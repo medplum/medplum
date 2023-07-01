@@ -1,9 +1,14 @@
 import { readJson } from '@medplum/definitions';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { globalSchema, indexStructureDefinitionBundle } from '../types';
-import { SearchParameterType, getSearchParameterDetails } from './details';
+import { getSearchParameterDetails, SearchParameterType } from './details';
 
-const searchParams = readJson('fhir/r4/search-parameters.json');
+const searchParamsBundle = readJson('fhir/r4/search-parameters.json');
+const medplumSearchParamsBundle = readJson('fhir/r4/search-parameters-medplum.json');
+const searchParams = [
+  ...(searchParamsBundle.entry as BundleEntry[]).map((e) => e.resource as SearchParameter),
+  ...(medplumSearchParamsBundle.entry as BundleEntry[]).map((e) => e.resource as SearchParameter),
+];
 
 describe('SearchParameterDetails', () => {
   beforeAll(() => {
@@ -13,13 +18,8 @@ describe('SearchParameterDetails', () => {
   });
 
   test('Get details', () => {
-    const individualPhoneticParam: SearchParameter = {
-      resourceType: 'SearchParameter',
-      code: 'phonetic',
-      type: 'string',
-      expression: 'Patient.name | Person.name | Practitioner.name | RelatedPerson.name',
-    };
-
+    // expression: 'Patient.name | Person.name | Practitioner.name | RelatedPerson.name'
+    const individualPhoneticParam = searchParams.find((e) => e.id === 'individual-phonetic') as SearchParameter;
     const details = getSearchParameterDetails('Patient', individualPhoneticParam);
     expect(details).toBeDefined();
     expect(details.columnName).toEqual('phonetic');
@@ -27,13 +27,8 @@ describe('SearchParameterDetails', () => {
   });
 
   test('Boolean param', () => {
-    const activeParam: SearchParameter = {
-      resourceType: 'SearchParameter',
-      code: 'active',
-      type: 'token',
-      expression: 'Patient.active',
-    };
-
+    // expression: 'Patient.active'
+    const activeParam = searchParams.find((e) => e.id === 'Patient-active') as SearchParameter;
     const details = getSearchParameterDetails('Patient', activeParam);
     expect(details).toBeDefined();
     expect(details.columnName).toEqual('active');
@@ -42,13 +37,8 @@ describe('SearchParameterDetails', () => {
   });
 
   test('Date param', () => {
-    const birthDateParam: SearchParameter = {
-      resourceType: 'SearchParameter',
-      code: 'birthdate',
-      type: 'date',
-      expression: 'Patient.birthDate',
-    };
-
+    // expression: 'Patient.birthDate'
+    const birthDateParam = searchParams.find((e) => e.id === 'individual-birthdate') as SearchParameter;
     const details = getSearchParameterDetails('Patient', birthDateParam);
     expect(details).toBeDefined();
     expect(details.columnName).toEqual('birthdate');
@@ -57,13 +47,8 @@ describe('SearchParameterDetails', () => {
   });
 
   test('Date/Time param', () => {
-    const authoredParam: SearchParameter = {
-      resourceType: 'SearchParameter',
-      code: 'authored',
-      type: 'date',
-      expression: 'ServiceRequest.authoredOn',
-    };
-
+    // expression: 'ServiceRequest.authoredOn'
+    const authoredParam = searchParams.find((e) => e.id === 'ServiceRequest-authored') as SearchParameter;
     const details = getSearchParameterDetails('ServiceRequest', authoredParam);
     expect(details).toBeDefined();
     expect(details.columnName).toEqual('authored');
@@ -72,13 +57,8 @@ describe('SearchParameterDetails', () => {
   });
 
   test('Get nested details', () => {
-    const missingExpressionParam: SearchParameter = {
-      resourceType: 'SearchParameter',
-      code: 'link',
-      type: 'reference',
-      expression: 'Patient.link.other',
-    };
-
+    // expression: 'Patient.link.other'
+    const missingExpressionParam = searchParams.find((e) => e.id === 'Patient-link') as SearchParameter;
     const details = getSearchParameterDetails('Patient', missingExpressionParam);
     expect(details).toBeDefined();
     expect(details.columnName).toEqual('link');
@@ -101,7 +81,7 @@ describe('SearchParameterDetails', () => {
   test('Property not found', () => {
     const missingExpressionParam: SearchParameter = {
       resourceType: 'SearchParameter',
-      code: 'test',
+      code: 'unknown',
       type: 'string',
       expression: 'Patient.unknown',
     };
@@ -112,7 +92,18 @@ describe('SearchParameterDetails', () => {
   test('Subtype not found', () => {
     const missingExpressionParam: SearchParameter = {
       resourceType: 'SearchParameter',
-      code: 'test',
+      code: 'name-unknown',
+      type: 'string',
+      expression: 'Patient.name.select()',
+    };
+
+    expect(() => getSearchParameterDetails('Patient', missingExpressionParam)).toThrow();
+  });
+
+  test('Unhandled function', () => {
+    const missingExpressionParam: SearchParameter = {
+      resourceType: 'SearchParameter',
+      code: 'unhandled-function',
       type: 'string',
       expression: 'Patient.name.unknown',
     };
@@ -121,89 +112,92 @@ describe('SearchParameterDetails', () => {
   });
 
   test('Observation-value-date', () => {
-    const valueDateParam: SearchParameter = {
-      resourceType: 'SearchParameter',
-      id: 'Observation-value-date',
-      code: 'value-date',
-      type: 'date',
-      expression: '(Observation.value as dateTime) | (Observation.value as Period)',
-    };
-
+    // expression: '(Observation.value as dateTime) | (Observation.value as Period)',
+    const valueDateParam = searchParams.find((e) => e.id === 'Observation-value-date') as SearchParameter;
     const details = getSearchParameterDetails('Observation', valueDateParam);
     expect(details).toBeDefined();
     expect(details.type).toEqual(SearchParameterType.DATETIME);
     expect(details.columnName).toEqual('valueDate');
-    expect(details.elementDefinition).toBeDefined();
+    expect(details.elementDefinitions).toBeDefined();
   });
 
   test('Observation-value-quantity', () => {
-    const valueQuantityParam: SearchParameter = {
-      resourceType: 'SearchParameter',
-      id: 'Observation-value-quantity',
-      code: 'value-quantity',
-      type: 'quantity',
-      expression: '(Observation.value as Quantity) | (Observation.value as SampledData)',
-    };
-
+    // expression: '(Observation.value as Quantity) | (Observation.value as SampledData)',
+    const valueQuantityParam = searchParams.find((e) => e.id === 'Observation-value-quantity') as SearchParameter;
     const details = getSearchParameterDetails('Observation', valueQuantityParam);
     expect(details).toBeDefined();
     expect(details.type).toEqual(SearchParameterType.QUANTITY);
     expect(details.columnName).toEqual('valueQuantity');
-    expect(details.elementDefinition).toBeDefined();
+    expect(details.elementDefinitions).toBeDefined();
   });
 
   test('Encounter-date', () => {
-    const clinicalDateParam: SearchParameter = {
-      resourceType: 'SearchParameter',
-      id: 'clinical-date',
-      url: 'http://hl7.org/fhir/SearchParameter/clinical-date',
-      name: 'date',
-      code: 'date',
-      base: [
-        'AllergyIntolerance',
-        'CarePlan',
-        'CareTeam',
-        'ClinicalImpression',
-        'Composition',
-        'Consent',
-        'DiagnosticReport',
-        'Encounter',
-        'EpisodeOfCare',
-        'FamilyMemberHistory',
-        'Flag',
-        'Immunization',
-        'List',
-        'Observation',
-        'Procedure',
-        'RiskAssessment',
-        'SupplyRequest',
-      ],
-      type: 'date',
-      expression:
-        'AllergyIntolerance.recordedDate | CarePlan.period | CareTeam.period | ClinicalImpression.date | Composition.date | Consent.dateTime | DiagnosticReport.effective | Encounter.period | EpisodeOfCare.period | FamilyMemberHistory.date | Flag.period | Immunization.occurrence | List.date | Observation.effective | Procedure.performed | (RiskAssessment.occurrence as dateTime) | SupplyRequest.authoredOn',
-      comparator: ['eq', 'ne', 'gt', 'ge', 'lt', 'le', 'sa', 'eb', 'ap'],
-    };
-
+    // expression: 'AllergyIntolerance.recordedDate | CarePlan.period | CareTeam.period | ClinicalImpression.date | Composition.date | Consent.dateTime | DiagnosticReport.effective | Encounter.period | EpisodeOfCare.period | FamilyMemberHistory.date | Flag.period | Immunization.occurrence | List.date | Observation.effective | Procedure.performed | (RiskAssessment.occurrence as dateTime) | SupplyRequest.authoredOn',
+    const clinicalDateParam = searchParams.find((e) => e.id === 'clinical-date') as SearchParameter;
     const details = getSearchParameterDetails('Encounter', clinicalDateParam);
     expect(details).toBeDefined();
     expect(details.type).toEqual(SearchParameterType.DATETIME);
     expect(details.columnName).toEqual('date');
-    expect(details.elementDefinition).toBeDefined();
+    expect(details.elementDefinitions).toBeDefined();
   });
 
   test('Bundle-composition', () => {
+    // expression: 'Bundle.entry[0].resource',
+    const searchParam = searchParams.find((e) => e.id === 'Bundle-composition') as SearchParameter;
+    const details = getSearchParameterDetails('Bundle', searchParam);
+    expect(details).toBeDefined();
+    expect(details.array).toBe(false);
+  });
+
+  test('ProjectMembership-profile-type', () => {
+    // expression: 'ProjectMembership.profile.resolve().resourceType',
+    const searchParam = searchParams.find((e) => e.id === 'ProjectMembership-profile-type') as SearchParameter;
+    const details = getSearchParameterDetails('ProjectMembership', searchParam);
+    expect(details).toBeDefined();
+    expect(details.array).toBe(false);
+  });
+
+  test('ProjectMembership-access-policy', () => {
     const searchParam: SearchParameter = {
       resourceType: 'SearchParameter',
-      id: 'Bundle-composition',
-      code: 'composition',
-      base: ['Bundle'],
+      id: 'ProjectMembership-access-policy',
+      url: 'https://medplum.com/fhir/SearchParameter/ProjectMembership-access-policy',
+      version: '4.0.1',
+      name: 'access-policy',
+      status: 'draft',
+      publisher: 'Medplum',
+      description: 'The access policy of the user',
+      code: 'access-policy',
+      base: ['ProjectMembership'],
       type: 'reference',
-      expression: 'Bundle.entry[0].resource',
-      xpath: 'f:Bundle/f:entry[0]/f:resource',
-      xpathUsage: 'normal',
-      target: ['Composition'],
+      expression: 'ProjectMembership.accessPolicy | ProjectMembership.access.policy',
+      target: ['AccessPolicy'],
     };
-    const details = getSearchParameterDetails('Bundle', searchParam);
+    const details = getSearchParameterDetails('ProjectMembership', searchParam);
+    expect(details).toBeDefined();
+    expect(details.array).toBe(true);
+  });
+
+  test('Account-patient', () => {
+    // expression: 'Account.subject.where(resolve() is Patient)',
+    const searchParam = searchParams.find((e) => e.id === 'Account-patient') as SearchParameter;
+    const details = getSearchParameterDetails('Account', searchParam);
+    expect(details).toBeDefined();
+    expect(details.array).toBe(true);
+  });
+
+  test('ActivityDefinition-composed-of', () => {
+    // expression: 'Account.subject.where(resolve() is Patient)',
+    const searchParam = searchParams.find((e) => e.id === 'ActivityDefinition-composed-of') as SearchParameter;
+    const details = getSearchParameterDetails('ActivityDefinition', searchParam);
+    expect(details).toBeDefined();
+    expect(details.array).toBe(true);
+  });
+
+  test('Patient-deceased', () => {
+    // expression: 'Patient.deceased.exists() and Patient.deceased != false',
+    const searchParam = searchParams.find((e) => e.id === 'Patient-deceased') as SearchParameter;
+    const details = getSearchParameterDetails('Patient', searchParam);
     expect(details).toBeDefined();
     expect(details.array).toBe(false);
   });
@@ -214,9 +208,8 @@ describe('SearchParameterDetails', () => {
       if (resourceType === 'Resource' || resourceType === 'DomainResource') {
         continue;
       }
-      for (const entry of searchParams.entry) {
-        const searchParam = entry.resource;
-        if (searchParam.base?.includes(resourceType)) {
+      for (const searchParam of searchParams) {
+        if (searchParam.base?.includes(resourceType as ResourceType)) {
           const details = getSearchParameterDetails(resourceType, searchParam);
           expect(details).toBeDefined();
         }

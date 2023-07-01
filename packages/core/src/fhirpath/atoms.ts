@@ -13,6 +13,7 @@ import {
   toJsBoolean,
   toTypedValue,
 } from './utils';
+
 export class FhirPathAtom implements Atom {
   constructor(public readonly original: string, public readonly child: Atom) {}
 
@@ -102,7 +103,7 @@ export class UnaryOperatorAtom extends PrefixOperatorAtom {
   }
 
   toString(): string {
-    return this.child.toString();
+    return this.operator + this.child.toString();
   }
 }
 
@@ -116,7 +117,11 @@ export class AsAtom extends InfixOperatorAtom {
   }
 }
 
-export class ArithemticOperatorAtom extends InfixOperatorAtom {
+export abstract class BooleanInfixOperatorAtom extends InfixOperatorAtom {
+  abstract eval(context: AtomContext, input: TypedValue[]): TypedValue[];
+}
+
+export class ArithemticOperatorAtom extends BooleanInfixOperatorAtom {
   constructor(
     operator: string,
     left: Atom,
@@ -166,7 +171,7 @@ export class ConcatAtom extends InfixOperatorAtom {
   }
 }
 
-export class ContainsAtom extends InfixOperatorAtom {
+export class ContainsAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('contains', left, right);
   }
@@ -178,7 +183,7 @@ export class ContainsAtom extends InfixOperatorAtom {
   }
 }
 
-export class InAtom extends InfixOperatorAtom {
+export class InAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('in', left, right);
   }
@@ -216,7 +221,7 @@ export class UnionAtom extends InfixOperatorAtom {
   }
 }
 
-export class EqualsAtom extends InfixOperatorAtom {
+export class EqualsAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('=', left, right);
   }
@@ -228,7 +233,7 @@ export class EqualsAtom extends InfixOperatorAtom {
   }
 }
 
-export class NotEqualsAtom extends InfixOperatorAtom {
+export class NotEqualsAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('!=', left, right);
   }
@@ -240,7 +245,7 @@ export class NotEqualsAtom extends InfixOperatorAtom {
   }
 }
 
-export class EquivalentAtom extends InfixOperatorAtom {
+export class EquivalentAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('~', left, right);
   }
@@ -252,7 +257,7 @@ export class EquivalentAtom extends InfixOperatorAtom {
   }
 }
 
-export class NotEquivalentAtom extends InfixOperatorAtom {
+export class NotEquivalentAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('!~', left, right);
   }
@@ -264,7 +269,7 @@ export class NotEquivalentAtom extends InfixOperatorAtom {
   }
 }
 
-export class IsAtom extends InfixOperatorAtom {
+export class IsAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('is', left, right);
   }

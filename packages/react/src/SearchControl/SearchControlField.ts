@@ -124,7 +124,7 @@ function getFieldDefinition(resourceType: string, name: string): SearchControlFi
   // So we need to walk backwards to find the element definition.
   if (exactSearchParam) {
     const details = getSearchParameterDetails(resourceType, exactSearchParam);
-    return { name, elementDefinition: details.elementDefinition, searchParams: [exactSearchParam] };
+    return { name, elementDefinition: details.elementDefinitions?.[0], searchParams: [exactSearchParam] };
   }
 
   // Worst case: no element definition and no search parameter.
