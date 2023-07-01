@@ -1,9 +1,11 @@
-import { allOk, forbidden, getResourceTypes, Operator } from '@medplum/core';
+import { accepted, allOk, forbidden, getResourceTypes, Operator } from '@medplum/core';
 import { Login, ResourceType } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import { getConfig } from '../../config';
+import { logger } from '../../logger';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
-import { logger } from '../../logger';
+import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 
 /**
  * Handles an expunge request.
@@ -22,11 +24,14 @@ export async function expungeHandler(req: Request, res: Response): Promise<void>
   const { everything } = req.query;
   const repo = res.locals.repo as Repository;
   if (everything === 'true') {
-    logger.info(`expunge started for ${resourceType}/${id}`);
-    new Expunger(repo, id)
-      .expunge()
-      .then(() => logger.info(`expunge for ${resourceType}/${id} is completed`))
-      .catch((err) => logger.error(`expunge ${resourceType}/${id} failed: ${err}`));
+    const { baseUrl } = getConfig();
+    const exec = new AsyncJobExecutor(repo);
+    await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
+    exec.start(async () => {
+      logger.info(`expunge started for ${resourceType}/${id}`);
+      await new Expunger(repo, id).expunge();
+    });
+    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
   } else {
     await repo.expungeResource(resourceType, id);
   }
