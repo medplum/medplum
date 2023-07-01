@@ -20,7 +20,7 @@
     "@medplum/definitions": "*",
     "@medplum/fhirtypes": "*",
     "dataloader": "2.2.2",
-    "graphql": "16.6.0",
+    "graphql": "16.7.1",
     "rfc6902": "5.0.1"
   },
   "main": "dist/cjs/index.cjs",
