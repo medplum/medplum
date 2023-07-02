@@ -3454,4 +3454,20 @@ describe('FHIR Repo', () => {
       expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid id');
     }
   });
+
+  test('Get estimated count with filter on human name', async () => {
+    const result = await systemRepo.search({
+      resourceType: 'Patient',
+      total: 'estimate',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'John',
+        },
+      ],
+    });
+    expect(result.total).toBeDefined();
+    expect(typeof result.total).toBe('number');
+  });
 });
