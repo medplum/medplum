@@ -1237,8 +1237,11 @@ export class Repository extends BaseRepository implements FhirRepository {
     this.addDeletedFilter(builder);
     this.addSecurityFilters(builder, searchRequest.resourceType);
     this.addSearchFilters(builder, searchRequest);
-    builder.raw(`DISTINCT "${searchRequest.resourceType}"."id"`);
     builder.explain = true;
+
+    if (builder.joins.length > 0) {
+      builder.groupBy({ tableName: searchRequest.resourceType, columnName: 'id' });
+    }
 
     // See: https://wiki.postgresql.org/wiki/Count_estimate
     // This parses the query plan to find the estimated number of rows.
