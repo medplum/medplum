@@ -12,21 +12,20 @@ export function initWebSockets(server: http.Server): void {
   wsServer = new ws.Server({ noServer: true });
 
   wsServer.on('connection', (socket: ws.WebSocket) => {
-    logger.debug('on new connection!');
-    socket.send('hello');
+    logger.debug('[WS] connection');
 
-    socket.on('message', (data: ws.RawData, isBinary: boolean) => {
-      logger.debug('Received: %s', data, isBinary);
-      socket.send(`echo ${data}`);
+    socket.on('message', (data: ws.RawData, binary: boolean) => {
+      logger.debug('[WS] message', data, binary);
+      socket.send(data, { binary });
     });
 
     socket.on('error', (err: Error) => {
-      logger.debug('WebSocket error observed:', err);
+      logger.debug('[WS] error', err);
       socket.close();
     });
 
     socket.on('close', () => {
-      logger.debug('WebSocket connection closed');
+      logger.debug('[WS] close');
     });
   });
 

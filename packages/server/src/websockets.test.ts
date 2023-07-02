@@ -1,5 +1,4 @@
 import express from 'express';
-// import request from 'supertest';
 import request from 'superwstest';
 import { initApp, shutdownApp } from './app';
 import { loadTestConfig } from './config';
@@ -14,19 +13,12 @@ describe('WebSockets', () => {
       server.listen(0, 'localhost', 511, resolve);
     });
 
-    // const res = await request(app).get('/');
-    // expect(res.status).toBe(200);
-    // expect(res.headers['cache-control']).toBeDefined();
-    // expect(res.headers['content-security-policy']).toBeDefined();
-    // expect(res.headers['referrer-policy']).toBeDefined();
-
     const response = await request(server)
       .ws('/ws')
-      .expectText('hello')
       .sendText('foo')
-      .expectText('echo foo')
+      .expectText('foo')
       .sendText('abc')
-      .expectText('echo abc')
+      .expectText('abc')
       .close()
       .expectClosed();
     expect(response).toBeDefined();
