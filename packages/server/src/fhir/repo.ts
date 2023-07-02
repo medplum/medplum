@@ -1232,15 +1232,16 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @returns The total number of matching results.
    */
   private async getEstimateCount(searchRequest: SearchRequest): Promise<number> {
+    const resourceType = searchRequest.resourceType;
     const client = getClient();
-    const builder = new SelectQuery(searchRequest.resourceType);
+    const builder = new SelectQuery(resourceType).column('id');
     this.addDeletedFilter(builder);
     this.addSecurityFilters(builder, searchRequest.resourceType);
     this.addSearchFilters(builder, searchRequest);
     builder.explain = true;
 
     if (builder.joins.length > 0) {
-      builder.groupBy({ tableName: searchRequest.resourceType, columnName: 'id' });
+      builder.groupBy({ tableName: resourceType, columnName: 'id' });
     }
 
     // See: https://wiki.postgresql.org/wiki/Count_estimate
