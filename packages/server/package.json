@@ -28,6 +28,7 @@
     "@aws-sdk/cloudfront-signer": "3.363.0",
     "@aws-sdk/lib-storage": "3.363.0",
     "@aws-sdk/types": "3.357.0",
+    "@aws-sdk/util-stream": "^3.360.0",
     "@medplum/core": "*",
     "@medplum/definitions": "*",
     "@medplum/fhir-router": "*",

@@ -1,5 +1,5 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { sdkStreamMixin } from '@aws-sdk/util-stream-node';
+import { sdkStreamMixin } from '@aws-sdk/util-stream';
 import { Binary } from '@medplum/fhirtypes';
 import { Request } from 'express';
 import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
