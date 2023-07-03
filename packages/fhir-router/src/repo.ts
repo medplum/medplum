@@ -117,7 +117,7 @@ export interface FhirRepository {
    * @param searchRequest The FHIR search request.
    * @returns The search results.
    */
-  search<T extends Resource>(searchRequest: SearchRequest): Promise<Bundle<T>>;
+  search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>>;
 
   /**
    * Searches for a single FHIR resource.
@@ -313,7 +313,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     return deepClone(version);
   }
 
-  async search<T extends Resource>(searchRequest: SearchRequest): Promise<Bundle<T>> {
+  async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
     const { resourceType } = searchRequest;
     const resources = this.resources.get(resourceType) || new Map();
     const result = [];
