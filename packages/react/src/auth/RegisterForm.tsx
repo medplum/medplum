@@ -1,4 +1,4 @@
-import { isOperationOutcome, LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
+import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
