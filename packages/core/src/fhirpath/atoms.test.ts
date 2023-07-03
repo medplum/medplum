@@ -53,17 +53,17 @@ describe('Atoms', () => {
   });
 
   test.each([
-    ['true implies true', true],
-    ['true implies false', false],
-    ['true implies null', undefined],
-    ['false implies true', true],
-    ['false implies false', true],
-    ['false implies null', true],
-    ['null implies true', true],
-    ['null implies false', undefined],
-    ['null implies null', undefined],
+    ['true implies true', [true]],
+    ['true implies false', [false]],
+    ['true implies {}', []],
+    ['false implies true', [true]],
+    ['false implies false', [true]],
+    ['false implies {}', [true]],
+    ['{} implies true', [true]],
+    ['{} implies false', []],
+    ['{} implies {}', []],
   ])('ImpliesAtom: %s to equal %s', (input: any, expected: any) => {
-    expect(evalFhirPath(input, [])).toEqual([expected]);
+    expect(evalFhirPath(input, [])).toEqual(expected);
   });
 
   test('AsAtom', () => {
