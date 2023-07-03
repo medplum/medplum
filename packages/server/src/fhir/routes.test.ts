@@ -57,6 +57,12 @@ describe('FHIR Routes', () => {
     expect(res.body.resourceType).toEqual('CapabilityStatement');
   });
 
+  test('Get versions anonymously', async () => {
+    const res = await request(app).get(`/fhir/R4/$versions`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ versions: ['4.0'], default: '4.0' });
+  });
+
   test('Get SMART-on-FHIR configuration', async () => {
     const res = await request(app).get(`/fhir/R4/.well-known/smart-configuration`);
     expect(res.status).toBe(200);
