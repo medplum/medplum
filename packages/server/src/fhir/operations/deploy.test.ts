@@ -1,8 +1,20 @@
-import { LambdaClient } from '@aws-sdk/client-lambda';
+import {
+  CreateFunctionCommand,
+  GetFunctionCommand,
+  GetFunctionConfigurationCommand,
+  LambdaClient,
+  ListLayerVersionsCommand,
+  UpdateFunctionCodeCommand,
+  UpdateFunctionConfigurationCommand,
+} from '@aws-sdk/client-lambda';
+import 'aws-sdk-client-mock-jest';
+
 import { Bot } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
+
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config';
@@ -12,6 +24,69 @@ const app = express();
 let accessToken: string;
 
 describe('Deploy', () => {
+  let mockLambdaClient: AwsClientStub<LambdaClient>;
+
+  beforeEach(() => {
+    let created = false;
+
+    mockLambdaClient = mockClient(LambdaClient);
+
+    mockLambdaClient.on(CreateFunctionCommand).callsFake(({ FunctionName }) => {
+      created = true;
+
+      return {
+        Configuration: {
+          FunctionName,
+        },
+      };
+    });
+
+    mockLambdaClient.on(GetFunctionCommand).callsFake(({ FunctionName }) => {
+      if (created) {
+        return {
+          Configuration: {
+            FunctionName,
+          },
+        };
+      }
+
+      return {
+        Configuration: {},
+      };
+    });
+
+    mockLambdaClient.on(GetFunctionConfigurationCommand).callsFake(({ FunctionName }) => {
+      return {
+        FunctionName,
+        Runtime: 'node16.x',
+        Handler: 'index.handler',
+        Layers: [
+          {
+            Arn: 'arn:aws:lambda:us-east-1:123456789012:layer:test-layer:1',
+          },
+        ],
+      };
+    });
+
+    mockLambdaClient.on(ListLayerVersionsCommand).resolves({
+      LayerVersions: [
+        {
+          LayerVersionArn: 'xyz',
+        },
+      ],
+    });
+
+    mockLambdaClient.on(UpdateFunctionCodeCommand).callsFake(({ FunctionName }) => ({
+      Configuration: {
+        FunctionName,
+      },
+    }));
+  });
+
+  afterEach(() => {
+    mockLambdaClient.restore();
+  });
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -20,11 +95,6 @@ describe('Deploy', () => {
 
   afterAll(async () => {
     await shutdownApp();
-  });
-
-  beforeEach(() => {
-    (LambdaClient as any).created = false;
-    (LambdaClient as any).updated = false;
   });
 
   test('Happy path', async () => {
@@ -46,6 +116,7 @@ describe('Deploy', () => {
       });
     expect(res1.status).toBe(201);
     const bot = res1.body as Bot;
+    const name = `medplum-bot-lambda-${bot.id}`;
 
     // Step 2: Deploy the bot
     const res2 = await request(app)
@@ -54,8 +125,17 @@ describe('Deploy', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res2.status).toBe(200);
-    expect((LambdaClient as any).created).toBe(true);
-    expect((LambdaClient as any).updated).toBe(false);
+
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(CreateFunctionCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, {
+      FunctionName: name,
+    });
+    expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
+      FunctionName: name,
+    });
+    mockLambdaClient.resetHistory();
 
     // Step 3: Update the bot
     const res3 = await request(app)
@@ -64,7 +144,15 @@ describe('Deploy', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res3.status).toBe(200);
-    expect((LambdaClient as any).updated).toBe(true);
+
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, {
+      FunctionName: name,
+    });
   });
 
   test('Bots not enabled', async () => {
