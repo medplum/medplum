@@ -1,5 +1,5 @@
 import { Anchor, Button, Center, Checkbox, Divider, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
-import { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
+import { GoogleCredentialResponse, LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
@@ -52,7 +52,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
             })
           );
         } catch (err) {
-          setOutcome(err as OperationOutcome);
+          setOutcome(normalizeOperationOutcome(err));
         }
       }}
     >
@@ -73,7 +73,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
                     })
                   );
                 } catch (err) {
-                  setOutcome(err as OperationOutcome);
+                  setOutcome(normalizeOperationOutcome(err));
                 }
               }}
             />

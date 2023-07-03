@@ -1,7 +1,7 @@
 import { Button, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { deepClone, IndexedStructureDefinition } from '@medplum/core';
-import { OperationOutcome, ProjectSite } from '@medplum/fhirtypes';
+import { deepClone, IndexedStructureDefinition, normalizeOperationOutcome } from '@medplum/core';
+import { ProjectSite } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
@@ -38,7 +38,7 @@ export function SitesPage(): JSX.Element {
           .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
           .then(() => showNotification({ color: 'green', message: 'Saved' }))
           .catch((err) => {
-            const operationOutcome = err as OperationOutcome;
+            const operationOutcome = normalizeOperationOutcome(err);
             // Only show the first error
             showNotification({
               color: 'red',
