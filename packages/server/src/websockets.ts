@@ -14,37 +14,35 @@ export function initWebSockets(server: http.Server): void {
   wsServer = new ws.Server({ noServer: true });
 
   wsServer.on('connection', async (socket: ws.WebSocket) => {
-    logger.debug('[WS] connection');
+    // Set binary type to 'nodebuffer' so that data is returned as Buffer objects
+    // See: https://github.com/websockets/ws/blob/master/doc/ws.md#websocketbinarytype
+    socket.binaryType = 'nodebuffer';
 
-    const redis = getRedis();
+    // Create a redis client for this connection.
+    // According to Redis documentation: http://redis.io/commands/subscribe
+    // Once the client enters the subscribed state it is not supposed to issue any other commands,
+    // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
+    const redisSubscriber = getRedis().duplicate();
     const channel = randomUUID();
 
-    redis.on('message', (channel: string, message: string) => {
+    await redisSubscriber.subscribe(channel);
+
+    redisSubscriber.on('message', (channel: string, message: string) => {
       logger.debug('[WS] redis message', channel, message);
       socket.send(message, { binary: false });
     });
 
-    redis.on('messageBuffer', (channel: string, message: Buffer) => {
-      logger.debug('[WS] redis messageBuffer', channel, message);
-      socket.send(message, { binary: true });
-    });
-
-    await redis.subscribe(channel);
-
-    socket.on('message', async (data: ws.RawData, binary: boolean) => {
-      logger.debug('[WS] message', data, binary);
-      await redis.publish(channel, rawDataToBuffer(data));
+    socket.on('message', async (data: ws.RawData) => {
+      await getRedis().publish(channel, data as Buffer);
     });
 
     socket.on('error', async (err: Error) => {
-      logger.debug('[WS] error', err);
-      await redis.unsubscribe(channel);
+      logger.error('websocket error', err);
       socket.close();
     });
 
     socket.on('close', async () => {
-      logger.debug('[WS] close');
-      await redis.unsubscribe(channel);
+      redisSubscriber.disconnect();
     });
   });
 
@@ -64,15 +62,4 @@ export function closeWebSockets(): void {
     wsServer.close();
     wsServer = undefined;
   }
-}
-
-function rawDataToBuffer(data: ws.RawData): Buffer {
-  if (Buffer.isBuffer(data)) {
-    return data;
-  }
-  if (data instanceof ArrayBuffer) {
-    return Buffer.from(data);
-  }
-  // Otherwise data is Buffer[]
-  return Buffer.concat(data);
 }
