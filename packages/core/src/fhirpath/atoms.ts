@@ -354,7 +354,7 @@ export class XorAtom extends InfixOperatorAtom {
 
 /**
  * 6.5.5. implies
- * Returns true if left is true and right is true, 
+ * Returns true if left is true and right is true,
  * true left is false and right true, false or empty
  * true left is empty
  */
@@ -371,7 +371,7 @@ export class ImpliesAtom extends InfixOperatorAtom {
     }
     const leftValue = leftResult.length === 0 ? null : leftResult[0].value;
     const rightValue = rightResult.length === 0 ? null : rightResult[0].value;
-    if ((rightValue === true) || (leftValue === false) || (leftValue === null && rightValue === true)) {
+    if (rightValue === true || leftValue === false || (leftValue === null && rightValue === true)) {
       return booleanToTypedValue(true);
     }
     if (leftValue === true && rightValue === false) {

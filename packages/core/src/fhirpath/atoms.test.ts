@@ -53,7 +53,16 @@ describe('Atoms', () => {
   });
 
   test.each([
-  ])('ImpliesAtom: %s %s', (input: any, expected: any) => {
+    ['true implies true', true],
+    ['true implies false', false],
+    ['true implies null', undefined],
+    ['false implies true', true],
+    ['false implies false', true],
+    ['false implies null', true],
+    ['null implies true', true],
+    ['null implies false', undefined],
+    ['null implies null', undefined],
+  ])('ImpliesAtom: %s to equal %s', (input: any, expected: any) => {
     expect(evalFhirPath(input, [])).toEqual([expected]);
   });
 
