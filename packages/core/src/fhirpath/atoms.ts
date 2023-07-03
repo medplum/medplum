@@ -357,6 +357,38 @@ export class XorAtom extends InfixOperatorAtom {
   }
 }
 
+/**
+ * 6.5.5. implies
+ * Returns true if left is true and right is true,
+ * true left is false and right true, false or empty
+ * true left is empty
+ */
+export class ImpliesAtom extends InfixOperatorAtom {
+  constructor(left: Atom, right: Atom) {
+    super('implies', left, right);
+  }
+
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftResult = this.left.eval(context, input);
+    const rightResult = this.right.eval(context, input);
+    if (!this.isValidCollectionLength(leftResult, rightResult)) {
+      throw new Error(`Expected single boolean value but got ${leftResult}, ${rightResult}`);
+    }
+    const leftValue = leftResult.length === 0 ? null : leftResult[0].value;
+    const rightValue = rightResult.length === 0 ? null : rightResult[0].value;
+    if (rightValue === true || leftValue === false) {
+      return booleanToTypedValue(true);
+    } else if (leftValue === null || rightValue === null) {
+      return [];
+    }
+    return booleanToTypedValue(false);
+  }
+
+  private isValidCollectionLength(leftResult: TypedValue[], rightResult: TypedValue[]): boolean {
+    return leftResult.length <= 1 && rightResult.length <= 1;
+  }
+}
+
 export class FunctionAtom implements Atom {
   constructor(public readonly name: string, public readonly args: Atom[]) {}
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {

@@ -13,6 +13,7 @@ import {
   EquivalentAtom,
   FhirPathAtom,
   FunctionAtom,
+  ImpliesAtom,
   InAtom,
   IndexerAtom,
   IsAtom,
@@ -210,7 +211,8 @@ export function initFhirPathParserBuilder(): ParserBuilder {
       (left, _, right) => new ArithemticOperatorAtom('mod', left, right, (x, y) => x % y)
     )
     .infixLeft('or', OperatorPrecedence.Is, (left, _, right) => new OrAtom(left, right))
-    .infixLeft('xor', OperatorPrecedence.Is, (left, _, right) => new XorAtom(left, right));
+    .infixLeft('xor', OperatorPrecedence.Is, (left, _, right) => new XorAtom(left, right))
+    .infixLeft('implies', OperatorPrecedence.Implies, (left, _, right) => new ImpliesAtom(left, right));
 }
 
 const fhirPathParserBuilder = initFhirPathParserBuilder();
