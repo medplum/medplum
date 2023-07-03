@@ -29,6 +29,13 @@ aws s3 cp dist/ "s3://${APP_BUCKET}/" \
 
 aws s3 cp dist/ "s3://${APP_BUCKET}/" \
   --recursive \
+  --content-type "application/json" \
+  --cache-control "public, max-age=31536000" \
+  --exclude "*" \
+  --include "*.map"
+
+aws s3 cp dist/ "s3://${APP_BUCKET}/" \
+  --recursive \
   --content-type "text/plain" \
   --cache-control "public, max-age=31536000" \
   --exclude "*" \
