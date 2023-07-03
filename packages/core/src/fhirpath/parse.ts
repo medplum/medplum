@@ -212,7 +212,7 @@ export function initFhirPathParserBuilder(): ParserBuilder {
     )
     .infixLeft('or', OperatorPrecedence.Is, (left, _, right) => new OrAtom(left, right))
     .infixLeft('xor', OperatorPrecedence.Is, (left, _, right) => new XorAtom(left, right))
-    .infixLeft('implies', OperatorPrecedence.Is, (left, _, right) => new ImpliesAtom(left, right));
+    .infixLeft('implies', OperatorPrecedence.Implies, (left, _, right) => new ImpliesAtom(left, right));
 }
 
 const fhirPathParserBuilder = initFhirPathParserBuilder();

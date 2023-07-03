@@ -366,18 +366,26 @@ export class ImpliesAtom extends InfixOperatorAtom {
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     const leftResult = this.left.eval(context, input);
     const rightResult = this.right.eval(context, input);
-    if (leftResult.length === 0 && rightResult.length === 0) {
-      return [];
+    if (!this.isValidCollectionLength(leftResult, rightResult)) {
+      throw new Error(
+        `One or more collections are not of length 1 leftResult: ${leftResult.length} rightResult: ${rightResult.length}`
+      );
     }
     const leftValue = leftResult.length === 0 ? null : leftResult[0].value;
     const rightValue = rightResult.length === 0 ? null : rightResult[0].value;
     if (rightValue === true || leftValue === false || (leftValue === null && rightValue === true)) {
       return booleanToTypedValue(true);
+    } else if (leftValue === null || rightValue === null) {
+      return [];
     }
-    if (leftValue === true && rightValue === false) {
-      return booleanToTypedValue(false);
+    return booleanToTypedValue(false);
+  }
+
+  private isValidCollectionLength(leftResult: TypedValue[], rightResult: TypedValue[]): boolean {
+    if (leftResult.length > 1 || rightResult.length > 1) {
+      return false;
     }
-    return [];
+    return true;
   }
 }
 
