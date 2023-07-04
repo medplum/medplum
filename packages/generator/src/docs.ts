@@ -1,8 +1,14 @@
 import { getExpressionForResourceType, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
-import { writeFileSync } from 'fs';
+import fs, { writeFileSync } from 'fs';
+import { JSDOM } from 'jsdom';
+import * as mkdirp from 'mkdirp';
+import fetch from 'node-fetch';
+import * as path from 'path';
 import { resolve } from 'path/posix';
+import * as unzipper from 'unzipper';
+
 import {
   DocumentationLocation,
   PropertyDocInfo,
@@ -24,7 +30,12 @@ for (const entry of readJson('fhir/r4/search-parameters-medplum.json').entry as 
 
 let documentedTypes: Record<string, DocumentationLocation>;
 
-export function main(): void {
+export async function main(): Promise<void> {
+  const outputFolder = path.resolve(__dirname, '..', 'output');
+  if (!fs.existsSync(outputFolder)) {
+    fs.mkdirSync(outputFolder);
+  }
+
   const indexedSearchParams = indexSearchParameters(searchParams);
   // Definitions for FHIR Spec resources
   const fhirCoreDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-resources.json`));
@@ -32,7 +43,6 @@ export function main(): void {
   const medplumResourceDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-medplum.json`));
   // StructureDefinitions for FHIR "Datatypes" (e.g. Address, ContactPoint, Identifier...)
   const fhirDatatypes = filterDefinitions(readJson(`fhir/r4/profiles-types.json`));
-
   // Map from resource/datatype name -> documented location
   documentedTypes = {
     ...Object.fromEntries(
@@ -43,11 +53,13 @@ export function main(): void {
       medplumResourceDefinitions.map((def): [string, DocumentationLocation] => [def.name || '', 'medplum'])
     ),
   };
-
   const fhirResourceDocs = buildDocsDefinitions(fhirCoreDefinitions, 'resource', indexedSearchParams);
   const medplumResourceDocs = buildDocsDefinitions(medplumResourceDefinitions, 'medplum', indexedSearchParams);
   const fhirDatatypeDocs = buildDocsDefinitions(fhirDatatypes, 'datatype');
-  writeDocs(fhirResourceDocs, 'resource');
+
+  const resourceIntroductions = await fetchFhirIntroductions(fhirCoreDefinitions);
+
+  writeDocs(fhirResourceDocs, 'resource', resourceIntroductions);
   writeDocs(fhirDatatypeDocs, 'datatype');
   writeDocs(medplumResourceDocs, 'medplum');
 }
@@ -133,7 +145,7 @@ function buildDocsDefinition(
   return result;
 }
 
-function buildDocsMarkdown(position: number, definition: ResourceDocsProps): string {
+function buildDocsMarkdown(position: number, definition: ResourceDocsProps, resourceIntroduction?: any): string {
   const resourceName = definition.name;
   const description = rewriteLinks(definition.description);
   return `\
@@ -141,13 +153,29 @@ function buildDocsMarkdown(position: number, definition: ResourceDocsProps): str
 title: ${resourceName}
 sidebar_position: ${position}
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/${definition.location}Definitions/${resourceName.toLowerCase()}.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
 # ${resourceName}
 
 ${description}
+
+<Tabs>
+  <TabItem value="usage" label="Usage" default>
+    ${resourceIntroduction?.scopeAndUsage || ''}
+  </TabItem>
+  <TabItem value="backgroundAndContext" label="Background and Context">
+  ${resourceIntroduction?.backgroundAndContext || ''}
+  </TabItem>
+  <TabItem value="relationships" label="Relationships">
+    ${resourceIntroduction?.boundariesAndRelationships || ''}
+  </TabItem>
+  <TabItem value="referencedBy" label="Referenced By">
+    ${resourceIntroduction?.referencedBy.map((e: string) => `<a href="${e}">${e}</a>`)}
+  </TabItem>
+</Tabs>
 
 ## Properties
 
@@ -169,18 +197,26 @@ ${
 `;
 }
 
-function writeDocs(definitions: ResourceDocsProps[], location: DocumentationLocation): void {
+function writeDocs(
+  definitions: ResourceDocsProps[],
+  location: DocumentationLocation,
+  resourceIntroductions?: Record<string, any>
+): void {
   definitions.forEach((definition, i) => {
-    const resourceName = definition.name.toLowerCase();
+    const resourceType = definition.name.toLowerCase();
+    if (resourceType === 'account') {
+      console.log(!!resourceIntroductions);
+      console.log(resourceIntroductions?.['account']);
+      console.log(resourceIntroductions?.[resourceType]);
+    }
     writeFileSync(
-      resolve(__dirname, `../../docs/static/data/${location}Definitions/${resourceName}.json`),
+      resolve(__dirname, `../../docs/static/data/${location}Definitions/${resourceType}.json`),
       JSON.stringify(definition, null, 2),
-      // JSON.stringify(definition),
       'utf8'
     );
     writeFileSync(
-      resolve(__dirname, `../../docs/docs/api/fhir/${pluralize(location)}/${resourceName}.mdx`),
-      buildDocsMarkdown(i, definition),
+      resolve(__dirname, `../../docs/docs/api/fhir/${pluralize(location)}/${resourceType}.mdx`),
+      buildDocsMarkdown(i, definition, resourceIntroductions?.[resourceType]),
       'utf8'
     );
   });
@@ -282,6 +318,138 @@ function rewriteLinks(description: string): string {
   return description;
 }
 
+async function downloadAndUnzip(downloadURL: string, zipFilePath: string, outputFolder: string): Promise<void> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const response = await fetch(downloadURL);
+
+      if (!response.ok) {
+        console.error('Error downloading file:', response.status, response.statusText);
+        reject();
+        return;
+      }
+
+      const fileStream = fs.createWriteStream(zipFilePath);
+      response.body.pipe(fileStream);
+
+      // Inside your 'downloadAndUnzip' function, replace the extraction part with this:
+      fileStream.on('finish', async () => {
+        fs.createReadStream(zipFilePath)
+          .pipe(unzipper.Parse())
+          .on('entry', function (entry) {
+            const fileName = entry.path;
+            const type = entry.type; // 'Directory' or 'File'
+            const fullPath = path.join(outputFolder, fileName).replaceAll('\\', '/');
+
+            if (type === 'Directory') {
+              mkdirp.sync(fullPath);
+              entry.autodrain();
+            } else {
+              mkdirp.sync(path.dirname(fullPath));
+              entry.pipe(fs.createWriteStream(fullPath));
+            }
+          })
+          .on('close', resolve)
+          .on('error', reject);
+      });
+    } catch (error) {
+      console.error('Error downloading or unzipping file:', error);
+      reject();
+    }
+  });
+}
+
+function extractResourceDescriptions(
+  htmlDirectory: string,
+  definitions: StructureDefinition[]
+): Record<string, Record<string, string | string[] | undefined>> {
+  const results: Record<string, Record<string, string | string[] | undefined>> = {};
+  for (const definition of definitions) {
+    const resourceType = definition.name?.toLowerCase();
+    const fileName = path.resolve(htmlDirectory, `${resourceType}.html`);
+    if (resourceType && fs.existsSync(fileName)) {
+      const fileContent = fs.readFileSync(fileName, 'utf-8');
+      const dom = new JSDOM(fileContent);
+      const document = dom.window.document;
+
+      const resourceContents: Record<string, string | string[] | undefined> = { referencedBy: [] };
+
+      // find the divs
+      const divs = document.getElementsByTagName('div');
+      for (let div of divs) {
+        const h2 = div.querySelector('h2');
+        if (h2) {
+          const h2Text = h2.textContent?.toLowerCase().replace(/\s/g, '') || '';
+
+          let paragraphHTML = sanitizeDivContent(div);
+
+          if (h2Text.includes('scopeandusage')) {
+            resourceContents.scopeAndUsage = paragraphHTML;
+          } else if (h2Text.includes('backgroundandcontext')) {
+            resourceContents.backgroundAndContext = paragraphHTML;
+          } else if (h2Text.includes('boundariesandrelationships')) {
+            resourceContents.boundariesAndRelationships = paragraphHTML;
+          }
+        }
+      }
+
+      // find referencedBy
+      const pElements = document.querySelectorAll('p');
+      for (let p of pElements) {
+        if (p.textContent?.trim().startsWith('This resource is referenced by itself,')) {
+          const aElements = p.querySelectorAll('a');
+          const aHrefs = Array.from(aElements).map((a) => a.href);
+          resourceContents['referencedBy'] = aHrefs;
+        }
+      }
+      results[resourceType] = resourceContents;
+    }
+  }
+
+  return results;
+}
+
+function sanitizeDivContent(div: HTMLDivElement) {
+  const ps = div.getElementsByTagName('p');
+  let paragraphHTML = '';
+  for (let p of ps) {
+    let containsTrialUseNote = p.querySelector('b') && p.querySelector('b')?.textContent?.includes('Trial-Use Note');
+    if (!containsTrialUseNote) {
+      // Remove img tags from p tag
+      const images = p.getElementsByTagName('img');
+      while (images.length > 0) {
+        images[0]?.parentNode?.removeChild(images[0]);
+      }
+
+      // Remove HTML comments
+      let comments = Array.from(p.childNodes).filter((n) => n.nodeType === 8);
+      comments.forEach((c) => p.removeChild(c));
+
+      paragraphHTML += p.outerHTML.replaceAll('\n', '');
+    }
+  }
+
+  paragraphHTML = paragraphHTML.replaceAll('<br>', '<br/>');
+  return paragraphHTML;
+}
+
+async function fetchFhirIntroductions(
+  definitions: StructureDefinition[]
+): Promise<Record<string, Record<string, string | string[] | undefined>>> {
+  const downloadURL = 'http://hl7.org/fhir/R4/fhir-spec.zip';
+  const zipFile = path.resolve(__dirname, '..', 'output', 'fhir-spec.zip');
+  const outputFolder = path.resolve(__dirname, '..', 'output', 'fhir-spec');
+  const siteDir = path.resolve(outputFolder, 'site');
+  if (!fs.existsSync(outputFolder)) {
+    return downloadAndUnzip(downloadURL, zipFile, outputFolder).then(() => {
+      return extractResourceDescriptions(siteDir, definitions);
+    });
+  } else {
+    const results = extractResourceDescriptions(siteDir, definitions);
+    return results;
+  }
+}
+
 function pluralize(location: DocumentationLocation): string {
   if (location !== 'medplum' && location.endsWith('e')) {
     return `${location}s`;
@@ -290,5 +458,5 @@ function pluralize(location: DocumentationLocation): string {
 }
 
 if (process.argv[1].endsWith('docs.ts')) {
-  main();
+  main().catch(console.error);
 }
