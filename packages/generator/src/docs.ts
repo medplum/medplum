@@ -65,7 +65,7 @@ export async function main(): Promise<void> {
 }
 
 /**
- * Indexes searcch parameters by "base" resource type.
+ * Indexes search parameters by "base" resource type.
  * @param searchParams The bundle of SearchParameter resources.
  * @returns A map from resourceType -> an array of associated SearchParameters
  */
@@ -148,6 +148,7 @@ function buildDocsDefinition(
 function buildDocsMarkdown(position: number, definition: ResourceDocsProps, resourceIntroduction?: any): string {
   const resourceName = definition.name;
   const description = rewriteLinks(definition.description);
+
   return `\
 ---
 title: ${resourceName}
@@ -166,16 +167,16 @@ ${
     ? `
   <Tabs>
   <TabItem value="usage" label="Usage" default>
-    ${resourceIntroduction.scopeAndUsage || ''}
-  </TabItem>
-  <TabItem value="backgroundAndContext" label="Background and Context">
-  ${resourceIntroduction.backgroundAndContext || ''}
+    ${rewriteLinks(resourceIntroduction.scopeAndUsage) || ''}
   </TabItem>
   <TabItem value="relationships" label="Relationships">
-    ${resourceIntroduction.boundariesAndRelationships || ''}
+    ${rewriteLinks(resourceIntroduction.boundariesAndRelationships) || ''}
+  </TabItem>
+  <TabItem value="backgroundAndContext" label="Background and Context">
+  ${rewriteLinks(resourceIntroduction.backgroundAndContext) || ''}
   </TabItem>
   <TabItem value="referencedBy" label="Referenced By">
-    <ul>${resourceIntroduction.referencedBy.map((e: string) => `<li><a href="${e}">${e}</a></li>`)}</ul>
+    <ul>${resourceIntroduction.referencedBy.map((e: string) => `<li>${e}</li>`).join('\n')}</ul>
   </TabItem>
 </Tabs>`
     : ''
@@ -207,9 +208,10 @@ function writeDocs(
   location: DocumentationLocation,
   resourceIntroductions?: Record<string, any>
 ): void {
+  console.info('Writing JS and Markdown files...');
   definitions.forEach((definition, i) => {
     const resourceType = definition.name.toLowerCase();
-
+    printProgress(Math.round((i / definitions.length) * 100));
     writeFileSync(
       resolve(__dirname, `../../docs/static/data/${location}Definitions/${resourceType}.json`),
       JSON.stringify(definition, null, 2),
@@ -293,30 +295,48 @@ function getInheritance(property: ElementDefinition): { inherited: boolean; base
   return { inherited, base: inheritanceBase };
 }
 
-function rewriteLinks(description: string): string {
-  description = description
+/**
+ * Rewrite internal links from official FHIR site to medplum internal links
+ * @param text text which contains internal links
+ * @returns returns text with internal links rewritten
+ */
+function rewriteLinks(text: string | undefined): string {
+  if (!text) {
+    return '';
+  }
+
+  text = text
     .replace('(operations.html)', '(/api/fhir/operations)')
     .replace('(terminologies.html)', '(https://www.hl7.org/fhir/terminologies.html)');
 
   // Replace datatype internal links
   const datatypeLinkPattern = /datatypes.html#([a-zA-Z-]+)/g;
-  const dtMatches = description.matchAll(datatypeLinkPattern);
+  const dtMatches = text.matchAll(datatypeLinkPattern);
 
   for (const match of dtMatches) {
     if (match[1] in documentedTypes) {
-      description = description.replace(match[0], `/api/fhir/datatypes/${match[1].toLowerCase()}`);
+      text = text.replace(match[0], `/api/fhir/datatypes/${match[1].toLowerCase()}`);
     } else {
-      description = description.replace(match[0], `https://www.hl7.org/fhir/datatypes.html#${match[1]}`);
+      text = text.replace(match[0], `https://www.hl7.org/fhir/datatypes.html#${match[1]}`);
     }
   }
 
   // Replace all the links of [[[Type]]] with internal links
-  const typeLinks = Array.from(description.matchAll(/\[\[\[([A-Z][a-z]*)*\]\]\]/gi));
+  const typeLinks = Array.from(text.matchAll(/\[\[\[([A-Z][a-z]*)*\]\]\]/gi));
   for (const match of typeLinks) {
-    description = description.replace(match[0], `[${match[1]}](./${match[1].toLowerCase()})`);
+    text = text.replace(match[0], `[${match[1]}](./${match[1].toLowerCase()})`);
   }
 
-  return description;
+  // Replace names of all Resources/datatypes with internal links
+  const documentedTypeNames = Object.keys(documentedTypes);
+  const resourceTypeExp = new RegExp(`\\s((${documentedTypeNames.join('|')})[s]?)\\b`, 'g');
+  text = text.replace(
+    resourceTypeExp,
+    (_, resourceText, resourceName) =>
+      ` <a href="../${pluralize(documentedTypes[resourceName])}/${resourceName.toLowerCase()}">${resourceText}</a>`
+  );
+
+  return text;
 }
 
 async function downloadAndUnzip(downloadURL: string, zipFilePath: string, outputFolder: string): Promise<void> {
@@ -359,16 +379,27 @@ async function downloadAndUnzip(downloadURL: string, zipFilePath: string, output
       });
   });
 }
-
+/**
+ * For each core FHIR resource type, find the corresponding HTML page and extract the relevant introductory sections.
+ * @param htmlDirectory Directory containing HTML files for each resource ([resourceType].html)
+ * @param definitions Array of all core FHIR StructureDefinitions
+ * @returns A map from resourcename to html description data
+ */
 function extractResourceDescriptions(
   htmlDirectory: string,
   definitions: StructureDefinition[]
 ): Record<string, Record<string, string | string[] | undefined>> {
   const results: Record<string, Record<string, string | string[] | undefined>> = {};
+  const lowerCaseResourceNames = Object.fromEntries(Object.keys(documentedTypes).map((k) => [k.toLowerCase(), k]));
+
   console.info('Extracting HTML descriptions...');
-  for (const definition of definitions) {
-    console.info('\t' + definition.name);
+  for (let i = 0; i < definitions.length; i++) {
+    printProgress(Math.round(i / definitions.length) * 100);
+    const definition = definitions[i];
     const resourceType = definition.name?.toLowerCase();
+    if (resourceType !== 'deviceusestatement') {
+      continue;
+    }
     const fileName = path.resolve(htmlDirectory, `${resourceType}.html`);
     if (resourceType && fs.existsSync(fileName)) {
       const fileContent = fs.readFileSync(fileName, 'utf-8');
@@ -384,7 +415,7 @@ function extractResourceDescriptions(
         if (h2) {
           const h2Text = h2.textContent?.toLowerCase().replace(/\s/g, '') || '';
 
-          const paragraphHTML = sanitizeDivContent(div);
+          const paragraphHTML = sanitizeIntroDivContent(div);
 
           if (h2Text.includes('scopeandusage')) {
             resourceContents.scopeAndUsage = paragraphHTML;
@@ -401,24 +432,95 @@ function extractResourceDescriptions(
       for (const p of pElements) {
         if (p.textContent?.trim().startsWith('This resource is referenced by')) {
           const aElements = p.querySelectorAll('a');
-          const aHrefs = Array.from(aElements).map((a) => a.href);
-          resourceContents['referencedBy'] = aHrefs;
+          aElements.forEach((element) => rewriteReferencedByHref(element, lowerCaseResourceNames));
+          resourceContents['referencedBy'] = Array.from(aElements).map((a) => a.outerHTML);
         }
       }
       results[resourceType] = resourceContents;
     }
   }
 
-  console.info('\rDone');
+  console.info('Done');
 
   return results;
 }
 
+function rewriteReferencedByHref(
+  anchorElement: HTMLAnchorElement,
+  lowerCaseResourceNames: Record<string, string>
+): void {
+  const href = anchorElement.getAttribute('href'); // Get the href attribute of the anchor tag
+
+  // Try to match the href to the expected format
+  const match = href?.match(/(\w+)(\.html)?(#\w+)?/);
+  if (match) {
+    const resourceType = match[1];
+
+    // Try to find a match in inverseDocumentedTypes
+    const resourceName = lowerCaseResourceNames[resourceType];
+    if (resourceName) {
+      // Update the href attribute of the anchor tag
+      anchorElement.setAttribute('href', `${pluralize(documentedTypes[resourceName])}/${resourceName}`);
+    }
+  }
+}
+
+/**
+ * For each <div> in the introduction section of a resource page, create a sanitized html string that plays nicely with
+ * Docusaurus
+ * @param div Div element that starts with an <h2>, representing an intro section
+ * @returns Sanitized HTML content
+ */
+function sanitizeIntroDivContent(div: HTMLDivElement): string {
+  let combinedHTML = '';
+
+  // Clone the div to keep original div intact.
+  const clonedDiv = div.cloneNode(true) as HTMLElement;
+
+  // Sanitize the cloned div.
+  const sanitized = sanitizeNodeContent(clonedDiv);
+
+  // Get the sanitized HTML of the cloned div.
+  combinedHTML = sanitized;
+
+  return combinedHTML;
+}
+
 function sanitizeNodeContent(node: HTMLElement): string {
+  // Recursive function to remove comment nodes.
+  function removeComments(node: Node): void {
+    Array.from(node.childNodes).forEach((child) => {
+      if (child.nodeType === 8) {
+        // Node.COMMENT_NODE
+        node.removeChild(child);
+      } else {
+        removeComments(child);
+      }
+    });
+  }
+
   // Remove img tags.
   const imgElements = node.getElementsByTagName('img');
   for (const img of Array.from(imgElements)) {
     img.parentNode?.removeChild(img);
+  }
+
+  // Remove svg tags.
+  const svgElements = node.getElementsByTagName('svg');
+  for (const svg of Array.from(svgElements)) {
+    svg.parentNode?.removeChild(svg);
+  }
+
+  // Remove h2 tags.
+  const h2Elements = node.getElementsByTagName('h2');
+  for (const h2 of Array.from(h2Elements)) {
+    h2.parentNode?.removeChild(h2);
+  }
+
+  // Remove span elements with class 'sectioncount'.
+  const spanElements = node.querySelectorAll('span.sectioncount');
+  for (const span of Array.from(spanElements)) {
+    span.parentNode?.removeChild(span);
   }
 
   // Remove p elements containing the text "Trial-Use Note".
@@ -427,39 +529,18 @@ function sanitizeNodeContent(node: HTMLElement): string {
   }
 
   // Remove comment nodes.
-  const childNodes = node.childNodes;
-  for (const child of Array.from(childNodes)) {
-    if (child.nodeType === 8) {
-      node.removeChild(child);
-    }
-  }
+  removeComments(node);
 
   // Replace br tags with closed ones.
   return node.outerHTML.replaceAll('<br>', '<br/>').replace(/[\n\t]/g, ' ');
 }
 
-function sanitizeDivContent(div: Element): string {
-  let combinedHTML = '';
-
-  // Extract and sanitize p tags.
-  const pElements = div.getElementsByTagName('p');
-  for (const p of Array.from(pElements)) {
-    combinedHTML += sanitizeNodeContent(p);
-  }
-
-  // Extract and sanitize tables and their td tags.
-  const tableElements = div.getElementsByTagName('table');
-  for (const table of Array.from(tableElements)) {
-    const tdElements = table.getElementsByTagName('td');
-    for (const td of Array.from(tdElements)) {
-      td.outerHTML = sanitizeNodeContent(td);
-    }
-    combinedHTML += table.outerHTML;
-  }
-
-  return combinedHTML;
-}
-
+/**
+ * Download the "entire fhir spec" as a zip file, and parse the HTML file for each resource to extract the detailed
+ * information about usage and scope for each resource
+ * @param definitions FHIR core profile definitions
+ * @returns Map from resource name to extracted HTML data
+ */
 async function fetchFhirIntroductions(
   definitions: StructureDefinition[]
 ): Promise<Record<string, Record<string, string | string[] | undefined>>> {
@@ -482,6 +563,12 @@ function pluralize(location: DocumentationLocation): string {
     return `${location}s`;
   }
   return location;
+}
+
+function printProgress(progress: number): void {
+  process.stdout.clearLine(0);
+  process.stdout.cursorTo(0);
+  process.stdout.write(progress + '%');
 }
 
 if (process.argv[1].endsWith('docs.ts')) {
