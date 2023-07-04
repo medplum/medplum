@@ -161,21 +161,26 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 # ${resourceName}
 
 ${description}
-
-<Tabs>
+${
+  resourceIntroduction
+    ? `
+  <Tabs>
   <TabItem value="usage" label="Usage" default>
-    ${resourceIntroduction?.scopeAndUsage || ''}
+    ${resourceIntroduction.scopeAndUsage || ''}
   </TabItem>
   <TabItem value="backgroundAndContext" label="Background and Context">
-  ${resourceIntroduction?.backgroundAndContext || ''}
+  ${resourceIntroduction.backgroundAndContext || ''}
   </TabItem>
   <TabItem value="relationships" label="Relationships">
-    ${resourceIntroduction?.boundariesAndRelationships || ''}
+    ${resourceIntroduction.boundariesAndRelationships || ''}
   </TabItem>
   <TabItem value="referencedBy" label="Referenced By">
-    ${resourceIntroduction?.referencedBy.map((e: string) => `<a href="${e}">${e}</a>`)}
+    <ul>${resourceIntroduction.referencedBy.map((e: string) => `<li><a href="${e}">${e}</a></li>`)}</ul>
   </TabItem>
-</Tabs>
+</Tabs>`
+    : ''
+}
+
 
 ## Properties
 
@@ -204,11 +209,7 @@ function writeDocs(
 ): void {
   definitions.forEach((definition, i) => {
     const resourceType = definition.name.toLowerCase();
-    if (resourceType === 'account') {
-      console.log(!!resourceIntroductions);
-      console.log(resourceIntroductions?.['account']);
-      console.log(resourceIntroductions?.[resourceType]);
-    }
+
     writeFileSync(
       resolve(__dirname, `../../docs/static/data/${location}Definitions/${resourceType}.json`),
       JSON.stringify(definition, null, 2),
@@ -319,43 +320,43 @@ function rewriteLinks(description: string): string {
 }
 
 async function downloadAndUnzip(downloadURL: string, zipFilePath: string, outputFolder: string): Promise<void> {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const response = await fetch(downloadURL);
+  console.info('Downloading FHIR Spec...');
+  return new Promise((resolve, reject) => {
+    fetch(downloadURL)
+      .then((response) => {
+        if (!response.ok) {
+          reject(new Error(`Error downloading file: ${response.status} ${response.statusText}`));
+          return;
+        }
 
-      if (!response.ok) {
-        console.error('Error downloading file:', response.status, response.statusText);
-        reject();
-        return;
-      }
+        const fileStream = fs.createWriteStream(zipFilePath);
+        response.body.pipe(fileStream);
 
-      const fileStream = fs.createWriteStream(zipFilePath);
-      response.body.pipe(fileStream);
+        // Inside your 'downloadAndUnzip' function, replace the extraction part with this:
+        fileStream.on('finish', async () => {
+          fs.createReadStream(zipFilePath)
+            .pipe(unzipper.Parse())
+            .on('entry', function (entry) {
+              const fileName = entry.path;
+              const type = entry.type; // 'Directory' or 'File'
+              const fullPath = path.join(outputFolder, fileName).replaceAll('\\', '/');
 
-      // Inside your 'downloadAndUnzip' function, replace the extraction part with this:
-      fileStream.on('finish', async () => {
-        fs.createReadStream(zipFilePath)
-          .pipe(unzipper.Parse())
-          .on('entry', function (entry) {
-            const fileName = entry.path;
-            const type = entry.type; // 'Directory' or 'File'
-            const fullPath = path.join(outputFolder, fileName).replaceAll('\\', '/');
-
-            if (type === 'Directory') {
-              mkdirp.sync(fullPath);
-              entry.autodrain();
-            } else {
-              mkdirp.sync(path.dirname(fullPath));
-              entry.pipe(fs.createWriteStream(fullPath));
-            }
-          })
-          .on('close', resolve)
-          .on('error', reject);
+              if (type === 'Directory') {
+                mkdirp.sync(fullPath);
+                entry.autodrain();
+              } else {
+                mkdirp.sync(path.dirname(fullPath));
+                entry.pipe(fs.createWriteStream(fullPath));
+              }
+              console.info('\rDownloading FHIR Spec...');
+            })
+            .on('close', resolve)
+            .on('error', reject);
+        });
+      })
+      .catch(() => {
+        reject(new Error('Error downloading or unzipping file'));
       });
-    } catch (error) {
-      console.error('Error downloading or unzipping file:', error);
-      reject();
-    }
   });
 }
 
@@ -364,7 +365,9 @@ function extractResourceDescriptions(
   definitions: StructureDefinition[]
 ): Record<string, Record<string, string | string[] | undefined>> {
   const results: Record<string, Record<string, string | string[] | undefined>> = {};
+  console.info('Extracting HTML descriptions...');
   for (const definition of definitions) {
+    console.info('\t' + definition.name);
     const resourceType = definition.name?.toLowerCase();
     const fileName = path.resolve(htmlDirectory, `${resourceType}.html`);
     if (resourceType && fs.existsSync(fileName)) {
@@ -376,12 +379,12 @@ function extractResourceDescriptions(
 
       // find the divs
       const divs = document.getElementsByTagName('div');
-      for (let div of divs) {
+      for (const div of divs) {
         const h2 = div.querySelector('h2');
         if (h2) {
           const h2Text = h2.textContent?.toLowerCase().replace(/\s/g, '') || '';
 
-          let paragraphHTML = sanitizeDivContent(div);
+          const paragraphHTML = sanitizeDivContent(div);
 
           if (h2Text.includes('scopeandusage')) {
             resourceContents.scopeAndUsage = paragraphHTML;
@@ -395,8 +398,8 @@ function extractResourceDescriptions(
 
       // find referencedBy
       const pElements = document.querySelectorAll('p');
-      for (let p of pElements) {
-        if (p.textContent?.trim().startsWith('This resource is referenced by itself,')) {
+      for (const p of pElements) {
+        if (p.textContent?.trim().startsWith('This resource is referenced by')) {
           const aElements = p.querySelectorAll('a');
           const aHrefs = Array.from(aElements).map((a) => a.href);
           resourceContents['referencedBy'] = aHrefs;
@@ -406,31 +409,55 @@ function extractResourceDescriptions(
     }
   }
 
+  console.info('\rDone');
+
   return results;
 }
 
-function sanitizeDivContent(div: HTMLDivElement) {
-  const ps = div.getElementsByTagName('p');
-  let paragraphHTML = '';
-  for (let p of ps) {
-    let containsTrialUseNote = p.querySelector('b') && p.querySelector('b')?.textContent?.includes('Trial-Use Note');
-    if (!containsTrialUseNote) {
-      // Remove img tags from p tag
-      const images = p.getElementsByTagName('img');
-      while (images.length > 0) {
-        images[0]?.parentNode?.removeChild(images[0]);
-      }
+function sanitizeNodeContent(node: HTMLElement): string {
+  // Remove img tags.
+  const imgElements = node.getElementsByTagName('img');
+  for (const img of Array.from(imgElements)) {
+    img.parentNode?.removeChild(img);
+  }
 
-      // Remove HTML comments
-      let comments = Array.from(p.childNodes).filter((n) => n.nodeType === 8);
-      comments.forEach((c) => p.removeChild(c));
+  // Remove p elements containing the text "Trial-Use Note".
+  if (node.nodeName.toLowerCase() === 'p' && node.textContent?.includes('Trial-Use Note')) {
+    node.parentNode?.removeChild(node);
+  }
 
-      paragraphHTML += p.outerHTML.replaceAll('\n', '');
+  // Remove comment nodes.
+  const childNodes = node.childNodes;
+  for (const child of Array.from(childNodes)) {
+    if (child.nodeType === 8) {
+      node.removeChild(child);
     }
   }
 
-  paragraphHTML = paragraphHTML.replaceAll('<br>', '<br/>');
-  return paragraphHTML;
+  // Replace br tags with closed ones.
+  return node.outerHTML.replaceAll('<br>', '<br/>').replace(/[\n\t]/g, ' ');
+}
+
+function sanitizeDivContent(div: Element): string {
+  let combinedHTML = '';
+
+  // Extract and sanitize p tags.
+  const pElements = div.getElementsByTagName('p');
+  for (const p of Array.from(pElements)) {
+    combinedHTML += sanitizeNodeContent(p);
+  }
+
+  // Extract and sanitize tables and their td tags.
+  const tableElements = div.getElementsByTagName('table');
+  for (const table of Array.from(tableElements)) {
+    const tdElements = table.getElementsByTagName('td');
+    for (const td of Array.from(tdElements)) {
+      td.outerHTML = sanitizeNodeContent(td);
+    }
+    combinedHTML += table.outerHTML;
+  }
+
+  return combinedHTML;
 }
 
 async function fetchFhirIntroductions(
