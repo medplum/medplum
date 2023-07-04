@@ -2358,7 +2358,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (search) {
       query = search.resourceType + formatSearchQuery(search);
     }
-    logRestfulEvent(
+    const auditEvent = logRestfulEvent(
       subtype,
       this.context.project as string,
       this.context.author,
@@ -2368,6 +2368,11 @@ export class Repository extends BaseRepository implements FhirRepository {
       resource,
       query
     );
+
+    if (getConfig().saveAuditEvents && resource?.resourceType !== 'AuditEvent') {
+      auditEvent.id = randomUUID();
+      this.updateResourceImpl(auditEvent, true).catch(console.error);
+    }
   }
 }
 
