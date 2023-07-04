@@ -1,21 +1,21 @@
 {
-  "name": "SmartAppLaunch",
+  "name": "AsyncJob",
   "location": "medplum",
-  "description": "This resource contains context details for a SMART App Launch.",
+  "description": "Contains details of long running asynchronous/background jobs.",
   "properties": [
     {
-      "name": "SmartAppLaunch",
+      "name": "AsyncJob",
       "depth": 0,
       "types": [
         {
           "datatype": ""
         }
       ],
-      "path": "SmartAppLaunch",
+      "path": "AsyncJob",
       "min": 0,
       "max": "*",
-      "short": "This resource contains context details for a SMART App Launch.",
-      "definition": "This resource contains context details for a SMART App Launch.",
+      "short": "Contains details of long running asynchronous/background jobs.",
+      "definition": "Contains details of long running asynchronous/background jobs.",
       "comment": "",
       "inherited": false
     },
@@ -27,7 +27,7 @@
           "datatype": "string"
         }
       ],
-      "path": "SmartAppLaunch.id",
+      "path": "AsyncJob.id",
       "min": 0,
       "max": "1",
       "short": "Logical id of this artifact",
@@ -45,7 +45,7 @@
           "documentLocation": "datatype"
         }
       ],
-      "path": "SmartAppLaunch.meta",
+      "path": "AsyncJob.meta",
       "min": 0,
       "max": "1",
       "short": "",
@@ -62,7 +62,7 @@
           "datatype": "uri"
         }
       ],
-      "path": "SmartAppLaunch.implicitRules",
+      "path": "AsyncJob.implicitRules",
       "min": 0,
       "max": "1",
       "short": "",
@@ -79,57 +79,77 @@
           "datatype": "code"
         }
       ],
-      "path": "SmartAppLaunch.language",
+      "path": "AsyncJob.language",
       "min": 0,
       "max": "1",
       "short": "",
       "definition": "The base language in which the resource is written.",
       "comment": "",
-      "inherited": false
+      "inherited": true,
+      "base": "Resource"
     },
     {
-      "name": "patient",
+      "name": "status",
       "depth": 1,
       "types": [
         {
-          "datatype": "Reference",
-          "documentLocation": "datatype"
+          "datatype": "code"
         }
       ],
-      "referenceTypes": [
+      "path": "AsyncJob.status",
+      "min": 1,
+      "max": "1",
+      "short": "accepted | error | completed",
+      "definition": "The status of the request.",
+      "comment": "",
+      "inherited": true,
+      "base": "ServiceRequest"
+    },
+    {
+      "name": "requestTime",
+      "depth": 1,
+      "types": [
         {
-          "datatype": "Patient",
-          "documentLocation": "resource"
+          "datatype": "instant"
         }
       ],
-      "path": "SmartAppLaunch.patient",
-      "min": 0,
+      "path": "AsyncJob.requestTime",
+      "min": 1,
       "max": "1",
       "short": "",
-      "definition": "Optional patient indicating that the app was launched in the patient context.",
+      "definition": "Indicates the server's time when the query is requested.",
       "comment": "",
       "inherited": false
     },
     {
-      "name": "encounter",
+      "name": "transactionTime",
       "depth": 1,
       "types": [
         {
-          "datatype": "Reference",
-          "documentLocation": "datatype"
+          "datatype": "instant"
         }
       ],
-      "referenceTypes": [
-        {
-          "datatype": "Encounter",
-          "documentLocation": "resource"
-        }
-      ],
-      "path": "SmartAppLaunch.encounter",
+      "path": "AsyncJob.transactionTime",
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "Optional encounter indicating that the app was launched in the encounter context.",
+      "definition": "Indicates the server's time when the query is run. The response SHOULD NOT include any resources modified after this instant, and SHALL include any matching resources modified up to and including this instant.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "request",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "AsyncJob.request",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The full URL of the original kick-off request. In the case of a POST request, this URL will not include the request parameters.",
       "comment": "",
       "inherited": false
     }

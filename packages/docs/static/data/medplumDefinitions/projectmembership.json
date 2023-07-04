@@ -112,6 +112,29 @@
       "inherited": false
     },
     {
+      "name": "invitedBy",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "User",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "ProjectMembership.invitedBy",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The project administrator who invited the user to the project.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "user",
       "depth": 1,
       "types": [
@@ -174,10 +197,26 @@
         }
       ],
       "path": "ProjectMembership.profile",
-      "min": 0,
+      "min": 1,
       "max": "1",
       "short": "",
       "definition": "Reference to the resource that represents the user profile within the project.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "externalId",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ProjectMembership.externalId",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "A String that is an identifier for the resource as defined by the provisioning client.  The \"externalId\" may simplify identification of a resource between the provisioning client and the service provider by allowing the client to use a filter to locate the resource with an identifier from the provisioning domain, obviating the need to store a local mapping between the provisioning domain's identifier of the resource and the identifier used by the service provider.  Each resource MAY include a non-empty \"externalId\" value.  The value of the \"externalId\" attribute is always issued by the provisioning client and MUST NOT be specified by the service provider.  The service provider MUST always interpret the externalId as scoped to the provisioning domain.",
       "comment": "",
       "inherited": false
     },
@@ -201,6 +240,98 @@
       "max": "1",
       "short": "",
       "definition": "The access policy for the user within the project memebership.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "access",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "ProjectMembership.access",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Extended access configuration using parameterized access policies.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "policy",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "AccessPolicy",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "ProjectMembership.access.policy",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The base access policy used as a template.  Variables in the template access policy are replaced by the values in the parameter.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "parameter",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "ProjectMembership.access.parameter",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "User options that control the display of the application.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "name",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "ProjectMembership.access.parameter.name",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The unique name of the parameter.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "value[x]",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [],
+      "path": "ProjectMembership.access.parameter.value[x]",
+      "min": 1,
+      "max": "1",
+      "short": "Value of the parameter.",
+      "definition": "Value of the parameter - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
       "comment": "",
       "inherited": false
     },
@@ -262,6 +393,18 @@
       "type": "reference",
       "description": "The user profile associated with the project membership",
       "expression": "ProjectMembership.profile"
+    },
+    {
+      "name": "profile-type",
+      "type": "token",
+      "description": "Resource type of the user profile associated with the project membership",
+      "expression": "ProjectMembership.profile.resolve().resourceType"
+    },
+    {
+      "name": "external-id",
+      "type": "string",
+      "description": "The externalID of the user",
+      "expression": "ProjectMembership.externalId"
     }
   ]
 }

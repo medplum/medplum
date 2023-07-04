@@ -1,21 +1,21 @@
 {
-  "name": "SmartAppLaunch",
+  "name": "DomainConfiguration",
   "location": "medplum",
-  "description": "This resource contains context details for a SMART App Launch.",
+  "description": "Domain specific configuration for the Medplum application.",
   "properties": [
     {
-      "name": "SmartAppLaunch",
+      "name": "DomainConfiguration",
       "depth": 0,
       "types": [
         {
           "datatype": ""
         }
       ],
-      "path": "SmartAppLaunch",
+      "path": "DomainConfiguration",
       "min": 0,
       "max": "*",
-      "short": "This resource contains context details for a SMART App Launch.",
-      "definition": "This resource contains context details for a SMART App Launch.",
+      "short": "Domain specific configuration for the Medplum application.",
+      "definition": "Domain specific configuration for the Medplum application.",
       "comment": "",
       "inherited": false
     },
@@ -27,7 +27,7 @@
           "datatype": "string"
         }
       ],
-      "path": "SmartAppLaunch.id",
+      "path": "DomainConfiguration.id",
       "min": 0,
       "max": "1",
       "short": "Logical id of this artifact",
@@ -45,7 +45,7 @@
           "documentLocation": "datatype"
         }
       ],
-      "path": "SmartAppLaunch.meta",
+      "path": "DomainConfiguration.meta",
       "min": 0,
       "max": "1",
       "short": "",
@@ -62,7 +62,7 @@
           "datatype": "uri"
         }
       ],
-      "path": "SmartAppLaunch.implicitRules",
+      "path": "DomainConfiguration.implicitRules",
       "min": 0,
       "max": "1",
       "short": "",
@@ -79,7 +79,7 @@
           "datatype": "code"
         }
       ],
-      "path": "SmartAppLaunch.language",
+      "path": "DomainConfiguration.language",
       "min": 0,
       "max": "1",
       "short": "",
@@ -88,50 +88,45 @@
       "inherited": false
     },
     {
-      "name": "patient",
+      "name": "domain",
       "depth": 1,
       "types": [
         {
-          "datatype": "Reference",
-          "documentLocation": "datatype"
+          "datatype": "uri"
         }
       ],
-      "referenceTypes": [
-        {
-          "datatype": "Patient",
-          "documentLocation": "resource"
-        }
-      ],
-      "path": "SmartAppLaunch.patient",
-      "min": 0,
+      "path": "DomainConfiguration.domain",
+      "min": 1,
       "max": "1",
       "short": "",
-      "definition": "Optional patient indicating that the app was launched in the patient context.",
+      "definition": "Globally unique domain name for this configuration.",
       "comment": "",
       "inherited": false
     },
     {
-      "name": "encounter",
+      "name": "identityProvider",
       "depth": 1,
       "types": [
         {
-          "datatype": "Reference",
-          "documentLocation": "datatype"
+          "datatype": "IdentityProvider",
+          "documentLocation": "medplum"
         }
       ],
-      "referenceTypes": [
-        {
-          "datatype": "Encounter",
-          "documentLocation": "resource"
-        }
-      ],
-      "path": "SmartAppLaunch.encounter",
+      "path": "DomainConfiguration.identityProvider",
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "Optional encounter indicating that the app was launched in the encounter context.",
+      "definition": "Optional external Identity Provider (IdP) for the domain name.",
       "comment": "",
       "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "publisher",
+      "type": "token",
+      "description": "The publisher of the observation definition.",
+      "expression": "DomainConfiguration.domain"
     }
   ]
 }

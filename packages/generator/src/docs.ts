@@ -2,7 +2,7 @@ import { getExpressionForResourceType, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import fs, { writeFileSync } from 'fs';
-import { JSDOM } from 'jsdom';
+import { JSDOM, DOMWindow } from 'jsdom';
 import * as mkdirp from 'mkdirp';
 import fetch from 'node-fetch';
 import * as path from 'path';
@@ -394,12 +394,9 @@ function extractResourceDescriptions(
 
   console.info('Extracting HTML descriptions...');
   for (let i = 0; i < definitions.length; i++) {
-    printProgress(Math.round(i / definitions.length) * 100);
+    printProgress(Math.round((i / definitions.length) * 100));
     const definition = definitions[i];
     const resourceType = definition.name?.toLowerCase();
-    if (resourceType !== 'deviceusestatement') {
-      continue;
-    }
     const fileName = path.resolve(htmlDirectory, `${resourceType}.html`);
     if (resourceType && fs.existsSync(fileName)) {
       const fileContent = fs.readFileSync(fileName, 'utf-8');
@@ -415,7 +412,7 @@ function extractResourceDescriptions(
         if (h2) {
           const h2Text = h2.textContent?.toLowerCase().replace(/\s/g, '') || '';
 
-          const paragraphHTML = sanitizeIntroDivContent(div);
+          const paragraphHTML = sanitizeIntroDivContent(div, dom.window);
 
           if (h2Text.includes('scopeandusage')) {
             resourceContents.scopeAndUsage = paragraphHTML;
@@ -445,6 +442,11 @@ function extractResourceDescriptions(
   return results;
 }
 
+/**
+ * Converts local links to FHIR resources from the FHIR site to relative links in the medplum documentation site
+ * @param anchorElement An Anchor tag, potentially referring to a resource page (e.g. "appointmentresponse.html")
+ * @param lowerCaseResourceNames a map from lowercase resource names (e.g. appointmentresponse) to camelcase names (e.g. AppointmentResponse)
+ */
 function rewriteReferencedByHref(
   anchorElement: HTMLAnchorElement,
   lowerCaseResourceNames: Record<string, string>
@@ -469,16 +471,17 @@ function rewriteReferencedByHref(
  * For each <div> in the introduction section of a resource page, create a sanitized html string that plays nicely with
  * Docusaurus
  * @param div Div element that starts with an <h2>, representing an intro section
+ * @param window JSDOM window object
  * @returns Sanitized HTML content
  */
-function sanitizeIntroDivContent(div: HTMLDivElement): string {
+function sanitizeIntroDivContent(div: HTMLDivElement, window: DOMWindow): string {
   let combinedHTML = '';
 
   // Clone the div to keep original div intact.
   const clonedDiv = div.cloneNode(true) as HTMLElement;
 
   // Sanitize the cloned div.
-  const sanitized = sanitizeNodeContent(clonedDiv);
+  const sanitized = sanitizeNodeContent(clonedDiv, window);
 
   // Get the sanitized HTML of the cloned div.
   combinedHTML = sanitized;
@@ -486,15 +489,18 @@ function sanitizeIntroDivContent(div: HTMLDivElement): string {
   return combinedHTML;
 }
 
-function sanitizeNodeContent(node: HTMLElement): string {
-  // Recursive function to remove comment nodes.
-  function removeComments(node: Node): void {
-    Array.from(node.childNodes).forEach((child) => {
+function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
+  // Recursive function to remove comment nodes and style attributes.
+  function removeUnwantedNodes(node: Node): void {
+    Array.from(node.childNodes).forEach((child: Node) => {
       if (child.nodeType === 8) {
         // Node.COMMENT_NODE
         node.removeChild(child);
       } else {
-        removeComments(child);
+        if (node instanceof window.Element && node.getAttribute('style')) {
+          node.removeAttribute('style');
+        }
+        removeUnwantedNodes(child);
       }
     });
   }
@@ -528,8 +534,8 @@ function sanitizeNodeContent(node: HTMLElement): string {
     node.parentNode?.removeChild(node);
   }
 
-  // Remove comment nodes.
-  removeComments(node);
+  // Remove comment nodes and style attributes.
+  removeUnwantedNodes(node);
 
   // Replace br tags with closed ones.
   return node.outerHTML.replaceAll('<br>', '<br/>').replace(/[\n\t]/g, ' ');

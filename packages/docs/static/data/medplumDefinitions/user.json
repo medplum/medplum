@@ -121,6 +121,22 @@
       "inherited": false
     },
     {
+      "name": "externalId",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "User.externalId",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "DEPRECATED Replaced by ProjectMembership.externalId.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "email",
       "depth": 1,
       "types": [
@@ -129,7 +145,7 @@
         }
       ],
       "path": "User.email",
-      "min": 1,
+      "min": 0,
       "max": "1",
       "short": "",
       "definition": "The email address that uniquely identifies the user.",
@@ -243,9 +259,15 @@
   "searchParameters": [
     {
       "name": "email",
-      "type": "token",
+      "type": "string",
       "description": "The email address of the user",
       "expression": "User.email"
+    },
+    {
+      "name": "external-id",
+      "type": "string",
+      "description": "The externalID of the user",
+      "expression": "User.externalId"
     },
     {
       "name": "project",

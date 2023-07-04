@@ -1,0 +1,119 @@
+{
+  "name": "IdentityProvider",
+  "location": "medplum",
+  "description": "External Identity Provider (IdP) configuration details.",
+  "properties": [
+    {
+      "name": "IdentityProvider",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "IdentityProvider",
+      "min": 0,
+      "max": "*",
+      "short": "External Identity Provider (IdP) configuration details.",
+      "definition": "External Identity Provider (IdP) configuration details.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "authorizeUrl",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "IdentityProvider.authorizeUrl",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "Remote URL for the external Identity Provider authorize endpoint.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "tokenUrl",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "IdentityProvider.tokenUrl",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "Remote URL for the external Identity Provider token endpoint.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "userInfoUrl",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "IdentityProvider.userInfoUrl",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "Remote URL for the external Identity Provider userinfo endpoint.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "clientId",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "IdentityProvider.clientId",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "External Identity Provider client ID.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "clientSecret",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "IdentityProvider.clientSecret",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "External Identity Provider client secret.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "useSubject",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "IdentityProvider.useSubject",
+      "min": 0,
+      "max": "1",
+      "short": "Optional flag to use the subject field instead of the email field.",
+      "definition": "Optional flag to use the subject field instead of the email field.",
+      "comment": "",
+      "inherited": false
+    }
+  ]
+}
