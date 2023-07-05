@@ -84,6 +84,9 @@ export function getConfig(): MedplumServerConfig {
 export async function loadConfig(configName: string): Promise<MedplumServerConfig> {
   const [configType, configPath] = splitOnce(configName, ':');
   switch (configType) {
+    case 'env':
+      cachedConfig = loadEnvConfig();
+      break;
     case 'file':
       cachedConfig = await loadFileConfig(configPath);
       break;
@@ -130,6 +133,24 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
  * @param path The AWS SSM Parameter Store path prefix.
  * @returns The loaded configuration.
  */
+function loadEnvConfig(): MedplumServerConfig {
+  const config: Partial<MedplumServerConfig> = {};
+  for (const key of Object.keys(config)) {
+    const envVarName = `MEDPLUM_${key.toUpperCase().replace(/([A-Z])/g, '_$1')}`;
+    const envVarValue = process.env[envVarName];
+    if (envVarValue !== undefined) {
+      if (key === 'port') {
+        config.port = parseInt(envVarValue, 10);
+      } else if (key === 'botCustomFunctionsEnabled' || key === 'logAuditEvents' || key === 'registerEnabled') {
+        config[key] = envVarValue === 'true';
+      } else {
+        config[key] = envVarValue;
+      }
+    }
+  }
+  return config as MedplumServerConfig;
+}
+
 async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
   let region = DEFAULT_AWS_REGION;
   if (path.includes(':')) {
@@ -171,12 +192,6 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
   return config as unknown as MedplumServerConfig;
 }
 
-/**
- * Returns the AWS Database Secret data as a JSON map.
- * @param region The AWS region.
- * @param secretId Secret ARN
- * @returns The secret data as a JSON map.
- */
 async function loadAwsSecrets(region: string, secretId: string): Promise<Record<string, any> | undefined> {
   const client = new SecretsManagerClient({ region });
   const result = await client.send(new GetSecretValueCommand({ SecretId: secretId }));
@@ -188,11 +203,6 @@ async function loadAwsSecrets(region: string, secretId: string): Promise<Record<
   return JSON.parse(result.SecretString);
 }
 
-/**
- * Adds default values to the config.
- * @param config The input config as loaded from the config file.
- * @returns The config with default values added.
- */
 function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.port = config.port || 8103;
   config.issuer = config.issuer || config.baseUrl;
@@ -212,3 +222,4 @@ function splitOnce(value: string, delimiter: string): [string, string] {
   const index = value.indexOf(delimiter);
   return [value.substring(0, index), value.substring(index + 1)];
 }
+
