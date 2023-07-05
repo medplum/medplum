@@ -18,7 +18,7 @@ import {
 } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { validateResource } from './validation';
+import { validate as validateResource } from './validation';
 import { indexStructureDefinitionBundle } from '../types';
 import { readJson } from '@medplum/definitions';
 import { loadDataTypes } from './types';

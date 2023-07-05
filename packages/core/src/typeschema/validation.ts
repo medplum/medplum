@@ -62,7 +62,7 @@ const validationRegexes: Record<string, RegExp> = {
   xhtml: /.*/,
 };
 
-export function validateResource(resource: Resource, profile?: StructureDefinition): void {
+export function validate(resource: Resource, profile?: StructureDefinition): void {
   return new ResourceValidator(resource.resourceType, profile).validate(resource);
 }
 
