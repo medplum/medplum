@@ -1,6 +1,6 @@
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { badRequest, OperationOutcomeError } from '../outcomes';
 import { globalSchema } from '../types';
-import { OperationOutcomeError, badRequest } from '../outcomes';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 
@@ -454,7 +454,7 @@ export function formatSearchQuery(definition: SearchRequest): string {
     return '';
   }
 
-  params.sort();
+  params.sort((a, b) => a.localeCompare(b));
   return '?' + params.join('&');
 }
 
