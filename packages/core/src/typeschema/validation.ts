@@ -423,21 +423,7 @@ function matchDiscriminant(
         return true;
       }
       break;
-    case 'exists':
-      if (slice.min === 0 && slice.max === 0 && !value) {
-        return true;
-      } else if (slice.min > 0 && value) {
-        return true;
-      }
-      break;
-    case 'type':
-      if (!value) {
-        return false;
-      } else if (Array.isArray(value)) {
-        return value.some((v) => element.type.some((t) => t.code === v.type));
-      } else {
-        return element.type.some((t) => t.code === value.type);
-      }
+    // Other discriminator types are not yet supported, see http://hl7.org/fhir/R4/profiling.html#discriminator
   }
   // Default to no match
   return false;
