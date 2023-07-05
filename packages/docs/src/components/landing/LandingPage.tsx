@@ -83,10 +83,7 @@ export function LandingPage(): JSX.Element {
             </pre>
           </Section>
           <SectionHeader>
-            <h2>
-              Focus on building apps, <br />
-              not infra
-            </h2>
+            <h2>Focus on building apps, not infra</h2>
             <p>The future-ready, medical-grade backend that tames the complexity of healthcare development.</p>
           </SectionHeader>
           <Section>
@@ -152,7 +149,7 @@ export function LandingPage(): JSX.Element {
           </Section>
           <Jumbotron>
             <div className={styles.heroContent}>
-              <h2>Infrastructure you can trust to meet any future you make.</h2>
+              <h3>Infrastructure you can trust to meet any future you make.</h3>
               <p>
                 Infrastructure you can trust to meet whatever future you make. Medplum fast-paths your team to the
                 innovation stage, increasing your developer velocity to let you get to market faster with a secure,
@@ -160,7 +157,7 @@ export function LandingPage(): JSX.Element {
                 IPO.
               </p>
               <a href="/docs" className={styles.getStartedButton}>
-                <div>Get Started</div>
+                <div>Book a demo</div>
                 <img src="/img/btn-arrow.svg" alt="Go arrow" width="32" height="32" />
               </a>
             </div>

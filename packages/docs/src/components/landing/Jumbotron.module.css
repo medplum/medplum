@@ -11,3 +11,9 @@
     gap: 2rem;
   }
 }
+
+.jumbotron h3 {
+  font-size: 2.375rem;
+  line-height: 1.25;
+  font-weight: 400;
+}
