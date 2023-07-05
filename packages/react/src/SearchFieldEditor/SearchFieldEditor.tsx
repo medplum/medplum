@@ -161,7 +161,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
   const selected = state.search.fields ?? [];
   const available = getFieldsList(typeDef)
     .filter((field) => !selected.includes(field))
-    .sort();
+    .sort((a, b) => a.localeCompare(b));
 
   return (
     <Modal title="Fields" closeButtonProps={{ 'aria-label': 'Close' }} opened={props.visible} onClose={props.onCancel}>
@@ -278,3 +278,4 @@ function getFieldsList(typeSchema: TypeSchema): string[] {
 
   return result;
 }
+
