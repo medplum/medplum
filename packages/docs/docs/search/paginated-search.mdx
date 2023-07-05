@@ -49,17 +49,51 @@ Here's an example query that sets the page offset to 30:
 
 In this example, the search will return up to 50 Patient resources per page, starting from the 31st item in the result set.
 
+## Getting the total number of results with `_total`
+
+To include the total count of matching resources in the search response, you need to use the `_total` parameter in your search query. This information is particularly useful for [pagination](./paginated-search) and understanding the scope of the data you are dealing with.
+
+The `_total` parameter can have three values: `accurate`, `estimate`, and `none`.
+
+|                  |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `none` (Default) | No total is returned                                                                                                                                                                                                                                                                                                                                                        |
+| `estimate`       | Tells the Medplum server that you are willing to accept an approximate count. This is usually faster than the accurate option as it may use database statistics or other methods for estimating the total number without scanning the entire dataset. This option is particularly useful when you need a rough idea of the number of resources without requiring precision. |
+| `accurate`       | The Medplum server will perform additional processing to calculate the exact number of resources that match the search criteria. This can be more time-consuming, especially for large datasets, but you will receive a precise count. Use this option when an exact number is crucial for your use case.                                                                   |
+
+By default, searches the response do not include totals. Choosing between `accurate` and `estimate` depends on your specific requirements. For large datasets, using `estimate` can significantly improve response times, but at the cost of precision.
+
+Example Query
+Here is an example of how to use the `_total` parameter in a search query:
+
+<Tabs>
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchTotal">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchTotalCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+This query will search for patients with the name "smith" and will return a Bundle with the accurate total number of matching resources included.
+
+<MedplumCodeBlock language="ts" selectBlocks="searchTotalResult">
+  {ExampleCode}
+</MedplumCodeBlock>
+
 ## Navigating pages with the `Bundle.link` element
 
-When you perform a paginated search, the response will be a `Bundle` resource containing a list of resources matching the query. The `Bundle` resource will also have a link field containing navigation links to help you traverse through the search results.
+When you perform a paginated search, the response will be a `Bundle` resource containing a list of resources matching the query. The `Bundle` resource will also have a `link` field containing navigation links to help you traverse through the search results.
 
 The `Bundle.link` field will include the following relations:
 
 - `self`: The URL of the current search results page.
-- `first`: The URL of the first page of search results.
 - `previous`: The URL of the previous page of search results (if applicable).
 - `next`: The URL of the next page of search results (if applicable).
-- `last`: The URL of the last page of search results.
 
 Here's an example of how the Bundle.link field may look :
 
@@ -67,24 +101,16 @@ Here's an example of how the Bundle.link field may look :
 'link': [
   {
     relation: 'self',
-    url: 'https://example.com/Patient?_count=50&_offset=30',
-  },
-  {
-    relation: 'first',
-    url: 'https://example.com/Patient?_count=50&_offset=0',
+    url: 'https://example.com/Patient?_count=50&_offset=60',
   },
   {
     relation: 'previous',
-    url: 'https://example.com/Patient?_count=50&_offset=20',
+    url: 'https://example.com/Patient?_count=50&_offset=10',
   },
   {
     relation: 'next',
-    url: 'https://example.com/Patient?_count=50&_offset=80',
-  },
-  {
-    relation: 'last',
-    url: 'https://example.com/Patient?_count=50&_offset=980',
-  },
+    url: 'https://example.com/Patient?_count=50&_offset=110',
+  }
 ];
 ```
 

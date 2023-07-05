@@ -50,7 +50,6 @@ await medplum.search('Patient', 'birthdate=1940-03-29');
       },
     },
   ],
-  total: 2,
   link: [
     {
       relation: 'self',
