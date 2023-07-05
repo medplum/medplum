@@ -67,10 +67,6 @@ describe('ResourcePage', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Delete'));
     });
-    // cannot be awaited
-    jest.runAllTimersAsync().catch(() => {
-      return undefined;
-    });
 
     try {
       await medplum.readResource('Practitioner', practitioner.id as string);
@@ -121,7 +117,11 @@ describe('ResourcePage', () => {
     expect(screen.getByText('Preview')).toBeInTheDocument();
 
     window.alert = jest.fn();
-    fireEvent.click(screen.getByText('OK'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
     expect(window.alert).toHaveBeenCalledWith('You submitted the preview');
   });
 
