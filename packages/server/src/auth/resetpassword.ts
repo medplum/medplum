@@ -7,7 +7,7 @@ import { sendEmail } from '../email/email';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
-import { getProjectByRecaptchaSiteKey, verifyRecaptcha } from './utils';
+import { getProjectByRecaptchaSiteKey, getProjectIdByClientId, verifyRecaptcha } from './utils';
 
 export const resetPasswordValidators = [body('email').isEmail().withMessage('Valid email address is required')];
 
@@ -26,7 +26,13 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     // If the recaptcha site key is not the main Medplum recaptcha site key,
     // then it must be associated with a Project.
     // The user can only authenticate with that project.
-    project = await getProjectByRecaptchaSiteKey(recaptchaSiteKey, req.body.projectId as string | undefined);
+
+    // Project ID can come from one of two sources
+    // 1) Passed in explicitly as projectId
+    // 2) Implicit with clientId
+    // The only rule is that they have to match
+    const projectId = await getProjectIdByClientId(req.body.clientId, req.body.projectId as string | undefined);
+    project = await getProjectByRecaptchaSiteKey(recaptchaSiteKey, projectId as string | undefined);
     if (!project) {
       sendOutcome(res, badRequest('Invalid recaptchaSiteKey'));
       return;
