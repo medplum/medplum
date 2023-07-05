@@ -315,6 +315,63 @@ describe('FHIR resource validation', () => {
     }).toThrow();
   });
 
+  test('Invalid slice contents', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      category: [
+        {
+          coding: [
+            {
+              code: 'vital-signs',
+              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+            },
+          ],
+        },
+      ],
+      code: {
+        coding: [
+          {
+            code: '85354-9',
+            system: 'http://loinc.org',
+          },
+        ],
+      },
+      subject: {
+        reference: 'Patient/example',
+      },
+      effectiveDateTime: '2023-05-31T17:03:45-07:00',
+      component: [
+        {
+          code: {
+            coding: [
+              {
+                code: '8480-6',
+                system: 'http://loinc.org',
+              },
+            ],
+          },
+        },
+        {
+          code: {
+            coding: [
+              {
+                code: 'wrong code',
+                system: 'http://loinc.org',
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    expect(() => {
+      validateResource(observation, observationProfile);
+    }).toThrow(
+      `Incorrect number of values provided for slice 'diastolic': expected 1..1, but found 0 (Observation.component)`
+    );
+  });
+
   test('StructureDefinition', () => {
     const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
     expect(() => {

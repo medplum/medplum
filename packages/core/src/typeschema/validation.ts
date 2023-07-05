@@ -1,10 +1,18 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
-import { ElementValidator, getDataType, parseStructureDefinition, InternalTypeSchema } from './types';
+import {
+  ElementValidator,
+  getDataType,
+  parseStructureDefinition,
+  InternalTypeSchema,
+  SliceDefinition,
+  SliceDiscriminator,
+  SlicingRules,
+} from './types';
 import { OperationOutcomeError, validationError } from '../outcomes';
 import { PropertyType, TypedValue } from '../types';
 import { getTypedPropertyValue } from '../fhirpath';
 import { createStructureIssue } from '../schema';
-import { deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
+import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -149,10 +157,20 @@ class ResourceValidator {
         );
       }
 
-      this.checkSpecifiedValue(value, element, path);
+      if (!matchesSpecifiedValue(value, element)) {
+        this.issues.push(createStructureIssue(path, 'Value did not match expected pattern'));
+      }
+      const sliceCounts: Record<string, number> | undefined = element.slicing
+        ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
+        : undefined;
       for (const value of values) {
         this.checkPropertyValue(value, path);
+        const sliceName = checkSliceElement(value, element.slicing);
+        if (sliceName && sliceCounts) {
+          sliceCounts[sliceName] += 1;
+        }
       }
+      this.validateSlices(element.slicing?.slices, sliceCounts, path);
     }
   }
 
@@ -173,14 +191,6 @@ class ResourceValidator {
     return true;
   }
 
-  private checkSpecifiedValue(value: TypedValue | TypedValue[], element: ElementValidator, path: string): void {
-    if (element.pattern && !deepIncludes(value, element.pattern)) {
-      this.issues.push(createStructureIssue(path, 'Pattern fields need to be included in element definition'));
-    } else if (element.fixed && !deepEquals(value, element.fixed)) {
-      this.issues.push(createStructureIssue(path, 'Fixed needs exact match to element definition'));
-    }
-  }
-
   private checkPropertyValue(value: TypedValue, path: string): void {
     if (isLowerCase(value.type.charAt(0))) {
       this.validatePrimitiveType(value, path);
@@ -191,13 +201,39 @@ class ResourceValidator {
     }
   }
 
+  private validateSlices(
+    slices: SliceDefinition[] | undefined,
+    counts: Record<string, number> | undefined,
+    path: string
+  ): void {
+    if (!slices || !counts) {
+      return;
+    }
+    for (const slice of slices) {
+      const sliceCardinality = counts[slice.name];
+      if (sliceCardinality < slice.min || sliceCardinality > slice.max) {
+        this.issues.push(
+          createStructureIssue(
+            path,
+            `Incorrect number of values provided for slice '${slice.name}': expected ${slice.min}..${
+              Number.isFinite(slice.max) ? slice.max : '*'
+            }, but found ${sliceCardinality}`
+          )
+        );
+      }
+    }
+  }
+
   private checkAdditionalProperties(
     parent: TypedValue,
     properties: Record<string, ElementValidator>,
     path: string
   ): void {
-    const object = parent.value as Record<string, unknown>;
-    for (const key of Object.keys(object ?? {})) {
+    const object = parent.value as Record<string, unknown> | undefined;
+    if (!object) {
+      return;
+    }
+    for (const key of Object.keys(object)) {
       if (key === 'resourceType') {
         continue; // Skip special resource type discriminator property in JSON
       }
@@ -359,4 +395,52 @@ function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: 
       checkObjectForNull(value as Record<string, unknown>, propertyPath, issues);
     }
   }
+}
+
+function matchesSpecifiedValue(value: TypedValue | TypedValue[], element: ElementValidator): boolean {
+  if (element.pattern && !deepIncludes(value, element.pattern)) {
+    return false;
+  } else if (element.fixed && !deepEquals(value, element.fixed)) {
+    return false;
+  }
+  return true;
+}
+
+function matchDiscriminant(
+  value: TypedValue | TypedValue[] | undefined,
+  discriminator: SliceDiscriminator,
+  slice: SliceDefinition
+): boolean {
+  const element = slice.fields[discriminator.path];
+  switch (discriminator.type) {
+    case 'value':
+    case 'pattern':
+      if (!element) {
+        throw new Error(`Failed to match slicing discriminator at ${discriminator.path}`);
+      } else if (!value) {
+        return false;
+      } else if (matchesSpecifiedValue(value, element)) {
+        return true;
+      }
+      break;
+    // Other discriminator types are not yet supported, see http://hl7.org/fhir/R4/profiling.html#discriminator
+  }
+  // Default to no match
+  return false;
+}
+
+function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undefined): string | undefined {
+  if (!slicingRules) {
+    return undefined;
+  }
+  for (const slice of slicingRules.slices) {
+    if (
+      slicingRules.discriminator.every((discriminator) =>
+        arrayify(getNestedProperty(value, discriminator.path))?.some((v) => matchDiscriminant(v, discriminator, slice))
+      )
+    ) {
+      return slice.name;
+    }
+  }
+  return undefined;
 }
