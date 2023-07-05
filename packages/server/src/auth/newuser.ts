@@ -1,5 +1,5 @@
-import { badRequest, NewUserRequest, Operator } from '@medplum/core';
-import { OperationOutcome, Project, User } from '@medplum/fhirtypes';
+import { badRequest, NewUserRequest, normalizeOperationOutcome, Operator } from '@medplum/core';
+import { Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -104,8 +104,8 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
       userAgent: req.get('User-Agent'),
     });
     res.status(200).json({ login: login.id });
-  } catch (outcome) {
-    sendOutcome(res, outcome as OperationOutcome);
+  } catch (err) {
+    sendOutcome(res, normalizeOperationOutcome(err));
   }
 }
 

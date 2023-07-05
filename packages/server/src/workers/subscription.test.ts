@@ -3,6 +3,9 @@ import { AuditEvent, Bot, Observation, Patient, Project, ProjectMembership, Subs
 import { Job } from 'bullmq';
 import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
+import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
+
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { getClient } from '../database';
@@ -17,6 +20,27 @@ let repo: Repository;
 let botRepo: Repository;
 
 describe('Subscription Worker', () => {
+  let mockLambdaClient: AwsClientStub<LambdaClient>;
+
+  beforeEach(() => {
+    mockLambdaClient = mockClient(LambdaClient);
+    mockLambdaClient.on(InvokeCommand).callsFake(({ Payload }) => {
+      const decoder = new TextDecoder();
+      const event = JSON.parse(decoder.decode(Payload));
+      const output = typeof event.input === 'string' ? event.input : JSON.stringify(event.input);
+      const encoder = new TextEncoder();
+
+      return {
+        LogResult: `U1RBUlQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMgVmVyc2lvbjogJExBVEVTVAoyMDIyLTA1LTMwVDE2OjEyOjIyLjY4NVoJMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODczCUlORk8gdGVzdApFTkQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMKUkVQT1JUIFJlcXVlc3RJZDogMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODcz`,
+        Payload: encoder.encode(output),
+      };
+    });
+  });
+
+  afterEach(() => {
+    mockLambdaClient.restore();
+  });
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);

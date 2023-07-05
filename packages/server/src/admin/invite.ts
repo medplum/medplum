@@ -6,7 +6,6 @@ import {
   ProjectMembership,
   ProjectMembershipAccess,
   Reference,
-  ResourceType,
   User,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
@@ -161,7 +160,7 @@ async function createUser(request: InviteRequest): Promise<User> {
 
 async function searchForExistingProfile(
   project: Project,
-  resourceType: ResourceType,
+  resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson',
   email: string
 ): Promise<ProfileResource | undefined> {
   const bundle = await systemRepo.search<ProfileResource>({

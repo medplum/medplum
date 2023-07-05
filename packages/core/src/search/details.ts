@@ -1,4 +1,15 @@
-import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
+import { ElementDefinition, ElementDefinitionType, SearchParameter } from '@medplum/fhirtypes';
+import { Atom } from '../fhirlexer';
+import {
+  AsAtom,
+  BooleanInfixOperatorAtom,
+  DotAtom,
+  FunctionAtom,
+  IndexerAtom,
+  IsAtom,
+  parseFhirPath,
+  UnionAtom,
+} from '../fhirpath';
 import { buildTypeName, getElementDefinition, globalSchema, PropertyType } from '../types';
 import { capitalize } from '../utils';
 
@@ -18,8 +29,14 @@ export enum SearchParameterType {
 export interface SearchParameterDetails {
   readonly columnName: string;
   readonly type: SearchParameterType;
-  readonly elementDefinition?: ElementDefinition;
+  readonly elementDefinitions?: ElementDefinition[];
   readonly array?: boolean;
+}
+
+interface SearchParameterDetailsBuilder {
+  elementDefinitions: ElementDefinition[];
+  propertyTypes: Set<string>;
+  array: boolean;
 }
 
 /**
@@ -55,54 +72,110 @@ function setSearchParameterDetails(resourceType: string, code: string, details: 
 function buildSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   const code = searchParam.code as string;
   const columnName = convertCodeToColumnName(code);
-  const expression = getExpressionForResourceType(resourceType, searchParam.expression as string)?.split('.');
-  if (!expression) {
-    // This happens on compound types
-    // In the future, explore returning multiple column definitions
-    return { columnName, type: SearchParameterType.TEXT };
-  }
+  const expressions = getExpressionsForResourceType(resourceType, searchParam.expression as string);
 
-  let baseType = resourceType;
-  let elementDefinition = undefined;
-  let propertyType = undefined;
-  let array = false;
+  const builder: SearchParameterDetailsBuilder = {
+    elementDefinitions: [],
+    propertyTypes: new Set(),
+    array: false,
+  };
 
-  for (let i = 1; i < expression.length; i++) {
-    let propertyName = expression[i];
-    let hasArrayIndex = false;
-
-    const arrayIndexMatch = /\[\d+\]$/.exec(propertyName);
-    if (arrayIndexMatch) {
-      propertyName = propertyName.substring(0, propertyName.length - arrayIndexMatch[0].length);
-      hasArrayIndex = true;
-    }
-
-    elementDefinition = getElementDefinition(baseType, propertyName);
-    if (!elementDefinition) {
-      throw new Error(`Element definition not found for ${resourceType} ${searchParam.code}`);
-    }
-
-    if (elementDefinition.max !== '0' && elementDefinition.max !== '1' && !hasArrayIndex) {
-      array = true;
-    }
-
-    // "code" is only missing when using "contentReference"
-    // "contentReference" is handled above in "getElementDefinition"
-    propertyType = elementDefinition.type?.[0].code as string;
-
-    if (i < expression.length - 1) {
-      if (isBackboneElement(propertyType)) {
-        baseType = buildTypeName(elementDefinition.path?.split('.') as string[]);
-      } else {
-        baseType = propertyType;
-      }
+  for (const expression of expressions) {
+    const atomArray = flattenAtom(expression);
+    if (atomArray.length === 1 && atomArray[0] instanceof BooleanInfixOperatorAtom) {
+      builder.propertyTypes.add('boolean');
+    } else {
+      crawlSearchParameterDetails(builder, flattenAtom(expression), resourceType, 1);
     }
   }
 
-  const type = getSearchParameterType(searchParam, propertyType as PropertyType);
-  const result = { columnName, type, elementDefinition, array };
+  const result: SearchParameterDetails = {
+    columnName,
+    type: getSearchParameterType(searchParam, builder.propertyTypes),
+    elementDefinitions: builder.elementDefinitions,
+    array: builder.array,
+  };
   setSearchParameterDetails(resourceType, code, result);
   return result;
+}
+
+function crawlSearchParameterDetails(
+  details: SearchParameterDetailsBuilder,
+  atoms: Atom[],
+  baseType: string,
+  index: number
+): void {
+  const currAtom = atoms[index];
+
+  if (currAtom instanceof AsAtom) {
+    details.propertyTypes.add(currAtom.right.toString());
+    return;
+  }
+
+  if (currAtom instanceof FunctionAtom) {
+    handleFunctionAtom(details, currAtom);
+    return;
+  }
+
+  const propertyName = currAtom.toString();
+  let hasArrayIndex = false;
+  let nextIndex = index + 1;
+
+  if (nextIndex < atoms.length && atoms[nextIndex] instanceof IndexerAtom) {
+    hasArrayIndex = true;
+    nextIndex++;
+  }
+
+  const elementDefinition = getElementDefinition(baseType, propertyName);
+  if (!elementDefinition) {
+    throw new Error(`Element definition not found for ${baseType} ${propertyName}`);
+  }
+
+  if (elementDefinition.max !== '0' && elementDefinition.max !== '1' && !hasArrayIndex) {
+    details.array = true;
+  }
+
+  if (index < atoms.length - 1) {
+    // This is in the middle of the expression, so we need to keep crawling.
+    // "code" is only missing when using "contentReference"
+    // "contentReference" is handled above in "getElementDefinition"
+    for (const elementDefinitionType of elementDefinition.type as ElementDefinitionType[]) {
+      let propertyType = elementDefinitionType.code as string;
+      if (isBackboneElement(propertyType)) {
+        propertyType = buildTypeName(elementDefinition.path?.split('.') as string[]);
+      }
+      crawlSearchParameterDetails(details, atoms, propertyType, nextIndex);
+    }
+  } else {
+    // This is the final atom in the expression
+    // So we can collect the ElementDefinition and property types
+    details.elementDefinitions.push(elementDefinition);
+    for (const elementDefinitionType of elementDefinition.type as ElementDefinitionType[]) {
+      details.propertyTypes.add(elementDefinitionType.code as string);
+    }
+  }
+}
+
+function handleFunctionAtom(builder: SearchParameterDetailsBuilder, functionAtom: FunctionAtom): void {
+  if (functionAtom.name === 'as') {
+    builder.propertyTypes.add(functionAtom.args[0].toString());
+    return;
+  }
+
+  if (functionAtom.name === 'resolve') {
+    // Handle .resolve().resourceType
+    builder.propertyTypes.add('string');
+    return;
+  }
+
+  if (functionAtom.name === 'where' && functionAtom.args[0] instanceof IsAtom) {
+    // Common pattern: "where(resolve() is Patient)"
+    // Use the type information
+    builder.propertyTypes.add(functionAtom.args[0].right.toString());
+    return;
+  }
+
+  throw new Error(`Unhandled FHIRPath function: ${functionAtom.name}`);
 }
 
 function isBackboneElement(propertyType: string): boolean {
@@ -118,10 +191,10 @@ function convertCodeToColumnName(code: string): string {
   return code.split('-').reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
 
-function getSearchParameterType(searchParam: SearchParameter, propertyType: PropertyType): SearchParameterType {
+function getSearchParameterType(searchParam: SearchParameter, propertyTypes: Set<string>): SearchParameterType {
   switch (searchParam.type) {
     case 'date':
-      if (propertyType === PropertyType.date) {
+      if (propertyTypes.size === 1 && propertyTypes.has(PropertyType.date)) {
         return SearchParameterType.DATE;
       } else {
         return SearchParameterType.DATETIME;
@@ -131,13 +204,13 @@ function getSearchParameterType(searchParam: SearchParameter, propertyType: Prop
     case 'quantity':
       return SearchParameterType.QUANTITY;
     case 'reference':
-      if (propertyType === PropertyType.canonical) {
+      if (propertyTypes.has(PropertyType.canonical)) {
         return SearchParameterType.CANONICAL;
       } else {
         return SearchParameterType.REFERENCE;
       }
     case 'token':
-      if (propertyType === PropertyType.boolean) {
+      if (propertyTypes.size === 1 && propertyTypes.has(PropertyType.boolean)) {
         return SearchParameterType.BOOLEAN;
       } else {
         return SearchParameterType.TEXT;
@@ -147,37 +220,48 @@ function getSearchParameterType(searchParam: SearchParameter, propertyType: Prop
   }
 }
 
-export function getExpressionForResourceType(resourceType: string, expression: string): string | undefined {
-  const expressions = expression.split(' | ');
-  for (const e of expressions) {
-    if (isIgnoredExpression(e)) {
-      continue;
-    }
-    const simplified = simplifyExpression(e);
-    if (simplified.startsWith(resourceType + '.')) {
-      return simplified;
-    }
-  }
-  return undefined;
-}
-
-function isIgnoredExpression(input: string): boolean {
-  return input.includes(' as Period') || input.includes(' as SampledDate');
-}
-
-function simplifyExpression(input: string): string {
-  let result = input.trim();
-
-  if (result.startsWith('(') && result.endsWith(')')) {
-    result = result.substring(1, result.length - 1);
-  }
-
-  const stopStrings = [' != ', ' as ', '.as(', '.exists(', '.resolve(', '.where('];
-  for (const stopString of stopStrings) {
-    if (result.includes(stopString)) {
-      result = result.substring(0, result.indexOf(stopString));
-    }
-  }
-
+export function getExpressionsForResourceType(resourceType: string, expression: string): Atom[] {
+  const result: Atom[] = [];
+  const fhirPathExpression = parseFhirPath(expression);
+  buildExpressionsForResourceType(resourceType, fhirPathExpression.child, result);
   return result;
+}
+
+export function getExpressionForResourceType(resourceType: string, expression: string): string | undefined {
+  const atoms = getExpressionsForResourceType(resourceType, expression);
+  if (atoms.length === 0) {
+    return undefined;
+  }
+  return atoms.map((atom) => atom.toString()).join(' | ');
+}
+
+function buildExpressionsForResourceType(resourceType: string, atom: Atom, result: Atom[]): void {
+  if (atom instanceof UnionAtom) {
+    buildExpressionsForResourceType(resourceType, atom.left, result);
+    buildExpressionsForResourceType(resourceType, atom.right, result);
+  } else {
+    const str = atom.toString();
+    if (str.startsWith(resourceType + '.')) {
+      result.push(atom);
+    }
+  }
+}
+
+function flattenAtom(atom: Atom): Atom[] {
+  if (atom instanceof AsAtom || atom instanceof IndexerAtom) {
+    return [flattenAtom(atom.left), atom].flat();
+  }
+  if (atom instanceof BooleanInfixOperatorAtom) {
+    return [atom];
+  }
+  if (atom instanceof DotAtom) {
+    return [flattenAtom(atom.left), flattenAtom(atom.right)].flat();
+  }
+  if (atom instanceof FunctionAtom) {
+    if (atom.name === 'where' && !(atom.args[0] instanceof IsAtom)) {
+      // Remove all "where" functions other than "where(x as type)"
+      return [];
+    }
+  }
+  return [atom];
 }

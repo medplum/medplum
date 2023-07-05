@@ -255,6 +255,8 @@ class StructureDefinitionParser {
           ...ref,
           id: element.id,
           path: element.path,
+          min: element.min ?? ref.min,
+          max: element.max ?? ref.max,
         };
       }
       return element;

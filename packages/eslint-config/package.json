@@ -1,6 +1,6 @@
 {
   "name": "@medplum/eslint-config",
-  "version": "0.1.0",
+  "version": "2.0.25",
   "description": "Shared ESLint configuration for Medplum projects",
   "main": "index.cjs",
   "repository": {
@@ -14,15 +14,18 @@
     "url": "https://github.com/medplum/medplum/issues"
   },
   "homepage": "https://github.com/medplum/medplum#readme",
-  "keywords": ["eslint", "eslintconfig"],
+  "keywords": [
+    "eslint",
+    "eslintconfig"
+  ],
   "peerDependencies": {
     "eslint": ">= 8",
     "@typescript-eslint/eslint-plugin": ">= 5"
   },
   "dependencies": {
-    "@typescript-eslint/parser": "5.59.9",
+    "@typescript-eslint/parser": "5.60.1",
     "eslint-config-prettier": "8.8.0",
-    "eslint-plugin-jsdoc": "46.2.5",
+    "eslint-plugin-jsdoc": "46.4.3",
     "eslint-plugin-prettier": "4.2.1",
     "eslint-plugin-react-hooks": "4.6.0"
   }

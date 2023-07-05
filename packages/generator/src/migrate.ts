@@ -1,12 +1,12 @@
 import {
-  PropertyType,
-  SearchParameterDetails,
-  SearchParameterType,
-  TypeSchema,
   getSearchParameterDetails,
   globalSchema,
   indexStructureDefinitionBundle,
   isResourceTypeSchema,
+  PropertyType,
+  SearchParameterDetails,
+  SearchParameterType,
+  TypeSchema,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
@@ -213,13 +213,12 @@ function isLookupTableParam(searchParam: SearchParameter, details: SearchParamet
       return true;
     }
 
-    const elementDefinition = details.elementDefinition;
-    if (elementDefinition?.type) {
+    for (const elementDefinition of details.elementDefinitions ?? []) {
       // Check for any "Identifier", "CodeableConcept", or "Coding"
       // Any of those value types require the "Token" table for full system|value search semantics.
       // The common case is that the "type" property only has one value,
       // but we need to support arrays of types for the choice-of-type properties such as "value[x]".
-      for (const type of elementDefinition.type) {
+      for (const type of elementDefinition.type ?? []) {
         if (
           type.code === PropertyType.Identifier ||
           type.code === PropertyType.CodeableConcept ||

@@ -1,4 +1,4 @@
-import { LoginAuthenticationResponse } from '@medplum/core';
+import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
@@ -27,7 +27,7 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
         .startNewPatient({ login, projectId: projectId as string })
         .then((response) => medplum.processCode(response.code as string))
         .then(() => onSuccess())
-        .catch((err) => setOutcome(err as OperationOutcome));
+        .catch((err) => setOutcome(normalizeOperationOutcome(err)));
     }
   }, [medplum, type, projectId, login, onSuccess]);
 

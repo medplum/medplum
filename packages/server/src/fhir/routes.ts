@@ -67,6 +67,11 @@ publicRoutes.get('/metadata', (_req: Request, res: Response) => {
   res.status(200).json(getCapabilityStatement());
 });
 
+// FHIR Versions
+publicRoutes.get('/([$]|%24)versions', (_req: Request, res: Response) => {
+  res.status(200).json({ versions: ['4.0'], default: '4.0' });
+});
+
 // SMART-on-FHIR configuration
 publicRoutes.get('/.well-known/smart-configuration', smartConfigurationHandler);
 publicRoutes.get('/.well-known/smart-styles.json', smartStylingHandler);

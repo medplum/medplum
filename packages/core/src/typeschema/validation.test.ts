@@ -14,6 +14,7 @@ import {
   Resource,
   StructureDefinition,
   SubstanceProtein,
+  ValueSet,
 } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -390,6 +391,55 @@ describe('FHIR resource validation', () => {
         ],
       } as unknown as Patient);
     }).not.toThrow();
+  });
+
+  test('Valid ValueSet (content reference with altered cardinality', () => {
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      id: 'observation-status',
+      meta: {
+        lastUpdated: '2019-11-01T09:29:23.356+11:00',
+        profile: ['http://hl7.org/fhir/StructureDefinition/shareablevalueset'],
+      },
+      url: 'http://hl7.org/fhir/ValueSet/observation-status',
+      identifier: [
+        {
+          system: 'urn:ietf:rfc:3986',
+          value: 'urn:oid:2.16.840.1.113883.4.642.3.400',
+        },
+      ],
+      version: '4.0.1',
+      name: 'ObservationStatus',
+      title: 'ObservationStatus',
+      status: 'active',
+      experimental: false,
+      date: '2019-11-01T09:29:23+11:00',
+      publisher: 'HL7 (FHIR Project)',
+      contact: [
+        {
+          telecom: [
+            {
+              system: 'url',
+              value: 'http://hl7.org/fhir',
+            },
+            {
+              system: 'email',
+              value: 'fhir@lists.hl7.org',
+            },
+          ],
+        },
+      ],
+      description: 'Codes providing the status of an observation.',
+      immutable: true,
+      compose: {
+        include: [
+          {
+            system: 'http://hl7.org/fhir/observation-status',
+          },
+        ],
+      },
+    };
+    expect(() => validateResource(valueSet)).not.toThrow();
   });
 });
 

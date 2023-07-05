@@ -1,23 +1,28 @@
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { Upload } from '@aws-sdk/lib-storage';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { sdkStreamMixin } from '@aws-sdk/util-stream';
 import { Binary } from '@medplum/fhirtypes';
 import { Request } from 'express';
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
 import internal, { Readable } from 'stream';
+import 'aws-sdk-client-mock-jest';
+import fs from 'fs';
+
 import { loadTestConfig } from '../config';
 import { getBinaryStorage, initBinaryStorage } from './storage';
 
-jest.mock('@aws-sdk/client-s3');
-jest.mock('@aws-sdk/lib-storage');
-
 describe('Storage', () => {
+  let mockS3Client: AwsClientStub<S3Client>;
+
   beforeAll(async () => {
     await loadTestConfig();
   });
 
   beforeEach(() => {
-    (S3Client as unknown as jest.Mock).mockClear();
-    (Upload as unknown as jest.Mock).mockClear();
-    (GetObjectCommand as unknown as jest.Mock).mockClear();
+    mockS3Client = mockClient(S3Client);
+  });
+
+  afterEach(() => {
+    mockS3Client.restore();
   });
 
   test('Undefined binary storage', () => {
@@ -56,21 +61,13 @@ describe('Storage', () => {
     expect(content).toEqual('foo');
 
     // Make sure we didn't touch S3 at all
-    expect(S3Client).toHaveBeenCalledTimes(0);
-    expect(Upload).toHaveBeenCalledTimes(0);
-    expect(GetObjectCommand).toHaveBeenCalledTimes(0);
+    expect(mockS3Client.send.callCount).toBe(0);
+    expect(mockS3Client).not.toHaveReceivedCommand(PutObjectCommand);
+    expect(mockS3Client).not.toHaveReceivedCommand(GetObjectCommand);
   });
 
   test('S3 storage', async () => {
     initBinaryStorage('s3:foo');
-    expect(S3Client).toHaveBeenCalled();
-
-    const client = (S3Client as unknown as jest.Mock).mock.instances[0];
-    client.send = async () => ({
-      Body: {
-        pipe: jest.fn(),
-      },
-    });
 
     const storage = getBinaryStorage();
     expect(storage).toBeDefined();
@@ -87,33 +84,27 @@ describe('Storage', () => {
     req.push('foo');
     req.push(null);
     (req as any).headers = {};
+
+    const sdkStream = sdkStreamMixin(req);
+    mockS3Client.on(GetObjectCommand).resolves({ Body: sdkStream });
+
     await storage.writeBinary(binary, 'test.txt', 'text/plain', req as Request);
-    expect(Upload).toHaveBeenCalledWith(
-      expect.objectContaining({
-        params: expect.objectContaining({
-          Bucket: 'foo',
-          Key: 'binary/123/456',
-          ContentType: 'text/plain',
-        }),
-      })
-    );
+
+    expect(mockS3Client.send.callCount).toBe(1);
+    expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
+      Bucket: 'foo',
+      Key: 'binary/123/456',
+      ContentType: 'text/plain',
+    });
 
     // Read a file
     const stream = await storage.readBinary(binary);
     expect(stream).toBeDefined();
-    expect(GetObjectCommand).toHaveBeenCalled();
+    expect(mockS3Client).toHaveReceivedCommand(GetObjectCommand);
   });
 
   test('Missing metadata', async () => {
     initBinaryStorage('s3:foo');
-    expect(S3Client).toHaveBeenCalled();
-
-    const client = (S3Client as unknown as jest.Mock).mock.instances[0];
-    client.send = async () => ({
-      Body: {
-        pipe: jest.fn(),
-      },
-    });
 
     const storage = getBinaryStorage();
     expect(storage).toBeDefined();
@@ -130,26 +121,26 @@ describe('Storage', () => {
     req.push('foo');
     req.push(null);
     (req as any).headers = {};
+
+    const sdkStream = sdkStreamMixin(req);
+    mockS3Client.on(GetObjectCommand).resolves({ Body: sdkStream });
+
     await storage.writeBinary(binary, '', '', req as Request);
-    expect(Upload).toHaveBeenCalledWith(
-      expect.objectContaining({
-        params: expect.objectContaining({
-          Bucket: 'foo',
-          Key: 'binary/123/456',
-          ContentType: 'application/octet-stream',
-        }),
-      })
-    );
+    expect(mockS3Client.send.callCount).toBe(1);
+    expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
+      Bucket: 'foo',
+      Key: 'binary/123/456',
+      ContentType: 'application/octet-stream',
+    });
 
     // Read a file
     const stream = await storage.readBinary(binary);
     expect(stream).toBeDefined();
-    expect(GetObjectCommand).toHaveBeenCalled();
+    expect(mockS3Client).toHaveReceivedCommand(GetObjectCommand);
   });
 
   test('Invalid file extension', async () => {
     initBinaryStorage('s3:foo');
-    expect(S3Client).toHaveBeenCalled();
 
     const storage = getBinaryStorage();
     expect(storage).toBeDefined();
@@ -162,12 +153,11 @@ describe('Storage', () => {
     } catch (err) {
       expect((err as Error).message).toEqual('Invalid file extension');
     }
-    expect(Upload).not.toHaveBeenCalled();
+    expect(mockS3Client).not.toHaveReceivedCommand(PutObjectCommand);
   });
 
   test('Invalid content type', async () => {
     initBinaryStorage('s3:foo');
-    expect(S3Client).toHaveBeenCalled();
 
     const storage = getBinaryStorage();
     expect(storage).toBeDefined();
@@ -180,7 +170,32 @@ describe('Storage', () => {
     } catch (err) {
       expect((err as Error).message).toEqual('Invalid content type');
     }
-    expect(Upload).not.toHaveBeenCalled();
+    expect(mockS3Client).not.toHaveReceivedCommand(PutObjectCommand);
+  });
+
+  test('Should throw an error when file is not found in readBinary()', async () => {
+    initBinaryStorage('file:binary');
+
+    const storage = getBinaryStorage();
+    expect(storage).toBeDefined();
+
+    // Write a file
+    const binary: Binary = {
+      resourceType: 'Binary',
+      id: '123',
+      meta: {
+        versionId: '456',
+      },
+    };
+
+    jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+    try {
+      const stream = await storage.readBinary(binary);
+      expect(stream).not.toBeDefined();
+    } catch (err) {
+      expect((err as Error).message).toEqual('File not found');
+    }
   });
 });
 

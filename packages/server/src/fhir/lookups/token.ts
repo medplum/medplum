@@ -159,23 +159,21 @@ function isIndexed(searchParam: SearchParameter, resourceType: string): boolean 
   }
 
   const details = getSearchParameterDetails(resourceType, searchParam);
-  const elementDefinition = details.elementDefinition;
-  if (!elementDefinition?.type) {
-    return false;
-  }
 
   // Check for any "Identifier", "CodeableConcept", or "Coding"
   // Any of those value types require the "Token" table for full system|value search semantics.
   // The common case is that the "type" property only has one value,
   // but we need to support arrays of types for the choice-of-type properties such as "value[x]".
-  for (const type of elementDefinition.type) {
-    if (
-      type.code === PropertyType.Identifier ||
-      type.code === PropertyType.CodeableConcept ||
-      type.code === PropertyType.Coding ||
-      type.code === PropertyType.ContactPoint
-    ) {
-      return true;
+  for (const elementDefinition of details.elementDefinitions ?? []) {
+    for (const type of elementDefinition.type ?? []) {
+      if (
+        type.code === PropertyType.Identifier ||
+        type.code === PropertyType.CodeableConcept ||
+        type.code === PropertyType.Coding ||
+        type.code === PropertyType.ContactPoint
+      ) {
+        return true;
+      }
     }
   }
 

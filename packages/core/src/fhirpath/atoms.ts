@@ -13,6 +13,7 @@ import {
   toJsBoolean,
   toTypedValue,
 } from './utils';
+
 export class FhirPathAtom implements Atom {
   constructor(public readonly original: string, public readonly child: Atom) {}
 
@@ -102,7 +103,7 @@ export class UnaryOperatorAtom extends PrefixOperatorAtom {
   }
 
   toString(): string {
-    return this.child.toString();
+    return this.operator + this.child.toString();
   }
 }
 
@@ -116,7 +117,11 @@ export class AsAtom extends InfixOperatorAtom {
   }
 }
 
-export class ArithemticOperatorAtom extends InfixOperatorAtom {
+export abstract class BooleanInfixOperatorAtom extends InfixOperatorAtom {
+  abstract eval(context: AtomContext, input: TypedValue[]): TypedValue[];
+}
+
+export class ArithemticOperatorAtom extends BooleanInfixOperatorAtom {
   constructor(
     operator: string,
     left: Atom,
@@ -166,7 +171,7 @@ export class ConcatAtom extends InfixOperatorAtom {
   }
 }
 
-export class ContainsAtom extends InfixOperatorAtom {
+export class ContainsAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('contains', left, right);
   }
@@ -178,7 +183,7 @@ export class ContainsAtom extends InfixOperatorAtom {
   }
 }
 
-export class InAtom extends InfixOperatorAtom {
+export class InAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('in', left, right);
   }
@@ -216,7 +221,7 @@ export class UnionAtom extends InfixOperatorAtom {
   }
 }
 
-export class EqualsAtom extends InfixOperatorAtom {
+export class EqualsAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('=', left, right);
   }
@@ -228,7 +233,7 @@ export class EqualsAtom extends InfixOperatorAtom {
   }
 }
 
-export class NotEqualsAtom extends InfixOperatorAtom {
+export class NotEqualsAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('!=', left, right);
   }
@@ -240,7 +245,7 @@ export class NotEqualsAtom extends InfixOperatorAtom {
   }
 }
 
-export class EquivalentAtom extends InfixOperatorAtom {
+export class EquivalentAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('~', left, right);
   }
@@ -252,7 +257,7 @@ export class EquivalentAtom extends InfixOperatorAtom {
   }
 }
 
-export class NotEquivalentAtom extends InfixOperatorAtom {
+export class NotEquivalentAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('!~', left, right);
   }
@@ -264,7 +269,7 @@ export class NotEquivalentAtom extends InfixOperatorAtom {
   }
 }
 
-export class IsAtom extends InfixOperatorAtom {
+export class IsAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('is', left, right);
   }
@@ -349,6 +354,38 @@ export class XorAtom extends InfixOperatorAtom {
       return booleanToTypedValue(false);
     }
     return [];
+  }
+}
+
+/**
+ * 6.5.5. implies
+ * Returns true if left is true and right is true,
+ * true left is false and right true, false or empty
+ * true left is empty
+ */
+export class ImpliesAtom extends InfixOperatorAtom {
+  constructor(left: Atom, right: Atom) {
+    super('implies', left, right);
+  }
+
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftResult = this.left.eval(context, input);
+    const rightResult = this.right.eval(context, input);
+    if (!this.isValidCollectionLength(leftResult, rightResult)) {
+      throw new Error(`Expected single boolean value but got ${leftResult}, ${rightResult}`);
+    }
+    const leftValue = leftResult.length === 0 ? null : leftResult[0].value;
+    const rightValue = rightResult.length === 0 ? null : rightResult[0].value;
+    if (rightValue === true || leftValue === false) {
+      return booleanToTypedValue(true);
+    } else if (leftValue === null || rightValue === null) {
+      return [];
+    }
+    return booleanToTypedValue(false);
+  }
+
+  private isValidCollectionLength(leftResult: TypedValue[], rightResult: TypedValue[]): boolean {
+    return leftResult.length <= 1 && rightResult.length <= 1;
   }
 }
 

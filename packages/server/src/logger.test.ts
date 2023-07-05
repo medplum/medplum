@@ -5,14 +5,31 @@ import {
   PutLogEventsCommand,
 } from '@aws-sdk/client-cloudwatch-logs';
 import fs from 'fs';
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
+import 'aws-sdk-client-mock-jest';
+
 import { loadConfig } from './config';
 import { LogLevel, logger } from './logger';
 import { waitFor } from './test.setup';
 
-jest.mock('@aws-sdk/client-cloudwatch-logs');
-jest.mock('fs');
-
 describe('Logger', () => {
+  let mockCloudWatchLogsClient: AwsClientStub<CloudWatchLogsClient>;
+
+  beforeEach(() => {
+    mockCloudWatchLogsClient = mockClient(CloudWatchLogsClient);
+
+    mockCloudWatchLogsClient.on(CreateLogGroupCommand).resolves({});
+    mockCloudWatchLogsClient.on(CreateLogStreamCommand).resolves({});
+    mockCloudWatchLogsClient.on(PutLogEventsCommand).resolves({
+      nextSequenceToken: '',
+      rejectedLogEventsInfo: {},
+    });
+  });
+
+  afterEach(() => {
+    mockCloudWatchLogsClient.restore();
+  });
+
   test('Debug', () => {
     console.log = jest.fn();
 
@@ -65,7 +82,8 @@ describe('Logger', () => {
     console.info = jest.fn();
     console.log = jest.fn();
 
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(JSON.stringify({ logAuditEvents: false }));
+    jest.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ logAuditEvents: false }));
+
     await loadConfig('file:test.json');
 
     logger.logAuditEvent({ resourceType: 'AuditEvent' });
@@ -77,7 +95,7 @@ describe('Logger', () => {
   test('AuditEvent to console.log', async () => {
     console.log = jest.fn();
 
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(JSON.stringify({ logAuditEvents: true }));
+    jest.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ logAuditEvents: true }));
     await loadConfig('file:test.json');
 
     // Log an AuditEvent
@@ -92,26 +110,27 @@ describe('Logger', () => {
     console.log = jest.fn();
 
     // Mock readFileSync for custom config file
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    jest.spyOn(fs, 'readFileSync').mockReturnValue(
       JSON.stringify({
         logAuditEvents: true,
         auditEventLogGroup: 'test-log-group',
         auditEventLogStream: 'test-log-stream',
       })
     );
+
     await loadConfig('file:test.json');
 
     // Log an AuditEvent
     logger.logAuditEvent({ resourceType: 'AuditEvent' });
     logger.logAuditEvent({ resourceType: 'AuditEvent' });
 
-    await waitFor(async () => expect(PutLogEventsCommand).toHaveBeenCalled());
+    await waitFor(async () => expect(mockCloudWatchLogsClient).toHaveReceivedCommand(PutLogEventsCommand));
 
     // CloudWatch logs should have been created
-    expect(CloudWatchLogsClient).toHaveBeenCalled();
-    expect(CreateLogGroupCommand).toHaveBeenCalled();
-    expect(CreateLogStreamCommand).toHaveBeenCalled();
-    expect(PutLogEventsCommand).toHaveBeenCalled();
+    expect(mockCloudWatchLogsClient.send.callCount).toBe(3);
+    expect(mockCloudWatchLogsClient).toHaveReceivedCommandTimes(CreateLogGroupCommand, 1);
+    expect(mockCloudWatchLogsClient).toHaveReceivedCommandTimes(CreateLogStreamCommand, 1);
+    expect(mockCloudWatchLogsClient).toHaveReceivedCommandTimes(PutLogEventsCommand, 1);
 
     expect(console.info).toHaveBeenCalled();
     expect(console.log).not.toHaveBeenCalled();

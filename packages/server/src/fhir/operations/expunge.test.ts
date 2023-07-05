@@ -5,11 +5,11 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { getClient } from '../../database';
-import { createTestProject, initTestAuth } from '../../test.setup';
-import { systemRepo } from '../repo';
-import { Operator as SqlOperator, SelectQuery } from '../sql';
-import { Expunger } from './expunge';
 import { getRedis } from '../../redis';
+import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
+import { systemRepo } from '../repo';
+import { SelectQuery, Operator as SqlOperator } from '../sql';
+import { Expunger } from './expunge';
 
 const app = express();
 let superAdminAccessToken: string;
@@ -90,10 +90,13 @@ describe('Expunge', () => {
       .set('Content-Type', 'application/fhir+json')
       .set('X-Medplum', 'extended')
       .send({});
-    expect(res.status).toBe(200);
-    await new Promise((r) => {
-      setTimeout(r, 200);
-    });
+    expect(res.status).toBe(202);
+
+    await waitForAsyncJob(res.headers['content-location'], app, superAdminAccessToken);
+
+    expect(await existsInDatabase('Project', project.id)).toBe(false);
+    expect(await existsInDatabase('ClientApplication', client.id)).toBe(false);
+    expect(await existsInDatabase('ProjectMembership', membership.id)).toBe(false);
   });
 
   test('Expunger.expunge() expunges all resource types', async () => {
