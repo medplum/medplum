@@ -7,6 +7,7 @@ import {
   SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
+  Constraint,
 } from './types';
 import { OperationOutcomeError, validationError } from '../outcomes';
 import { PropertyType, TypedValue, isResource } from '../types';
@@ -180,6 +181,9 @@ class ResourceValidator {
         }
         this.constraintsCheck(value, element, path);
         this.checkPropertyValue(value, path);
+        if (validResourceType) {
+          this.currentResource.pop();
+        }
         const sliceName = checkSliceElement(value, element.slicing);
         if (sliceName && sliceCounts) {
           sliceCounts[sliceName] += 1;
@@ -285,6 +289,9 @@ class ResourceValidator {
         rootResource: toTypedValue(this.rootResource),
         ucum: toTypedValue('http://unitsofmeasure.org'),
       });
+      if (constraint.key === 'opd-3' && evalValues[0].value === false) {
+        console.log(constraint.expression, value);
+      }
       return evalValues.every((evalValue) => evalValue.value === true);
     } catch (e: any) {
       this.issues.push(createStructureIssue(path, `Constraint ${constraint.key} failed with error: ${e.message}`));

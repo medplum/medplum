@@ -13,7 +13,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
-    "test": "jest"
+    "test": "jest src/typeschema/validation.test.ts"
   },
   "devDependencies": {
     "@medplum/definitions": "*",

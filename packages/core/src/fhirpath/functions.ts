@@ -1493,7 +1493,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns The input collection.
    */
   trace: (context: AtomContext, input: TypedValue[], nameAtom: Atom): TypedValue[] => {
-    console.log('trace', input, nameAtom);
     return input;
   },
 
