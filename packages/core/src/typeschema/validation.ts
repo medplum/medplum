@@ -77,15 +77,13 @@ export function validate(resource: Resource, profile?: StructureDefinition): voi
 class ResourceValidator {
   private issues: OperationOutcomeIssue[];
   private rootResource: Resource;
-  private resources: Resource[];
-  private currentResource: Resource;
+  private currentResource: Resource[];
   private readonly schema: InternalTypeSchema;
 
   constructor(resourceType: string, rootResource: Resource, profile?: StructureDefinition) {
     this.issues = [];
     this.rootResource = rootResource;
-    this.resources = [rootResource];
-    this.currentResource = rootResource;
+    this.currentResource = [rootResource];
     if (!profile) {
       this.schema = getDataType(resourceType);
     } else {
@@ -99,9 +97,17 @@ class ResourceValidator {
       throw new OperationOutcomeError(validationError('Missing resource type'));
     }
 
-    checkObjectForNull(this.rootResource as unknown as Record<string, unknown>, this.rootResource.resourceType, this.issues);
+    checkObjectForNull(
+      this.rootResource as unknown as Record<string, unknown>,
+      this.rootResource.resourceType,
+      this.issues
+    );
 
-    this.validateObject({ type: resourceType, value: this.currentResource }, this.schema, resourceType);
+    this.validateObject(
+      { type: resourceType, value: this.currentResource[this.currentResource.length - 1] },
+      this.schema,
+      resourceType
+    );
 
     const issues = this.issues;
     this.issues = []; // Reset issues to allow re-using the validator for other resources
@@ -133,7 +139,6 @@ class ResourceValidator {
       if (!this.checkPresence(value, element, path)) {
         return;
       }
-
       // Check cardinality
       let values: TypedValue[];
       if (element.isArray) {
@@ -149,6 +154,7 @@ class ResourceValidator {
         }
         values = [value];
       }
+
       if (values.length < element.min || values.length > element.max) {
         this.issues.push(
           createStructureIssue(
@@ -167,6 +173,12 @@ class ResourceValidator {
         ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
         : undefined;
       for (const value of values) {
+        // take next resource, push that onto the stack.
+        const validResourceType = isResource(value.value);
+        if (validResourceType) {
+          this.currentResource.push(value.value as Resource);
+        }
+        this.constraintsCheck(value, element, path);
         this.checkPropertyValue(value, path);
         const sliceName = checkSliceElement(value, element.slicing);
         if (sliceName && sliceCounts) {
@@ -198,15 +210,9 @@ class ResourceValidator {
     if (isLowerCase(value.type.charAt(0))) {
       this.validatePrimitiveType(value, path);
     } else {
-      // take next resource, push that onto the stack.
-
       // Recursively validate as the expected data type
       const type = getDataType(value.type);
-      // if (isResource(value.value)) {
-
-      // }
       this.validateObject(value, type, path);
-      // pop object off stack
     }
   }
 
@@ -256,14 +262,13 @@ class ResourceValidator {
     }
   }
 
-  private constraintsCheck(value: TypedValue | TypedValue[], element: ElementValidator, path: string): void {
+  private constraintsCheck(value: TypedValue, element: ElementValidator, path: string): void {
     const constraints = element.constraints;
-    const arrayValue = Array.isArray(value) ? value : [value];
     for (const constraint of constraints) {
       if (constraint.severity !== 'error' || constraint.key in skippedConstraintKeys) {
         continue;
       } else {
-        const expression = this.isExpressionTrue(constraint, arrayValue, path);
+        const expression = this.isExpressionTrue(constraint, value, path);
         if (!expression) {
           this.issues.push(createStructureIssue(path, `Constraint ${constraint.key} failed`));
           return;
@@ -272,18 +277,15 @@ class ResourceValidator {
     }
   }
 
-  private isExpressionTrue(constraint: Constraint, values: TypedValue[], path: string): boolean {
+  private isExpressionTrue(constraint: Constraint, value: TypedValue, path: string): boolean {
     try {
-      const expression = values.every((value) => {
-        const evalValues = evalFhirPathTyped(constraint.expression, [value], {
-          context: value,
-          resource: toTypedValue(this.currentResource),
-          rootResource: toTypedValue(this.rootResource),
-          ucum: toTypedValue('http://unitsofmeasure.org'),
-        });
-        return evalValues.every((evalValue) => evalValue.value === true);
+      const evalValues = evalFhirPathTyped(constraint.expression, [value], {
+        context: value,
+        resource: toTypedValue(this.currentResource[this.currentResource.length - 1]),
+        rootResource: toTypedValue(this.rootResource),
+        ucum: toTypedValue('http://unitsofmeasure.org'),
       });
-      return expression;
+      return evalValues.every((evalValue) => evalValue.value === true);
     } catch (e: any) {
       this.issues.push(createStructureIssue(path, `Constraint ${constraint.key} failed with error: ${e.message}`));
       return false;
