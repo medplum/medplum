@@ -48,6 +48,7 @@ import { randomUUID } from 'crypto';
 import { Pool, PoolClient } from 'pg';
 import { applyPatch, Operation } from 'rfc6902';
 import validator from 'validator';
+import { getConfig } from '../config';
 import { getClient } from '../database';
 import { logger } from '../logger';
 import { getRedis } from '../redis';
