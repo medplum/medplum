@@ -164,11 +164,6 @@ const lookupTables: LookupTable<unknown>[] = [
   new ValueSetElementTable(),
 ];
 
-// /**
-//  * Defines the maximum number of resources returned in a single search result.
-//  */
-// const maxSearchResults = 1000;
-
 /**
  * The Repository class manages reading and writing to the FHIR repository.
  * It is a thin layer on top of the database.
@@ -1089,7 +1084,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment' ||
       searchParam.type === 'composite' ||
-      this.isIndexTable(resource.resourceType, searchParam)
+      isIndexTable(resource.resourceType, searchParam)
     ) {
       return;
     }
@@ -1311,19 +1306,6 @@ export class Repository extends BaseRepository implements FhirRepository {
     for (const lookupTable of lookupTables) {
       await lookupTable.deleteValuesForResource(client, resource);
     }
-  }
-
-  private isIndexTable(resourceType: string, searchParam: SearchParameter): boolean {
-    return !!this.getLookupTable(resourceType, searchParam);
-  }
-
-  private getLookupTable(resourceType: string, searchParam: SearchParameter): LookupTable<unknown> | undefined {
-    for (const lookupTable of lookupTables) {
-      if (lookupTable.isIndexed(searchParam, resourceType)) {
-        return lookupTable;
-      }
-    }
-    return undefined;
   }
 
   /**

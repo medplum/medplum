@@ -444,9 +444,7 @@ export function getElementDefinition(typeName: string, propertyName: string): El
  * @param value The object to check
  * @returns True if the input is of type 'object' and contains property 'resourceType'
  */
-export function isResource<T extends Resource = Resource>(
-  value: T | Reference<T> | string | undefined | null
-): value is T {
+export function isResource<T extends Resource = Resource>(value: unknown): value is T {
   return !!(value && typeof value === 'object' && 'resourceType' in value);
 }
 
@@ -455,9 +453,7 @@ export function isResource<T extends Resource = Resource>(
  * @param value The object to check
  * @returns True if the input is of type 'object' and contains property 'reference'
  */
-export function isReference<T extends Resource>(
-  value: T | Reference<T> | string | undefined | null
-): value is Reference<T> & { reference: string } {
+export function isReference<T extends Resource>(value: unknown): value is Reference<T> & { reference: string } {
   return !!(value && typeof value === 'object' && 'reference' in value);
 }
 
