@@ -33,4 +33,34 @@ describe('Config', () => {
     expect(config.port).toEqual(8080);
     expect(getConfig()).toBe(config);
   });
-});
+
+  test('Load env config', async () => {
+    process.env['MEDPLUM_BASE_URL'] = 'http://localhost:3000';
+    process.env['MEDPLUM_PORT'] = '3000';
+    process.env['MEDPLUM_DATABASE_HOST'] = 'localhost';
+    process.env['MEDPLUM_DATABASE_PORT'] = '5432';
+    process.env['MEDPLUM_DATABASE_DBNAME'] = 'medplum';
+    process.env['MEDPLUM_DATABASE_USERNAME'] = 'medplum';
+    process.env['MEDPLUM_DATABASE_PASSWORD'] = 'medplum';
+    const config = await loadConfig('env');
+    expect(config).toBeDefined();
+    expect(config.baseUrl).toEqual('http://localhost:3000');
+    expect(config.port).toEqual(3000);
+    expect(config.database).toEqual({
+      host: 'localhost',
+      port: 5432,
+      dbname: 'medplum',
+      username: 'medplum',
+      password: 'medplum'
+    });
+    expect(getConfig()).toBe(config);
+    delete process.env['MEDPLUM_BASE_URL'];
+    delete process.env['MEDPLUM_PORT'];
+    delete process.env['MEDPLUM_DATABASE_HOST'];
+    delete process.env['MEDPLUM_DATABASE_PORT'];
+    delete process.env['MEDPLUM_DATABASE_DBNAME'];
+    delete process.env['MEDPLUM_DATABASE_USERNAME'];
+    delete process.env['MEDPLUM_DATABASE_PASSWORD'];
+  });
+}
+
