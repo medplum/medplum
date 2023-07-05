@@ -146,9 +146,9 @@ function loadEnvConfig(): MedplumServerConfig {
     // Convert key from CAPITAL_CASE to camelCase
     key = key.toLowerCase().replace(/_([a-z])/g, (g) => g[1].toUpperCase());
 
-    if (key === 'port') {
+    if (isIntegerConfig(key)) {
       currConfig.port = parseInt(value ?? '', 10);
-    } else if (key === 'botCustomFunctionsEnabled' || key === 'logAuditEvents' || key === 'registerEnabled') {
+    } else if (isBooleanConfig(key)) {
       currConfig[key] = value === 'true';
     } else {
       currConfig[key] = value;
@@ -199,9 +199,9 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
           config['database'] = await loadAwsSecrets(region, value);
         } else if (key === 'RedisSecrets') {
           config['redis'] = await loadAwsSecrets(region, value);
-        } else if (key === 'port') {
+        } else if (isIntegerConfig(key)) {
           config.port = parseInt(value, 10);
-        } else if (key === 'botCustomFunctionsEnabled' || key === 'logAuditEvents' || key === 'registerEnabled') {
+        } else if (isBooleanConfig(key)) {
           config[key] = value === 'true';
         } else {
           config[key] = value;
@@ -214,6 +214,12 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
   return config as MedplumServerConfig;
 }
 
+/**
+ * Returns the AWS Database Secret data as a JSON map.
+ * @param region The AWS region.
+ * @param secretId Secret ARN
+ * @returns The secret data as a JSON map.
+ */
 async function loadAwsSecrets(region: string, secretId: string): Promise<Record<string, any> | undefined> {
   const client = new SecretsManagerClient({ region });
   const result = await client.send(new GetSecretValueCommand({ SecretId: secretId }));
@@ -225,6 +231,11 @@ async function loadAwsSecrets(region: string, secretId: string): Promise<Record<
   return JSON.parse(result.SecretString);
 }
 
+/**
+ * Adds default values to the config.
+ * @param config The input config as loaded from the config file.
+ * @returns The config with default values added.
+ */
 function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.port = config.port || 8103;
   config.issuer = config.issuer || config.baseUrl;
@@ -246,4 +257,12 @@ function splitOnce(value: string, delimiter: string): [string, string] {
     return [value, ''];
   }
   return [value.substring(0, index), value.substring(index + 1)];
+}
+
+function isIntegerConfig(key: string): boolean {
+  return key === 'port';
+}
+
+function isBooleanConfig(key: string): boolean {
+  return key === 'botCustomFunctionsEnabled' || key === 'logAuditEvents' || key === 'registerEnabled';
 }
