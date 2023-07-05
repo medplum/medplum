@@ -1,4 +1,11 @@
-import { badRequest, createReference, OperationOutcomeError, ProfileResource, resolveId } from '@medplum/core';
+import {
+  badRequest,
+  createReference,
+  OperationOutcomeError,
+  Operator,
+  ProfileResource,
+  resolveId,
+} from '@medplum/core';
 import { ContactPoint, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Response } from 'express';
@@ -170,4 +177,32 @@ export async function getProjectIdByClientId(
  */
 export function bcryptHashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, getConfig().bcryptHashSalt);
+}
+
+export async function getProjectByRecaptchaSiteKey(
+  recaptchaSiteKey: string,
+  projectId: string | undefined
+): Promise<Project | undefined> {
+  const filters = [
+    {
+      code: 'recaptcha-site-key',
+      operator: Operator.EQUALS,
+      value: recaptchaSiteKey,
+    },
+  ];
+
+  if (projectId) {
+    filters.push({
+      code: '_id',
+      operator: Operator.EQUALS,
+      value: projectId,
+    });
+  }
+
+  const bundle = await systemRepo.search<Project>({
+    resourceType: 'Project',
+    count: 1,
+    filters,
+  });
+  return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }

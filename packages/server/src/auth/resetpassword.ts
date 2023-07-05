@@ -1,5 +1,5 @@
 import { allOk, badRequest, createReference, Operator, resolveId } from '@medplum/core';
-import { PasswordChangeRequest, User } from '@medplum/fhirtypes';
+import { PasswordChangeRequest, Project, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { getConfig } from '../config';
@@ -7,7 +7,7 @@ import { sendEmail } from '../email/email';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
-import { verifyRecaptcha } from './utils';
+import { getProjectByRecaptchaSiteKey, verifyRecaptcha } from './utils';
 
 export const resetPasswordValidators = [body('email').isEmail().withMessage('Valid email address is required')];
 
@@ -18,15 +18,33 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
-  const recaptchaSecretKey = getConfig().recaptchaSecretKey;
+  const recaptchaSiteKey = req.body.recaptchaSiteKey;
+  let secretKey: string | undefined = getConfig().recaptchaSecretKey;
+  let project: Project | undefined;
 
-  if (recaptchaSecretKey) {
+  if (recaptchaSiteKey && recaptchaSiteKey !== getConfig().recaptchaSiteKey) {
+    // If the recaptcha site key is not the main Medplum recaptcha site key,
+    // then it must be associated with a Project.
+    // The user can only authenticate with that project.
+    project = await getProjectByRecaptchaSiteKey(recaptchaSiteKey, req.body.projectId as string | undefined);
+    if (!project) {
+      sendOutcome(res, badRequest('Invalid recaptchaSiteKey'));
+      return;
+    }
+    secretKey = project.site?.find((s) => s.recaptchaSiteKey === recaptchaSiteKey)?.recaptchaSecretKey;
+    if (!secretKey) {
+      sendOutcome(res, badRequest('Invalid recaptchaSecretKey'));
+      return;
+    }
+  }
+
+  if (secretKey) {
     if (!req.body.recaptchaToken) {
       sendOutcome(res, badRequest('Recaptcha token is required'));
       return;
     }
 
-    if (!(await verifyRecaptcha(recaptchaSecretKey, req.body.recaptchaToken))) {
+    if (!(await verifyRecaptcha(secretKey, req.body.recaptchaToken))) {
       sendOutcome(res, badRequest('Recaptcha failed'));
       return;
     }

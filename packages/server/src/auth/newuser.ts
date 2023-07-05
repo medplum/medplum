@@ -1,4 +1,4 @@
-import { badRequest, NewUserRequest, normalizeOperationOutcome, Operator } from '@medplum/core';
+import { badRequest, NewUserRequest, normalizeOperationOutcome } from '@medplum/core';
 import { Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
@@ -9,7 +9,7 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
-import { bcryptHashPassword, verifyRecaptcha } from './utils';
+import { bcryptHashPassword, getProjectByRecaptchaSiteKey, verifyRecaptcha } from './utils';
 
 export const newUserValidators = [
   body('firstName').notEmpty().withMessage('First name is required'),
@@ -129,32 +129,4 @@ export async function createUser(request: NewUserRequest): Promise<User> {
   });
   logger.info('Created: ' + result.id);
   return result;
-}
-
-async function getProjectByRecaptchaSiteKey(
-  recaptchaSiteKey: string,
-  projectId: string | undefined
-): Promise<Project | undefined> {
-  const filters = [
-    {
-      code: 'recaptcha-site-key',
-      operator: Operator.EQUALS,
-      value: recaptchaSiteKey,
-    },
-  ];
-
-  if (projectId) {
-    filters.push({
-      code: '_id',
-      operator: Operator.EQUALS,
-      value: projectId,
-    });
-  }
-
-  const bundle = await systemRepo.search<Project>({
-    resourceType: 'Project',
-    count: 1,
-    filters,
-  });
-  return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }
