@@ -453,8 +453,7 @@ export function formatSearchQuery(definition: SearchRequest): string {
   if (params.length === 0) {
     return '';
   }
-
-  params.sort();
+params.sort((a, b) => a.localeCompare(b));
   return '?' + params.join('&');
 }
 
@@ -467,3 +466,4 @@ function formatFilter(filter: Filter): string {
 function formatSortRules(sortRules: SortRule[]): string {
   return '_sort=' + sortRules.map((sr) => (sr.descending ? '-' + sr.code : sr.code)).join(',');
 }
+
