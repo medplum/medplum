@@ -33,7 +33,7 @@ export function useResource<T extends Resource>(
   useEffect(() => {
     let subscribed = true;
 
-    if (isReference<T>(value)) {
+    if (isReference(value)) {
       medplum
         .readReference(value as Reference<T>)
         .then((r) => {
@@ -71,12 +71,12 @@ function getInitialResource<T extends Resource>(
   value: Reference<T> | T | undefined
 ): T | undefined {
   if (value) {
-    if (isResource<T>(value)) {
+    if (isResource(value)) {
       return value;
     }
 
-    if (isReference<T>(value)) {
-      return medplum.getCachedReference(value);
+    if (isReference(value)) {
+      return medplum.getCachedReference(value as Reference<T>);
     }
   }
 
