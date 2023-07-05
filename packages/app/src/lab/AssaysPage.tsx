@@ -109,4 +109,3 @@ function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {
 function getUnique(arr: (string | undefined)[]): string[] {
   return [...new Set<string>(arr.filter((e) => !!e) as string[])];
 }
-

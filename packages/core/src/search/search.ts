@@ -1,6 +1,6 @@
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { badRequest, OperationOutcomeError } from '../outcomes';
 import { globalSchema } from '../types';
-import { OperationOutcomeError, badRequest } from '../outcomes';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 
@@ -453,7 +453,8 @@ export function formatSearchQuery(definition: SearchRequest): string {
   if (params.length === 0) {
     return '';
   }
-params.sort((a, b) => a.localeCompare(b));
+
+  params.sort((a, b) => a.localeCompare(b));
   return '?' + params.join('&');
 }
 
@@ -466,4 +467,3 @@ function formatFilter(filter: Filter): string {
 function formatSortRules(sortRules: SortRule[]): string {
   return '_sort=' + sortRules.map((sr) => (sr.descending ? '-' + sr.code : sr.code)).join(',');
 }
-

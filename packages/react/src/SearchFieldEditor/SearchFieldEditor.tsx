@@ -278,4 +278,3 @@ function getFieldsList(typeSchema: TypeSchema): string[] {
 
   return result;
 }
-
