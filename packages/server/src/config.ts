@@ -90,6 +90,9 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
     case 'aws':
       cachedConfig = await loadAwsConfig(configPath);
       break;
+    case 'env':
+      cachedConfig = loadEnvConfig();
+      break;
     default:
       throw new Error('Unrecognized config type: ' + configType);
   }
@@ -123,6 +126,32 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
  */
 async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
   return JSON.parse(readFileSync(resolve(__dirname, '../', path), { encoding: 'utf8' }));
+}
+
+/**
+ * Loads configuration settings from environment variables.
+ * @returns The configuration.
+ */
+function loadEnvConfig(): MedplumServerConfig {
+  const config: any = {};
+  for (const key of Object.keys(process.env)) {
+    if (key.startsWith('MEDPLUM_')) {
+      const camelCaseKey = key
+        .substring(8)
+        .toLowerCase()
+        .replace(/_[a-z]/g, match => match[1].toUpperCase());
+      const parts = camelCaseKey.split('.');
+      if (parts.length === 1) {
+        config[parts[0]] = process.env[key];
+      } else if (parts.length === 2) {
+        if (!config[parts[0]]) {
+          config[parts[0]] = {};
+        }
+        config[parts[0]][parts[1]] = process.env[key];
+      }
+    }
+  }
+  return config as MedplumServerConfig;
 }
 
 /**
@@ -212,3 +241,4 @@ function splitOnce(value: string, delimiter: string): [string, string] {
   const index = value.indexOf(delimiter);
   return [value.substring(0, index), value.substring(index + 1)];
 }
+
