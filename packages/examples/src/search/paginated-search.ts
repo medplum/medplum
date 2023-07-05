@@ -44,7 +44,6 @@ const response: Bundle = {
   resourceType: 'Bundle',
   id: 'bundle-id',
   type: 'searchset',
-  // highlight-next-line
   total: 15,
   entry: [
     {

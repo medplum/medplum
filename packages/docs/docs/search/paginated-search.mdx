@@ -92,6 +92,7 @@ When you perform a paginated search, the response will be a `Bundle` resource co
 The `Bundle.link` field will include the following relations:
 
 - `self`: The URL of the current search results page.
+- `first`: The URL of the first page of search results.
 - `previous`: The URL of the previous page of search results (if applicable).
 - `next`: The URL of the next page of search results (if applicable).
 
@@ -102,6 +103,10 @@ Here's an example of how the Bundle.link field may look :
   {
     relation: 'self',
     url: 'https://example.com/Patient?_count=50&_offset=60',
+  },
+  {
+    relation: 'first',
+    url: 'https://example.com/Patient?_count=50&_offset=0',
   },
   {
     relation: 'previous',
