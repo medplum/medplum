@@ -119,6 +119,46 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
 }
 
 /**
+ * Loads configuration settings from environment variables.
+ * Environment variables names are prefixed with "MEDPLUM_".
+ * For example, "MEDPLUM_PORT" will set the "port" config setting.
+ * @returns The configuration.
+ */
+function loadEnvConfig(): MedplumServerConfig {
+  const config: Record<string, any> = {};
+  // Iterate over all environment variables
+  for (const [name, value] of Object.entries(process.env)) {
+    if (!name.startsWith('MEDPLUM_')) {
+      continue;
+    }
+
+    let key = name.substring('MEDPLUM_'.length);
+    let currConfig = config;
+
+    if (key.startsWith('DATABASE_')) {
+      key = key.substring('DATABASE_'.length);
+      currConfig = config.database = config.database ?? {};
+    } else if (key.startsWith('REDIS_')) {
+      key = key.substring('REDIS_'.length);
+      currConfig = config.redis = config.redis ?? {};
+    }
+
+    // Convert key from CAPITAL_CASE to camelCase
+    key = key.toLowerCase().replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+
+    if (key === 'port') {
+      currConfig.port = parseInt(value ?? '', 10);
+    } else if (key === 'botCustomFunctionsEnabled' || key === 'logAuditEvents' || key === 'registerEnabled') {
+      currConfig[key] = value === 'true';
+    } else {
+      currConfig[key] = value;
+    }
+  }
+
+  return config as MedplumServerConfig;
+}
+
+/**
  * Loads configuration settings from a JSON file.
  * Path relative to the current working directory at runtime.
  * @param path The config file path.
@@ -133,24 +173,6 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
  * @param path The AWS SSM Parameter Store path prefix.
  * @returns The loaded configuration.
  */
-function loadEnvConfig(): MedplumServerConfig {
-  const config: Partial<MedplumServerConfig> = {};
-  for (const key of Object.keys(config)) {
-    const envVarName = `MEDPLUM_${key.toUpperCase().replace(/([A-Z])/g, '_$1')}`;
-    const envVarValue = process.env[envVarName];
-    if (envVarValue !== undefined) {
-      if (key === 'port') {
-        config.port = parseInt(envVarValue, 10);
-      } else if (key === 'botCustomFunctionsEnabled' || key === 'logAuditEvents' || key === 'registerEnabled') {
-        config[key] = envVarValue === 'true';
-      } else {
-        config[key] = envVarValue;
-      }
-    }
-  }
-  return config as MedplumServerConfig;
-}
-
 async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
   let region = DEFAULT_AWS_REGION;
   if (path.includes(':')) {
@@ -189,7 +211,7 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
     nextToken = response.NextToken;
   } while (nextToken);
 
-  return config as unknown as MedplumServerConfig;
+  return config as MedplumServerConfig;
 }
 
 async function loadAwsSecrets(region: string, secretId: string): Promise<Record<string, any> | undefined> {
@@ -220,6 +242,8 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
 
 function splitOnce(value: string, delimiter: string): [string, string] {
   const index = value.indexOf(delimiter);
+  if (index === -1) {
+    return [value, ''];
+  }
   return [value.substring(0, index), value.substring(index + 1)];
 }
-
