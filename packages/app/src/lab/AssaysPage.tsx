@@ -56,7 +56,7 @@ function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {
 
   const genders = getUnique(ranges.map((r) => r.gender));
   if (genders.length > 1) {
-    genders.sort();
+    genders.sort((a, b) => a.localeCompare(b));
     return (
       <>
         {genders.map((gender) => (
@@ -73,7 +73,7 @@ function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {
 
   const ages = getUnique(ranges.map((r) => r.age && formatRange(r.age)));
   if (ages.length > 1) {
-    ages.sort();
+    ages.sort((a, b) => a.localeCompare(b));
     return (
       <>
         {ages.map((age) => (
@@ -109,3 +109,4 @@ function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {
 function getUnique(arr: (string | undefined)[]): string[] {
   return [...new Set<string>(arr.filter((e) => !!e) as string[])];
 }
+
