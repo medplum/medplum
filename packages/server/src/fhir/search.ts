@@ -127,42 +127,7 @@ async function getSearchEntries<T extends Resource>(
   );
 
   if (searchRequest.include || searchRequest.revInclude) {
-    let base = resources;
-    let iterateOnly = false;
-    const seen: Record<string, boolean> = {};
-    resources.forEach((r) => {
-      seen[`${r.resourceType}/${r.id}`] = true;
-    });
-    let depth = 0;
-    while (base.length > 0) {
-      // Circuit breaker / load limit
-      if (depth >= 5 || entries.length > 1000) {
-        throw new Error(
-          `Search with _(rev)include reached query scope limit: depth=${depth}, results=${entries.length}`
-        );
-      }
-
-      const includes =
-        searchRequest.include
-          ?.filter((param) => !iterateOnly || param.modifier === FhirOperator.ITERATE)
-          ?.map((param) => getSearchIncludeEntries(repo, param, base)) || [];
-      const revincludes =
-        searchRequest.revInclude
-          ?.filter((param) => !iterateOnly || param.modifier === FhirOperator.ITERATE)
-          ?.map((param) => getSearchRevIncludeEntries(repo, param, base)) || [];
-
-      const includedResources = (await Promise.all([...includes, ...revincludes])).flat();
-      includedResources.forEach((r) => {
-        const ref = `${r.resource?.resourceType}/${r.resource?.id}`;
-        if (!seen[ref]) {
-          entries.push(r);
-        }
-        seen[ref] = true;
-      });
-      base = includedResources.map((entry) => entry.resource) as T[];
-      iterateOnly = true; // Only consider :iterate params on iterations after the first
-      depth++;
-    }
+    await getExtraEntries(repo, searchRequest, resources, entries);
   }
 
   for (const entry of entries) {
@@ -173,6 +138,56 @@ async function getSearchEntries<T extends Resource>(
     entry: entries as BundleEntry<T>[],
     hasMore: rows.length > count,
   };
+}
+
+/**
+ * Gets the extra search entries for the _include and _revinclude parameters.
+ * @param repo The FHIR repository.
+ * @param searchRequest The original search request.
+ * @param resources The resources returned by the original search.
+ * @param entries The output bundle entries.
+ */
+async function getExtraEntries<T extends Resource>(
+  repo: Repository,
+  searchRequest: SearchRequest<T>,
+  resources: T[],
+  entries: BundleEntry[]
+): Promise<void> {
+  let base = resources;
+  let iterateOnly = false;
+  const seen: Record<string, boolean> = {};
+  resources.forEach((r) => {
+    seen[`${r.resourceType}/${r.id}`] = true;
+  });
+  let depth = 0;
+  while (base.length > 0) {
+    // Circuit breaker / load limit
+    if (depth >= 5 || entries.length > 1000) {
+      throw new Error(`Search with _(rev)include reached query scope limit: depth=${depth}, results=${entries.length}`);
+    }
+
+    const includes =
+      searchRequest.include
+        ?.filter((param) => !iterateOnly || param.modifier === FhirOperator.ITERATE)
+        ?.map((param) => getSearchIncludeEntries(repo, param, base)) || [];
+
+    const revincludes =
+      searchRequest.revInclude
+        ?.filter((param) => !iterateOnly || param.modifier === FhirOperator.ITERATE)
+        ?.map((param) => getSearchRevIncludeEntries(repo, param, base)) || [];
+
+    const includedResources = (await Promise.all([...includes, ...revincludes])).flat();
+    includedResources.forEach((r) => {
+      const ref = `${r.resource?.resourceType}/${r.resource?.id}`;
+      if (!seen[ref]) {
+        entries.push(r);
+      }
+      seen[ref] = true;
+    });
+    base = includedResources.map((entry) => entry.resource) as T[];
+    iterateOnly = true; // Only consider :iterate params on iterations after the first
+    depth++;
+  }
 }
 
 /**
@@ -202,14 +217,13 @@ async function getSearchIncludeEntries(
     .filter((typedValue) => (typedValue.type as PropertyType) === PropertyType.Reference)
     .map((typedValue) => typedValue.value as Reference);
   const readResult = await repo.readReferences(references);
-  const includedResources = readResult.filter((e) => isResource(e as Resource | undefined)) as Resource[];
+  const includedResources = readResult.filter(isResource);
 
   const canonicalReferences = fhirPathResult
     .filter((typedValue) => [PropertyType.canonical, PropertyType.uri].includes(typedValue.type as PropertyType))
     .map((typedValue) => typedValue.value as string);
   if (canonicalReferences.length > 0) {
     const canonicalSearches = (searchParam.target || []).map((resourceType) =>
-      // this.searchResources({
       getSearchEntries(repo, {
         resourceType: resourceType,
         filters: [
@@ -226,13 +240,10 @@ async function getSearchIncludeEntries(
     });
   }
 
-  return includedResources.map(
-    (resource: Resource) =>
-      ({
-        fullUrl: getFullUrl(resource.resourceType, resource.id as string),
-        resource,
-      } as BundleEntry)
-  ) as BundleEntry[];
+  return includedResources.map((resource) => ({
+    fullUrl: getFullUrl(resource.resourceType, resource.id as string),
+    resource,
+  }));
 }
 
 /**
