@@ -1,4 +1,5 @@
 import { MedplumClient } from '@medplum/core';
+import { Bundle } from '@medplum/fhirtypes';
 
 const medplum = new MedplumClient();
 
@@ -27,3 +28,42 @@ for await (const patientPage of medplum.searchResourcePages('Patient', { _count:
   }
 }
 // end-block paginatedSearch
+
+/*
+//start-block searchTotalCurl
+curl https://api.medplum.com/fhir/R4/Patient?name=smith&_total=accurate
+//end-block searchTotalCurl
+*/
+
+//start-block searchTotal
+await medplum.search('Patient', { name: 'Smith', _total: 'accurate' });
+//end-block searchTotal
+
+// start-block searchTotalResult
+const response: Bundle = {
+  resourceType: 'Bundle',
+  id: 'bundle-id',
+  type: 'searchset',
+  total: 15,
+  entry: [
+    {
+      fullUrl: 'http://example.com/base/Patient/1',
+      resource: {
+        resourceType: 'Patient',
+        // ...
+      },
+    },
+    {
+      fullUrl: 'http://example.com/base/Patient/2',
+      resource: {
+        resourceType: 'Patient',
+        // ...
+      },
+    },
+    // ...
+  ],
+  // ...
+};
+// end-block searchTotalResult
+
+console.log(response);
