@@ -7,18 +7,23 @@ import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
+import { Readable } from 'stream';
+import 'aws-sdk-client-mock-jest';
+
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
-jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
 jest.mock('node-fetch');
 
 const app = express();
 
 describe('Admin Invite', () => {
+  let mockSESv2Client: AwsClientStub<SESv2Client>;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -29,12 +34,17 @@ describe('Admin Invite', () => {
   });
 
   beforeEach(() => {
-    (SESv2Client as unknown as jest.Mock).mockClear();
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
+    mockSESv2Client = mockClient(SESv2Client);
+    mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
+
     (fetch as unknown as jest.Mock).mockClear();
     (pwnedPassword as unknown as jest.Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
     setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+  });
+
+  afterEach(() => {
+    mockSESv2Client.restore();
   });
 
   test('New user to project', async () => {
@@ -60,13 +70,15 @@ describe('Admin Invite', () => {
       });
 
     expect(res2.status).toBe(200);
-    expect(SESv2Client).toHaveBeenCalledTimes(1);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
 
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    expect(args.Destination.ToAddresses[0]).toBe(bobEmail);
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe(bobEmail);
+
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
+
     expect(parsed.subject).toBe('Welcome to Medplum');
   });
 
@@ -103,13 +115,14 @@ describe('Admin Invite', () => {
       });
 
     expect(res3.status).toBe(200);
-    expect(SESv2Client).toHaveBeenCalledTimes(1);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
 
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    expect(args.Destination.ToAddresses[0]).toBe(bobEmail);
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe(bobEmail);
+
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
     expect(parsed.subject).toBe('Medplum: Welcome to Alice Project');
   });
 
@@ -181,8 +194,8 @@ describe('Admin Invite', () => {
       });
 
     expect(res3.status).toBe(403);
-    expect(SESv2Client).not.toHaveBeenCalled();
-    expect(SendEmailCommand).not.toHaveBeenCalled();
+    expect(mockSESv2Client.send.callCount).toBe(0);
+    expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
   });
 
   test('Input validation', async () => {
@@ -210,8 +223,8 @@ describe('Admin Invite', () => {
 
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
-    expect(SESv2Client).not.toHaveBeenCalled();
-    expect(SendEmailCommand).not.toHaveBeenCalled();
+    expect(mockSESv2Client.send.callCount).toBe(0);
+    expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
   });
 
   test('Do not send email', async () => {
@@ -238,8 +251,8 @@ describe('Admin Invite', () => {
       });
 
     expect(res2.status).toBe(200);
-    expect(SESv2Client).toHaveBeenCalledTimes(0);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(0);
+    expect(mockSESv2Client.send.callCount).toBe(0);
+    expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
   });
 
   test('Invite by externalId', async () => {
@@ -267,8 +280,8 @@ describe('Admin Invite', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.profile.reference).toContain('Patient/');
     expect(res2.body.admin).toBe(undefined);
-    expect(SESv2Client).toHaveBeenCalledTimes(0);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(0);
+    expect(mockSESv2Client.send.callCount).toBe(0);
+    expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
   });
 
   test('Reuse deleted externalId', async () => {
@@ -397,8 +410,8 @@ describe('Admin Invite', () => {
       });
     expect(res2.status).toBe(200);
     expect(res2.body.admin).toBe(true);
-    expect(SESv2Client).toHaveBeenCalledTimes(1);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
   });
 
   test('Invite user with admin flag as false', async () => {
@@ -425,15 +438,12 @@ describe('Admin Invite', () => {
       });
     expect(res2.status).toBe(200);
     expect(res2.body.admin).toBe(false);
-    expect(SESv2Client).toHaveBeenCalledTimes(1);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
   });
 
   test('Email sending error due to SES not being set up', async () => {
-    // AWS is mocked to not be set up
-    (SESv2Client as unknown as jest.Mock).mockImplementationOnce(() => {
-      throw new Error('error');
-    });
+    mockSESv2Client.rejects('error');
 
     // First, Alice creates a project
     const aliceRegistration = await registerNew({
@@ -456,11 +466,10 @@ describe('Admin Invite', () => {
         email: bobEmail,
       });
     expect(res2.status).toBe(200);
-    expect(SESv2Client).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.send.callCount).toBe(1);
     expect(res2.body.error.outcome.issue?.[0].details.text).toBe(
       'Could not send email. Make sure you have AWS SES set up.'
     );
-    expect(SendEmailCommand).not.toHaveBeenCalled();
   });
 
   test('Super admin invite to different project', async () => {
@@ -517,13 +526,14 @@ describe('Admin Invite', () => {
       console.log(JSON.stringify(res2.body, null, 2));
     }
     expect(res2.body.user.display).toBe(lowerBobEmail);
-    expect(SESv2Client).toHaveBeenCalledTimes(1);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
 
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    expect(args.Destination.ToAddresses[0]).toBe(lowerBobEmail);
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe(lowerBobEmail);
+
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
     expect(parsed.subject).toBe('Welcome to Medplum');
   });
 });

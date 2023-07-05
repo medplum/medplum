@@ -13,6 +13,8 @@ import { systemRepo } from '../fhir/repo';
 import { createTestProject } from '../test.setup';
 import { revokeLogin } from './utils';
 
+jest.mock('@aws-sdk/client-sesv2');
+
 const app = express();
 const email = randomUUID() + '@example.com';
 const password = randomUUID();
