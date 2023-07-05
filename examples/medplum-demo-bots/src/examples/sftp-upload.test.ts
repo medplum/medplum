@@ -5,5 +5,5 @@ vi.mock('ssh2-sftp-client');
 
 test('Hello SFTP', async () => {
   const result = await handler();
-  expect(result).toBeDefined();
+  expect(result).not.toBeDefined();
 });

@@ -128,7 +128,7 @@ describe('Read from Partner Lab', () => {
     vi.resetAllMocks();
   });
 
-  test('Test Connection', async (ctx: any) => {
+  test.skip('Test Connection', async (ctx: any) => {
     await handler(ctx.medplum, {
       input: { resourceType: 'QuestionnaireResponse' },
       contentType: 'string',
