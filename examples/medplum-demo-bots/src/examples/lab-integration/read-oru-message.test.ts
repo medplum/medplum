@@ -220,6 +220,14 @@ describe('Read from Partner Lab', () => {
       status: 'final',
     });
 
+    // Make sure TSH is flagged as low
+    expect(checkObservations?.[5]?.interpretation?.[0]).toMatchObject({
+      text: 'Low',
+      coding: [
+        { display: 'Low', code: 'L', system: 'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation' },
+      ],
+    });
+
     /* Test Comparators */
     expect(checkObservations?.[5]?.valueQuantity).toMatchObject({
       value: 1,

@@ -415,6 +415,7 @@ function processObservation(
       observation.dataAbsentReason = { text: 'Result Blanked by Partner Lab' };
     } else if (observation.status !== 'cancelled') {
       quantity = { ...quantity, ...parseValueWithComparator(value) };
+      interpretation = INTERPRETATION_CODES[segment.get(8).get(0)];
     }
   }
 
