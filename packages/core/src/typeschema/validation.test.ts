@@ -26,6 +26,7 @@ import { OperationOutcomeError } from '../outcomes';
 
 describe('FHIR resource validation', () => {
   let observationProfile: StructureDefinition;
+  let patientProfile: StructureDefinition;
 
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -37,6 +38,7 @@ describe('FHIR resource validation', () => {
     observationProfile = JSON.parse(
       readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8')
     );
+    patientProfile = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-patient.json'), 'utf8'));
   });
 
   test('Invalid resource', () => {
@@ -377,6 +379,34 @@ describe('FHIR resource validation', () => {
     expect(() => {
       validateResource(structureDefinition);
     }).not.toThrow();
+  });
+
+  test('Profile with restriction on base type field', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      identifier: [
+        {
+          system: 'http://example.com',
+          value: 'foo',
+        },
+      ],
+      telecom: [
+        {
+          // Missing system property
+          value: '555-555-5555',
+        },
+      ],
+      gender: 'unknown',
+      name: [
+        {
+          given: ['Test'],
+          family: 'Patient',
+        },
+      ],
+    };
+    expect(() => {
+      validateResource(patient, patientProfile);
+    }).toThrow(new Error('Missing required property (Patient.telecom.system)'));
   });
 
   test('Valid resource with nulls in primitive extension', () => {
