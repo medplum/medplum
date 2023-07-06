@@ -790,16 +790,6 @@ describe('Legacy tests for parity checking', () => {
     }
   });
 
-  test('StructureDefinition', () => {
-    const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
-    try {
-      validate(structureDefinition);
-    } catch (err) {
-      const outcome = (err as OperationOutcomeError).outcome;
-      console.log(JSON.stringify(outcome, null, 2).substring(0, 1000));
-    }
-  });
-
   test('Choice of type', () => {
     // Observation.value[x]
     expect(() =>
