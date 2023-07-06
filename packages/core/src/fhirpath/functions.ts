@@ -1489,10 +1489,10 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#tracename-string-projection-expression-collection
    * @param context The evaluation context.
    * @param input The input collection.
-   * @param nameAtom The log name.
+   * @param _nameAtom The log name.
    * @returns The input collection.
    */
-  trace: (context: AtomContext, input: TypedValue[], nameAtom: Atom): TypedValue[] => {
+  trace: (context: AtomContext, input: TypedValue[], _nameAtom: Atom): TypedValue[] => {
     return input;
   },
 
