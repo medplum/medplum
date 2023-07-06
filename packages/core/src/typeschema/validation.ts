@@ -1,10 +1,10 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
-import { ElementValidator, getDataType, parseStructureDefinition, InternalTypeSchema } from './types';
-import { OperationOutcomeError, validationError } from '../outcomes';
-import { PropertyType, TypedValue } from '../types';
 import { getTypedPropertyValue } from '../fhirpath';
+import { OperationOutcomeError, validationError } from '../outcomes';
 import { createStructureIssue } from '../schema';
+import { PropertyType, TypedValue } from '../types';
 import { deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
+import { ElementValidator, getDataType, InternalTypeSchema, parseStructureDefinition } from './types';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -113,46 +113,44 @@ class ResourceValidator {
   }
 
   private checkProperty(parent: TypedValue, key: string, schema: InternalTypeSchema, path: string): void {
-    const propertyValues = getNestedProperty(parent, key);
+    const value = getTypedPropertyValue(parent, key);
     const element = schema.fields[key];
     if (!element) {
       throw new Error(`Missing element validation schema for ${key}`);
     }
-    for (const value of propertyValues) {
-      if (!this.checkPresence(value, element, path)) {
+    if (!this.checkPresence(value, element, path)) {
+      return;
+    }
+
+    // Check cardinality
+    let values: TypedValue[];
+    if (element.isArray) {
+      if (!Array.isArray(value)) {
+        this.issues.push(createStructureIssue(path, 'Expected array of values for property'));
         return;
       }
+      values = value;
+    } else {
+      if (Array.isArray(value)) {
+        this.issues.push(createStructureIssue(path, 'Expected single value for property'));
+        return;
+      }
+      values = [value];
+    }
+    if (values.length < element.min || values.length > element.max) {
+      this.issues.push(
+        createStructureIssue(
+          path,
+          `Invalid number of values: expected ${element.min}..${
+            Number.isFinite(element.max) ? element.max : '*'
+          }, but found ${values.length}`
+        )
+      );
+    }
 
-      // Check cardinality
-      let values: TypedValue[];
-      if (element.isArray) {
-        if (!Array.isArray(value)) {
-          this.issues.push(createStructureIssue(path, 'Expected array of values for property'));
-          return;
-        }
-        values = value;
-      } else {
-        if (Array.isArray(value)) {
-          this.issues.push(createStructureIssue(path, 'Expected single value for property'));
-          return;
-        }
-        values = [value];
-      }
-      if (values.length < element.min || values.length > element.max) {
-        this.issues.push(
-          createStructureIssue(
-            path,
-            `Invalid number of values: expected ${element.min}..${
-              Number.isFinite(element.max) ? element.max : '*'
-            }, but found ${values.length}`
-          )
-        );
-      }
-
-      this.checkSpecifiedValue(value, element, path);
-      for (const value of values) {
-        this.checkPropertyValue(value, path);
-      }
+    this.checkSpecifiedValue(value, element, path);
+    for (const value of values) {
+      this.checkPropertyValue(value, path);
     }
   }
 
@@ -314,27 +312,6 @@ function isChoiceOfType(
     return !!typedPropertyValue;
   }
   return false;
-}
-
-function getNestedProperty(value: TypedValue, key: string): (TypedValue | TypedValue[] | undefined)[] {
-  const [firstProp, ...nestedProps] = key.split('.');
-  let propertyValues = [getTypedPropertyValue(value, firstProp)];
-  for (const prop of nestedProps) {
-    const next = [];
-    for (const current of propertyValues) {
-      if (current === undefined) {
-        continue;
-      } else if (Array.isArray(current)) {
-        for (const element of current) {
-          next.push(getTypedPropertyValue(element, prop));
-        }
-      } else {
-        next.push(getTypedPropertyValue(current, prop));
-      }
-    }
-    propertyValues = next;
-  }
-  return propertyValues;
 }
 
 function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {

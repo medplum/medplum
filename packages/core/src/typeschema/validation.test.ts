@@ -1,3 +1,4 @@
+import { readJson } from '@medplum/definitions';
 import {
   Account,
   Appointment,
@@ -18,11 +19,10 @@ import {
 } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { validate } from './validation';
-import { indexStructureDefinitionBundle } from '../types';
-import { readJson } from '@medplum/definitions';
-import { loadDataTypes } from './types';
 import { OperationOutcomeError } from '../outcomes';
+import { indexStructureDefinitionBundle } from '../types';
+import { loadDataTypes } from './types';
+import { validate } from './validation';
 
 describe('FHIR resource validation', () => {
   let observationProfile: StructureDefinition;
