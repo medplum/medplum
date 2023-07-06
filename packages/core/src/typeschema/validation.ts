@@ -181,12 +181,12 @@ class ResourceValidator {
         }
         this.constraintsCheck(value, element, path);
         this.checkPropertyValue(value, path);
-        if (validResourceType) {
-          this.currentResource.pop();
-        }
         const sliceName = checkSliceElement(value, element.slicing);
         if (sliceName && sliceCounts) {
           sliceCounts[sliceName] += 1;
+        }
+        if (validResourceType) {
+          this.currentResource.pop();
         }
       }
       this.validateSlices(element.slicing?.slices, sliceCounts, path);
