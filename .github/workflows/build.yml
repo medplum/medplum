@@ -9,6 +9,8 @@ on:
     branches: [main]
   pull_request:
     types: [opened, synchronize, reopened]
+  merge_group:
+    types: [checks_requested]
 jobs:
   build:
     name: Build
