@@ -600,6 +600,9 @@ function buildFilterParameterComparison(
  * @returns The select query condition.
  */
 function buildStringSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
+  if (details.array) {
+    return new Condition(details.columnName, Operator.ARRAY_CONTAINS, filter.value, details.type + '[]');
+  }
   if (filter.operator === FhirOperator.EXACT) {
     return new Condition(details.columnName, Operator.EQUALS, filter.value);
   }

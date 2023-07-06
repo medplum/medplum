@@ -2663,4 +2663,22 @@ describe('FHIR Search', () => {
     expect(result.total).toBeDefined();
     expect(typeof result.total).toBe('number');
   });
+
+  test('Organization by name', async () => {
+    const org = await systemRepo.createResource<Organization>({
+      resourceType: 'Organization',
+      name: randomUUID(),
+    });
+    const result = await systemRepo.search({
+      resourceType: 'Organization',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: org.name as string,
+        },
+      ],
+    });
+    expect(result.entry?.length).toBe(1);
+  });
 });
