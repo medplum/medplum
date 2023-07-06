@@ -231,13 +231,13 @@ export function LandingPage(): JSX.Element {
               </Card>
               <Card>
                 <TestimonialHeader
-                  name="Michael Caves"
-                  title="Dir. of Product, Thirty Madison"
-                  imgSrc="/img/avatars/michael-caves.webp"
+                  name="Florencia Herra Vega"
+                  title="CEO at AlleyCorp Nord"
+                  imgSrc="/img/avatars/florencia.webp"
                 />
                 <p>
-                  Team and community expertise and an obviously robust product gave us the confidence to rely on Medplum
-                  for core functionality.
+                  We have been dreaming of a product that simplifies building custom EHRs and clinical tools for years.
+                  Medplum achieves this with an expert team, a fantastic developer experience, and standards compliance.
                 </p>
               </Card>
               <Card>
