@@ -941,7 +941,7 @@ describe('Legacy tests for parity checking', () => {
           { linkId: 'test', type: 'string', text: 'test', _text: { extension: [] } } as unknown as QuestionnaireItem,
         ],
       })
-    ).toThrow();
+    ).not.toThrow();
   });
 
   test('Array mismatch', () => {
