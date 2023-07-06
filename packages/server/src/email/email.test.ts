@@ -1,36 +1,47 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { simpleParser } from 'mailparser';
 import Mail from 'nodemailer/lib/mailer';
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
+import { Readable } from 'stream';
+import 'aws-sdk-client-mock-jest';
+
 import { loadTestConfig } from '../config';
 import { sendEmail } from './email';
 
-jest.mock('@aws-sdk/client-sesv2');
-
 describe('Email', () => {
+  let mockSESv2Client: AwsClientStub<SESv2Client>;
+
   beforeAll(async () => {
     await loadTestConfig();
   });
 
   beforeEach(() => {
-    (SESv2Client as unknown as jest.Mock).mockClear();
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
+    mockSESv2Client = mockClient(SESv2Client);
+    mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
+  });
+
+  afterEach(() => {
+    mockSESv2Client.restore();
   });
 
   test('Send text email', async () => {
+    const toAddresses = 'alice@example.com';
     await sendEmail({
-      to: 'alice@example.com',
+      to: toAddresses,
       cc: 'bob@example.com',
       subject: 'Hello',
       text: 'Hello Alice',
     });
-    expect(SESv2Client).toHaveBeenCalledTimes(1);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
 
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    expect(args.Destination.ToAddresses[0]).toBe('alice@example.com');
-    expect(args.Destination.CcAddresses[0]).toBe('bob@example.com');
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
 
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+
+    expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe('alice@example.com');
+    expect(inputArgs?.Destination?.CcAddresses?.[0] ?? '').toBe('bob@example.com');
+
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
     expect(parsed.subject).toBe('Hello');
     expect(parsed.text).toBe('Hello Alice\n');
   });
@@ -47,13 +58,14 @@ describe('Email', () => {
         },
       ],
     });
-    expect(SESv2Client).toHaveBeenCalledTimes(1);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
 
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    expect(args.Destination.ToAddresses[0]).toBe('alice@example.com');
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe('alice@example.com');
+
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
     expect(parsed.subject).toBe('Hello');
     expect(parsed.text).toBe('Hello Alice');
     expect(parsed.attachments).toHaveLength(1);
@@ -66,14 +78,16 @@ describe('Email', () => {
       subject: 'Hello',
       text: 'Hello Alice',
     });
-    expect(SESv2Client).toHaveBeenCalledTimes(1);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
 
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    expect(args.Destination.ToAddresses[0]).toBe('alice@example.com');
-    expect(args.Destination.ToAddresses[1]).toBe('bob@example.com');
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
 
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+
+    expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe('alice@example.com');
+    expect(inputArgs?.Destination?.ToAddresses?.[1] ?? '').toBe('bob@example.com');
+
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
     expect(parsed.subject).toBe('Hello');
     expect(parsed.text).toBe('Hello Alice\n');
   });
@@ -86,13 +100,15 @@ describe('Email', () => {
       subject: 'Hello',
       text: 'Hello Alice',
     });
-    expect(SESv2Client).toHaveBeenCalledTimes(1);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
 
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    expect(args.Destination.ToAddresses[0]).toBe('alice@example.com');
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe('alice@example.com');
+
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
+
     expect(parsed.subject).toBe('Hello');
     expect(parsed.text).toBe('Hello Alice\n');
   });
