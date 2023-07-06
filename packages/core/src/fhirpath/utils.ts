@@ -64,10 +64,7 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
 
   const elementDefinition = getElementDefinition(input.type, path);
   if (elementDefinition) {
-    const typedResult = getTypedPropertyValueWithSchema(input, path, elementDefinition);
-    if (typedResult) {
-      return typedResult;
-    }
+    return getTypedPropertyValueWithSchema(input, path, elementDefinition);
   }
 
   return getTypedPropertyValueWithoutSchema(input, path);
