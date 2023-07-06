@@ -318,3 +318,7 @@ All CDK operations support verbose logging by adding the `--verbose` flag. Verbo
 ```bash
 npx cdk synth --verbose -c config=medplum.demo.config.json
 ```
+
+## Related Resources
+
+- [Video Overview](https://youtu.be/rEMCeziEfdA) for the Medplum Team only
