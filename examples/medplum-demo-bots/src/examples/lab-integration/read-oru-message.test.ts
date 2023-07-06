@@ -261,7 +261,6 @@ describe('Read from Partner Lab', () => {
     const medplum = ctx.medplum as MedplumClient;
     const serviceRequest = ctx.order as ServiceRequest;
     const msg = Hl7Message.parse(CANCELLED_MESSAGE);
-
     await processOruMessage(medplum, msg, ctx.performer);
 
     const checkReports = await medplum.searchResources(
