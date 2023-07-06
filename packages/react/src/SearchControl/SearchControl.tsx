@@ -173,13 +173,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         search.resourceType as ResourceType,
         formatSearchQuery({ ...search, total: totalType, fields: undefined })
       )
-      .then((response: Bundle) => {
+      .then((response) => {
         setState({ ...stateRef.current, searchResponse: response });
         if (onLoad) {
           onLoad(new SearchLoadEvent(response));
         }
       })
-      .catch((reason: any) => {
+      .catch((reason) => {
         setState({ ...stateRef.current, searchResponse: undefined });
         setOutcome(reason);
       });
