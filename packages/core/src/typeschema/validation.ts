@@ -71,8 +71,13 @@ const validationRegexes: Record<string, RegExp> = {
   xhtml: /.*/,
 };
 
+/**
+ * List of constraint keys that aren't to be checked in an expression.
+ */
+const skippedConstraintKeys: Record<string, boolean> = { 'ele-1': true };
+
 export function validate(resource: Resource, profile?: StructureDefinition): void {
-  return new ResourceValidator(resource.resourceType, profile).validate(resource);
+  return new ResourceValidator(resource.resourceType, resource, profile).validate();
 }
 
 class ResourceValidator {
