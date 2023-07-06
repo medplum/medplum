@@ -405,7 +405,7 @@ describe('FHIR resource validation', () => {
       ],
     };
     expect(() => {
-      validateResource(patient, patientProfile);
+      validate(patient, patientProfile);
     }).toThrow(new Error('Missing required property (Patient.telecom.system)'));
   });
 
