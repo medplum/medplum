@@ -279,7 +279,7 @@ class ResourceValidator {
       } else {
         const expression = this.isExpressionTrue(constraint, value, path);
         if (!expression) {
-          this.issues.push(createStructureIssue(path, `Constraint ${constraint.key} failed`));
+          this.issues.push(createStructureIssue(path, `Constraint ${constraint.key} failed with expression: ${constraint.expression}`));
           return;
         }
       }
@@ -294,12 +294,10 @@ class ResourceValidator {
         rootResource: toTypedValue(this.rootResource),
         ucum: toTypedValue('http://unitsofmeasure.org'),
       });
-      if (constraint.key === 'opd-3' && evalValues[0].value === false) {
-        console.log(constraint.expression, value);
-      }
-      return evalValues.every((evalValue) => evalValue.value === true);
+
+      return (evalValues.length === 1 && evalValues[0].value === true);
     } catch (e: any) {
-      this.issues.push(createStructureIssue(path, `Constraint ${constraint.key} failed with error: ${e.message}`));
+      this.issues.push(createStructureIssue(path, `Constraint ${constraint.key} with expression: ${constraint.expression} failed with error: ${e.message}`));
       return false;
     }
   }
