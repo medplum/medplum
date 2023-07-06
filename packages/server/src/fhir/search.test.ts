@@ -2187,8 +2187,8 @@ describe('FHIR Search', () => {
       status: 'finished',
       class: { code: 'test' },
       period: {
-        start: '2020-02-01T13:30Z',
-        end: '2020-02-01T14:15Z',
+        start: '2020-02-01T13:30:00Z',
+        end: '2020-02-01T14:15:00Z',
       },
     });
 

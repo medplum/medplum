@@ -161,6 +161,7 @@ export function validateResourceType(resourceType: string): void {
  * await medplum.requestSchema('Patient');
  * ```
  * @param resource The candidate resource.
+ * @deprecated use validate() instead
  */
 export function validateResource<T extends Resource>(resource: T): void {
   new FhirSchemaValidator(resource).validate();
