@@ -368,7 +368,7 @@ describe('FHIR resource validation', () => {
     };
 
     expect(() => {
-      validateResource(observation, observationProfile);
+      validate(observation, observationProfile);
     }).toThrow(
       `Incorrect number of values provided for slice 'diastolic': expected 1..1, but found 0 (Observation.component)`
     );
