@@ -66,7 +66,7 @@ The sidebar also contains links to administrative pages, including:
 
 ## Quick Search Bar
 
-The Quick Search Bar can be used to navigate to specific instances of [ServiceRequest](/api/fhir/resources/servicerequest) or [Patient](/api/fhir/resources/patient) resources, which are two of the most common resource types. This search bar searches the following search parameters:
+The Quick Search Bar can be used to navigate to specific instances of [ServiceRequest](/docs/api/fhir/resources/servicerequest) or [Patient](/docs/api/fhir/resources/patient) resources, which are two of the most common resource types. This search bar searches the following search parameters:
 
 - `Patient.id`
 - `Patient.name`
