@@ -11,10 +11,7 @@ test.skip('Sync Tasks', async () => {
     status: 'open',
   };
   const contentType = 'application/json';
-  const result = await handler(medplum, {
-      input,
-      contentType,
-      secrets: {},
-    });
+
+  const result = await handler(medplum, { input, contentType, secrets: {} });
   expect(result).toBeDefined();
 });
