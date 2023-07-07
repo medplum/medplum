@@ -375,8 +375,13 @@ describe('FHIR resource validation', () => {
   });
 
   test('StructureDefinition', () => {
-    const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
     expect(() => {
+      const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
+      validate(structureDefinition);
+    }).not.toThrow();
+
+    expect(() => {
+      const structureDefinition = readJson('fhir/r4/profiles-medplum.json') as Bundle;
       validate(structureDefinition);
     }).not.toThrow();
   });
