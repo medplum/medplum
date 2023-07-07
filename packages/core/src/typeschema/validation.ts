@@ -295,7 +295,7 @@ class ResourceValidator {
         ucum: toTypedValue('http://unitsofmeasure.org'),
       });
 
-      return (evalValues.length === 1 && evalValues[0].value === true);
+      return evalValues.every((evalValue) => evalValue.value === true);
     } catch (e: any) {
       this.issues.push(createStructureIssue(path, `Constraint ${constraint.key} with expression: ${constraint.expression} failed with error: ${e.message}`));
       return false;
