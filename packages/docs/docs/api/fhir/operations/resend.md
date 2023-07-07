@@ -1,5 +1,7 @@
 ---
 sidebar_position: 7
+tags:
+  - subscription
 ---
 
 import Tabs from '@theme/Tabs';
