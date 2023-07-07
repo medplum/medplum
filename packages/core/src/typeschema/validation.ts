@@ -118,10 +118,13 @@ class ResourceValidator {
     const issues = this.issues;
     this.issues = []; // Reset issues to allow re-using the validator for other resources
     if (issues.length > 0) {
-      throw new OperationOutcomeError({
-        resourceType: 'OperationOutcome',
-        issue: issues,
-      });
+      const issueErrors = issues.every((issue) => issue.severity === 'error');
+      if (issueErrors) {
+        throw new OperationOutcomeError({
+          resourceType: 'OperationOutcome',
+          issue: issues,
+        });
+      }
     }
   }
 
@@ -280,7 +283,7 @@ class ResourceValidator {
         const expression = this.isExpressionTrue(constraint, value, path);
         if (!expression) {
           this.issues.push(
-            createStructureIssue(path, `Constraint ${constraint.key} failed with expression: ${constraint.expression}`)
+            createConstraintIssue(path, `Constraint ${constraint.key} failed with expression: ${constraint.expression}`)
           );
           return;
         }
@@ -300,7 +303,7 @@ class ResourceValidator {
       return evalValues.every((evalValue) => evalValue.value === true);
     } catch (e: any) {
       this.issues.push(
-        createStructureIssue(
+        createConstraintIssue(
           path,
           `Constraint ${constraint.key} with expression: ${constraint.expression} failed with error: ${e.message}`
         )
@@ -505,4 +508,15 @@ function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undef
     }
   }
   return undefined;
+}
+
+function createConstraintIssue(expression: string, message: string): OperationOutcomeIssue {
+  return {
+    severity: 'warning',
+    code: 'invalid',
+    details: {
+      text: message,
+    },
+    expression: [expression],
+  };
 }
