@@ -38,6 +38,7 @@ import {
   BundleEntry,
   Meta,
   OperationOutcome,
+  OperationOutcomeIssue,
   Reference,
   Resource,
   ResourceType,
@@ -526,7 +527,18 @@ export class Repository extends BaseRepository implements FhirRepository {
   private validate(resource: Resource): void {
     if (this.context.strictMode) {
       const start = process.hrtime.bigint();
-      validate(resource);
+      try {
+        validate(resource);
+      } catch (err: any) {
+        const invariantErrors = err.outcome.issue.filter((issue: OperationOutcomeIssue) => issue.code === 'invariant');
+        const structureErrors = err.outcome.issue.filter((issue: OperationOutcomeIssue) => issue.code !== 'invariant');
+        if (invariantErrors.length > 0) {
+          logger.error(`Validation errors: ${err.invariantErrors}`);
+        } else if (structureErrors.length > 0) {
+          throw new OperationOutcomeError({ resourceType: 'OperationOutcome', issue: structureErrors });
+        }
+      }
+
       const elapsedTime = Number(process.hrtime.bigint() - start);
 
       const MILLISECONDS = 1e6; // Conversion factor from ns to ms

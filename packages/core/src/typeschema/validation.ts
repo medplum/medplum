@@ -118,13 +118,12 @@ class ResourceValidator {
     const issues = this.issues;
     this.issues = []; // Reset issues to allow re-using the validator for other resources
     if (issues.length > 0) {
-      const issueErrors = issues.every((issue) => issue.severity === 'error');
-      if (issueErrors) {
-        throw new OperationOutcomeError({
-          resourceType: 'OperationOutcome',
-          issue: issues,
-        });
-      }
+      // if (issueErrors) {
+      throw new OperationOutcomeError({
+        resourceType: 'OperationOutcome',
+        issue: issues,
+      });
+      // }
     }
   }
 
@@ -300,7 +299,7 @@ class ResourceValidator {
         ucum: toTypedValue('http://unitsofmeasure.org'),
       });
 
-      return evalValues.every((evalValue) => evalValue.value === true);
+      return evalValues.length === 1 && evalValues[0].value === true;
     } catch (e: any) {
       this.issues.push(
         createConstraintIssue(
@@ -512,8 +511,8 @@ function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undef
 
 function createConstraintIssue(expression: string, message: string): OperationOutcomeIssue {
   return {
-    severity: 'warning',
-    code: 'invalid',
+    severity: 'error',
+    code: 'invariant',
     details: {
       text: message,
     },

@@ -23,6 +23,7 @@ import { indexStructureDefinitionBundle } from '../types';
 import { readJson } from '@medplum/definitions';
 import { loadDataTypes } from './types';
 import { OperationOutcomeError } from '../outcomes';
+import { createReference } from '../utils';
 
 describe('FHIR resource validation', () => {
   let observationProfile: StructureDefinition;
@@ -189,6 +190,14 @@ describe('FHIR resource validation', () => {
       effectiveDateTime: '2023-05-31T17:03:45-07:00',
       component: [
         {
+          dataAbsentReason: {
+            coding: [
+              {
+                code: '8480-6',
+                system: 'http://loinc.org',
+              },
+            ],
+          },
           code: {
             coding: [
               {
@@ -199,6 +208,14 @@ describe('FHIR resource validation', () => {
           },
         },
         {
+          dataAbsentReason: {
+            coding: [
+              {
+                code: '8480-6',
+                system: 'http://loinc.org',
+              },
+            ],
+          },
           code: {
             coding: [
               {
@@ -625,10 +642,12 @@ describe('Legacy tests for parity checking', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.length).toEqual(1);
+      expect(outcome.issue?.length).toEqual(2);
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid null value');
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Questionnaire.item[0].item[0].item[0].item[0].item');
+      expect(outcome.issue?.[1]?.severity).toEqual('error');
+      expect(outcome.issue?.[1]?.code).toEqual('invariant');
     }
   });
 
@@ -807,7 +826,13 @@ describe('Legacy tests for parity checking', () => {
   });
 
   test('positiveInt', () => {
-    const appt: Appointment = { resourceType: 'Appointment', status: 'booked', participant: [{ status: 'accepted' }] };
+    const patient: Patient = { resourceType: 'Patient' };
+    const patientReference = createReference(patient);
+    const appt: Appointment = {
+      resourceType: 'Appointment',
+      status: 'booked',
+      participant: [{ status: 'accepted', actor: patientReference }],
+    };
 
     appt.minutesDuration = 'x' as unknown as number;
     expect(() => validate(appt)).toThrowError(
@@ -834,7 +859,13 @@ describe('Legacy tests for parity checking', () => {
   });
 
   test('unsignedInt', () => {
-    const appt: Appointment = { resourceType: 'Appointment', status: 'booked', participant: [{ status: 'accepted' }] };
+    const patient: Patient = { resourceType: 'Patient' };
+    const patientReference = createReference(patient);
+    const appt: Appointment = {
+      resourceType: 'Appointment',
+      status: 'booked',
+      participant: [{ status: 'accepted', actor: patientReference }],
+    };
 
     appt.priority = 'x' as unknown as number;
     expect(() => validate(appt)).toThrowError(

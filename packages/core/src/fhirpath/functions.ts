@@ -515,8 +515,14 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns true if the input is a value HTML element.
    *
    * See: https://hl7.org/fhir/fhirpath.html#variables
+   * @param _context The evaluation context.
+   * @param _input The input collection.
+   * @param _other The atom representing the collection of elements to validate the html.
+   * @returns A collection of boolean values
    */
-  htmlChecks: stub,
+  htmlChecks: (_context: AtomContext, _input: TypedValue[], _other: Atom): TypedValue[] => {
+    return [toTypedValue(true)];
+  },
 
   /*
    * 5.5. Conversion

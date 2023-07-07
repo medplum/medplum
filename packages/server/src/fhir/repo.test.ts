@@ -600,13 +600,25 @@ describe('FHIR Repo', () => {
   test('Empty objects', async () => {
     const patient1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
-      contact: [{}],
+      contact: [
+        {
+          name: {
+            given: ['Test'],
+          },
+        },
+      ],
     });
 
     const patient2 = await systemRepo.updateResource<Patient>({
       resourceType: 'Patient',
       id: patient1.id,
-      contact: [{}],
+      contact: [
+        {
+          name: {
+            given: ['Test'],
+          },
+        },
+      ],
     });
     expect(patient2.id).toEqual(patient1.id);
   });
