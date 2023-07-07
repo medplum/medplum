@@ -7,6 +7,7 @@ import { sendEmail } from '../email/email';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
+import { isExternalAuth } from './method';
 import { verifyRecaptcha } from './utils';
 
 export const resetPasswordValidators = [body('email').isEmail().withMessage('Valid email address is required')];
@@ -15,6 +16,12 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     sendOutcome(res, invalidRequest(errors));
+    return;
+  }
+
+  const email = req.body.email.toLowerCase();
+  if (await isExternalAuth(email)) {
+    sendOutcome(res, badRequest('Cannot reset password for external auth. Contact your system administrator.'));
     return;
   }
 
@@ -38,7 +45,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
       {
         code: 'email',
         operator: Operator.EXACT,
-        value: req.body.email,
+        value: email,
       },
     ],
   });
