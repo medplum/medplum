@@ -243,9 +243,9 @@
               "code" : "string"
             }],
             "base" : {
-              "path" : "Project.secret",
+              "path" : "Project.secret.name",
               "min" : 1,
-              "max" : "*"
+              "max" : "1"
             }
           },
           {
