@@ -136,7 +136,7 @@ describe('Read from Partner Lab', () => {
     } as BotEvent<QuestionnaireResponse>);
   }, 10000);
 
-  test.skip('Parse Input', async (ctx: any) => {
+  test('Parse Input', async (ctx: any) => {
     const medplum = ctx.medplum as MedplumClient;
     const createBinarySpy = vi.spyOn(medplum, 'createBinary');
     const serviceRequest = ctx.order as ServiceRequest;
@@ -257,7 +257,7 @@ describe('Read from Partner Lab', () => {
     expect(createBinarySpy).toHaveBeenCalled();
   });
 
-  test.skip('Parse Input [Cancelled]', async (ctx: any) => {
+  test('Parse Input [Cancelled]', async (ctx: any) => {
     const medplum = ctx.medplum as MedplumClient;
     const serviceRequest = ctx.order as ServiceRequest;
     const msg = Hl7Message.parse(CANCELLED_MESSAGE);
@@ -327,7 +327,7 @@ describe('Read from Partner Lab', () => {
     ]);
   });
 
-  test.skip('Parse Input [Unable to Calculate]', async (ctx: any) => {
+  test('Parse Input [Unable to Calculate]', async (ctx: any) => {
     const medplum = ctx.medplum as MedplumClient;
     const serviceRequest = ctx.order as ServiceRequest;
     const msg = Hl7Message.parse(NOT_CALCULATED_MESSAGE);
@@ -361,7 +361,7 @@ describe('Read from Partner Lab', () => {
   });
 
   // Test that the bot gracefully handles errors when reading files from SFTP
-  test.skip('Handle file reading errors', async (ctx: any) => {
+  test('Handle file reading errors', async (ctx: any) => {
     const medplum: MedplumClient = ctx.medplum;
     vi.mocked(mockSftp)
       // The first time we read from the SFTP server, we'll return a valid message
