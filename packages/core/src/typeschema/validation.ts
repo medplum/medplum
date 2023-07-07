@@ -118,12 +118,10 @@ class ResourceValidator {
     const issues = this.issues;
     this.issues = []; // Reset issues to allow re-using the validator for other resources
     if (issues.length > 0) {
-      // if (issueErrors) {
       throw new OperationOutcomeError({
         resourceType: 'OperationOutcome',
         issue: issues,
       });
-      // }
     }
   }
 
@@ -184,7 +182,7 @@ class ResourceValidator {
         // take next resource, push that onto the stack.
         const validResourceType = isResource(value.value);
         if (validResourceType) {
-          this.currentResource.push(value.value as Resource);
+          this.currentResource.push(value.value);
         }
         this.constraintsCheck(value, element, path);
         this.checkPropertyValue(value, path);
