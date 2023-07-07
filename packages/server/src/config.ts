@@ -84,6 +84,9 @@ export function getConfig(): MedplumServerConfig {
 export async function loadConfig(configName: string): Promise<MedplumServerConfig> {
   const [configType, configPath] = splitOnce(configName, ':');
   switch (configType) {
+    case 'env':
+      cachedConfig = loadEnvConfig();
+      break;
     case 'file':
       cachedConfig = await loadFileConfig(configPath);
       break;
@@ -113,6 +116,46 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
       dbname: 'medplum_test',
     },
   };
+}
+
+/**
+ * Loads configuration settings from environment variables.
+ * Environment variables names are prefixed with "MEDPLUM_".
+ * For example, "MEDPLUM_PORT" will set the "port" config setting.
+ * @returns The configuration.
+ */
+function loadEnvConfig(): MedplumServerConfig {
+  const config: Record<string, any> = {};
+  // Iterate over all environment variables
+  for (const [name, value] of Object.entries(process.env)) {
+    if (!name.startsWith('MEDPLUM_')) {
+      continue;
+    }
+
+    let key = name.substring('MEDPLUM_'.length);
+    let currConfig = config;
+
+    if (key.startsWith('DATABASE_')) {
+      key = key.substring('DATABASE_'.length);
+      currConfig = config.database = config.database ?? {};
+    } else if (key.startsWith('REDIS_')) {
+      key = key.substring('REDIS_'.length);
+      currConfig = config.redis = config.redis ?? {};
+    }
+
+    // Convert key from CAPITAL_CASE to camelCase
+    key = key.toLowerCase().replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+
+    if (isIntegerConfig(key)) {
+      currConfig.port = parseInt(value ?? '', 10);
+    } else if (isBooleanConfig(key)) {
+      currConfig[key] = value === 'true';
+    } else {
+      currConfig[key] = value;
+    }
+  }
+
+  return config as MedplumServerConfig;
 }
 
 /**
@@ -156,9 +199,9 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
           config['database'] = await loadAwsSecrets(region, value);
         } else if (key === 'RedisSecrets') {
           config['redis'] = await loadAwsSecrets(region, value);
-        } else if (key === 'port') {
+        } else if (isIntegerConfig(key)) {
           config.port = parseInt(value, 10);
-        } else if (key === 'botCustomFunctionsEnabled' || key === 'logAuditEvents' || key === 'registerEnabled') {
+        } else if (isBooleanConfig(key)) {
           config[key] = value === 'true';
         } else {
           config[key] = value;
@@ -168,7 +211,7 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
     nextToken = response.NextToken;
   } while (nextToken);
 
-  return config as unknown as MedplumServerConfig;
+  return config as MedplumServerConfig;
 }
 
 /**
@@ -210,5 +253,16 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
 
 function splitOnce(value: string, delimiter: string): [string, string] {
   const index = value.indexOf(delimiter);
+  if (index === -1) {
+    return [value, ''];
+  }
   return [value.substring(0, index), value.substring(index + 1)];
+}
+
+function isIntegerConfig(key: string): boolean {
+  return key === 'port';
+}
+
+function isBooleanConfig(key: string): boolean {
+  return key === 'botCustomFunctionsEnabled' || key === 'logAuditEvents' || key === 'registerEnabled';
 }
