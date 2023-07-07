@@ -118,7 +118,7 @@ describe('Send to Partner Lab', () => {
     vi.clearAllMocks();
   });
 
-  test.skip('Test Connection', async (ctx: any) => {
+  test('Test Connection', async (ctx: any) => {
     try {
       await handler(ctx.medplum, { input: ctx.order, contentType: 'string', secrets: { ...CONNECTION_DETAILS } });
     } catch {
@@ -126,7 +126,7 @@ describe('Send to Partner Lab', () => {
     }
   });
 
-  test.skip(`ORM Message Format`, async (ctx: any) => {
+  test(`ORM Message Format`, async (ctx: any) => {
     const serviceRequest: ServiceRequest = ctx.order;
     vi.setSystemTime(new Date('2023-02-10T09:25:00Z'));
 
