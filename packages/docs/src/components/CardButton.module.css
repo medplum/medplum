@@ -1,0 +1,31 @@
+.cardButton {
+  height: 2.5rem;
+  margin-top: auto;
+  padding-right: 0.75rem;
+  padding-left: 1rem;
+  grid-column-gap: 0.5rem;
+  background-color: #f4f0fe;
+  transition: all 200ms ease;
+  color: #946af9;
+  font-size: 1rem;
+  line-height: 2rem;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  border-style: none;
+  border-width: 1px;
+  border-color: #000;
+  border-radius: 2.5rem;
+  text-align: center;
+}
+
+.cardButton:hover {
+  background-color: #ebe6fe;
+  color: #946af9;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+[data-theme='dark'] .cardButton {
+  background: #19122c;
+}

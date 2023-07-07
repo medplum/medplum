@@ -1,0 +1,37 @@
+.card {
+  display: flex;
+  flex: 1;
+  padding: 2rem;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1px solid #e6e6e6;
+  border-radius: 32px;
+  background-color: #fbfbfb;
+  transition: all 200ms ease;
+}
+
+[data-theme='dark'] .card {
+  border-color: #333333;
+  background: #000;
+}
+
+.card h2 {
+  font-size: 2.375rem;
+  line-height: 1.25;
+  font-weight: 400;
+}
+
+.card h3 {
+  font-size: 1.375rem;
+  line-height: 1.2;
+  font-weight: 400;
+}
+
+.card p {
+  font-size: 0.9375rem;
+}
+
+.card strong {
+  color: #946af9;
+  font-weight: 400;
+}

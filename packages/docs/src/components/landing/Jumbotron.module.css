@@ -1,0 +1,19 @@
+.jumbotron {
+  max-width: 72rem;
+  display: flex;
+  margin: 20px auto 60px auto;
+  padding: 20px;
+}
+
+@media screen and (max-width: 996px) {
+  .jumbotron {
+    flex-direction: column-reverse;
+    gap: 2rem;
+  }
+}
+
+.jumbotron h3 {
+  font-size: 2.375rem;
+  line-height: 1.25;
+  font-weight: 400;
+}
