@@ -1,4 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import { DomainConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -7,6 +8,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
+import { systemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { registerNew } from './register';
 
@@ -133,5 +135,35 @@ describe('Reset Password', () => {
 
     const parsed = await simpleParser(args.Content.Raw.Data);
     expect(parsed.subject).toBe('Medplum Password Reset');
+  });
+
+  test('External auth', async () => {
+    // Create a domain with external auth
+    const domain = randomUUID() + '.example.com';
+    await systemRepo.createResource<DomainConfiguration>({
+      resourceType: 'DomainConfiguration',
+      domain,
+      identityProvider: {
+        authorizeUrl: 'https://example.com/oauth2/authorize',
+        tokenUrl: 'https://example.com/oauth2/token',
+        userInfoUrl: 'https://example.com/oauth2/userinfo',
+        clientId: '123',
+        clientSecret: '456',
+      },
+    });
+
+    const res = await request(app)
+      .post('/auth/resetpassword')
+      .type('json')
+      .send({
+        email: `alice@${domain}`,
+        recaptchaToken: 'xyz',
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe(
+      'Cannot reset password for external auth. Contact your system administrator.'
+    );
+    expect(SESv2Client).not.toHaveBeenCalled();
+    expect(SendEmailCommand).not.toHaveBeenCalled();
   });
 });
