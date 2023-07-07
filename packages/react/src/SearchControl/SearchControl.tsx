@@ -163,12 +163,15 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const stateRef = useRef<SearchControlState>(state);
   stateRef.current = state;
 
+  const totalType = search.total ?? 'estimate';
+
   useEffect(() => {
     setOutcome(undefined);
+
     medplum
       .search(
         search.resourceType as ResourceType,
-        formatSearchQuery({ ...search, total: search.total ?? 'estimate', fields: undefined })
+        formatSearchQuery({ ...search, total: totalType, fields: undefined })
       )
       .then((response) => {
         setState({ ...stateRef.current, searchResponse: response });
@@ -180,7 +183,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         setState({ ...stateRef.current, searchResponse: undefined });
         setOutcome(reason);
       });
-  }, [medplum, search, onLoad]);
+  }, [medplum, search, totalType, onLoad]);
 
   function handleSingleCheckboxClick(e: React.ChangeEvent, id: string): void {
     e.stopPropagation();
@@ -369,7 +372,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           {lastResult && (
             <Text size="xs" color="dimmed">
               {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
-              {lastResult.total?.toLocaleString()}
+              {`${totalType === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
             </Text>
           )}
         </Group>
