@@ -321,4 +321,4 @@ npx cdk synth --verbose -c config=medplum.demo.config.json
 
 ## Related Resources
 
-- [Video Overview](https://youtu.be/rEMCeziEfdA) for the Medplum Team only
+- [Video Overview](https://youtu.be/rEMCeziEfdA)

@@ -59,7 +59,7 @@ Some system generated resources can accumulate and lead to degraded performance.
 
 User accounts are global, and can be members of multiple projects. Therefore, normal project administrators do not have access to "Set Password" functionality. Use the "Force Set Password" button to forcefully override a user's password.
 
-[Video Tutorial](https://youtu.be/jw1NZbk5WmA) for the Medplum team only.
+[Video Tutorial](https://youtu.be/jw1NZbk5WmA)
 
 ### Inviting Users to Projects
 
