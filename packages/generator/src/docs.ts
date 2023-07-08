@@ -29,6 +29,8 @@ for (const entry of readJson('fhir/r4/search-parameters-medplum.json').entry as 
 }
 
 let documentedTypes: Record<string, DocumentationLocation>;
+// a map from lowercase resource names (e.g. appointmentresponse) to camelcase names (e.g. AppointmentResponse)
+let lowerCaseResourceNames: Record<string, string>;
 
 export async function main(): Promise<void> {
   const outputFolder = path.resolve(__dirname, '..', 'output');
@@ -53,11 +55,14 @@ export async function main(): Promise<void> {
       medplumResourceDefinitions.map((def): [string, DocumentationLocation] => [def.name || '', 'medplum'])
     ),
   };
+
+  lowerCaseResourceNames = Object.fromEntries(Object.keys(documentedTypes).map((e) => [e.toLowerCase(), e]));
+
   const fhirResourceDocs = buildDocsDefinitions(fhirCoreDefinitions, 'resource', indexedSearchParams);
   const medplumResourceDocs = buildDocsDefinitions(medplumResourceDefinitions, 'medplum', indexedSearchParams);
   const fhirDatatypeDocs = buildDocsDefinitions(fhirDatatypes, 'datatype');
 
-  const resourceIntroductions = await fetchFhirIntroductions(fhirCoreDefinitions);
+  const resourceIntroductions = await fetchHtmlSpecContent(fhirCoreDefinitions);
 
   writeDocs(fhirResourceDocs, 'resource', resourceIntroductions);
   writeDocs(fhirDatatypeDocs, 'datatype');
@@ -210,15 +215,16 @@ function writeDocs(
 ): void {
   console.info('Writing JS and Markdown files...');
   definitions.forEach((definition, i) => {
-    const resourceType = definition.name.toLowerCase();
+    const resourceType = definition.name;
     printProgress(Math.round((i / definitions.length) * 100));
     writeFileSync(
-      resolve(__dirname, `../../docs/static/data/${location}Definitions/${resourceType}.json`),
+      resolve(__dirname, `../../docs/static/data/${location}Definitions/${resourceType.toLowerCase()}.json`),
       JSON.stringify(definition, null, 2),
       'utf8'
     );
+
     writeFileSync(
-      resolve(__dirname, `../../docs/docs/api/fhir/${pluralize(location)}/${resourceType}.mdx`),
+      resolve(__dirname, `../../docs${getMedplumDocsPath(resourceType)}.mdx`),
       buildDocsMarkdown(i, definition, resourceIntroductions?.[resourceType]),
       'utf8'
     );
@@ -306,7 +312,7 @@ function rewriteLinks(text: string | undefined): string {
   }
 
   text = text
-    .replace('(operations.html)', '(/api/fhir/operations)')
+    .replace('(operations.html)', '(/docs/api/fhir/operations)')
     .replace('(terminologies.html)', '(https://www.hl7.org/fhir/terminologies.html)');
 
   // Replace datatype internal links
@@ -332,8 +338,7 @@ function rewriteLinks(text: string | undefined): string {
   const resourceTypeExp = new RegExp(`\\s((${documentedTypeNames.join('|')})[s]?)\\b`, 'g');
   text = text.replace(
     resourceTypeExp,
-    (_, resourceText, resourceName) =>
-      ` <a href="../${pluralize(documentedTypes[resourceName])}/${resourceName.toLowerCase()}">${resourceText}</a>`
+    (_, resourceText, resourceName) => ` <a href="${getMedplumDocsPath(resourceName)}">${resourceText}</a>`
   );
 
   return text;
@@ -390,14 +395,13 @@ function extractResourceDescriptions(
   definitions: StructureDefinition[]
 ): Record<string, Record<string, string | string[] | undefined>> {
   const results: Record<string, Record<string, string | string[] | undefined>> = {};
-  const lowerCaseResourceNames = Object.fromEntries(Object.keys(documentedTypes).map((k) => [k.toLowerCase(), k]));
 
   console.info('Extracting HTML descriptions...');
   for (let i = 0; i < definitions.length; i++) {
     printProgress(Math.round((i / definitions.length) * 100));
     const definition = definitions[i];
-    const resourceType = definition.name?.toLowerCase();
-    const fileName = path.resolve(htmlDirectory, `${resourceType}.html`);
+    const resourceType = definition.name;
+    const fileName = path.resolve(htmlDirectory, `${resourceType?.toLowerCase()}.html`);
     if (resourceType && fs.existsSync(fileName)) {
       const fileContent = fs.readFileSync(fileName, 'utf-8');
       const dom = new JSDOM(fileContent);
@@ -412,7 +416,7 @@ function extractResourceDescriptions(
         if (h2) {
           const h2Text = h2.textContent?.toLowerCase().replace(/\s/g, '') || '';
 
-          const paragraphHTML = sanitizeIntroDivContent(div, dom.window);
+          const paragraphHTML = sanitizeNodeContent(div, dom.window);
 
           if (h2Text.includes('scopeandusage')) {
             resourceContents.scopeAndUsage = paragraphHTML;
@@ -429,8 +433,10 @@ function extractResourceDescriptions(
       for (const p of pElements) {
         if (p.textContent?.trim().startsWith('This resource is referenced by')) {
           const aElements = p.querySelectorAll('a');
-          aElements.forEach((element) => rewriteReferencedByHref(element, lowerCaseResourceNames));
-          resourceContents['referencedBy'] = Array.from(aElements).map((a) => a.outerHTML);
+          resourceContents['referencedBy'] = Array.from(aElements).map((a) => {
+            rewriteHtmlSpecHref(a);
+            return a.outerHTML;
+          });
         }
       }
       results[resourceType] = resourceContents;
@@ -445,51 +451,39 @@ function extractResourceDescriptions(
 /**
  * Converts local links to FHIR resources from the FHIR site to relative links in the medplum documentation site
  * @param anchorElement An Anchor tag, potentially referring to a resource page (e.g. "appointmentresponse.html")
- * @param lowerCaseResourceNames a map from lowercase resource names (e.g. appointmentresponse) to camelcase names (e.g. AppointmentResponse)
  */
-function rewriteReferencedByHref(
-  anchorElement: HTMLAnchorElement,
-  lowerCaseResourceNames: Record<string, string>
-): void {
+function rewriteHtmlSpecHref(anchorElement: HTMLAnchorElement): void {
   const href = anchorElement.getAttribute('href'); // Get the href attribute of the anchor tag
 
   // Try to match the href to the expected format
-  const match = href?.match(/(\w+)(\.html)?(#\w+)?/);
+  const match = href?.match(/^(http[s]?:\/\/)?(\S+?)(\.html)?(#\w+)?$/);
   if (match) {
-    const resourceType = match[1];
+    const http = match[1];
+    const resourceType = match[2];
+    // If the URL is absolute, don't do anything
+    if (http || match[0]?.startsWith('/')) {
+      return;
+    }
 
-    // Try to find a match in inverseDocumentedTypes
+    // If it is a relative URL, check if it is a link to a resource page.
+    // If yes, rewrite to medplum docs URL
+    // If no, convert to an absolute URL
+    let newHref = match[0];
     const resourceName = lowerCaseResourceNames[resourceType];
     if (resourceName) {
       // Update the href attribute of the anchor tag
-      anchorElement.setAttribute('href', `${pluralize(documentedTypes[resourceName])}/${resourceName}`);
+      newHref = getMedplumDocsPath(resourceName);
+    } else {
+      newHref = `https://www.hl7.org/fhir/${newHref}`;
     }
+    anchorElement.setAttribute('href', newHref);
   }
 }
 
-/**
- * For each <div> in the introduction section of a resource page, create a sanitized html string that plays nicely with
- * Docusaurus
- * @param div Div element that starts with an <h2>, representing an intro section
- * @param window JSDOM window object
- * @returns Sanitized HTML content
- */
-function sanitizeIntroDivContent(div: HTMLDivElement, window: DOMWindow): string {
-  let combinedHTML = '';
-
-  // Clone the div to keep original div intact.
-  const clonedDiv = div.cloneNode(true) as HTMLElement;
-
-  // Sanitize the cloned div.
-  const sanitized = sanitizeNodeContent(clonedDiv, window);
-
-  // Get the sanitized HTML of the cloned div.
-  combinedHTML = sanitized;
-
-  return combinedHTML;
-}
-
 function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
+  // Clone the div to keep original div intact.
+  const clonedDiv = node.cloneNode(true) as HTMLElement;
+
   // Recursive function to remove comment nodes and style attributes.
   function removeUnwantedNodes(node: Node): void {
     Array.from(node.childNodes).forEach((child: Node) => {
@@ -497,8 +491,14 @@ function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
         // Node.COMMENT_NODE
         node.removeChild(child);
       } else {
-        if (node instanceof window.Element && node.getAttribute('style')) {
-          node.removeAttribute('style');
+        if (node instanceof window.Element) {
+          if (node.getAttribute('style')) {
+            node.removeAttribute('style');
+          }
+
+          if (node.tagName.toLowerCase() === 'a') {
+            rewriteHtmlSpecHref(node as HTMLAnchorElement);
+          }
         }
         removeUnwantedNodes(child);
       }
@@ -506,39 +506,39 @@ function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
   }
 
   // Remove img tags.
-  const imgElements = node.getElementsByTagName('img');
+  const imgElements = clonedDiv.getElementsByTagName('img');
   for (const img of Array.from(imgElements)) {
     img.parentNode?.removeChild(img);
   }
 
   // Remove svg tags.
-  const svgElements = node.getElementsByTagName('svg');
+  const svgElements = clonedDiv.getElementsByTagName('svg');
   for (const svg of Array.from(svgElements)) {
     svg.parentNode?.removeChild(svg);
   }
 
   // Remove h2 tags.
-  const h2Elements = node.getElementsByTagName('h2');
+  const h2Elements = clonedDiv.getElementsByTagName('h2');
   for (const h2 of Array.from(h2Elements)) {
     h2.parentNode?.removeChild(h2);
   }
 
   // Remove span elements with class 'sectioncount'.
-  const spanElements = node.querySelectorAll('span.sectioncount');
+  const spanElements = clonedDiv.querySelectorAll('span.sectioncount');
   for (const span of Array.from(spanElements)) {
     span.parentNode?.removeChild(span);
   }
 
   // Remove p elements containing the text "Trial-Use Note".
-  if (node.nodeName.toLowerCase() === 'p' && node.textContent?.includes('Trial-Use Note')) {
-    node.parentNode?.removeChild(node);
+  if (clonedDiv.nodeName.toLowerCase() === 'p' && clonedDiv.textContent?.includes('Trial-Use Note')) {
+    clonedDiv.parentNode?.removeChild(node);
   }
 
   // Remove comment nodes and style attributes.
   removeUnwantedNodes(node);
 
   // Replace br tags with closed ones.
-  return node.outerHTML.replaceAll('<br>', '<br/>').replace(/[\n\t]/g, ' ');
+  return clonedDiv.outerHTML.replaceAll('<br>', '<br/>').replace(/[\n\t]/g, ' ');
 }
 
 /**
@@ -547,7 +547,7 @@ function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
  * @param definitions FHIR core profile definitions
  * @returns Map from resource name to extracted HTML data
  */
-async function fetchFhirIntroductions(
+async function fetchHtmlSpecContent(
   definitions: StructureDefinition[]
 ): Promise<Record<string, Record<string, string | string[] | undefined>>> {
   const downloadURL = 'http://hl7.org/fhir/R4/fhir-spec.zip';
@@ -559,16 +559,21 @@ async function fetchFhirIntroductions(
       return extractResourceDescriptions(siteDir, definitions);
     });
   } else {
-    const results = extractResourceDescriptions(siteDir, definitions);
+    const results = extractResourceDescriptions(
+      siteDir,
+      definitions
+      // .filter((e) => e.name === 'CoverageEligibilityRequest')
+    );
     return results;
   }
 }
 
-function pluralize(location: DocumentationLocation): string {
+function getMedplumDocsPath(typeName: string): string {
+  let location = documentedTypes[typeName] as string;
   if (location !== 'medplum' && location.endsWith('e')) {
-    return `${location}s`;
+    location = location + 's';
   }
-  return location;
+  return `/docs/api/fhir/${location}/${typeName.toLowerCase()}`;
 }
 
 function printProgress(progress: number): void {
