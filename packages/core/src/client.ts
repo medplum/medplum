@@ -35,7 +35,7 @@ import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
-import { parseJWTPayload } from './jwt';
+import { isMedplumAccessToken, parseJWTPayload } from './jwt';
 import {
   badRequest,
   isOk,
@@ -444,13 +444,15 @@ interface AutoBatchEntry<T = any> {
 
 /**
  * OAuth 2.0 Grant Type Identifiers
- * Standard identifiers defined here: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-07#name-grant-types
- * Token exchange extension defined here: https://datatracker.ietf.org/doc/html/rfc8693
+ * Standard identifiers: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-07#name-grant-types
+ * JWT bearer extension: https://datatracker.ietf.org/doc/html/rfc7523
+ * Token exchange extension: https://datatracker.ietf.org/doc/html/rfc8693
  */
 export enum OAuthGrantType {
   ClientCredentials = 'client_credentials',
   AuthorizationCode = 'authorization_code',
   RefreshToken = 'refresh_token',
+  JwtBearer = 'urn:ietf:params:oauth:grant-type:jwt-bearer',
   TokenExchange = 'urn:ietf:params:oauth:grant-type:token-exchange',
 }
 
@@ -544,6 +546,7 @@ export class MedplumClient extends EventTarget {
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
+  private medplumServer?: boolean;
   private clientId?: string;
   private clientSecret?: string;
   private autoBatchTimerId?: any;
@@ -582,7 +585,7 @@ export class MedplumClient extends EventTarget {
     }
 
     if (options?.autoBatchTime) {
-      this.autoBatchTime = options.autoBatchTime ?? 0;
+      this.autoBatchTime = options.autoBatchTime;
       this.autoBatchQueue = [];
     } else {
       this.autoBatchTime = 0;
@@ -591,9 +594,7 @@ export class MedplumClient extends EventTarget {
 
     const activeLogin = this.getActiveLogin();
     if (activeLogin) {
-      this.accessToken = activeLogin.accessToken;
-      this.refreshToken = activeLogin.refreshToken;
-      this.refreshProfile().catch(console.log);
+      this.setActiveLogin(activeLogin).catch(console.error);
     }
 
     this.setupStorageListener();
@@ -636,14 +637,12 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   clearActiveLogin(): void {
-    if (this.basicAuth) {
-      return;
-    }
     this.storage.setString('activeLogin', undefined);
     this.requestCache?.clear();
     this.accessToken = undefined;
     this.refreshToken = undefined;
     this.sessionDetails = undefined;
+    this.medplumServer = undefined;
     this.dispatchEvent({ type: 'change' });
   }
 
@@ -2073,11 +2072,7 @@ export class MedplumClient extends EventTarget {
    */
   async setActiveLogin(login: LoginState): Promise<void> {
     this.clearActiveLogin();
-    this.accessToken = login.accessToken;
-    if (this.basicAuth) {
-      return;
-    }
-    this.refreshToken = login.refreshToken;
+    this.setAccessToken(login.accessToken, login.refreshToken);
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
     this.refreshPromise = undefined;
@@ -2096,12 +2091,14 @@ export class MedplumClient extends EventTarget {
   /**
    * Sets the current access token.
    * @param accessToken The new access token.
+   * @param refreshToken Optional refresh token.
    * @category Authentication
    */
-  setAccessToken(accessToken: string): void {
+  setAccessToken(accessToken: string, refreshToken?: string): void {
     this.accessToken = accessToken;
-    this.refreshToken = undefined;
+    this.refreshToken = refreshToken;
     this.sessionDetails = undefined;
+    this.medplumServer = isMedplumAccessToken(accessToken);
   }
 
   /**
@@ -2120,10 +2117,10 @@ export class MedplumClient extends EventTarget {
   }
 
   private async refreshProfile(): Promise<ProfileResource | undefined> {
+    if (!this.medplumServer) {
+      return Promise.resolve(undefined);
+    }
     this.profilePromise = new Promise((resolve, reject) => {
-      if (this.basicAuth) {
-        return;
-      }
       this.get('auth/me')
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
@@ -2724,7 +2721,6 @@ export class MedplumClient extends EventTarget {
    * await medplum.searchResources('Patient')
    * ```
    *
-   *
    * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
    * @category Authentication
    * @param clientId The client ID.
@@ -2739,6 +2735,32 @@ export class MedplumClient extends EventTarget {
     formBody.set('grant_type', OAuthGrantType.ClientCredentials);
     formBody.set('client_id', clientId);
     formBody.set('client_secret', clientSecret);
+    return this.fetchTokens(formBody);
+  }
+
+  /**
+   * Starts a new OAuth2 JWT bearer flow.
+   *
+   * ```typescript
+   * await medplum.startJwtBearerLogin(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_JWT_BEARER_ASSERTION, 'openid profile');
+   * // Example Search
+   * await medplum.searchResources('Patient')
+   * ```
+   *
+   * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.1
+   * @param clientId The client ID.
+   * @param assertion The JWT assertion.
+   * @param scope The OAuth scope.
+   * @returns Promise that resolves to the client profile.
+   */
+  async startJwtBearerLogin(clientId: string, assertion: string, scope: string): Promise<ProfileResource> {
+    this.clientId = clientId;
+
+    const formBody = new URLSearchParams();
+    formBody.set('grant_type', OAuthGrantType.JwtBearer);
+    formBody.set('client_id', clientId);
+    formBody.set('assertion', assertion);
+    formBody.set('scope', scope);
     return this.fetchTokens(formBody);
   }
 

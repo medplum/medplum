@@ -26,3 +26,18 @@ export function parseJWTPayload(token: string): Record<string, number | string> 
   const [_header, payload, _signature] = token.split('.');
   return decodePayload(payload);
 }
+
+/**
+ * Returns true if the access token was issued by a Medplum server.
+ * @param accessToken An access token of unknown origin.
+ * @returns True if the access token was issued by a Medplum server.
+ */
+export function isMedplumAccessToken(accessToken: string): boolean {
+  try {
+    const payload = parseJWTPayload(accessToken);
+    const loginId = payload.login_id;
+    return typeof loginId === 'string';
+  } catch (err) {
+    return false;
+  }
+}

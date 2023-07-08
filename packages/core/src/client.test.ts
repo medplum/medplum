@@ -14,7 +14,7 @@ import { TextEncoder } from 'util';
 import { encodeBase64 } from './base64';
 import { FetchLike, InviteBody, MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
 import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
-import { createReference, ProfileResource, stringify } from './utils';
+import { createReference, ProfileResource } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -140,7 +140,7 @@ describe('Client', () => {
     window.localStorage.setItem(
       'activeLogin',
       JSON.stringify({
-        accessToken: '123',
+        accessToken: createFakeJwt({ client_id: '123', login_id: '123' }),
         refreshToken: '456',
         project: {
           reference: 'Project/123',
@@ -154,8 +154,8 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('/oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
-          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          access_token: createFakeJwt({ client_id: '123', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: '123' }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -197,7 +197,7 @@ describe('Client', () => {
     window.localStorage.setItem(
       'activeLogin',
       JSON.stringify({
-        accessToken: '123',
+        accessToken: createFakeJwt({ client_id: '123', login_id: '123' }),
         refreshToken: '456',
         project: {
           reference: 'Project/123',
@@ -211,8 +211,8 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('/oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
-          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          access_token: createFakeJwt({ client_id: '123', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: '123' }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -278,8 +278,8 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('/oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
-          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          access_token: createFakeJwt({ client_id: '123', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: '123' }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -352,8 +352,8 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('/oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(stringify({ client_id: clientId })) + '.signature',
-          refresh_token: 'header.' + window.btoa(stringify({ client_id: clientId })) + '.signature',
+          access_token: createFakeJwt({ client_id: clientId, login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: clientId }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -378,8 +378,8 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('/oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(stringify({ client_id: clientId2 })) + '.signature',
-          refresh_token: 'header.' + window.btoa(stringify({ client_id: clientId2 })) + '.signature',
+          access_token: createFakeJwt({ client_id: clientId2, login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: clientId2 }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -434,8 +434,8 @@ describe('Client', () => {
       }
       if (url.includes('/oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
-          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          access_token: createFakeJwt({ client_id: '123', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: '123' }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -480,8 +480,8 @@ describe('Client', () => {
       }
       if (url.includes('/oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
-          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          access_token: createFakeJwt({ client_id: '123', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: '123' }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -530,8 +530,8 @@ describe('Client', () => {
       if (url.includes('oauth2/token')) {
         tokenExpired = false;
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'test-client-id' })) + '.signature',
-          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'test-client-id' })) + '.signature',
+          access_token: createFakeJwt({ client_id: 'test-client-id', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: 'test-client-id' }),
           profile: { reference: 'ClientApplication/123' },
         };
       }
@@ -612,7 +612,7 @@ describe('Client', () => {
     const patientId = randomUUID();
     const clientId = 'test-client-id';
     const clientSecret = 'test-client-secret';
-    const accessToken = 'header.' + Buffer.from(JSON.stringify({ cid: clientId })).toString('base64') + '.signature';
+    const accessToken = createFakeJwt({ cid: clientId });
     const fetch = mockFetch(200, (url) => {
       if (url.includes(`Patient/${patientId}`)) {
         return { resourceType: 'Patient', id: patientId };
@@ -660,7 +660,7 @@ describe('Client', () => {
     const patientId = randomUUID();
     const clientId = 'test-client-id';
     const clientSecret = 'test-client-secret';
-    const accessToken = 'header.' + Buffer.from(JSON.stringify({ cid: clientId })).toString('base64') + '.signature';
+    const accessToken = createFakeJwt({ cid: clientId });
     const fetch = mockFetch(200, (url) => {
       if (url.includes(`Patient/${patientId}`)) {
         return { resourceType: 'Patient', id: patientId };
@@ -735,8 +735,7 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('oauth2/token')) {
         return {
-          access_token:
-            'header.' + Buffer.from(JSON.stringify({ cid: 'different-client-id' })).toString('base64') + '.signature',
+          access_token: createFakeJwt({ cid: 'different-client-id' }),
         };
       }
       return {};
@@ -773,8 +772,7 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('oauth2/token')) {
         return {
-          access_token:
-            'header.' + Buffer.from(JSON.stringify({ exp: oneMinuteAgo })).toString('base64') + '.signature',
+          access_token: createFakeJwt({ exp: oneMinuteAgo }),
         };
       }
       return {};
@@ -829,8 +827,8 @@ describe('Client', () => {
       if (url.includes('oauth2/token')) {
         tokenExpired = false;
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
-          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          access_token: createFakeJwt({ client_id: '123', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: '123' }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -2277,6 +2275,10 @@ function createPdf(
     pdfDoc.on('error', reject);
     pdfDoc.end();
   });
+}
+
+function createFakeJwt(claims: Record<string, string | number>): string {
+  return 'header.' + window.btoa(JSON.stringify(claims)) + '.signature';
 }
 
 function fail(message: string): never {
