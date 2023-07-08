@@ -170,19 +170,35 @@ ${description}
 ${
   resourceIntroduction
     ? `
-  <Tabs>
-  <TabItem value="usage" label="Usage" default>
-    ${rewriteLinks(resourceIntroduction.scopeAndUsage) || ''}
-  </TabItem>
-  <TabItem value="relationships" label="Relationships">
-    ${rewriteLinks(resourceIntroduction.boundariesAndRelationships) || ''}
-  </TabItem>
-  <TabItem value="backgroundAndContext" label="Background and Context">
-  ${rewriteLinks(resourceIntroduction.backgroundAndContext) || ''}
-  </TabItem>
-  <TabItem value="referencedBy" label="Referenced By">
+  <Tabs queryString="intro-section">
+  ${
+    resourceIntroduction.scopeAndUsage
+      ? `<TabItem value="usage" label="Usage" default>
+    ${rewriteLinks(resourceIntroduction.scopeAndUsage)}
+    </TabItem>`
+      : ''
+  }
+  ${
+    resourceIntroduction.boundariesAndRelationships
+      ? `<TabItem value="relationships" label="Relationships">
+    ${rewriteLinks(resourceIntroduction.boundariesAndRelationships)}
+    </TabItem>`
+      : ''
+  }
+  ${
+    resourceIntroduction.backgroundAndContext
+      ? `<TabItem value="backgroundAndContext" label="Background and Context">
+    ${rewriteLinks(resourceIntroduction.backgroundAndContext)}
+    </TabItem>`
+      : ''
+  }
+  ${
+    resourceIntroduction.referencedBy?.length > 0
+      ? `<TabItem value="referencedBy" label="Referenced By">
     <ul>${resourceIntroduction.referencedBy.map((e: string) => `<li>${e}</li>`).join('\n')}</ul>
-  </TabItem>
+    </TabItem>`
+      : ''
+  }
 </Tabs>`
     : ''
 }
