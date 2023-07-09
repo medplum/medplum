@@ -185,7 +185,7 @@ export abstract class BaseRepository {
    */
   async searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T[]> {
     const bundle = await this.search(searchRequest);
-    return bundle.entry?.map((e) => e.resource as T) || [];
+    return bundle.entry?.map((e) => e.resource as T) ?? [];
   }
 }
 
@@ -295,7 +295,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     return {
       resourceType: 'Bundle',
       type: 'history',
-      entry: ((this.history.get(resourceType)?.get(id) || []) as T[])
+      entry: ((this.history.get(resourceType)?.get(id) ?? []) as T[])
         .reverse()
         .map((version) => ({ resource: deepClone(version) })),
     };
@@ -315,7 +315,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
     const { resourceType } = searchRequest;
-    const resources = this.resources.get(resourceType) || new Map();
+    const resources = this.resources.get(resourceType) ?? new Map();
     const result = [];
     for (const resource of resources.values()) {
       if (matchesSearchRequest(resource, searchRequest)) {

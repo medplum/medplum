@@ -606,11 +606,11 @@ function FilterDescription(props: FilterDescriptionProps): JSX.Element {
 }
 
 function getPage(search: SearchRequest): number {
-  return Math.floor((search.offset || 0) / (search.count || DEFAULT_SEARCH_COUNT)) + 1;
+  return Math.floor((search.offset ?? 0) / (search.count ?? DEFAULT_SEARCH_COUNT)) + 1;
 }
 
 function getTotalPages(search: SearchRequest, total: number): number {
-  const pageSize = search.count || DEFAULT_SEARCH_COUNT;
+  const pageSize = search.count ?? DEFAULT_SEARCH_COUNT;
   return Math.ceil(total / pageSize);
 }
 

@@ -78,7 +78,7 @@ export class MockClient extends MedplumClient {
     const client = new MockFetchClient(router, repo, clientOptions?.debug);
 
     super({
-      baseUrl: clientOptions?.baseUrl || 'https://example.com/',
+      baseUrl: clientOptions?.baseUrl ?? 'https://example.com/',
       clientId: clientOptions?.clientId,
       storage: clientOptions?.storage,
       createPdf: (
@@ -191,7 +191,7 @@ class MockFetchClient {
       this.initialized = true;
     }
 
-    const method = options.method || 'GET';
+    const method = options.method ?? 'GET';
     const path = url.replace('https://example.com/', '');
 
     if (this.debug) {
@@ -248,14 +248,14 @@ class MockFetchClient {
   }
 
   private async mockAdminHandler(_method: string, path: string): Promise<any> {
-    const projectMatch = path.match(/^admin\/projects\/([\w-]+)$/);
+    const projectMatch = /^admin\/projects\/([\w-]+)$/.exec(path);
     if (projectMatch) {
       return {
         project: await this.repo.readResource('Project', projectMatch[1]),
       };
     }
 
-    const membershipMatch = path.match(/^admin\/projects\/([\w-]+)\/members\/([\w-]+)$/);
+    const membershipMatch = /^admin\/projects\/([\w-]+)\/members\/([\w-]+)$/.exec(path);
     if (membershipMatch) {
       return this.repo.readResource('ProjectMembership', membershipMatch[2]);
     }
@@ -442,7 +442,7 @@ class MockFetchClient {
 
   private mockOAuthHandler(_method: string, path: string, options: any): any {
     if (path.startsWith('oauth2/token')) {
-      const clientId = (options.body as URLSearchParams).get('client_id') || 'my-client-id';
+      const clientId = (options.body as URLSearchParams).get('client_id') ?? 'my-client-id';
       return {
         access_token: 'header.' + base64Encode(JSON.stringify({ client_id: clientId })) + '.signature',
       };

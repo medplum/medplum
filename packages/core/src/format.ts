@@ -57,7 +57,7 @@ export function formatAddress(address: Address, options?: AddressFormatOptions):
     builder.push('[' + address.use + ']');
   }
 
-  return builder.join(options?.lineSeparator || ', ').trim();
+  return builder.join(options?.lineSeparator ?? ', ').trim();
 }
 
 /**
@@ -111,7 +111,7 @@ export function formatGivenName(name: HumanName): string {
  * @returns The formatted family name string.
  */
 export function formatFamilyName(name: HumanName): string {
-  return name.family || '';
+  return name.family ?? '';
 }
 
 /**
@@ -255,8 +255,8 @@ export function formatTiming(timing: Timing | undefined): string {
   const builder: string[] = [];
 
   if (timing.repeat?.periodUnit) {
-    const frequency = timing.repeat.frequency || 1;
-    const period = timing.repeat.period || 1;
+    const frequency = timing.repeat.frequency ?? 1;
+    const period = timing.repeat.period ?? 1;
     const periodUnit = timing.repeat.periodUnit;
 
     if (frequency === 1 && period === 1) {
@@ -377,7 +377,7 @@ export function formatMoney(money: Money | undefined): string {
 
   return money.value.toLocaleString(undefined, {
     style: 'currency',
-    currency: money.currency || 'USD',
+    currency: money.currency ?? 'USD',
     currencyDisplay: 'narrowSymbol',
   });
 }
@@ -406,7 +406,7 @@ export function formatCodeableConcept(codeableConcept: CodeableConcept | undefin
  * @returns The coding as a string.
  */
 export function formatCoding(coding: Coding | undefined): string {
-  return coding?.display || coding?.code || '';
+  return coding?.display ?? coding?.code ?? '';
 }
 
 /**

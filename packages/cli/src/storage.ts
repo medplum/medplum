@@ -22,7 +22,7 @@ export class FileSystemStorage extends ClientStorage {
   }
 
   setString(key: string, value: string | undefined): void {
-    const data = this.readFile() || {};
+    const data = this.readFile() ?? {};
     if (value) {
       data[key] = value;
     } else {

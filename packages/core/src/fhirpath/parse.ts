@@ -30,45 +30,43 @@ import { parseDateString } from './date';
 import { tokenize } from './tokenize';
 import { toTypedValue } from './utils';
 
-/* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 /**
  * Operator precedence
  * See: https://hl7.org/fhirpath/#operator-precedence
  */
-export const enum OperatorPrecedence {
-  FunctionCall = 0,
-  Dot = 1,
-  Indexer = 2,
-  UnaryAdd = 3,
-  UnarySubtract = 3,
-  Multiply = 4,
-  Divide = 4,
-  IntegerDivide = 4,
-  Modulo = 4,
-  Add = 5,
-  Subtract = 5,
-  Ampersand = 5,
-  Is = 6,
-  As = 6,
-  Union = 7,
-  GreaterThan = 8,
-  GreaterThanOrEquals = 8,
-  LessThan = 8,
-  LessThanOrEquals = 8,
-  Equals = 9,
-  Equivalent = 9,
-  NotEquals = 9,
-  NotEquivalent = 9,
-  In = 10,
-  Contains = 10,
-  And = 11,
-  Xor = 12,
-  Or = 12,
-  Implies = 13,
-  Arrow = 100,
-  Semicolon = 200,
-}
-/* eslint-enable @typescript-eslint/no-duplicate-enum-values */
+export const OperatorPrecedence = {
+  FunctionCall: 0,
+  Dot: 1,
+  Indexer: 2,
+  UnaryAdd: 3,
+  UnarySubtract: 3,
+  Multiply: 4,
+  Divide: 4,
+  IntegerDivide: 4,
+  Modulo: 4,
+  Add: 5,
+  Subtract: 5,
+  Ampersand: 5,
+  Is: 6,
+  As: 6,
+  Union: 7,
+  GreaterThan: 8,
+  GreaterThanOrEquals: 8,
+  LessThan: 8,
+  LessThanOrEquals: 8,
+  Equals: 9,
+  Equivalent: 9,
+  NotEquals: 9,
+  NotEquivalent: 9,
+  In: 10,
+  Contains: 10,
+  And: 11,
+  Xor: 12,
+  Or: 12,
+  Implies: 13,
+  Arrow: 100,
+  Semicolon: 200,
+};
 
 const PARENTHESES_PARSELET: PrefixParselet = {
   parse(parser: Parser) {

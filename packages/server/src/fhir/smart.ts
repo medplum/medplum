@@ -3,7 +3,7 @@
  * https://build.fhir.org/ig/HL7/smart-app-launch/scopes-and-launch-context.html
  */
 
-import { OAuthGrantType, deepClone } from '@medplum/core';
+import { deepClone, OAuthGrantType } from '@medplum/core';
 import { AccessPolicy, AccessPolicyResource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../config';
@@ -106,7 +106,7 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
 
   if (scope) {
     for (const scopeTerm of scope.split(' ')) {
-      const match = scopeTerm.match(/(patient|user|system)\/(\w+|\*)\.(\w+)/);
+      const match = /(patient|user|system)\/(\w+|\*)\.(\w+)/.exec(scopeTerm);
       if (match) {
         result.push({
           permissionType: match[1] as 'patient' | 'user' | 'system',
