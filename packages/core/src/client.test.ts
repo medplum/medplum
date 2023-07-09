@@ -554,6 +554,27 @@ describe('Client', () => {
     expect(fetch).toHaveBeenCalledTimes(4);
   });
 
+  test('JWT bearer token flow', async () => {
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token: createFakeJwt({ client_id: 'test-client-id', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: 'test-client-id' }),
+          profile: { reference: 'ClientApplication/123' },
+        };
+      }
+      if (url.includes('/auth/me')) {
+        return { profile: { resourceType: 'ClientApplication' } };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch });
+    const result1 = await client.startJwtBearerLogin('test-client-id', 'test-client-secret', 'openid profile');
+    expect(result1).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   test('Basic auth in browser', async () => {
     Object.defineProperty(globalThis, 'Buffer', { get: () => undefined });
     Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
