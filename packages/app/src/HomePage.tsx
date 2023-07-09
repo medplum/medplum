@@ -138,8 +138,8 @@ function addSearchValues(search: SearchRequest, config: UserConfiguration | unde
 
 function getDefaultResourceType(config: UserConfiguration | undefined): string {
   return (
-    localStorage.getItem('defaultResourceType') ||
-    config?.option?.find((o) => o.id === 'defaultResourceType')?.valueString ||
+    localStorage.getItem('defaultResourceType') ??
+    config?.option?.find((o) => o.id === 'defaultResourceType')?.valueString ??
     'Patient'
   );
 }
