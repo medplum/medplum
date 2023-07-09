@@ -134,7 +134,7 @@ function crawlSearchParameterDetails(
     details.array = true;
   }
 
-  if (index === atoms.length - 1) {
+  if (nextIndex >= atoms.length) {
     // This is the final atom in the expression
     // So we can collect the ElementDefinition and property types
     details.elementDefinitions.push(elementDefinition);
