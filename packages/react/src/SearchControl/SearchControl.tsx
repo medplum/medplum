@@ -267,7 +267,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   function isExportPassed(): boolean {
-    return !!(props.onExport || props.onExportCsv || props.onExportTransactionBundle);
+    return !!(props.onExport ?? props.onExportCsv ?? props.onExportTransactionBundle);
   }
 
   useEffect(() => {

@@ -97,7 +97,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         <QuestionnaireFormItemArray items={questionnaire.item} answers={answers} onChange={setItems} />
       )}
       <Group position="right" mt="xl">
-        <Button type="submit">{props.submitButtonText || 'OK'}</Button>
+        <Button type="submit">{props.submitButtonText ?? 'OK'}</Button>
       </Group>
     </Form>
   );
@@ -160,7 +160,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
           );
         }
         return (
-          <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text || ''}>
+          <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text ?? ''}>
             <QuestionnaireFormItem
               item={item}
               answers={props.answers}
@@ -499,7 +499,7 @@ export function isQuestionEnabled(
   if (!item.enableWhen) {
     return true;
   }
-  const enableBehavior = item.enableBehavior || 'any';
+  const enableBehavior = item.enableBehavior ?? 'any';
   for (const enableWhen of item.enableWhen) {
     const expectedAnswer = getTypedPropertyValue(
       {
