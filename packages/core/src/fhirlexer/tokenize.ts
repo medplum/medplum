@@ -105,15 +105,15 @@ export class Tokenizer {
       return this.consumeDateTime();
     }
 
-    if (c.match(/\d/)) {
+    if (/\d/.exec(c)) {
       return this.consumeNumber();
     }
 
-    if (c.match(/\w/)) {
+    if (/\w/.exec(c)) {
       return this.consumeSymbol();
     }
 
-    if ((c === '$' || c === '%') && next.match(/\w/)) {
+    if ((c === '$' || c === '%') && /\w/.exec(next)) {
       return this.consumeSymbol();
     }
 

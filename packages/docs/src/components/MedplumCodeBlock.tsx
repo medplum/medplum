@@ -70,7 +70,7 @@ function extractBlocks(codeLines: string[]): Record<string, [number, number]> {
     const line = codeLines[i];
 
     // If we are beginning a new block, save the starting line number
-    const startMatch = line.match(BLOCK_START_PATTERN);
+    const startMatch = BLOCK_START_PATTERN.exec(line);
     if (startMatch) {
       const blockName = startMatch[1];
       if (blockName in results) {
@@ -79,7 +79,7 @@ function extractBlocks(codeLines: string[]): Record<string, [number, number]> {
       results[blockName] = [i + 1, undefined];
     }
 
-    const endMatch = line.match(BLOCK_END_PATTERN);
+    const endMatch = BLOCK_END_PATTERN.exec(line);
     if (endMatch) {
       const blockName = endMatch[1];
       if (!(blockName in results)) {

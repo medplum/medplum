@@ -3,7 +3,7 @@ import { Upload } from '@aws-sdk/lib-storage';
 import { Binary } from '@medplum/fhirtypes';
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
-import { Readable, pipeline } from 'stream';
+import { pipeline, Readable } from 'stream';
 import { getConfig } from '../config';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
@@ -145,7 +145,7 @@ class S3Storage implements BinaryStorage {
         Bucket: this.bucket,
         Key: this.getKey(binary),
         CacheControl: 'max-age=3600, s-maxage=86400',
-        ContentType: contentType || 'application/octet-stream',
+        ContentType: contentType ?? 'application/octet-stream',
         Body: stream as Readable | ReadableStream,
       },
       client: this.client,

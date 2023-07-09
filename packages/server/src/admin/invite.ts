@@ -132,7 +132,7 @@ export async function inviteUser(
 async function createUser(request: InviteRequest): Promise<User> {
   const { firstName, lastName, externalId } = request;
   const email = request.email?.toLowerCase();
-  const password = request.password || generateSecret(16);
+  const password = request.password ?? generateSecret(16);
   logger.info('Create user ' + email);
   const passwordHash = await bcryptHashPassword(password);
 

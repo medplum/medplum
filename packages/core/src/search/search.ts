@@ -135,7 +135,7 @@ export function parseSearchRequest<T extends Resource = Resource>(
         queryArray.push([key, v]);
       }
     } else {
-      queryArray.push([key, value || '']);
+      queryArray.push([key, value ?? '']);
     }
   }
   return parseSearchImpl(resourceType, queryArray);
@@ -376,7 +376,7 @@ function parsePrefix(input: string): { operator: Operator; value: string } {
 }
 
 function parseModifier(modifier: string): Operator {
-  return MODIFIER_OPERATORS[modifier] || Operator.EQUALS;
+  return MODIFIER_OPERATORS[modifier] ?? Operator.EQUALS;
 }
 
 function parseIncludeTarget(input: string): IncludeTarget {

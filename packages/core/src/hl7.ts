@@ -91,12 +91,12 @@ export class Hl7Message {
   buildAck(): Hl7Message {
     const now = new Date();
     const msh = this.get('MSH');
-    const sendingApp = msh?.get(2)?.toString() || '';
-    const sendingFacility = msh?.get(3)?.toString() || '';
-    const receivingApp = msh?.get(4)?.toString() || '';
-    const receivingFacility = msh?.get(5)?.toString() || '';
-    const controlId = msh?.get(9)?.toString() || '';
-    const versionId = msh?.get(12)?.toString() || '2.5.1';
+    const sendingApp = msh?.get(2)?.toString() ?? '';
+    const sendingFacility = msh?.get(3)?.toString() ?? '';
+    const receivingApp = msh?.get(4)?.toString() ?? '';
+    const receivingFacility = msh?.get(5)?.toString() ?? '';
+    const controlId = msh?.get(9)?.toString() ?? '';
+    const versionId = msh?.get(12)?.toString() ?? '2.5.1';
 
     return new Hl7Message([
       new Hl7Segment(
@@ -228,10 +228,10 @@ export class Hl7Field {
    * @returns The string value of the specified component.
    */
   get(component: number, subcomponent?: number, repetition = 0): string {
-    let value = this.components[repetition][component] || '';
+    let value = this.components[repetition][component] ?? '';
 
     if (subcomponent !== undefined) {
-      value = value.split(this.context.subcomponentSeparator)[subcomponent] || '';
+      value = value.split(this.context.subcomponentSeparator)[subcomponent] ?? '';
     }
 
     return value;

@@ -449,7 +449,7 @@ export class BackEnd extends Construct {
     const ecrImageUriRegex = new RegExp(
       `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/(.*)[:@](.*)$`
     );
-    const nameTagMatches = imageName.match(ecrImageUriRegex);
+    const nameTagMatches = ecrImageUriRegex.exec(imageName);
     const serverImageName = nameTagMatches?.[1];
     const serverImageTag = nameTagMatches?.[2];
     if (serverImageName && serverImageTag) {

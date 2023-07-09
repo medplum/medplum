@@ -195,12 +195,12 @@ function indexType(structureDefinition: StructureDefinition, elementDefinition: 
     globalSchema.types[typeName] = typeSchema = {} as TypeSchema;
   }
 
-  typeSchema.parentType = typeSchema.parentType || buildTypeName(parts.slice(0, parts.length - 1));
-  typeSchema.display = typeSchema.display || typeName;
-  typeSchema.structureDefinition = typeSchema.structureDefinition || structureDefinition;
-  typeSchema.elementDefinition = typeSchema.elementDefinition || elementDefinition;
-  typeSchema.description = typeSchema.description || elementDefinition.definition;
-  typeSchema.properties = typeSchema.properties || {};
+  typeSchema.parentType = typeSchema.parentType ?? buildTypeName(parts.slice(0, parts.length - 1));
+  typeSchema.display = typeSchema.display ?? typeName;
+  typeSchema.structureDefinition = typeSchema.structureDefinition ?? structureDefinition;
+  typeSchema.elementDefinition = typeSchema.elementDefinition ?? elementDefinition;
+  typeSchema.description = typeSchema.description ?? elementDefinition.definition;
+  typeSchema.properties = typeSchema.properties ?? {};
 }
 
 /**

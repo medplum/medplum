@@ -207,7 +207,7 @@ export interface MedplumClientOptions {
    *   fonts?: TFontDictionary
    * ): Promise<Buffer> {
    *   return new Promise((resolve, reject) => {
-   *     const printer = new PdfPrinter(fonts || {});
+   *     const printer = new PdfPrinter(fonts ?? {});
    *     const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
    *     const chunks: Uint8Array[] = [];
    *     pdfDoc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
@@ -376,6 +376,11 @@ export interface MailAddress {
 }
 
 /**
+ * Email destination definition.
+ */
+export type MailDestination = string | MailAddress | string[] | MailAddress[];
+
+/**
  * Email attachment definition.
  * Compatible with nodemailer Mail.Options.
  */
@@ -400,11 +405,11 @@ export interface MailOptions {
   /** An e-mail address that will appear on the Sender: field */
   readonly sender?: string | MailAddress;
   /** Comma separated list or an array of recipients e-mail addresses that will appear on the To: field */
-  readonly to?: string | MailAddress | string[] | MailAddress[];
+  readonly to?: MailDestination;
   /** Comma separated list or an array of recipients e-mail addresses that will appear on the Cc: field */
-  readonly cc?: string | MailAddress | string[] | MailAddress[];
+  readonly cc?: MailDestination;
   /** Comma separated list or an array of recipients e-mail addresses that will appear on the Bcc: field */
-  readonly bcc?: string | MailAddress | string[] | MailAddress[];
+  readonly bcc?: MailDestination;
   /** An e-mail address that will appear on the Reply-To: field */
   readonly replyTo?: string | MailAddress;
   /** The subject of the e-mail */
@@ -559,14 +564,14 @@ export class MedplumClient extends EventTarget {
     }
 
     this.fetch = options?.fetch ?? getDefaultFetch();
-    this.storage = options?.storage || new ClientStorage();
+    this.storage = options?.storage ?? new ClientStorage();
     this.createPdfImpl = options?.createPdf;
-    this.baseUrl = ensureTrailingSlash(options?.baseUrl) || DEFAULT_BASE_URL;
-    this.fhirBaseUrl = this.baseUrl + (ensureTrailingSlash(options?.fhirUrlPath) || 'fhir/R4/');
-    this.clientId = options?.clientId || '';
-    this.authorizeUrl = options?.authorizeUrl || this.baseUrl + 'oauth2/authorize';
-    this.tokenUrl = options?.tokenUrl || this.baseUrl + 'oauth2/token';
-    this.logoutUrl = options?.logoutUrl || this.baseUrl + 'oauth2/logout';
+    this.baseUrl = ensureTrailingSlash(options?.baseUrl) ?? DEFAULT_BASE_URL;
+    this.fhirBaseUrl = this.baseUrl + (ensureTrailingSlash(options?.fhirUrlPath) ?? 'fhir/R4/');
+    this.clientId = options?.clientId ?? '';
+    this.authorizeUrl = options?.authorizeUrl ?? this.baseUrl + 'oauth2/authorize';
+    this.tokenUrl = options?.tokenUrl ?? this.baseUrl + 'oauth2/token';
+    this.logoutUrl = options?.logoutUrl ?? this.baseUrl + 'oauth2/logout';
     this.onUnauthenticated = options?.onUnauthenticated;
 
     this.cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
@@ -988,7 +993,7 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   async exchangeExternalAccessToken(token: string, clientId?: string): Promise<ProfileResource> {
-    clientId = clientId || this.clientId;
+    clientId = clientId ?? this.clientId;
     if (!clientId) {
       throw new Error('MedplumClient is missing clientId');
     }
@@ -2646,15 +2651,15 @@ export class MedplumClient extends EventTarget {
    * @see https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
   private async requestAuthorization(loginParams?: Partial<BaseLoginRequest>): Promise<void> {
-    const loginRequest = await this.ensureCodeChallenge(loginParams || {});
+    const loginRequest = await this.ensureCodeChallenge(loginParams ?? {});
     const url = new URL(this.authorizeUrl);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
-    url.searchParams.set('client_id', loginRequest.clientId || (this.clientId as string));
-    url.searchParams.set('redirect_uri', loginRequest.redirectUri || getWindowOrigin());
+    url.searchParams.set('client_id', loginRequest.clientId ?? (this.clientId as string));
+    url.searchParams.set('redirect_uri', loginRequest.redirectUri ?? getWindowOrigin());
     url.searchParams.set('code_challenge_method', loginRequest.codeChallengeMethod as string);
     url.searchParams.set('code_challenge', loginRequest.codeChallenge as string);
-    url.searchParams.set('scope', loginRequest.scope || 'openid profile');
+    url.searchParams.set('scope', loginRequest.scope ?? 'openid profile');
     window.location.assign(url.toString());
   }
 
@@ -2670,8 +2675,8 @@ export class MedplumClient extends EventTarget {
     const formBody = new URLSearchParams();
     formBody.set('grant_type', OAuthGrantType.AuthorizationCode);
     formBody.set('code', code);
-    formBody.set('client_id', loginParams?.clientId || (this.clientId as string));
-    formBody.set('redirect_uri', loginParams?.redirectUri || getWindowOrigin());
+    formBody.set('client_id', loginParams?.clientId ?? (this.clientId as string));
+    formBody.set('redirect_uri', loginParams?.redirectUri ?? getWindowOrigin());
 
     if (typeof sessionStorage !== 'undefined') {
       const codeVerifier = sessionStorage.getItem('codeVerifier');
