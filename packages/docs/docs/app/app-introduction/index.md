@@ -23,7 +23,7 @@ When you first log in to the Medplum App, you'll see the page shown above. This 
 
 ## Search Control
 
-The Search Control displays a paginated list of all the resources for the selected resource type. You can select individual resources for certain operations using the checkbox on the left hand, and you can select all resources on the current page by clicking on the checkbox in the table header.
+The [Search Control](https://storybook.medplum.com/?path=/story/medplum-searchcontrol--checkboxes) displays a paginated list of all the resources for the selected resource type. You can select individual resources for certain operations using the checkbox on the left hand, and you can select all resources on the current page by clicking on the checkbox in the table header.
 
 The toolbar at the top contains actions that you can use to customize this view.
 
