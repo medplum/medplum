@@ -17,7 +17,8 @@
   },
   "devDependencies": {
     "@medplum/definitions": "*",
-    "@medplum/fhirtypes": "*"
+    "@medplum/fhirtypes": "*",
+    "tinybench": "^2.5.0"
   },
   "peerDependencies": {
     "pdfmake": "^0.2.5"
