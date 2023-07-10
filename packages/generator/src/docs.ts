@@ -575,11 +575,7 @@ async function fetchHtmlSpecContent(
       return extractResourceDescriptions(siteDir, definitions);
     });
   } else {
-    const results = extractResourceDescriptions(
-      siteDir,
-      definitions
-      // .filter((e) => e.name === 'CoverageEligibilityRequest')
-    );
+    const results = extractResourceDescriptions(siteDir, definitions);
     return results;
   }
 }
