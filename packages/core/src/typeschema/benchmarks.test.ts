@@ -1,17 +1,14 @@
-import { Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
+import { AuditEvent, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { Bench } from 'tinybench';
 import { validate } from './validation';
 import { validateResource } from '../schema';
 import { readJson } from '@medplum/definitions';
-import { resolve } from 'path';
-import { readFileSync } from 'fs';
 import { indexStructureDefinitionBundle } from '../types';
 import { loadDataTypes } from './types';
 
 describe.skip('Validation benchmarks', () => {
-  let observationProfile: StructureDefinition;
-  let patientProfile: StructureDefinition;
   const resourcesData = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
+  let b: Bench;
 
   beforeAll(() => {
     const typesData = readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>;
@@ -22,11 +19,15 @@ describe.skip('Validation benchmarks', () => {
     loadDataTypes(typesData);
     loadDataTypes(resourcesData);
     loadDataTypes(medplumResourcesData);
+  });
 
-    observationProfile = JSON.parse(
-      readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8')
-    );
-    patientProfile = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-patient.json'), 'utf8'));
+  beforeEach(() => {
+    b = new Bench({
+      iterations: 100,
+    });
+    b.addEventListener('error', (err) => {
+      expect(err).toBeUndefined();
+    });
   });
 
   test('Patient resource validation', async () => {
@@ -181,39 +182,68 @@ describe.skip('Validation benchmarks', () => {
         reference: 'Organization/1',
       },
     } as unknown as Patient;
-    const b = new Bench({
-      iterations: 100,
-    });
-    b.addEventListener('error', (err) => {
-      expect(err).toBeUndefined();
-    });
-
     b.add('New validator', () => {
       validate(patient);
     }).add('Legacy validator', () => {
       validateResource(patient);
     });
-
     await b.run();
     printBenchmarkResults(b, 'Example Patient');
   });
 
   test('Large Bundle validation', async () => {
-    const b = new Bench({
-      iterations: 100,
-    });
-    b.addEventListener('error', (err) => {
-      expect(err).toBeUndefined();
-    });
-
     b.add('New validator', () => {
       validate(resourcesData);
     }).add('Legacy validator', () => {
       validateResource(resourcesData);
     });
-
     await b.run();
     printBenchmarkResults(b, 'Resource StructureDefinition Bundle');
+  });
+
+  test('AuditEvent validation', async () => {
+    const auditEvent: AuditEvent = {
+      resourceType: 'AuditEvent',
+      meta: {
+        project: '3b84b30b-0798-4f70-9139-5164d3da3071',
+        versionId: '530a0c3f-a2a6-4411-aa3c-f78f03ed1283',
+        lastUpdated: '2023-07-05T22:17:14.907Z',
+        author: { reference: 'system' },
+        compartment: [
+          { reference: 'Project/3b84b30b-0798-4f70-9139-5164d3da3071' },
+          { reference: 'Patient/2a38b3ad-7ceb-43ff-b240-c29ac9804671', display: 'Alice Smith' },
+        ],
+      },
+      period: { start: '2023-07-05T22:17:14.895Z', end: '2023-07-05T22:17:14.903Z' },
+      recorded: '2023-07-05T22:17:14.903Z',
+      type: { code: 'transmit' },
+      agent: [{ type: { text: 'Subscription' }, requestor: false }],
+      source: { observer: { reference: 'Subscription/72d0713a-408d-42a6-a04d-6771b87f0d24' } },
+      entity: [
+        {
+          what: { reference: 'Patient/2a38b3ad-7ceb-43ff-b240-c29ac9804671', display: 'Alice Smith' },
+          role: { code: '4', display: 'Domain' },
+        },
+        {
+          what: { reference: 'Subscription/72d0713a-408d-42a6-a04d-6771b87f0d24' },
+          role: { code: '9', display: 'Subscriber' },
+        },
+        {
+          what: { reference: 'Bot/d95a3153-e942-4fe9-92af-399c674372b6', display: 'Test Bot' },
+          role: { code: '9', display: 'Subscriber' },
+        },
+      ],
+      outcome: '0',
+      outcomeDesc: '2022-05-30T16:12:22.685Z\t146fcfcf-c32b-43f5-82a6-ee0f3132d873\tINFO test',
+      id: 'afb77bbf-60d1-4703-a038-75f969837a7d',
+    };
+    b.add('New validator', () => {
+      validate(auditEvent);
+    }).add('Legacy validator', () => {
+      validateResource(auditEvent);
+    });
+    await b.run();
+    printBenchmarkResults(b, 'AuditEvent');
   });
 });
 
