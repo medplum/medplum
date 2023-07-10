@@ -152,7 +152,7 @@ function buildDocsDefinition(
 
 function buildDocsMarkdown(position: number, definition: ResourceDocsProps, resourceIntroduction?: any): string {
   const resourceName = definition.name;
-  const description = rewriteLinks(definition.description);
+  const description = rewriteLinksText(definition.description);
 
   return `\
 ---
@@ -174,21 +174,21 @@ ${
   ${
     resourceIntroduction.scopeAndUsage
       ? `<TabItem value="usage" label="Usage" default>
-    ${rewriteLinks(resourceIntroduction.scopeAndUsage)}
+    ${rewriteLinksText(resourceIntroduction.scopeAndUsage)}
     </TabItem>`
       : ''
   }
   ${
     resourceIntroduction.boundariesAndRelationships
       ? `<TabItem value="relationships" label="Relationships">
-    ${rewriteLinks(resourceIntroduction.boundariesAndRelationships)}
+    ${rewriteLinksText(resourceIntroduction.boundariesAndRelationships)}
     </TabItem>`
       : ''
   }
   ${
     resourceIntroduction.backgroundAndContext
       ? `<TabItem value="backgroundAndContext" label="Background and Context">
-    ${rewriteLinks(resourceIntroduction.backgroundAndContext)}
+    ${rewriteLinksText(resourceIntroduction.backgroundAndContext)}
     </TabItem>`
       : ''
   }
@@ -322,11 +322,11 @@ function getInheritance(property: ElementDefinition): { inherited: boolean; base
  * @param text text which contains internal links
  * @returns returns text with internal links rewritten
  */
-function rewriteLinks(text: string | undefined): string {
+function rewriteLinksText(text: string | undefined): string {
   if (!text) {
     return '';
   }
-
+  // Replace relative links in StructureDefinition.description with absolute links
   text = text
     .replace('(operations.html)', '(/docs/api/fhir/operations)')
     .replace('(terminologies.html)', '(https://www.hl7.org/fhir/terminologies.html)');
@@ -360,6 +360,12 @@ function rewriteLinks(text: string | undefined): string {
   return text;
 }
 
+/**
+ * Download a Zip file from the given URL, and unzip to the given path
+ * @param downloadURL Source URL
+ * @param zipFilePath Destination path for *.zip
+ * @param outputFolder Destination path for extracted contents
+ */
 async function downloadAndUnzip(downloadURL: string, zipFilePath: string, outputFolder: string): Promise<void> {
   console.info('Downloading FHIR Spec...');
   return new Promise((resolve, reject) => {
