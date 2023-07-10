@@ -13,7 +13,7 @@ GraphQL mutations are operations that allow the client to create, update, or del
 
 Medplum implements the draft [FHIR GraphQL Mutation spec](https://hl7.org/fhir/R4/graphql.html#mutations). For the inputs, you would append the action (Create, Update, or Delete) to the resource type.
 
-Here are examples of mutations for the `Patient` resource:
+Here are examples of mutations for the `Patient` resource. You can test these mutations at [graphiql.medplum.com](https://graphiql.medplum.com/)
 
 ### Create Mutation
 
