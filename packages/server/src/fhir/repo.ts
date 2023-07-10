@@ -534,7 +534,8 @@ export class Repository extends BaseRepository implements FhirRepository {
         const structureErrors = err.outcome.issue.filter((issue: OperationOutcomeIssue) => issue.code !== 'invariant');
         if (invariantErrors.length > 0) {
           logger.error(`Validation errors: ${err.invariantErrors}`);
-        } else if (structureErrors.length > 0) {
+        }
+        if (structureErrors.length > 0) {
           throw new OperationOutcomeError({ resourceType: 'OperationOutcome', issue: structureErrors });
         }
       }
