@@ -9,11 +9,14 @@ import TabItem from '@theme/TabItem';
 
 # Mutations
 
-GraphQL mutations are operations that allow the client to create, update, or delete data on the server. Unlike queries, which are read-only operations and can be executed in parallel, mutations are write operations. 
+GraphQL mutations are operations that allow the client to create, update, or delete data on the server. Unlike queries, which are read-only operations and can be executed in parallel, mutations are write operations. For more information about GraphQL mutations, refer to the [GraphQL documentation](https://graphql.org/learn/queries/#mutations).
 
-For the inputs, you would append the action (Create, Update, or Delete) to the resource type. Here are examples of mutations for the `Patient` resource:
+Medplum implements the draft [FHIR GraphQL Mutation spec](https://hl7.org/fhir/R4/graphql.html#mutations). For the inputs, you would append the action (Create, Update, or Delete) to the resource type.
+
+Here are examples of mutations for the `Patient` resource:
 
 ### Create Mutation
+
 <Tabs groupId="language">
   <TabItem value="graphql" label="GraphQL">
     <MedplumCodeBlock language="graphql" selectBlocks="MutationCreatePatientGraphQL">
@@ -34,7 +37,30 @@ For the inputs, you would append the action (Create, Update, or Delete) to the r
   </MedplumCodeBlock>
 </details>
 
-### Put Mutation
+Just as with GraphQL queries, you can alias the newly created resource.
+
+<Tabs groupId="language">
+  <TabItem value="graphql" label="GraphQL">
+    <MedplumCodeBlock language="graphql" selectBlocks="MutationCreatePatientGraphQLAliased">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="graphql" selectBlocks="MutationCreatePatientAliased">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+<details>
+  <summary>Example Response</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="MutationCreateResponseAliased">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+### Update Mutation
+
 <Tabs groupId="language">
   <TabItem value="graphql" label="GraphQL">
     <MedplumCodeBlock language="graphql" selectBlocks="MutationPatientUpdateGraphQL">
@@ -56,6 +82,7 @@ For the inputs, you would append the action (Create, Update, or Delete) to the r
 </details>
 
 ### Delete Mutation
+
 <Tabs groupId="language">
   <TabItem value="graphql" label="GraphQL">
     <MedplumCodeBlock language="graphql" selectBlocks="MutationPatientDeleteGraphQL">
