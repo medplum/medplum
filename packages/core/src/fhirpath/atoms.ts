@@ -290,7 +290,7 @@ export class IsAtom extends BooleanInfixOperatorAtom {
  * false if either operand evaluates to false,
  * and the empty collection otherwise.
  */
-export class AndAtom extends InfixOperatorAtom {
+export class AndAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('and', left, right);
   }
@@ -308,7 +308,7 @@ export class AndAtom extends InfixOperatorAtom {
   }
 }
 
-export class OrAtom extends InfixOperatorAtom {
+export class OrAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('or', left, right);
   }
@@ -334,7 +334,7 @@ export class OrAtom extends InfixOperatorAtom {
  * false if either both operands evaluate to true or both operands evaluate to false,
  * and the empty collection otherwise.
  */
-export class XorAtom extends InfixOperatorAtom {
+export class XorAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('xor', left, right);
   }
@@ -363,7 +363,7 @@ export class XorAtom extends InfixOperatorAtom {
  * true left is false and right true, false or empty
  * true left is empty
  */
-export class ImpliesAtom extends InfixOperatorAtom {
+export class ImpliesAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('implies', left, right);
   }

@@ -7,10 +7,11 @@ import {
   SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
+  Constraint,
 } from './types';
 import { OperationOutcomeError, validationError } from '../outcomes';
-import { PropertyType, TypedValue } from '../types';
-import { getTypedPropertyValue } from '../fhirpath';
+import { PropertyType, TypedValue, isResource } from '../types';
+import { evalFhirPathTyped, getTypedPropertyValue, toTypedValue } from '../fhirpath';
 import { createStructureIssue } from '../schema';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 
@@ -70,16 +71,25 @@ const validationRegexes: Record<string, RegExp> = {
   xhtml: /.*/,
 };
 
+/**
+ * List of constraint keys that aren't to be checked in an expression.
+ */
+const skippedConstraintKeys: Record<string, boolean> = { 'ele-1': true };
+
 export function validate(resource: Resource, profile?: StructureDefinition): void {
-  return new ResourceValidator(resource.resourceType, profile).validate(resource);
+  return new ResourceValidator(resource.resourceType, resource, profile).validate();
 }
 
 class ResourceValidator {
   private issues: OperationOutcomeIssue[];
+  private rootResource: Resource;
+  private currentResource: Resource[];
   private readonly schema: InternalTypeSchema;
 
-  constructor(resourceType: string, profile?: StructureDefinition) {
+  constructor(resourceType: string, rootResource: Resource, profile?: StructureDefinition) {
     this.issues = [];
+    this.rootResource = rootResource;
+    this.currentResource = [rootResource];
     if (!profile) {
       this.schema = getDataType(resourceType);
     } else {
@@ -87,18 +97,19 @@ class ResourceValidator {
     }
   }
 
-  validate(resource: Resource): void {
-    if (!resource) {
-      throw new OperationOutcomeError(validationError('Resource is null'));
-    }
-    const resourceType = resource.resourceType;
+  validate(): void {
+    const resourceType = this.rootResource.resourceType;
     if (!resourceType) {
       throw new OperationOutcomeError(validationError('Missing resource type'));
     }
 
-    checkObjectForNull(resource as unknown as Record<string, unknown>, resource.resourceType, this.issues);
+    checkObjectForNull(this.rootResource as unknown as Record<string, unknown>, resourceType, this.issues);
 
-    this.validateObject({ type: resourceType, value: resource }, this.schema, resourceType);
+    this.validateObject(
+      { type: resourceType, value: this.currentResource[this.currentResource.length - 1] },
+      this.schema,
+      resourceType
+    );
 
     const issues = this.issues;
     this.issues = []; // Reset issues to allow re-using the validator for other resources
@@ -130,7 +141,6 @@ class ResourceValidator {
       if (!this.checkPresence(value, element, path)) {
         return;
       }
-
       // Check cardinality
       let values: TypedValue[];
       if (element.isArray) {
@@ -146,6 +156,7 @@ class ResourceValidator {
         }
         values = [value];
       }
+
       if (values.length < element.min || values.length > element.max) {
         this.issues.push(
           createStructureIssue(
@@ -164,10 +175,19 @@ class ResourceValidator {
         ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
         : undefined;
       for (const value of values) {
+        // take next resource, push that onto the stack.
+        const validResourceType = isResource(value.value);
+        if (validResourceType) {
+          this.currentResource.push(value.value);
+        }
+        this.constraintsCheck(value, element, path);
         this.checkPropertyValue(value, path);
         const sliceName = checkSliceElement(value, element.slicing);
         if (sliceName && sliceCounts) {
           sliceCounts[sliceName] += 1;
+        }
+        if (validResourceType) {
+          this.currentResource.pop();
         }
       }
       this.validateSlices(element.slicing?.slices, sliceCounts, path);
@@ -244,6 +264,44 @@ class ResourceValidator {
       ) {
         this.issues.push(createStructureIssue(`${path}.${key}`, `Invalid additional property "${key}"`));
       }
+    }
+  }
+
+  private constraintsCheck(value: TypedValue, element: ElementValidator, path: string): void {
+    const constraints = element.constraints;
+    for (const constraint of constraints) {
+      if (constraint.severity !== 'error' || constraint.key in skippedConstraintKeys) {
+        continue;
+      } else {
+        const expression = this.isExpressionTrue(constraint, value, path);
+        if (!expression) {
+          this.issues.push(
+            createConstraintIssue(path, `Constraint ${constraint.key} failed with expression: ${constraint.expression}`)
+          );
+          return;
+        }
+      }
+    }
+  }
+
+  private isExpressionTrue(constraint: Constraint, value: TypedValue, path: string): boolean {
+    try {
+      const evalValues = evalFhirPathTyped(constraint.expression, [value], {
+        context: value,
+        resource: toTypedValue(this.currentResource[this.currentResource.length - 1]),
+        rootResource: toTypedValue(this.rootResource),
+        ucum: toTypedValue('http://unitsofmeasure.org'),
+      });
+
+      return evalValues.length === 1 && evalValues[0].value === true;
+    } catch (e: any) {
+      this.issues.push(
+        createConstraintIssue(
+          path,
+          `Constraint ${constraint.key} with expression: ${constraint.expression} failed with error: ${e.message}`
+        )
+      );
+      return false;
     }
   }
 
@@ -443,4 +501,15 @@ function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undef
     }
   }
   return undefined;
+}
+
+function createConstraintIssue(expression: string, message: string): OperationOutcomeIssue {
+  return {
+    severity: 'error',
+    code: 'invariant',
+    details: {
+      text: message,
+    },
+    expression: [expression],
+  };
 }
