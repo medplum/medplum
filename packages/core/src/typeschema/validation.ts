@@ -103,11 +103,7 @@ class ResourceValidator {
       throw new OperationOutcomeError(validationError('Missing resource type'));
     }
 
-    checkObjectForNull(
-      this.rootResource as unknown as Record<string, unknown>,
-      this.rootResource.resourceType,
-      this.issues
-    );
+    checkObjectForNull(this.rootResource as unknown as Record<string, unknown>, resourceType, this.issues);
 
     this.validateObject(
       { type: resourceType, value: this.currentResource[this.currentResource.length - 1] },
