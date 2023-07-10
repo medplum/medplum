@@ -760,7 +760,7 @@
       "name": "location",
       "type": "reference",
       "description": "This location is listed in the participants of the appointment",
-      "expression": "Appointment.participant.actor"
+      "expression": "Appointment.participant.actor.where(resolve() is Location)"
     },
     {
       "name": "part-status",
@@ -772,13 +772,13 @@
       "name": "patient",
       "type": "reference",
       "description": "One of the individuals of the appointment is this patient",
-      "expression": "Appointment.participant.actor"
+      "expression": "Appointment.participant.actor.where(resolve() is Patient)"
     },
     {
       "name": "practitioner",
       "type": "reference",
       "description": "One of the individuals of the appointment is this practitioner",
-      "expression": "Appointment.participant.actor"
+      "expression": "Appointment.participant.actor.where(resolve() is Practitioner)"
     },
     {
       "name": "reason-code",

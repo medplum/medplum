@@ -806,7 +806,7 @@
       "name": "code",
       "type": "token",
       "description": " Code for what is being requested/ordered\r",
-      "expression": "DeviceRequest.code"
+      "expression": "DeviceRequest.code as CodeableConcept"
     },
     {
       "name": "identifier",
@@ -818,7 +818,7 @@
       "name": "patient",
       "type": "reference",
       "description": " Individual the service is ordered for\r",
-      "expression": "DeviceRequest.subject"
+      "expression": "DeviceRequest.subject.where(resolve() is Patient)"
     },
     {
       "name": "encounter",
@@ -842,13 +842,13 @@
       "name": "device",
       "type": "reference",
       "description": "Reference to resource that is being requested/ordered",
-      "expression": "DeviceRequest.code"
+      "expression": "DeviceRequest.code as Reference"
     },
     {
       "name": "event-date",
       "type": "date",
       "description": "When service should occur",
-      "expression": "DeviceRequest.occurrence"
+      "expression": "DeviceRequest.occurrence as dateTime | DeviceRequest.occurrence as Period"
     },
     {
       "name": "group-identifier",

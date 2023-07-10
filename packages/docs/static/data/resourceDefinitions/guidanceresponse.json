@@ -492,7 +492,7 @@
       "name": "patient",
       "type": "reference",
       "description": "The identity of a patient to search for guidance response results",
-      "expression": "GuidanceResponse.subject"
+      "expression": "GuidanceResponse.subject.where(resolve() is Patient)"
     },
     {
       "name": "request",

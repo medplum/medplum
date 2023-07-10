@@ -902,7 +902,7 @@
       "name": "code",
       "type": "token",
       "description": " Returns dispenses of this medicine code\r",
-      "expression": "MedicationDispense.medication"
+      "expression": "MedicationDispense.medication as CodeableConcept"
     },
     {
       "name": "identifier",
@@ -914,13 +914,13 @@
       "name": "patient",
       "type": "reference",
       "description": " The identity of a patient to list dispenses  for\r",
-      "expression": "MedicationDispense.subject"
+      "expression": "MedicationDispense.subject.where(resolve() is Patient)"
     },
     {
       "name": "medication",
       "type": "reference",
       "description": " Returns dispenses of this medicine resource\r",
-      "expression": "MedicationDispense.medication"
+      "expression": "MedicationDispense.medication as Reference"
     },
     {
       "name": "status",

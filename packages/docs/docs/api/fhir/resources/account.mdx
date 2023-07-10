@@ -2,13 +2,33 @@
 title: Account
 sidebar_position: 0
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/account.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
 # Account
 
 A financial tool for tracking value accrued for a particular purpose.  In the healthcare field, used to track charges for a patient, cost centers, etc.
+
+  <Tabs queryString="intro-section">
+  <TabItem value="usage" label="Usage" default>
+    <div> <a name="scope"></a>  <p> The <a href="/docs/api/fhir/resources/account">Account</a> resource acts as a central record against which charges, payments, and adjustments are applied.  It contains information about which parties are responsible for payment of the account. </p> <p> While the <a href="/docs/api/fhir/resources/account">Account</a> does conceptually have a balance, expressing that balance directly as a resource property is challenging due to the complexity of pricing contracts.  An operation to retrieve the current balance of an account is in consideration as future work. </p> </div>
+    </TabItem>
+  <TabItem value="relationships" label="Relationships">
+    <div>  <p> The <a href="/docs/api/fhir/resources/account">Account</a> itself does not include information about the charges, payments or adjustments, but rather those resources, such as <a href="/docs/api/fhir/resources/chargeitem">ChargeItem</a> point to the account to which they apply.  Payment and adjustment resources have not yet been developed. </p> </div>
+    </TabItem>
+  <TabItem value="backgroundAndContext" label="Background and Context">
+    <div>  <p> The <a href="/docs/api/fhir/resources/account">Account</a> resource can be considered a "bucket" to which <a href="/docs/api/fhir/resources/chargeitem">ChargeItem</a> resources are linked.  These charges are processed by a billing system, which determines the responsible parties for the balance of the account.  The billing system then submits claims or sends statements to the appropriate parties.  Once payment is received, an adjustment is applied to the <a href="/docs/api/fhir/resources/account">Account</a>.  The internal calculation of balances and allocation of responsibility is expected to be internal to the billing systems.  Only the inputs and outputs of the billing process is communicated in the relevant financial FHIR resources. </p> </div>
+    </TabItem>
+  <TabItem value="referencedBy" label="Referenced By">
+    <ul><li><a href="/docs/api/fhir/resources/chargeitem">ChargeItem</a></li>
+<li><a href="/docs/api/fhir/resources/encounter">Encounter</a></li>
+<li><a href="/docs/api/fhir/resources/episodeofcare">EpisodeOfCare</a></li>
+<li><a href="/docs/api/fhir/resources/invoice">Invoice</a></li></ul>
+    </TabItem>
+</Tabs>
+
 
 ## Properties
 

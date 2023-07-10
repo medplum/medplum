@@ -846,7 +846,7 @@
       "name": "patient",
       "type": "reference",
       "description": "Recipient(s) of goods and services",
-      "expression": "Invoice.subject"
+      "expression": "Invoice.subject.where(resolve() is Patient)"
     },
     {
       "name": "recipient",

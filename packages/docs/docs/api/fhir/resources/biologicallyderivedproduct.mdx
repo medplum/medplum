@@ -2,7 +2,8 @@
 title: BiologicallyDerivedProduct
 sidebar_position: 9
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/biologicallyderivedproduct.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
@@ -10,6 +11,18 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A material substance originating from a biological entity intended to be transplanted or infused
 into another (possibly the same) biological entity.
+
+  <Tabs queryString="intro-section">
+  <TabItem value="usage" label="Usage" default>
+    <div>   <a name="bnc"> </a>     <blockquote class="stu-note"><p><b>Trial-Use Note:</b> <a name="dstu"></a> <strong>Note that this content is preliminary has not undergone proper review by the appropriate Workgroups.</strong> </p></blockquote>     <p> A material substance originating from a biological entity intended to be transplanted or infused into another (possibly the same) biological entity. </p>   <p> Examples include: </p>   <ul>    <li>hematopoietic stem cells (bone marrow, peripheral blood, or cord blood extraction) </li>    <li>blood (whole, extracted cells, plasma, etc.) </li>    <li>organs </li>    <li>tissues (porcine valves, skin, bovine cardiac tissue, etc.) </li>    <li>manipulated cells (e.g. CAR T-cells)  </li>   </ul>   <p> The workflow using this resource (e.g., request, administration) should be discussed and implemented in a consistent way as other similar resources are handled (e.g., device, medication) </p>  </div>
+    </TabItem>
+  <TabItem value="relationships" label="Relationships">
+    <div>  <p> This resource relates to these other resource:</p>  <ul>  <li>ProcedureRequest (for collection)</li>  <li>Patient ("receiver" and "source")</li>  <li>Practitioner (who collected product)</li>  <li>Substance (product processing)</li>  <li>DiagnosticReport (containing HLA-typing)</li>  <li>BiologicallyDerivedProduct ("parent" product for multi-day collections)</li>  <li>Procedure (one for collection and one for transplantation, will need to add <a href="/docs/api/fhir/resources/biologicallyderivedproduct">BiologicallyDerivedProduct</a> to the "usedReference")</li> </ul> </div>
+    </TabItem>
+  
+  
+</Tabs>
+
 
 ## Properties
 

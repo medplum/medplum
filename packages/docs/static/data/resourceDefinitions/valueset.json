@@ -1444,13 +1444,13 @@
       "name": "context",
       "type": "token",
       "description": " A use context assigned to the value set\r",
-      "expression": "ValueSet.useContext.value"
+      "expression": "ValueSet.useContext.value as CodeableConcept"
     },
     {
       "name": "context-quantity",
       "type": "quantity",
       "description": " A quantity- or range-valued use context assigned to the value set\r",
-      "expression": "ValueSet.useContext.value"
+      "expression": "ValueSet.useContext.value as Quantity | ValueSet.useContext.value as Range"
     },
     {
       "name": "context-type",
@@ -1534,7 +1534,7 @@
       "name": "code",
       "type": "token",
       "description": "This special parameter searches for codes in the value set. See additional notes on the ValueSet resource",
-      "expression": "ValueSet.expansion.contains.code"
+      "expression": "ValueSet.expansion.contains.code | ValueSet.compose.include.concept.code"
     },
     {
       "name": "expansion",

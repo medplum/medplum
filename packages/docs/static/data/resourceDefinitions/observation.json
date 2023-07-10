@@ -1121,7 +1121,7 @@
       "name": "patient",
       "type": "reference",
       "description": " The subject that the observation is about (if patient)\r",
-      "expression": "Observation.subject"
+      "expression": "Observation.subject.where(resolve() is Patient)"
     },
     {
       "name": "encounter",
@@ -1145,25 +1145,25 @@
       "name": "combo-code",
       "type": "token",
       "description": "The code of the observation type or component type",
-      "expression": "Observation.code"
+      "expression": "Observation.code | Observation.component.code"
     },
     {
       "name": "combo-data-absent-reason",
       "type": "token",
       "description": "The reason why the expected value in the element Observation.value[x] or Observation.component.value[x] is missing.",
-      "expression": "Observation.dataAbsentReason"
+      "expression": "Observation.dataAbsentReason | Observation.component.dataAbsentReason"
     },
     {
       "name": "combo-value-concept",
       "type": "token",
       "description": "The value or component value of the observation, if the value is a CodeableConcept",
-      "expression": "Observation.value"
+      "expression": "Observation.value as CodeableConcept | Observation.component.value as CodeableConcept"
     },
     {
       "name": "combo-value-quantity",
       "type": "quantity",
       "description": "The value or component value of the observation, if the value is a Quantity, or a SampledData (just search on the bounds of the values in sampled data)",
-      "expression": "Observation.value"
+      "expression": "Observation.value as Quantity | Observation.value as SampledData | Observation.component.value as Quantity | Observation.component.value as SampledData"
     },
     {
       "name": "component-code",
@@ -1181,13 +1181,13 @@
       "name": "component-value-concept",
       "type": "token",
       "description": "The value of the component observation, if the value is a CodeableConcept",
-      "expression": "Observation.component.value"
+      "expression": "Observation.component.value as CodeableConcept"
     },
     {
       "name": "component-value-quantity",
       "type": "quantity",
       "description": "The value of the component observation, if the value is a Quantity, or a SampledData (just search on the bounds of the values in sampled data)",
-      "expression": "Observation.component.value"
+      "expression": "Observation.component.value as Quantity | Observation.component.value as SampledData"
     },
     {
       "name": "data-absent-reason",
@@ -1259,25 +1259,25 @@
       "name": "value-concept",
       "type": "token",
       "description": "The value of the observation, if the value is a CodeableConcept",
-      "expression": "Observation.value"
+      "expression": "Observation.value as CodeableConcept"
     },
     {
       "name": "value-date",
       "type": "date",
       "description": "The value of the observation, if the value is a date or period of time",
-      "expression": "Observation.value"
+      "expression": "Observation.value as dateTime | Observation.value as Period"
     },
     {
       "name": "value-quantity",
       "type": "quantity",
       "description": "The value of the observation, if the value is a Quantity, or a SampledData (just search on the bounds of the values in sampled data)",
-      "expression": "Observation.value"
+      "expression": "Observation.value as Quantity | Observation.value as SampledData"
     },
     {
       "name": "value-string",
       "type": "string",
       "description": "The value of the observation, if the value is a string, and also searches in CodeableConcept.text",
-      "expression": "Observation.value"
+      "expression": "Observation.value as string | Observation.value as CodeableConcept.text"
     },
     {
       "name": "code-value-concept",

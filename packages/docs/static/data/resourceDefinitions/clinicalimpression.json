@@ -794,7 +794,7 @@
       "name": "patient",
       "type": "reference",
       "description": " Patient or group assessed\r",
-      "expression": "ClinicalImpression.subject"
+      "expression": "ClinicalImpression.subject.where(resolve() is Patient)"
     },
     {
       "name": "assessor",

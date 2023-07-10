@@ -616,7 +616,7 @@
       "name": "patient",
       "type": "reference",
       "description": "The entity that caused the expenses",
-      "expression": "Account.subject"
+      "expression": "Account.subject.where(resolve() is Patient)"
     },
     {
       "name": "period",

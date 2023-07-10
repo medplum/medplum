@@ -1,9 +1,9 @@
 ---
 title: MedicinalProductAuthorization
 sidebar_position: 81
-tags: [medications, billing]
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/medicinalproductauthorization.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
@@ -11,11 +11,21 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 The regulatory authorization of a medicinal product.
 
+  <Tabs queryString="intro-section">
+  <TabItem value="usage" label="Usage" default>
+    <div>   <a name="scope"></a>    <blockquote class="stu-note">   <a name="dstu"></a> <strong>This resource is still undergoing development and review by the appropriate Workgroups. At this time, is considered only as a draft resource not suitable for production implementation</strong> </blockquote>   <p>    <a href="/docs/api/fhir/resources/medicinalproductauthorization">MedicinalProductAuthorization</a> is a resource covering the Marketing Authorization of a Medicinal Product, from a regulatory point of view.   </p>  </div>
+    </TabItem>
+  
+  
+  <TabItem value="referencedBy" label="Referenced By">
+    <ul><li><a href="/docs/api/fhir/resources/medicinalproductpackaged">MedicinalProductPackaged</a></li></ul>
+    </TabItem>
+</Tabs>
+
+
 ## Properties
 
-<ResourcePropertiesTable
-  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
-/>
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 ## Search Parameters
 
@@ -24,3 +34,5 @@ The regulatory authorization of a medicinal product.
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

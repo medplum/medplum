@@ -565,7 +565,7 @@
       "name": "patient",
       "type": "reference",
       "description": " If all resources have the same subject\r",
-      "expression": "List.subject"
+      "expression": "List.subject.where(resolve() is Patient)"
     },
     {
       "name": "encounter",

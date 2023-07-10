@@ -1096,13 +1096,13 @@
       "name": "context",
       "type": "token",
       "description": " A use context assigned to the concept map\r",
-      "expression": "ConceptMap.useContext.value"
+      "expression": "ConceptMap.useContext.value as CodeableConcept"
     },
     {
       "name": "context-quantity",
       "type": "quantity",
       "description": " A quantity- or range-valued use context assigned to the concept map\r",
-      "expression": "ConceptMap.useContext.value"
+      "expression": "ConceptMap.useContext.value as Quantity | ConceptMap.useContext.value as Range"
     },
     {
       "name": "context-type",
@@ -1204,7 +1204,7 @@
       "name": "source",
       "type": "reference",
       "description": "The source value set that contains the concepts that are being mapped",
-      "expression": "ConceptMap.source"
+      "expression": "ConceptMap.source as canonical"
     },
     {
       "name": "source-code",
@@ -1222,13 +1222,13 @@
       "name": "source-uri",
       "type": "reference",
       "description": "The source value set that contains the concepts that are being mapped",
-      "expression": "ConceptMap.source"
+      "expression": "ConceptMap.source as uri"
     },
     {
       "name": "target",
       "type": "reference",
       "description": "The target value set which provides context for the mappings",
-      "expression": "ConceptMap.target"
+      "expression": "ConceptMap.target as canonical"
     },
     {
       "name": "target-code",
@@ -1246,7 +1246,7 @@
       "name": "target-uri",
       "type": "reference",
       "description": "The target value set which provides context for the mappings",
-      "expression": "ConceptMap.target"
+      "expression": "ConceptMap.target as uri"
     }
   ]
 }

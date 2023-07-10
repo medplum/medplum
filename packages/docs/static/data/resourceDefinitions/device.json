@@ -1149,7 +1149,7 @@
       "name": "device-name",
       "type": "string",
       "description": "A server defined search that may match any of the string fields in Device.deviceName or Device.type.",
-      "expression": "Device.deviceName.name"
+      "expression": "Device.deviceName.name | Device.type.coding.display | Device.type.text"
     },
     {
       "name": "identifier",

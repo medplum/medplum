@@ -866,13 +866,13 @@
       "name": "identifier",
       "type": "token",
       "description": " Master Version Specific Identifier\r",
-      "expression": "DocumentReference.masterIdentifier"
+      "expression": "DocumentReference.masterIdentifier | DocumentReference.identifier"
     },
     {
       "name": "patient",
       "type": "reference",
       "description": " Who/what is the subject of the document\r",
-      "expression": "DocumentReference.subject"
+      "expression": "DocumentReference.subject.where(resolve() is Patient)"
     },
     {
       "name": "type",

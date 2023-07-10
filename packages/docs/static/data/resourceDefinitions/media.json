@@ -672,7 +672,7 @@
       "name": "patient",
       "type": "reference",
       "description": "Who/What this Media is a record of",
-      "expression": "Media.subject"
+      "expression": "Media.subject.where(resolve() is Patient)"
     },
     {
       "name": "site",

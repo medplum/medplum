@@ -2,13 +2,26 @@
 title: Subscription
 sidebar_position: 129
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/subscription.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
 # Subscription
 
 The subscription resource is used to define a push-based subscription from a server to another system. Once a subscription is registered with the server, the server checks every resource that is created or updated, and if the resource matches the given criteria, it sends a message on the defined "channel" so that another system can take an appropriate action.
+
+  <Tabs queryString="intro-section">
+  <TabItem value="usage" label="Usage" default>
+    <div> <a name="scope"></a>  <p> Once a subscription is created, any newly created or updated resources  that meet the criteria in the resource cause a notification to be sent using the  provided channel. The criteria are <a href="https://www.hl7.org/fhir/search.html">Search</a> strings that have the same interpretation as if they were appended to the base  URL and submitted using the REST API. Note that the search criteria  are applied to the new value of the resource. The consequence of this  is that there is no notification when a resource is deleted, or when  a resource is updated so that it no longer meets the criteria.  </p> <p> The server is able to send notifications without any information about the matching resource, or with the entire resource. </p> <p> Several different types of channels are supported: </p> <ul>  <li><b>rest-hook</b>: A post is made to the URL identified in the <a href="/docs/api/fhir/resources/subscription">Subscription</a> resource. If the subscription requests that the whole resource is included, the URL is interpreted as the service base</li>  <li><b>websocket</b>: A PING message is sent to the designated URI</li>  <li><b>email/sms</b>: A notification is sent to the nominated email address or SMS number</li>  <li><b>message</b>: The resource is sent to the application identified in the URI as a <a href="https://www.hl7.org/fhir/messaging.html">message</a></li> </ul> <p> See below for further discussion of the various channels. Note that sending the entire resource creates security concerns that must be managed by the server. </p> <p> <a href="/docs/api/fhir/resources/subscription">Subscriptions</a> are active resources; a server can only accept a subscription if it will execute the specified channel for any resources subsequently  received. The subscription is no longer active once it is deleted from  the server. </p> </div>
+    </TabItem>
+  <TabItem value="relationships" label="Relationships">
+    <div> <a name="bnr"></a>  <p> As an alternative to subscriptions, the RESTful API describes a  polling-based subscription method using <a href="/docs/api/fhir/resources/bundle">bundles</a>  and the <a href="https://www.hl7.org/fhir/http.html#history">history operation</a>. This method  of polling allows for a much tighter relationship between the client and  the server that doesn't involve missing updates and/or deletes.  </p> <p> When using the <code>Subscription</code> resource, the FHIR server combines  the roles of publisher and information distributer. Other arrangements of the publish and subscribe pattern describe separate agents for the two roles.  Implementers may implement the <code>Subscription</code> resource using an  architecture with separate agents, or using any other pub/sub architectire (e.g. see <a href="http://fhircast.org/">FHIRCast </a>, or, more generally,  <a href="https://www.w3.org/TR/websub/">W3C Pub/Sub </a>). </p> </div>
+    </TabItem>
+  
+  
+</Tabs>
+
 
 ## Properties
 

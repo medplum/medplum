@@ -1857,19 +1857,19 @@
       "name": "composed-of",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "PlanDefinition.relatedArtifact"
+      "expression": "PlanDefinition.relatedArtifact.where(type = 'composed-of').resource"
     },
     {
       "name": "context",
       "type": "token",
       "description": "A use context assigned to the plan definition",
-      "expression": "PlanDefinition.useContext.value"
+      "expression": "PlanDefinition.useContext.value as CodeableConcept"
     },
     {
       "name": "context-quantity",
       "type": "quantity",
       "description": "A quantity- or range-valued use context assigned to the plan definition",
-      "expression": "PlanDefinition.useContext.value"
+      "expression": "PlanDefinition.useContext.value as Quantity | PlanDefinition.useContext.value as Range"
     },
     {
       "name": "context-type",
@@ -1893,13 +1893,13 @@
       "name": "depends-on",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "PlanDefinition.relatedArtifact"
+      "expression": "PlanDefinition.relatedArtifact.where(type = 'depends-on').resource | PlanDefinition.library"
     },
     {
       "name": "derived-from",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "PlanDefinition.relatedArtifact"
+      "expression": "PlanDefinition.relatedArtifact.where(type = 'derived-from').resource"
     },
     {
       "name": "description",
@@ -1935,7 +1935,7 @@
       "name": "predecessor",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "PlanDefinition.relatedArtifact"
+      "expression": "PlanDefinition.relatedArtifact.where(type = 'predecessor').resource"
     },
     {
       "name": "publisher",
@@ -1953,7 +1953,7 @@
       "name": "successor",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "PlanDefinition.relatedArtifact"
+      "expression": "PlanDefinition.relatedArtifact.where(type = 'successor').resource"
     },
     {
       "name": "title",

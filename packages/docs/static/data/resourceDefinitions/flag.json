@@ -368,7 +368,7 @@
       "name": "patient",
       "type": "reference",
       "description": " The identity of a subject to list flags for\r",
-      "expression": "Flag.subject"
+      "expression": "Flag.subject.where(resolve() is Patient)"
     },
     {
       "name": "encounter",

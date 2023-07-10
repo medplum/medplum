@@ -944,13 +944,13 @@
       "name": "context",
       "type": "token",
       "description": " A use context assigned to the structure definition\r",
-      "expression": "StructureDefinition.useContext.value"
+      "expression": "StructureDefinition.useContext.value as CodeableConcept"
     },
     {
       "name": "context-quantity",
       "type": "quantity",
       "description": " A quantity- or range-valued use context assigned to the structure definition\r",
-      "expression": "StructureDefinition.useContext.value"
+      "expression": "StructureDefinition.useContext.value as Quantity | StructureDefinition.useContext.value as Range"
     },
     {
       "name": "context-type",
@@ -1046,7 +1046,7 @@
       "name": "base-path",
       "type": "token",
       "description": "Path that identifies the base element",
-      "expression": "StructureDefinition.snapshot.element.base.path"
+      "expression": "StructureDefinition.snapshot.element.base.path | StructureDefinition.differential.element.base.path"
     },
     {
       "name": "derivation",
@@ -1082,7 +1082,7 @@
       "name": "path",
       "type": "token",
       "description": "A path that is constrained in the StructureDefinition",
-      "expression": "StructureDefinition.snapshot.element.path"
+      "expression": "StructureDefinition.snapshot.element.path | StructureDefinition.differential.element.path"
     },
     {
       "name": "type",

@@ -1,9 +1,9 @@
 ---
 title: MedicinalProductIndication
 sidebar_position: 83
-tags: [medications]
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/medicinalproductindication.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
@@ -11,11 +11,22 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Indication for the Medicinal Product.
 
+  <Tabs queryString="intro-section">
+  <TabItem value="usage" label="Usage" default>
+    <div>   <a name="scope"></a>      <p>    A medical situation in which a medicinal product is appropriate for use   </p>  </div>
+    </TabItem>
+  
+  
+  <TabItem value="referencedBy" label="Referenced By">
+    <ul><li><a href="/docs/api/fhir/resources/medicinalproduct">MedicinalProduct</a></li>
+<li><a href="/docs/api/fhir/resources/medicinalproductcontraindication">MedicinalProductContraindication</a></li></ul>
+    </TabItem>
+</Tabs>
+
+
 ## Properties
 
-<ResourcePropertiesTable
-  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
-/>
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 ## Search Parameters
 
@@ -24,3 +35,5 @@ Indication for the Medicinal Product.
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

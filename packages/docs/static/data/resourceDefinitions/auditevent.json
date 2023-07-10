@@ -1193,7 +1193,7 @@
       "name": "patient",
       "type": "reference",
       "description": "Identifier of who",
-      "expression": "AuditEvent.agent.who"
+      "expression": "AuditEvent.agent.who.where(resolve() is Patient) | AuditEvent.entity.what.where(resolve() is Patient)"
     },
     {
       "name": "policy",
