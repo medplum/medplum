@@ -594,7 +594,8 @@ export class MedplumClient extends EventTarget {
 
     const activeLogin = this.getActiveLogin();
     if (activeLogin) {
-      this.setActiveLogin(activeLogin).catch(console.error);
+      this.setAccessToken(activeLogin.accessToken, activeLogin.refreshToken);
+      this.refreshProfile().catch(console.log);
     }
 
     this.setupStorageListener();
