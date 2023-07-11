@@ -126,7 +126,7 @@ describe('Send to Partner Lab', () => {
     }
   });
 
-  test.skip(`ORM Message Format`, async (ctx: any) => {
+  test(`ORM Message Format`, async (ctx: any) => {
     const serviceRequest: ServiceRequest = ctx.order;
     vi.setSystemTime(new Date('2023-02-10T09:25:00Z'));
 
