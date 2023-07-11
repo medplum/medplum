@@ -1,5 +1,5 @@
 import { badRequest, NewUserRequest, normalizeOperationOutcome, Operator } from '@medplum/core';
-import { Project, User } from '@medplum/fhirtypes';
+import { ClientApplication, Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -39,13 +39,14 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
 
   const recaptchaSiteKey = req.body.recaptchaSiteKey;
   let secretKey: string | undefined = getConfig().recaptchaSecretKey;
+  let projectId = req.body.projectId as string | undefined;
   let project: Project | undefined;
 
   if (recaptchaSiteKey && recaptchaSiteKey !== getConfig().recaptchaSiteKey) {
     // If the recaptcha site key is not the main Medplum recaptcha site key,
     // then it must be associated with a Project.
     // The user can only authenticate with that project.
-    project = await getProjectByRecaptchaSiteKey(recaptchaSiteKey, req.body.projectId as string | undefined);
+    project = await getProjectByRecaptchaSiteKey(recaptchaSiteKey, projectId);
     if (!project) {
       sendOutcome(res, badRequest('Invalid recaptchaSiteKey'));
       return;
@@ -59,6 +60,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
       sendOutcome(res, badRequest('Project does not allow open registration'));
       return;
     }
+    projectId = project.id;
   }
 
   if (secretKey) {
@@ -70,6 +72,21 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     if (!(await verifyRecaptcha(secretKey, req.body.recaptchaToken))) {
       sendOutcome(res, badRequest('Recaptcha failed'));
       return;
+    }
+  }
+
+  // If the user specifies a client ID, then make sure it is compatible with the project
+  const clientId = req.body.clientId;
+  let client: ClientApplication | undefined = undefined;
+  if (clientId) {
+    client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+    if (projectId) {
+      if (client.meta?.project !== projectId) {
+        sendOutcome(res, badRequest('Client and project do not match'));
+        return;
+      }
+    } else {
+      projectId = client.meta?.project;
     }
   }
 
@@ -92,7 +109,8 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
 
     const login = await tryLogin({
       authMethod: 'password',
-      projectId: req.body.projectId || undefined,
+      clientId,
+      projectId,
       scope: req.body.scope || 'openid',
       nonce: req.body.nonce || randomUUID(),
       codeChallenge: req.body.codeChallenge,
