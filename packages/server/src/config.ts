@@ -14,6 +14,7 @@ export interface MedplumServerConfig {
   tokenUrl: string;
   userInfoUrl: string;
   appBaseUrl: string;
+  logLevel?: string;
   binaryStorage: string;
   storageBaseUrl: string;
   signingKey: string;

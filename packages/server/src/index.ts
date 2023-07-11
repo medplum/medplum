@@ -1,7 +1,7 @@
 import express from 'express';
 import { initApp } from './app';
 import { loadConfig } from './config';
-import { logger } from './logger';
+import { logger, parseLogLevel } from './logger';
 
 export async function main(configName: string): Promise<void> {
   process.on('unhandledRejection', (err) => {
@@ -16,6 +16,9 @@ export async function main(configName: string): Promise<void> {
   logger.info('configName: ' + configName);
 
   const config = await loadConfig(configName);
+  if (config.logLevel) {
+    logger.level = parseLogLevel(config.logLevel);
+  }
 
   const app = await initApp(express(), config);
   const server = app.listen(config.port);
