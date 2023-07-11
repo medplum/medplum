@@ -19,7 +19,7 @@ export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.
           medplum.search('Communication', { 'based-on': ref, _count }),
           medplum.search('DiagnosticReport', { 'based-on': ref, _count }),
           medplum.search('Media', { 'based-on': ref, _count }),
-          medplum.search('DocumentReference', { 'based-on': ref, _count }),
+          medplum.search('DocumentReference', { related: ref, _count }),
           medplum.search('Task', { _filter: `based-on eq ${ref} or focus eq ${ref} or subject eq ${ref}`, _count }),
         ]);
       }}
