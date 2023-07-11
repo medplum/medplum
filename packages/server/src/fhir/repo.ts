@@ -38,7 +38,6 @@ import {
   BundleEntry,
   Meta,
   OperationOutcome,
-  OperationOutcomeIssue,
   Reference,
   Resource,
   ResourceType,
