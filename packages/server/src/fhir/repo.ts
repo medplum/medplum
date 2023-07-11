@@ -531,21 +531,17 @@ export class Repository extends BaseRepository implements FhirRepository {
       } catch (err: any) {
         const outcome = normalizeOperationOutcome(err);
         const invariantErrors = outcome.issue?.filter((issue) => issue.code === 'invariant');
-        const structureErrors = outcome.issue?.filter((issue) => issue.code !== 'invariant');
-        if (invariantErrors && invariantErrors.length > 0) {
+        if (invariantErrors?.length) {
           logger.error(
             `New validator invariant error in ${resource.resourceType}/${resource.id}: ${JSON.stringify(
               err.invariantErrors
             )}`
           );
         }
-        if (structureErrors && structureErrors.length > 0) {
-          throw new OperationOutcomeError({ resourceType: 'OperationOutcome', issue: structureErrors });
-        }
+        throw new OperationOutcomeError(outcome);
       }
 
       const elapsedTime = Number(process.hrtime.bigint() - start);
-
       const MILLISECONDS = 1e6; // Conversion factor from ns to ms
       if (elapsedTime > 5 * MILLISECONDS) {
         logger.warn(
