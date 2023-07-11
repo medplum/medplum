@@ -572,6 +572,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const result1 = await client.startJwtBearerLogin('test-client-id', 'test-client-secret', 'openid profile');
     expect(result1).toBeDefined();
+    expect(result1).toMatchObject({ resourceType: 'ClientApplication' });
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
