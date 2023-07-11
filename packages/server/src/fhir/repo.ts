@@ -29,6 +29,7 @@ import {
   stringify,
   tooManyRequests,
   validateResourceType,
+  Operator as FhirOperator,
 } from '@medplum/core';
 import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
 import {
@@ -43,6 +44,7 @@ import {
   Resource,
   ResourceType,
   SearchParameter,
+  StructureDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Pool, PoolClient } from 'pg';
@@ -451,7 +453,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
-    this.validate(resource);
+    await this.validate(resource);
 
     if (this.context.checkReferencesOnWrite) {
       await validateReferences(this, resource);
@@ -524,18 +526,43 @@ export class Repository extends BaseRepository implements FhirRepository {
     return result;
   }
 
-  private validate(resource: Resource): void {
+  private async validate(resource: Resource): Promise<void> {
     if (this.context.strictMode) {
       const start = process.hrtime.bigint();
+      const profileURLs = resource.meta?.profile;
       try {
-        validate(resource);
+        if (profileURLs) {
+          for (const url of profileURLs) {
+            const profile = await this.searchOne<StructureDefinition>({
+              resourceType: 'StructureDefinition',
+              filters: [
+                {
+                  code: 'url',
+                  operator: FhirOperator.EQUALS,
+                  value: url,
+                },
+              ],
+            });
+            if (!profile) {
+              logger.warn(`Unknown profile referenced in ${resource.resourceType}/${resource.id}: ${url}`);
+              continue;
+            }
+            validate(resource, profile);
+          }
+        } else {
+          validate(resource);
+        }
       } catch (err: any) {
-        const invariantErrors = err.outcome.issue.filter((issue: OperationOutcomeIssue) => issue.code === 'invariant');
-        const structureErrors = err.outcome.issue.filter((issue: OperationOutcomeIssue) => issue.code !== 'invariant');
-        if (invariantErrors.length > 0) {
+        const invariantErrors = err.outcome?.issue?.filter(
+          (issue: OperationOutcomeIssue) => issue.code === 'invariant'
+        );
+        const structureErrors = err.outcome?.issue?.filter(
+          (issue: OperationOutcomeIssue) => issue.code !== 'invariant'
+        );
+        if (invariantErrors?.length > 0) {
           logger.error(`Validation errors: ${err.invariantErrors}`);
         }
-        if (structureErrors.length > 0) {
+        if (structureErrors?.length > 0) {
           throw new OperationOutcomeError({ resourceType: 'OperationOutcome', issue: structureErrors });
         }
       }

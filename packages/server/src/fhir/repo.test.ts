@@ -801,4 +801,14 @@ describe('FHIR Repo', () => {
       expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid id');
     }
   });
+
+  test('Resource with profile', async () => {
+    try {
+      await systemRepo.updateResource({ resourceType: 'Patient', id: '123' });
+      throw new Error('expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid id');
+    }
+  });
 });

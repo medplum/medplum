@@ -48,12 +48,12 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
           <InfoBar.Value>{patient.address[0]?.state}</InfoBar.Value>
         </InfoBar.Entry>
       )}
-      {patient.identifier?.map((identifier, index) => (
+      {/* {patient.identifier?.map((identifier, index) => (
         <InfoBar.Entry key={`${index}-${patient.identifier?.length}`}>
           <InfoBar.Key>{identifier?.system}</InfoBar.Key>
           <InfoBar.Value>{identifier?.value}</InfoBar.Value>
         </InfoBar.Entry>
-      ))}
+      ))} */}
     </InfoBar>
   );
 }
