@@ -5,7 +5,6 @@ import {
   canWriteResourceType,
   deepEquals,
   evalFhirPath,
-  validate,
   forbidden,
   formatSearchQuery,
   getSearchParameterDetails,
@@ -28,6 +27,7 @@ import {
   SearchRequest,
   stringify,
   tooManyRequests,
+  validate,
   validateResourceType,
   Operator as FhirOperator,
 } from '@medplum/core';
@@ -1614,6 +1614,8 @@ export class Repository extends BaseRepository implements FhirRepository {
    */
   private removeField<T extends Resource>(input: T, path: string): T {
     const patch: Operation[] = [{ op: 'remove', path: `/${path.replaceAll('.', '/')}` }];
+    // applyPatch returns errors if the value is missing
+    // but we don't care if the value is missing in this case
     applyPatch(input, patch);
     return input;
   }
