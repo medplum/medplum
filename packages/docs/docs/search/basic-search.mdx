@@ -76,6 +76,8 @@ Because iterating over the `Bundle.entry` array is such a common pattern, the Me
   {ExampleCode}
 </MedplumCodeBlock>
 
+The array returned by `searchResources` also includes a `bundle` property that contains the original `Bundle` resource. You can use this to access bundle metadata such as `Bundle.total` and `Bundle.link`.
+
 ## Searching Multiple Criteria
 
 You can perform and AND search by specifying multiple query parameters
