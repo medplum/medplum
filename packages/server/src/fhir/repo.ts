@@ -534,7 +534,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         if (invariantErrors?.length) {
           logger.error(
             `New validator invariant error in ${resource.resourceType}/${resource.id}: ${JSON.stringify(
-              err.invariantErrors
+              invariantErrors
             )}`
           );
         }
