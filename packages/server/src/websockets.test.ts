@@ -1,19 +1,30 @@
-import express from 'express';
+import express, { Express } from 'express';
+import { Server } from 'http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from './app';
-import { loadTestConfig } from './config';
+import { MedplumServerConfig, loadTestConfig } from './config';
+
+let app: Express;
+let config: MedplumServerConfig;
+let server: Server;
 
 describe('WebSockets', () => {
-  test('Connect', async () => {
-    const app = express();
-    const config = await loadTestConfig();
-    const server = await initApp(app, config);
+  beforeAll(async () => {
+    app = express();
+    config = await loadTestConfig();
+    server = await initApp(app, config);
 
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 511, resolve);
     });
+  });
 
-    const response = await request(server)
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  test('Connect', async () => {
+    await request(server)
       .ws('/ws')
       .sendText('foo')
       .expectText('foo')
@@ -21,8 +32,9 @@ describe('WebSockets', () => {
       .expectText('abc')
       .close()
       .expectClosed();
-    expect(response).toBeDefined();
+  });
 
-    await shutdownApp();
-  }, 5000);
+  test('Invalid endpoint', async () => {
+    await request(server).ws('/foo').expectConnectionError();
+  });
 });

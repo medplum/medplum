@@ -36,11 +36,6 @@ export function initWebSockets(server: http.Server): void {
       await getRedis().publish(channel, data as Buffer);
     });
 
-    socket.on('error', async (err: Error) => {
-      logger.error('websocket error', err);
-      socket.close();
-    });
-
     socket.on('close', async () => {
       redisSubscriber.disconnect();
     });
