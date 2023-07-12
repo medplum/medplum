@@ -1496,6 +1496,8 @@ describe('Client', () => {
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBe(1);
     expect(result[0].resourceType).toBe('Patient');
+    expect(result.bundle).toBeDefined();
+    expect(result.bundle.resourceType).toBe('Bundle');
   });
 
   test('Search resources with record of params', async () => {
