@@ -2,6 +2,10 @@
 
 The Medplum CLI (Command Line Interface) is a set of command line tools to quickly deploy Medplum web applications and Medplum bots.
 
+## Prerequisites
+
+The Medplum CLI requires [Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) version 18+
+
 ## Installation
 
 Add globally:

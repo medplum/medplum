@@ -10,6 +10,9 @@
     "url": "https://github.com/medplum/medplum.git",
     "directory": "packages/mock"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
