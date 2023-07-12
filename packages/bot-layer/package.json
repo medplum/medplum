@@ -11,6 +11,9 @@
     "url": "https://github.com/medplum/medplum.git",
     "directory": "packages/bot-layer"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@medplum/core": "*",
     "form-data": "4.0.0",

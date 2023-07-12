@@ -10,6 +10,9 @@
     "url": "https://github.com/medplum/medplum.git",
     "directory": "packages/react"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "clean": "rimraf dist storybook-static",
     "dev": "storybook dev -p 6006",

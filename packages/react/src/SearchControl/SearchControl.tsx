@@ -163,7 +163,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const stateRef = useRef<SearchControlState>(state);
   stateRef.current = state;
 
-  const totalType = search.total ?? 'estimate';
+  const totalType = search.total ?? 'accurate';
 
   useEffect(() => {
     setOutcome(undefined);
