@@ -21,13 +21,9 @@
     "@types/node": "20.3.3",
     "@types/node-fetch": "2.6.4",
     "@types/ssh2-sftp-client": "9.0.0",
-    "@typescript-eslint/eslint-plugin": "5.61.0",
-    "@typescript-eslint/parser": "5.61.0",
     "@vitest/coverage-v8": "0.32.4",
     "@vitest/ui": "0.32.4",
     "eslint": "8.44.0",
-    "eslint-config-prettier": "8.8.0",
-    "eslint-plugin-prettier": "4.2.1",
     "form-data": "4.0.0",
     "node-fetch": "3.3.1",
     "pdfmake": "0.2.7",
@@ -38,38 +34,9 @@
     "vitest": "0.32.4"
   },
   "eslintConfig": {
-    "root": true,
-    "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-      "project": "./tsconfig.json"
-    },
-    "plugins": [
-      "@typescript-eslint"
-    ],
     "extends": [
-      "eslint:recommended",
-      "plugin:@typescript-eslint/recommended",
-      "plugin:prettier/recommended"
-    ],
-    "rules": {
-      "@typescript-eslint/explicit-function-return-type": [
-        "error",
-        {
-          "allowExpressions": true
-        }
-      ],
-      "@typescript-eslint/explicit-module-boundary-types": "off",
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-floating-promises": "error",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        {
-          "argsIgnorePattern": "^_",
-          "varsIgnorePattern": "^_"
-        }
-      ],
-      "prefer-promise-reject-errors": "error"
-    }
+      "@medplum/eslint-config"
+    ]
   },
   "prettier": {
     "printWidth": 120,
@@ -79,4 +46,3 @@
     "esbuild": "0.18.11"
   }
 }
-

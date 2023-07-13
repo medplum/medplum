@@ -18,6 +18,10 @@ const FACILITY_CODE = '52054';
  * This Bot demonstrates how to send a lab order to an SFTP server in the form of HL7v2 ORM messages
  *
  * See: https://hl7-definition.caristix.com/v2/HL7v2.3/TriggerEvents/ORM_O01
+ *
+ * @param medplum The Medplum Client object
+ * @param event The BotEvent object
+ * @returns The data returned by the `list` command
  */
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<any> {
   const host = event.secrets['SFTP_HOST'].valueString;
@@ -168,7 +172,8 @@ export function createOrmMessage(
   return new Hl7Message(segments, context);
 }
 
-/** Medplum I/O */
+/* Medplum I/O */
+
 async function readExistingResources(
   response: QuestionnaireResponse,
   medplum: MedplumClient
@@ -184,7 +189,8 @@ async function readExistingResources(
   return { serviceRequest, specimen, patient };
 }
 
-/** SFTP I/O */
+/* SFTP I/O */
+
 async function writeHL7ToSftp(client: Client, message: Hl7Message, dstPath: string): Promise<void> {
   try {
     console.log('Writing');
@@ -195,7 +201,8 @@ async function writeHL7ToSftp(client: Client, message: Hl7Message, dstPath: stri
   }
 }
 
-/** Helper Functions **/
+/* Helper Functions */
+
 function formatDate(date: Date | undefined, includeTime = true): string {
   if (!date) {
     return '';
@@ -209,7 +216,7 @@ function formatDate(date: Date | undefined, includeTime = true): string {
 }
 
 function formatName(name: HumanName | undefined): string {
-  if (!name || !name.family || !name.given?.[0]) {
+  if (!name?.family || !name?.given?.[0]) {
     throw new Error('Could not find name for patient');
   }
   const components = [name.family, name.given?.[0]];

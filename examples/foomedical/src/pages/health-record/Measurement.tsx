@@ -201,7 +201,10 @@ export function Measurement(): JSX.Element | null {
       }));
     }
 
-    medplum.createResource(obs).then(() => setModalOpen(false));
+    medplum
+      .createResource(obs)
+      .then(() => setModalOpen(false))
+      .catch(console.error);
   }
 
   return (

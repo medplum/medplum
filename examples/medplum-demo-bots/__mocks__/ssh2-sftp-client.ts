@@ -5,11 +5,11 @@ export default class SftpClient {
     this.connectionStatus = false;
   }
 
-  connect(options: any) {
+  connect(_options: any): void {
     this.connectionStatus = true;
   }
 
-  createReadStream() {
+  createReadStream(): undefined {
     return undefined;
   }
 
@@ -17,7 +17,7 @@ export default class SftpClient {
     return Promise.resolve('success');
   }
 
-  list(remoteFilePath: string): Promise<any> {
+  list(_remoteFilePath: string): Promise<any> {
     return Promise.resolve([]);
   }
 }

@@ -1,6 +1,6 @@
-require('@testing-library/jest-dom');
+import '@testing-library/jest-dom';
 
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
 window.ResizeObserver =
   window.ResizeObserver ||

@@ -1,4 +1,4 @@
-import { BotEvent, MedplumClient, createReference } from '@medplum/core';
+import { BotEvent, createReference, MedplumClient } from '@medplum/core';
 import fetch from 'node-fetch';
 
 const CANDID_API_URL = 'https://api-staging.joincandidhealth.com/api/v1/';
@@ -86,10 +86,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 /**
  * Authenticates into the Candid Health API using API key and API secret, and gets the Task object from
  * Candid's /v1/tasks endpoint
- * @param candidTaskQuery A JS representation of the TaskQuery object
+ * @param candidCodedEncounter The CodedEncounter object to send to Candid Health
  * @param apiKey  Candid Health API Key
  * @param apiSecret Candid Health API Secret
- * @returns
+ * @returns The response from the Candid Health API
  */
 async function getCandidTasks(candidCodedEncounter: any, apiKey: string, apiSecret: string): Promise<any> {
   // Get a Bearer Token

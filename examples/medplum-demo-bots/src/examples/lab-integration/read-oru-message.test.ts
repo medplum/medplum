@@ -144,9 +144,7 @@ describe('Read from Partner Lab', () => {
     expect(checkReports?.[0]?.result).toHaveLength(8);
     expect(checkReports?.[0]?.presentedForm).toHaveLength(1);
 
-    const checkObservationPromise = await checkReports?.[0]?.result?.map(
-      async (r) => r && (await medplum.readReference(r))
-    );
+    const checkObservationPromise = checkReports?.[0]?.result?.map((r) => r && medplum.readReference(r));
     const checkObservations = checkObservationPromise && (await Promise.all(checkObservationPromise));
     expect(checkObservations).toBeDefined();
     expect(checkObservations).toHaveLength(8);
@@ -265,10 +263,7 @@ describe('Read from Partner Lab', () => {
     expect(checkReports?.[0]?.status).toBe('cancelled');
     expect(checkReports?.[0]?.presentedForm).toHaveLength(1);
 
-    const checkObservationPromise = await checkReports?.[0]?.result?.map(
-      async (r) => r && (await medplum.readReference(r))
-    );
-
+    const checkObservationPromise = checkReports?.[0]?.result?.map((r) => r && medplum.readReference(r));
     const checkObservations = checkObservationPromise && (await Promise.all(checkObservationPromise));
 
     expect(checkObservations).toHaveLength(8);
@@ -331,10 +326,8 @@ describe('Read from Partner Lab', () => {
       `based-on=${getReferenceString(serviceRequest)}`
     );
     expect(checkReports).toHaveLength(1);
-    const checkObservationPromise = await checkReports?.[0]?.result?.map(
-      async (r) => r && (await medplum.readReference(r))
-    );
 
+    const checkObservationPromise = checkReports?.[0]?.result?.map((r) => r && medplum.readReference(r));
     const checkObservations = checkObservationPromise && (await Promise.all(checkObservationPromise));
     expect(checkObservations).toHaveLength(6);
     expect(checkObservations?.map((o) => o.code?.coding?.at(0)?.code)).toMatchObject([

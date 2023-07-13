@@ -246,6 +246,13 @@ export interface FetchLike {
  */
 export type QueryTypes = URLSearchParams | string[][] | Record<string, any> | string | undefined;
 
+/**
+ * ResourceArray is an array of resources with a bundle property.
+ * The bundle property is a FHIR Bundle containing the search results.
+ * This is useful for retrieving bundle metadata such as total, offset, and next link.
+ */
+export type ResourceArray<T extends Resource = Resource> = T[] & { bundle: Bundle<T> };
+
 export interface CreatePdfFunction {
   (
     docDefinition: TDocumentDefinitions,
@@ -283,6 +290,7 @@ export interface NewUserRequest {
   readonly recaptchaSiteKey?: string;
   readonly remember?: boolean;
   readonly projectId?: string;
+  readonly clientId?: string;
 }
 
 export interface NewProjectRequest {
@@ -1196,18 +1204,14 @@ export class MedplumClient extends EventTarget {
     resourceType: K,
     query?: QueryTypes,
     options?: RequestInit
-  ): ReadablePromise<ExtractResource<K>[]> {
+  ): ReadablePromise<ResourceArray<ExtractResource<K>>> {
     const url = this.fhirSearchUrl(resourceType, query);
     const cacheKey = url.toString() + '-searchResources';
     const cached = this.getCacheEntry(cacheKey, options);
     if (cached) {
       return cached.value;
     }
-    const promise = new ReadablePromise(
-      this.search<K>(resourceType, query, options).then(
-        (b) => b.entry?.map((e) => e.resource as ExtractResource<K>) ?? []
-      )
-    );
+    const promise = new ReadablePromise(this.search<K>(resourceType, query, options).then(bundleToResourceArray));
     this.setCacheEntry(cacheKey, promise);
     return promise;
   }
@@ -1236,7 +1240,7 @@ export class MedplumClient extends EventTarget {
     resourceType: K,
     query?: QueryTypes,
     options?: RequestInit
-  ): AsyncGenerator<ExtractResource<K>[]> {
+  ): AsyncGenerator<ResourceArray<ExtractResource<K>>> {
     let url: URL | undefined = this.fhirSearchUrl(resourceType, query);
 
     while (url) {
@@ -1247,7 +1251,7 @@ export class MedplumClient extends EventTarget {
         break;
       }
 
-      yield bundle.entry?.map((e) => e.resource as ExtractResource<K>) ?? [];
+      yield bundleToResourceArray(bundle);
       url = nextLink?.url ? new URL(nextLink.url) : undefined;
     }
   }
@@ -2965,4 +2969,15 @@ async function tryGetContentLocation(response: Response): Promise<string | undef
 
   // If all else fails, return undefined.
   return undefined;
+}
+
+/**
+ * Converts a FHIR resource bundle to a resource array.
+ * The bundle is attached to the array as a property named "bundle".
+ * @param bundle A FHIR resource bundle.
+ * @returns The resource array with the bundle attached.
+ */
+function bundleToResourceArray<T extends Resource>(bundle: Bundle<T>): ResourceArray<T> {
+  const array = bundle.entry?.map((e) => e.resource as T) ?? [];
+  return Object.assign(array, { bundle });
 }
