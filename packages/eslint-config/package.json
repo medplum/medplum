@@ -22,16 +22,14 @@
     "node": ">=18.0.0"
   },
   "peerDependencies": {
-    "eslint": ">= 8",
-    "@typescript-eslint/eslint-plugin": ">= 5"
+    "@typescript-eslint/eslint-plugin": ">=5",
+    "eslint": ">=8",
+    "eslint-plugin-jsdoc": ">=46",
+    "eslint-plugin-prettier": ">=4",
+    "eslint-plugin-react-hooks": ">=4"
   },
   "dependencies": {
-    "@typescript-eslint/eslint-plugin": "5.60.1",
     "@typescript-eslint/parser": "5.60.1",
-    "eslint": "8.44.0",
-    "eslint-config-prettier": "8.8.0",
-    "eslint-plugin-jsdoc": "46.4.3",
-    "eslint-plugin-prettier": "4.2.1",
-    "eslint-plugin-react-hooks": "4.6.0"
+    "eslint-config-prettier": "8.8.0"
   }
 }
