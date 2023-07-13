@@ -11,6 +11,7 @@ import { getRecaptcha, initRecaptcha } from '../utils/recaptcha';
 
 export interface NewUserFormProps {
   readonly projectId: string;
+  readonly clientId?: string;
   readonly googleClientId?: string;
   readonly recaptchaSiteKey?: string;
   readonly children?: React.ReactNode;
@@ -42,6 +43,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
           props.handleAuthResponse(
             await medplum.startNewUser({
               projectId: props.projectId,
+              clientId: props.clientId,
               firstName: formData.firstName,
               lastName: formData.lastName,
               email: formData.email,
