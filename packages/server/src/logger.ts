@@ -74,18 +74,10 @@ function getCloudWatchLogger(config: MedplumServerConfig): CloudWatchLogger {
 }
 
 export function parseLogLevel(level: string): LogLevel {
-  switch (level.toUpperCase()) {
-    case 'NONE':
-      return LogLevel.NONE;
-    case 'ERROR':
-      return LogLevel.ERROR;
-    case 'WARN':
-      return LogLevel.WARN;
-    case 'INFO':
-      return LogLevel.INFO;
-    case 'DEBUG':
-      return LogLevel.DEBUG;
-    default:
-      throw new Error('Invalid log level: ' + level);
+  const value = LogLevel[level.toUpperCase() as keyof typeof LogLevel];
+  if (value === undefined) {
+    throw new Error(`Invalid log level: ${level}`);
   }
+
+  return value;
 }
