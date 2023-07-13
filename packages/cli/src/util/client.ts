@@ -13,7 +13,6 @@ export async function createMedplumClient(options: MedplumClientOptions, profile
     fhirUrlPath,
     authorizeUrl,
     storage,
-    // TODO: add authType to Medplum
     onUnauthenticated: onUnauthenticated,
   });
 
@@ -32,18 +31,18 @@ export async function createMedplumClient(options: MedplumClientOptions, profile
 }
 
 function getClientValues(options: MedplumClientOptions, storage: FileSystemStorage): Record<string, any> {
-  const values: Record<string, any> = {};
-  values.baseUrl =
+  const baseUrl =
     options.baseUrl ?? storage.getString('baseUrl') ?? process.env['MEDPLUM_BASE_URL'] ?? 'https://api.medplum.com/';
-  values.fhirUrlPath =
+  const fhirUrlPath =
     options.fhirUrlPath ?? storage.getString('fhirUrlPath') ?? process.env['MEDPLUM_FHIR_URL_PATH'] ?? '';
-  values.accessToken =
+  const accessToken =
     options.accessToken ?? storage.getString('accessToken') ?? process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] ?? '';
-  values.tokenUrl = options.tokenUrl ?? storage.getString('tokenUrl') ?? process.env['MEDPLUM_TOKEN_URL'] ?? '';
-  values.authorizeUrl =
+  const tokenUrl = options.tokenUrl ?? storage.getString('tokenUrl') ?? process.env['MEDPLUM_TOKEN_URL'] ?? '';
+  const authorizeUrl =
     options.authorizeUrl ?? storage.getString('authorizeUrl') ?? process.env['MEDPLUM_AUTHORIZE_URL'] ?? '';
-  values.fetchApi = options.fetch ?? fetch;
-  return values;
+  const fetchApi = options.fetch ?? fetch;
+
+  return { baseUrl, fhirUrlPath, accessToken, tokenUrl, authorizeUrl, fetchApi };
 }
 
 export function onUnauthenticated(): void {
