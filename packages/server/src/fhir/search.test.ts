@@ -1301,12 +1301,13 @@ describe('FHIR Search', () => {
     const nowMinus1Second = new Date(now.getTime() - 1000);
     const nowMinus2Seconds = new Date(now.getTime() - 2000);
     const nowMinus3Seconds = new Date(now.getTime() - 3000);
-
+    const patient: Patient = { resourceType: 'Patient' };
+    const patientReference = createReference(patient);
     const appt1 = await systemRepo.createResource<Appointment>({
       resourceType: 'Appointment',
       status: 'booked',
       serviceType: [{ coding: [{ code }] }],
-      participant: [{ status: 'accepted' }],
+      participant: [{ status: 'accepted', actor: patientReference }],
       start: nowMinus1Second.toISOString(),
     });
     expect(appt1).toBeDefined();
@@ -1315,7 +1316,7 @@ describe('FHIR Search', () => {
       resourceType: 'Appointment',
       status: 'booked',
       serviceType: [{ coding: [{ code }] }],
-      participant: [{ status: 'accepted' }],
+      participant: [{ status: 'accepted', actor: patientReference }],
       start: nowMinus2Seconds.toISOString(),
     });
     expect(appt2).toBeDefined();

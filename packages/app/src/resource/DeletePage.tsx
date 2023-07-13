@@ -18,7 +18,7 @@ export function DeletePage(): JSX.Element {
         color="red"
         onClick={() => {
           medplum
-            .deleteResource(resourceType, id as string)
+            .deleteResource(resourceType, id)
             .then(() => navigate(`/${resourceType}`))
             .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
         }}

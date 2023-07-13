@@ -35,7 +35,7 @@ import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
-import { parseJWTPayload } from './jwt';
+import { isMedplumAccessToken, parseJWTPayload } from './jwt';
 import {
   badRequest,
   isOk,
@@ -207,7 +207,7 @@ export interface MedplumClientOptions {
    *   fonts?: TFontDictionary
    * ): Promise<Buffer> {
    *   return new Promise((resolve, reject) => {
-   *     const printer = new PdfPrinter(fonts || {});
+   *     const printer = new PdfPrinter(fonts ?? {});
    *     const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
    *     const chunks: Uint8Array[] = [];
    *     pdfDoc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
@@ -283,6 +283,7 @@ export interface NewUserRequest {
   readonly recaptchaSiteKey?: string;
   readonly remember?: boolean;
   readonly projectId?: string;
+  readonly clientId?: string;
 }
 
 export interface NewProjectRequest {
@@ -376,6 +377,11 @@ export interface MailAddress {
 }
 
 /**
+ * Email destination definition.
+ */
+export type MailDestination = string | MailAddress | string[] | MailAddress[];
+
+/**
  * Email attachment definition.
  * Compatible with nodemailer Mail.Options.
  */
@@ -400,11 +406,11 @@ export interface MailOptions {
   /** An e-mail address that will appear on the Sender: field */
   readonly sender?: string | MailAddress;
   /** Comma separated list or an array of recipients e-mail addresses that will appear on the To: field */
-  readonly to?: string | MailAddress | string[] | MailAddress[];
+  readonly to?: MailDestination;
   /** Comma separated list or an array of recipients e-mail addresses that will appear on the Cc: field */
-  readonly cc?: string | MailAddress | string[] | MailAddress[];
+  readonly cc?: MailDestination;
   /** Comma separated list or an array of recipients e-mail addresses that will appear on the Bcc: field */
-  readonly bcc?: string | MailAddress | string[] | MailAddress[];
+  readonly bcc?: MailDestination;
   /** An e-mail address that will appear on the Reply-To: field */
   readonly replyTo?: string | MailAddress;
   /** The subject of the e-mail */
@@ -439,13 +445,15 @@ interface AutoBatchEntry<T = any> {
 
 /**
  * OAuth 2.0 Grant Type Identifiers
- * Standard identifiers defined here: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-07#name-grant-types
- * Token exchange extension defined here: https://datatracker.ietf.org/doc/html/rfc8693
+ * Standard identifiers: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-07#name-grant-types
+ * JWT bearer extension: https://datatracker.ietf.org/doc/html/rfc7523
+ * Token exchange extension: https://datatracker.ietf.org/doc/html/rfc8693
  */
 export enum OAuthGrantType {
   ClientCredentials = 'client_credentials',
   AuthorizationCode = 'authorization_code',
   RefreshToken = 'refresh_token',
+  JwtBearer = 'urn:ietf:params:oauth:grant-type:jwt-bearer',
   TokenExchange = 'urn:ietf:params:oauth:grant-type:token-exchange',
 }
 
@@ -539,6 +547,7 @@ export class MedplumClient extends EventTarget {
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
+  private medplumServer?: boolean;
   private clientId?: string;
   private clientSecret?: string;
   private autoBatchTimerId?: any;
@@ -559,14 +568,14 @@ export class MedplumClient extends EventTarget {
     }
 
     this.fetch = options?.fetch ?? getDefaultFetch();
-    this.storage = options?.storage || new ClientStorage();
+    this.storage = options?.storage ?? new ClientStorage();
     this.createPdfImpl = options?.createPdf;
-    this.baseUrl = ensureTrailingSlash(options?.baseUrl) || DEFAULT_BASE_URL;
-    this.fhirBaseUrl = this.baseUrl + (ensureTrailingSlash(options?.fhirUrlPath) || 'fhir/R4/');
-    this.clientId = options?.clientId || '';
-    this.authorizeUrl = options?.authorizeUrl || this.baseUrl + 'oauth2/authorize';
-    this.tokenUrl = options?.tokenUrl || this.baseUrl + 'oauth2/token';
-    this.logoutUrl = options?.logoutUrl || this.baseUrl + 'oauth2/logout';
+    this.baseUrl = ensureTrailingSlash(options?.baseUrl) ?? DEFAULT_BASE_URL;
+    this.fhirBaseUrl = this.baseUrl + (ensureTrailingSlash(options?.fhirUrlPath) ?? 'fhir/R4/');
+    this.clientId = options?.clientId ?? '';
+    this.authorizeUrl = options?.authorizeUrl ?? this.baseUrl + 'oauth2/authorize';
+    this.tokenUrl = options?.tokenUrl ?? this.baseUrl + 'oauth2/token';
+    this.logoutUrl = options?.logoutUrl ?? this.baseUrl + 'oauth2/logout';
     this.onUnauthenticated = options?.onUnauthenticated;
 
     this.cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
@@ -577,7 +586,7 @@ export class MedplumClient extends EventTarget {
     }
 
     if (options?.autoBatchTime) {
-      this.autoBatchTime = options.autoBatchTime ?? 0;
+      this.autoBatchTime = options.autoBatchTime;
       this.autoBatchQueue = [];
     } else {
       this.autoBatchTime = 0;
@@ -586,8 +595,7 @@ export class MedplumClient extends EventTarget {
 
     const activeLogin = this.getActiveLogin();
     if (activeLogin) {
-      this.accessToken = activeLogin.accessToken;
-      this.refreshToken = activeLogin.refreshToken;
+      this.setAccessToken(activeLogin.accessToken, activeLogin.refreshToken);
       this.refreshProfile().catch(console.log);
     }
 
@@ -631,14 +639,12 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   clearActiveLogin(): void {
-    if (this.basicAuth) {
-      return;
-    }
     this.storage.setString('activeLogin', undefined);
     this.requestCache?.clear();
     this.accessToken = undefined;
     this.refreshToken = undefined;
     this.sessionDetails = undefined;
+    this.medplumServer = undefined;
     this.dispatchEvent({ type: 'change' });
   }
 
@@ -988,7 +994,7 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   async exchangeExternalAccessToken(token: string, clientId?: string): Promise<ProfileResource> {
-    clientId = clientId || this.clientId;
+    clientId = clientId ?? this.clientId;
     if (!clientId) {
       throw new Error('MedplumClient is missing clientId');
     }
@@ -2068,11 +2074,7 @@ export class MedplumClient extends EventTarget {
    */
   async setActiveLogin(login: LoginState): Promise<void> {
     this.clearActiveLogin();
-    this.accessToken = login.accessToken;
-    if (this.basicAuth) {
-      return;
-    }
-    this.refreshToken = login.refreshToken;
+    this.setAccessToken(login.accessToken, login.refreshToken);
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
     this.refreshPromise = undefined;
@@ -2091,12 +2093,14 @@ export class MedplumClient extends EventTarget {
   /**
    * Sets the current access token.
    * @param accessToken The new access token.
+   * @param refreshToken Optional refresh token.
    * @category Authentication
    */
-  setAccessToken(accessToken: string): void {
+  setAccessToken(accessToken: string, refreshToken?: string): void {
     this.accessToken = accessToken;
-    this.refreshToken = undefined;
+    this.refreshToken = refreshToken;
     this.sessionDetails = undefined;
+    this.medplumServer = isMedplumAccessToken(accessToken);
   }
 
   /**
@@ -2115,10 +2119,10 @@ export class MedplumClient extends EventTarget {
   }
 
   private async refreshProfile(): Promise<ProfileResource | undefined> {
+    if (!this.medplumServer) {
+      return Promise.resolve(undefined);
+    }
     this.profilePromise = new Promise((resolve, reject) => {
-      if (this.basicAuth) {
-        return;
-      }
       this.get('auth/me')
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
@@ -2646,15 +2650,15 @@ export class MedplumClient extends EventTarget {
    * @see https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
   private async requestAuthorization(loginParams?: Partial<BaseLoginRequest>): Promise<void> {
-    const loginRequest = await this.ensureCodeChallenge(loginParams || {});
+    const loginRequest = await this.ensureCodeChallenge(loginParams ?? {});
     const url = new URL(this.authorizeUrl);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
-    url.searchParams.set('client_id', loginRequest.clientId || (this.clientId as string));
-    url.searchParams.set('redirect_uri', loginRequest.redirectUri || getWindowOrigin());
+    url.searchParams.set('client_id', loginRequest.clientId ?? (this.clientId as string));
+    url.searchParams.set('redirect_uri', loginRequest.redirectUri ?? getWindowOrigin());
     url.searchParams.set('code_challenge_method', loginRequest.codeChallengeMethod as string);
     url.searchParams.set('code_challenge', loginRequest.codeChallenge as string);
-    url.searchParams.set('scope', loginRequest.scope || 'openid profile');
+    url.searchParams.set('scope', loginRequest.scope ?? 'openid profile');
     window.location.assign(url.toString());
   }
 
@@ -2670,8 +2674,8 @@ export class MedplumClient extends EventTarget {
     const formBody = new URLSearchParams();
     formBody.set('grant_type', OAuthGrantType.AuthorizationCode);
     formBody.set('code', code);
-    formBody.set('client_id', loginParams?.clientId || (this.clientId as string));
-    formBody.set('redirect_uri', loginParams?.redirectUri || getWindowOrigin());
+    formBody.set('client_id', loginParams?.clientId ?? (this.clientId as string));
+    formBody.set('redirect_uri', loginParams?.redirectUri ?? getWindowOrigin());
 
     if (typeof sessionStorage !== 'undefined') {
       const codeVerifier = sessionStorage.getItem('codeVerifier');
@@ -2719,7 +2723,6 @@ export class MedplumClient extends EventTarget {
    * await medplum.searchResources('Patient')
    * ```
    *
-   *
    * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
    * @category Authentication
    * @param clientId The client ID.
@@ -2734,6 +2737,32 @@ export class MedplumClient extends EventTarget {
     formBody.set('grant_type', OAuthGrantType.ClientCredentials);
     formBody.set('client_id', clientId);
     formBody.set('client_secret', clientSecret);
+    return this.fetchTokens(formBody);
+  }
+
+  /**
+   * Starts a new OAuth2 JWT bearer flow.
+   *
+   * ```typescript
+   * await medplum.startJwtBearerLogin(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_JWT_BEARER_ASSERTION, 'openid profile');
+   * // Example Search
+   * await medplum.searchResources('Patient')
+   * ```
+   *
+   * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.1
+   * @param clientId The client ID.
+   * @param assertion The JWT assertion.
+   * @param scope The OAuth scope.
+   * @returns Promise that resolves to the client profile.
+   */
+  async startJwtBearerLogin(clientId: string, assertion: string, scope: string): Promise<ProfileResource> {
+    this.clientId = clientId;
+
+    const formBody = new URLSearchParams();
+    formBody.set('grant_type', OAuthGrantType.JwtBearer);
+    formBody.set('client_id', clientId);
+    formBody.set('assertion', assertion);
+    formBody.set('scope', scope);
     return this.fetchTokens(formBody);
   }
 

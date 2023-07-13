@@ -82,8 +82,8 @@ export function MoneyInput(props: MoneyInputProps): JSX.Element {
     <TextInput
       type="number"
       label={props.label}
-      placeholder={props.placeholder || 'Value'}
-      defaultValue={value?.value?.toString() || 'USD'}
+      placeholder={props.placeholder ?? 'Value'}
+      defaultValue={value?.value?.toString() ?? 'USD'}
       icon={<IconCurrencyDollar size={14} />}
       rightSection={select}
       rightSectionWidth={92}

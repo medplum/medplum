@@ -25,7 +25,12 @@
             "short" : "Encapsulation of resources for a specific project or organization.",
             "definition" : "Encapsulation of resources for a specific project or organization.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base": {
+              "min" : 0,
+              "max" : "*",
+              "path" : "Project"
+            }
           },
           {
             "id" : "Project.id",
@@ -96,7 +101,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.name",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Project.description",
@@ -106,7 +116,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.description",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Project.superAdmin",
@@ -117,7 +132,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.superAdmin",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Project.strictMode",
@@ -128,7 +148,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.strictMode",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Project.checkReferencesOnWrite",
@@ -139,7 +164,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.checkReferencesOnWrite",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Project.owner",
@@ -150,7 +180,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/User"]
-            }]
+            }],
+            "base" : {
+              "path" : "Project.owner",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Project.features",
@@ -160,7 +195,12 @@
             "max" : "*",
             "type" : [{
               "code" : "code"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.features",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "Project.defaultPatientAccessPolicy",
@@ -171,7 +211,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
-            }]
+            }],
+            "base" : {
+              "path" : "Project.defaultPatientAccessPolicy",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Project.secret",
@@ -181,7 +226,12 @@
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.secret",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "Project.secret.name",
@@ -191,7 +241,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.secret.name",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "Project.secret.value[x]",
@@ -210,7 +265,12 @@
             },
             {
               "code" : "integer"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.secret.value[x]",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "Project.site",
@@ -220,7 +280,12 @@
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.site",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "Project.site.name",
@@ -230,7 +295,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.site.name",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "Project.site.domain",
@@ -240,7 +310,12 @@
             "max" : "*",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.site.domain",
+              "min" : 1,
+              "max" : "*"
+            }
           },
           {
             "id" : "Project.site.googleClientId",
@@ -250,7 +325,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.site.googleClientId",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Project.site.googleClientSecret",
@@ -260,7 +340,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.site.googleClientSecret",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Project.site.recaptchaSiteKey",
@@ -270,7 +355,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.site.recaptchaSiteKey",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Project.site.recaptchaSecretKey",
@@ -280,7 +370,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Project.site.recaptchaSecretKey",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -306,7 +401,12 @@
             "short" : "Medplum client application for automated access.",
             "definition" : "Medplum client application for automated access.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base": {
+              "path" : "ClientApplication",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "ClientApplication.id",
@@ -377,7 +477,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base": {
+              "path" : "ClientApplication.name",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "ClientApplication.description",
@@ -387,7 +492,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base": {
+              "path" : "ClientApplication.description",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "ClientApplication.secret",
@@ -397,7 +507,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base": {
+              "path" : "ClientApplication.secret",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "ClientApplication.jwksUri",
@@ -407,7 +522,12 @@
             "max" : "1",
             "type" : [{
               "code" : "uri"
-            }]
+            }],
+            "base": {
+              "path" : "ClientApplication.jwksUri",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "ClientApplication.redirectUri",
@@ -417,7 +537,12 @@
             "max" : "1",
             "type" : [{
               "code" : "uri"
-            }]
+            }],
+            "base": {
+              "path" : "ClientApplication.redirectUri",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "ClientApplication.launchUri",
@@ -427,7 +552,12 @@
             "max" : "1",
             "type" : [{
               "code" : "uri"
-            }]
+            }],
+            "base": {
+              "path" : "ClientApplication.launchUri",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "ClientApplication.pkceOptional",
@@ -437,7 +567,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base": {
+              "path" : "ClientApplication.pkceOptional",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "ClientApplication.identityProvider",
@@ -447,7 +582,12 @@
             "max" : "1",
             "type" : [{
               "code" : "IdentityProvider"
-            }]
+            }],
+            "base": {
+              "path" : "ClientApplication.identityProvider",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -474,7 +614,12 @@
             "short" : "Representation of a human user of the system",
             "definition" : "Representation of a human user of the system.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base" : {
+              "path" : "User",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "User.id",
@@ -545,7 +690,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base": {
+              "path" : "User.firstName",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "User.lastName",
@@ -555,7 +705,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base": {
+              "path" : "User.lastName",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "User.externalId",
@@ -565,7 +720,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base": {
+              "path" : "User.externalId",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "User.email",
@@ -575,7 +735,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base": {
+              "path" : "User.email",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "User.emailVerified",
@@ -585,7 +750,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base": {
+              "path" : "User.emailVerified",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "User.admin",
@@ -596,7 +766,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base": {
+              "path" : "User.admin",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "User.passwordHash",
@@ -606,7 +781,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base": {
+              "path" : "User.passwordHash",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "User.mfaSecret",
@@ -616,7 +796,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base": {
+              "path" : "User.mfaSecret",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "User.mfaEnrolled",
@@ -626,7 +811,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base": {
+              "path" : "User.mfaEnrolled",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "User.project",
@@ -637,7 +827,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Project"]
-            }]
+            }],
+            "base": {
+              "path" : "User.project",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -664,7 +859,12 @@
             "short" : "Medplum project membership. A project membership grants a user access to a project.",
             "definition" : "Medplum project membership. A project membership grants a user access to a project.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base": {
+              "path" : "ProjectMembership",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "ProjectMembership.id",
@@ -736,7 +936,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Project"]
-            }]
+            }],
+            "base": {
+              "path" : "ProjectMembership.project",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "ProjectMembership.invitedBy",
@@ -747,7 +952,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/User"]
-            }]
+            }],
+            "base": {
+              "path" : "ProjectMembership.invitedBy",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "ProjectMembership.user",
@@ -760,7 +970,12 @@
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Bot",
                 "https://medplum.com/fhir/StructureDefinition/ClientApplication",
                 "https://medplum.com/fhir/StructureDefinition/User"]
-            }]
+            }],
+            "base": {
+              "path" : "ProjectMembership.user",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "ProjectMembership.profile",
@@ -775,7 +990,12 @@
                 "http://hl7.org/fhir/StructureDefinition/Patient",
                 "http://hl7.org/fhir/StructureDefinition/Practitioner",
                 "http://hl7.org/fhir/StructureDefinition/RelatedPerson"]
-            }]
+            }],
+            "base": {
+              "path" : "ProjectMembership.profile",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "ProjectMembership.externalId",
@@ -785,7 +1005,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base": {
+              "path" : "ProjectMembership.externalId",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "ProjectMembership.accessPolicy",
@@ -796,7 +1021,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
-            }]
+            }],
+            "base": {
+              "path" : "ProjectMembership.accessPolicy",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "ProjectMembership.access",
@@ -806,7 +1036,12 @@
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
-            }]
+            }],
+            "base": {
+              "path" : "ProjectMembership.access",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "ProjectMembership.access.policy",
@@ -819,7 +1054,12 @@
                 "code" : "Reference",
                 "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
               }
-            ]
+            ],
+            "base": {
+              "path" : "ProjectMembership.access.policy",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "ProjectMembership.access.parameter",
@@ -829,7 +1069,12 @@
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
-            }]
+            }],
+            "base": {
+              "path" : "ProjectMembership.access.parameter",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "ProjectMembership.access.parameter.name",
@@ -839,7 +1084,12 @@
             "max" : "1",
             "type" : [{
               "code" : "code"
-            }]
+            }],
+            "base": {
+              "path" : "ProjectMembership.access.parameter.name",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "ProjectMembership.access.parameter.value[x]",
@@ -854,7 +1104,12 @@
             },
             {
               "code" : "Reference"
-            }]
+            }],
+            "base": {
+              "path" : "ProjectMembership.access.parameter.value[x]",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "ProjectMembership.userConfiguration",
@@ -865,7 +1120,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/UserConfiguration"]
-            }]
+            }],
+            "base": {
+              "path" : "ProjectMembership.userConfiguration",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "ProjectMembership.admin",
@@ -876,7 +1136,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base": {
+              "path" : "ProjectMembership.admin",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -903,7 +1168,12 @@
             "short" : "Bot account for automated actions.",
             "definition" : "Bot account for automated actions.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base" : {
+              "path" : "Bot",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "Bot.id",
@@ -975,7 +1245,12 @@
             "max" : "*",
             "type" : [{
               "code" : "Identifier"
-            }]
+            }],
+            "base" : {
+              "path" : "Bot.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "Bot.name",
@@ -985,7 +1260,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Bot.name",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Bot.description",
@@ -995,7 +1275,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Bot.description",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Bot.runtimeVersion",
@@ -1005,7 +1290,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Bot.runtimeVersion",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Bot.photo",
@@ -1015,7 +1305,12 @@
             "max" : "1",
             "type" : [{
               "code" : "Attachment"
-            }]
+            }],
+            "base" : {
+              "path" : "Bot.photo",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id": "Bot.cron[x]",
@@ -1027,7 +1322,12 @@
               "code": "Timing"
             }, {
               "code": "string"
-            }]
+            }],
+            "base": {
+              "path": "Bot.cron[x]",
+              "min": 0,
+              "max": "1"
+            }
           },
           {
             "id" : "Bot.code",
@@ -1037,7 +1337,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Bot.code",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Bot.category",
@@ -1049,7 +1354,12 @@
             "max" : "*",
             "type" : [{
               "code" : "CodeableConcept"
-            }]
+            }],
+            "base" : {
+              "path" : "Bot.category",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "Bot.runAsUser",
@@ -1059,7 +1369,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base" : {
+              "path" : "Bot.runAsUser",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -1086,7 +1401,12 @@
             "short" : "Login event and session details.",
             "definition" : "Login event and session details.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base" : {
+              "path" : "Login",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "Login.id",
@@ -1158,7 +1478,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/ClientApplication"]
-            }]
+            }],
+            "base" : {
+              "path" : "Login.client",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.profileType",
@@ -1172,6 +1497,11 @@
             "binding" : {
               "strength" : "required",
               "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types|4.0.1"
+            },
+            "base" : {
+              "path" : "Login.profileType",
+              "min" : 0,
+              "max" : "1"
             }
           },
           {
@@ -1183,7 +1513,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Project"]
-            }]
+            }],
+            "base" : {
+              "path" : "Login.project",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.user",
@@ -1196,7 +1531,12 @@
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Bot",
                 "https://medplum.com/fhir/StructureDefinition/ClientApplication",
                 "https://medplum.com/fhir/StructureDefinition/User"]
-            }]
+            }],
+            "base" : {
+              "path" : "Login.user",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.membership",
@@ -1207,7 +1547,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/ProjectMembership"]
-            }]
+            }],
+            "base" : {
+              "path" : "Login.membership",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.scope",
@@ -1217,7 +1562,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.scope",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.authMethod",
@@ -1227,7 +1577,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.authMethod",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.authTime",
@@ -1237,7 +1592,12 @@
             "max" : "1",
             "type" : [{
               "code" : "instant"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.authTime",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.cookie",
@@ -1247,7 +1607,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.cookie",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.code",
@@ -1257,7 +1622,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.code",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.codeChallenge",
@@ -1267,7 +1637,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.codeChallenge",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.codeChallengeMethod",
@@ -1277,7 +1652,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.codeChallengeMethod",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.refreshSecret",
@@ -1287,7 +1667,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.refreshSecret",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.nonce",
@@ -1297,7 +1682,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.nonce",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.mfaVerified",
@@ -1307,7 +1697,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.mfaVerified",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.granted",
@@ -1317,7 +1712,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.granted",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.revoked",
@@ -1327,7 +1727,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.revoked",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.admin",
@@ -1337,7 +1742,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.admin",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.superAdmin",
@@ -1347,7 +1757,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.superAdmin",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.launch",
@@ -1358,7 +1773,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/SmartAppLaunch"]
-            }]
+            }],
+            "base" : {
+              "path" : "Login.launch",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.remoteAddress",
@@ -1368,7 +1788,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.remoteAddress",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "Login.userAgent",
@@ -1378,7 +1803,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "Login.userAgent",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -1405,7 +1835,12 @@
             "short" : "Password change request for the 'forgot password' flow.",
             "definition" : "Password change request for the 'forgot password' flow.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base": {
+              "path" : "PasswordChangeRequest",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "PasswordChangeRequest.id",
@@ -1477,7 +1912,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/User"]
-            }]
+            }],
+            "base" : {
+              "path" : "PasswordChangeRequest.user",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "PasswordChangeRequest.secret",
@@ -1487,7 +1927,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "PasswordChangeRequest.secret",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "PasswordChangeRequest.used",
@@ -1497,7 +1942,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base" : {
+              "path" : "PasswordChangeRequest.used",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "PasswordChangeRequest.redirectUri",
@@ -1507,7 +1957,12 @@
             "max" : "1",
             "type" : [{
               "code" : "uri"
-            }]
+            }],
+            "base" : {
+              "path" : "PasswordChangeRequest.redirectUri",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -1534,7 +1989,12 @@
             "short" : "A JSON object that represents a cryptographic key.",
             "definition" : "A JSON object that represents a cryptographic key. The members of the object represent properties of the key, including its value.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base": {
+              "path" : "JsonWebKey",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "JsonWebKey.id",
@@ -1607,7 +2067,12 @@
               {
                 "code": "boolean"
               }
-            ]
+            ],
+            "base": {
+              "path": "JsonWebKey.active",
+              "min": 0,
+              "max": "1"
+            }
           },
           {
             "id": "JsonWebKey.alg",
@@ -1619,7 +2084,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path": "JsonWebKey.alg",
+              "min": 0,
+              "max": "1"
+            }
           },
           {
             "id": "JsonWebKey.kty",
@@ -1631,7 +2101,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path": "JsonWebKey.kty",
+              "min": 0,
+              "max": "1"
+            }
           },
           {
             "id": "JsonWebKey.use",
@@ -1643,7 +2118,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path" : "JsonWebKey.use",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id": "JsonWebKey.key_ops",
@@ -1655,7 +2135,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path" : "JsonWebKey.key_ops",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id": "JsonWebKey.x5c",
@@ -1667,7 +2152,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path" : "JsonWebKey.x5c",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id": "JsonWebKey.n",
@@ -1679,7 +2169,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path" : "JsonWebKey.n",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id": "JsonWebKey.e",
@@ -1691,7 +2186,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path" : "JsonWebKey.e",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id": "JsonWebKey.kid",
@@ -1703,7 +2203,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path" : "JsonWebKey.kid",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id": "JsonWebKey.x5t",
@@ -1715,7 +2220,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path" : "JsonWebKey.x5t",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id": "JsonWebKey.d",
@@ -1727,7 +2237,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path" : "JsonWebKey.d",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id": "JsonWebKey.p",
@@ -1739,7 +2254,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path" : "JsonWebKey.p",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id": "JsonWebKey.q",
@@ -1751,7 +2271,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path" : "JsonWebKey.q",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id": "JsonWebKey.dp",
@@ -1763,7 +2288,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path" : "JsonWebKey.dp",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id": "JsonWebKey.dq",
@@ -1775,7 +2305,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path" : "JsonWebKey.dq",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id": "JsonWebKey.qi",
@@ -1787,7 +2322,12 @@
               {
                 "code": "string"
               }
-            ]
+            ],
+            "base": {
+              "path" : "JsonWebKey.qi",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -1814,7 +2354,12 @@
             "short" : "Access Policy for user or user group that defines how entities can or cannot access resources.",
             "definition" : "Access Policy for user or user group that defines how entities can or cannot access resources.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base": {
+              "path" : "AccessPolicy",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "AccessPolicy.id",
@@ -1885,7 +2430,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "AccessPolicy.name",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "AccessPolicy.compartment",
@@ -1895,7 +2445,12 @@
             "max" : "1",
             "type" : [{
               "code" : "Reference"
-            }]
+            }],
+            "base" : {
+              "path" : "AccessPolicy.compartment",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "AccessPolicy.resource",
@@ -1905,7 +2460,12 @@
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
-            }]
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "AccessPolicy.resource.resourceType",
@@ -1915,7 +2475,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource.resourceType",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "AccessPolicy.resource.compartment",
@@ -1925,7 +2490,12 @@
             "max" : "1",
             "type" : [{
               "code" : "Reference"
-            }]
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource.compartment",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "AccessPolicy.resource.criteria",
@@ -1936,7 +2506,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource.criteria",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "AccessPolicy.resource.readonly",
@@ -1946,7 +2521,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource.readonly",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "AccessPolicy.resource.hiddenFields",
@@ -1956,7 +2536,12 @@
             "max" : "*",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource.hiddenFields",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "AccessPolicy.resource.readonlyFields",
@@ -1966,7 +2551,12 @@
             "max" : "*",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource.readonlyFields",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "AccessPolicy.ipAccessRule",
@@ -1976,7 +2566,12 @@
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
-            }]
+            }],
+            "base" : {
+              "path" : "AccessPolicy.ipAccessRule",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "AccessPolicy.ipAccessRule.name",
@@ -1986,7 +2581,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "AccessPolicy.ipAccessRule.name",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "AccessPolicy.ipAccessRule.value",
@@ -1996,7 +2596,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "AccessPolicy.ipAccessRule.value",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "AccessPolicy.ipAccessRule.action",
@@ -2006,7 +2611,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "AccessPolicy.ipAccessRule.action",
+              "min" : 1,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -2033,7 +2643,12 @@
             "short" : "User specific configuration for the Medplum application.",
             "definition" : "User specific configuration for the Medplum application.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base": {
+              "path" : "UserConfiguration",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "UserConfiguration.id",
@@ -2104,7 +2719,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "UserConfiguration.name",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "UserConfiguration.menu",
@@ -2114,7 +2734,12 @@
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
-            }]
+            }],
+            "base" : {
+              "path" : "UserConfiguration.menu",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "UserConfiguration.menu.title",
@@ -2124,7 +2749,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "UserConfiguration.menu.title",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "UserConfiguration.menu.link",
@@ -2134,7 +2764,12 @@
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
-            }]
+            }],
+            "base" : {
+              "path" : "UserConfiguration.menu.link",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "UserConfiguration.menu.link.name",
@@ -2144,7 +2779,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "UserConfiguration.menu.link.name",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "UserConfiguration.menu.link.target",
@@ -2154,7 +2794,12 @@
             "max" : "1",
             "type" : [{
               "code" : "url"
-            }]
+            }],
+            "base" : {
+              "path" : "UserConfiguration.menu.link.target",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "UserConfiguration.search",
@@ -2164,7 +2809,12 @@
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
-            }]
+            }],
+            "base" : {
+              "path" : "UserConfiguration.search",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "UserConfiguration.search.name",
@@ -2174,7 +2824,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "UserConfiguration.search.name",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "UserConfiguration.search.criteria",
@@ -2185,7 +2840,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "UserConfiguration.search.criteria",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "UserConfiguration.option",
@@ -2195,7 +2855,12 @@
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
-            }]
+            }],
+            "base" : {
+              "path" : "UserConfiguration.option",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "UserConfiguration.option.id",
@@ -2205,7 +2870,12 @@
             "max" : "1",
             "type" : [{
               "code" : "code"
-            }]
+            }],
+            "base" : {
+              "path" : "UserConfiguration.option.id",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "UserConfiguration.option.value[x]",
@@ -2229,7 +2899,12 @@
             },
             {
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "UserConfiguration.option.value[x]",
+              "min" : 1,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -2256,7 +2931,12 @@
             "short" : "User specific configuration for the Medplum application.",
             "definition" : "User specific configuration for the Medplum application.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base": {
+              "path" : "BulkDataExport",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "BulkDataExport.id",
@@ -2343,7 +3023,12 @@
             "max" : "1",
             "type" : [{
               "code" : "instant"
-            }]
+            }],
+            "base" : {
+              "path" : "BulkDataExport.requestTime",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "BulkDataExport.transactionTime",
@@ -2353,7 +3038,12 @@
             "max" : "1",
             "type" : [{
               "code" : "instant"
-            }]
+            }],
+            "base" : {
+              "path" : "BulkDataExport.transactionTime",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "BulkDataExport.request",
@@ -2363,7 +3053,12 @@
             "max" : "1",
             "type" : [{
               "code" : "uri"
-            }]
+            }],
+            "base" : {
+              "path" : "BulkDataExport.request",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "BulkDataExport.requiresAccessToken",
@@ -2373,7 +3068,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base" : {
+              "path" : "BulkDataExport.requiresAccessToken",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "BulkDataExport.output",
@@ -2383,7 +3083,12 @@
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
-            }]
+            }],
+            "base" : {
+              "path" : "BulkDataExport.output",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "BulkDataExport.output.type",
@@ -2394,6 +3099,11 @@
             "type" : [{
               "code" : "code"
             }],
+            "base" : {
+              "path" : "BulkDataExport.output.type",
+              "min" : 1,
+              "max" : "1"
+            },
             "binding" : {
               "extension" : [{
                 "url" : "http://hl7.org/fhir/StructureDefinition/elementdefinition-bindingName",
@@ -2416,7 +3126,12 @@
             "max" : "1",
             "type" : [{
               "code" : "uri"
-            }]
+            }],
+            "base" : {
+              "path" : "BulkDataExport.output.url",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "BulkDataExport.deleted",
@@ -2426,7 +3141,12 @@
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
-            }]
+            }],
+            "base" : {
+              "path" : "BulkDataExport.deleted",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "BulkDataExport.deleted.type",
@@ -2437,6 +3157,11 @@
             "type" : [{
               "code" : "code"
             }],
+            "base" : {
+              "path" : "BulkDataExport.deleted.type",
+              "min" : 1,
+              "max" : "1"
+            },
             "binding" : {
               "extension" : [{
                 "url" : "http://hl7.org/fhir/StructureDefinition/elementdefinition-bindingName",
@@ -2459,7 +3184,12 @@
             "max" : "1",
             "type" : [{
               "code" : "uri"
-            }]
+            }],
+            "base" : {
+              "path" : "BulkDataExport.deleted.url",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "BulkDataExport.error",
@@ -2469,7 +3199,12 @@
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
-            }]
+            }],
+            "base" : {
+              "path" : "BulkDataExport.error",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "BulkDataExport.error.type",
@@ -2480,6 +3215,11 @@
             "type" : [{
               "code" : "code"
             }],
+            "base" : {
+              "path" : "BulkDataExport.error.type",
+              "min" : 1,
+              "max" : "1"
+            },
             "binding" : {
               "extension" : [{
                 "url" : "http://hl7.org/fhir/StructureDefinition/elementdefinition-bindingName",
@@ -2502,7 +3242,12 @@
             "max" : "1",
             "type" : [{
               "code" : "uri"
-            }]
+            }],
+            "base" : {
+              "path" : "BulkDataExport.error.url",
+              "min" : 1,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -2529,7 +3274,12 @@
             "short" : "This resource contains context details for a SMART App Launch.",
             "definition" : "This resource contains context details for a SMART App Launch.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base": {
+              "path" : "SmartAppLaunch",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "SmartAppLaunch.id",
@@ -2585,7 +3335,12 @@
             "max" : "1",
             "type" : [{
               "code" : "code"
-            }]
+            }],
+            "base" : {
+              "path" : "SmartAppLaunch.language",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "SmartAppLaunch.patient",
@@ -2596,7 +3351,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Patient"]
-            }]
+            }],
+            "base" : {
+              "path" : "SmartAppLaunch.patient",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "SmartAppLaunch.encounter",
@@ -2607,7 +3367,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Encounter"]
-            }]
+            }],
+            "base" : {
+              "path" : "SmartAppLaunch.encounter",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -2634,7 +3399,12 @@
             "short" : "Domain specific configuration for the Medplum application.",
             "definition" : "Domain specific configuration for the Medplum application.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base": {
+              "path" : "DomainConfiguration",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "DomainConfiguration.id",
@@ -2690,7 +3460,12 @@
             "max" : "1",
             "type" : [{
               "code" : "code"
-            }]
+            }],
+            "base" : {
+              "path" : "DomainConfiguration.language",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "DomainConfiguration.domain",
@@ -2700,7 +3475,12 @@
             "max" : "1",
             "type" : [{
               "code" : "uri"
-            }]
+            }],
+            "base" : {
+              "path" : "DomainConfiguration.domain",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "DomainConfiguration.identityProvider",
@@ -2710,7 +3490,12 @@
             "max" : "1",
             "type" : [{
               "code" : "IdentityProvider"
-            }]
+            }],
+            "base" : {
+              "path" : "DomainConfiguration.identityProvider",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -2737,7 +3522,12 @@
             "short" : "External Identity Provider (IdP) configuration details.",
             "definition" : "External Identity Provider (IdP) configuration details.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base": {
+              "path" : "IdentityProvider",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "IdentityProvider.authorizeUrl",
@@ -2747,7 +3537,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "IdentityProvider.authorizeUrl",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "IdentityProvider.tokenUrl",
@@ -2757,7 +3552,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "IdentityProvider.tokenUrl",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "IdentityProvider.userInfoUrl",
@@ -2767,7 +3567,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "IdentityProvider.userInfoUrl",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "IdentityProvider.clientId",
@@ -2777,7 +3582,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "IdentityProvider.clientId",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "IdentityProvider.clientSecret",
@@ -2787,7 +3597,12 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
-            }]
+            }],
+            "base" : {
+              "path" : "IdentityProvider.clientSecret",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "IdentityProvider.useSubject",
@@ -2798,7 +3613,12 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
+            }],
+            "base" : {
+              "path" : "IdentityProvider.useSubject",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -2825,7 +3645,12 @@
             "short" : "Contains details of long running asynchronous/background jobs.",
             "definition" : "Contains details of long running asynchronous/background jobs.",
             "min" : 0,
-            "max" : "*"
+            "max" : "*",
+            "base": {
+              "path" : "AsyncJob",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "AsyncJob.id",
@@ -2912,7 +3737,12 @@
             "max" : "1",
             "type" : [{
               "code" : "instant"
-            }]
+            }],
+            "base" : {
+              "path" : "AsyncJob.requestTime",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "AsyncJob.transactionTime",
@@ -2922,7 +3752,12 @@
             "max" : "1",
             "type" : [{
               "code" : "instant"
-            }]
+            }],
+            "base" : {
+              "path" : "AsyncJob.transactionTime",
+              "min" : 0,
+              "max" : "1"
+            }
           },
           {
             "id" : "AsyncJob.request",
@@ -2932,7 +3767,12 @@
             "max" : "1",
             "type" : [{
               "code" : "uri"
-            }]
+            }],
+            "base" : {
+              "path" : "AsyncJob.request",
+              "min" : 1,
+              "max" : "1"
+            }
           }
         ]
       }

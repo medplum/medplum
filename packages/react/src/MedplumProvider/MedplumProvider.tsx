@@ -1,6 +1,6 @@
-import { MedplumClient, ProfileResource } from '@medplum/core';
 import { showNotification } from '@mantine/notifications';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { MedplumClient, ProfileResource } from '@medplum/core';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 const reactContext = createContext(undefined as MedplumContext | undefined);
 
@@ -30,7 +30,7 @@ export interface MedplumContext {
  */
 export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
   const medplum = props.medplum;
-  const navigate = props.navigate || defaultNavigate;
+  const navigate = props.navigate ?? defaultNavigate;
 
   const [state, setState] = useState({
     profile: medplum.getProfile(),
@@ -57,11 +57,14 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
     return () => medplum.removeEventListeneer('offline', eventListener);
   }, [medplum]);
 
-  const medplumContext = {
-    ...state,
-    medplum,
-    navigate,
-  };
+  const medplumContext = useMemo(
+    () => ({
+      ...state,
+      medplum,
+      navigate,
+    }),
+    [state, medplum, navigate]
+  );
 
   return <reactContext.Provider value={medplumContext}>{props.children}</reactContext.Provider>;
 }

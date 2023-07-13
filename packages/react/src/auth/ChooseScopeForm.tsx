@@ -32,7 +32,7 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
           <Title>Choose scope</Title>
         </Center>
         <Stack>
-          {(props.scope || 'openid').split(' ').map((scopeName: string) => (
+          {(props.scope ?? 'openid').split(' ').map((scopeName: string) => (
             <Checkbox key={scopeName} id={scopeName} name={scopeName} label={scopeName} defaultChecked />
           ))}
         </Stack>

@@ -26,9 +26,6 @@ VERSION=$(node -p "require('./package.json').version")
 
 # Build server tarball
 tar \
-  --exclude='*.js.map' \
-  --exclude='*.cjs.map' \
-  --exclude='*.mjs.map' \
   --exclude='*.ts' \
   --exclude='*.tsbuildinfo' \
   -czf medplum-server.tar.gz \

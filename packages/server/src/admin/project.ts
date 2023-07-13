@@ -3,7 +3,7 @@ import { Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
+import { Repository, systemRepo } from '../fhir/repo';
 import { authenticateToken } from '../oauth/middleware';
 import { createBotHandler, createBotValidators } from './bot';
 import { createClientHandler, createClientValidators } from './client';
@@ -39,7 +39,8 @@ projectAdminRouter.get(
 projectAdminRouter.post(
   '/:projectId/secrets',
   asyncWrap(async (req: Request, res: Response) => {
-    const result = await systemRepo.updateResource({
+    const repo = res.locals.repo as Repository;
+    const result = await repo.updateResource({
       ...res.locals.project,
       secret: req.body,
     });
@@ -51,7 +52,8 @@ projectAdminRouter.post(
 projectAdminRouter.post(
   '/:projectId/sites',
   asyncWrap(async (req: Request, res: Response) => {
-    const result = await systemRepo.updateResource({
+    const repo = res.locals.repo as Repository;
+    const result = await repo.updateResource({
       ...res.locals.project,
       site: req.body,
     });
@@ -63,9 +65,10 @@ projectAdminRouter.post(
 projectAdminRouter.get(
   '/:projectId/members/:membershipId',
   asyncWrap(async (req: Request, res: Response) => {
+    const repo = res.locals.repo as Repository;
     const project = res.locals.project as Project;
     const { membershipId } = req.params;
-    const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+    const membership = await repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
     if (membership.project?.reference !== getReferenceString(project)) {
       sendOutcome(res, forbidden);
       return;
@@ -77,9 +80,10 @@ projectAdminRouter.get(
 projectAdminRouter.post(
   '/:projectId/members/:membershipId',
   asyncWrap(async (req: Request, res: Response) => {
+    const repo = res.locals.repo as Repository;
     const project = res.locals.project as Project;
     const { membershipId } = req.params;
-    const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+    const membership = await repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
     if (membership.project?.reference !== getReferenceString(project)) {
       sendOutcome(res, forbidden);
       return;
@@ -97,9 +101,10 @@ projectAdminRouter.post(
 projectAdminRouter.delete(
   '/:projectId/members/:membershipId',
   asyncWrap(async (req: Request, res: Response) => {
+    const repo = res.locals.repo as Repository;
     const project = res.locals.project as Project;
     const { membershipId } = req.params;
-    const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+    const membership = await repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
     if (membership.project?.reference !== getReferenceString(project)) {
       sendOutcome(res, forbidden);
       return;

@@ -3,7 +3,6 @@ import {
   CodeableConcept,
   Device,
   Extension,
-  Identifier,
   ObservationDefinition,
   ObservationDefinitionQualifiedInterval,
   Patient,
@@ -282,7 +281,7 @@ function buildQuestionnaireAnswerItems(
  * @returns The identifier value if found; otherwise undefined.
  */
 export function getIdentifier(resource: Resource, system: string): string | undefined {
-  const identifiers = (resource as any).identifier as Identifier[] | Identifier | undefined;
+  const identifiers = (resource as any).identifier;
   if (!identifiers) {
     return undefined;
   }
@@ -328,7 +327,7 @@ export function getExtension(resource: any, ...urls: string[]): Extension | unde
     curr = (curr?.extension as Extension[] | undefined)?.find((e) => e.url === urls[i]);
   }
 
-  return curr as Extension | undefined;
+  return curr;
 }
 
 /**
@@ -362,7 +361,7 @@ function stringifyReplacer(k: string, v: any): any {
  * @returns True if the key is an array key.
  */
 function isArrayKey(k: string): boolean {
-  return !!k.match(/\d+$/);
+  return !!/\d+$/.exec(k);
 }
 
 /**
@@ -505,7 +504,7 @@ export function deepClone<T>(input: T): T {
  * @returns True if the input string matches the UUID format.
  */
 export function isUUID(input: string): boolean {
-  return !!input.match(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/i);
+  return !!/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/i.exec(input);
 }
 
 /**

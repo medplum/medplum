@@ -11,6 +11,9 @@
     "url": "https://github.com/medplum/medplum.git",
     "directory": "packages/app"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "files": [
     "dist"
   ],

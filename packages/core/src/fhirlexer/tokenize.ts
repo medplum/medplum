@@ -105,15 +105,15 @@ export class Tokenizer {
       return this.consumeDateTime();
     }
 
-    if (c.match(/\d/)) {
+    if (/\d/.exec(c)) {
       return this.consumeNumber();
     }
 
-    if (c.match(/\w/)) {
+    if (/\w/.exec(c)) {
       return this.consumeSymbol();
     }
 
-    if ((c === '$' || c === '%') && next.match(/\w/)) {
+    if ((c === '$' || c === '%') && /\w/.exec(next)) {
       return this.consumeSymbol();
     }
 
@@ -121,7 +121,7 @@ export class Tokenizer {
   }
 
   private consumeWhitespace(): void {
-    this.consumeWhile(() => this.curr().match(/\s/));
+    this.consumeWhile(() => /\s/.exec(this.curr()));
   }
 
   private consumeMultiLineComment(): Token {
@@ -163,22 +163,22 @@ export class Tokenizer {
     this.advance(); // Consume "@"
 
     const start = this.pos.index;
-    this.consumeWhile(() => this.curr().match(/[\d-]/));
+    this.consumeWhile(() => /[\d-]/.exec(this.curr()));
 
     if (this.curr() === 'T') {
       this.advance();
-      this.consumeWhile(() => this.curr().match(/[\d:]/));
+      this.consumeWhile(() => /[\d:]/.exec(this.curr()));
 
-      if (this.curr() === '.' && this.peek().match(/\d/)) {
+      if (this.curr() === '.' && /\d/.exec(this.peek())) {
         this.advance();
-        this.consumeWhile(() => this.curr().match(/\d/));
+        this.consumeWhile(() => /\d/.exec(this.curr()));
       }
 
       if (this.curr() === 'Z') {
         this.advance();
       } else if (this.curr() === '+' || this.curr() === '-') {
         this.advance();
-        this.consumeWhile(() => this.curr().match(/[\d:]/));
+        this.consumeWhile(() => /[\d:]/.exec(this.curr()));
       }
     }
 
@@ -188,11 +188,11 @@ export class Tokenizer {
   private consumeNumber(): Token {
     const start = this.pos.index;
     let id = 'Number';
-    this.consumeWhile(() => this.curr().match(/\d/));
+    this.consumeWhile(() => /\d/.exec(this.curr()));
 
-    if (this.curr() === '.' && this.peek().match(/\d/)) {
+    if (this.curr() === '.' && /\d/.exec(this.peek())) {
       this.advance();
-      this.consumeWhile(() => this.curr().match(/\d/));
+      this.consumeWhile(() => /\d/.exec(this.curr()));
     }
 
     if (this.curr() === '-' && this.dateTimeLiterals) {
@@ -212,7 +212,7 @@ export class Tokenizer {
   }
 
   private consumeSymbol(): Token {
-    const value = this.consumeWhile(() => this.curr().match(this.symbolRegex));
+    const value = this.consumeWhile(() => this.symbolRegex.exec(this.curr()));
     if (this.prevToken()?.value !== '.' && this.keywords.includes(value)) {
       return this.buildToken(value, value);
     }

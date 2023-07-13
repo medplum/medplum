@@ -1,11 +1,11 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { sdkStreamMixin } from '@aws-sdk/util-stream';
 import { Binary } from '@medplum/fhirtypes';
-import { Request } from 'express';
-import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
-import internal, { Readable } from 'stream';
+import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
+import { Request } from 'express';
 import fs from 'fs';
+import internal, { Readable } from 'stream';
 
 import { loadTestConfig } from '../config';
 import { getBinaryStorage, initBinaryStorage } from './storage';
@@ -125,7 +125,7 @@ describe('Storage', () => {
     const sdkStream = sdkStreamMixin(req);
     mockS3Client.on(GetObjectCommand).resolves({ Body: sdkStream });
 
-    await storage.writeBinary(binary, '', '', req as Request);
+    await storage.writeBinary(binary, undefined, undefined, req as Request);
     expect(mockS3Client.send.callCount).toBe(1);
     expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
       Bucket: 'foo',

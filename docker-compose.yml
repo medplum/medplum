@@ -19,6 +19,7 @@ services:
       - '5432:5432'
   redis:
     image: redis:6
+    restart: always
     command: redis-server --requirepass medplum
     ports:
       - '6379:6379'

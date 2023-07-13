@@ -9,6 +9,7 @@ import { NewUserForm } from './NewUserForm';
 export interface RegisterFormProps {
   readonly type: 'patient' | 'project';
   readonly projectId?: string;
+  readonly clientId?: string;
   readonly googleClientId?: string;
   readonly recaptchaSiteKey?: string;
   readonly children?: React.ReactNode;
@@ -16,7 +17,7 @@ export interface RegisterFormProps {
 }
 
 export function RegisterForm(props: RegisterFormProps): JSX.Element {
-  const { type, projectId, googleClientId, recaptchaSiteKey, onSuccess } = props;
+  const { type, projectId, clientId, googleClientId, recaptchaSiteKey, onSuccess } = props;
   const medplum = useMedplum();
   const [login, setLogin] = useState<string | undefined>(undefined);
   const [outcome, setOutcome] = useState<OperationOutcome>();
@@ -48,6 +49,7 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
       {!login && (
         <NewUserForm
           projectId={projectId as string}
+          clientId={clientId}
           googleClientId={googleClientId}
           recaptchaSiteKey={recaptchaSiteKey}
           handleAuthResponse={handleAuthResponse}

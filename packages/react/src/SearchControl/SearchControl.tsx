@@ -163,7 +163,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const stateRef = useRef<SearchControlState>(state);
   stateRef.current = state;
 
-  const totalType = search.total ?? 'estimate';
+  const totalType = search.total ?? 'accurate';
 
   useEffect(() => {
     setOutcome(undefined);
@@ -267,7 +267,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   function isExportPassed(): boolean {
-    return !!(props.onExport || props.onExportCsv || props.onExportTransactionBundle);
+    return !!(props.onExport ?? props.onExportCsv ?? props.onExportTransactionBundle);
   }
 
   useEffect(() => {
@@ -606,11 +606,11 @@ function FilterDescription(props: FilterDescriptionProps): JSX.Element {
 }
 
 function getPage(search: SearchRequest): number {
-  return Math.floor((search.offset || 0) / (search.count || DEFAULT_SEARCH_COUNT)) + 1;
+  return Math.floor((search.offset ?? 0) / (search.count ?? DEFAULT_SEARCH_COUNT)) + 1;
 }
 
 function getTotalPages(search: SearchRequest, total: number): number {
-  const pageSize = search.count || DEFAULT_SEARCH_COUNT;
+  const pageSize = search.count ?? DEFAULT_SEARCH_COUNT;
   return Math.ceil(total / pageSize);
 }
 

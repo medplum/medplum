@@ -54,7 +54,7 @@ export function ResourcePage(): JSX.Element | null {
   const tabs = getTabs(resourceType);
   const defaultTab = tabs[0].toLowerCase();
   const tab = window.location.pathname.split('/').pop();
-  const [currentTab, setCurrentTab] = useState<string>(tab || defaultTab);
+  const [currentTab, setCurrentTab] = useState<string>(tab ?? defaultTab);
 
   async function restoreResource(): Promise<void> {
     const historyBundle = await medplum.readHistory(resourceType, id);
@@ -122,9 +122,9 @@ export function ResourcePage(): JSX.Element | null {
     <>
       {value?.resourceType === 'ServiceRequest' && statusValueSet && (
         <QuickStatus
-          key={getReferenceString(value) + '-' + (value as ServiceRequest | undefined)?.orderDetail?.[0]?.text}
+          key={getReferenceString(value) + '-' + value.orderDetail?.[0]?.text}
           valueSet={{ reference: statusValueSet }}
-          defaultValue={(value as ServiceRequest | undefined)?.orderDetail?.[0]?.text}
+          defaultValue={value.orderDetail?.[0]?.text}
           onChange={onStatusChange}
         />
       )}

@@ -115,7 +115,7 @@ export function clearFilters(definition: SearchRequest): SearchRequest {
 export function clearFiltersOnField(definition: SearchRequest, code: string): SearchRequest {
   return setFilters(
     definition,
-    (definition.filters || []).filter((f) => f.code !== code)
+    (definition.filters ?? []).filter((f) => f.code !== code)
   );
 }
 
@@ -143,7 +143,7 @@ export function addFilter(
   if (definition.filters) {
     nextFilters.push(...definition.filters);
   }
-  nextFilters.push({ code: field, operator: op, value: value || '' });
+  nextFilters.push({ code: field, operator: op, value: value ?? '' });
 
   return setFilters(definition, nextFilters);
 }
@@ -540,7 +540,7 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
  * @returns A React element or null.
  */
 function renderPropertyValue(resource: Resource, elementDefinition: ElementDefinition): JSX.Element | null {
-  const path = elementDefinition.path?.split('.')?.pop()?.replaceAll('[x]', '') || '';
+  const path = elementDefinition.path?.split('.')?.pop()?.replaceAll('[x]', '') ?? '';
   const [value, propertyType] = getValueAndType({ type: resource.resourceType, value: resource }, path);
   if (!value) {
     return null;

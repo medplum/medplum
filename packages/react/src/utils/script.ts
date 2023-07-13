@@ -8,6 +8,6 @@ export function createScriptTag(src: string, onload?: () => void): void {
   const script = document.createElement('script');
   script.async = true;
   script.src = src;
-  script.onload = onload || null;
+  script.onload = onload ?? null;
   head.appendChild(script);
 }

@@ -66,16 +66,17 @@ export async function searchImpl<T extends Resource>(
   }
 
   let entry = undefined;
+  let rowCount = undefined;
   let hasMore = false;
   if (searchRequest.count > 0) {
-    ({ entry, hasMore } = await getSearchEntries<T>(repo, searchRequest));
+    ({ entry, rowCount, hasMore } = await getSearchEntries<T>(repo, searchRequest));
   }
 
   let total = undefined;
   if (searchRequest.total === 'accurate') {
     total = await getAccurateCount(repo, searchRequest);
   } else if (searchRequest.total === 'estimate') {
-    total = await getEstimateCount(repo, searchRequest);
+    total = await getEstimateCount(repo, searchRequest, rowCount);
   }
 
   return {
@@ -96,7 +97,7 @@ export async function searchImpl<T extends Resource>(
 async function getSearchEntries<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequest
-): Promise<{ entry: BundleEntry<T>[]; hasMore: boolean }> {
+): Promise<{ entry: BundleEntry<T>[]; rowCount: number; hasMore: boolean }> {
   const resourceType = searchRequest.resourceType;
   const client = getClient();
   const builder = new SelectQuery(resourceType)
@@ -117,6 +118,7 @@ async function getSearchEntries<T extends Resource>(
   builder.offset(searchRequest.offset || 0);
 
   const rows = await builder.execute(client);
+  const rowCount = rows.length;
   const resources = rows.slice(0, count).map((row) => JSON.parse(row.content as string)) as T[];
   const entries = resources.map(
     (resource) =>
@@ -136,6 +138,7 @@ async function getSearchEntries<T extends Resource>(
 
   return {
     entry: entries as BundleEntry<T>[],
+    rowCount,
     hasMore: rows.length > count,
   };
 }
@@ -373,9 +376,14 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
  * This uses the estimated row count technique as described here: https://wiki.postgresql.org/wiki/Count_estimate
  * @param repo The repository.
  * @param searchRequest The search request.
+ * @param rowCount The number of matching results if found.
  * @returns The total number of matching results.
  */
-async function getEstimateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
+async function getEstimateCount(
+  repo: Repository,
+  searchRequest: SearchRequest,
+  rowCount: number | undefined
+): Promise<number> {
   const resourceType = searchRequest.resourceType;
   const client = getClient();
   const builder = new SelectQuery(resourceType).column('id');
@@ -391,14 +399,20 @@ async function getEstimateCount(repo: Repository, searchRequest: SearchRequest):
   // See: https://wiki.postgresql.org/wiki/Count_estimate
   // This parses the query plan to find the estimated number of rows.
   const rows = await builder.execute(client);
+  let result = 0;
   for (const row of rows) {
     const queryPlan = row['QUERY PLAN'];
     const match = /rows=(\d+)/.exec(queryPlan);
     if (match) {
-      return parseInt(match[1], 10);
+      result = parseInt(match[1], 10);
+      break;
     }
   }
-  return 0;
+
+  // Apply some logic to avoid obviously incorrect estimates
+  const startIndex = (searchRequest.offset ?? 0) * (searchRequest.count ?? DEFAULT_SEARCH_COUNT);
+  const minCount = rowCount === undefined ? startIndex : startIndex + rowCount;
+  return Math.max(minCount, result);
 }
 
 /**

@@ -22,6 +22,8 @@ Editing bots in the web editor is good for getting started quickly, but as Bots 
 
 The first thing we'll do is set up a Git repository to host your Bot code. While you can set up bots in any git repository, we provide a [template Git repository](https://github.com/medplum/medplum-demo-bots) to help you get started.
 
+Note that the Medplum Bot SDK requires [Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) version 18+.
+
 Clone the repo and install the dependencies
 
 ```bash

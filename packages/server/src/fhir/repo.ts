@@ -5,7 +5,6 @@ import {
   canWriteResourceType,
   deepEquals,
   evalFhirPath,
-  validate,
   forbidden,
   formatSearchQuery,
   getSearchParameterDetails,
@@ -28,6 +27,7 @@ import {
   SearchRequest,
   stringify,
   tooManyRequests,
+  validate,
   validateResourceType,
 } from '@medplum/core';
 import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
@@ -38,6 +38,7 @@ import {
   BundleEntry,
   Meta,
   OperationOutcome,
+  OperationOutcomeIssue,
   Reference,
   Resource,
   ResourceType,
@@ -526,7 +527,19 @@ export class Repository extends BaseRepository implements FhirRepository {
   private validate(resource: Resource): void {
     if (this.context.strictMode) {
       const start = process.hrtime.bigint();
-      validate(resource);
+      try {
+        validate(resource);
+      } catch (err: any) {
+        const invariantErrors = err.outcome.issue.filter((issue: OperationOutcomeIssue) => issue.code === 'invariant');
+        const structureErrors = err.outcome.issue.filter((issue: OperationOutcomeIssue) => issue.code !== 'invariant');
+        if (invariantErrors.length > 0) {
+          logger.error(`Validation errors: ${err.invariantErrors}`);
+        }
+        if (structureErrors.length > 0) {
+          throw new OperationOutcomeError({ resourceType: 'OperationOutcome', issue: structureErrors });
+        }
+      }
+
       const elapsedTime = Number(process.hrtime.bigint() - start);
 
       const MILLISECONDS = 1e6; // Conversion factor from ns to ms
@@ -1574,6 +1587,8 @@ export class Repository extends BaseRepository implements FhirRepository {
    */
   private removeField<T extends Resource>(input: T, path: string): T {
     const patch: Operation[] = [{ op: 'remove', path: `/${path.replaceAll('.', '/')}` }];
+    // applyPatch returns errors if the value is missing
+    // but we don't care if the value is missing in this case
     applyPatch(input, patch);
     return input;
   }

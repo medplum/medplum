@@ -149,16 +149,22 @@ This policy acts like a template, that can be instantiated (potentially multiple
   "access": [
     // Provide access to Patients in Organization/abc
     {
-      "policy": { "reference": "AccessPolicy/123", "display": "Parameterized Access Policy" },
+      "policy": { "reference": "AccessPolicy/123" },
       "parameter": [
-        { "name": "provider_organization", "valueReference": { "reference": "Organization/abc" },
+        {
+          "name": "provider_organization",
+          "valueReference": { "reference": "Organization/abc" }
+        }
       ]
     },
     // Provide access to Patients in Organization/def
     {
-      "policy": { "reference": "AccessPolicy/123", "display": "Parameterized Access Policy" },
+      "policy": { "reference": "AccessPolicy/123" },
       "parameter": [
-        { "name": "provider_organization", "valueReference": { "reference": "Organization/def" },
+        {
+          "name": "provider_organization",
+          "valueReference": { "reference": "Organization/def" }
+        }
       ]
     }
   ]

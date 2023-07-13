@@ -326,11 +326,11 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     case 'Integer':
       return typeof value === 'number';
     case 'Date':
-      return typeof value === 'string' && !!value.match(/^\d{4}(-\d{2}(-\d{2})?)?/);
+      return typeof value === 'string' && !!/^\d{4}(-\d{2}(-\d{2})?)?/.exec(value);
     case 'DateTime':
-      return typeof value === 'string' && !!value.match(/^\d{4}(-\d{2}(-\d{2})?)?T/);
+      return typeof value === 'string' && !!/^\d{4}(-\d{2}(-\d{2})?)?T/.exec(value);
     case 'Time':
-      return typeof value === 'string' && !!value.match(/^T\d/);
+      return typeof value === 'string' && !!/^T\d/.exec(value);
     case 'Period':
       return isPeriod(value);
     case 'Quantity':
