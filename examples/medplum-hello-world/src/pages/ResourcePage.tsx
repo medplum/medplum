@@ -8,6 +8,7 @@ import { useParams } from 'react-router-dom';
 /**
  * This is an example of a generic "Resource Display" page.
  * It uses the Medplum `<ResourceTable>` component to display a resource.
+ * @returns A React component that displays a resource.
  */
 export function ResourcePage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -16,7 +17,10 @@ export function ResourcePage(): JSX.Element | null {
 
   useEffect(() => {
     if (resourceType && id) {
-      medplum.readResource(resourceType as ResourceType, id).then(setResource);
+      medplum
+        .readResource(resourceType as ResourceType, id)
+        .then(setResource)
+        .catch(console.error);
     }
   }, [medplum, resourceType, id]);
 

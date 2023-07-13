@@ -18,7 +18,7 @@ import fetch from 'node-fetch';
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   // Because this bot is triggered by a subscription, the resource that comes in is a Coverage object
 
-  const OPKIT_KEY = event.secrets['OPKIT_API_KEY'];
+  const OPKIT_KEY = event.secrets['OPKIT_API_KEY']?.valueString as string;
 
   const coverage = event.input as Coverage;
   const patient = await medplum.readReference(coverage.subscriber as Reference<Patient>);
@@ -89,7 +89,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     .then((response) => response.json())
     .catch(() => console.log('Error checking eligibility request'));
 
-  if (!result || !result?.plan?.benefits) {
+  if (!result?.plan?.benefits) {
     return false;
   }
 
