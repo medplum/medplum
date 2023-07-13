@@ -37,8 +37,9 @@ function isOriginAllowed(origin: string | undefined): boolean {
   return false;
 }
 
-const prefixes = ['/.well-known/', '/admin/', '/auth/', '/fhir/', '/oauth2/'];
+const prefixes = ['/.well-known/', '/admin/', '/auth/', '/fhir/', '/oauth2/', '/email/'];
 
 function isPathAllowed(path: string): boolean {
+  console.info('CORS PATH', path);
   return prefixes.some((prefix) => path.startsWith(prefix));
 }
