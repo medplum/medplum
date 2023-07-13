@@ -538,7 +538,9 @@ export class Repository extends BaseRepository implements FhirRepository {
             )}`
           );
         }
-        throw new OperationOutcomeError(outcome);
+        if (outcome.issue?.length && outcome.issue.length !== invariantErrors?.length) {
+          throw new OperationOutcomeError(outcome);
+        }
       }
 
       const elapsedTime = Number(process.hrtime.bigint() - start);
