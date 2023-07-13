@@ -139,7 +139,7 @@ describe('Link Patient', async () => {
       ],
     });
 
-    medplum.createResource(patient1);
+    await medplum.createResource(patient1);
 
     // Create another patient with the same identifier but different name
     const patient2: Patient = await medplum.createResource({

@@ -118,7 +118,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Encounter>
  * @param candidCodedEncounter A JS representation of the CodedEncounter object
  * @param apiKey  Candid Health API Key
  * @param apiSecret Candid Health API Secret
- * @returns
+ * @returns The Candid Health API response
  */
 async function submitCandidEncounter(candidCodedEncounter: any, apiKey: string, apiSecret: string): Promise<any> {
   // Get a Bearer Token
@@ -144,8 +144,12 @@ async function submitCandidEncounter(candidCodedEncounter: any, apiKey: string, 
   return candidEncounterResult;
 }
 
-// Convert a FHIR patient
-function convertPatient(patient: Patient | undefined): any | undefined {
+/**
+ * Converts a FHIR patient to a Candid Health patient
+ * @param patient The FHIR patient.
+ * @returns The Candid Health patient.
+ */
+function convertPatient(patient: Patient | undefined): any {
   if (!patient) {
     return undefined;
   }
@@ -312,7 +316,8 @@ function convertDiagnoses(encounter: Encounter): any[] {
   return result;
 }
 
-/** Data Type Conversions **/
+/* Data Type Conversions */
+
 function convertAddress(address: Address | undefined): object | undefined {
   if (!address) {
     return undefined;

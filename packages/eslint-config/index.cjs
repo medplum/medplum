@@ -138,6 +138,7 @@ module.exports = {
       },
     ],
     'jsdoc/require-jsdoc': 'off',
+    'jsdoc/tag-lines': 'off',
   },
   ignorePatterns: [
     'coverage',

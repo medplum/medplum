@@ -33,6 +33,11 @@
     "typescript": "5.1.6",
     "vite": "4.3.9"
   },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
+  },
   "prettier": {
     "printWidth": 120,
     "singleQuote": true

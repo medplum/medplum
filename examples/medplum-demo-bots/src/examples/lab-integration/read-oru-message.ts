@@ -33,6 +33,9 @@ const PARTNER_TIMEZONE = '-05:00';
  * resources. Incoming data is the the form of HL7v2 ORU messages
  *
  * See: https://v2plus.hl7.org/2021Jan/message-structure/ORU_R01.html
+ * @param medplum The Medplum client
+ * @param event The Bot event
+ * @returns The Bot result
  */
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   // Read SFTP connection data from project secrets (TODO link)
@@ -91,7 +94,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
  *
  * @param medplum The Medplum Client object
  * @param message Parsed ORU message.
- * @param performer
+ * @param performer The `Organization` resource corresponding to the lab that performed the test.
  */
 export async function processOruMessage(
   medplum: MedplumClient,
@@ -196,7 +199,7 @@ export async function processOruMessage(
  * @param serviceRequest `ServiceRequest` representing this order
  * @param observations  parsed `Observation` resources
  * @param report `DiagnosticReport` for these results
- * @param specimen `Specimen` associated with the results
+ * @param specimens `Specimen` associated with the results
  */
 async function handleOrderCancellation(
   medplum: MedplumClient,
@@ -228,11 +231,11 @@ async function handleOrderCancellation(
 
 /**
  * Check to see if the order was cancelled. If so, return the cancellation reason
- * @param message
- * @param medplum
- * @param serviceRequest
- * @param orderId
- * @returns
+ *
+ * @param medplum The MedplumClient object.
+ * @param message The parsed HL7 message.
+ * @param serviceRequest The ServiceRequest resource.
+ * @returns The cancellation reason, if any.
  */
 async function getCancellationReason(
   medplum: MedplumClient,
@@ -262,7 +265,8 @@ async function getCancellationReason(
   return undefined;
 }
 
-/** SFTP Handling Code */
+/* SFTP Handling Code */
+
 async function readSFTPDirectory(sftp: SftpClient, dir: string, batchSize = 25): Promise<string[]> {
   const results: string[] = [];
 
@@ -312,7 +316,7 @@ async function readSFTPDirectory(sftp: SftpClient, dir: string, batchSize = 25):
  * @param message Parsed HL7 Message
  * @param serviceRequest Current `ServiceRequest` representing the lab order
  * @param performer A reference to the performing lab
- * @returns
+ * @returns An array of `Observation` resources.
  */
 function processObxSegments(
   message: Hl7Message,
@@ -361,10 +365,10 @@ function processObxSegments(
  *
  * Note that some systems send numerical values with comparators (e.g. <, >) as structured text fields
  *
- * @param segment
- * @param serviceRequest
- * @param performer
- * @returns
+ * @param segment The OBX segment to convert.
+ * @param serviceRequest The current `ServiceRequest` representing the lab order.
+ * @param performer The performing lab.
+ * @returns The converted `Observation` resource.
  */
 function processObservation(
   segment: Hl7Segment,
@@ -433,7 +437,7 @@ function processObservation(
  * @param medplum The Medplum Client
  * @param updatedObservation The latest `Observation`
  * @param existingObservations The existing `Observation` on the server
- * @returns
+ * @returns The updated `Observation` resource.
  */
 function createOrUpdateObservation(
   medplum: MedplumClient,
@@ -457,11 +461,11 @@ function createOrUpdateObservation(
 /**
  * Upload any embedded rendered PDF reports in the HL7 message as a FHIR `Media` resource
  * and attach it to the diagnostic report in the `DiagnosticReport.presentedForm` property
- * @param medplum The Medplum Client
- * @param report The current `DiagnosticReport` resource
- * @param bid
- * @param message
- * @returns
+ * @param medplum The Medplum Client.
+ * @param report The current `DiagnosticReport` resource.
+ * @param fileName The name of the PDF file.
+ * @param message The HL7 message.
+ * @returns The uploaded `Media` resources.
  */
 async function uploadEmbeddedPdfs(
   medplum: MedplumClient,
@@ -492,7 +496,8 @@ async function uploadEmbeddedPdfs(
   return media;
 }
 
-/** Parsing Utilities */
+/* Parsing Utilities */
+
 function parseValueWithComparator(value: string): Quantity | undefined {
   const match = value.match(/([<>][=]?)(\d+(\.\d+)?)/);
   if (match) {

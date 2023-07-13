@@ -275,6 +275,7 @@ async function createCompletedCarePlan(medplum: MedplumClient, patient: Patient)
 
 /**
  * Creates an active CarePlan that starts today.
+ * @param medplum The medplum client
  * @param patient The patient.
  */
 async function createActiveCarePlan(medplum: MedplumClient, patient: Patient): Promise<void> {
@@ -303,6 +304,7 @@ async function createActiveCarePlan(medplum: MedplumClient, patient: Patient): P
  * @param medplum The medplum client
  * @param patient The patient
  * @param tasks The set of tasks to complete for the care plan
+ * @returns The created care plan
  */
 async function createCarePlan(medplum: MedplumClient, patient: Patient, tasks: Task[]): Promise<CarePlan> {
   tasks = await Promise.all(
@@ -366,6 +368,8 @@ function createA1CObservation(patient: Patient): Observation {
 /**
  * Creates a DiagnosticReport with an A1C observation.
  * @param patient The patient.
+ * @param a1c The A1C observation.
+ * @returns The DiagnosticReport.
  */
 function createDiagnosticReport(patient: Patient, a1c: Observation): DiagnosticReport {
   return {
