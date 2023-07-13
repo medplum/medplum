@@ -127,6 +127,8 @@ The [`searchResourcePages()`](/docs/sdk/classes/MedplumClient#searchresourcepage
   {ExampleCode}
 </MedplumCodeBlock>
 
+The array returned by `searchResourcePages` also includes a `bundle` property that contains the original `Bundle` resource. You can use this to access bundle metadata such as `Bundle.total` and `Bundle.link`.
+
 ## Conclusion
 
 In this guide, we've discussed how to perform paginated search queries using the `_count` and `_offset` search parameters, as well as the the `Bundle.link` element.
