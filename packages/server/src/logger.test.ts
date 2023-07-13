@@ -9,7 +9,7 @@ import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 
 import { loadConfig } from './config';
-import { LogLevel, logger } from './logger';
+import { LogLevel, logger, parseLogLevel } from './logger';
 import { waitFor } from './test.setup';
 
 describe('Logger', () => {
@@ -134,5 +134,16 @@ describe('Logger', () => {
 
     expect(console.info).toHaveBeenCalled();
     expect(console.log).not.toHaveBeenCalled();
+  });
+
+  test('parseLogLevel', () => {
+    expect(parseLogLevel('DEbug')).toBe(LogLevel.DEBUG);
+    expect(parseLogLevel('INFO')).toBe(LogLevel.INFO);
+    expect(parseLogLevel('none')).toBe(LogLevel.NONE);
+    expect(parseLogLevel('WARN')).toBe(LogLevel.WARN);
+    expect(parseLogLevel('error')).toBe(LogLevel.ERROR);
+    expect(() => {
+      parseLogLevel('foo');
+    }).toThrow('Invalid log level: foo');
   });
 });
