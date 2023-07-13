@@ -532,21 +532,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       const profileURLs = resource.meta?.profile;
       try {
         if (profileURLs) {
-          for (const url of profileURLs) {
-            const loadStart = process.hrtime.bigint();
-            const profile = await this.loadProfile(url);
-            const loadTime = Number(process.hrtime.bigint() - loadStart);
-            if (!profile) {
-              logger.warn(`Unknown profile referenced in ${resource.resourceType}/${resource.id}: ${url}`);
-              continue;
-            }
-            const validateStart = process.hrtime.bigint();
-            validate(resource, profile);
-            const validateTime = Number(process.hrtime.bigint() - validateStart);
-            logger.debug(
-              `Profile validation timing: load=${formatDuration(loadTime)}; validate=${formatDuration(validateTime)}`
-            );
-          }
+          await this.validateProfiles(resource, profileURLs);
         } else {
           validate(resource);
         }
@@ -579,13 +565,34 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
   }
 
+  private async validateProfiles(resource: Resource, profileURLs: string[]): Promise<void> {
+    for (const url of profileURLs) {
+      const loadStart = process.hrtime.bigint();
+      const profile = await this.loadProfile(url);
+      const loadTime = Number(process.hrtime.bigint() - loadStart);
+      if (!profile) {
+        logger.warn(`Unknown profile referenced in ${resource.resourceType}/${resource.id}: ${url}`);
+        continue;
+      }
+      const validateStart = process.hrtime.bigint();
+      validate(resource, profile);
+      const validateTime = Number(process.hrtime.bigint() - validateStart);
+      logger.debug(
+        `Profile validation timing: load=${formatDuration(loadTime)}; validate=${formatDuration(validateTime)}`
+      );
+    }
+  }
+
   private async loadProfile(url: string): Promise<StructureDefinition | undefined> {
     const redis = getRedis();
-    const cachedProfile = await redis.get(`Project/${this.context.project}/StructureDefinition/${url}`);
+    const cacheKey = `Project/${this.context.project}/StructureDefinition/${url}`;
+    // Try retrieving from cache
+    const cachedProfile = await redis.get(cacheKey);
     if (cachedProfile) {
       return (JSON.parse(cachedProfile) as CacheEntry<StructureDefinition>).resource;
     }
 
+    // Fall back to loading from the DB; descending version sort approximates version resolution for some cases
     const profile = await this.searchOne<StructureDefinition>({
       resourceType: 'StructureDefinition',
       filters: [
@@ -602,9 +609,11 @@ export class Repository extends BaseRepository implements FhirRepository {
         },
       ],
     });
+
     if (profile) {
+      // Store loaded profile in cache
       await redis.set(
-        `Project/${this.context.project}/StructureDefinition/${url}`,
+        cacheKey,
         JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
         'EX',
         24 * 60 * 60 // 24 hours in seconds
