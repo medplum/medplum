@@ -53,11 +53,6 @@ jobs:
       - name: Build Project
         run: ./scripts/build.sh
         env:
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          MEDPLUM_BASE_URL: ${{ secrets.MEDPLUM_BASE_URL }}
-          MEDPLUM_CLIENT_ID: ${{ secrets.MEDPLUM_CLIENT_ID }}
-          MEDPLUM_INTROSPECTION_URL: ${{ secrets.MEDPLUM_INTROSPECTION_URL }}
-          RECAPTCHA_SITE_KEY: ${{ secrets.RECAPTCHA_SITE_KEY }}
           POSTGRES_HOST: localhost
           POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
       - name: Coveralls GitHub Action
@@ -94,4 +89,7 @@ jobs:
           DOCKERHUB_REPOSITORY: ${{ secrets.DOCKERHUB_REPOSITORY }}
           ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
           ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MEDPLUM_BASE_URL: ${{ secrets.MEDPLUM_BASE_URL }}
           MEDPLUM_INTROSPECTION_URL: ${{ secrets.MEDPLUM_INTROSPECTION_URL }}
+          RECAPTCHA_SITE_KEY: ${{ secrets.RECAPTCHA_SITE_KEY }}
