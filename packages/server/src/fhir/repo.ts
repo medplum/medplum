@@ -81,6 +81,7 @@ import { rewriteAttachments, RewriteMode } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, Operator, SelectQuery } from './sql';
 import { getSearchParameters } from './structure';
+import { formatDuration } from '../util/time';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -528,31 +529,30 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   private async validate(resource: Resource): Promise<void> {
     if (this.context.strictMode) {
-      const start = process.hrtime.bigint();
+      // const start = process.hrtime.bigint();
       const profileURLs = resource.meta?.profile;
       try {
         if (profileURLs) {
           for (const url of profileURLs) {
-            const profile = await this.searchOne<StructureDefinition>({
-              resourceType: 'StructureDefinition',
-              filters: [
-                {
-                  code: 'url',
-                  operator: FhirOperator.EQUALS,
-                  value: url,
-                },
-              ],
-            });
+            const loadStart = process.hrtime.bigint();
+            const profile = await this.loadProfile(url);
+            const loadTime = Number(process.hrtime.bigint() - loadStart);
             if (!profile) {
               logger.warn(`Unknown profile referenced in ${resource.resourceType}/${resource.id}: ${url}`);
               continue;
             }
+            const validateStart = process.hrtime.bigint();
             validate(resource, profile);
+            const validateTime = Number(process.hrtime.bigint() - validateStart);
+            logger.debug(
+              `Profile validation timing: load=${formatDuration(loadTime)}; validate=${formatDuration(validateTime)}`
+            );
           }
         } else {
           validate(resource);
         }
       } catch (err: any) {
+        console.log(err);
         const invariantErrors = err.outcome?.issue?.filter(
           (issue: OperationOutcomeIssue) => issue.code === 'invariant'
         );
@@ -567,19 +567,52 @@ export class Repository extends BaseRepository implements FhirRepository {
         }
       }
 
-      const elapsedTime = Number(process.hrtime.bigint() - start);
-
-      const MILLISECONDS = 1e6; // Conversion factor from ns to ms
-      if (elapsedTime > 5 * MILLISECONDS) {
-        logger.warn(
-          `High validator latency on ${resource.resourceType}/${resource.id}: time=${(
-            elapsedTime / MILLISECONDS
-          ).toPrecision(3)} ms`
-        );
-      }
+      // const elapsedTime = Number(process.hrtime.bigint() - start);
+      // const MILLISECONDS = 1e6; // Conversion factor from ns to ms
+      // if (elapsedTime > 5 * MILLISECONDS) {
+      //   logger.warn(
+      //     `High validator latency on ${resource.resourceType}/${resource.id}: time=${(
+      //       elapsedTime / MILLISECONDS
+      //     ).toPrecision(3)} ms`
+      //   );
+      // }
     } else {
       validateResourceWithJsonSchema(resource);
     }
+  }
+
+  private async loadProfile(url: string): Promise<StructureDefinition | undefined> {
+    const redis = getRedis();
+    const cachedProfile = await redis.get(`Project/${this.context.project}/StructureDefinition/${url}`);
+    if (cachedProfile) {
+      return (JSON.parse(cachedProfile) as CacheEntry<StructureDefinition>).resource;
+    }
+
+    const profile = await this.searchOne<StructureDefinition>({
+      resourceType: 'StructureDefinition',
+      filters: [
+        {
+          code: 'url',
+          operator: FhirOperator.EQUALS,
+          value: url,
+        },
+      ],
+      sortRules: [
+        {
+          code: 'version',
+          descending: true,
+        },
+      ],
+    });
+    if (profile) {
+      await redis.set(
+        `Project/${this.context.project}/StructureDefinition/${url}`,
+        JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
+        'EX',
+        24 * 60 * 60 // 24 hours in seconds
+      );
+    }
+    return profile;
   }
 
   /**
