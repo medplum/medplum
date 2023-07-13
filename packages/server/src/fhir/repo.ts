@@ -529,7 +529,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   private async validate(resource: Resource): Promise<void> {
     if (this.context.strictMode) {
-      // const start = process.hrtime.bigint();
+      const start = process.hrtime.bigint();
       const profileURLs = resource.meta?.profile;
       try {
         if (profileURLs) {
@@ -552,7 +552,6 @@ export class Repository extends BaseRepository implements FhirRepository {
           validate(resource);
         }
       } catch (err: any) {
-        console.log(err);
         const invariantErrors = err.outcome?.issue?.filter(
           (issue: OperationOutcomeIssue) => issue.code === 'invariant'
         );
@@ -567,15 +566,15 @@ export class Repository extends BaseRepository implements FhirRepository {
         }
       }
 
-      // const elapsedTime = Number(process.hrtime.bigint() - start);
-      // const MILLISECONDS = 1e6; // Conversion factor from ns to ms
-      // if (elapsedTime > 5 * MILLISECONDS) {
-      //   logger.warn(
-      //     `High validator latency on ${resource.resourceType}/${resource.id}: time=${(
-      //       elapsedTime / MILLISECONDS
-      //     ).toPrecision(3)} ms`
-      //   );
-      // }
+      const elapsedTime = Number(process.hrtime.bigint() - start);
+      const MILLISECONDS = 1e6; // Conversion factor from ns to ms
+      if (elapsedTime > 5 * MILLISECONDS) {
+        logger.warn(
+          `High validator latency on ${resource.resourceType}/${resource.id}: time=${(
+            elapsedTime / MILLISECONDS
+          ).toPrecision(3)} ms`
+        );
+      }
     } else {
       validateResourceWithJsonSchema(resource);
     }
