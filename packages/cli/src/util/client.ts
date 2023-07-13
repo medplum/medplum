@@ -1,13 +1,10 @@
 import { MedplumClient, MedplumClientOptions } from '@medplum/core';
 import { FileSystemStorage } from '../storage';
 
-export async function createMedplumClient(options: MedplumClientOptions): Promise<MedplumClient> {
-  const baseUrl = options.baseUrl ?? process.env['MEDPLUM_BASE_URL'] ?? 'https://api.medplum.com/';
-  const fhirUrlPath = options.fhirUrlPath ?? process.env['MEDPLUM_FHIR_URL_PATH'] ?? '';
-  const accessToken = options.accessToken ?? process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] ?? '';
-  const tokenUrl = options.tokenUrl ?? process.env['MEDPLUM_TOKEN_URL'] ?? '';
-  const authorizeUrl = options.authorizeUrl ?? process.env['MEDPLUM_AUTHORIZE_URL'] ?? '';
-  const fetchApi = options.fetch ?? fetch;
+export async function createMedplumClient(options: MedplumClientOptions, profileName?: string): Promise<MedplumClient> {
+  const profile = profileName ?? 'default';
+  const storage = new FileSystemStorage(profile);
+  const { baseUrl, fhirUrlPath, accessToken, tokenUrl, authorizeUrl, fetchApi } = getClientValues(options, storage);
 
   const medplumClient = new MedplumClient({
     fetch: fetchApi,
@@ -15,7 +12,8 @@ export async function createMedplumClient(options: MedplumClientOptions): Promis
     tokenUrl,
     fhirUrlPath,
     authorizeUrl,
-    storage: new FileSystemStorage(),
+    storage,
+    // TODO: add authType to Medplum
     onUnauthenticated: onUnauthenticated,
   });
 
@@ -31,6 +29,21 @@ export async function createMedplumClient(options: MedplumClientOptions): Promis
     await medplumClient.startClientLogin(clientId, clientSecret);
   }
   return medplumClient;
+}
+
+function getClientValues(options: MedplumClientOptions, storage: FileSystemStorage): Record<string, any> {
+  const values: Record<string, any> = {};
+  values.baseUrl =
+    options.baseUrl ?? storage.getString('baseUrl') ?? process.env['MEDPLUM_BASE_URL'] ?? 'https://api.medplum.com/';
+  values.fhirUrlPath =
+    options.fhirUrlPath ?? storage.getString('fhirUrlPath') ?? process.env['MEDPLUM_FHIR_URL_PATH'] ?? '';
+  values.accessToken =
+    options.accessToken ?? storage.getString('accessToken') ?? process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] ?? '';
+  values.tokenUrl = options.tokenUrl ?? storage.getString('tokenUrl') ?? process.env['MEDPLUM_TOKEN_URL'] ?? '';
+  values.authorizeUrl =
+    options.authorizeUrl ?? storage.getString('authorizeUrl') ?? process.env['MEDPLUM_AUTHORIZE_URL'] ?? '';
+  values.fetchApi = options.fetch ?? fetch;
+  return values;
 }
 
 export function onUnauthenticated(): void {

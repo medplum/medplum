@@ -7,10 +7,10 @@ export class FileSystemStorage extends ClientStorage {
   private readonly dirName: string;
   private readonly fileName: string;
 
-  constructor() {
+  constructor(profile: string) {
     super();
     this.dirName = resolve(homedir(), '.medplum');
-    this.fileName = resolve(this.dirName, 'credentials');
+    this.fileName = resolve(this.dirName, profile + '.json');
   }
 
   clear(): void {
