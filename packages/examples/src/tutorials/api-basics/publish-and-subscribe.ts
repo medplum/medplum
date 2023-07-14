@@ -1,3 +1,5 @@
+/* eslint-disable no-duplicate-imports */
+
 // start-block core-imports
 import { createReference, getReferenceString, MedplumClient } from '@medplum/core';
 import fetch from 'node-fetch';
@@ -10,7 +12,7 @@ import { Specimen } from '@medplum/fhirtypes';
 // end-block specimen-imports
 
 // start-block report-imports
-import { Observation, DiagnosticReport } from '@medplum/fhirtypes';
+import { DiagnosticReport, Observation } from '@medplum/fhirtypes';
 
 // end-block report-imports
 
