@@ -70,13 +70,13 @@ The Medplum team recommends starting with a batch pipeline. If your source syste
 
 ### Batch Pipelines
 
-Batch pipelines run as offline jobs that consider all records at once to produce pairs of patient matches. Most implementations schedule these pipelines to run on a regularly scheduled interval. As this is an N<sup>2</sup> problem, they are primarily constrained by memory rather than latency.
+Batch pipelines run as offline jobs that consider all records at once to produce sets of patient matches. Most implementations schedule these pipelines to run on a regularly scheduled interval. As this is an N<sup>2</sup> problem, they are primarily constrained by memory rather than latency.
 
 Typically, these pipelines compute matches in a data warehouse or a compute engine, but can also can also be computed in a [Medplum Bot](/docs/bots) with sufficient memory. A typical workflow is:
 
 1. Export patient data from Medplum into the appropriate data warehouse or compute engine (e.g. [Spark](https://spark.apache.org/)). Note that even large patient datasets should be able to fit into local memory (1M patients < 10GB), so distributed computation is not strictly required. See our [analytics guide](/docs/analytics) for more info.
-2. Use [matching rules](#matching-rules) to detect pairs of records. Because this is an N<sup>2</sup> operation, we recommend using some form of exact matching rules to reduce the cardinality of the problem, before applying "fuzzy matching."
-3. Use [merging rules](#merge-rules) to _create_ the master record.
+2. Use [matching rules](#matching-rules) to detect matched pairs of records. Because this is an N<sup>2</sup> operation, we recommend using some form of exact matching rules to reduce the cardinality of the problem, before applying "fuzzy matching."
+3. Use [merging rules](#merge-rules) to combine matched pairs and _create_ the master record.
 4. Use the Medplum API to update the `Patient.active` and `Patient.link` elements for all records.
 
 ### Incremental Pipelines
