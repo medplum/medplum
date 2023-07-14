@@ -34,7 +34,7 @@
     "jest-environment-jsdom": "29.6.1",
     "npm-check-updates": "16.10.15",
     "nyc": "15.1.0",
-    "prettier": "3.0.0",
+    "prettier": "2.8.8",
     "rimraf": "5.0.1",
     "source-map-explorer": "2.5.3",
     "ts-node": "10.9.1",
