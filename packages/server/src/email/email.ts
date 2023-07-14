@@ -1,4 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import { badRequest, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import MailComposer from 'nodemailer/lib/mail-composer';
 import Mail, { Address } from 'nodemailer/lib/mailer';
@@ -33,7 +34,12 @@ export async function sendEmail(repo: Repository, options: Mail.Options): Promis
   // "if set to true then fails with an error when a node tries to load content from a file"
   options.disableFileAccess = true;
 
-  const msg = await buildRawMessage(options);
+  let msg: Uint8Array;
+  try {
+    msg = await buildRawMessage(options);
+  } catch (err) {
+    throw new OperationOutcomeError(badRequest('Invalid email options: ' + normalizeErrorString(err)), err);
+  }
 
   logger.info(`Sending email to ${toAddresses?.join(', ')} subject "${options.subject}"`);
   await sesClient.send(

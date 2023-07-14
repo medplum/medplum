@@ -286,6 +286,9 @@ export function normalizeErrorString(error: unknown): string {
   if (isOperationOutcome(error)) {
     return operationOutcomeToString(error);
   }
+  if (typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
+    return error.code;
+  }
   return JSON.stringify(error);
 }
 

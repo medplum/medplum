@@ -91,6 +91,7 @@ describe('Outcomes', () => {
     expect(normalizeErrorString(badRequest('foo'))).toBe('foo');
     expect(normalizeErrorString({ resourceType: 'OperationOutcome' })).toBe('Unknown error');
     expect(normalizeErrorString({ foo: 'bar' })).toBe('{"foo":"bar"}');
+    expect(normalizeErrorString({ code: 'ERR_INVALID_ARG_TYPE' })).toBe('ERR_INVALID_ARG_TYPE');
   });
 
   test('isOperationOutcome', () => {

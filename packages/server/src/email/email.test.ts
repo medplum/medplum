@@ -217,4 +217,29 @@ describe('Email', () => {
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);
   });
+
+  test('Catch invalid options', async () => {
+    try {
+      await sendEmail(systemRepo, {
+        to: 'alice@example.com',
+        subject: 'Hello',
+        text: 'Hello Alice',
+        attachments: [
+          {
+            filename: 'text1.txt',
+            content: { foo: 'bar' } as unknown as Readable, // Invalid content
+          },
+        ],
+      });
+
+      throw new Error('Expected to throw');
+    } catch (err) {
+      const outcome = normalizeOperationOutcome(err);
+      expect(outcome.issue?.[0]?.code).toEqual('invalid');
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid email options: ERR_INVALID_ARG_TYPE');
+    }
+
+    expect(mockSESv2Client.send.callCount).toBe(0);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);
+  });
 });
