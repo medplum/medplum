@@ -65,3 +65,4 @@ In conclusion, Medplum was instrumental in providing the tools and support neede
 - Implementation partner: [AlleyCorp Nord](https://alleycorpnord.com/)
 - Tech leads: [Julien Blin](https://ca.linkedin.com/in/julienblin), [Florencia Herra Vega](https://ca.linkedin.com/in/flohdot)
 - [BonFHIR Toolkit](https://bonfhir.dev/) is featured in this application
+- [Download Case Study](https://drive.google.com/file/d/1X1m5EcS1FIytt949oUbOrrAgEFIj5QR6/view?usp=sharing) as PDF
