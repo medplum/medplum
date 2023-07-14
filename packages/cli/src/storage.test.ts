@@ -17,7 +17,7 @@ describe('FileSystemStorage', () => {
   });
 
   test('Read and write', async () => {
-    const storage = new FileSystemStorage();
+    const storage = new FileSystemStorage('default');
 
     expect(storage.getString('foo')).toBeUndefined();
 
@@ -39,7 +39,7 @@ describe('FileSystemStorage', () => {
   });
 
   test('getObject and setObject', async () => {
-    const storage = new FileSystemStorage();
+    const storage = new FileSystemStorage('default');
 
     const obj = { profiles: { a: 1, b: 2 } };
 
