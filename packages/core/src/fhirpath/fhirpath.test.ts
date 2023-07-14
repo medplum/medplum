@@ -3537,4 +3537,6 @@ describe('FHIRPath Test Suite', () => {
       expect(() => evalFhirPath("conformsTo('http://trash')", patient)).toThrow();
     });
   });
+
+  // (concept.exists() or filter.exists()) implies system.exists()
 });
