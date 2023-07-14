@@ -18,11 +18,11 @@
     "build": "npm run clean && tsc"
   },
   "devDependencies": {
-    "@jest/globals": "29.5.0",
+    "@jest/globals": "29.6.1",
     "@medplum/core": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
-    "jest": "29.5.0"
+    "jest": "29.6.1"
   },
   "eslintConfig": {
     "extends": [
