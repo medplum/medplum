@@ -27,7 +27,9 @@ Designing status codes for tasks varies from implementation to implementation, a
 
 [`Task`](/docs/api/fhir/resources/task) provides three fields fields, `status` , `businessStatus`, and `statusReason`.
 
-`Task.status` maps to a the FHIR task lifecycle shown below. It provides coarse-grained information about the activity state of a [`Task`](/docs/api/fhir/resources/task) and is most useful for day-to-day operations, as it allows for efficient queries on active, completed, and cancelled tasks. These queries will remains stable as your implementation scales.
+`Task.status` maps to a the FHIR task lifecycle shown below. It provides coarse-grained information about the activity state of a [`Task`](/docs/api/fhir/resources/task) and is most useful for day-to-day operations, as it allows for efficient queries on active, completed, and cancelled tasks. These queries will remains stable as your implementation scales. (**Note**: in the diagram below, the codes `requested`, `received`, `accepted`, `rejected` only apply when `Tasks` are shared between systems. Most implementations will just use `ready` to indicate a `Task` can be actioned)
+
+![Task lifecyle](./task-state-machine.svg)
 
 `Task.businessStatus` should map to your implementation's specific operational funnel. It provides fine-grained information for customer-service and operations teams to troubleshoot tasks and monitor progress. It is also useful for analytics teams to compute conversion metrics between pipeline stages.
 
@@ -37,12 +39,12 @@ Designing status codes for tasks varies from implementation to implementation, a
 
 `Task.priority` can be used to indicate the urgency of the task. This field uses a fixed set of codes that are borrowed from acute in-patient care settings.
 
-| **Code**                                                                                     | **Definition**                                                                             |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| [routine](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-routine) | The request has normal priority.                                                           |
-| [urgent](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-urgent)   | The request should be actioned promptly - higher priority than routine.                    |
-| [asap](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-asap)       | The request should be actioned as soon as possible - higher priority than urgent.          |
-| [stat](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-stat)       | The request should be actioned immediately - highest possible priority. E.g. an emergency. |
+| **Code**                                                                                       | **Definition**                                                                             |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [`routine`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-routine) | The request has normal priority.                                                           |
+| [`urgent`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-urgent)   | The request should be actioned promptly - higher priority than routine.                    |
+| [`asap`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-asap)       | The request should be actioned as soon as possible - higher priority than urgent.          |
+| [`stat`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-stat)       | The request should be actioned immediately - highest possible priority. E.g. an emergency. |
 
 While these terms might feel awkward in a digital health setting, Medplum recommends that implementations use these codes rather than create their own extensions in order to maintain interoperability with the ecosystem.
 
