@@ -8,10 +8,10 @@ import { getConfig } from '../config';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
 
-export function initBinaryStorage(type: string): void {
-  if (type.startsWith('s3:')) {
+export function initBinaryStorage(type?: string): void {
+  if (type?.startsWith('s3:')) {
     binaryStorage = new S3Storage(type.replace('s3:', ''));
-  } else if (type.startsWith('file:')) {
+  } else if (type?.startsWith('file:')) {
     binaryStorage = new FileSystemStorage(type.replace('file:', ''));
   } else {
     binaryStorage = undefined;
