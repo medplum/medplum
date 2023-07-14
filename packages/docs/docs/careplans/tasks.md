@@ -9,74 +9,73 @@ tags:
 
 ## Introduction
 
-Workflow is an essential part of healthcare, and healthcare operations requiring coordination of many manual steps physicians, patients, nurses, care coordinators, etc. 
+Workflow is an essential part of healthcare, and healthcare operations requiring coordination of many manual steps physicians, patients, nurses, care coordinators, etc.
 
-While the majority of FHIR resources represent clinical data that is *operated on*, FHIR also defines a set of workflow resources that describe and track *work to be done.* This guide will discuss the usage of the [`Task`](/docs/api/fhir/resources/task) resource, which is the basic building block resource for tracking workflow progress. 
+While the majority of FHIR resources represent clinical data that is _operated on_, FHIR also defines a set of workflow resources that describe and track _work to be done._ This guide will discuss the usage of the [`Task`](/docs/api/fhir/resources/task) resource, which is the basic building block resource for tracking workflow progress.
 
-A common application is for organizations to build **task queue systems** to route tasks to the correct practitioner based on specialty, level of credential, and availability. The [Medplum Task Demo](https://github.com/medplum/medplum-task-demo) application provides a minimalist task queue that demonstrates task search, assignment, and status. 
+A common application is for organizations to build **task queue systems** to route tasks to the correct practitioner based on specialty, level of credential, and availability. The [Medplum Task Demo](https://github.com/medplum/medplum-task-demo) application provides a minimalist task queue that demonstrates task search, assignment, and status.
 
 ## Task type
 
 The `Task.code` element is used to represent the task type, equivalent to the task title. This can either be different from task to task, or selected from an standard set of task types. Using the latter approach helps enable querying across all `Tasks` of the same type.
 
-`Task.description` can be used to add additional descriptive text to the specific `Task` instance.
+`Task.description` can be used to add additional descriptive text to the specific [`Task`](/docs/api/fhir/resources/task) instance.
 
 ## Task status
 
-Designing status codes for tasks varies from implementation to implementation, and requires a good understanding of your operations. 
+Designing status codes for tasks varies from implementation to implementation, and requires a good understanding of your operations.
 
-`Task` provides three fields fields, `status` , `businessStatus`, and `statusReason`.
+[`Task`](/docs/api/fhir/resources/task) provides three fields fields, `status` , `businessStatus`, and `statusReason`.
 
-`Task.status` maps to a the FHIR task lifecycle shown below. It provides coarse-grained information about the activity state of a `Task` and is most useful for day-to-day operations, as it allows for efficient queries on active, completed, and cancelled tasks. These queries will remains stable as your implementation scales. 
+`Task.status` maps to a the FHIR task lifecycle shown below. It provides coarse-grained information about the activity state of a [`Task`](/docs/api/fhir/resources/task) and is most useful for day-to-day operations, as it allows for efficient queries on active, completed, and cancelled tasks. These queries will remains stable as your implementation scales.
 
 `Task.businessStatus` should map to your implementation's specific operational funnel. It provides fine-grained information for customer-service and operations teams to troubleshoot tasks and monitor progress. It is also useful for analytics teams to compute conversion metrics between pipeline stages.
 
-`Task.statusReason` describes *why* the `Task` has the current status, and is most commonly used when `status` is set to `"on-hold"` or `"cancelled"`. Using an orthogonal `statusResason` allows operations teams to efficiently query for all tasks at the same point in the funnel, while analytics teams can further break down by all the reasons they may be on hold. 
+`Task.statusReason` describes _why_ the [`Task`](/docs/api/fhir/resources/task) has the current status, and is most commonly used when `status` is set to `"on-hold"` or `"cancelled"`. Using an orthogonal `statusReason` allows operations teams to efficiently query for all tasks at the same point in the funnel, while analytics teams can further break down by all the reasons they may be on hold.
 
 ## Task priority
 
-`Task.priority` can be used to indicate the urgency of the task. This field uses a fixed set of codes that are borrowed from acute in-patient care settings. 
+`Task.priority` can be used to indicate the urgency of the task. This field uses a fixed set of codes that are borrowed from acute in-patient care settings.
 
-| **Code**                                                     | **Definition**                                               |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| [routine](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-routine) | The request has normal priority.                             |
-| [urgent](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-urgent) | The request should be actioned promptly - higher priority than routine. |
-| [asap](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-asap) | The request should be actioned as soon as possible - higher priority than urgent. |
-| [stat](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-stat) | The request should be actioned immediately - highest possible priority. E.g. an emergency. |
+| **Code**                                                                                     | **Definition**                                                                             |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [routine](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-routine) | The request has normal priority.                                                           |
+| [urgent](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-urgent)   | The request should be actioned promptly - higher priority than routine.                    |
+| [asap](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-asap)       | The request should be actioned as soon as possible - higher priority than urgent.          |
+| [stat](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-stat)       | The request should be actioned immediately - highest possible priority. E.g. an emergency. |
 
 While these terms might feel awkward in a digital health setting, Medplum recommends that implementations use these codes rather than create their own extensions in order to maintain interoperability with the ecosystem.
 
 ## Task assignment
 
-`Task.owner` indicates the party responsible for *performing* the task. This can either be an individual (`Practitioner`, `PractitionerRole`, `Patient`, `RelatedPerson`) or a group (`Organization`, `HealthcareService`, `CareTeam`).
-
-`Task.for` indicates who *benefits* from the task, and is most commonly the patient for whom care is being delivered. 
+`Task.owner` indicates the party responsible for _performing_ the task. This can either be an individual ([`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), [`Patient`](/docs/api/fhir/resources/patient), [`RelatedPerson`](/docs/api/fhir/resources/relatedperson)) or a group ([`Organization`](/docs/api/fhir/resources/organization), [`HealthcareService`](/docs/api/fhir/resources/healthcareservice), [`CareTeam`](/docs/api/fhir/resources/careteam)).
+`Task.for` indicates who _benefits_ from the task, and is most commonly the patient for whom care is being delivered.
 
 ### Assigning tasks to roles
 
-A common pattern is telehealth practices to assign to assign tasks to all practitioners with a given role (e.g. clinical specialty, level of credential, etc.). `Task.performerType` is a searchable element that can be used to indicate which roles can/should perform this task. 
+A common pattern is telehealth practices to assign to assign tasks to all practitioners with a given role (e.g. clinical specialty, level of credential, etc.). `Task.performerType` is a searchable element that can be used to indicate which roles can/should perform this task.
 
-It is a best practice to select these roles from a standard code system to promote interoperability. The [US Core Guidelines](/docs/fhir-datastore/understanding-uscdi-dataclasses) recommend using the [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) valueset for `performerType`. The table below contains SNOMED code for the common roles used in digital healthcare. 
+It is a best practice to select these roles from a standard code system to promote interoperability. The [US Core Guidelines](/docs/fhir-datastore/understanding-uscdi-dataclasses) recommend using the [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) valueset for `performerType`. The table below contains SNOMED code for the common roles used in digital healthcare.
 
-In rare instances, SNOMED might not contain an appropriate code for a given role (e.g. Customer Service Representative). Medplum recommends using the [Standard Occupational Classification (SOC)](https://www.bls.gov/soc/) codes published by the Bureau of Labor Statistics. 
+In rare instances, SNOMED might not contain an appropriate code for a given role (e.g. Customer Service Representative). Medplum recommends using the [Standard Occupational Classification (SOC)](https://www.bls.gov/soc/) codes published by the Bureau of Labor Statistics.
 
-| Name | SNOMED Code | SOC Code | See Also |
-| ---- | ----------- | -------- | -------- |
-| Doctors | 158965000 ([Doctor](https://browser.ihtsdotools.org/?perspective=full&conceptId1=158965000&edition=MAIN/2023-03-31&release=&languages=en)) | | |
-| Nurse Practitioner | 224571005 ([Nurse Practitioner](https://browser.ihtsdotools.org/?perspective=full&conceptId1=224571005&edition=MAIN/2023-03-31&release=&languages=en)) | | |
-| Registered Nurse | 224535009 ([Registered Nurse](https://browser.ihtsdotools.org/?perspective=full&conceptId1=224535009&edition=MAIN/2023-03-31&release=&languages=en)) | | |
-| Care Coordinator | 768820003 ([Care Coordinator](https://browser.ihtsdotools.org/?perspective=full&conceptId1=768820003&edition=MAIN/2023-03-31&release=&languages=en)) | | |
-| Care Team Coordinator | 768821004 ([Care Team Coordinator](https://browser.ihtsdotools.org/?perspective=full&conceptId1=768821004&edition=MAIN/2023-03-31&release=&languages=en)) | | |
-| Medical Billing Specialist | 1251542004 ([Medical Coder](https://browser.ihtsdotools.org/?perspective=full&conceptId1=1251542004&edition=MAIN/2023-04-30&release=&languages=en)) | | |
-| Quality Assurance | 56542007 ([Medical record administrator (occupation)](https://browser.ihtsdotools.org/?perspective=full&conceptId1=56542007&edition=MAIN/2023-04-30&release=&languages=en)) | | |
-| Physician Assistant | 449161006 ([Physician assistant](https://browser.ihtsdotools.org/?perspective=full&conceptId1=449161006&edition=MAIN/2023-03-31&release=&languages=en)) | | |
+| Name                       | SNOMED Code                                                  | SOC Code                                                  |
+| -------------------------- | ------------------------------------------------------------ | --------------------------------------------------------- |
+| Doctors                    | 158965000 ([Doctor](https://browser.ihtsdotools.org/?perspective=full&conceptId1=158965000&edition=MAIN/2023-03-31&release=&languages=en)) | 29-1210 (Physicians)                                      |
+| Nurse Practitioner         | 224571005 ([Nurse Practitioner](https://browser.ihtsdotools.org/?perspective=full&conceptId1=224571005&edition=MAIN/2023-03-31&release=&languages=en)) | 29-1171 (Nurse Practitioners)                             |
+| Registered Nurse           | 224535009 ([Registered Nurse](https://browser.ihtsdotools.org/?perspective=full&conceptId1=224535009&edition=MAIN/2023-03-31&release=&languages=en)) | 29-1141 (Registered Nurses)                               |
+| Care Coordinator           | 768820003 ([Care Coordinator](https://browser.ihtsdotools.org/?perspective=full&conceptId1=768820003&edition=MAIN/2023-03-31&release=&languages=en)) | 11-9111 (Medical and Health Services Managers)            |
+| Care Team Coordinator      | 768821004 ([Care Team Coordinator](https://browser.ihtsdotools.org/?perspective=full&conceptId1=768821004&edition=MAIN/2023-03-31&release=&languages=en)) | 11-9111 (Medical and Health Services Managers)            |
+| Medical Billing Specialist | 1251542004 ([Medical Coder](https://browser.ihtsdotools.org/?perspective=full&conceptId1=1251542004&edition=MAIN/2023-04-30&release=&languages=en)) | 29-2072 (Medical Records Specialists)                     |
+| Quality Assurance          | 56542007 ([Medical record administrator](https://browser.ihtsdotools.org/?perspective=full&conceptId1=56542007&edition=MAIN/2023-04-30&release=&languages=en)) | 15-1253 (Software Quality Assurance Analysts and Testers) |
+| Assistant                  | 449161006 ([Physician assistant](https://browser.ihtsdotools.org/?perspective=full&conceptId1=449161006&edition=MAIN/2023-03-31&release=&languages=en)) | 29-1071 (Physician Assistants)                            |
 
 Below is an example of a `Task.performerType` [CodeableConcept](/docs/fhir-basics#codeable-concepts-standarding-data) using both SNOMED and SOC systems.
 
 ```ts
 {
   resourceType: 'Task',
-  // ... 
+  // ...
   performerType: [
     {
       text:'Medical Billing Specialist',
@@ -89,7 +88,7 @@ Below is an example of a `Task.performerType` [CodeableConcept](/docs/fhir-basic
         },
         // US SOC
         {
-          code:"SOC CODE" //This corresponds to doctor
+          code:"29-2072"
           system: "https://www.bls.gov/soc"
         }
       ],
@@ -100,34 +99,38 @@ Below is an example of a `Task.performerType` [CodeableConcept](/docs/fhir-basic
 
 ## Task focus
 
-The `Task.focus` element tracks the FHIR resource being *operated on* by this task, known as the "focal resource". See the [Examples](#examples) section below for examples of focal resources in common scenarios.
+The `Task.focus` element tracks the FHIR resource being _operated on_ by this task, known as the "focal resource". See the [Examples](#examples) section below for examples of focal resources in common scenarios.
 
-Well maintained `Task.focus` elements are critical data hygiene that streamlines operations and analytics . Making sure that every `Task` has a populated`focus` reference will make it easier to find all touch points for a given clinical resource, spot operational bottlenecks and calculate turn-around-times, conversions, and care quality metrics as your implementation scales.
+Well maintained `Task.focus` elements are critical data hygiene that streamlines operations and analytics . Making sure that every [`Task`](/docs/api/fhir/resources/task) has a populated`focus` reference will make it easier to find all touch points for a given clinical resource, spot operational bottlenecks and calculate turn-around-times, conversions, and care quality metrics as your implementation scales.
 
 ## Task start / due dates
 
-The `Task.restriction.period` field describes the time period over which the `Task` should be fulfilled, with `Task.restriction.period.end` representing the *due date*, and `Task.restriction.period.start` representing the (potentially optional) start date.
+The `Task.restriction.period` field describes the time period over which the [`Task`](/docs/api/fhir/resources/task) should be fulfilled, with `Task.restriction.period.end` representing the _due date_, and `Task.restriction.period.start` representing the (potentially optional) start date.
+
+## Task comments
+
+`Task.note`` can be used to capture narrative text that is not represented elsewhere in the resource.
+
+The most common usage for this field is to record comments from the task assignee as they work on the task. When used this way, it is a best practice to include the `author` and `time` fields in the [`Annotation`](/docs/api/fhir/datatypes/annotation).
 
 ## Subtasks
 
-`Tasks` can be organized into a hierarchical structure to create subtasks, sub-tasks, etc. To represent this hierarchy, subtasks should reference their parent using the using the `Task.partOf` element. `Task.partOf` is a searchable field, which can be used to query all sub-tasks of a given task, and can be combined with the [`_revinclude`](/docs/search/includes#_include-and-_revinclude) and [`:iterate`](/docs/search/includes#iterate-modifier) directives to query the entire `Task` tree. 
+`Tasks` can be organized into a hierarchical structure to create subtasks, sub-tasks, etc. To represent this hierarchy, subtasks should reference their parent using the using the `Task.partOf` element. `Task.partOf` is a searchable field, which can be used to query all sub-tasks of a given task, and can be combined with the [`_revinclude`](/docs/search/includes#_include-and-_revinclude) and [`:iterate`](/docs/search/includes#iterate-modifier) directives to query the entire [`Task`](/docs/api/fhir/resources/task) tree.
 
 :::caution
 
-While this functionality is powerful, it can be complex to maintain and operationalize. Medplum recommends that most implementations start with a single-level `Task` hierarchy, and gradually add depth over time.
+While this functionality is powerful, it can be complex to maintain and operationalize. Medplum recommends that most implementations start with a single-level [`Task`](/docs/api/fhir/resources/task) hierarchy, and gradually add depth over time.
 
-::: 
+:::
 
 ## Examples
 
-| Use Case                                        | Task Owner                    | Focal Resource       | Example `businessStatuses`                                   | Additional Info                                              |
-| ----------------------------------------------- | ----------------------------- | -------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Use Case                                        | Task Owner                    | Focal Resource       | Example `businessStatuses`                                                                                                                                                                         | Additional Info                                                  |
+| ----------------------------------------------- | ----------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | Complete patient intake questionnaire           | New Patient. Care Coordinator | `Questionnaire`      | <ol><li>Questionnaire sent to patient</li><li>First reminder sent</li><li>Second reminder sent</li><li>Questionnaire completed by patient</li><li>Responses reviewed by care coordinator</li></ol> | Use `Task.output` to reference resulting `QuestionnaireResponse` |
-| Review lab report                               | Physician                     | `DiagnosticReport`   | <ol><li>Report Available</li><li>Assigned to physician</li><li>Reviewed by physician</li><li>Discussed with patient</li></ol> |                                                              |
-| Verify patient identity (e.g. driver's license) | Patient. Care Coordinator     | `DocumentReference`  | <ol><li>Identification document requested</li><li>Documentation received</li><li>Documentation received</li><li>Documentation verified</li></ol> | See also:                                                    |
-| Complete encounter notes                        | Physician                     | `ClinicalImpression` | <ol><li>Encounter complete. Physician note required</li><li>Note drafted</li> <li>Note finalized</li></ol> | Use `Task.encoutner` to reference the original encounter     |
-
-
+| Review lab report                               | Physician                     | `DiagnosticReport`   | <ol><li>Report Available</li><li>Assigned to physician</li><li>Reviewed by physician</li><li>Discussed with patient</li></ol>                                                                      |                                                                  |
+| Verify patient identity (e.g. driver's license) | Patient. Care Coordinator     | `DocumentReference`  | <ol><li>Identification document requested</li><li>Documentation received</li><li>Documentation received</li><li>Documentation verified</li></ol>                                                   | See also:                                                        |
+| Complete encounter notes                        | Physician                     | `ClinicalImpression` | <ol><li>Encounter complete. Physician note required</li><li>Note drafted</li> <li>Note finalized</li></ol>                                                                                         | Use `Task.encoutner` to reference the original encounter         |
 
 ## See Also
 
