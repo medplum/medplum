@@ -76,7 +76,7 @@ describe('CLI auth', () => {
   });
 
   test('Load credentials from disk', async () => {
-    medplum = new MockClient({ storage: new FileSystemStorage() });
+    medplum = new MockClient({ storage: new FileSystemStorage('default') });
 
     (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
     (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
