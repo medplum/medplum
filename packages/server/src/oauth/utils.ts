@@ -1,5 +1,6 @@
 import {
   badRequest,
+  tooManyRequests,
   createReference,
   Filter,
   getDateProperty,
@@ -701,6 +702,14 @@ export async function getExternalUserInfo(
   } catch (err) {
     logger.warn('Failed to verify code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
+  }
+
+  if (response.status === 429) {
+    console.log(response.status)
+    console.log('in here');
+
+    logger.warn('Too many requests sent in a given amount of time', response.status);
+    throw new OperationOutcomeError(tooManyRequests);
   }
 
   if (response.status !== 200) {
