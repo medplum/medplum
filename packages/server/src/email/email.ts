@@ -1,33 +1,41 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import { Binary } from '@medplum/fhirtypes';
 import MailComposer from 'nodemailer/lib/mail-composer';
 import Mail, { Address } from 'nodemailer/lib/mailer';
 import { getConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
-import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
+import { Repository } from '../fhir/repo';
+import { getBinaryStorage } from '../fhir/storage';
 import { logger } from '../logger';
 
 /**
  * Sends an email using the AWS SES service.
  * Builds the email using nodemailer MailComposer.
  * See options here: https://nodemailer.com/extras/mailcomposer/
+ * @param repo The user repository.
  * @param options The MailComposer options.
  */
-export async function sendEmail(options: Mail.Options): Promise<void> {
+export async function sendEmail(repo: Repository, options: Mail.Options): Promise<void> {
   const sesClient = new SESv2Client({ region: getConfig().awsRegion });
   const fromAddress = getConfig().supportEmail;
   const toAddresses = buildAddresses(options.to);
   const ccAddresses = buildAddresses(options.cc);
   const bccAddresses = buildAddresses(options.bcc);
+
+  // Always set the from and sender to the support email address
+  options.from = fromAddress;
+  options.sender = fromAddress;
+
+  // Process attachments
+  // For any FHIR Binary attachments, rewrite to a stream
+  await processAttachments(repo, options.attachments);
+
+  // Disable file access
+  // "if set to true then fails with an error when a node tries to load content from a file"
+  options.disableFileAccess = true;
+
+  const msg = await buildRawMessage(options);
+
   logger.info(`Sending email to ${toAddresses?.join(', ')} subject "${options.subject}"`);
-
-  const msg = await buildRawMessage(
-    await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
-      ...options,
-      from: fromAddress,
-      sender: fromAddress,
-    })
-  );
-
   await sesClient.send(
     new SendEmailCommand({
       FromEmailAddress: fromAddress,
@@ -78,4 +86,47 @@ function buildRawMessage(options: Mail.Options): Promise<Uint8Array> {
       resolve(message);
     });
   });
+}
+
+/**
+ * Validates an array of nodemailer attachments.
+ * @param repo The user repository.
+ * @param attachments Optional array of nodemailer attachments.
+ */
+async function processAttachments(repo: Repository, attachments: Mail.Attachment[] | undefined): Promise<void> {
+  if (attachments) {
+    for (const attachment of attachments) {
+      await processAttachment(repo, attachment);
+    }
+  }
+}
+
+/**
+ * Validates a nodemailer attachment.
+ * @param repo The user repository.
+ * @param attachment The nodemailer attachment.
+ */
+async function processAttachment(repo: Repository, attachment: Mail.Attachment): Promise<void> {
+  // MailComposer/nodemailer has many different ways to specify attachments.
+  // See: https://nodemailer.com/message/attachments/
+  // We only support HTTPS URLs and embedded content.
+  // The most risky case is when the attachment is a file path,
+  // because nodemailer will attempt to read the file from disk.
+  const path = attachment.path?.toString();
+  if (!path) {
+    // No path is specified, so this is probably embedded content.
+    return;
+  }
+
+  if (path.startsWith('Binary/')) {
+    // This is a reference to a binary resource.
+    // Validate that the user can read it
+    const binary = await repo.readReference<Binary>({ reference: path });
+
+    // Then get the Readable stream from the storage service.
+    attachment.content = await getBinaryStorage().readBinary(binary);
+
+    // And then delete the original path
+    delete attachment.path;
+  }
 }
