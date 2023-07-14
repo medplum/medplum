@@ -494,6 +494,50 @@ describe('FHIR resource validation', () => {
     };
     expect(() => validate(valueSet)).not.toThrow();
   });
+
+  test('ValueSet compose invariant', () => {
+    const vs: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://terminology.hl7.org/ValueSet/v3-ProvenanceEventCurrentState',
+      identifier: [
+        {
+          system: 'urn:ietf:rfc:3986',
+          value: 'urn:oid:2.16.840.1.113883.1.11.20547',
+        },
+      ],
+      version: '2014-08-07',
+      name: 'v3.ProvenanceEventCurrentState',
+      title: 'V3 Value SetProvenanceEventCurrentState',
+      status: 'active',
+      experimental: false,
+      publisher: 'HL7 v3',
+      contact: [
+        {
+          telecom: [
+            {
+              system: 'url',
+              value: 'http://www.hl7.org',
+            },
+          ],
+        },
+      ],
+      immutable: false,
+      compose: {
+        include: [
+          {
+            valueSet: ['http://terminology.hl7.org/ValueSet/v3-ProvenanceEventCurrentState-AS'],
+          },
+          {
+            valueSet: ['http://terminology.hl7.org/ValueSet/v3-ProvenanceEventCurrentState-DC'],
+          },
+        ],
+      },
+    };
+
+    expect(() => {
+      validate(vs);
+    }).not.toThrow();
+  });
 });
 
 describe('Legacy tests for parity checking', () => {

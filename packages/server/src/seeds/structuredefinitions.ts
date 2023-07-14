@@ -12,6 +12,7 @@ export async function createStructureDefinitions(): Promise<void> {
   await client.query('DELETE FROM "StructureDefinition"');
   await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+  await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-others.json') as Bundle);
 }
 
 async function createStructureDefinitionsForBundle(structureDefinitions: Bundle): Promise<void> {

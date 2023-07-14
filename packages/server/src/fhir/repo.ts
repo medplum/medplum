@@ -529,12 +529,11 @@ export class Repository extends BaseRepository implements FhirRepository {
   private async validate(resource: Resource): Promise<void> {
     if (this.context.strictMode) {
       const start = process.hrtime.bigint();
-      const profileURLs = resource.meta?.profile;
+      const profileUrls = resource.meta?.profile;
       try {
-        if (profileURLs) {
-          await this.validateProfiles(resource, profileURLs);
-        } else {
-          validate(resource);
+        validate(resource);
+        if (profileUrls) {
+          await this.validateProfiles(resource, profileUrls);
         }
       } catch (err: any) {
         const outcome = normalizeOperationOutcome(err);
@@ -553,7 +552,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
       const elapsedTime = Number(process.hrtime.bigint() - start);
       const MILLISECONDS = 1e6; // Conversion factor from ns to ms
-      if (elapsedTime > 5 * MILLISECONDS) {
+      if (elapsedTime > 10 * MILLISECONDS) {
         logger.warn(
           `High validator latency on ${resource.resourceType}/${resource.id}: time=${(
             elapsedTime / MILLISECONDS
@@ -565,8 +564,8 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
   }
 
-  private async validateProfiles(resource: Resource, profileURLs: string[]): Promise<void> {
-    for (const url of profileURLs) {
+  private async validateProfiles(resource: Resource, profileUrls: string[]): Promise<void> {
+    for (const url of profileUrls) {
       const loadStart = process.hrtime.bigint();
       const profile = await this.loadProfile(url);
       const loadTime = Number(process.hrtime.bigint() - loadStart);
