@@ -836,6 +836,7 @@ export class MedplumClient extends EventTarget {
       'auth/newuser',
       {
         ...newUserRequest,
+        clientId: newUserRequest.clientId ?? this.clientId,
         codeChallengeMethod,
         codeChallenge,
       },
