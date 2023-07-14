@@ -2,7 +2,6 @@
 sidebar_position: 1
 ---
 
-
 import ExampleCode from '!!raw-loader!@site/../examples/src/graphql/basic-query.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
@@ -93,6 +92,12 @@ To search for a list of `Patient` resources with a specific name and city:
 This query searches for Patient resources with the name `"Eve"` and a city of `"Philadelphia"`, and aliases the list of patients as `patients` in the response.
 
 See the "[Searching Resources](https://hl7.org/fhir/r4/graphql.html#searching)" section of the FHIR GraphQL specification for more information.
+
+:::caution Search Modifiers
+
+The [official FHIR GraphQL specification](https://hl7.org/fhir/R4/graphql.html) currently does not support [search modifiers](/docs/search/basic-search#search-modifiers) such as `:not`, `:missing`, and `:contains`. If you'd like to participate or learn more, join the discussion [here] (https://chat.fhir.org/#narrow/stream/192326-graphql/topic/Search.20Modifiers.20in.20GraphQL/near/340283410).
+
+:::
 
 ## Resolving nested resources with the `resource` element
 
@@ -223,7 +228,6 @@ Another common use is to filter an `extension` array by `url`:
 </details>
 
 See the "[List Navigation](https://hl7.org/fhir/r4/graphql.html#list)" section of the FHIR GraphQL specification for more information.
-
 
 ## Putting it all together
 
