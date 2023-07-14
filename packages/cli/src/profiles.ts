@@ -42,7 +42,9 @@ listProfiles.description('All profiles saved').action(async () => {
     const fileName = file.split('.')[0];
     const storage = new FileSystemStorage(fileName);
     const profile = storage.getObject('profile');
-    allProfiles.push({ profileName: fileName, profile });
+    if (profile) {
+      allProfiles.push({ profileName: fileName, profile });
+    }
   });
   console.log(allProfiles);
 });

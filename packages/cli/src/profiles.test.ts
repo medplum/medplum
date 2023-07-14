@@ -115,9 +115,6 @@ describe('Profiles', () => {
 
     // ProfileName should be undefined, but profileName2 should still exist
     await main(['node', 'index.js', 'profile', 'list']);
-    expect(console.log).toBeCalledWith([
-      { profileName, profile: undefined },
-      { profileName: profileName2, profile: obj },
-    ]);
+    expect(console.log).toBeCalledWith([{ profileName: profileName2, profile: obj }]);
   });
 });
