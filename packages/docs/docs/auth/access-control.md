@@ -136,6 +136,10 @@ For more advanced access control configurations, You can use `%` variables to pa
     {
       "resourceType": "Patient",
       "criteria": "Patient?organization=%provider_organization"
+    },
+    {
+      "resourceType": "DiagnosticReport",
+      "criteria": "DiagnosticReport?performer=%provider_organization"
     }
   ]
 }
@@ -170,6 +174,8 @@ This policy acts like a template, that can be instantiated (potentially multiple
   ]
 }
 ```
+
+In this example, the user with the parameterized policy shown above will only have access to Patient and DiagnosticReport resources, filtered by the relevant organizations. See this [video demo](https://www.youtube.com/watch?v=IDhsWiIxK3o) for an illustration.
 
 See [this Github Discussion](https://github.com/medplum/medplum/discussions/1453) for more examples of access scenarios that can be created using these policies.
 
