@@ -151,7 +151,7 @@ This policy acts like a template, that can be instantiated (potentially multiple
 {
   "resourceType": "ProjectMembership",
   "access": [
-    // Provide access to Patients in Organization/abc
+    // Provide access to Patients and Diagnostic Reports in Organization/abc
     {
       "policy": { "reference": "AccessPolicy/123" },
       "parameter": [
@@ -161,7 +161,7 @@ This policy acts like a template, that can be instantiated (potentially multiple
         }
       ]
     },
-    // Provide access to Patients in Organization/def
+    // Provide access to Patients and Diagnostic Reports in Organization/def
     {
       "policy": { "reference": "AccessPolicy/123" },
       "parameter": [
