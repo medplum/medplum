@@ -23,64 +23,28 @@ The `Task.code` element is used to represent the task type, equivalent to the ta
 
 ## Task status
 
-- Designing status codes for tasks varies from implementation to implementation, and requires some design work. 
+Designing status codes for tasks varies from implementation to implementation, and requires a good understanding of your operations. 
 
-- `Task` provides three fields fields, `status` , `businessStatus`, and `statusReason`
+`Task` provides three fields fields, `status` , `businessStatus`, and `statusReason`.
 
-  - `status` maps to a fixed set of values, and provides coarse-grained information about the activity state of a `Task`.
-  - `businessStatus` provides fine-grained information about how the `Task` is progressing through your operational funnel. 
-  - `statusReason` describes *why* the `Task` has the current status, and is most commonly used when `status` is set to `"on-hold"` or `"cancelled"`. 
+`Task.status` maps to a the FHIR task lifecycle shown below. It provides coarse-grained information about the activity state of a `Task` and is most useful for day-to-day operations, as it allows for efficient queries on active, completed, and cancelled tasks. These queries will remains stable as your implementation scales. 
 
-  
+`Task.businessStatus` should map to your implementation's specific operational funnel. It provides fine-grained information for customer-service and operations teams to troubleshoot tasks and monitor progress. It is also useful for analytics teams to compute conversion metrics between pipeline stages.
 
-  `Task.status` maps to the FHIR task life cycle shown below. It is most useful for day-to-day operations, as it allows for efficient queries on active, completed, and cancelled tasks. Using standard codes means these
-
-
-
-
-
-- basic status
-  - standard statuses to fit into the common task state machine. Useful to build generic tools, and build robust queries
-  - Eg. show me all tasks that are active
-- business status
-  - More detailed statuses that map to your application, and give users pointers to the action that needs to be taken
-- Status Reason
-
-
-
-:::tip A note on analytics
-
-Primary stakeholder is clinical and operations teams
-
-Secondary stakeholders are analytics teams to optimize workflows.  
-
-:::
-
-
-
-I would recommend using the `on-hold` value for Task.status, and then using the 'statusReason` field to indicate why this is on hold. 
-
-While not hard-and-fast rules, businessStatus can often refer to where the task is in your operational funnel. Using an orthogonal statusReason allows you to efficiently query for all tasks at the same point in the funnel (same business status), and then further break down by all the reasons they may be on hold. 
-
-This will be REALLY impactful for your business analytics teams, who are going to want to report metrics across various different slices
-
-
-
-Yes, 100% agree with the above. Use statusReason to mark why a task is cancelled or suspended. This will be of great use to your CX team
-
-
-
-Rahul Agarwal
-
-9:35 AM Mar 6
-
-Agree that businessStatus can probably be optional for now. The real stakeholders that should be looped in here are Ops (cc: @[michael.caves@thirtymadison.com](mailto:michael.caves@thirtymadison.com) ). They will probably have specific statuses related to their funnel and checkpoints.
-
-Because businessStatus is a searchable field, you'll be able to create dashboards that filter on this status
+`Task.statusReason` describes *why* the `Task` has the current status, and is most commonly used when `status` is set to `"on-hold"` or `"cancelled"`. Using an orthogonal `statusResason` allows operations teams to efficiently query for all tasks at the same point in the funnel, while analytics teams can further break down by all the reasons they may be on hold. 
 
 ## Task priority
 
-The task
+`Task.priority` can be used to indicate the urgency of the task. This field uses a fixed set of codes that are borrowed from acute in-patient care settings. 
+
+| **Code**                                                     | **Definition**                                               |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| [routine](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-routine) | The request has normal priority.                             |
+| [urgent](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-urgent) | The request should be actioned promptly - higher priority than routine. |
+| [asap](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-asap) | The request should be actioned as soon as possible - higher priority than urgent. |
+| [stat](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-stat) | The request should be actioned immediately - highest possible priority. E.g. an emergency. |
+
+While these terms might feel awkward in a digital health setting, Medplum recommends that implementations use these codes rather than create their own extensions in order to maintain interoperability with the ecosystem.
 
 ## Task assignment
 
@@ -92,7 +56,7 @@ The task
 
 A common pattern is telehealth practices to assign to assign tasks to all practitioners with a given role (e.g. clinical specialty, level of credential, etc.). `Task.performerType` is a searchable element that can be used to indicate which roles can/should perform this task. 
 
-It is a best practice to select these roles from a standard code system to promote interoperability. The [US Core Guidelines]() recommend using the [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) valueset for `performerType`. The table below contains SNOMED code for the common roles used in digital healthcare. 
+It is a best practice to select these roles from a standard code system to promote interoperability. The [US Core Guidelines](/docs/fhir-datastore/understanding-uscdi-dataclasses) recommend using the [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) valueset for `performerType`. The table below contains SNOMED code for the common roles used in digital healthcare. 
 
 In rare instances, SNOMED might not contain an appropriate code for a given role (e.g. Customer Service Representative). Medplum recommends using the [Standard Occupational Classification (SOC)](https://www.bls.gov/soc/) codes published by the Bureau of Labor Statistics. 
 
@@ -150,19 +114,22 @@ The `Task.restriction.period` field describes the time period over which the `Ta
 
 :::caution
 
-While this functionality is powerful, it can be hard to maintain and operationalize. Medplum recommends that most implementations start with a single-level `Task` hierarchy, and gradually add depth over time.
+While this functionality is powerful, it can be complex to maintain and operationalize. Medplum recommends that most implementations start with a single-level `Task` hierarchy, and gradually add depth over time.
 
 ::: 
 
 ## Examples
 
-- Example, the ServiceRequest may indicate an order for a lab
-  - Might need to be authorized, filled, reviewed
-- Review Diagnostic Report
-- Patient Collect medical history / fill out questionnaire
-- Write notes for encounter
+| Use Case                                        | Task Owner                    | Focal Resource       | Example `businessStatuses`                                   | Additional Info                                              |
+| ----------------------------------------------- | ----------------------------- | -------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Complete patient intake questionnaire           | New Patient. Care Coordinator | `Questionnaire`      | <ol><li>Questionnaire sent to patient</li><li>First reminder sent</li><li>Second reminder sent</li><li>Questionnaire completed by patient</li><li>Responses reviewed by care coordinator</li></ol> | Use `Task.output` to reference resulting `QuestionnaireResponse` |
+| Review lab report                               | Physician                     | `DiagnosticReport`   | <ol><li>Report Available</li><li>Assigned to physician</li><li>Reviewed by physician</li><li>Discussed with patient</li></ol> |                                                              |
+| Verify patient identity (e.g. driver's license) | Patient. Care Coordinator     | `DocumentReference`  | <ol><li>Identification document requested</li><li>Documentation received</li><li>Documentation received</li><li>Documentation verified</li></ol> | See also:                                                    |
+| Complete encounter notes                        | Physician                     | `ClinicalImpression` | <ol><li>Encounter complete. Physician note required</li><li>Note drafted</li> <li>Note finalized</li></ol> | Use `Task.encoutner` to reference the original encounter     |
+
+
 
 ## See Also
 
-- The [FHIR Workflow Spec](http://hl7.org/fhir/R4/workflow.html)
+- The [FHIR Workflow Specification](http://hl7.org/fhir/R4/workflow.html)
 - [Medplum Task Demo](https://github.com/medplum/medplum-task-demo)
