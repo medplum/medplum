@@ -8,5 +8,5 @@ export function createMedplumCommand(name: string): Command {
     .option('--token-url <tokenUrl>', 'FHIR server token url')
     .option('--authorize-url <authorizeUrl>', 'FHIR server authorize url')
     .option('--fhir-url-path <fhirUrlPath>', 'FHIR server url path')
-    .option('--auth-type', 'Type of authentication', 'basic');
+    .option('--auth-type <authType>', 'Type of authentication', 'basic');
 }
