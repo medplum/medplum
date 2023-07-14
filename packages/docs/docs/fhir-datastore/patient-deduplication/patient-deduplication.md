@@ -76,7 +76,7 @@ Typically, these pipelines compute matches in a data warehouse or a compute engi
 
 1. Export patient data from Medplum into the appropriate data warehouse or compute engine (e.g. [Spark](https://spark.apache.org/)). Note that even large patient datasets should be able to fit into local memory (1M patients < 10GB), so distributed computation is not strictly required. See our [analytics guide](/docs/analytics) for more info.
 2. Use [matching rules](#matching-rules) to detect matched pairs of records. Because this is an N<sup>2</sup> operation, we recommend using some form of exact matching rules to reduce the cardinality of the problem, before applying "fuzzy matching."
-3. Use [merging rules](#merge-rules) to combine matched pairs and _create_ the master record.
+3. Use [merging rules](#merge-rules) to combine matched pairs into sets and _create_ the master record.
 4. Use the Medplum API to update the `Patient.active` and `Patient.link` elements for all records.
 
 ### Incremental Pipelines
