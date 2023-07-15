@@ -211,7 +211,9 @@ describe('Email', () => {
     } catch (err) {
       const outcome = normalizeOperationOutcome(err);
       expect(outcome.issue?.[0]?.code).toEqual('invalid');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('File access rejected for ./package.json');
+      expect(outcome.issue?.[0]?.details?.text).toEqual(
+        'Invalid email options: File access rejected for ./package.json'
+      );
     }
 
     expect(mockSESv2Client.send.callCount).toBe(0);
