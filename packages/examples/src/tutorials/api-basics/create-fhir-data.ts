@@ -1,6 +1,8 @@
+/* eslint-disable no-duplicate-imports */
+
 // start-block core-imports
-import fetch from 'node-fetch';
 import { MedplumClient } from '@medplum/core';
+import fetch from 'node-fetch';
 
 // end-block core-imports
 // start-block patient-imports
@@ -9,8 +11,8 @@ import { randomUUID } from 'crypto';
 
 // end-block patient-imports
 // start-block service-request-imports
-import { ServiceRequest } from '@medplum/fhirtypes';
 import { createReference } from '@medplum/core';
+import { ServiceRequest } from '@medplum/fhirtypes';
 
 // end-block service-request-imports
 // start-block observation-imports

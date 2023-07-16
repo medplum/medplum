@@ -1,5 +1,5 @@
 import { Atom, AtomContext, InfixOperatorAtom, PrefixOperatorAtom } from '../fhirlexer';
-import { PropertyType, TypedValue, isResource } from '../types';
+import { isResource, PropertyType, TypedValue } from '../types';
 import { functions } from './functions';
 import {
   booleanToTypedValue,
@@ -10,7 +10,6 @@ import {
   getTypedPropertyValue,
   isQuantity,
   removeDuplicates,
-  toJsBoolean,
   toTypedValue,
 } from './utils';
 
@@ -308,6 +307,12 @@ export class AndAtom extends BooleanInfixOperatorAtom {
   }
 }
 
+/**
+ * 6.5.2. or
+ * Returns false if both operands evaluate to false,
+ * true if either operand evaluates to true,
+ * and empty ({ }) otherwise:
+ */
 export class OrAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {
     super('or', left, right);
@@ -315,15 +320,13 @@ export class OrAtom extends BooleanInfixOperatorAtom {
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     const leftValue = this.left.eval(context, input);
-    if (toJsBoolean(leftValue)) {
-      return leftValue;
-    }
-
     const rightValue = this.right.eval(context, input);
-    if (toJsBoolean(rightValue)) {
-      return rightValue;
+    if (leftValue[0]?.value === false && rightValue[0]?.value === false) {
+      return booleanToTypedValue(false);
     }
-
+    if (leftValue[0]?.value === true || rightValue[0]?.value === true) {
+      return booleanToTypedValue(true);
+    }
     return [];
   }
 }

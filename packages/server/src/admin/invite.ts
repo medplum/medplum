@@ -10,6 +10,7 @@ import {
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
+import Mail from 'nodemailer/lib/mailer';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProfile, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
@@ -187,39 +188,35 @@ async function sendInviteEmail(
   existing: boolean,
   resetPasswordUrl: string | undefined
 ): Promise<void> {
+  const options: Mail.Options = { to: user.email };
   if (existing) {
     // Existing user
-    await sendEmail({
-      to: user.email,
-      subject: `Medplum: Welcome to ${request.project.name}`,
-      text: [
-        `You were invited to ${request.project.name}`,
-        '',
-        `The next time you sign-in, you will see ${request.project.name} as an option.`,
-        '',
-        `You can sign in here: ${getConfig().appBaseUrl}signin`,
-        '',
-        'Thank you,',
-        'Medplum',
-        '',
-      ].join('\n'),
-    });
+    options.subject = `Medplum: Welcome to ${request.project.name}`;
+    options.text = [
+      `You were invited to ${request.project.name}`,
+      '',
+      `The next time you sign-in, you will see ${request.project.name} as an option.`,
+      '',
+      `You can sign in here: ${getConfig().appBaseUrl}signin`,
+      '',
+      'Thank you,',
+      'Medplum',
+      '',
+    ].join('\n');
   } else {
     // New user
-    await sendEmail({
-      to: user.email,
-      subject: 'Welcome to Medplum',
-      text: [
-        `You were invited to ${request.project.name}`,
-        '',
-        'Please click on the following link to create your account:',
-        '',
-        resetPasswordUrl,
-        '',
-        'Thank you,',
-        'Medplum',
-        '',
-      ].join('\n'),
-    });
+    options.subject = 'Welcome to Medplum';
+    options.text = [
+      `You were invited to ${request.project.name}`,
+      '',
+      'Please click on the following link to create your account:',
+      '',
+      resetPasswordUrl,
+      '',
+      'Thank you,',
+      'Medplum',
+      '',
+    ].join('\n');
   }
+  await sendEmail(systemRepo, options);
 }
