@@ -156,7 +156,7 @@ export function LandingPage(): JSX.Element {
                 compliant, and scalable foundation. It’s clean, customizable technology that simply works - from MVP to
                 IPO.
               </p>
-              <a href="/docs" className={styles.getStartedButton}>
+              <a href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
                 <div>Book a demo</div>
                 <img src="/img/btn-arrow.svg" alt="Go arrow" width="32" height="32" />
               </a>
