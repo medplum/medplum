@@ -2,17 +2,29 @@
 title: ContactDetail
 sidebar_position: 6
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/datatypeDefinitions/contactdetail.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
 # ContactDetail
 
-Base StructureDefinition for ContactDetail Type: Specifies contact information for a person or organization.
+Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/contactdetail">ContactDetail</a> Type: Specifies contact information for a person or organization.
+
+<Tabs queryString="section">
+<TabItem value="schema" label="Schema" default>
+
 
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 
+</TabItem>
+  
+  
+  
+  
 
+</Tabs>

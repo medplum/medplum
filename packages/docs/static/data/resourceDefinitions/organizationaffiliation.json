@@ -416,7 +416,7 @@
       "name": "email",
       "type": "token",
       "description": "A value in an email contact",
-      "expression": "OrganizationAffiliation.telecom"
+      "expression": "OrganizationAffiliation.telecom.where(system = 'email')"
     },
     {
       "name": "endpoint",
@@ -452,7 +452,7 @@
       "name": "phone",
       "type": "token",
       "description": "A value in a phone contact",
-      "expression": "OrganizationAffiliation.telecom"
+      "expression": "OrganizationAffiliation.telecom.where(system = 'phone')"
     },
     {
       "name": "primary-organization",

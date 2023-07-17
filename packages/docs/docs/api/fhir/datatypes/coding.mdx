@@ -2,17 +2,29 @@
 title: Coding
 sidebar_position: 5
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/datatypeDefinitions/coding.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
 # Coding
 
-Base StructureDefinition for Coding Type: A reference to a code defined by a terminology system.
+Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/coding">Coding</a> Type: A reference to a code defined by a terminology system.
+
+<Tabs queryString="section">
+<TabItem value="schema" label="Schema" default>
+
 
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 
+</TabItem>
+  
+  
+  
+  
 
+</Tabs>

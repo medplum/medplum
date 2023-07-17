@@ -518,7 +518,7 @@
       "name": "name",
       "type": "string",
       "description": "A portion of the organization's name or alias",
-      "expression": "Organization.name"
+      "expression": "Organization.name | Organization.alias"
     },
     {
       "name": "partof",

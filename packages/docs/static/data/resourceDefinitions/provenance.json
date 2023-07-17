@@ -655,7 +655,7 @@
       "name": "patient",
       "type": "reference",
       "description": "Target Reference(s) (usually version specific)",
-      "expression": "Provenance.target"
+      "expression": "Provenance.target.where(resolve() is Patient)"
     },
     {
       "name": "recorded",
@@ -679,7 +679,7 @@
       "name": "when",
       "type": "date",
       "description": "When the activity occurred",
-      "expression": "Provenance.occurred"
+      "expression": "Provenance.occurred as dateTime"
     }
   ]
 }

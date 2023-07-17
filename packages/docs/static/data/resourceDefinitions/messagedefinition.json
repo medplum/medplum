@@ -759,13 +759,13 @@
       "name": "context",
       "type": "token",
       "description": " A use context assigned to the message definition\r",
-      "expression": "MessageDefinition.useContext.value"
+      "expression": "MessageDefinition.useContext.value as CodeableConcept"
     },
     {
       "name": "context-quantity",
       "type": "quantity",
       "description": " A quantity- or range-valued use context assigned to the message definition\r",
-      "expression": "MessageDefinition.useContext.value"
+      "expression": "MessageDefinition.useContext.value as Quantity | MessageDefinition.useContext.value as Range"
     },
     {
       "name": "context-type",

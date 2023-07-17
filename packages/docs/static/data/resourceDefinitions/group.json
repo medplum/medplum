@@ -663,7 +663,7 @@
       "name": "value",
       "type": "token",
       "description": "Value held by characteristic",
-      "expression": "Group.characteristic.value"
+      "expression": "Group.characteristic.value as CodeableConcept | Group.characteristic.value as boolean"
     },
     {
       "name": "characteristic-value",

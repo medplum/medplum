@@ -3588,7 +3588,7 @@
       "name": "patient",
       "type": "reference",
       "description": "The identity of the subject of the contract (if a patient)",
-      "expression": "Contract.subject"
+      "expression": "Contract.subject.where(resolve() is Patient)"
     },
     {
       "name": "signer",

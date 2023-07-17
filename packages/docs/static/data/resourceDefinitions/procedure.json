@@ -1035,7 +1035,7 @@
       "name": "patient",
       "type": "reference",
       "description": " Search by subject - a patient\r",
-      "expression": "Procedure.subject"
+      "expression": "Procedure.subject.where(resolve() is Patient)"
     },
     {
       "name": "encounter",

@@ -683,7 +683,7 @@
       "name": "date",
       "type": "date",
       "description": " When was assessment made?\r",
-      "expression": "RiskAssessment.occurrence"
+      "expression": "RiskAssessment.occurrence as dateTime"
     },
     {
       "name": "identifier",
@@ -695,7 +695,7 @@
       "name": "patient",
       "type": "reference",
       "description": " Who/what does assessment apply to?\r",
-      "expression": "RiskAssessment.subject"
+      "expression": "RiskAssessment.subject.where(resolve() is Patient)"
     },
     {
       "name": "encounter",

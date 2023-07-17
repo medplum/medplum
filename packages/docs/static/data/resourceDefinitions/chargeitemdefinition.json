@@ -859,13 +859,13 @@
       "name": "context",
       "type": "token",
       "description": "A use context assigned to the charge item definition",
-      "expression": "ChargeItemDefinition.useContext.value"
+      "expression": "ChargeItemDefinition.useContext.value as CodeableConcept"
     },
     {
       "name": "context-quantity",
       "type": "quantity",
       "description": "A quantity- or range-valued use context assigned to the charge item definition",
-      "expression": "ChargeItemDefinition.useContext.value"
+      "expression": "ChargeItemDefinition.useContext.value as Quantity | ChargeItemDefinition.useContext.value as Range"
     },
     {
       "name": "context-type",

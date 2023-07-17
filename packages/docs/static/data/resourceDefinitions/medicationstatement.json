@@ -562,7 +562,7 @@
       "name": "code",
       "type": "token",
       "description": " Return statements of this medication code\r",
-      "expression": "MedicationStatement.medication"
+      "expression": "MedicationStatement.medication as CodeableConcept"
     },
     {
       "name": "identifier",
@@ -574,13 +574,13 @@
       "name": "patient",
       "type": "reference",
       "description": " Returns statements for a specific patient.\r",
-      "expression": "MedicationStatement.subject"
+      "expression": "MedicationStatement.subject.where(resolve() is Patient)"
     },
     {
       "name": "medication",
       "type": "reference",
       "description": " Return statements of this medication reference\r",
-      "expression": "MedicationStatement.medication"
+      "expression": "MedicationStatement.medication as Reference"
     },
     {
       "name": "status",

@@ -775,7 +775,8 @@
       "depth": 3,
       "types": [
         {
-          "datatype": "Resource"
+          "datatype": "OperationOutcome",
+          "documentLocation": "resource"
         }
       ],
       "path": "Bundle.entry.response.outcome",
@@ -809,7 +810,7 @@
       "name": "composition",
       "type": "reference",
       "description": "The first resource in the bundle, if the bundle type is \"document\" - this is a composition, and this parameter provides access to search its contents",
-      "expression": "Bundle.entry.resource"
+      "expression": "Bundle.entry[0].resource"
     },
     {
       "name": "identifier",
@@ -821,7 +822,7 @@
       "name": "message",
       "type": "reference",
       "description": "The first resource in the bundle, if the bundle type is \"message\" - this is a message header, and this parameter provides access to search its contents",
-      "expression": "Bundle.entry.resource"
+      "expression": "Bundle.entry[0].resource"
     },
     {
       "name": "timestamp",

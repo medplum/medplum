@@ -2,7 +2,8 @@
 title: SubstanceNucleicAcid
 sidebar_position: 131
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/substancenucleicacid.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
@@ -10,7 +11,12 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Nucleic acids are defined by three distinct elements: the base, sugar and linkage. Individual substance/moiety IDs will be created for each of these elements. The nucleotide sequence will be always entered in the 5’-3’ direction.
 
+<Tabs queryString="section">
+<TabItem value="schema" label="Schema" default>
+
+
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
@@ -22,4 +28,14 @@ Nucleic acids are defined by three distinct elements: the base, sugar and linkag
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+</TabItem>
+  <TabItem value="usage" label="Usage">
+    <div>   <a name="scope"> </a>     </div>
+    </TabItem>
+  
+  
+  <TabItem value="referencedBy" label="Referenced By">
+    <ul><li><a href="/docs/api/fhir/resources/substancespecification">SubstanceSpecification</a></li></ul>
+    </TabItem>
 
+</Tabs>

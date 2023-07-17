@@ -945,7 +945,7 @@
       "name": "patient",
       "type": "reference",
       "description": "The patient the specimen comes from",
-      "expression": "Specimen.subject"
+      "expression": "Specimen.subject.where(resolve() is Patient)"
     },
     {
       "name": "status",

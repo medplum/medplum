@@ -823,13 +823,13 @@
       "name": "context",
       "type": "token",
       "description": " A use context assigned to the graph definition\r",
-      "expression": "GraphDefinition.useContext.value"
+      "expression": "GraphDefinition.useContext.value as CodeableConcept"
     },
     {
       "name": "context-quantity",
       "type": "quantity",
       "description": " A quantity- or range-valued use context assigned to the graph definition\r",
-      "expression": "GraphDefinition.useContext.value"
+      "expression": "GraphDefinition.useContext.value as Quantity | GraphDefinition.useContext.value as Range"
     },
     {
       "name": "context-type",

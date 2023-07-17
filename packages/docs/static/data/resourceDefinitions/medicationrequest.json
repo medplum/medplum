@@ -1231,7 +1231,7 @@
       "name": "code",
       "type": "token",
       "description": " Return prescriptions of this medication code\r",
-      "expression": "MedicationRequest.medication"
+      "expression": "MedicationRequest.medication as CodeableConcept"
     },
     {
       "name": "identifier",
@@ -1243,13 +1243,13 @@
       "name": "patient",
       "type": "reference",
       "description": " Returns prescriptions for a specific patient\r",
-      "expression": "MedicationRequest.subject"
+      "expression": "MedicationRequest.subject.where(resolve() is Patient)"
     },
     {
       "name": "medication",
       "type": "reference",
       "description": " Return prescriptions for this medication reference\r",
-      "expression": "MedicationRequest.medication"
+      "expression": "MedicationRequest.medication as Reference"
     },
     {
       "name": "status",

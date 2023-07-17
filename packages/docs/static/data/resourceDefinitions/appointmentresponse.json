@@ -351,7 +351,7 @@
       "name": "location",
       "type": "reference",
       "description": "This Response is for this Location",
-      "expression": "AppointmentResponse.actor"
+      "expression": "AppointmentResponse.actor.where(resolve() is Location)"
     },
     {
       "name": "part-status",
@@ -363,13 +363,13 @@
       "name": "patient",
       "type": "reference",
       "description": "This Response is for this Patient",
-      "expression": "AppointmentResponse.actor"
+      "expression": "AppointmentResponse.actor.where(resolve() is Patient)"
     },
     {
       "name": "practitioner",
       "type": "reference",
       "description": "This Response is for this Practitioner",
-      "expression": "AppointmentResponse.actor"
+      "expression": "AppointmentResponse.actor.where(resolve() is Practitioner)"
     }
   ]
 }

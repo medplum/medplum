@@ -483,7 +483,7 @@
       "name": "email",
       "type": "token",
       "description": " A value in an email contact\r",
-      "expression": "Person.telecom"
+      "expression": "Person.telecom.where(system = 'email')"
     },
     {
       "name": "gender",
@@ -495,7 +495,7 @@
       "name": "phone",
       "type": "token",
       "description": " A value in a phone contact\r",
-      "expression": "Person.telecom"
+      "expression": "Person.telecom.where(system = 'phone')"
     },
     {
       "name": "phonetic",
@@ -537,19 +537,19 @@
       "name": "patient",
       "type": "reference",
       "description": "The Person links to this Patient",
-      "expression": "Person.link.target"
+      "expression": "Person.link.target.where(resolve() is Patient)"
     },
     {
       "name": "practitioner",
       "type": "reference",
       "description": "The Person links to this Practitioner",
-      "expression": "Person.link.target"
+      "expression": "Person.link.target.where(resolve() is Practitioner)"
     },
     {
       "name": "relatedperson",
       "type": "reference",
       "description": "The Person links to this RelatedPerson",
-      "expression": "Person.link.target"
+      "expression": "Person.link.target.where(resolve() is RelatedPerson)"
     }
   ]
 }

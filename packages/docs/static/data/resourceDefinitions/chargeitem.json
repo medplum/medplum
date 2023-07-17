@@ -905,7 +905,7 @@
       "name": "patient",
       "type": "reference",
       "description": "Individual service was done for/to",
-      "expression": "ChargeItem.subject"
+      "expression": "ChargeItem.subject.where(resolve() is Patient)"
     },
     {
       "name": "performer-actor",

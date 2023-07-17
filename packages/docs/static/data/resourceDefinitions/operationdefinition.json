@@ -1068,13 +1068,13 @@
       "name": "context",
       "type": "token",
       "description": " A use context assigned to the operation definition\r",
-      "expression": "OperationDefinition.useContext.value"
+      "expression": "OperationDefinition.useContext.value as CodeableConcept"
     },
     {
       "name": "context-quantity",
       "type": "quantity",
       "description": " A quantity- or range-valued use context assigned to the operation definition\r",
-      "expression": "OperationDefinition.useContext.value"
+      "expression": "OperationDefinition.useContext.value as Quantity | OperationDefinition.useContext.value as Range"
     },
     {
       "name": "context-type",

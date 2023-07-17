@@ -530,13 +530,13 @@
       "name": "ingredient",
       "type": "reference",
       "description": "Returns medications for this ingredient reference",
-      "expression": "Medication.ingredient.item"
+      "expression": "Medication.ingredient.item as Reference"
     },
     {
       "name": "ingredient-code",
       "type": "token",
       "description": "Returns medications for this ingredient code",
-      "expression": "Medication.ingredient.item"
+      "expression": "Medication.ingredient.item as CodeableConcept"
     },
     {
       "name": "lot-number",

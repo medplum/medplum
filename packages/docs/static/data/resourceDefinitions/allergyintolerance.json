@@ -680,7 +680,7 @@
       "name": "code",
       "type": "token",
       "description": " Code that identifies the allergy or intolerance\r",
-      "expression": "AllergyIntolerance.code"
+      "expression": "AllergyIntolerance.code | AllergyIntolerance.reaction.substance"
     },
     {
       "name": "criticality",

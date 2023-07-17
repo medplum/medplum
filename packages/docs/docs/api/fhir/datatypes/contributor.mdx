@@ -2,17 +2,29 @@
 title: Contributor
 sidebar_position: 8
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/datatypeDefinitions/contributor.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
 # Contributor
 
-Base StructureDefinition for Contributor Type: A contributor to the content of a knowledge asset, including authors, editors, reviewers, and endorsers.
+Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/contributor">Contributor</a> Type: A contributor to the content of a knowledge asset, including authors, editors, reviewers, and endorsers.
+
+<Tabs queryString="section">
+<TabItem value="schema" label="Schema" default>
+
 
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 
+</TabItem>
+  
+  
+  
+  
 
+</Tabs>

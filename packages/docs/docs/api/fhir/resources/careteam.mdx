@@ -2,7 +2,8 @@
 title: CareTeam
 sidebar_position: 14
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/careteam.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
@@ -10,11 +11,14 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 The Care Team includes all the people and organizations who plan to participate in the coordination and delivery of care for a patient. Refer to the [US Core CarePlan profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-careplan.html).
 
+<Tabs queryString="section">
+<TabItem value="schema" label="Schema" default>
+
+
 ## Properties
 
-<ResourcePropertiesTable
-  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
-/>
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 ## Search Parameters
 
@@ -23,3 +27,31 @@ The Care Team includes all the people and organizations who plan to participate 
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
+    <div> <a name="bnc"></a>  <p> The <a href="/docs/api/fhir/resources/careteam">CareTeam</a> includes all the people, teams, and organizations who plan to participate in the coordination and delivery of care for a single patient or a group (such as a married couple in therapy or a support group).  <a href="/docs/api/fhir/resources/careteam">CareTeam</a> can also be organizationally assigned without a subject in context, such as a code blue team or emergency response team. This is not limited to practitioners, but may include other caregivers such as family members, guardians, the patient themself, or others.   The Care Team, depending on where used, may include care team members specific to a particular care plan, an episode, an encounter, or may reflect all known team members across these perspectives. An individual's <a href="/docs/api/fhir/resources/careteam">CareTeam</a> can be dynamic over time, such that there can be transience of team members, such as a rehabilitation team.  </p> </div>
+    </TabItem>
+  <TabItem value="relationships" label="Relationships">
+    <div>  <p> Care Team is distinct from <a href="/docs/api/fhir/resources/group">Group</a>. <a href="/docs/api/fhir/resources/group">Group</a> is patient-independent and identifies an undifferentiated set of individuals who are intended to be the target of one or more clinical activities (e.g. set of clinical trial participants, set of individuals impacted by or at risk of a public health event, a herd or flock, etc.) The <a href="/docs/api/fhir/resources/careteam">CareTeam</a> resource establishes a set of relationships and roles and is specific to a particular <a href="/docs/api/fhir/resources/patient">Patient</a>.  The actors are the individual members or organized group of individuals.     <a href="/docs/api/fhir/resources/careteam">CareTeam</a> can be referenced by <a href="/docs/api/fhir/resources/episodeofcare">EpisodeOfCare</a>, <a href="/docs/api/fhir/resources/encounter">Encounter</a>, or <a href="/docs/api/fhir/resources/careplan">CarePlan</a> to identify the set of individuals (and their respective roles) who are intended to be involved in providing the care defined by those resources.   </p> </div>
+    </TabItem>
+  
+  <TabItem value="referencedBy" label="Referenced By">
+    <ul><li><a href="/docs/api/fhir/resources/careplan">CarePlan</a></li>
+<li><a href="/docs/api/fhir/resources/chargeitem">ChargeItem</a></li>
+<li><a href="/docs/api/fhir/resources/communication">Communication</a></li>
+<li><a href="/docs/api/fhir/resources/communicationrequest">CommunicationRequest</a></li>
+<li><a href="/docs/api/fhir/resources/consent">Consent</a></li>
+<li><a href="/docs/api/fhir/resources/contract">Contract</a></li>
+<li><a href="/docs/api/fhir/resources/devicerequest">DeviceRequest</a></li>
+<li><a href="/docs/api/fhir/resources/diagnosticreport">DiagnosticReport</a></li>
+<li><a href="/docs/api/fhir/resources/episodeofcare">EpisodeOfCare</a></li>
+<li><a href="/docs/api/fhir/resources/imagingstudy">ImagingStudy</a></li>
+<li><a href="/docs/api/fhir/resources/media">Media</a></li>
+<li><a href="/docs/api/fhir/resources/medicationrequest">MedicationRequest</a></li>
+<li><a href="/docs/api/fhir/resources/observation">Observation</a></li>
+<li><a href="/docs/api/fhir/resources/servicerequest">ServiceRequest</a></li>
+<li><a href="/docs/api/fhir/resources/task">Task</a></li></ul>
+    </TabItem>
+
+</Tabs>

@@ -2090,13 +2090,13 @@
       "name": "ingredient",
       "type": "reference",
       "description": "Medication(s) or substance(s) contained in the medication",
-      "expression": "MedicationKnowledge.ingredient.item"
+      "expression": "MedicationKnowledge.ingredient.item as Reference"
     },
     {
       "name": "ingredient-code",
       "type": "token",
       "description": "Medication(s) or substance(s) contained in the medication",
-      "expression": "MedicationKnowledge.ingredient.item"
+      "expression": "MedicationKnowledge.ingredient.item as CodeableConcept"
     },
     {
       "name": "manufacturer",

@@ -486,7 +486,7 @@
       "name": "code",
       "type": "token",
       "description": "The code of the substance or ingredient",
-      "expression": "Substance.code"
+      "expression": "Substance.code | Substance.ingredient.substance as CodeableConcept"
     },
     {
       "name": "container-identifier",
@@ -522,7 +522,7 @@
       "name": "substance-reference",
       "type": "reference",
       "description": "A component of the substance",
-      "expression": "Substance.ingredient.substance"
+      "expression": "Substance.ingredient.substance as Reference"
     }
   ]
 }

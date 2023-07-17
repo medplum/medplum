@@ -2,17 +2,29 @@
 title: DataRequirement
 sidebar_position: 10
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/datatypeDefinitions/datarequirement.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
 # DataRequirement
 
-Base StructureDefinition for DataRequirement Type: Describes a required data item for evaluation in terms of the type of data, and optional code or date-based filters of the data.
+Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/datarequirement">DataRequirement</a> Type: Describes a required data item for evaluation in terms of the type of data, and optional code or date-based filters of the data.
+
+<Tabs queryString="section">
+<TabItem value="schema" label="Schema" default>
+
 
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 
+</TabItem>
+  
+  
+  
+  
 
+</Tabs>

@@ -183,6 +183,39 @@
       "definition": "Optional launch URI for SMART EHR launch sequence.",
       "comment": "",
       "inherited": false
+    },
+    {
+      "name": "pkceOptional",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "ClientApplication.pkceOptional",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Flag to make PKCE optional for this client application. PKCE is required by default for compliance with Smart App Launch. It can be disabled for compatibility with legacy client applications.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "identityProvider",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "IdentityProvider",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "ClientApplication.identityProvider",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional external Identity Provider (IdP) for the client application.",
+      "comment": "",
+      "inherited": false
     }
   ],
   "searchParameters": [

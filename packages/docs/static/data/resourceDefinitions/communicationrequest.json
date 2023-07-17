@@ -805,13 +805,13 @@
       "name": "occurrence",
       "type": "date",
       "description": "When scheduled",
-      "expression": "CommunicationRequest.occurrence"
+      "expression": "CommunicationRequest.occurrence as dateTime"
     },
     {
       "name": "patient",
       "type": "reference",
       "description": "Focus of message",
-      "expression": "CommunicationRequest.subject"
+      "expression": "CommunicationRequest.subject.where(resolve() is Patient)"
     },
     {
       "name": "priority",

@@ -1526,7 +1526,7 @@
       "name": "patient",
       "type": "reference",
       "description": "Search by patient",
-      "expression": "Task.for"
+      "expression": "Task.for.where(resolve() is Patient)"
     },
     {
       "name": "performer",
@@ -1563,6 +1563,12 @@
       "type": "reference",
       "description": "Search by subject",
       "expression": "Task.for"
+    },
+    {
+      "name": "due-date",
+      "type": "date",
+      "description": "Search by period Task is/was due",
+      "expression": "Task.restriction.period"
     }
   ]
 }

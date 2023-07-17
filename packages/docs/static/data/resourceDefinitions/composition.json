@@ -1052,7 +1052,7 @@
       "name": "patient",
       "type": "reference",
       "description": " Who and/or what the composition is about\r",
-      "expression": "Composition.subject"
+      "expression": "Composition.subject.where(resolve() is Patient)"
     },
     {
       "name": "type",
@@ -1112,13 +1112,13 @@
       "name": "related-id",
       "type": "token",
       "description": "Target of the relationship",
-      "expression": "Composition.relatesTo.target"
+      "expression": "Composition.relatesTo.target as Identifier"
     },
     {
       "name": "related-ref",
       "type": "reference",
       "description": "Target of the relationship",
-      "expression": "Composition.relatesTo.target"
+      "expression": "Composition.relatesTo.target as Reference"
     },
     {
       "name": "section",

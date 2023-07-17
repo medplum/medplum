@@ -687,7 +687,7 @@
       "name": "composed-of",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "Library.relatedArtifact"
+      "expression": "Library.relatedArtifact.where(type = 'composed-of').resource"
     },
     {
       "name": "content-type",
@@ -699,13 +699,13 @@
       "name": "context",
       "type": "token",
       "description": "A use context assigned to the library",
-      "expression": "Library.useContext.value"
+      "expression": "Library.useContext.value as CodeableConcept"
     },
     {
       "name": "context-quantity",
       "type": "quantity",
       "description": "A quantity- or range-valued use context assigned to the library",
-      "expression": "Library.useContext.value"
+      "expression": "Library.useContext.value as Quantity | Library.useContext.value as Range"
     },
     {
       "name": "context-type",
@@ -723,13 +723,13 @@
       "name": "depends-on",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "Library.relatedArtifact"
+      "expression": "Library.relatedArtifact.where(type = 'depends-on').resource"
     },
     {
       "name": "derived-from",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "Library.relatedArtifact"
+      "expression": "Library.relatedArtifact.where(type = 'derived-from').resource"
     },
     {
       "name": "description",
@@ -765,7 +765,7 @@
       "name": "predecessor",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "Library.relatedArtifact"
+      "expression": "Library.relatedArtifact.where(type = 'predecessor').resource"
     },
     {
       "name": "publisher",
@@ -783,7 +783,7 @@
       "name": "successor",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "Library.relatedArtifact"
+      "expression": "Library.relatedArtifact.where(type = 'successor').resource"
     },
     {
       "name": "title",
