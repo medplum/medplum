@@ -59,7 +59,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
 
   const url = await resetPassword(user);
 
-  await sendEmail({
+  await sendEmail(systemRepo, {
     to: user.email,
     subject: 'Medplum Password Reset',
     text: [

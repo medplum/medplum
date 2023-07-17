@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@medplum/bot-layer",
-  "version": "2.0.25",
+  "version": "2.0.26",
   "description": "Medplum Bot Lambda Layer",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",

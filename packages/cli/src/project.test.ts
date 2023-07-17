@@ -28,7 +28,7 @@ describe('CLI Project', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
-    medplum = new MockClient({ storage: new FileSystemStorage() });
+    medplum = new MockClient({ storage: new FileSystemStorage('default') });
     (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
 
     console.log = jest.fn();
