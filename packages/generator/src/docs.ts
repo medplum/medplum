@@ -168,7 +168,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 ${description}
 
-<Tabs queryString="intro-section">
+<Tabs queryString="section">
 ${`<TabItem value="schema" label="Schema" default>
 
 
