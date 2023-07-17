@@ -1,6 +1,8 @@
 import {
   createReference,
+  getStatus,
   normalizeErrorString,
+  normalizeOperationOutcome,
   OAuthGrantType,
   OAuthTokenType,
   Operator,
@@ -27,8 +29,6 @@ import {
   tryLogin,
   verifyMultipleMatchingException,
 } from './utils';
-import { getStatus } from '@medplum/core';
-import { normalizeOperationOutcome } from '@medplum/core';
 
 type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
 
@@ -564,6 +564,7 @@ async function sendTokenResponse(res: Response, login: Login, membership: Projec
  * @param res The HTTP response.
  * @param error The error code.  See: https://datatracker.ietf.org/doc/html/rfc6749#appendix-A.7
  * @param description The error description.  See: https://datatracker.ietf.org/doc/html/rfc6749#appendix-A.8
+ * @param status The HTTP status code.
  * @returns Reference to the HTTP response.
  */
 function sendTokenError(res: Response, error: string, description?: string, status = 400): Response {
