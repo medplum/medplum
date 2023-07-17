@@ -250,4 +250,27 @@ describe('Search Utils', () => {
       })
     ).toEqual('?code:not=x');
   });
+
+  test('Format token not', () => {
+    expect(
+      formatSearchQuery({
+        resourceType: 'Condition',
+        filters: [{ code: 'code', operator: Operator.NOT, value: 'x' }],
+      })
+    ).toEqual('?code:not=x');
+  });
+
+  test('Format _include', () => {
+    expect(
+      formatSearchQuery({
+        resourceType: 'Patient',
+        include: [
+          {
+            resourceType: 'Patient',
+            searchParam: 'organization',
+          },
+        ],
+      })
+    ).toEqual('?_include=Patient:organization');
+  });
 });
