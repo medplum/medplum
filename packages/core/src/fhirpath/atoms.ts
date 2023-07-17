@@ -189,9 +189,12 @@ export class InAtom extends BooleanInfixOperatorAtom {
   }
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context, input);
-    const rightValue = this.right.eval(context, input);
-    return booleanToTypedValue(rightValue.some((e) => e.value === leftValue[0].value));
+    const left = singleton(this.left.eval(context, input));
+    const right = this.right.eval(context, input);
+    if (!left) {
+      return [];
+    }
+    return booleanToTypedValue(right.some((e) => e.value === left.value));
   }
 }
 

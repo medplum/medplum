@@ -47,10 +47,10 @@ export function toJsBoolean(obj: TypedValue[]): boolean {
   return obj.length === 0 ? false : !!obj[0].value;
 }
 
-export function singleton(collection: TypedValue[], type: string): TypedValue | undefined {
+export function singleton(collection: TypedValue[], type?: string): TypedValue | undefined {
   if (collection.length === 0) {
     return undefined;
-  } else if (collection.length === 1 && collection[0].type === type) {
+  } else if (collection.length === 1 && (!type || collection[0].type === type)) {
     return collection[0];
   } else {
     throw new Error(`Expected singleton of type ${type}, but found ${JSON.stringify(collection)}`);

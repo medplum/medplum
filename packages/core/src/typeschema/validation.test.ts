@@ -7,6 +7,7 @@ import {
   HumanName,
   ImplementationGuide,
   Media,
+  MedicationRequest,
   Observation,
   Patient,
   Questionnaire,
@@ -536,6 +537,80 @@ describe('FHIR resource validation', () => {
 
     expect(() => {
       validate(vs);
+    }).not.toThrow();
+  });
+
+  test('Timing invariant', () => {
+    const prescription: MedicationRequest = {
+      resourceType: 'MedicationRequest',
+      status: 'stopped',
+      intent: 'order',
+      medicationCodeableConcept: {
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '105078',
+            display: 'Penicillin G 375 MG/ML Injectable Solution',
+          },
+        ],
+        text: 'Penicillin G 375 MG/ML Injectable Solution',
+      },
+      subject: {
+        reference: 'Patient/1c9f7759-dcc2-4aed-9beb-d7f8a2bfb4f6',
+      },
+      encounter: {
+        reference: 'Encounter/82bec000-a6e4-4352-bea4-b7f0af7c246b',
+      },
+      authoredOn: '1947-11-01T00:11:45-05:00',
+      requester: {
+        reference: 'Practitioner/4b823444-df09-40a9-8de8-cf1e6f044b9a',
+        display: 'Dr. Willena258 Oberbrunner298',
+      },
+      dosageInstruction: [
+        {
+          sequence: 1,
+          text: 'Take at regular intervals. Complete the prescribed course unless otherwise directed.\n',
+          additionalInstruction: [
+            {
+              coding: [
+                {
+                  system: 'http://snomed.info/sct',
+                  code: '418577003',
+                  display: 'Take at regular intervals. Complete the prescribed course unless otherwise directed.',
+                },
+              ],
+              text: 'Take at regular intervals. Complete the prescribed course unless otherwise directed.',
+            },
+          ],
+          timing: {
+            repeat: {
+              frequency: 4,
+              period: 1,
+              periodUnit: 'd',
+            },
+          },
+          asNeededBoolean: false,
+          doseAndRate: [
+            {
+              type: {
+                coding: [
+                  {
+                    system: 'http://terminology.hl7.org/CodeSystem/dose-rate-type',
+                    code: 'ordered',
+                    display: 'Ordered',
+                  },
+                ],
+              },
+              doseQuantity: {
+                value: 1,
+              },
+            },
+          ],
+        },
+      ],
+    };
+    expect(() => {
+      validate(prescription);
     }).not.toThrow();
   });
 });
