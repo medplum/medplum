@@ -5,6 +5,7 @@ import { Task } from '@medplum/fhirtypes';
  * Calculates a score for a task.
  * Higher scores are more important.
  * @param task The task.
+ * @returns The score.
  */
 export function scoreTask(task: Task): number {
   let secondsRemaining = 24 * 3600; // Default time remaining is 24 hours

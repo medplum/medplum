@@ -22,7 +22,7 @@ root.render(
       <MedplumProvider medplum={medplum}>
         <MantineProvider withGlobalStyles withNormalizeCSS>
           <Notifications />
-            <App />
+          <App />
         </MantineProvider>
       </MedplumProvider>
     </BrowserRouter>

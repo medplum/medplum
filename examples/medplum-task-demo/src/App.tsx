@@ -34,7 +34,7 @@ export function App(): JSX.Element | null {
                 size="xs"
                 variant="outline"
                 onClick={() => {
-                  medplum.signOut();
+                  medplum.signOut().catch(console.error);
                   window.location.reload();
                 }}
               >

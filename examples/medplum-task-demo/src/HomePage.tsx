@@ -36,16 +36,16 @@ export function HomePage(): JSX.Element {
   const createTask = useCallback(
     async (task: Task) => {
       await medplum.createResource(task);
-      loadTasks();
+      loadTasks().catch(console.error);
     },
-    [medplum]
+    [medplum, loadTasks]
   );
 
   useEffect(() => {
-    medplum.searchResources('Location', '_count=1000').then(setLocations);
-    medplum.searchResources('PractitionerRole', '_count=1000').then(setRoles);
-    loadTasks();
-  }, [medplum]);
+    medplum.searchResources('Location', '_count=1000').then(setLocations).catch(console.error);
+    medplum.searchResources('PractitionerRole', '_count=1000').then(setRoles).catch(console.error);
+    loadTasks().catch(console.error);
+  }, [medplum, loadTasks]);
 
   if (!locations || !roles || !tasks) {
     return <Loader />;
