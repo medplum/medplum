@@ -27,6 +27,8 @@ import {
   tryLogin,
   verifyMultipleMatchingException,
 } from './utils';
+import { getStatus } from '@medplum/core';
+import { normalizeOperationOutcome } from '@medplum/core';
 
 type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
 
@@ -353,9 +355,8 @@ export async function exchangeExternalAuthToken(
   try {
     userInfo = await getExternalUserInfo(idp, subjectToken);
   } catch (err: any) {
-    // If the status is 429, then the error message will be Too Many Requests
-    const status = err.message === 'Too Many Requests' ? 429 : 400;
-    sendTokenError(res, 'invalid_request', normalizeErrorString(err), status);
+    const outcome = normalizeOperationOutcome(err);
+    sendTokenError(res, 'invalid_request', normalizeErrorString(err), getStatus(outcome));
     return;
   }
 
