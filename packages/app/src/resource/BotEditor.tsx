@@ -17,9 +17,7 @@ export function BotEditor(): JSX.Element | null {
   const codeFrameRef = useRef<HTMLIFrameElement>(null);
   const inputFrameRef = useRef<HTMLIFrameElement>(null);
   const outputFrameRef = useRef<HTMLIFrameElement>(null);
-  const [saving, setSaving] = useState(false);
-  const [deploying, setDeploying] = useState(false);
-  const [executing, setExecuting] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     medplum
@@ -45,7 +43,7 @@ export function BotEditor(): JSX.Element | null {
     async (e: React.SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      setSaving(true);
+      setLoading(true);
       try {
         const code = await getCode();
         await medplum.patchResource('Bot', id, [
@@ -59,7 +57,7 @@ export function BotEditor(): JSX.Element | null {
       } catch (err) {
         showNotification({ color: 'red', message: normalizeErrorString(err) });
       } finally {
-        setSaving(false);
+        setLoading(false);
       }
     },
     [medplum, id, getCode]
@@ -69,7 +67,7 @@ export function BotEditor(): JSX.Element | null {
     async (e: React.SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      setDeploying(true);
+      setLoading(true);
       try {
         const code = await getCodeOutput();
         await medplum.post(medplum.fhirUrl('Bot', id, '$deploy'), { code });
@@ -77,7 +75,7 @@ export function BotEditor(): JSX.Element | null {
       } catch (err) {
         showNotification({ color: 'red', message: normalizeErrorString(err) });
       } finally {
-        setDeploying(false);
+        setLoading(false);
       }
     },
     [medplum, id, getCodeOutput]
@@ -87,7 +85,7 @@ export function BotEditor(): JSX.Element | null {
     async (e: React.SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      setExecuting(true);
+      setLoading(true);
       try {
         const input = await getSampleInput();
         const result = await medplum.post(medplum.fhirUrl('Bot', id, '$execute'), input);
@@ -99,7 +97,7 @@ export function BotEditor(): JSX.Element | null {
       } catch (err) {
         showNotification({ color: 'red', message: normalizeErrorString(err) });
       } finally {
-        setExecuting(false);
+        setLoading(false);
       }
     },
     [medplum, id, getSampleInput]
@@ -122,11 +120,14 @@ export function BotEditor(): JSX.Element | null {
             minHeight="528px"
           />
           <Group position="right" spacing="xs">
-            <Button type="button" onClick={saveBot} loading={saving} leftIcon={<IconDeviceFloppy size="1rem" />}>
+            <Button type="button" onClick={saveBot} loading={loading} leftIcon={<IconDeviceFloppy size="1rem" />}>
               Save
             </Button>
-            <Button type="button" onClick={deployBot} loading={deploying} leftIcon={<IconCloudUpload size="1rem" />}>
+            <Button type="button" onClick={deployBot} loading={loading} leftIcon={<IconCloudUpload size="1rem" />}>
               Deploy
+            </Button>
+            <Button type="button" onClick={executeBot} loading={loading} leftIcon={<IconPlayerPlay size="1rem" />}>
+              Execute
             </Button>
           </Group>
         </Paper>
@@ -147,11 +148,6 @@ export function BotEditor(): JSX.Element | null {
               2
             )}
           />
-          <Group position="right">
-            <Button type="button" onClick={executeBot} loading={executing} leftIcon={<IconPlayerPlay size="1rem" />}>
-              Execute
-            </Button>
-          </Group>
         </Paper>
         <Paper m={2} p="xs" shadow="md">
           <BotRunner
