@@ -154,7 +154,7 @@ The most common usage for this field is to record comments from the task assigne
 
 :::caution
 
-While this functionality is powerful, it can be complex to maintain and operationalize. Medplum recommends that most implementations start with a single-level [`Task`](/docs/api/fhir/resources/task) hierarchy, and gradually add depth over time.
+While task hierarchy functionality is powerful, it can be complex to maintain and operationalize. Medplum recommends that most implementations start with a single-level [`Task`](/docs/api/fhir/resources/task) hierarchy, and gradually add depth over time.
 
 :::
 
