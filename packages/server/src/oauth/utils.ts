@@ -705,7 +705,7 @@ export async function getExternalUserInfo(
   }
 
   if (response.status === 429) {
-    logger.warn('Too many requests sent in a given amount of time', response.status);
+    logger.warn('Auth rate limit exceeded');
     throw new OperationOutcomeError(tooManyRequests);
   }
 

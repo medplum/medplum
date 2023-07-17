@@ -1484,7 +1484,6 @@ describe('OAuth2 Token', () => {
   test('Too many requests', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 429,
-      son: () => ({ email }),
       headers: { get: () => 'application/json' },
     }));
 
