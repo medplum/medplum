@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A financial tool for tracking value accrued for a particular purpose.  In the healthcare field, used to track charges for a patient, cost centers, etc.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p> The <a href="/docs/api/fhir/resources/account">Account</a> resource acts as a central record against which charges, payments, and adjustments are applied.  It contains information about which parties are responsible for payment of the account. </p> <p> While the <a href="/docs/api/fhir/resources/account">Account</a> does conceptually have a balance, expressing that balance directly as a resource property is challenging due to the complexity of pricing contracts.  An operation to retrieve the current balance of an account is in consideration as future work. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -27,19 +44,5 @@ A financial tool for tracking value accrued for a particular purpose.  In the he
 <li><a href="/docs/api/fhir/resources/episodeofcare">EpisodeOfCare</a></li>
 <li><a href="/docs/api/fhir/resources/invoice">Invoice</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

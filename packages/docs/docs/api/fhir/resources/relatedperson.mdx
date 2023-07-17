@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Information about a person that is involved in the care for a patient, but who is not the target of healthcare, nor has a formal responsibility in the care process.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p> <a href="/docs/api/fhir/resources/relatedperson">RelatedPersons</a> typically have a personal or non-healthcare-specific professional relationship to the patient. A <a href="/docs/api/fhir/resources/relatedperson">RelatedPerson</a>  resource is primarily used for attribution of information,  since <a href="/docs/api/fhir/resources/relatedperson">RelatedPersons</a> are often a source of information about the patient.  For keeping information about people for contact purposes for a patient, use a <a href="/docs/api/fhir/resources/patient">Patient</a>'s Contact element.  Some individuals may serve as both a <a href="/docs/api/fhir/resources/patient">Patient</a>'s Contact and a Related <a href="/docs/api/fhir/resources/person">Person</a>. </p> <p> Example <a href="/docs/api/fhir/resources/relatedperson">RelatedPersons</a> are: </p> <ul> <li>A patient's wife or husband</li> <li>A patient's relatives or friends</li> <li>A neighbor bringing a patient to the hospital</li> <li>The owner or trainer of a horse</li> <li>A patient's attorney or guardian</li> <li>A Guide Dog</li> </ul> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -68,19 +85,5 @@ Information about a person that is involved in the care for a patient, but who i
 <li><a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a></li>
 <li><a href="/docs/api/fhir/resources/task">Task</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

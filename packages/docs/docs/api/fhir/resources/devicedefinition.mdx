@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 The characteristics, operational status and capabilities of a medical-related component of a medical device.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p> The <a href="/docs/api/fhir/resources/devicedefinition">DeviceDefinition</a> resource is used to describe the characteristics and capabilities of a medical device.    </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -26,19 +43,5 @@ The characteristics, operational status and capabilities of a medical-related co
 <li><a href="/docs/api/fhir/resources/medicinalproductpackaged">MedicinalProductPackaged</a></li>
 <li><a href="/docs/api/fhir/resources/medicinalproductpharmaceutical">MedicinalProductPharmaceutical</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Risk of harmful or undesirable, physiological response which is unique to an individual and associated with exposure to a substance.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div>   <a name="scope"></a>      <p> A record of a clinical assessment of an allergy or intolerance; a propensity, or a potential risk  to an individual, to have an adverse reaction on future exposure to the specified substance, or class  of substance.  </p>   <p> Where a propensity is identified, to record information or evidence about a reaction event  that is characterized by any harmful or undesirable physiological response that is specific  to the individual and triggered by exposure of an individual to the identified substance  or class of substance. </p>   <p> <a href="/docs/api/fhir/resources/substance">Substances</a> include, but are not limited to: a therapeutic substance administered correctly  at an appropriate dosage for the individual; food; material derived from plants or animals;  or venom from insect stings. </p>   <p>    <b>Note for Reviewers</b>   </p>   <p> Presently open issues for this resource: </p>   <ul>    <li>This resource represents a condition of susceptibility to a substance, with a list of supporting events and/or symptoms,    and has no direct relationship to an event reporting framework; this will be re-assessed when adverse event reporting resource(s) and/or profiles are added to FHIR  </li>    <li>Other HL7 models and the openEHR archetype have "exposure date" but this is not found in any surveyed systems, so this is left as an extension (more appropriate for adverse event reporting)</li>   </ul>  </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -25,19 +42,5 @@ Risk of harmful or undesirable, physiological response which is unique to an ind
 <li><a href="/docs/api/fhir/resources/familymemberhistory">FamilyMemberHistory</a></li>
 <li><a href="/docs/api/fhir/resources/nutritionorder">NutritionOrder</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

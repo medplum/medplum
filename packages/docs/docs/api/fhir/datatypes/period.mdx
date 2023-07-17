@@ -11,11 +11,20 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/period">Period</a> Type: A time period defined by a start and end date and optionally time.
 
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
 
 
 ## Properties
 
+
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 
+</TabItem>
+  
+  
+  
+  
 
+</Tabs>

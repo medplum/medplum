@@ -11,22 +11,12 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Describes a measurement, calculation or setting capability of a medical device.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
-    <div> <a name="scope"></a>  <p> The <a href="/docs/api/fhir/resources/devicemetric">DeviceMetric</a> resource describes mandatory static properties that characterize a direct or derived, quantitative or qualitative biosignal measurement, setting, or calculation produced by a medical device.  The <a href="/docs/api/fhir/resources/devicemetric">DeviceMetric</a> resource can also be used to describe the non-static but highly relevant properties to the metric such as metric status, metric last calibration time and type, measurement mode, color, reference link to the parent DeviceComponent to where it belongs, and any capabilities that the metric offers (for example: setting the metric label). </p> <p> Note: </p> <p> For the initial scope, this <a href="/docs/api/fhir/resources/devicemetric">DeviceMetric</a> resource is only applicable to describe a single metric node in the containment tree that is produced by the context scanner in any medical device that implements or derives from the ISO/IEEE 11073 standard. </p> </div>
-    </TabItem>
-  <TabItem value="relationships" label="Relationships">
-    <div> <a name="bnr"></a>  <p> There are two related resources </p> <ul>  <li><a href="/docs/api/fhir/resources/device">Device</a>  - The physical device that this <a href="/docs/api/fhir/resources/devicemetric">DeviceMetric</a> belongs to.</li> </ul>  </div>
-    </TabItem>
-  
-  <TabItem value="referencedBy" label="Referenced By">
-    <ul><li><a href="/docs/api/fhir/resources/media">Media</a></li>
-<li><a href="/docs/api/fhir/resources/observation">Observation</a></li></ul>
-    </TabItem>
-</Tabs>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
 
 
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
@@ -38,4 +28,17 @@ Describes a measurement, calculation or setting capability of a medical device.
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+</TabItem>
+  <TabItem value="usage" label="Usage">
+    <div> <a name="scope"></a>  <p> The <a href="/docs/api/fhir/resources/devicemetric">DeviceMetric</a> resource describes mandatory static properties that characterize a direct or derived, quantitative or qualitative biosignal measurement, setting, or calculation produced by a medical device.  The <a href="/docs/api/fhir/resources/devicemetric">DeviceMetric</a> resource can also be used to describe the non-static but highly relevant properties to the metric such as metric status, metric last calibration time and type, measurement mode, color, reference link to the parent DeviceComponent to where it belongs, and any capabilities that the metric offers (for example: setting the metric label). </p> <p> Note: </p> <p> For the initial scope, this <a href="/docs/api/fhir/resources/devicemetric">DeviceMetric</a> resource is only applicable to describe a single metric node in the containment tree that is produced by the context scanner in any medical device that implements or derives from the ISO/IEEE 11073 standard. </p> </div>
+    </TabItem>
+  <TabItem value="relationships" label="Relationships">
+    <div> <a name="bnr"></a>  <p> There are two related resources </p> <ul>  <li><a href="/docs/api/fhir/resources/device">Device</a>  - The physical device that this <a href="/docs/api/fhir/resources/devicemetric">DeviceMetric</a> belongs to.</li> </ul>  </div>
+    </TabItem>
+  
+  <TabItem value="referencedBy" label="Referenced By">
+    <ul><li><a href="/docs/api/fhir/resources/media">Media</a></li>
+<li><a href="/docs/api/fhir/resources/observation">Observation</a></li></ul>
+    </TabItem>
 
+</Tabs>

@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Represents a defined collection of entities that may be discussed or acted upon collectively but which are not expected to act collectively, and are not formally or legally recognized; i.e. a collection of entities that isn't an <a href="/docs/api/fhir/resources/organization">Organization</a>.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <a name="use"></a> <h3 class="self-link-parent"> Use Cases <a href="/docs/api/fhir/resources/group" title="link to here" class="self-link"></a></h3> <p>The <a href="/docs/api/fhir/resources/group">Group</a> resource is used in one of two ways:</p> <ol>   <li>To define a group of specific people, animals, devices, etc. that is being tracked, examined or otherwise referenced as part of healthcare-related activities</li>   <li>To define a set of <i>possible</i> people, animals, devices, etc. that are of interest for some intended future healthcare-related activities</li> </ol>  <p>Examples of the former could include group therapy or treatment sessions, exposed entities tracked as part of public health, etc.  The latter might be used to define expected subjects for a clinical study.</p>  <p>Both use cases are handled by a single resource because the data elements captured tend to be similar.</p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -67,19 +84,5 @@ Represents a defined collection of entities that may be discussed or acted upon 
 <li><a href="/docs/api/fhir/resources/specimen">Specimen</a></li>
 <li><a href="/docs/api/fhir/resources/task">Task</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

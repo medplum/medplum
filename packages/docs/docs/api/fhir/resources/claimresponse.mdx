@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 This resource provides the adjudication details from the processing of a <a href="/docs/api/fhir/resources/claim">Claim</a> resource.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p> The <a href="/docs/api/fhir/resources/claimresponse">ClaimResponse</a> resource provides application level adjudication results, or an application level error,  which are the result of processing a submitted <a href="/docs/api/fhir/resources/claim">Claim</a> resource where that <a href="/docs/api/fhir/resources/claim">Claim</a> may be the functional corollary of   a <a href="/docs/api/fhir/resources/claim">Claim</a>, Predetermination or a Preauthorization.This resource is the only appropriate response to a <a href="/docs/api/fhir/resources/claim">Claim</a> which a  processing system recognizes as a <a href="/docs/api/fhir/resources/claim">Claim</a> resource.  </p>  <p>  This is the adjudicated response to a <a href="/docs/api/fhir/resources/claim">Claim</a>, Predetermination or Preauthorization. The strength   of the payment aspect of the response is matching to the strength of the original request. For a   <a href="/docs/api/fhir/resources/claim">Claim</a> the adjudication indicates payment which is intended to be made. For Preauthorization no payment will  actually be made however funds may be reserved to settle a claim submitted later. For   Predetermination no payment will  actually be made and no assurance is given that the adjudication of a claim submitted later will  match the adjudication provided, for example funds may have been exhausted in the interim.   Only an actual claim may be expected to result in actual payment.  </p> <p> The <a href="/docs/api/fhir/resources/claimresponse">ClaimResponse</a> resource may also be returned with the response for the submission of: Re-adjudication and Reversals. </p>  <p>The <a href="/docs/api/fhir/resources/claimresponse">ClaimResponse</a> resource is an "event" resource from a FHIR workflow perspective - see <a href="https://www.hl7.org/fhir/workflow.html#event">Workflow Event.</a></p> <h3 class="self-link-parent"> Additional Information <a href="https://www.hl7.org/fhir/claimresponse.html#13.7.1.1" title="link to here" class="self-link"></a></h3> <p> Additional information regarding electronic claims content and usage may be found at: </p>   <ul> <li><a href="https://www.hl7.org/fhir/financial-module.html#resource-status">Financial Resource Status Lifecycle</a>: how .status is used in the financial resources.</li> <li><a href="https://www.hl7.org/fhir/financial-module.html#secondary-use">Secondary Use of Resources</a>: how resources such as <a href="/docs/api/fhir/resources/claim">Claim</a>, <a href="/docs/api/fhir/resources/claimresponse">ClaimResponse</a> and <a href="/docs/api/fhir/resources/explanationofbenefit">ExplanationOfBenefit</a>  may be used for    reporting and data exchange for analytics, not just for eClaims exchange between providers and payors.</li> <li><a href="https://www.hl7.org/fhir/financial-module.html#subrogation">Subrogation</a>: how eClaims may handle patient insurance coverages when another insurer rather than  the provider will settle the claim and potentially recover costs against specified coverages.</li> <li><a href="https://www.hl7.org/fhir/financial-module.html#cob">Coordination of Benefit</a>: how eClaims may handle multiple patient insurance coverages.</li> <li><a href="https://www.hl7.org/fhir/financial-module.html#real-time">RealTime Exchange and Obtaining Deferred Responsess</a>: <a href="/docs/api/fhir/resources/claimresponse">ClaimResponses</a> may be obtained using Polling or FHIR REST (SEARCH).</li> <li><a href="https://www.hl7.org/fhir/financial-module.html#attachments">Attachments and Supporting Information</a>: how eClaims may handle the provision of supporting  information, whether provided by content or reference, within the eClaim resource when submitted to the payor or later in a resource which refers  to the subject eClaim resource. This also includes how payors may request additional supporting information from providers.</li> </ul>  </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -27,19 +44,5 @@ This resource provides the adjudication details from the processing of a <a href
 <li><a href="/docs/api/fhir/resources/servicerequest">ServiceRequest</a></li>
 <li><a href="/docs/api/fhir/resources/task">Task</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

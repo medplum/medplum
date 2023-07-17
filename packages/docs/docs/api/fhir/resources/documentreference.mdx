@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A reference to a document of any kind for any purpose. Provides metadata about the document so that the document can be discovered and managed. The scope of a document is any seralized object with a mime-type, so includes formal patient centric documents (CDA), cliical notes, scanned paper, and non-patient specific documents like policy text.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p>  A <a href="/docs/api/fhir/resources/documentreference">DocumentReference</a> resource is used to index a document, clinical note, and other binary objects  to make them available to a healthcare system.  A document is some sequence of bytes that is identifiable, establishes its own context (e.g., what subject,  author, etc. can be displayed to the user), and has defined update management. The <a href="/docs/api/fhir/resources/documentreference">DocumentReference</a> resource can be  used with any document format that has a recognized mime type and that conforms to this definition. </p> <p> Typically, <a href="/docs/api/fhir/resources/documentreference">DocumentReference</a> resources are used in document indexing systems, such as <a href="http://wiki.ihe.net/index.php?title=Cross-Enterprise_Document_Sharing">IHE XDS </a>, such as profiled in <a href="http://wiki.ihe.net/index.php/Mobile_access_to_Health_Documents_(MHD)">IHE Mobile access to Health Documents </a>. </p> <p> <a href="/docs/api/fhir/resources/documentreference">DocumentReference</a> is metadata describing a document such as:</p> <ul>  <li><a href="http://www.hl7.org/implement/standards/product_brief.cfm?product_id=7">CDA </a> documents in FHIR systems</li>  <li><a href="https://www.hl7.org/fhir/documents.html">FHIR documents</a> stored elsewhere (i.e. registry/repository following the XDS model)</li>  <li><a href="http://en.wikipedia.org/wiki/Portable_Document_Format">PDF documents </a>, Scanned Paper, and digital records of faxes</li>  <li>Clinical Notes in various forms</li>  <li>Image files (e.g., JPEG, GIF, TIFF)</li>  <li>Non-Standard formats (e.g., WORD)</li>  <li>Other kinds of documents, such as records of prescriptions or immunizations</li>  </ul> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -42,19 +59,5 @@ A reference to a document of any kind for any purpose. Provides metadata about t
 <li><a href="/docs/api/fhir/resources/substancespecification">SubstanceSpecification</a></li>
 <li><a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

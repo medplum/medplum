@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 The findings and interpretation of diagnostic  tests performed on patients, groups of patients, devices, and locations, and/or specimens derived from these. The report includes clinical context such as requesting and provider information, and some mix of atomic results, images, textual and coded interpretations, and formatted representation of diagnostic reports.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p><strong>This resource is an <em>event</em> resource from a FHIR workflow perspective - see <a href="https://www.hl7.org/fhir/workflow.html">Workflow</a>.   It is the intent of the Orders and <a href="/docs/api/fhir/resources/observation">Observation</a> Workgroup to align this resource with  the workflow pattern for <a href="https://www.hl7.org/fhir/workflow.html#event"><em>event</em> resources</a>.</strong></p> <p> A diagnostic report is the set of information that is typically provided by a diagnostic service when investigations are complete. The information includes a mix of atomic results, text reports, images, and codes. The mix varies depending on the nature of the diagnostic procedure, and sometimes on the nature of the outcomes for a particular investigation.  In FHIR, the report can be conveyed in a variety of ways including a <a href="https://www.hl7.org/fhir/documents.html">Document</a>, <a href="https://www.hl7.org/fhir/http.html">RESTful API</a>, or <a href="https://www.hl7.org/fhir/messaging.html">Messaging </a> framework.  Included within each of these, would be the <a href="/docs/api/fhir/resources/diagnosticreport">DiagnosticReport</a> resource itself. </p> <p> The <a href="/docs/api/fhir/resources/diagnosticreport">DiagnosticReport</a> resource has information about the diagnostic report itself, and about the subject and, in the case of laboratory tests, the specimen of the report.  It can also refer to the request details and atomic observations details or image instances.  Report conclusions can be expressed as a simple text blob, structured coded data or as an attached fully formatted report such as a PDF.</p> <p> The <a href="/docs/api/fhir/resources/diagnosticreport">DiagnosticReport</a> resource is suitable for the following kinds of diagnostic reports: </p> <ul>  <li>Laboratory (Clinical Chemistry, Hematology, Microbiology, etc.)</li>  <li>Pathology / Histopathology / related disciplines</li>  <li>Imaging Investigations (x-ray, CT, MRI etc.)</li>  <li>Other diagnostics - Cardiology, Gastroenterology etc.</li> </ul> <p> The <a href="/docs/api/fhir/resources/diagnosticreport">DiagnosticReport</a> resource is not intended to support cumulative result presentation (tabular presentation of past and present results in the resource). The <a href="/docs/api/fhir/resources/diagnosticreport">DiagnosticReport</a> resource does not yet provide full support for detailed structured reports of sequencing; this is planned for a future release. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -43,19 +60,5 @@ The findings and interpretation of diagnostic  tests performed on patients, grou
 <li><a href="/docs/api/fhir/resources/servicerequest">ServiceRequest</a></li>
 <li><a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

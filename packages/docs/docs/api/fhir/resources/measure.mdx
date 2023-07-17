@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 The <a href="/docs/api/fhir/resources/measure">Measure</a> resource provides the definition of a quality measure.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="bnc"></a>   <p>The <a href="/docs/api/fhir/resources/measure">Measure</a> resource represents a structured, computable definition of a health-related measure such as a clinical quality measure, public health indicator, or population analytics measure. A quality measure is a quantitative tool to assess the performance of an individual or organization with respect to a specified process or outcome via the measurement of actions, processes, or outcomes of clinical care. Quality measures are often derived from clinical guidelines and are designed to determine whether the appropriate care has been provided given a set of clinical criteria and an evidence base.</p>  <p>Note that the <a href="/docs/api/fhir/resources/measure">Measure</a> itself does not typically contain any logic; rather a <a href="/docs/api/fhir/resources/library">Library</a> resource is referenced that contains the logic required by the measure, and the various expression elements, such as population criteria, reference named expressions within that library (or libraries). In addition, if the <a href="/docs/api/fhir/resources/measure">Measure</a> references multiple libraries, then any expression references within the resource must be qualified with the name of the library that contains the referenced expression.</p>  <p>For a detailed discussion of how to use the <a href="/docs/api/fhir/resources/measure">Measure</a> and <a href="/docs/api/fhir/resources/measurereport">MeasureReport</a> resources, refer to the <a href="https://www.hl7.org/fhir/clinicalreasoning-quality-reporting.html">Quality Reporting</a> topic.</p>  </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -26,19 +43,5 @@ The <a href="/docs/api/fhir/resources/measure">Measure</a> resource provides the
 <li><a href="/docs/api/fhir/resources/measurereport">MeasureReport</a></li>
 <li><a href="/docs/api/fhir/resources/procedure">Procedure</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

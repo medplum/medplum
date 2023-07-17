@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 An association between a patient and an organization / healthcare provider(s) during which time encounters may occur. The managing organization assumes a level of responsibility for the patient during this time.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>          <p>       The <a href="/docs/api/fhir/resources/episodeofcare">EpisodeOfCare</a> Resource contains information about an association of a <a href="/docs/api/fhir/resources/patient">Patient</a> with a Healthcare Provider for a period       of time under which related healthcare activities may occur.     </p>     <p>       In many cases, this represents a period of time where the Healthcare Provider has some level of responsibility for the care       of the patient regarding a specific condition or problem, even if not currently participating in an encounter.     </p>     <p>       These resources are typically known in existing systems as:     </p>     <ul>       <li>EpisodeOfCare: Case, Program, Problem, Episode</li>       <li>Encounter: Visit, Contact</li>     </ul>     <p></p>     <h3 class="self-link-parent"> Multiple <a href="/docs/api/fhir/resources/organization">Organizations</a> and Transfer of Care <a href="https://www.hl7.org/fhir/episodeofcare.html#8.10.1.1" title="link to here" class="self-link"></a></h3>     <p>       Many organizations can be involved in an <a href="/docs/api/fhir/resources/episodeofcare">EpisodeOfCare</a>; however each organization will have its own <a href="/docs/api/fhir/resources/episodeofcare">EpisodeOfCare</a> resource instance       that tracks its responsibility with the patient.     </p>     <p>       When an <a href="/docs/api/fhir/resources/organization">Organization</a> completes their involvement with the patient and transfers care to another <a href="/docs/api/fhir/resources/organization">Organization</a>.       This is often in the form of a referral to another <a href="/docs/api/fhir/resources/organization">Organization</a> (or <a href="/docs/api/fhir/resources/organization">Organizations</a>).<br/>     </p>     <p>       When an incoming referral is received a new <a href="/docs/api/fhir/resources/episodeofcare">EpisodeOfCare</a> may be created for this organization.       The initial step(s) in the intake workflow for the referral often involve some form of assessment(s),       eligibility, capacity, care levels, which could take some time.<br/>       Once the intake process is completed and the patient is accepted, a <a href="/docs/api/fhir/resources/careplan">CarePlan</a> is often created.     </p>   </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -30,19 +47,5 @@ An association between a patient and an organization / healthcare provider(s) du
 <li><a href="/docs/api/fhir/resources/medicationdispense">MedicationDispense</a></li>
 <li><a href="/docs/api/fhir/resources/medicationstatement">MedicationStatement</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

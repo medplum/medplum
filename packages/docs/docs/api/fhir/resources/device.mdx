@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A type of a manufactured item that is used in the provision of healthcare without being substantially changed through that activity. The device may be a medical or non-medical device.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div>  <a name="scope"></a>  <p> This resource is an administrative resource that tracks individual instances of a device and their location. It is referenced by other resources for recording which device performed an action such as a procedure or an observation, referenced when prescribing and dispensing devices for patient use or for ordering supplies, and used to record and transmit <a href="https://www.hl7.org/fhir/#udi">Unique <a href="/docs/api/fhir/resources/device">Device</a> <a href="/docs/api/fhir/datatypes/identifier">Identifier</a> (UDI)</a> information about a device such as a patient's implant. </p>  </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -70,19 +87,5 @@ A type of a manufactured item that is used in the provision of healthcare withou
 <li><a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a></li>
 <li><a href="/docs/api/fhir/resources/task">Task</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

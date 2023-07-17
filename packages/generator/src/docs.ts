@@ -167,44 +167,13 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 # ${resourceName}
 
 ${description}
-${
-  resourceIntroduction
-    ? `
-  <Tabs queryString="intro-section">
-  ${
-    resourceIntroduction.scopeAndUsage
-      ? `<TabItem value="usage" label="Usage" default>
-    ${rewriteLinksText(resourceIntroduction.scopeAndUsage)}
-    </TabItem>`
-      : ''
-  }
-  ${
-    resourceIntroduction.boundariesAndRelationships
-      ? `<TabItem value="relationships" label="Relationships">
-    ${rewriteLinksText(resourceIntroduction.boundariesAndRelationships)}
-    </TabItem>`
-      : ''
-  }
-  ${
-    resourceIntroduction.backgroundAndContext
-      ? `<TabItem value="backgroundAndContext" label="Background and Context">
-    ${rewriteLinksText(resourceIntroduction.backgroundAndContext)}
-    </TabItem>`
-      : ''
-  }
-  ${
-    resourceIntroduction.referencedBy?.length > 0
-      ? `<TabItem value="referencedBy" label="Referenced By">
-    <ul>${resourceIntroduction.referencedBy.map((e: string) => `<li>${e}</li>`).join('\n')}</ul>
-    </TabItem>`
-      : ''
-  }
-</Tabs>`
-    : ''
-}
+
+<Tabs queryString="intro-section">
+${`<TabItem value="schema" label="Schema" default>
 
 
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
@@ -220,7 +189,37 @@ ${
 `
     : ''
 }
+</TabItem>
+  ${
+    resourceIntroduction?.scopeAndUsage
+      ? `<TabItem value="usage" label="Usage">
+    ${rewriteLinksText(resourceIntroduction.scopeAndUsage)}
+    </TabItem>`
+      : ''
+  }
+  ${
+    resourceIntroduction?.boundariesAndRelationships
+      ? `<TabItem value="relationships" label="Relationships">
+    ${rewriteLinksText(resourceIntroduction.boundariesAndRelationships)}
+    </TabItem>`
+      : ''
+  }
+  ${
+    resourceIntroduction?.backgroundAndContext
+      ? `<TabItem value="backgroundAndContext" label="Background and Context">
+    ${rewriteLinksText(resourceIntroduction.backgroundAndContext)}
+    </TabItem>`
+      : ''
+  }
+  ${
+    resourceIntroduction?.referencedBy?.length > 0
+      ? `<TabItem value="referencedBy" label="Referenced By">
+    <ul>${resourceIntroduction.referencedBy.map((e: string) => `<li>${e}</li>`).join('\n')}</ul>
+    </TabItem>`
+      : ''
+  }`}
 
+</Tabs>
 `;
 }
 

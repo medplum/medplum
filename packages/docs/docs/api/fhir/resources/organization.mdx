@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A formally or informally recognized grouping of people or organizations formed for the purpose of achieving some form of collective action.  Includes companies, institutions, corporations, departments, community groups, healthcare practice groups, payer/insurer, etc.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p> This resource may be used in a shared registry of contact and other information for various organizations or it can be used merely as a support for other resources that need to reference organizations, perhaps as a <a href="https://www.hl7.org/fhir/documents.html">document</a>, <a href="https://www.hl7.org/fhir/messaging.html">message</a> or  as a <a href="https://www.hl7.org/fhir/references.html#contained">contained</a> resource.  If using a registry approach, it's entirely possible for multiple registries to exist, each dealing with different types or levels of organization. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -99,19 +116,5 @@ A formally or informally recognized grouping of people or organizations formed f
 <li><a href="/docs/api/fhir/resources/task">Task</a></li>
 <li><a href="/docs/api/fhir/resources/verificationresult">VerificationResult</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A person who is directly or indirectly involved in the provisioning of healthcare.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p> <a href="/docs/api/fhir/resources/practitioner">Practitioner</a> covers all individuals who are engaged in the healthcare process and healthcare-related services as part of their formal  responsibilities and this Resource is used for attribution of activities and responsibilities to these individuals.  <a href="/docs/api/fhir/resources/practitioner">Practitioners</a> include (but are not limited to): </p> <ul> <li>physicians,&nbsp;dentists,&nbsp;pharmacists</li> <li>physician assistants,&nbsp;nurses, scribes</li> <li>midwives,&nbsp;dietitians,&nbsp;therapists,&nbsp;optometrists, paramedics</li> <li>medical technicians,&nbsp;laboratory scientists, prosthetic technicians, radiographers</li> <li>social workers, professional homecare providers, official volunteers</li> <li>receptionists handling patient registration</li> <li>IT personnel merging or unmerging patient records</li> <li>Service animal (e.g., ward assigned dog capable of detecting cancer in patients)</li> </ul> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -95,19 +112,5 @@ A person who is directly or indirectly involved in the provisioning of healthcar
 <li><a href="/docs/api/fhir/resources/verificationresult">VerificationResult</a></li>
 <li><a href="/docs/api/fhir/resources/visionprescription">VisionPrescription</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

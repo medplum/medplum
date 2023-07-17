@@ -11,23 +11,12 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 The <a href="/docs/api/fhir/resources/evidencevariable">EvidenceVariable</a> resource describes a "PICO" element that knowledge (evidence, assertion, recommendation) is about.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
-    <div> <a name="bnc"></a>  <p><strong>This resource is a <em>definition</em> resource from a FHIR workflow perspective</strong> - see <a href="https://www.hl7.org/fhir/workflow.html">Workflow</a>, specifically <a href="https://www.hl7.org/fhir/workflow.html#definition">Definition</a>.</p>  <p>The scope of the <a href="/docs/api/fhir/resources/evidencevariable">EvidenceVariable</a> resource is to describe a "PICO" element that knowledge (evidence, assertion, recommendation) is about. PICO stands for:  <a href="/docs/api/fhir/datatypes/population">Population</a> - the population within which exposures and outcomes are being considered Intervention - the conditional state or exposure state being described for which one is expressing the risk of or effect on an outcome Comparison - the alternative conditional state or alternative exposure state when one is comparing states for the effect on an outcome Outcome - the result or effect of an intervention or exposure in a population PICO (and its variants like PECO or PICOT) is a universal acronym used in evidence-based medicine communities to clearly express research questions and evidence findings.  The <a href="/docs/api/fhir/resources/evidencevariable">EvidenceVariable</a> resource allows expression of the components of a PICO question in codeable and reusable formats.</p>  </div>
-    </TabItem>
-  <TabItem value="relationships" label="Relationships">
-    <div>  <p>Multiple resources describing evidence findings (Evidence, <a href="/docs/api/fhir/resources/effectevidencesynthesis">EffectEvidenceSynthesis</a>, EffectEvidenceBit, <a href="/docs/api/fhir/resources/riskevidencesynthesis">RiskEvidenceSynthesis</a>, RiskEvidenceBit) will reference <a href="/docs/api/fhir/resources/evidencevariable">EvidenceVariable</a> to describe what the evidence findings are about.</p> </div>
-    </TabItem>
-  
-  <TabItem value="referencedBy" label="Referenced By">
-    <ul><li><a href="/docs/api/fhir/resources/effectevidencesynthesis">EffectEvidenceSynthesis</a></li>
-<li><a href="/docs/api/fhir/resources/evidence">Evidence</a></li>
-<li><a href="/docs/api/fhir/resources/riskevidencesynthesis">RiskEvidenceSynthesis</a></li></ul>
-    </TabItem>
-</Tabs>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
 
 
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
@@ -39,4 +28,18 @@ The <a href="/docs/api/fhir/resources/evidencevariable">EvidenceVariable</a> res
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+</TabItem>
+  <TabItem value="usage" label="Usage">
+    <div> <a name="bnc"></a>  <p><strong>This resource is a <em>definition</em> resource from a FHIR workflow perspective</strong> - see <a href="https://www.hl7.org/fhir/workflow.html">Workflow</a>, specifically <a href="https://www.hl7.org/fhir/workflow.html#definition">Definition</a>.</p>  <p>The scope of the <a href="/docs/api/fhir/resources/evidencevariable">EvidenceVariable</a> resource is to describe a "PICO" element that knowledge (evidence, assertion, recommendation) is about. PICO stands for:  <a href="/docs/api/fhir/datatypes/population">Population</a> - the population within which exposures and outcomes are being considered Intervention - the conditional state or exposure state being described for which one is expressing the risk of or effect on an outcome Comparison - the alternative conditional state or alternative exposure state when one is comparing states for the effect on an outcome Outcome - the result or effect of an intervention or exposure in a population PICO (and its variants like PECO or PICOT) is a universal acronym used in evidence-based medicine communities to clearly express research questions and evidence findings.  The <a href="/docs/api/fhir/resources/evidencevariable">EvidenceVariable</a> resource allows expression of the components of a PICO question in codeable and reusable formats.</p>  </div>
+    </TabItem>
+  <TabItem value="relationships" label="Relationships">
+    <div>  <p>Multiple resources describing evidence findings (Evidence, <a href="/docs/api/fhir/resources/effectevidencesynthesis">EffectEvidenceSynthesis</a>, EffectEvidenceBit, <a href="/docs/api/fhir/resources/riskevidencesynthesis">RiskEvidenceSynthesis</a>, RiskEvidenceBit) will reference <a href="/docs/api/fhir/resources/evidencevariable">EvidenceVariable</a> to describe what the evidence findings are about.</p> </div>
+    </TabItem>
+  
+  <TabItem value="referencedBy" label="Referenced By">
+    <ul><li><a href="/docs/api/fhir/resources/effectevidencesynthesis">EffectEvidenceSynthesis</a></li>
+<li><a href="/docs/api/fhir/resources/evidence">Evidence</a></li>
+<li><a href="/docs/api/fhir/resources/riskevidencesynthesis">RiskEvidenceSynthesis</a></li></ul>
+    </TabItem>
 
+</Tabs>

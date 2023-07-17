@@ -11,11 +11,20 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/contactpoint">ContactPoint</a> Type: Details for all kinds of technology mediated contact points for a person or organization, including telephone, email, etc.
 
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
 
 
 ## Properties
 
+
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 
+</TabItem>
+  
+  
+  
+  
 
+</Tabs>

@@ -11,19 +11,12 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A summary of information based on the results of executing a <a href="/docs/api/fhir/resources/testscript">TestScript</a>.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
-    <div> <a name="scope"></a>   <p> The <a href="/docs/api/fhir/resources/testscript">TestScript</a> resource is used to define tests that can be executed on one or more FHIR servers. The <a href="/docs/api/fhir/resources/testreport">TestReport</a> resource defines how systems should encode the summarized results of executing a <a href="/docs/api/fhir/resources/testscript">TestScript</a>. </p> <p> The <a href="/docs/api/fhir/resources/testreport">TestReport</a> structure mirrors the <a href="/docs/api/fhir/resources/testscript">TestScript</a> concepts of having sections for setup, tests, and teardown. If present, these ordered lists should mirror the actions (either operations or assertions) of the referenced <a href="/docs/api/fhir/resources/testscript">TestScript</a> with a result code: pass, skip, fail, warning, or error. </p> </div>
-    </TabItem>
-  
-  <TabItem value="backgroundAndContext" label="Background and Context">
-    <div> <a name="bnc"></a>   <h3 class="self-link-parent"> Background <a href="https://www.hl7.org/fhir/testreport.html#7.4.2.1" title="link to here" class="self-link"></a></h3> <p> Implementers should be familiar with the testing concepts and descriptions found in <a href="https://www.hl7.org/fhir/testing.html">Testing FHIR</a> before working with this resource. </p>  </div>
-    </TabItem>
-  
-</Tabs>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
 
 
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
@@ -35,4 +28,14 @@ A summary of information based on the results of executing a <a href="/docs/api/
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+</TabItem>
+  <TabItem value="usage" label="Usage">
+    <div> <a name="scope"></a>   <p> The <a href="/docs/api/fhir/resources/testscript">TestScript</a> resource is used to define tests that can be executed on one or more FHIR servers. The <a href="/docs/api/fhir/resources/testreport">TestReport</a> resource defines how systems should encode the summarized results of executing a <a href="/docs/api/fhir/resources/testscript">TestScript</a>. </p> <p> The <a href="/docs/api/fhir/resources/testreport">TestReport</a> structure mirrors the <a href="/docs/api/fhir/resources/testscript">TestScript</a> concepts of having sections for setup, tests, and teardown. If present, these ordered lists should mirror the actions (either operations or assertions) of the referenced <a href="/docs/api/fhir/resources/testscript">TestScript</a> with a result code: pass, skip, fail, warning, or error. </p> </div>
+    </TabItem>
+  
+  <TabItem value="backgroundAndContext" label="Background and Context">
+    <div> <a name="bnc"></a>   <h3 class="self-link-parent"> Background <a href="https://www.hl7.org/fhir/testreport.html#7.4.2.1" title="link to here" class="self-link"></a></h3> <p> Implementers should be familiar with the testing concepts and descriptions found in <a href="https://www.hl7.org/fhir/testing.html">Testing FHIR</a> before working with this resource. </p>  </div>
+    </TabItem>
+  
 
+</Tabs>

@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Describes the intention of how one or more practitioners intend to deliver care for a particular patient, group or community for a period of time, possibly limited to care for a specific condition or set of conditions.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>   <p>CarePlan is one of the <a href="https://www.hl7.org/fhir/workflow.html#request">request</a> resources in the FHIR <a href="https://www.hl7.org/fhir/workflow.html">workflow</a> specification.</p>  <p>  Care Plans are used in many areas of healthcare with a variety of scopes. They can be as simple as a general practitioner keeping track of when their  patient is next due for a tetanus immunization through to a detailed plan for an oncology patient covering diet, chemotherapy, radiation, lab work and counseling with detailed timing relationships, pre-conditions and goals. They may be used in veterinary care or clinical research to describe the care of a herd or other collection of animals.  In public health, they may describe education or immunization campaigns. </p> <p> This resource takes an intermediate approach to complexity.  It captures basic details about who is involved and what actions are intended without dealing in discrete data about dependencies and timing relationships.  These can be supported where necessary using the extension mechanism. </p> <p> The scope of care plans may vary widely.  Examples include: </p> <ul> <li> Multi-disciplinary cross-organizational care plans; e.g. An oncology plan including the  oncologist, home nursing staff, pharmacy and others </li> <li> Plans to manage specific disease/condition(s) (e.g. nutritional plan for a patient post bowel  resection, neurological plan post head injury, pre-natal plan, post-partum plan, grief management  plan, etc.) </li> <li> Decision support generated plans following specific practice guidelines (e.g. stroke care plan,  diabetes plan, falls prevention, etc.) </li> <li> Self-maintained patient or care-giver authored plans identifying their goals and an integrated understanding of actions to be taken </li> </ul> <p> This resource can be used to represent both proposed plans (for example, recommendations from a decision support engine or returned as part of a consult report) as well as active plans.  The nature of the plan is communicated by the status.  Some systems may need to filter <a href="/docs/api/fhir/resources/careplan">CarePlans</a> to ensure that only appropriate plans are exposed via a given user interface. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -31,19 +48,5 @@ Describes the intention of how one or more practitioners intend to deliver care 
 <li><a href="/docs/api/fhir/resources/questionnaireresponse">QuestionnaireResponse</a></li>
 <li><a href="/docs/api/fhir/resources/servicerequest">ServiceRequest</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

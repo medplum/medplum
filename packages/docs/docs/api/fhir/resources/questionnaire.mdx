@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A structured set of questions intended to guide the collection of answers from end-users. <a href="/docs/api/fhir/resources/questionnaire">Questionnaires</a> provide detailed control over order, presentation, phraseology and grouping to allow coherent, consistent data collection.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p> A <b>Questionnaire</b> is an organized collection of questions intended to solicit information from patients, providers or other individuals involved in the healthcare domain.  They may be simple flat lists of questions or can be hierarchically organized in groups and sub-groups, each containing questions.  The <b>Questionnaire</b> defines the questions to be asked, how they are ordered and grouped, any intervening instructional text and what the constraints are on the allowed answers.  The results of a <b>Questionnaire</b> can be communicated using the <a href="/docs/api/fhir/resources/questionnaireresponse">QuestionnaireResponse</a> resource. </p> <p> <a href="/docs/api/fhir/resources/questionnaire">Questionnaires</a> cover the need to communicate data originating from forms used in medical history examinations, research questionnaires and sometimes full clinical specialty records. In many systems this data is collected using user-defined screens and forms. <a href="/docs/api/fhir/resources/questionnaire">Questionnaires</a> define specifics about data capture - exactly what questions were asked, in what order, what choices for answers were, etc. Each of these questions is part of the <a href="/docs/api/fhir/resources/questionnaire">Questionnaire</a>, and as such the <a href="/docs/api/fhir/resources/questionnaire">Questionnaire</a> is a separately identifiable Resource, whereas the individual questions are not.  (Questionnaire questions can be linked to shared data elements using the <code>Questionnaire.item.definition</code> element.) </p> <p>Examples of <a href="/docs/api/fhir/resources/questionnaire">Questionnaires</a> include:</p> <ul> <li>Past medical history (PMH)</li> <li>Family diseases</li> <li>Social history</li> <li>Research questionnaires/Clinical research forms (CRFs)</li> <li>Quality and evaluation forms</li> <li>Patient intake form (e.g. clipboard)</li> <li>Forms to support insurance claims</li> </ul> <p> This resource is limited in scope to support the characteristics of simple questionnaires.  However, common extensions have been defined to allow more sophisticated behavior.  This includes: </p> <ul>   <li><a href="https://www.hl7.org/fhir/questionnaire-extensions.html">Questionnaire core extensions</a> which defines the additional descriptive characteristics for questionnaires and their groups and questions</li>   <li><a href="https://www.hl7.org/fhir/element-extensions.html">Element extensions</a> which can describe additional constraints on allowed answers for questionnaires such as string length and date and numeric ranges</li> </ul> <p> Additional implementation guides, in particular the <a href="https://www.hl7.org/fhir/#sdc">Structured Data Capture <a href="/docs/api/fhir/resources/questionnaire">Questionnaire</a> IG</a> provide guidance, extensions and operations that support additional capabilities and allow the definition of more sophisticated questionnaires and their corresponding responses. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -30,19 +47,5 @@ A structured set of questions intended to guide the collection of answers from e
 <li><a href="/docs/api/fhir/resources/procedure">Procedure</a></li>
 <li><a href="/docs/api/fhir/resources/questionnaireresponse">QuestionnaireResponse</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

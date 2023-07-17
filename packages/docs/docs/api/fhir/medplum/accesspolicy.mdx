@@ -11,9 +11,12 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Access Policy for user or user group that defines how entities can or cannot access resources.
 
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
 
 
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
@@ -25,4 +28,10 @@ Access Policy for user or user group that defines how entities can or cannot acc
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+</TabItem>
+  
+  
+  
+  
 
+</Tabs>

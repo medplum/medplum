@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Financial instrument which may be used to reimburse or pay for health care products and services. Includes both insurance and self-payment.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div>  <a name="scope"></a>  <p> The <a href="/docs/api/fhir/resources/coverage">Coverage</a> resource is intended to provide the high-level identifiers and descriptors of an insurance plan, typically the information which would  appear on an insurance card, which may be used to pay, in part or in whole, for the provision of health care products and services.  </p> <p> This resource may also be used to register 'SelfPay' where an individual or organization other than an insurer is taking responsibility for payment for a  portion of the health care costs. Selfpay should not be confused with being a guarantor of the patient's account. </p> <p>The <a href="/docs/api/fhir/resources/coverage">Coverage</a> resource is a "event" resource from a FHIR workflow perspective - see <a href="https://www.hl7.org/fhir/workflow.html#event">Workflow Request.</a></p>  </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -32,19 +49,5 @@ Financial instrument which may be used to reimburse or pay for health care produ
 <li><a href="/docs/api/fhir/resources/servicerequest">ServiceRequest</a></li>
 <li><a href="/docs/api/fhir/resources/task">Task</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

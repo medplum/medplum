@@ -11,19 +11,12 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Describes validation requirements, source(s), status and dates for one or more elements.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
-    <div> <a name="scope"></a>  <p> The <a href="/docs/api/fhir/resources/verificationresult">VerificationResult</a> can be used where content (such as found in a directory) is aggregated between systems, and the details of this process needs to be recorded, to be able to determine the likely accuracy of the content. </p> </div>
-    </TabItem>
-  <TabItem value="relationships" label="Relationships">
-    <div> <a name="bnr"></a>  <p> TBD. </p> </div>
-    </TabItem>
-  
-  
-</Tabs>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
 
 
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
@@ -35,4 +28,14 @@ Describes validation requirements, source(s), status and dates for one or more e
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+</TabItem>
+  <TabItem value="usage" label="Usage">
+    <div> <a name="scope"></a>  <p> The <a href="/docs/api/fhir/resources/verificationresult">VerificationResult</a> can be used where content (such as found in a directory) is aggregated between systems, and the details of this process needs to be recorded, to be able to determine the likely accuracy of the content. </p> </div>
+    </TabItem>
+  <TabItem value="relationships" label="Relationships">
+    <div> <a name="bnr"></a>  <p> TBD. </p> </div>
+    </TabItem>
+  
+  
 
+</Tabs>

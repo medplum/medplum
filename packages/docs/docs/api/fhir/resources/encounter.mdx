@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 An interaction between a patient and healthcare provider(s) for the purpose of providing healthcare service(s) or assessing the health status of a patient.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p>  A patient encounter is further characterized by the setting in which it takes place. Amongst them are ambulatory,  emergency, home health, inpatient and virtual encounters. An <a href="/docs/api/fhir/resources/encounter">Encounter</a> encompasses the lifecycle from pre-admission,   the actual encounter (for ambulatory encounters), and admission, stay and discharge (for inpatient encounters).  During the encounter the patient may move from practitioner to practitioner and location to location. </p> <p> Because of the broad scope of <a href="/docs/api/fhir/resources/encounter">Encounter</a>, not all elements will be relevant in all settings. For this reason,  admission/discharge related information is kept in a separate Hospitalization component within <a href="/docs/api/fhir/resources/encounter">Encounter</a>.  The <i>class</i> element is used to distinguish between these settings, which will guide further validation and application of business rules. </p> <p> There is also substantial variance from organization to organization (and between jurisdictions and countries)  on which business events translate to the start of a new <a href="/docs/api/fhir/resources/encounter">Encounter</a>, or what level of aggregation is used for <a href="/docs/api/fhir/resources/encounter">Encounter</a>. For example, each single visit of a practitioner during a hospitalization may lead to a new instance of <a href="/docs/api/fhir/resources/encounter">Encounter</a>, but depending on local practice and the systems involved, it may well be that this is aggregated to a single instance for a whole hospitalization. Even more aggregation may occur where jurisdictions introduce groups of <a href="/docs/api/fhir/resources/encounter">Encounters</a> for financial or other reasons. <a href="/docs/api/fhir/resources/encounter">Encounters</a> can be aggregated or grouped under other <a href="/docs/api/fhir/resources/encounter">Encounters</a> using the <i>partOf</i> element.  See <a href="https://www.hl7.org/fhir/#examples">below</a> for examples. </p>  <p> <a href="/docs/api/fhir/resources/encounter">Encounter</a> instances may exist before the actual encounter takes place to convey pre-admission information, including using <a href="/docs/api/fhir/resources/encounter">Encounters</a> elements to reflect the planned start date or planned encounter locations. In  this case the <i>status</i> element is set to 'planned'. </p>  <p> The Hospitalization component is intended to store the extended information relating to a hospitalization event. It is always expected to be the same period as the encounter itself. Where the period is different, another encounter instance should be used to capture this information as a partOf this encounter instance. </p>  <p> The <a href="/docs/api/fhir/resources/procedure">Procedure</a> and encounter have references to each other, and these should be to different procedures; one for the procedure that was performed during the encounter (stored in <a href="/docs/api/fhir/resources/procedure">Procedure</a>.encounter), and another for cases where an encounter is a result of another procedure (stored in <a href="/docs/api/fhir/resources/encounter">Encounter</a>.indication) such as a follow-up encounter to resolve complications from an earlier procedure. </p>  <h3 class="self-link-parent"> Status Management <a href="https://www.hl7.org/fhir/encounter.html#8.11.1.1" title="link to here" class="self-link"></a></h3> <p> During the life-cycle of an encounter it will pass through many statuses. Typically these are in order or the organization's workflow: planned, in-progress, finished/cancelled.<br/> This status information is often used for other things, and often an analysis of the status history is required. This could be done by scanning through all the versions of the encounter, checking the period of each, and then doing some form of post processing. To ease the burden of this (or where a system doesn't support resource histories) a status history component is included. </p> <p> There is no direct indication purely by the status field as to whether an encounter is considered "admitted".<br/> The context of the encounter and business practices/policies/workflows/types can influence this definition. (e.g., acute care facility, aged care center, outpatient clinic, emergency department, community-based clinic).<br/> Statuses of "arrived", "triaged" or "in progress" could be considered the start of the admission, and also have the  presence of the hospitalization sub-component entered. </p> <p> The "on leave" status might or might not be a part of the admission, for example if the patient  was permitted to go home for a weekend or some other form of external event.<br/> The location is also likely to be filled in with a location status of "present".<br/> For other examples such as an outpatient visit (day procedure - colonoscopy), the patient could also be  considered to be admitted, hence the encounter doesn't have a fixed definition of admitted. At a minimum, we do believe that a patient IS admitted when the status is in-progress. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -56,19 +73,5 @@ An interaction between a patient and healthcare provider(s) for the purpose of p
 <li><a href="/docs/api/fhir/resources/task">Task</a></li>
 <li><a href="/docs/api/fhir/resources/visionprescription">VisionPrescription</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

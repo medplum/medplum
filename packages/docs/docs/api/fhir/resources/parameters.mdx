@@ -11,21 +11,12 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 This resource is a non-persisted resource used to pass information into and back from an [operation](/docs/api/fhir/operations). It has no other use, and there is no RESTful endpoint associated with it.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
-    <div> <a name="scope"></a>  <p> This resource is a non-persisted resource used to pass information into and back from an <a href="https://www.hl7.org/fhir/operations.html">operation</a>.  </p> </div>
-    </TabItem>
-  <TabItem value="relationships" label="Relationships">
-    <div> <a name="bnr"></a>  <p> This special resource has no other use than for operation parameters, and there is no RESTful end-point associated with it.  For further information, see the <a href="https://www.hl7.org/fhir/operations.html">operations</a> page. </p> <p> <a href="/docs/api/fhir/resources/operationdefinition">OperationDefinition</a> defines constraints on the <a href="/docs/api/fhir/resources/parameters">Parameters</a> resource instances that are used to convey the inputs and outputs of the operation. </p> </div>
-    </TabItem>
-  
-  <TabItem value="referencedBy" label="Referenced By">
-    <ul><li><a href="/docs/api/fhir/resources/guidanceresponse">GuidanceResponse</a></li></ul>
-    </TabItem>
-</Tabs>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
 
 
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
@@ -37,4 +28,16 @@ This resource is a non-persisted resource used to pass information into and back
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+</TabItem>
+  <TabItem value="usage" label="Usage">
+    <div> <a name="scope"></a>  <p> This resource is a non-persisted resource used to pass information into and back from an <a href="https://www.hl7.org/fhir/operations.html">operation</a>.  </p> </div>
+    </TabItem>
+  <TabItem value="relationships" label="Relationships">
+    <div> <a name="bnr"></a>  <p> This special resource has no other use than for operation parameters, and there is no RESTful end-point associated with it.  For further information, see the <a href="https://www.hl7.org/fhir/operations.html">operations</a> page. </p> <p> <a href="/docs/api/fhir/resources/operationdefinition">OperationDefinition</a> defines constraints on the <a href="/docs/api/fhir/resources/parameters">Parameters</a> resource instances that are used to convey the inputs and outputs of the operation. </p> </div>
+    </TabItem>
+  
+  <TabItem value="referencedBy" label="Referenced By">
+    <ul><li><a href="/docs/api/fhir/resources/guidanceresponse">GuidanceResponse</a></li></ul>
+    </TabItem>
 
+</Tabs>

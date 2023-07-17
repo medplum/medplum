@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A specific set of Roles/Locations/specialties/services that a practitioner may perform at an organization for a period of time.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p> <a href="/docs/api/fhir/resources/practitionerrole">PractitionerRole</a> covers the recording of the location and types of services that <a href="/docs/api/fhir/resources/practitioner">Practitioners</a> are able to provide for an organization. </p> <p> The role, specialty, <a href="/docs/api/fhir/resources/location">Location</a> telecom and <a href="/docs/api/fhir/resources/healthcareservice">HealthcareService</a> properties can be repeated if required in other instances of the <a href="/docs/api/fhir/resources/practitionerrole">PractitionerRole</a>. Some systems record a collection of service values for a single location, others record the  single service and the list of locations it is available. Both are acceptable options for representing this data.<br/> Where availability, telecom, or other details are not the same across all healthcareservices, or locations  a seperate <a href="/docs/api/fhir/resources/practitionerrole">PractitionerRole</a> instance should be created. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -93,19 +110,5 @@ A specific set of Roles/Locations/specialties/services that a practitioner may p
 <li><a href="/docs/api/fhir/resources/verificationresult">VerificationResult</a></li>
 <li><a href="/docs/api/fhir/resources/visionprescription">VisionPrescription</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

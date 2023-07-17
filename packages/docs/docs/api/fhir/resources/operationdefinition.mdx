@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A formal computable definition of an operation (on the RESTful interface) or a named query (using the search interaction).
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p> The <a href="/docs/api/fhir/resources/operationdefinition">OperationDefinition</a> resource provides a formal computable definition of an <a href="https://www.hl7.org/fhir/operations.html">operation</a> or <a href="https://www.hl7.org/fhir/search.html#advanced">a named query</a>. The <a href="/docs/api/fhir/resources/operationdefinition">OperationDefinition</a> serves two principal purposes: </p> <ul>  <li>To allow for automatic determination of system compatibility</li>  <li>To allow for dynamic generation of forms to drive the operations</li> </ul> <p> See below for further information about these, and about how operations and named queries are executed. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -26,19 +43,5 @@ A formal computable definition of an operation (on the RESTful interface) or a n
 <li><a href="/docs/api/fhir/resources/familymemberhistory">FamilyMemberHistory</a></li>
 <li><a href="/docs/api/fhir/resources/procedure">Procedure</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

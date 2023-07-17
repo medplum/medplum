@@ -11,11 +11,20 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/expression">Expression</a> Type: A expression that is evaluated in a specified context and returns a value. The context of use of the expression must specify the context in which the expression is evaluated, and how the result of the expression is used.
 
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
 
 
 ## Properties
 
+
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 
+</TabItem>
+  
+  
+  
+  
 
+</Tabs>

@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 The details of a healthcare service available at a location.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>      <p>    The <a href="/docs/api/fhir/resources/healthcareservice">HealthcareService</a> resource is used to describe a single healthcare service or    category of services that are provided by an organization at a location.<br/>    The location of the services could be virtual, as with telemedicine services.<br/>   </p>   <p>Common examples of <a href="/docs/api/fhir/resources/healthcareservice">HealthcareServices</a> resources are:</p>   <ul>    <li>Allied Health</li>    <li>Clinical Neuropsychologist</li>    <li>Podiatry Service</li>    <li>Smallville Hospital Emergency Services</li>    <li>Respite care provided at a nursing home or hostel</li>    <li>24hr crisis telephone counseling service</li>    <li>Information, advice and/or referral services; Disability, Telecommunications</li>    <li>Rural TeleHealth Services</li>    <li>Hospital in the home</li>    <li>Yellow Cabs</li>    <li>Pharmacy</li>    <li>Active Rehab</li>    <li>Social Support</li>    <li>Drug and/or alcohol counseling</li>    <li>Day Programs, Adult Training &amp; Support Services</li>    <li>Consulting psychologists and/or psychology services</li>    <li>Group Hydrotherapy</li>    <li>Little River Home Maintenance</li>   </ul>   <p>    <i>HealthcareService resources do not represent Computer related Services (not SOA)</i>   </p>   <p>Example uses of <a href="/docs/api/fhir/resources/healthcareservice">HealthcareService</a> resources are:</p>   <ul>    <li>National Services Directory - Consumer Focus</li>    <li>National Services Directory - <a href="/docs/api/fhir/resources/practitioner">Practitioner</a> Referrals Searching</li>    <li>Organization's Client Portal - to locate services / book appointments</li>    <li>     <a href="/docs/api/fhir/datatypes/address">Address</a> book of services for Referrals<br/>     <i>including references to <a href="/docs/api/fhir/resources/questionnaire">Questionnaires</a> for assessments that are required as part of the referral</i>    </li>    <li>     Health Network internal directory     <i>      Used for tracking available services offered internally,      and also those offered by business partners.<br/>      This information may also include costing information.     </i>    </li>   </ul>  </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -36,19 +53,5 @@ The details of a healthcare service available at a location.
 <li><a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a></li>
 <li><a href="/docs/api/fhir/resources/task">Task</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A photo, video, or audio recording acquired or used in healthcare. The actual content may be inline or provided by direct reference.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>    <a name="dstu"></a> <blockquote class="stu-note"><p><b>Trial-Use Note:</b>    The Orders and <a href="/docs/api/fhir/resources/observation">Observations</a> workgroups wants to make the balloter aware than observations that require the attachment data types are represented by the <a href="/docs/api/fhir/resources/media">Media</a> resource instead of <a href="/docs/api/fhir/resources/observation">Observation</a>.  There have been several significant changes to  the <a href="/docs/api/fhir/resources/media">Media</a> resource in order to align it with <a href="/docs/api/fhir/resources/observation">Observation</a> and the workflow <a href="https://www.hl7.org/fhir/event.html">event</a> pattern including:</p>    <ol>     <li>The addition of the <a href="https://www.hl7.org/fhir/media-definitions.html#Media.partOf">partOf</a> and <a href="https://www.hl7.org/fhir/media-definitions.html#issued">issued</a> elements.</li>     <li>The required <code>type</code> was changed an optional <a href="https://www.hl7.org/fhir/media-definitions.html#category">category</a> and the <code>subtype</code> element was renamed to  <a href="https://www.hl7.org/fhir/media-definitions.html#modality">modality</a>.</li>     <li>Additional reference targets added to the <code>subject</code>,<code>operator</code>, and <code>basedOn</code> elements</li>     <li>The additions of several standard <a href="https://www.hl7.org/fhir/media-profiles.html#extensions">event extensions</a>.</li>    </ol> </blockquote> <p> The <a href="/docs/api/fhir/resources/media">Media</a> resource contains photos, videos, and audio recordings. It is used with media acquired or used as part of the healthcare process. Here are some typical usages: </p> <ul>  <li>Photos and videos of diagnostic or care provision procedures for recording purposes </li>  <li>Images contained in diagnostic reports</li>  </ul> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -28,19 +45,5 @@ A photo, video, or audio recording acquired or used in healthcare. The actual co
 <li><a href="/docs/api/fhir/resources/medicationknowledge">MedicationKnowledge</a></li>
 <li><a href="/docs/api/fhir/resources/observation">Observation</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A request to supply a diet, formula feeding (enteral) or oral nutritional supplement to a patient/resident.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p><strong>This resource is a <em>request</em> resource from a FHIR workflow perspective - see <a href="https://www.hl7.org/fhir/workflow.html">Workflow</a>.  It is the intent of the Orders and <a href="/docs/api/fhir/resources/observation">Observation</a> Workgroup to align this resource with  the workflow  pattern for <a href="https://www.hl7.org/fhir/workflow.html"><em>request</em> resources</a>.</strong></p> <p> The <a href="/docs/api/fhir/resources/nutritionorder">NutritionOrder</a> resource describes a request for oral diets (including general diets such as General Healthy diet, or therapeutic diets such as Consistent Carbohydrate, 2 gram Sodium, or Fluid Restricted), oral nutrition supplements (such as nutritionally complete pre-packed drinks), enteral nutrition (tube feedings) and infant formula which govern the distribution of food and nutritional products used to feed patients within an in-patient setting. It does not cover orders for parenteral (IV) nutrition which are typically filled by pharmacy. These nutrition orders are combined with information on a patient's food allergies and intolerances, and ethnic or cultural food preferences (e.g. Kosher or Vegetarian) to inform healthcare personnel about the type, texture, and/or quantity of foods that the patient should receive or consume. </p> <p> Enteral orders are distinguished from supplements because they have some unique attributes and typically include administration information whereas oral nutritional supplements may simply be supplied (e.g. home health or outpatient settings).  In a simple case, the requestor may designate type of product, product name and the route of administration along with free text instructions without a having to complete the additional structured details. </p> <p> This resource is intended to be used by providers from a variety of specialties such as physicians, dietitian/nutritionists, or speech therapists.  One provider may simply order a base element oral diet such as General Healthful diet.   Another provider, based on scope of practice, may use other elements to communicate additional therapeutic needs or patient preferences. The optionality included gives an ordering provider the capability to write a simple order for an oral diet, nutritional supplement or formula with minimal requirements beyond that of specifying the diet, supplement or formula product, but also supports  the ability to provide more detailed information that may be further augmented by a dietitian or nutrition specialist. For example, a physician may order a 2 g sodium diet.  A speech therapist, based on the results of a swallowing evaluation, then orders a mechanically altered texture with nectar thick liquids. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -25,19 +42,5 @@ A request to supply a diet, formula feeding (enteral) or oral nutritional supple
 <li><a href="/docs/api/fhir/resources/goal">Goal</a></li>
 <li><a href="/docs/api/fhir/resources/observation">Observation</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

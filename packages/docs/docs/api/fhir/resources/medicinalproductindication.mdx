@@ -11,20 +11,12 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Indication for the Medicinal Product.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
-    <div>   <a name="scope"></a>      <p>    A medical situation in which a medicinal product is appropriate for use   </p>  </div>
-    </TabItem>
-  
-  
-  <TabItem value="referencedBy" label="Referenced By">
-    <ul><li><a href="/docs/api/fhir/resources/medicinalproduct">MedicinalProduct</a></li>
-<li><a href="/docs/api/fhir/resources/medicinalproductcontraindication">MedicinalProductContraindication</a></li></ul>
-    </TabItem>
-</Tabs>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
 
 
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
@@ -36,4 +28,15 @@ Indication for the Medicinal Product.
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+</TabItem>
+  <TabItem value="usage" label="Usage">
+    <div>   <a name="scope"></a>      <p>    A medical situation in which a medicinal product is appropriate for use   </p>  </div>
+    </TabItem>
+  
+  
+  <TabItem value="referencedBy" label="Referenced By">
+    <ul><li><a href="/docs/api/fhir/resources/medicinalproduct">MedicinalProduct</a></li>
+<li><a href="/docs/api/fhir/resources/medicinalproductcontraindication">MedicinalProductContraindication</a></li></ul>
+    </TabItem>
 
+</Tabs>

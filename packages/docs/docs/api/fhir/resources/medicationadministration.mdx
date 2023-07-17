@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Describes the event of a patient consuming or otherwise being administered a medication.  This may be as simple as swallowing a tablet or it may be a long running infusion.  Related resources tie this event to the authorizing prescription, and the specific encounter between patient and health care practitioner.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p> This resource covers the administration of all medications and vaccines.  Please refer to the <a href="/docs/api/fhir/resources/immunization">Immunization</a> Resource/Profile for the treatment of vaccines. It will principally be used within care settings (including inpatient) to record the capture of medication administrations, including self-administrations of oral medications, injections, intra-venous adjustments, etc.  It can also be used in outpatient settings to record allergy shots and other non-immunization administrations.  In some cases, it might be used for home-health reporting, such as recording self-administered or even device-administered insulin.  </p>     <p>MedicationAdministration is an event resource from a FHIR workflow perspective - see <a href="https://www.hl7.org/fhir/workflow.html#event"> Workflow Event </a>     </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -26,19 +43,5 @@ Describes the event of a patient consuming or otherwise being administered a med
 <li><a href="/docs/api/fhir/resources/observation">Observation</a></li>
 <li><a href="/docs/api/fhir/resources/procedure">Procedure</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

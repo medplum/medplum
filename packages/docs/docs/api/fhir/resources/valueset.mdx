@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A <a href="/docs/api/fhir/resources/valueset">ValueSet</a> resource instance specifies a set of codes drawn from one or more code systems, intended for use in a particular context. Value sets link between [CodeSystem](./codesystem) definitions and their use in [coded elements](https://www.hl7.org/fhir/terminologies.html).
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p> The FHIR terminology specification is based on two key concepts, originally defined in <a href="http://www.hl7.org/documentcenter/public/standards/V3/core_principles/infrastructure/coreprinciples/v3modelcoreprinciples.html">HL7 v3 Core Principles </a>: </p> <ul> <li> <code><a href="/docs/api/fhir/resources/codesystem">CodeSystem</a></code> - declares the existence of and describes a code system or code system supplement and its key properties, and optionally defines a part or all of its content. Also known as Ontology, Terminology, or Enumeration</li> <li> <code>ValueSet</code> - specifies a set of codes drawn from one or more code systems, intended for use in a particular context. Value sets link between <a href="/docs/api/fhir/resources/codesystem">CodeSystem</a> definitions and their use in <a href="https://www.hl7.org/fhir/terminologies.html">coded elements</a></li> </ul> <p> Value sets have 2 aspects: </p> <ul>  <li><code><a href="https://www.hl7.org/fhir/valueset-definitions.html#ValueSet.compose">.compose</a></code>: A definition of which codes are intended to be in the value set ("intension")</li>  <li><code><a href="https://www.hl7.org/fhir/valueset-definitions.html#ValueSet.expansion">.expansion</a></code>: The list of codes that are actually in the value set under a given set of conditions ("extension") - see <a href="/docs/api/fhir/resources/valueset">Value Set Expansion</a></li> </ul> <p> The <code>ValueSet</code> resource can carry either the <code>.compose</code> or the <code>.expansion</code>, both of them, or neither of them (if only the metadata is being represented). There is an <a href="https://www.hl7.org/fhir/valueset-operation-expand.html">"$expand" operation</a> which can be used to ask a server to generate an expansion given the composition rules, in a particular context, and a <a href="https://www.hl7.org/fhir/valueset-operation-validate-code.html">"$validate-code" operation</a> which can be used to ask a server to  check whether a given code or concept is in the value set in a particular context. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -31,19 +48,5 @@ A <a href="/docs/api/fhir/resources/valueset">ValueSet</a> resource instance spe
 <li><a href="/docs/api/fhir/resources/questionnaire">Questionnaire</a></li>
 <li><a href="/docs/api/fhir/resources/researchelementdefinition">ResearchElementDefinition</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

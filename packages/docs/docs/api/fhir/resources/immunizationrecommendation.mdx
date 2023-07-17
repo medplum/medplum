@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A patient's point-in-time set of recommendations (i.e. forecasting) according to a published schedule with optional supporting justification.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div>  <a name="scope"></a>  <p> The <a href="/docs/api/fhir/resources/immunizationrecommendation">ImmunizationRecommendation</a> resource is intended to cover communication of a specified patient's immunization recommendations and status across all healthcare disciplines in all care settings and all regions. The set of customized (for the patient) recommendations is based on the comparison of the patient's immunization history with a set of published recommendations (protocols). </p> <p> Additionally, the <a href="/docs/api/fhir/resources/immunizationrecommendation">ImmunizationRecommendation</a> resource is expected to cover key concepts related to the querying of a patient's immunization recommendations and status. This resource - through consultation with the Public Health work group - is believed to meet key use cases and information requirements as defined in the existing <a href="https://www.hl7.org/implement/standards/product_brief.cfm?product_id=186">HL7 v3 </a> POIZ domain and <a href="/docs/api/fhir/resources/immunization">Immunization</a> Domain Analysis Model. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -26,19 +43,5 @@ A patient's point-in-time set of recommendations (i.e. forecasting) according to
 <li><a href="/docs/api/fhir/resources/medicationrequest">MedicationRequest</a></li>
 <li><a href="/docs/api/fhir/resources/observation">Observation</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

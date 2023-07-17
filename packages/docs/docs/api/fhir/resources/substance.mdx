@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A homogeneous material with a definite composition.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>   <p> This resource allows for a material to be represented. The resource can be used to represent either a kind of a  substance - e.g. a formulation commonly used for treating patients, or it can be used to describe a particular package of a known substance (e.g. bottle, jar, packet).  </p>   <p> The composition of the material can be specified in terms of a mix of other materials, including with precise amounts if required. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -40,19 +57,5 @@ A homogeneous material with a definite composition.
 <li><a href="/docs/api/fhir/resources/supplydelivery">SupplyDelivery</a></li>
 <li><a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

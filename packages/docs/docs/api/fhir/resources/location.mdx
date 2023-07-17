@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Details and position information for a physical place where services are provided and resources and participants may be stored, found, contained, or accommodated.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div>    <a name="scope"></a>   <p> A <a href="/docs/api/fhir/resources/location">Location</a> includes both incidental locations (a place which is used for healthcare without prior designation or authorization) and  dedicated, formally appointed locations. <a href="/docs/api/fhir/resources/location">Locations</a> may be private, public, mobile or fixed and scale from small  freezers to full hospital buildings or parking garages. </p> <p>Examples of <a href="/docs/api/fhir/resources/location">Locations</a> are:</p> <ul> <li>Building, ward, corridor, room or bed</li> <li>Mobile Clinic</li> <li>Freezer, incubator</li> <li>Vehicle or lift</li> <li>Home, shed, or a garage</li> <li>Road, parking place, a park</li> <li>Ambulance (generic)</li> <li>Ambulance (specific)</li> <li>Patient's Home (generic)</li> <li>Jurisdiction</li> </ul>   <p>     These locations are not intended to cover locations on a patient where something occurred     (i.e. a patient's broken leg), but can happily cover the location where the patient broke the leg (the playground)   </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -59,19 +76,5 @@ Details and position information for a physical place where services are provide
 <li><a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a></li>
 <li><a href="/docs/api/fhir/resources/task">Task</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Indicates an actual or potential clinical issue with or between one or more active or proposed clinical actions for a patient; e.g. Drug-drug interaction, Ineffective treatment frequency, <a href="/docs/api/fhir/resources/procedure">Procedure</a>-condition conflict, etc.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p><strong>This resource is an <em>event</em> resource from a FHIR workflow perspective</strong> - see <a href="https://www.hl7.org/fhir/workflow.html">Workflow</a>, specifically <a href="https://www.hl7.org/fhir/workflow.html#event">Event</a>.</p>  <p> This resource applies to various circumstances where there is a concern about an existing or proposed set of clinical activity.  The issue could relate to single, proposed, or multiple actions.   It does not apply to technical issues (e.g. lack of user permissions) but could relate to violation of patient consent limitations.  Examples include: </p> <ul>   <li>Drug-drug interactions</li>   <li>Inappropriate therapy (wrong dose, frequency, body site)</li>   <li>Duplicate therapy</li> </ul>    <p> This resource represents a specific instance of a potential issue for a particular patient. It is <b>not</b> intended to represent general patient-independent knowledge. This resource is also <b>not</b> intended to be used in defining general prohibitions on actions such as "No NSAIDs", "No solid oral dose forms" or "No MRIs - metallic tattoos".   These guidelines can be captured using the <a href="/docs/api/fhir/resources/allergyintolerance">AllergyIntolerance</a>, and/or <a href="/docs/api/fhir/resources/flag">Flag</a> resources.   Similarly, this resource is not to be used to capture clinical facts that may imply contraindications such as pregnancy, breast feeding, patient preferences, past procedures, etc.  These would be represented using <a href="/docs/api/fhir/resources/condition">Condition</a>, <a href="/docs/api/fhir/resources/procedure">Procedure</a> or other resources. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -26,19 +43,5 @@ Indicates an actual or potential clinical issue with or between one or more acti
 <li><a href="/docs/api/fhir/resources/medicationknowledge">MedicationKnowledge</a></li>
 <li><a href="/docs/api/fhir/resources/medicationrequest">MedicationRequest</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Describes the event of a patient being administered a vaccine or a record of an immunization as reported by a patient, a clinician or another party.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="dstu"></a>  <a name="scope"></a>  <p> The <a href="/docs/api/fhir/resources/immunization">Immunization</a> resource is intended to cover the recording of current and historical administration of vaccines to patients across all healthcare disciplines in all care settings and all regions. This includes immunization of both humans and animals but does not include the administration of non-vaccine agents, even those that may have or claim to have immunological effects.  While the terms "immunization" and "vaccination" are not clinically identical, for the purposes of the FHIR resources, the terms are used synonymously. </p> <p> Additionally, the <a href="/docs/api/fhir/resources/immunization">Immunization</a> resource is expected to cover key concepts related to the creation, revision and querying of a patient's immunization history. This resource - through consultation with the Public Health work group - is believed to meet key use cases and information requirements as defined in the existing <a href="http://www.hl7.org/implement/standards/product_brief.cfm?product_id=185">HL7 v2 </a> immunization implementation guide, <a href="https://www.hl7.org/implement/standards/product_brief.cfm?product_id=186">HL7 v3 </a> POIZ domain and <a href="/docs/api/fhir/resources/immunization">Immunization</a> Domain Analysis Model. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -26,19 +43,5 @@ Describes the event of a patient being administered a vaccine or a record of an 
 <li><a href="/docs/api/fhir/resources/immunizationrecommendation">ImmunizationRecommendation</a></li>
 <li><a href="/docs/api/fhir/resources/observation">Observation</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

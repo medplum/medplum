@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A Map of relationships between 2 structures that can be used to transform data.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="snu"></a>  <p> The <i>StructureMap</i> resource defines a detailed set of rules that describe  how one <a href="/docs/api/fhir/resources/structuredefinition">Structure</a> is related to another and provides sufficient detail to allow for automated conversion of instances.  </p> <p> The intention of the structure map resource is to allow a specialist in  formats and interoperability to specify the full relationships between  two structures (e.g. a CDA document and a set of FHIR resources), and  then many different systems - both testing and production clinical systems - can leverage that to automatically transform from one format to the other.  </p> <p> Maps are unidirectional: they map from the source structure to the  target structure, and no reverse map is implied. Even if the mapping is simple, and loss-less, it cannot be assumed that there are no conditions  that might additionally apply in the reverse direction.  </p> <p> The mapping language, along with a concrete syntax, is defined in detail in <a href="https://www.hl7.org/fhir/mapping-language.html">the FHIR Mapping Language</a>. The <a href="/docs/api/fhir/resources/structuremap">StructureMap</a> resource  represents the abstract syntax, and the concrete syntax is the recommended narrative representation for  a <a href="/docs/api/fhir/resources/structuremap">StructureMap</a>. See also the <a href="https://www.hl7.org/fhir/mapping-tutorial.html">Tutorial</a>. </p>  </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -25,19 +42,5 @@ A Map of relationships between 2 structures that can be used to transform data.
     <ul><li><a href="/docs/api/fhir/resources/activitydefinition">ActivityDefinition</a></li>
 <li><a href="/docs/api/fhir/resources/plandefinition">PlanDefinition</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 The <a href="/docs/api/fhir/resources/codesystem">CodeSystem</a> resource is used to declare the existence of and describe a code system or code system supplement and its key properties, and optionally define a part or all of its content.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p> The FHIR terminology specification is based on two key concepts, originally defined in <a href="http://www.hl7.org/documentcenter/public/standards/V3/core_principles/infrastructure/coreprinciples/v3modelcoreprinciples.html">HL7 v3 Core Principles </a>: </p> <ul> <li> <b>code system</b> - declares the existence of and describes a code system or code system supplement and its key properties, and optionally defines a part or all of its content. Also known as Ontology, Terminology, or Enumeration</li> <li> <b>value set</b> - specifies a set of codes drawn from one or more code systems, intended for use in a particular context. Value sets link between <code>CodeSystem</code> definitions and their use in <a href="https://www.hl7.org/fhir/terminologies.html">coded elements</a></li> </ul> <p> Code systems define which codes (symbols and/or expressions) exist, and how they are understood. Value sets  select a set of codes from one or more code systems to specify which codes can be used in a particular context. </p> <p> The <a href="/docs/api/fhir/resources/codesystem">CodeSystem</a> resource is used to declare the existence of a code system, and its key properties: </p> <ul>  <li>Identifying URL and version</li>  <li>Description, Copyright, publication date, and other metadata</li>  <li>Some key properties of the code system itself - e.g. whether it exhibits concept permanence, whether it defines a compositional grammar, and whether the codes that it defines are case sensitive</li>  <li>What filters can be used in value sets that use the code system in a <a href="/docs/api/fhir/resources/valueset">ValueSet</a>.compose element</li>   <li>What concept properties are defined by the code system</li> </ul> <p> In addition, the <a href="/docs/api/fhir/resources/codesystem">CodeSystem</a> resource may list some or all of the concepts in the code system, along with their basic properties (code, display, definition), designations, and additional properties. Code System resources may also be used to define supplements, which extend an existing code system with  additional designations and properties. </p> <p> The <a href="/docs/api/fhir/resources/codesystem">CodeSystem</a> resource is not intended to support the process of maintaining code systems.  Instead, the focus is on publishing the properties and optionally the content of a code  system for use throughout the FHIR eco-system, such as to support value set expansion and  validation.  Note that the important existing (large) code systems (SNOMED CT, LOINC, RxNorm, ICD family, etc.)  all have their own maintenance systems and distribution formats, and <a href="/docs/api/fhir/resources/codesystem">CodeSystem</a> is generally not an efficient way to distribute their content, though it is used as one way of  declaring the filters and properties associated with those code systems.  </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -27,19 +44,5 @@ The <a href="/docs/api/fhir/resources/codesystem">CodeSystem</a> resource is use
 <li><a href="/docs/api/fhir/resources/terminologycapabilities">TerminologyCapabilities</a></li>
 <li><a href="/docs/api/fhir/resources/valueset">ValueSet</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

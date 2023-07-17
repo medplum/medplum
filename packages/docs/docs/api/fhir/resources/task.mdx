@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A task to be performed.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div>     <a name="scope"></a>          <p>       A task resource describes an activity that can be performed and tracks the state of       completion of that activity. It is a representation that an activity should be or has been       initiated, and eventually, represents the successful or unsuccessful completion of that       activity.     </p>     <p> Note that there are a variety of processes associated with making and processing orders.       Some orders may be handled immediately by automated systems but most require real world       actions by one or more humans. Some orders can only be processed when other real world actions       happen, such as a patient presenting themselves so that the action to be performed       can actually be performed. Often these real world dependencies are only implicit in the order       details. </p>   </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -26,19 +43,5 @@ A task to be performed.
 <li><a href="/docs/api/fhir/resources/imagingstudy">ImagingStudy</a></li>
 <li><a href="/docs/api/fhir/resources/paymentreconciliation">PaymentReconciliation</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

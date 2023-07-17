@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 A set of healthcare-related information that is assembled together into a single logical package that provides a single coherent statement of meaning, establishes its own context and that has clinical attestation with regard to who is making the statement. A <a href="/docs/api/fhir/resources/composition">Composition</a> defines the structure and narrative content necessary for a document. However, a <a href="/docs/api/fhir/resources/composition">Composition</a> alone does not constitute a document. Rather, the <a href="/docs/api/fhir/resources/composition">Composition</a> must be the first entry in a <a href="/docs/api/fhir/resources/bundle">Bundle</a> where <a href="/docs/api/fhir/resources/bundle">Bundle</a>.type=document, and any other resources referenced from <a href="/docs/api/fhir/resources/composition">Composition</a> must be included as subsequent entries in the <a href="/docs/api/fhir/resources/bundle">Bundle</a> (for example <a href="/docs/api/fhir/resources/patient">Patient</a>, <a href="/docs/api/fhir/resources/practitioner">Practitioner</a>, <a href="/docs/api/fhir/resources/encounter">Encounter</a>, etc.).
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p>  A <a href="/docs/api/fhir/resources/composition">Composition</a> is the basic structure from which <a href="https://www.hl7.org/fhir/documents.html">FHIR Documents</a> -  immutable bundles with attested narrative - are built. A single logical composition may be  associated with a series of derived documents, each of which is a frozen copy of the  composition. </p>  <p> Note: <a href="http://en.wikipedia.org/wiki/EN_13606">EN 13606 </a> uses the term "Composition"  to refer to a single commit to an EHR system, and offers some common examples: a composition  containing a consultation note, a progress note, a report or a letter, an investigation report,  a prescription form or a set of bedside nursing observations. Using <a href="/docs/api/fhir/resources/composition">Composition</a> for an attested EHR commit is a valid use of the <a href="/docs/api/fhir/resources/composition">Composition</a> resource, but for FHIR purposes, it would be usual to make more granular updates with individual provenance statements. </p>  <p> The <a href="https://www.hl7.org/fhir/composition-clinicaldocument.html">Clinical Document profile</a> constrains <a href="/docs/api/fhir/resources/composition">Composition</a> to specify a clinical document (matching <a href="http://www.hl7.org/implement/standards/product_brief.cfm?product_id=7">CDA </a>).   See also the <a href="https://www.hl7.org/fhir/comparison-cda.html">comparison with CDA</a>. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -25,19 +42,5 @@ A set of healthcare-related information that is assembled together into a single
     <ul><li><a href="/docs/api/fhir/resources/contract">Contract</a></li>
 <li><a href="/docs/api/fhir/resources/procedure">Procedure</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

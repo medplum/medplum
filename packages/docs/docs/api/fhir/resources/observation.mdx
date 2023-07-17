@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Measurements and simple assertions made about a patient, device or other subject.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div>          <p>This resource is an <a href="https://www.hl7.org/fhir/workflow.html#event">         <em>event resource</em>       </a> from a FHIR workflow perspective - see <a href="https://www.hl7.org/fhir/workflow.html">Workflow</a>.</p>     <p>Observations are a central element in healthcare, used to support diagnosis, monitor progress, determine baselines and patterns and even capture demographic characteristics.  Most observations are simple name/value pair assertions with some metadata, but some observations group other observations together logically, or even are multi-component observations. Note that the  <a href="/docs/api/fhir/resources/diagnosticreport">DiagnosticReport</a> resource provides a clinical or workflow context for a set of observations and the <a href="/docs/api/fhir/resources/observation">Observation</a> resource is referenced by <a href="/docs/api/fhir/resources/diagnosticreport">DiagnosticReport</a> to represent laboratory, imaging, and other clinical and diagnostic data to form a complete report. </p>     <p>Uses for the <a href="/docs/api/fhir/resources/observation">Observation</a> resource include:</p>     <ul>       <li>Vital signs such as <a href="https://www.hl7.org/fhir/observation-example.html">body weight</a>,  <a href="https://www.hl7.org/fhir/observation-example-bloodpressure.html">blood pressure</a>, and <a href="https://www.hl7.org/fhir/observation-example-f202-temperature.html">temperature</a>       </li>       <li>Laboratory Data like <a href="https://www.hl7.org/fhir/observation-example-f001-glucose.html">blood glucose</a>, or an <a href="https://www.hl7.org/fhir/observation-example-f205-egfr.html">estimated GFR</a>       </li>       <li>Imaging results like  <a href="https://www.hl7.org/fhir/observation-example-bmd.html">bone density</a> or fetal measurements</li>       <li>Clinical Findings<sup>*</sup> such as  <a href="https://www.hl7.org/fhir/observation-example-abdo-tender.html">abdominal tenderness</a>       </li>       <li>Device measurements such as  <a href="https://www.hl7.org/fhir/observation-example-sample-data.html">EKG data</a> or  <a href="https://www.hl7.org/fhir/observation-example-satO2.html">Pulse Oximetry data</a>       </li>       <li>Clinical assessment tools such as <a href="https://www.hl7.org/fhir/observation-example-5minute-apgar-score.html">APGAR</a> or a <a href="https://www.hl7.org/fhir/observation-example-glasgow.html">Glasgow Coma Score</a>       </li>       <li>Personal characteristics: such as  <a href="https://www.hl7.org/fhir/observation-example-eye-color.html">eye-color</a>       </li>       <li>Social history like tobacco use,  family support, or cognitive status</li>       <li>Core characteristics like pregnancy status, or a death assertion</li>     </ul>      <p>     <sup>*</sup>The boundaries between clinical findings and disorders remains a challenge in medical ontology.  Refer the <a href="https://www.hl7.org/fhir/#bnr">Boundaries</a> section below and in <a href="/docs/api/fhir/resources/condition">Condition</a> for general guidance.  These boundaries can be clarified by profiling <a href="/docs/api/fhir/resources/observation">Observation</a> for a particular use case.     </p>     <a name="core"></a>     <h3 class="self-link-parent"> Core Profiles for <a href="/docs/api/fhir/resources/observation">Observation</a> <a href="https://www.hl7.org/fhir/versions.html#std-process" title="Standards Status = Trial Use">Trial Use</a> <a href="/docs/api/fhir/resources/observation" title="link to here" class="self-link"></a></h3>     <p>The following core <a href="https://www.hl7.org/fhir/profiling.html">profiles</a> for the <a href="/docs/api/fhir/resources/observation">Observation</a> resource have been defined as well. If implementations use this Resource when expressing the profile-specific concepts as structured data, they <strong>SHALL</strong> conform to the following profiles:</p>     <table class="grid">       <thead>         <tr>           <th>Profile</th>           <th>Description</th>         </tr>       </thead>       <tbody>         <tr>           <td>             <a href="https://www.hl7.org/fhir/observation-vitalsigns.html">Vital signs</a>           </td>           <td>The FHIR Vital Signs profile sets minimum expectations for the <a href="/docs/api/fhir/resources/observation">Observation</a> Resource to record, search and fetch the vital signs (e.g. temperature, blood pressure, respiration rate, etc.) associated with a patient </td>         </tr>       </tbody>     </table>   </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -49,19 +66,5 @@ Measurements and simple assertions made about a patient, device or other subject
 <li><a href="/docs/api/fhir/resources/servicerequest">ServiceRequest</a></li>
 <li><a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

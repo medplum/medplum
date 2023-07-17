@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 The Care Team includes all the people and organizations who plan to participate in the coordination and delivery of care for a patient.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="bnc"></a>  <p> The <a href="/docs/api/fhir/resources/careteam">CareTeam</a> includes all the people, teams, and organizations who plan to participate in the coordination and delivery of care for a single patient or a group (such as a married couple in therapy or a support group).  <a href="/docs/api/fhir/resources/careteam">CareTeam</a> can also be organizationally assigned without a subject in context, such as a code blue team or emergency response team. This is not limited to practitioners, but may include other caregivers such as family members, guardians, the patient themself, or others.   The Care Team, depending on where used, may include care team members specific to a particular care plan, an episode, an encounter, or may reflect all known team members across these perspectives. An individual's <a href="/docs/api/fhir/resources/careteam">CareTeam</a> can be dynamic over time, such that there can be transience of team members, such as a rehabilitation team.  </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -36,19 +53,5 @@ The Care Team includes all the people and organizations who plan to participate 
 <li><a href="/docs/api/fhir/resources/servicerequest">ServiceRequest</a></li>
 <li><a href="/docs/api/fhir/resources/task">Task</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

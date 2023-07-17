@@ -11,8 +11,25 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 An assessment of the likely outcome(s) for a patient or other subject as well as the likelihood of each outcome.
 
-  <Tabs queryString="intro-section">
-  <TabItem value="usage" label="Usage" default>
+<Tabs queryString="intro-section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
     <div> <a name="scope"></a>  <p><strong>This resource is an <em>event</em> resource from a FHIR workflow perspective</strong> - see <a href="https://www.hl7.org/fhir/workflow.html">Workflow</a>, specifically <a href="https://www.hl7.org/fhir/workflow.html#event">Event</a>.</p>  <p> This resource captures predicted outcomes for a patient or population on the basis of source information.  Examples include: </p> <ul>   <li>A prognosis statement for a particular condition</li>   <li>Risk of health outcome (heart attack, particular type of cancer) on the basis of lifestyle factors and/or family history</li>   <li>List of potential health risks based on a patient's genetic analysis</li>   <li>A prediction of outbreak infection rates within a geography based on immunization rates</li> </ul> <p> This resource can be used to represent the results of formal scoring/decision support tools that evaluate risk.  It can also be used to capture a practitioner's subjective assessment of the patient's risk based on existing knowledge and previous experience. </p> </div>
     </TabItem>
   <TabItem value="relationships" label="Relationships">
@@ -25,19 +42,5 @@ An assessment of the likely outcome(s) for a patient or other subject as well as
     <ul><li><a href="/docs/api/fhir/resources/clinicalimpression">ClinicalImpression</a></li>
 <li><a href="/docs/api/fhir/resources/goal">Goal</a></li></ul>
     </TabItem>
+
 </Tabs>
-
-
-## Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-
