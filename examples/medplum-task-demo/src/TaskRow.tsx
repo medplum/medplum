@@ -38,7 +38,7 @@ export function TaskRow(props: TaskRowProps): JSX.Element {
       });
       props.onChange();
     },
-    [medplum, profile, task, props.onChange]
+    [medplum, profile, task, props]
   );
 
   const markAsCompleted = useCallback(
@@ -54,7 +54,7 @@ export function TaskRow(props: TaskRowProps): JSX.Element {
       });
       props.onChange();
     },
-    [medplum, task, props.onChange]
+    [medplum, task, props]
   );
 
   const editTask = useCallback(
@@ -63,7 +63,7 @@ export function TaskRow(props: TaskRowProps): JSX.Element {
       e.preventDefault();
       window.open(`https://app.medplum.com/Task/${task.id}`, '_blank', 'noopener,noreferrer');
     },
-    [medplum, task]
+    [task]
   );
 
   const cancelTask = useCallback(
@@ -79,7 +79,7 @@ export function TaskRow(props: TaskRowProps): JSX.Element {
       });
       props.onChange();
     },
-    [medplum, task, props.onChange]
+    [medplum, task, props]
   );
 
   const buttons = [
