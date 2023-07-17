@@ -1499,7 +1499,6 @@ describe('OAuth2 Token', () => {
     expect(res.body.error_description).toBe('Too Many Requests');
   });
 
-
   test('Token exchange missing client ID', async () => {
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,
