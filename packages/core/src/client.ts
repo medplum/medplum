@@ -18,6 +18,7 @@ import {
   Patient,
   Project,
   ProjectMembership,
+  ProjectMembershipAccess,
   ProjectSecret,
   Reference,
   Resource,
@@ -354,13 +355,20 @@ export interface BotEvent<T = Resource | Hl7Message | string | Record<string, an
   readonly secrets: Record<string, ProjectSecret>;
 }
 
-export interface InviteBody {
+export interface InviteRequest {
   resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson';
   firstName: string;
   lastName: string;
   email?: string;
+  externalId?: string;
+  password?: string;
   sendEmail?: boolean;
+  membership?: Partial<ProjectMembership>;
+  /** @deprecated Use membership.accessPolicy instead. */
   accessPolicy?: Reference<AccessPolicy>;
+  /** @deprecated Use membership.access instead. */
+  access?: ProjectMembershipAccess[];
+  /** @deprecated Use membership.admin instead. */
   admin?: boolean;
 }
 
@@ -2791,10 +2799,10 @@ export class MedplumClient extends EventTarget {
   /**
    * Invite a user to a project.
    * @param projectId The project ID.
-   * @param body The InviteBody.
+   * @param body The InviteRequest.
    * @returns Promise that returns a project membership or an operation outcome.
    */
-  async invite(projectId: string, body: InviteBody): Promise<ProjectMembership | OperationOutcome> {
+  async invite(projectId: string, body: InviteRequest): Promise<ProjectMembership | OperationOutcome> {
     return this.post('admin/projects/' + projectId + '/invite', body);
   }
 

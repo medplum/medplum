@@ -1,13 +1,12 @@
-import { badRequest, createReference, OperationOutcomeError, Operator, ProfileResource } from '@medplum/core';
 import {
-  AccessPolicy,
-  Practitioner,
-  Project,
-  ProjectMembership,
-  ProjectMembershipAccess,
-  Reference,
-  User,
-} from '@medplum/fhirtypes';
+  badRequest,
+  createReference,
+  InviteRequest,
+  OperationOutcomeError,
+  Operator,
+  ProfileResource,
+} from '@medplum/core';
+import { Practitioner, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
 import Mail from 'nodemailer/lib/mailer';
@@ -41,7 +40,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const inviteRequest = { ...req.body } as InviteRequest;
+  const inviteRequest = { ...req.body } as ServerInviteRequest;
   const { projectId } = req.params;
   if (res.locals.project.superAdmin) {
     inviteRequest.project = await systemRepo.readResource('Project', projectId as string);
@@ -58,24 +57,17 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
   }
 }
 
-export interface InviteRequest {
+export interface ServerInviteRequest extends InviteRequest {
   project: Project;
-  resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson';
-  firstName: string;
-  lastName: string;
-  email?: string;
-  externalId?: string;
-  accessPolicy?: Reference<AccessPolicy>;
-  access?: ProjectMembershipAccess[];
-  sendEmail?: boolean;
-  password?: string;
-  invitedBy?: Reference<User>;
-  admin?: boolean;
 }
 
-export async function inviteUser(
-  request: InviteRequest
-): Promise<{ user: User; profile: ProfileResource; membership: ProjectMembership }> {
+export interface ServerInviteResponse {
+  user: User;
+  profile: ProfileResource;
+  membership: ProjectMembership;
+}
+
+export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
   if (request.email) {
     request.email = request.email.toLowerCase();
   }
@@ -112,12 +104,21 @@ export async function inviteUser(
     )) as Practitioner;
   }
 
-  const membership = await createProjectMembership(user, project, profile, {
-    externalId: request.externalId,
-    accessPolicy: request.accessPolicy,
-    access: request.access,
-    admin: request.admin,
-  });
+  const membershipTemplate = request.membership ?? {};
+  if (request.externalId !== undefined) {
+    membershipTemplate.externalId = request.externalId;
+  }
+  if (request.accessPolicy !== undefined) {
+    membershipTemplate.accessPolicy = request.accessPolicy;
+  }
+  if (request.access !== undefined) {
+    membershipTemplate.access = request.access;
+  }
+  if (request.admin !== undefined) {
+    membershipTemplate.admin = request.admin;
+  }
+
+  const membership = await createProjectMembership(user, project, profile, membershipTemplate);
 
   if (email && request.sendEmail !== false) {
     try {
@@ -130,7 +131,7 @@ export async function inviteUser(
   return { user, profile, membership };
 }
 
-async function createUser(request: InviteRequest): Promise<User> {
+async function createUser(request: ServerInviteRequest): Promise<User> {
   const { firstName, lastName, externalId } = request;
   const email = request.email?.toLowerCase();
   const password = request.password ?? generateSecret(16);
@@ -183,7 +184,7 @@ async function searchForExistingProfile(
 }
 
 async function sendInviteEmail(
-  request: InviteRequest,
+  request: ServerInviteRequest,
   user: User,
   existing: boolean,
   resetPasswordUrl: string | undefined

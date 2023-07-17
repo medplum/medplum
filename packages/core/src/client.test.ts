@@ -12,7 +12,14 @@ import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
 import { encodeBase64 } from './base64';
-import { FetchLike, InviteBody, MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
+import {
+  FetchLike,
+  InviteRequest,
+  MedplumClient,
+  NewPatientRequest,
+  NewProjectRequest,
+  NewUserRequest,
+} from './client';
 import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
 import { createReference, ProfileResource } from './utils';
 
@@ -813,7 +820,7 @@ describe('Client', () => {
   test('Invite user', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const body: InviteBody = {
+    const body: InviteRequest = {
       resourceType: 'Patient',
       firstName: 'Sally',
       lastName: 'Foo',

@@ -68,7 +68,6 @@ Prepare JSON payload:
   "resourceType": "Patient",
   "firstName": "Homer",
   "lastName": "Simpson",
-  "resourceType": "Patient",
   "email": "homer@example.com",
   "sendEmail": false
 }
@@ -82,6 +81,57 @@ curl 'https://api.medplum.com/admin/projects/${projectId}/invite' \
   -H 'Content-Type: application/json' \
   --data-raw '{"resourceType":"Patient","firstName":"Homer","lastName":"Simpson","email":"homer@example.com", "sendEmail":"false"}'
 ```
+
+The `/invite` endpoint creates a [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership). The `ProjectMembership` resource includes additional properties to customize the user experience. The `/invite` endpoint accepts a partial `ProjectMebership` in the `membership` property where you can provide membership details.
+
+For example, use `admin: true` to make the new user a project administrator:
+
+```json
+{
+  "resourceType": "Practitioner",
+  "firstName": "Homer",
+  "lastName": "Simpson",
+  "email": "homer@example.com",
+  "membership": {
+    "admin": true
+  }
+}
+```
+
+Or use the `access` property to specify a user's `AccessPolicy` with optional parameters.
+
+```json
+{
+  "resourceType": "Patient",
+  "firstName": "Homer",
+  "lastName": "Simpson",
+  "email": "homer@example.com",
+  "membership": {
+    "access": [
+      {
+        "policy": { "reference": "AccessPolicy/123" },
+        "parameter": [
+          {
+            "name": "provider_organization",
+            "valueReference": { "reference": "Organization/abc" }
+          }
+        ]
+      },
+      {
+        "policy": { "reference": "AccessPolicy/123" },
+        "parameter": [
+          {
+            "name": "provider_organization",
+            "valueReference": { "reference": "Organization/def" }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+See [Access Control](/docs/auth/access-control) for more details.
 
 :::caution
 
