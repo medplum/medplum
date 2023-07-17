@@ -29,9 +29,9 @@ import { closeRedis, initRedis } from './redis';
 import { scimRouter } from './scim';
 import { seedDatabase } from './seed';
 import { storageRouter } from './storage';
+import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
-import { closeWebSockets, initWebSockets } from './websockets';
 
 let server: http.Server | undefined = undefined;
 
@@ -184,11 +184,6 @@ export async function shutdownApp(): Promise<void> {
 
   if (server) {
     server.close();
-    setImmediate(() => {
-      if (server) {
-        server.emit('close');
-      }
-      server = undefined;
-    });
+    server = undefined;
   }
 }

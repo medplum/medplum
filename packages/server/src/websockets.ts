@@ -1,6 +1,8 @@
+import bytes from 'bytes';
 import { randomUUID } from 'crypto';
 import http from 'http';
 import ws from 'ws';
+import { getConfig } from './config';
 import { logger } from './logger';
 import { getRedis } from './redis';
 
@@ -11,7 +13,10 @@ let wsServer: ws.Server | undefined = undefined;
  * @param server The HTTP server.
  */
 export function initWebSockets(server: http.Server): void {
-  wsServer = new ws.Server({ noServer: true });
+  wsServer = new ws.Server({
+    noServer: true,
+    maxPayload: bytes(getConfig().maxJsonSize) as number,
+  });
 
   wsServer.on('connection', async (socket: ws.WebSocket) => {
     // Set binary type to 'nodebuffer' so that data is returned as Buffer objects
