@@ -1496,7 +1496,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(429);
     expect(res.body.error).toBe('invalid_request');
-    expect(res.body.error_description).toBe('Failed to verify code - check your identity provider configuration');
+    expect(res.body.error_description).toBe('Too Many Requests');
   });
 
 

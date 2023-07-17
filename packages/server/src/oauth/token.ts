@@ -352,8 +352,10 @@ export async function exchangeExternalAuthToken(
   let userInfo;
   try {
     userInfo = await getExternalUserInfo(idp, subjectToken);
-  } catch (err) {
-    sendTokenError(res, 'invalid_request', normalizeErrorString(err));
+  } catch (err: any) {
+    // If the status is 429, then the error message will be Too Many Requests
+    const status = err.message === 'Too Many Requests' ? 429 : 400;
+    sendTokenError(res, 'invalid_request', normalizeErrorString(err), status);
     return;
   }
 
@@ -563,8 +565,8 @@ async function sendTokenResponse(res: Response, login: Login, membership: Projec
  * @param description The error description.  See: https://datatracker.ietf.org/doc/html/rfc6749#appendix-A.8
  * @returns Reference to the HTTP response.
  */
-function sendTokenError(res: Response, error: string, description?: string): Response {
-  return res.status(400).json({
+function sendTokenError(res: Response, error: string, description?: string, status = 400): Response {
+  return res.status(status).json({
     error,
     error_description: description,
   });
