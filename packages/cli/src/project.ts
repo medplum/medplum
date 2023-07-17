@@ -1,4 +1,4 @@
-import { InviteBody, LoginState, MedplumClient } from '@medplum/core';
+import { InviteRequest, LoginState, MedplumClient } from '@medplum/core';
 import { Command, Option } from 'commander';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
@@ -67,7 +67,7 @@ projectInviteCommand
     }
 
     const projectId = login.project.reference.split('/')[1];
-    const inviteBody: InviteBody = {
+    const inviteBody: InviteRequest = {
       resourceType: options.role,
       firstName,
       lastName,
@@ -89,7 +89,7 @@ async function switchProject(medplum: MedplumClient, projectId: string): Promise
   }
 }
 
-async function inviteUser(projectId: string, inviteBody: InviteBody, medplum: MedplumClient): Promise<void> {
+async function inviteUser(projectId: string, inviteBody: InviteRequest, medplum: MedplumClient): Promise<void> {
   try {
     await medplum.invite(projectId, inviteBody);
     if (inviteBody.sendEmail) {
