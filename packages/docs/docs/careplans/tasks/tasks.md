@@ -11,7 +11,9 @@ tags:
 
 Workflow is an essential part of healthcare, and healthcare operations requiring coordination of many manual steps physicians, patients, nurses, care coordinators, etc.
 
-While the majority of FHIR resources represent clinical data that is _operated on_, FHIR also defines a set of workflow resources that describe and track _work to be done._ This guide will discuss the usage of the [`Task`](/docs/api/fhir/resources/task) resource, which is the basic building block resource for tracking workflow progress.
+While the majority of FHIR resources represent clinical data that is _operated on_, FHIR also defines a set of workflow resources that describe and track _work to be done._ This guide will discuss the usage of the [`Task`](/docs/api/fhir/resources/task) resource, which is the basic building-block resource used to implement care plans and track workflow progress.
+
+For example, a [`Task`](/docs/api/fhir/resources/task) might represent the task of having a practitioner complete a [PHQ-9 questionnaire](https://www.apa.org/depression-guideline/patient-health-questionnaire.pdf) for a patient as part of their onboarding.
 
 A common application is for organizations to build **task queue systems** to route tasks to the correct practitioner based on specialty, level of credential, and availability. The [Medplum Task Demo](https://github.com/medplum/medplum-task-demo) application provides a minimalist task queue that demonstrates task search, assignment, and status.
 
@@ -19,7 +21,27 @@ A common application is for organizations to build **task queue systems** to rou
 
 The `Task.code` element is used to represent the task type, equivalent to the task title. This can either be different from task to task, or selected from an standard set of task types. Using the latter approach helps enable querying across all `Tasks` of the same type.
 
+While using SNOMED or LOINC codes are preferred, many implementations simply use the `Task.code.text ` element, as task types are often implementation-specific.
+
 `Task.description` can be used to add additional descriptive text to the specific [`Task`](/docs/api/fhir/resources/task) instance.
+
+**Example: **
+
+```ts
+{
+  resourceType: 'Task',
+  id: 'example-task',
+  code: {
+    text: 'Complete PHQ-9',
+    coding: [{
+      code: '715252007',
+      system: 'http://snomed.info/sct'
+    }]
+  },
+  description: "Patient to complete PHQ-9 depression screening",
+  //...
+}
+```
 
 ## Task status
 
@@ -50,10 +72,11 @@ While these terms might feel awkward in a digital health setting, Medplum recomm
 
 ## Task assignment
 
-`Task.owner` indicates the party responsible for _performing_ the task. This can either be an individual ([`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), [`Patient`](/docs/api/fhir/resources/patient), [`RelatedPerson`](/docs/api/fhir/resources/relatedperson)) or a group ([`Organization`](/docs/api/fhir/resources/organization), [`HealthcareService`](/docs/api/fhir/resources/healthcareservice), [`CareTeam`](/docs/api/fhir/resources/careteam)).
+`Task.owner` indicates the party responsible for _performing_ the task. This can either be an individual ([`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), [`Patient`](/docs/api/fhir/resources/patient), [`RelatedPerson`](/docs/api/fhir/resources/relatedperson)) or a group ([`Organization`](/docs/api/fhir/resources/organization), [`HealthcareService`](/docs/api/fhir/resources/healthcareservice), [`CareTeam`](/docs/api/fhir/resources/careteam)). You can search for all unassigned tasks (i.e those without owners), using the [`:missing`](/docs/search/basic-search#missing) search modifier.
+
 `Task.for` indicates who _benefits_ from the task, and is most commonly the patient for whom care is being delivered.
 
-### Assigning tasks to roles
+:::note Assigning tasks to roles
 
 A common pattern is telehealth practices to assign to assign tasks to all practitioners with a given role (e.g. clinical specialty, level of credential, etc.). `Task.performerType` is a searchable element that can be used to indicate which roles can/should perform this task.
 
@@ -99,6 +122,8 @@ Below is an example of a `Task.performerType` [CodeableConcept](/docs/fhir-basic
 }
 ```
 
+:::
+
 ## Task focus
 
 The `Task.focus` element tracks the FHIR resource being _operated on_ by this task, known as the "focal resource". See the [Examples](#examples) section below for examples of focal resources in common scenarios.
@@ -108,6 +133,14 @@ Well maintained `Task.focus` elements are critical data hygiene that streamlines
 ## Task start / due dates
 
 The `Task.restriction.period` field describes the time period over which the [`Task`](/docs/api/fhir/resources/task) should be fulfilled, with `Task.restriction.period.end` representing the _due date_, and `Task.restriction.period.start` representing the (potentially optional) start date.
+
+## Task completion times
+
+The `Task.executionPeriod` field describes the time period over which the [`Task`](/docs/api/fhir/resources/task) was actually actioned. Properly populating this field makes it easier to identify stalled tasks and compute turnaround-time metrics.
+
+`Task.executionPeriod.start` is used to store the start time of the _first action_ taken against this task.
+
+`Task.executionPeriod.end` is used to mark the completion time of the _final action_ taken against this task.
 
 ## Task comments
 
@@ -138,3 +171,5 @@ While this functionality is powerful, it can be complex to maintain and operatio
 
 - The [FHIR Workflow Specification](http://hl7.org/fhir/R4/workflow.html)
 - [Medplum Task Demo](https://github.com/medplum/medplum-task-demo)
+- [Blog Post: Task Management Apps](/blog/task-management-apps#dashboards)
+- [Charting Data Model](/docs/charting#data-model)
