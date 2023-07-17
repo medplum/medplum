@@ -450,6 +450,14 @@ export function formatSearchQuery(definition: SearchRequest): string {
     params.push('_total=' + definition.total);
   }
 
+  if (definition.include) {
+    definition.include.forEach((target) => params.push(formatIncludeTarget('_include', target)));
+  }
+
+  if (definition.revInclude) {
+    definition.revInclude.forEach((target) => params.push(formatIncludeTarget('_revinclude', target)));
+  }
+
   if (params.length === 0) {
     return '';
   }
@@ -466,4 +474,10 @@ function formatFilter(filter: Filter): string {
 
 function formatSortRules(sortRules: SortRule[]): string {
   return '_sort=' + sortRules.map((sr) => (sr.descending ? '-' + sr.code : sr.code)).join(',');
+}
+
+function formatIncludeTarget(kind: '_include' | '_revinclude', target: IncludeTarget): string {
+  return (
+    kind + '=' + target.resourceType + ':' + target.searchParam + (target.targetType ? ':' + target.targetType : '')
+  );
 }
