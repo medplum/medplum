@@ -112,8 +112,10 @@ export async function addTestUser(
     resourceType: 'Practitioner',
     firstName: 'Bob',
     lastName: 'Jones',
-    accessPolicy: accessPolicy && createReference(accessPolicy),
     sendEmail: false,
+    membership: {
+      accessPolicy: accessPolicy && createReference(accessPolicy),
+    },
   });
 
   const login = await tryLogin({

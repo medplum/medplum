@@ -63,14 +63,16 @@ export async function createScimUser(
 
   const { user, membership } = await inviteUser({
     project,
-    invitedBy,
     resourceType,
     firstName: scimUser.name?.givenName as string,
     lastName: scimUser.name?.familyName as string,
     email: scimUser.emails?.[0]?.value,
     externalId: scimUser.externalId,
     sendEmail: false,
-    accessPolicy,
+    membership: {
+      accessPolicy,
+      invitedBy,
+    },
   });
 
   return convertToScimUser(user, membership);
