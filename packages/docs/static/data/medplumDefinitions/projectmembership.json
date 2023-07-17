@@ -405,6 +405,12 @@
       "type": "string",
       "description": "The externalID of the user",
       "expression": "ProjectMembership.externalId"
+    },
+    {
+      "name": "access-policy",
+      "type": "reference",
+      "description": "The access policy of the user",
+      "expression": "ProjectMembership.accessPolicy | ProjectMembership.access.policy"
     }
   ]
 }

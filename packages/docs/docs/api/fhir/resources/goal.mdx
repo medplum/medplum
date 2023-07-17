@@ -17,6 +17,7 @@ Describes the intended objective(s) for a patient, group or organization care, f
 
 ## Properties
 
+
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 ## Search Parameters
@@ -26,7 +27,6 @@ Describes the intended objective(s) for a patient, group or organization care, f
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
 
 </TabItem>
   <TabItem value="usage" label="Usage">
