@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # CarePlan
 
-Describes the intention of how one or more practitioners intend to deliver care for a particular patient, group or community for a period of time, possibly limited to care for a specific condition or set of conditions.
+Describes the intention of how one or more practitioners intend to deliver care for a particular patient, group or community for a period of time, possibly limited to care for a specific condition or set of conditions. Refer to the [US Core CarePlan profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-careplan.html).
 
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
@@ -35,18 +35,41 @@ Describes the intention of how one or more practitioners intend to deliver care 
   <TabItem value="relationships" label="Relationships">
     <div> <a name="bnr"></a>  <p> For simplicity's sake, <a href="/docs/api/fhir/resources/careplan">CarePlan</a> allows the inline definition of activities as part of a plan using  the <code>activity.detail</code> element.  However, activities can also be defined using references to the various "request" resources.  These references could be to resources with a status of "planned" or to an active order.  It is possible for planned activities to exist (e.g. appointments) without needing a <a href="/docs/api/fhir/resources/careplan">CarePlan</a> at all.  <a href="/docs/api/fhir/resources/careplan">CarePlans</a> are used when there's a need to group activities, goals and/or participants together to provide some degree of context. </p> <p> <a href="/docs/api/fhir/resources/careplan">CarePlans</a> can be tied to specific <a href="/docs/api/fhir/resources/condition">Conditions</a>, however they can also be  condition-independent and instead focused on a particular type of care (e.g. psychological, nutritional) or the care delivered by a particular practitioner or group of practitioners. </p> <p> An <a href="/docs/api/fhir/resources/immunizationrecommendation">ImmunizationRecommendation</a> can be interpreted as a narrow type of <a href="/docs/api/fhir/resources/careplan">CarePlan</a> dealing only with immunization events.  Where such information could appear in either resource, the immunization-specific resource is preferred. </p> <p> <a href="/docs/api/fhir/resources/careplan">CarePlans</a> represent a specific plan instance for a particular patient or group.  It is not intended to be used to define generic plans or protocols that are independent of a specific individual or group.  <a href="/docs/api/fhir/resources/careplan">CarePlan</a> represents a specific intent, not a general definition.  Protocols and order sets are supported through <a href="/docs/api/fhir/resources/plandefinition">PlanDefinition</a>. </p> </div>
     </TabItem>
-  
-  <TabItem value="referencedBy" label="Referenced By">
-    <ul><li><a href="/docs/api/fhir/resources/diagnosticreport">DiagnosticReport</a></li>
-<li><a href="/docs/api/fhir/resources/guidanceresponse">GuidanceResponse</a></li>
-<li><a href="/docs/api/fhir/resources/imagingstudy">ImagingStudy</a></li>
-<li><a href="/docs/api/fhir/resources/media">Media</a></li>
-<li><a href="/docs/api/fhir/resources/medicationrequest">MedicationRequest</a></li>
-<li><a href="/docs/api/fhir/resources/medicationstatement">MedicationStatement</a></li>
-<li><a href="/docs/api/fhir/resources/observation">Observation</a></li>
-<li><a href="/docs/api/fhir/resources/procedure">Procedure</a></li>
-<li><a href="/docs/api/fhir/resources/questionnaireresponse">QuestionnaireResponse</a></li>
-<li><a href="/docs/api/fhir/resources/servicerequest">ServiceRequest</a></li></ul>
-    </TabItem>
+
+{' '}
+<TabItem value="referencedBy" label="Referenced By">
+  <ul>
+    <li>
+      <a href="/docs/api/fhir/resources/diagnosticreport">DiagnosticReport</a>
+    </li>
+    <li>
+      <a href="/docs/api/fhir/resources/guidanceresponse">GuidanceResponse</a>
+    </li>
+    <li>
+      <a href="/docs/api/fhir/resources/imagingstudy">ImagingStudy</a>
+    </li>
+    <li>
+      <a href="/docs/api/fhir/resources/media">Media</a>
+    </li>
+    <li>
+      <a href="/docs/api/fhir/resources/medicationrequest">MedicationRequest</a>
+    </li>
+    <li>
+      <a href="/docs/api/fhir/resources/medicationstatement">MedicationStatement</a>
+    </li>
+    <li>
+      <a href="/docs/api/fhir/resources/observation">Observation</a>
+    </li>
+    <li>
+      <a href="/docs/api/fhir/resources/procedure">Procedure</a>
+    </li>
+    <li>
+      <a href="/docs/api/fhir/resources/questionnaireresponse">QuestionnaireResponse</a>
+    </li>
+    <li>
+      <a href="/docs/api/fhir/resources/servicerequest">ServiceRequest</a>
+    </li>
+  </ul>
+</TabItem>
 
 </Tabs>
