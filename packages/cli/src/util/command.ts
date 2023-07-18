@@ -1,4 +1,4 @@
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 
 export function createMedplumCommand(name: string): Command {
   return new Command(name)
@@ -7,5 +7,14 @@ export function createMedplumCommand(name: string): Command {
     .option('--base-url <baseUrl>', 'FHIR server base url')
     .option('--token-url <tokenUrl>', 'FHIR server token url')
     .option('--authorize-url <authorizeUrl>', 'FHIR server authorize url')
-    .option('--fhir-url-path <fhirUrlPath>', 'FHIR server url path');
+    .option('--fhir-url-path <fhirUrlPath>', 'FHIR server url path')
+    .addOption(
+      new Option('--auth-type <authType>', 'Type of authentication').choices([
+        'basic',
+        'client_credentials',
+        'authorization_code',
+        'jwt-bearer',
+        'token-exchange',
+      ])
+    );
 }

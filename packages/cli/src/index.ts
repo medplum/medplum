@@ -7,6 +7,7 @@ import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from '.
 import { bulk } from './bulk';
 import { project } from './project';
 import { deleteObject, get, patch, post, put } from './rest';
+import { profile } from './profiles';
 
 export async function main(argv: string[]): Promise<void> {
   try {
@@ -37,6 +38,9 @@ export async function main(argv: string[]): Promise<void> {
     index.addCommand(saveBotDeprecate);
     index.addCommand(deployBotDeprecate);
     index.addCommand(createBotDeprecate);
+
+    // Profile Commands
+    index.addCommand(profile);
 
     // AWS commands
     index.addCommand(aws);
