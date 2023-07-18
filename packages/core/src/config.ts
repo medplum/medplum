@@ -20,6 +20,7 @@ export interface MedplumInfraConfig {
   storagePublicKey: string;
   storageLoggingBucket?: string;
   storageLoggingPrefix?: string;
+  baseUrl: string;
   maxAzs: number;
   rdsInstances: number;
   rdsInstanceType: string;
