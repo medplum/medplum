@@ -12,21 +12,15 @@ The `medplum-hello-world` applications is intended as a sample, and the experien
 
 The pages are customizable, and can be a great place to communicate the most important tasks to practitioners. On the home page dashboards, worklists, task lists and upcoming appointments are popular.
 
-## Questionnaires
-
-Make and manage questionnaires for clinicians and patients. Link them to powerful automations. [Learn more](../products/questionnaires).
-
 ## Notes and Charting
 
 Physician notes are represented in FHIR by the [Encounter](/docs/api/fhir/resources/encounter) object. Common implementations involve using custom [questionnaires](../products/questionnaires) to populate the Encounter object via [bot](/docs/bots/bot-for-questionnaire-response), or creating the object via the API.
 
-## Schedules
-
-Create schedules and slots and allow patients to book them. Create schedules that are geographically linked, belong to a specific practitioner or service, or other complex requirements. [Learn more](../products/scheduling).
+Common use cases include advanced [task](/docs/careplans/tasks) tooling and [scheduling](../products/scheduling.md).
 
 ## Medications
 
-Manage patient medications and refills, and create a pharmacy service that fits the needs of your patient population through custom [integrations](../products/integration).
+Manage patient [medications](/docs/medications) and refills, and create a pharmacy service that fits the needs of your patient population through custom [integrations](../products/integration).
 
 ## API Access
 
@@ -40,6 +34,7 @@ In general, HIPAA compliance is a must for EHRs, SOC2 Type 2 audit is recommende
 
 ## Case Studies
 
+- [Text Pediatricians in 15 Minutes - Summer Health Case Study](/blog/summer-case-study)
 - [Value Based Care and Elderly Populations - Ensage Case Study](/blog/ensage-case-study)
 
 ## Demos and Resources
