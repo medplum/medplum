@@ -1481,6 +1481,23 @@ describe('OAuth2 Token', () => {
     expect(res.body.error_description).toBe('Failed to verify code - check your identity provider configuration');
   });
 
+  test('Too many requests', async () => {
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 429,
+      headers: { get: () => 'application/json' },
+    }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalAuthClient.id,
+      subject_token: 'xyz',
+    });
+    expect(res.status).toBe(429);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Too Many Requests');
+  });
+
   test('Token exchange missing client ID', async () => {
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,

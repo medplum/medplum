@@ -1,6 +1,8 @@
 import {
   createReference,
+  getStatus,
   normalizeErrorString,
+  normalizeOperationOutcome,
   OAuthGrantType,
   OAuthTokenType,
   Operator,
@@ -352,8 +354,9 @@ export async function exchangeExternalAuthToken(
   let userInfo;
   try {
     userInfo = await getExternalUserInfo(idp, subjectToken);
-  } catch (err) {
-    sendTokenError(res, 'invalid_request', normalizeErrorString(err));
+  } catch (err: any) {
+    const outcome = normalizeOperationOutcome(err);
+    sendTokenError(res, 'invalid_request', normalizeErrorString(err), getStatus(outcome));
     return;
   }
 
@@ -561,10 +564,11 @@ async function sendTokenResponse(res: Response, login: Login, membership: Projec
  * @param res The HTTP response.
  * @param error The error code.  See: https://datatracker.ietf.org/doc/html/rfc6749#appendix-A.7
  * @param description The error description.  See: https://datatracker.ietf.org/doc/html/rfc6749#appendix-A.8
+ * @param status The HTTP status code.
  * @returns Reference to the HTTP response.
  */
-function sendTokenError(res: Response, error: string, description?: string): Response {
-  return res.status(400).json({
+function sendTokenError(res: Response, error: string, description?: string, status = 400): Response {
+  return res.status(status).json({
     error,
     error_description: description,
   });
