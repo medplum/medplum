@@ -21,7 +21,7 @@ setProfile
   .description('Create a new profile or replace it with the given name and its associated properties')
   .action(async (profileName, options) => {
     const storage = new FileSystemStorage(profileName);
-    storage.setObject('profile', options);
+    storage.setObject('options', options);
     console.log(`${profileName} profile created`);
   });
 
@@ -30,18 +30,18 @@ removeProfile
   .description('Remove a profile by name')
   .action(async (profileName) => {
     const storage = new FileSystemStorage(profileName);
-    storage.setObject('profile', undefined);
+    storage.setObject('options', undefined);
     console.log(`${profileName} profile removed`);
   });
 
-listProfiles.description('All profiles saved').action(async () => {
+listProfiles.description('List all profiles saved').action(async () => {
   const dir = resolve(homedir(), '.medplum');
   const files = readdirSync(dir);
   const allProfiles: any[] = [];
   files.forEach((file) => {
     const fileName = file.split('.')[0];
     const storage = new FileSystemStorage(fileName);
-    const profile = storage.getObject('profile');
+    const profile = storage.getObject('options');
     if (profile) {
       allProfiles.push({ profileName: fileName, profile });
     }
@@ -51,9 +51,9 @@ listProfiles.description('All profiles saved').action(async () => {
 
 describeProfile
   .argument('<profileName>', 'Name of the profile')
-  .description('Properties of a profile')
+  .description('Describes a profile')
   .action(async (profileName) => {
     const storage = new FileSystemStorage(profileName);
-    const profile = storage.getObject('profile');
+    const profile = storage.getObject('options');
     console.log(profile);
   });
