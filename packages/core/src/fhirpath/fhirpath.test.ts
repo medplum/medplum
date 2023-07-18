@@ -2976,27 +2976,27 @@ describe('FHIRPath Test Suite', () => {
 
   describe('testBooleanLogicOr', () => {
     test('testBooleanLogicOr1', () => {
-      expect(evalFhirPath('(true or true)', patient)).toEqual([true]);
+      expect(evalFhirPath('(true or true) = true', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicOr2', () => {
-      expect(evalFhirPath('(true or false)', patient)).toEqual([true]);
+      expect(evalFhirPath('(true or false) = true', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicOr3', () => {
-      expect(evalFhirPath('(true or {})', patient)).toEqual([true]);
+      expect(evalFhirPath('(true or {}) = true', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicOr4', () => {
-      expect(evalFhirPath('(false or true)', patient)).toEqual([true]);
+      expect(evalFhirPath('(false or true) = true', patient)).toEqual([true]);
     });
 
     test.skip('testBooleanLogicOr5', () => {
-      expect(evalFhirPath('(false or false)', patient)).toEqual([false]);
+      expect(evalFhirPath('(false or false) = false', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicOr6', () => {
-      expect(evalFhirPath('(false or {})', patient)).toEqual([]);
+      expect(evalFhirPath('(false or {}).empty()', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicOr7', () => {
@@ -3004,49 +3004,49 @@ describe('FHIRPath Test Suite', () => {
     });
 
     test('testBooleanLogicOr8', () => {
-      expect(evalFhirPath('({} or false)', patient)).toEqual([]);
+      expect(evalFhirPath('({} or false).empty()', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicOr9', () => {
-      expect(evalFhirPath('({} or {})', patient)).toEqual([]);
+      expect(evalFhirPath('({} or {}).empty()', patient)).toEqual([true]);
     });
   });
 
   describe('testBooleanLogicXOr', () => {
     test('testBooleanLogicXOr1', () => {
-      expect(evalFhirPath('(true xor true)', patient)).toEqual([false]);
+      expect(evalFhirPath('(true xor true) = false', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicXOr2', () => {
-      expect(evalFhirPath('(true xor false)', patient)).toEqual([true]);
+      expect(evalFhirPath('(true xor false) = true', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicXOr3', () => {
-      expect(evalFhirPath('(true xor {})', patient)).toEqual([]);
+      expect(evalFhirPath('(true xor {}).empty()', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicXOr4', () => {
-      expect(evalFhirPath('(false xor true)', patient)).toEqual([true]);
+      expect(evalFhirPath('(false xor true) = true', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicXOr5', () => {
-      expect(evalFhirPath('(false xor false)', patient)).toEqual([false]);
+      expect(evalFhirPath('(false xor false) = false', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicXOr6', () => {
-      expect(evalFhirPath('(false xor {})', patient)).toEqual([]);
+      expect(evalFhirPath('(false xor {}).empty()', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicXOr7', () => {
-      expect(evalFhirPath('({} xor true)', patient)).toEqual([]);
+      expect(evalFhirPath('({} xor true).empty()', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicXOr8', () => {
-      expect(evalFhirPath('({} xor false)', patient)).toEqual([]);
+      expect(evalFhirPath('({} xor false).empty()', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicXOr9', () => {
-      expect(evalFhirPath('({} xor {})', patient)).toEqual([]);
+      expect(evalFhirPath('({} xor {}).empty()', patient)).toEqual([true]);
     });
   });
 
