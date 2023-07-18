@@ -59,7 +59,7 @@ describe('Profiles', () => {
 
     // Replace the previous values
     const obj2 = {
-      authType: 'jwt',
+      authType: 'jwt-bearer',
       baseUrl: 'https://valid2.gov',
       fhirUrlPath: 'api/v2',
       tokenUrl: 'https://validtoken2.gov',
@@ -80,8 +80,8 @@ describe('Profiles', () => {
       '--token-url',
       obj2.tokenUrl,
     ]);
-    expect(storage.getObject('profile')).not.toEqual(obj);
-    expect(storage.getObject('profile')).toEqual(obj2);
+    expect(storage.getObject('options')).not.toEqual(obj);
+    expect(storage.getObject('options')).toEqual(obj2);
 
     // Add another profile
     const profileName2 = 'testProfile2';
@@ -101,7 +101,7 @@ describe('Profiles', () => {
       obj.tokenUrl,
     ]);
     const storage2 = new FileSystemStorage(profileName2);
-    expect(storage2.getObject('profile')).toEqual(obj);
+    expect(storage2.getObject('options')).toEqual(obj);
 
     // List the 2 profiles
     await main(['node', 'index.js', 'profile', 'list']);
