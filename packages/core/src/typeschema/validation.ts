@@ -473,9 +473,7 @@ function matchDiscriminant(
   switch (discriminator.type) {
     case 'value':
     case 'pattern':
-      if (!element) {
-        throw new Error(`Failed to match slicing discriminator at ${discriminator.path}`);
-      } else if (!value) {
+      if (!element || !value) {
         return false;
       } else if (matchesSpecifiedValue(value, element)) {
         return true;

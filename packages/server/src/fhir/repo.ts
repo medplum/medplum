@@ -29,6 +29,7 @@ import {
   tooManyRequests,
   validate,
   validateResourceType,
+  Operator as FhirOperator,
 } from '@medplum/core';
 import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
 import {
@@ -42,6 +43,7 @@ import {
   Resource,
   ResourceType,
   SearchParameter,
+  StructureDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Pool, PoolClient } from 'pg';
@@ -78,6 +80,7 @@ import { rewriteAttachments, RewriteMode } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, Operator, SelectQuery } from './sql';
 import { getSearchParameters } from './structure';
+import { formatDuration } from '../util/time';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -450,7 +453,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
-    this.validate(resource);
+    await this.validate(resource);
 
     if (this.context.checkReferencesOnWrite) {
       await validateReferences(this, resource);
@@ -523,11 +526,19 @@ export class Repository extends BaseRepository implements FhirRepository {
     return result;
   }
 
-  private validate(resource: Resource): void {
+  private async validate(resource: Resource): Promise<void> {
     if (this.context.strictMode) {
       const start = process.hrtime.bigint();
+      const profileUrls = resource.meta?.profile;
       try {
         validate(resource);
+        if (profileUrls) {
+          try {
+            await this.validateProfiles(resource, profileUrls);
+          } catch (err) {
+            logger.error(`Profile validation error on ${resource.resourceType}/${resource.id}: ${err}`);
+          }
+        }
       } catch (err: any) {
         const outcome = normalizeOperationOutcome(err);
         const invariantErrors = outcome.issue?.filter((issue) => issue.code === 'invariant');
@@ -545,7 +556,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
       const elapsedTime = Number(process.hrtime.bigint() - start);
       const MILLISECONDS = 1e6; // Conversion factor from ns to ms
-      if (elapsedTime > 5 * MILLISECONDS) {
+      if (elapsedTime > 10 * MILLISECONDS) {
         logger.warn(
           `High validator latency on ${resource.resourceType}/${resource.id}: time=${(
             elapsedTime / MILLISECONDS
@@ -555,6 +566,63 @@ export class Repository extends BaseRepository implements FhirRepository {
     } else {
       validateResourceWithJsonSchema(resource);
     }
+  }
+
+  private async validateProfiles(resource: Resource, profileUrls: string[]): Promise<void> {
+    for (const url of profileUrls) {
+      const loadStart = process.hrtime.bigint();
+      const profile = await this.loadProfile(url);
+      const loadTime = Number(process.hrtime.bigint() - loadStart);
+      if (!profile) {
+        logger.warn(`Unknown profile referenced in ${resource.resourceType}/${resource.id}: ${url}`);
+        continue;
+      }
+      const validateStart = process.hrtime.bigint();
+      validate(resource, profile);
+      const validateTime = Number(process.hrtime.bigint() - validateStart);
+      logger.debug(
+        `Profile validation timing: load=${formatDuration(loadTime)}; validate=${formatDuration(validateTime)}`
+      );
+    }
+  }
+
+  private async loadProfile(url: string): Promise<StructureDefinition | undefined> {
+    const redis = getRedis();
+    const cacheKey = `Project/${this.context.project}/StructureDefinition/${url}`;
+    // Try retrieving from cache
+    const cachedProfile = await redis.get(cacheKey);
+    if (cachedProfile) {
+      return (JSON.parse(cachedProfile) as CacheEntry<StructureDefinition>).resource;
+    }
+
+    // Fall back to loading from the DB; descending version sort approximates version resolution for some cases
+    const profile = await this.searchOne<StructureDefinition>({
+      resourceType: 'StructureDefinition',
+      filters: [
+        {
+          code: 'url',
+          operator: FhirOperator.EQUALS,
+          value: url,
+        },
+      ],
+      sortRules: [
+        {
+          code: 'version',
+          descending: true,
+        },
+      ],
+    });
+
+    if (profile) {
+      // Store loaded profile in cache
+      await redis.set(
+        cacheKey,
+        JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
+        'EX',
+        24 * 60 * 60 // 24 hours in seconds
+      );
+    }
+    return profile;
   }
 
   /**

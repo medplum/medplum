@@ -10,6 +10,7 @@ import {
   getTypedPropertyValue,
   isQuantity,
   removeDuplicates,
+  singleton,
   toTypedValue,
 } from './utils';
 
@@ -188,9 +189,12 @@ export class InAtom extends BooleanInfixOperatorAtom {
   }
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context, input);
-    const rightValue = this.right.eval(context, input);
-    return booleanToTypedValue(rightValue.some((e) => e.value === leftValue[0].value));
+    const left = singleton(this.left.eval(context, input));
+    const right = this.right.eval(context, input);
+    if (!left) {
+      return [];
+    }
+    return booleanToTypedValue(right.some((e) => e.value === left.value));
   }
 }
 
@@ -295,12 +299,12 @@ export class AndAtom extends BooleanInfixOperatorAtom {
   }
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context, input);
-    const rightValue = this.right.eval(context, input);
-    if (leftValue[0]?.value === true && rightValue[0]?.value === true) {
+    const left = singleton(this.left.eval(context, input), 'boolean');
+    const right = singleton(this.right.eval(context, input), 'boolean');
+    if (left?.value === true && right?.value === true) {
       return booleanToTypedValue(true);
     }
-    if (leftValue[0]?.value === false || rightValue[0]?.value === false) {
+    if (left?.value === false || right?.value === false) {
       return booleanToTypedValue(false);
     }
     return [];
@@ -319,15 +323,15 @@ export class OrAtom extends BooleanInfixOperatorAtom {
   }
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context, input);
-    const rightValue = this.right.eval(context, input);
-    if (leftValue[0]?.value === false && rightValue[0]?.value === false) {
+    const left = singleton(this.left.eval(context, input), 'boolean');
+    const right = singleton(this.right.eval(context, input), 'boolean');
+    if (left?.value === false && right?.value === false) {
       return booleanToTypedValue(false);
-    }
-    if (leftValue[0]?.value === true || rightValue[0]?.value === true) {
+    } else if (left?.value || right?.value) {
       return booleanToTypedValue(true);
+    } else {
+      return [];
     }
-    return [];
   }
 }
 
@@ -343,20 +347,12 @@ export class XorAtom extends BooleanInfixOperatorAtom {
   }
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
-    const leftResult = this.left.eval(context, input);
-    const rightResult = this.right.eval(context, input);
-    if (leftResult.length === 0 && rightResult.length === 0) {
+    const left = singleton(this.left.eval(context, input), 'boolean');
+    const right = singleton(this.right.eval(context, input), 'boolean');
+    if (!left || !right) {
       return [];
     }
-    const leftValue = leftResult.length === 0 ? null : leftResult[0].value;
-    const rightValue = rightResult.length === 0 ? null : rightResult[0].value;
-    if ((leftValue === true && rightValue !== true) || (leftValue !== true && rightValue === true)) {
-      return booleanToTypedValue(true);
-    }
-    if ((leftValue === true && rightValue === true) || (leftValue === false && rightValue === false)) {
-      return booleanToTypedValue(false);
-    }
-    return [];
+    return booleanToTypedValue(left.value !== right.value);
   }
 }
 
@@ -372,23 +368,14 @@ export class ImpliesAtom extends BooleanInfixOperatorAtom {
   }
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
-    const leftResult = this.left.eval(context, input);
-    const rightResult = this.right.eval(context, input);
-    if (!this.isValidCollectionLength(leftResult, rightResult)) {
-      throw new Error(`Expected single boolean value but got ${leftResult}, ${rightResult}`);
-    }
-    const leftValue = leftResult.length === 0 ? null : leftResult[0].value;
-    const rightValue = rightResult.length === 0 ? null : rightResult[0].value;
-    if (rightValue === true || leftValue === false) {
+    const left = singleton(this.left.eval(context, input), 'boolean');
+    const right = singleton(this.right.eval(context, input), 'boolean');
+    if (right?.value === true || left?.value === false) {
       return booleanToTypedValue(true);
-    } else if (leftValue === null || rightValue === null) {
+    } else if (!left || !right) {
       return [];
     }
     return booleanToTypedValue(false);
-  }
-
-  private isValidCollectionLength(leftResult: TypedValue[], rightResult: TypedValue[]): boolean {
-    return leftResult.length <= 1 && rightResult.length <= 1;
   }
 }
 

@@ -7,6 +7,7 @@ import {
   Patient,
   Questionnaire,
   ResourceType,
+  StructureDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
@@ -16,6 +17,8 @@ import { getClient } from '../database';
 import { bundleContains } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { Repository, systemRepo } from './repo';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 jest.mock('hibp');
 jest.mock('ioredis');
@@ -800,5 +803,37 @@ describe('FHIR Repo', () => {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid id');
     }
+  });
+
+  test.skip('Profile validation', async () => {
+    const profile = JSON.parse(
+      readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
+    ) as StructureDefinition;
+    profile.url = (profile.url ?? '') + Math.random();
+    const patient: Patient = {
+      resourceType: 'Patient',
+      meta: {
+        profile: [profile.url],
+      },
+      identifier: [
+        {
+          system: 'http://example.com/patient-id',
+          value: 'foo',
+        },
+      ],
+      name: [
+        {
+          given: ['Alex'],
+          family: 'Baker',
+        },
+      ],
+      // Missing gender property is required by profile
+    };
+
+    await expect(systemRepo.createResource(patient)).resolves.toBeTruthy();
+    await systemRepo.createResource(profile);
+    await expect(systemRepo.createResource(patient)).rejects.toEqual(
+      new Error('Missing required property (Patient.gender)')
+    );
   });
 });

@@ -3000,7 +3000,7 @@ describe('FHIRPath Test Suite', () => {
     });
 
     test('testBooleanLogicOr7', () => {
-      expect(evalFhirPath('({} or true) = true', patient)).toEqual([true]);
+      expect(evalFhirPath('({} or true)', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicOr8', () => {
@@ -3022,18 +3022,7 @@ describe('FHIRPath Test Suite', () => {
     });
 
     test('testBooleanLogicXOr3', () => {
-      // The official test expects this to be true.
-      // However, according to the spec, I believe this should be false.
-      //
-      // The spec says:
-      //   "Returns true if exactly one of the operands evaluates to true,
-      //    false if either both operands evaluate to true or both operands evaluate to false,
-      //    and the empty collection ({ }) otherwise:"
-      //
-      // I believe the first condition holds:  exactly one of the operands evaluates to true.
-      // Therefore, it should return true.
-      // Which should not satisfy .empty().
-      expect(evalFhirPath('(true xor {}).empty()', patient)).toEqual([false]);
+      expect(evalFhirPath('(true xor {}).empty()', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicXOr4', () => {
@@ -3049,18 +3038,7 @@ describe('FHIRPath Test Suite', () => {
     });
 
     test('testBooleanLogicXOr7', () => {
-      // The official test expects this to be true.
-      // However, according to the spec, I believe this should be false.
-      //
-      // The spec says:
-      //   "Returns true if exactly one of the operands evaluates to true,
-      //    false if either both operands evaluate to true or both operands evaluate to false,
-      //    and the empty collection ({ }) otherwise:"
-      //
-      // I believe the first condition holds:  exactly one of the operands evaluates to true.
-      // Therefore, it should return true.
-      // Which should not satisfy .empty().
-      expect(evalFhirPath('({} xor true).empty()', patient)).toEqual([false]);
+      expect(evalFhirPath('({} xor true).empty()', patient)).toEqual([true]);
     });
 
     test('testBooleanLogicXOr8', () => {
@@ -3072,7 +3050,7 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  describe.skip('testBooleanImplies', () => {
+  describe('testBooleanImplies', () => {
     test('testBooleanImplies1', () => {
       expect(evalFhirPath('(true implies true) = true', patient)).toEqual([true]);
     });
