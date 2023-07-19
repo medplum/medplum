@@ -18,7 +18,7 @@ Medplum uses custom FHIR resource types to manage user accounts and project admi
 
 The most important custom resource types are:
 
-- `User` - represents a user account capabale of logging into the system
+- `User` - represents a user account capable of logging into the system
 - `Project` - represents a project which contains other resources
 - `ProjectMembership` - link between a `User` and a `Project` which also defines `AccessPolicy` and `UserConfiguration`
 - `Login` - an authentication event and session state

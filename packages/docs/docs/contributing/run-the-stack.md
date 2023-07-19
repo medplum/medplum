@@ -141,7 +141,7 @@ To make sure the server is working, you can access the health check at <http://l
 If everything is working, you should see the following in your browser:
 
 ```json
-{ "ok": true, "postgres": true, "redis": true }
+{ "ok": true, "version": "<MEDPLUM_VERSION>", "postgres": true, "redis": true }
 ```
 
 ### Run the Medplum Web App
