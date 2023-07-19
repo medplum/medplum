@@ -530,27 +530,12 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (this.context.strictMode) {
       const start = process.hrtime.bigint();
       const profileUrls = resource.meta?.profile;
-      try {
-        validate(resource);
-        if (profileUrls) {
-          try {
-            await this.validateProfiles(resource, profileUrls);
-          } catch (err) {
-            logger.error(`Profile validation error on ${resource.resourceType}/${resource.id}: ${err}`);
-          }
-        }
-      } catch (err: any) {
-        const outcome = normalizeOperationOutcome(err);
-        const invariantErrors = outcome.issue?.filter((issue) => issue.code === 'invariant');
-        if (invariantErrors?.length) {
-          logger.error(
-            `New validator invariant error in ${resource.resourceType}/${resource.id}: ${JSON.stringify(
-              invariantErrors
-            )}`
-          );
-        }
-        if (outcome.issue?.length && outcome.issue.length !== invariantErrors?.length) {
-          throw new OperationOutcomeError(outcome);
+      validate(resource);
+      if (profileUrls) {
+        try {
+          await this.validateProfiles(resource, profileUrls);
+        } catch (err) {
+          logger.error(`Profile validation error on ${resource.resourceType}/${resource.id}: ${err}`);
         }
       }
 
