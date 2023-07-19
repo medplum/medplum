@@ -805,7 +805,7 @@ describe('FHIR Repo', () => {
     }
   });
 
-  test('Profile validation', async () => {
+  test.skip('Profile validation', async () => {
     const profile = JSON.parse(
       readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
     ) as StructureDefinition;

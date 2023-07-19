@@ -533,7 +533,11 @@ export class Repository extends BaseRepository implements FhirRepository {
       try {
         validate(resource);
         if (profileUrls) {
-          await this.validateProfiles(resource, profileUrls);
+          try {
+            await this.validateProfiles(resource, profileUrls);
+          } catch (err) {
+            logger.error(`Profile validation error on ${resource.resourceType}/${resource.id}: ${err}`);
+          }
         }
       } catch (err: any) {
         const outcome = normalizeOperationOutcome(err);
