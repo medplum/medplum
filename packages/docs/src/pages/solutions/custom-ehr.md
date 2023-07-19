@@ -16,7 +16,7 @@ The pages are customizable, and can be a great place to communicate the most imp
 
 Physician notes are represented in FHIR by the [Encounter](/docs/api/fhir/resources/encounter) object. Common implementations involve using custom [questionnaires](../products/questionnaires) to populate the Encounter object via [bot](/docs/bots/bot-for-questionnaire-response), or creating the object via the API.
 
-Common use cases include advanced [task](/docs/careplans/tasks) tooling and [scheduling](../products/scheduling.md).
+Common use cases include advanced [task](/docs/careplans/tasks) tooling and [scheduling](../products/scheduling).
 
 ## Medications
 
