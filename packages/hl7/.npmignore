@@ -1,0 +1,10 @@
+coverage/
+dist/**/*.test.d.ts
+dist/**/*.test.js
+dist/**/*.test.js.map
+src/
+babel.config.json
+esbuild.mjs
+jest.config.json
+tsconfig.build.json
+tsconfig.json

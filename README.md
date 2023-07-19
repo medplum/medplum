@@ -70,6 +70,7 @@ Here is a list of all the big technologies we use:
 ```sh
 medplum/
 ├── packages
+│   ├── agent        # On-premise agent
 │   ├── app          # Frontend web app
 │   ├── bot-layer    # AWS Lambda Layer for Bots
 │   ├── cdk          # AWS CDK infra as code
@@ -82,6 +83,7 @@ medplum/
 │   ├── fhirtypes    # FHIR TypeScript definitions
 │   ├── generator    # Code generator utilities
 │   ├── graphiql     # Preconfigured GraphiQL
+│   ├── hl7          # HL7 client and server
 │   ├── mock         # Mock FHIR data for testing
 │   ├── react        # React component library
 │   └── server       # Backend API server

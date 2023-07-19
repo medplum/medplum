@@ -10,6 +10,7 @@ node_modules/
 .env
 
 # Output
+packages/agent/dist/
 packages/app/dist/
 packages/cdk/dist/
 packages/cli/dist/
@@ -24,6 +25,7 @@ packages/generator/dist/
 packages/generator/output/
 packages/graphiql/dist/
 packages/graphiql/public/
+packages/hl7/dist/
 packages/mock/dist/
 packages/react/dist/
 packages/server/dist/
