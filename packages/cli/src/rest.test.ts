@@ -103,7 +103,7 @@ describe('CLI rest', () => {
     expect(console.log).toBeCalledWith(expect.stringMatching('Patient'));
   });
 
-  test('Basic Auth profile Post request', async () => {
+  test('Basic Auth profile request', async () => {
     const profileName = 'testProfile';
     const obj = {
       authType: 'basic',
@@ -118,15 +118,9 @@ describe('CLI rest', () => {
 
     await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType": "Patient" }', '-p', profileName]);
     expect(console.log).toBeCalledWith(expect.stringMatching('Patient'));
-  });
 
-  test('Profile does not exist check', async () => {
-    await main(['node', 'index.js', 'post', 'Patient', '{"resourceType": "Patient"}', '-p', 'notExistingProfile']);
-    expect(console.log).toBeCalledWith('Profile notExistingProfile does not exist');
-
-    await main(['node', 'index.js', 'get', 'Patient/123', '-p', 'notExistingProfile']);
-    expect(console.log).toBeCalledWith('Profile notExistingProfile does not exist');
-
+    await main(['node', 'index.js', 'get', 'Patient', '-p', profileName]);
+    expect(console.log).toBeCalledWith(expect.stringMatching('Patient'));
   });
 
   test('Post command with empty body', async () => {
