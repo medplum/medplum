@@ -13,6 +13,10 @@ export const whoami = createMedplumCommand('whoami');
 
 login.action(async (options) => {
   const medplum = await createMedplumClient(options);
+  if (options.authType && options.authType === 'basic') {
+    console.log('Basic authentication does not require login');
+    return;
+  }
   await startLogin(medplum);
 });
 
@@ -23,7 +27,6 @@ whoami.action(async (options) => {
 
 async function startLogin(medplum: MedplumClient): Promise<void> {
   await startWebServer(medplum);
-
   const loginUrl = new URL(medplum.getAuthorizeUrl());
   loginUrl.searchParams.set('client_id', clientId);
   loginUrl.searchParams.set('redirect_uri', redirectUri);
