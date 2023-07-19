@@ -218,7 +218,7 @@ describe('Profiles', () => {
     expect(console.log).toBeCalledWith([{ profileName: profileName2, profile: obj }]);
   });
 
-  test('Bulk Export with Profile flag', async () => {
+  test('Basic Auth profile bulk export', async () => {
     const profileName = 'testProfile';
     const obj = {
       authType: 'basic',
@@ -250,6 +250,4 @@ describe('Profiles', () => {
       )
     );
   });
-
-  
 });
