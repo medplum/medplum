@@ -34,7 +34,7 @@ bulkExportCommand
     const { exportLevel, types, since, targetDirectory, profile } = options;
     const medplum = await createMedplumClient(options, profile);
     const response = await medplum.bulkExport(exportLevel, types, since);
-    console.log(response)
+    console.log(response);
     response.output?.forEach(async ({ type, url }) => {
       const fileUrl = new URL(url as string);
       const data = await medplum.download(url as string);
