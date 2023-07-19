@@ -740,6 +740,11 @@ function addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void 
  * @param sortRule The sort rule.
  */
 function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
+  if (sortRule.code === '_id') {
+    builder.orderBy('id', !!sortRule.descending);
+    return;
+  }
+
   if (sortRule.code === '_lastUpdated') {
     builder.orderBy('lastUpdated', !!sortRule.descending);
     return;

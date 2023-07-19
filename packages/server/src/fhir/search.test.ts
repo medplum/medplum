@@ -2682,4 +2682,27 @@ describe('FHIR Search', () => {
     });
     expect(result.entry?.length).toBe(1);
   });
+
+  test('Sort by ID', async () => {
+    const org = await systemRepo.createResource<Organization>({ resourceType: 'Organization' });
+    const managingOrganization = createReference(org);
+    await systemRepo.createResource<Patient>({ resourceType: 'Patient', managingOrganization });
+    await systemRepo.createResource<Patient>({ resourceType: 'Patient', managingOrganization });
+
+    const result1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: 'organization', operator: Operator.EQUALS, value: getReferenceString(org) }],
+      sortRules: [{ code: '_id', descending: false }],
+    });
+    expect(result1.entry).toHaveLength(2);
+    expect(result1.entry?.[0]?.resource?.id?.localeCompare(result1.entry?.[1]?.resource?.id as string)).toBe(-1);
+
+    const result2 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: 'organization', operator: Operator.EQUALS, value: getReferenceString(org) }],
+      sortRules: [{ code: '_id', descending: true }],
+    });
+    expect(result2.entry).toHaveLength(2);
+    expect(result2.entry?.[0]?.resource?.id?.localeCompare(result2.entry?.[1]?.resource?.id as string)).toBe(1);
+  });
 });
