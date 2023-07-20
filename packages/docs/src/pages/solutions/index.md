@@ -2,13 +2,13 @@
 
 Medplum supports a wide array of use cases. Please look at this section for detailed examples of how to build sophisticated, compliant applications quickly. Though these are written as separate use cases, it is possible, indeed recommended, to have several implementations running off the same Medplum Project.
 
-## Patient Portal
-
-A portal for patients to message their provider, view their records, request medications and refills, schedule appointments and more. [Learn More](/solutions/patient-portal)
-
 ## Custom EHR
 
 Build a custom EHR to streamline provider workflow. Implement bespoke clinical workflows with high levels of automation and quality assurance. [Learn More](/solutions/custom-ehr)
+
+## Patient Portal
+
+A portal for patients to message their provider, view their records, request medications and refills, schedule appointments and more. [Learn More](/solutions/patient-portal)
 
 ## Provider Portal and FHIR API
 
