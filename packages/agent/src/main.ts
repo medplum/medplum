@@ -1,7 +1,6 @@
 import { MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
-import fetch from 'node-fetch';
 import { EventLogger } from 'node-windows';
 
 const log = new EventLogger({
@@ -60,5 +59,5 @@ export class App {
 }
 
 if (typeof require !== 'undefined' && require.main === module) {
-  new App(new MedplumClient({ fetch }), { resourceType: 'Bot', id: '00000000-00000000-00000000-00000000' }).start();
+  new App(new MedplumClient(), { resourceType: 'Bot', id: '00000000-00000000-00000000-00000000' }).start();
 }
