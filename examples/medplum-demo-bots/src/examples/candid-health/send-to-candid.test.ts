@@ -144,266 +144,289 @@ describe('Candid Health Tests', () => {
       resourceType: 'Encounter',
     } as Encounter);
 
-    const coverage: Coverage = await medplum.createResource({
-      resourceType: 'Coverage',
-      identifier: [
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                code: 'MB',
-                display: 'Member Number',
-              },
-            ],
-          },
-          system: 'https://www.acmeinsurance.com/glossary/memberid',
-          value: '102345672-01',
-          assigner: {
-            display: 'Acme Insurance Co',
-          },
-        },
-      ],
-      status: 'active',
-      type: {
-        coding: [
+    const coverage: Coverage = await medplum.createResource(
+      // start-block exampleCoverage
+      {
+        resourceType: 'Coverage',
+
+        // Member id
+        identifier: [
           {
-            system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
-            code: 'PPO',
-            display: 'preferred provider organization policy',
-          },
-          {
-            system: 'https://nahdo.org/sopt',
-            code: '512',
-            display: 'Commercial Managed Care - PPO',
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                  code: 'MB',
+                  display: 'Member Number',
+                },
+              ],
+            },
+            system: 'https://www.acmeinsurance.com/glossary/memberid',
+            value: '102345672-01',
+            assigner: {
+              display: 'Acme Insurance Co',
+            },
           },
         ],
-        text: 'health insurance plan policy',
-      },
-      policyHolder: createReference(patient),
-      subscriber: createReference(patient),
-      subscriberId: '102345672-01',
-      beneficiary: createReference(patient),
-      period: {
-        start: '2021-01-01',
-      },
-      payor: [
-        {
-          display: 'Acme Insurance Co',
+        subscriberId: '102345672-01',
+        status: 'active',
+
+        // Plan type
+        type: {
+          coding: [
+            {
+              system: 'https://nahdo.org/sopt',
+              code: '512',
+              display: 'Commercial Managed Care - PPO',
+            },
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+              code: 'PPO',
+              display: 'preferred provider organization policy',
+            },
+          ],
+          text: 'health insurance plan policy',
         },
-      ],
-      class: [
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/coverage-class',
-                code: 'group',
-              },
-            ],
-          },
-          value: '993355',
-          name: 'Stars Inc',
+
+        // Subscriber & Beneficiary
+        subscriber: createReference(patient),
+        beneficiary: createReference(patient),
+        relationship: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/subscriber-relationship',
+              code: 'self',
+              display: 'Self',
+            },
+          ],
         },
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/coverage-class',
-                code: 'plan',
-              },
-            ],
-          },
-          value: '11461128',
-          name: 'Acme Gold Plus',
+        period: {
+          start: '2021-01-01',
         },
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCoverageClassCS',
-                code: 'division',
-              },
-            ],
+
+        // Payor
+        payor: [
+          {
+            display: 'Acme Insurance Co',
           },
-          value: '11',
-        },
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCoverageClassCS',
-                code: 'network',
-              },
-            ],
+        ],
+        // Classification Codes
+        class: [
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/coverage-class',
+                  code: 'group',
+                },
+              ],
+            },
+            value: '993355',
+            name: 'Stars Inc',
           },
-          value: '561490',
-          name: 'Acme Gold Plus South',
-        },
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/coverage-class',
-                code: 'rxbin',
-              },
-            ],
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/coverage-class',
+                  code: 'plan',
+                },
+              ],
+            },
+            value: '11461128',
+            name: 'Acme Gold Plus',
           },
-          value: '100045',
-        },
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/coverage-class',
-                code: 'rxpcn',
-              },
-            ],
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCoverageClassCS',
+                  code: 'division',
+                },
+              ],
+            },
+            value: '11',
           },
-          value: '1234000',
-        },
-      ],
-      costToBeneficiary: [
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
-                code: 'FamOutDed',
-                display: 'Family Out of Network Deductible',
-              },
-            ],
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCoverageClassCS',
+                  code: 'network',
+                },
+              ],
+            },
+            value: '561490',
+            name: 'Acme Gold Plus South',
           },
-          valueMoney: {
-            value: 10000,
-            currency: 'USD',
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/coverage-class',
+                  code: 'rxbin',
+                },
+              ],
+            },
+            value: '100045',
           },
-        },
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
-                code: 'FamInDed',
-                display: 'Family In Network Deductible',
-              },
-            ],
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/coverage-class',
+                  code: 'rxpcn',
+                },
+              ],
+            },
+            value: '1234000',
           },
-          valueMoney: {
-            value: 8000,
-            currency: 'USD',
+        ],
+
+        // Cost Sharing Provisions
+        costToBeneficiary: [
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
+                  code: 'FamOutDed',
+                  display: 'Family Out of Network Deductible',
+                },
+              ],
+            },
+            valueMoney: {
+              value: 10000,
+              currency: 'USD',
+            },
           },
-        },
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
-                code: 'FamRxOutDed',
-                display: 'Family Pharmacy Out of Network Deductible',
-              },
-            ],
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
+                  code: 'FamInDed',
+                  display: 'Family In Network Deductible',
+                },
+              ],
+            },
+            valueMoney: {
+              value: 8000,
+              currency: 'USD',
+            },
           },
-          valueMoney: {
-            value: 2000,
-            currency: 'USD',
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
+                  code: 'FamRxOutDed',
+                  display: 'Family Pharmacy Out of Network Deductible',
+                },
+              ],
+            },
+            valueMoney: {
+              value: 2000,
+              currency: 'USD',
+            },
           },
-        },
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
-                code: 'FamRxInDed',
-                display: 'Family Pharmacy In Network Deductible',
-              },
-            ],
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
+                  code: 'FamRxInDed',
+                  display: 'Family Pharmacy In Network Deductible',
+                },
+              ],
+            },
+            valueMoney: {
+              value: 1500,
+              currency: 'USD',
+            },
           },
-          valueMoney: {
-            value: 1500,
-            currency: 'USD',
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
+                  code: 'FamOutMax',
+                  display: 'Family Out of Network Out of Pocket Maximum',
+                },
+              ],
+            },
+            valueMoney: {
+              value: 12000,
+              currency: 'USD',
+            },
           },
-        },
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
-                code: 'FamOutMax',
-                display: 'Family Out of Network Out of Pocket Maximum',
-              },
-            ],
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
+                  code: 'FamInMax',
+                  display: 'Family In Network Out of Pocket Maximum',
+                },
+              ],
+            },
+            valueMoney: {
+              value: 10000,
+              currency: 'USD',
+            },
           },
-          valueMoney: {
-            value: 12000,
-            currency: 'USD',
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
+                  code: 'FamRxOutMax',
+                  display: 'Family Pharmacy Out of Network Out of Pocket Maximum',
+                },
+              ],
+            },
+            valueMoney: {
+              value: 3000,
+              currency: 'USD',
+            },
           },
-        },
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
-                code: 'FamInMax',
-                display: 'Family In Network Out of Pocket Maximum',
-              },
-            ],
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
+                  code: 'FamRxInMax',
+                  display: 'Family Pharmacy In Network Out of Pocket Maximum',
+                },
+              ],
+            },
+            valueMoney: {
+              value: 2000,
+              currency: 'USD',
+            },
           },
-          valueMoney: {
-            value: 10000,
-            currency: 'USD',
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
+                  code: 'rx',
+                },
+              ],
+            },
+            valueMoney: {
+              extension: [
+                {
+                  url: 'http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-BeneficiaryCostString-extension',
+                  valueString: 'DED THEN $10/$40/$70/25%',
+                },
+              ],
+            },
           },
-        },
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
-                code: 'FamRxOutMax',
-                display: 'Family Pharmacy Out of Network Out of Pocket Maximum',
-              },
-            ],
-          },
-          valueMoney: {
-            value: 3000,
-            currency: 'USD',
-          },
-        },
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
-                code: 'FamRxInMax',
-                display: 'Family Pharmacy In Network Out of Pocket Maximum',
-              },
-            ],
-          },
-          valueMoney: {
-            value: 2000,
-            currency: 'USD',
-          },
-        },
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://hl7.org/fhir/us/insurance-card/CodeSystem/C4DICExtendedCopayTypeCS',
-                code: 'rx',
-              },
-            ],
-          },
-          valueMoney: {
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-BeneficiaryCostString-extension',
-                valueString: 'DED THEN $10/$40/$70/25%',
-              },
-            ],
-          },
-        },
-      ],
-    });
+        ],
+      }
+      // end-block exampleCoverage
+    );
 
     Object.assign(ctx, { medplum, patient, encounter, coverage });
   });
