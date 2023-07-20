@@ -56,11 +56,44 @@ export class Hl7Message {
   }
 
   /**
+   * Returns the HL7 message header.
+   * @returns The HL7 message header.
+   */
+  get header(): Hl7Segment {
+    return this.segments[0];
+  }
+
+  /**
    * Returns an HL7 segment by index or by name.
    * @param index The HL7 segment index or name.
    * @returns The HL7 segment if found; otherwise, undefined.
+   * @deprecated Use getSegment() instead. This method will be removed in a future release.
    */
   get(index: number | string): Hl7Segment | undefined {
+    return this.getSegment(index);
+  }
+
+  /**
+   * Returns all HL7 segments of a given name.
+   * @param name The HL7 segment name.
+   * @returns An array of HL7 segments with the specified name.
+   * @deprecated Use getAllSegments() instead. This method will be removed in a future release.
+   */
+  getAll(name: string): Hl7Segment[] {
+    return this.getAllSegments(name);
+  }
+
+  /**
+   * Returns an HL7 segment by index or by name.
+   *
+   * When using a numeric index, the first segment (usually the MSH header segment) is at index 0.
+   *
+   * When using a string index, this method returns the first segment with the specified name.
+   *
+   * @param index The HL7 segment index or name.
+   * @returns The HL7 segment if found; otherwise, undefined.
+   */
+  getSegment(index: number | string): Hl7Segment | undefined {
     if (typeof index === 'number') {
       return this.segments[index];
     }
@@ -72,7 +105,7 @@ export class Hl7Message {
    * @param name The HL7 segment name.
    * @returns An array of HL7 segments with the specified name.
    */
-  getAll(name: string): Hl7Segment[] {
+  getAllSegments(name: string): Hl7Segment[] {
     return this.segments.filter((s) => s.name === name);
   }
 
@@ -90,13 +123,13 @@ export class Hl7Message {
    */
   buildAck(): Hl7Message {
     const now = new Date();
-    const msh = this.get('MSH');
-    const sendingApp = msh?.get(2)?.toString() ?? '';
-    const sendingFacility = msh?.get(3)?.toString() ?? '';
-    const receivingApp = msh?.get(4)?.toString() ?? '';
-    const receivingFacility = msh?.get(5)?.toString() ?? '';
-    const controlId = msh?.get(9)?.toString() ?? '';
-    const versionId = msh?.get(12)?.toString() ?? '2.5.1';
+    const msh = this.getSegment('MSH');
+    const sendingApp = msh?.getField(3)?.toString() ?? '';
+    const sendingFacility = msh?.getField(4)?.toString() ?? '';
+    const receivingApp = msh?.getField(5)?.toString() ?? '';
+    const receivingFacility = msh?.getField(6)?.toString() ?? '';
+    const controlId = msh?.getField(10)?.toString() ?? '';
+    const versionId = msh?.getField(12)?.toString() ?? '2.5.1';
 
     return new Hl7Message([
       new Hl7Segment(
@@ -109,7 +142,7 @@ export class Hl7Message {
           sendingFacility,
           now.toISOString(),
           '',
-          'ACK',
+          this.buildAckMessageType(msh),
           now.getTime().toString(),
           'P',
           versionId,
@@ -118,6 +151,25 @@ export class Hl7Message {
       ),
       new Hl7Segment(['MSA', 'AA', controlId, 'OK'], this.context),
     ]);
+  }
+
+  private buildAckMessageType(msh: Hl7Segment | undefined): string {
+    // MSH 7 is the message type
+    // https://hl7-definition.caristix.com/v2/HL7v2.4/DataTypes/MSG
+    // In HL7 v2.1, the message type is a single field
+    // In HL7 v2.2 through v2.3, message type has two components.
+    // In HL7 v2.3.1 and later, message type has three components.
+    // Rather than using version to determine behavior, we instead mirror the original message.
+    const messageType = msh?.getField(9);
+    const triggerEvent = messageType?.getComponent(2);
+    const messageStructure = messageType?.getComponent(3);
+    let result = 'ACK';
+    if (triggerEvent && messageStructure) {
+      result = `ACK^${triggerEvent}^ACK`;
+    } else if (triggerEvent) {
+      result = `ACK^${triggerEvent}`;
+    }
+    return result;
   }
 
   /**
@@ -158,13 +210,13 @@ export class Hl7Segment {
 
   /**
    * Creates a new HL7 segment.
-   * @param fields The HL7 fields.
+   * @param fields The HL7 fields. The first field is the segment name.
    * @param context Optional HL7 parsing context.
    */
   constructor(fields: Hl7Field[] | string[], context = new Hl7Context()) {
     this.context = context;
     if (isStringArray(fields)) {
-      this.fields = fields.map((f) => Hl7Field.parse(f));
+      this.fields = fields.map((f) => Hl7Field.parse(f, context));
     } else {
       this.fields = fields;
     }
@@ -175,9 +227,60 @@ export class Hl7Segment {
    * Returns an HL7 field by index.
    * @param index The HL7 field index.
    * @returns The HL7 field.
+   * @deprecated Use getSegment() instead. This method includes the segment name in the index, which leads to confusing behavior. This method will be removed in a future release.
    */
   get(index: number): Hl7Field {
     return this.fields[index];
+  }
+
+  /**
+   * Returns an HL7 field by index.
+   *
+   * Note that the index is 1-based, not 0-based.
+   *
+   * For example, to get the first field, use `getField(1)`.
+   *
+   * This aligns with HL7 field names such as PID.1, PID.2, etc.
+   *
+   * Field zero is the segment name.
+   *
+   * @param index The HL7 field index.
+   * @returns The HL7 field.
+   */
+  getField(index: number): Hl7Field {
+    if (this.name === 'MSH') {
+      // MSH segments require special handling due to field separator
+      if (index === 1) {
+        // MSH.1 is the field separator
+        return Hl7Field.parse(this.context.fieldSeparator, this.context);
+      }
+      if (index > 1) {
+        // MSH.2 through MSH.n are offset by 1
+        return this.fields[index - 1];
+      }
+    }
+    return this.fields[index];
+  }
+
+  /**
+   * Returns an HL7 component by field index and component index.
+   *
+   * This is a shortcut for `getField(field).getComponent(component)`.
+   *
+   * Note that both indexex are 1-based, not 0-based.
+   *
+   * For example, to get the first component, use `getComponent(1, 1)`.
+   *
+   * This aligns with HL7 component names such as MSH.9.2.
+   *
+   * @param fieldIndex The HL7 field index.
+   * @param component The component index.
+   * @param subcomponent Optional subcomponent index.
+   * @param repetition Optional repetition index.
+   * @returns The string value of the specified component.
+   */
+  getComponent(fieldIndex: number, component: number, subcomponent?: number, repetition = 0): string {
+    return this.getField(fieldIndex).getComponent(component, subcomponent, repetition);
   }
 
   /**
@@ -226,9 +329,28 @@ export class Hl7Field {
    * @param subcomponent Optional subcomponent index.
    * @param repetition Optional repetition index.
    * @returns The string value of the specified component.
+   * @deprecated Use getComponent() instead. This method will be removed in a future release.
    */
   get(component: number, subcomponent?: number, repetition = 0): string {
-    let value = this.components[repetition][component] ?? '';
+    return this.getComponent(component + 1, subcomponent, repetition);
+  }
+
+  /**
+   * Returns an HL7 component by index.
+   *
+   * Note that the index is 1-based, not 0-based.
+   *
+   * For example, to get the first component, use `getComponent(1)`.
+   *
+   * This aligns with HL7 component names such as MSH.9.2.
+   *
+   * @param component The component index.
+   * @param subcomponent Optional subcomponent index.
+   * @param repetition Optional repetition index.
+   * @returns The string value of the specified component.
+   */
+  getComponent(component: number, subcomponent?: number, repetition = 0): string {
+    let value = this.components[repetition][component - 1] ?? '';
 
     if (subcomponent !== undefined) {
       value = value.split(this.context.subcomponentSeparator)[subcomponent] ?? '';
