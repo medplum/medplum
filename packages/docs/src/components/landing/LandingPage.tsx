@@ -219,14 +219,16 @@ export function LandingPage(): JSX.Element {
             <CardContainer>
               <Card>
                 <TestimonialHeader
-                  name="Phil Fung"
-                  title="Co-founder Kit.com, Facebook Engineer #15"
-                  imgSrc="/img/avatars/phil-fung.webp"
-                  twitter="https://twitter.com/philfung"
+                  name="Michael Caves"
+                  title="Dir of Product, Thirty Madison"
+                  imgSrc="/img/avatars/michael-caves.webp"
                 />
                 <p>
-                  Quality code base, open source and sets your data on the right path with FHIR. No-brainer for those
-                  who need to build for healthcare.
+                  Thanks to the expertise of the Medplum team, we were able to swiftly implement their product and get
+                  it up and running seamlessly. Their proactive approach in anticipating and mitigating any issues
+                  during our ramp-up was an example of first rate partnership. With their robust product, we've gained
+                  the agility to rapidly introduce new features, enabling Thirty Madison to maintain its commitment to
+                  putting patients first.
                 </p>
               </Card>
               <Card>
@@ -262,21 +264,29 @@ export function LandingPage(): JSX.Element {
                 <p>The Medplum GUI is very nice. There’s a lot of depth there.</p>
               </Card>
               <Card>
-                <TestimonialHeader name="Hussein" imgSrc="/img/avatars/hussein.webp" />
-                <p>Thank you so much for building such an amazing product.</p>
-              </Card>
-              <Card>
-                <TestimonialHeader name="Khudur" imgSrc="/img/avatars/khudur.webp" />
-                <p>Absolutely love what you’re building here and can’t wait to contribute!</p>
-              </Card>
-            </CardContainer>
-            <CardContainer>
-              <Card>
                 <TestimonialHeader name="Hassy Veldstra" title="Artillery" imgSrc="/img/avatars/hassy.webp" />
                 <p>
                   Love seeing scalability &amp; performance treated as a first-class feature. Always a sign of a project
                   that takes quality seriously.
                 </p>
+              </Card>
+              <Card>
+                <TestimonialHeader
+                  name="Phil Fung"
+                  title="Co-founder Kit.com, Facebook Engineer #15"
+                  imgSrc="/img/avatars/phil-fung.webp"
+                  twitter="https://twitter.com/philfung"
+                />
+                <p>
+                  Quality code base, open source and sets your data on the right path with FHIR. No-brainer for those
+                  who need to build for healthcare.
+                </p>
+              </Card>
+            </CardContainer>
+            <CardContainer>
+              <Card>
+                <TestimonialHeader name="Hussein" imgSrc="/img/avatars/hussein.webp" />
+                <p>Thank you so much for building such an amazing product.</p>
               </Card>
               <Card>
                 <TestimonialHeader name="Dima Goncharov" title="CEO Metriport" imgSrc="/img/avatars/dima.webp" />
