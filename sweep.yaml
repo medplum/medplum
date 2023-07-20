@@ -1,2 +1,3 @@
 # Reference: https://github.com/sweepai/sweep/blob/main/.github/sweep.yaml. If you use this be sure to frequently sync your default branch(main, master) to dev.
 branch: 'main'
+gha_enabled: True
