@@ -590,9 +590,14 @@ function renderSearchParameterValue(
   return (
     <>
       {value.map((v, index) => (
-        <span key={`${index}-${value.length}`}>
-          {typeof v === 'object' ? JSON.stringify(v) : (v as string | number)}
-        </span>
+        <ResourcePropertyDisplay
+          key={`${index}-${value.length}`}
+          propertyType={v.type as PropertyType}
+          value={v.value}
+          maxWidth={200}
+          ignoreMissingValues={true}
+          link={false}
+        />
       ))}
     </>
   );
