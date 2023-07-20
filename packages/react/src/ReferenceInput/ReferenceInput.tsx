@@ -9,6 +9,7 @@ export interface ReferenceInputProps {
   placeholder?: string;
   defaultValue?: Reference;
   targetTypes?: string[];
+  autoFocus?: boolean;
   onChange?: (value: Reference | undefined) => void;
 }
 
@@ -35,15 +36,19 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
     <Group spacing="xs" grow noWrap>
       {targetTypes ? (
         <NativeSelect
+          data-autofocus={props.autoFocus}
           data-testid="reference-input-resource-type-select"
           defaultValue={resourceType}
+          autoFocus={props.autoFocus}
           onChange={(e) => setResourceType(e.currentTarget.value)}
           data={targetTypes}
         />
       ) : (
         <TextInput
+          data-autofocus={props.autoFocus}
           data-testid="reference-input-resource-type-input"
           defaultValue={resourceType}
+          autoFocus={props.autoFocus}
           onChange={(e) => setResourceType(e.currentTarget.value)}
         />
       )}
