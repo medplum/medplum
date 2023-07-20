@@ -7,14 +7,12 @@ import { Hl7MessageEvent } from './events';
 export interface Hl7ClientOptions {
   host: string;
   port: number;
-  keepalive?: boolean;
 }
 
 export class Hl7Client extends Hl7Base {
   options: Hl7ClientOptions;
   host: string;
   port: number;
-  keepalive: boolean;
   socket?: Socket;
   buffer: string;
   awaitingResponse: boolean;
@@ -24,7 +22,6 @@ export class Hl7Client extends Hl7Base {
     this.options = options;
     this.host = this.options.host;
     this.port = this.options.port;
-    this.keepalive = this.options.keepalive ?? true;
     this.buffer = '';
     this.awaitingResponse = false;
   }
@@ -39,9 +36,6 @@ export class Hl7Client extends Hl7Base {
             this.dispatchEvent(new Hl7MessageEvent(socket, msg));
             this.buffer = '';
             this.awaitingResponse = false;
-            if (!this.keepalive) {
-              this.close();
-            }
           }
         });
         resolve(socket);
