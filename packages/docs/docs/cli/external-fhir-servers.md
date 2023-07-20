@@ -19,34 +19,87 @@ To enable these scenarios, you will need a `clientId` or `clientSecret` to acces
 
 The examples below use the [CLI optional flags](/docs/cli#optional-flags).
 
-## Example: Basic search
+## Setting up your credentials
 
-In this example, we will show how to search for a patient by identifier using the command line.
+Medplum CLI stores credentials to be used in a future period without needing it to be entered in every command. By using the `profile` command, this helps with the ability to work with multiple FHIR servers.
+
+### Example: Setting a Profile
+
+In this example, we will set up a profile using `medplum profile set <profileName>` with the flags below:
+
+- --auth-type
+- --client-id
+- --client-secret
+- --base-url
+- --token-url
+- --authorize-url
+- --fhir-url-path
 
 ```bash
-medplum get 'Patient?identifier:contains=3SH0A00AA00' --base-url <base-url> --fhir-url-path <fhir-url-path> --token-url <token-url> --client-id <client-id> --client-secret <client-secret>
+medplum profile set <profileName> --base-url <base-url> --fhir-url-path <fhir-url-path> --token-url <token-url> --client-id <client-id> --client-secret <client-secret>
+```
+
+The profile will now be stored in a file directory in `~.medplum/<profileName>.json`
+
+Once you have a profile, you can connect with external FHIR servers with your profile using the `-p` flag. 
+
+
+Other profile commands include:
+#### `describe`
+
+To see the state of your credentials in on profile 
+
+Example:
+```bash
+medplum profile describe <profileName>
+```
+
+#### `list`
+
+To see all of your profiles
+```bash
+medplum profile list
+```
+
+#### `remove`
+Removing a profile
+```bash
+medplum profile remove <profileName>
+```
+
+## Example: Basic search
+
+In this example, we will show how to search for a patient by identifier using the command line after a profile has been set.
+
+```bash
+medplum get -p <profileName> 'Patient?identifier:contains=3SH0A00AA00'
 ```
 
 ## Example: Create encounter
 
-In this example, an Encounter is created in another system using the command line.
+In this example, an Encounter is created in another system using the command line after a profile has been set.
 
 ```bash
-medplum post Encounter '{"resourceType": "Encounter", "status": "finished", "class": {"system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "AMB"}, "type": [{"coding": [{"system": "http://snomed.info/sct", "code": "162673000", "display": "General examination of patient (procedure)"}], "text": "General examination of patient (procedure)"}], "subject": {"reference": "Patient/13e44a47-636b-49e2-adb3-9f19c7e0e47a", "display": "Mr. Dustin31 Ritchie586"}}' --base-url <base-url> --fhir-url-path <fhir-url-path> --token-url <token-url> --client-id <client-id> --client-secret <client-secret>
+medplum post -p <profileName>  Encounter '{"resourceType": "Encounter", "status": "finished", "class": {"system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "AMB"}, "type": [{"coding": [{"system": "http://snomed.info/sct", "code": "162673000", "display": "General examination of patient (procedure)"}], "text": "General examination of patient (procedure)"}], "subject": {"reference": "Patient/13e44a47-636b-49e2-adb3-9f19c7e0e47a", "display": "Mr. Dustin31 Ritchie586"}}'
 ```
 
 ## Example: Bulk FHIR Export
 
-In this example, Bulk FHIR ndjson files are exported from the server and stored on on the local drive.
+In this example, Bulk FHIR ndjson files are exported from the server and stored on on the local drive after a profile has been set.
 
 ```bash
-medplum bulk export -e Group/all --base-url <base-url> --fhir-url-path <fhir-url-path> --token-url <token-url> --client-id <client-id> --client-secret <client-secret>
+medplum bulk export -p <profileName> -e Group/all
 ```
 
-For example, [CMS BCDA](https://bcda.cms.gov/) publishes a Bulk FHIR test server. You can get [test credentials here](https://bcda.cms.gov/guide.html#try-the-api) and try the following command.
+For example, [CMS BCDA](https://bcda.cms.gov/) publishes a Bulk FHIR test server. You can store [test credentials here](https://bcda.cms.gov/guide.html#try-the-api) in a profile and try the following command.
 
 ```bash
-medplum bulk export -e Group/all --base-url https://sandbox.bcda.cms.gov --fhir-url-path api/v2/ --token-url https://sandbox.bcda.cms.gov/auth/token --client-id <client-id> --client-secret <client-secret>
+medplum profile set bcda-sandbox --base-url https://sandbox.bcda.cms.gov --fhir-url-path api/v2/ --token-url https://sandbox.bcda.cms.gov/auth/token --client-id <client-id> --client-secret <client-secret>
+```
+
+And then run
+```bash
+medplum bulk export -p bcda-sandbox -e Group/all 
 ```
 
 ## Next Steps
