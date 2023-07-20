@@ -46,7 +46,7 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
     }
 
     medplum.addEventListener('change', eventListener);
-    return () => medplum.removeEventListeneer('change', eventListener);
+    return () => medplum.removeEventListener('change', eventListener);
   }, [medplum, state]);
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
       showNotification({ color: 'red', message: 'No connection to server', autoClose: false });
     }
     medplum.addEventListener('offline', eventListener);
-    return () => medplum.removeEventListeneer('offline', eventListener);
+    return () => medplum.removeEventListener('offline', eventListener);
   }, [medplum]);
 
   const medplumContext = useMemo(
