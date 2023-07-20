@@ -1,3 +1,14 @@
+---
+tags:
+  - billing
+  - insurance
+  - coverage
+keywords:
+  - insurance coverage
+  - copay
+  - fhir
+---
+
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Example from '!!raw-loader!@site/../../examples/medplum-demo-bots/src/examples/candid-health/send-to-candid.test.ts';
 
@@ -7,7 +18,7 @@ import Example from '!!raw-loader!@site/../../examples/medplum-demo-bots/src/exa
 
 The [`Coverage`](/docs/api/fhir/resources/coverage) resource represents high-level insurance information for a patient, similar to what would be found on their insurance cards.
 
-This guide will go over the most relevant elements of [`Coverage`](/docs/api/fhir/resources/coverage) , as it relates to digital health companies, primarily focused on the U.S. system.
+This guide will go over the most relevant elements of [`Coverage`](/docs/api/fhir/resources/coverage) for digital health providers and is primarily focused on the U.S. system.
 
 The guide aligns with recommendations from two implementation guides
 
@@ -18,29 +29,37 @@ The guide aligns with recommendations from two implementation guides
 
 In FHIR's [`Coverage`](/docs/api/fhir/resources/coverage) resource, a distinction is made between plan subscribers and beneficiaries.
 
-The `Coverage.subscriber` element denotes the individual who has subscribed to the plan, often also known as the "policyholder". The `Coverage.beneficiary` element, on the other hand, refers to the person who is eligible to receive healthcare services under the plan.
+The `Coverage.subscriber` element denotes the individual who has subscribed to the plan, often also known as the "policyholder".
+
+The `Coverage.beneficiary` element, on the other hand, refers to the person who is eligible to receive healthcare services under the plan.
 
 The `Coverage.relationship` element describes how the subscriber and beneficiary are related. The US Core guidelines recommend that this code should be selected from the [HL7 subscriber relationship valueset](http://hl7.org/fhir/R4/valueset-subscriber-relationship.html).
 
-Consider an example where Mr. John Doe, an employee at a company, has an insurance policy that covers his family, including his daughter, Jane Doe. When representing Jane's insurance coverage, she would be listed as the `Coverage.beneficiary`, John would be listed as the `Coverage.subscriber`, with a `Coverage.relationship` being set to `'child'`.
+:::note Example
+
+Consider an example where Mr. John Doe, an employee at a company, has an insurance policy that covers his family, including his daughter, Jane Doe. When representing Jane's insurance coverage, she would be listed as the `Coverage.beneficiary`, John would be listed as the `Coverage.subscriber`, and the `Coverage.relationship` would be set to `'child'`.
+
+:::
 
 ## Insurance Member ID
 
-The US core implementation of FHIR mandates every [`Coverage`](/docs/api/fhir/resources/coverage) to have an insurance member ID for the subscriber. This identifier can be included in one of two fields within the Coverage resource: `Coverage.subscriberId` or `Coverage.identifier`.
+The US Core implementation of FHIR mandates every [`Coverage`](/docs/api/fhir/resources/coverage) to have an insurance member ID for the _subscriber_. This identifier can be included in one of two elements: `Coverage.subscriberId` or `Coverage.identifier`.
 
-If you decide to use `Coverage.identifier`, US core requires that `Coverage.identifier.type` is drawn from the [HL7 identifierType code system](https://terminology.hl7.org/5.2.0/CodeSystem-v2-0203.html) with code `MB`. Check out the [example below](#example) for an example.
+If you decide to use `Coverage.identifier`, US Core requires that `Coverage.identifier.type` is drawn from the [HL7 identifierType code system](https://terminology.hl7.org/5.2.0/CodeSystem-v2-0203.html) with code `MB`. Check out the [example below](#example) for an example.
 
 ## Plan Types and Payors
 
 One of the most important fields in the Coverage resource is the plan type (`Coverage.type`). The United States offers many different types of insurance plans, including Health Maintenance Organizations (HMOs), Preferred Provider Organizations (PPOs), government employee programs, veteran's insurance, and many others. Each of these plan types has a distinct set of benefits and billing structures.
 
-The US core guidelines strongly encourage the use of the [Source of Payment Typology (SOPT)](https://www.nahdo.org/sopt) code system for classifying US plan types.These SOPT codes are a hierarchical system of numeric codes that classify most US health plans.
+The US Core guidelines strongly encourage the use of the [Source of Payment Typology (SOPT)](https://www.nahdo.org/sopt) code system for classifying US plan types. These SOPT codes are a hierarchical system of numeric codes that classify most US health plans.
 
-Another required field is `Coverage.payor` , which indicates the company or institution who reimburses the provider for care. At scale, this should a reference to a concrete [`Organzation`](/docs/api/fhir/resources/organization) resource, to allow for search queries of all patients insured by the same payor.
+Another required field is `Coverage.payor` , which indicates the company or institution who will reimburse the provider for care. This should a reference to an [`Organization`](/docs/api/fhir/resources/organization) resource, to allow for search queries of all patients insured by the same payor.
 
 :::tip Representing self-pay / cash-pay
 
-Many digital health companies have a significant patient population that pay out-of-pocket. Best practice is to still create [`Coverage`](/docs/api/fhir/resources/coverage) resources for these patients, to allow flexible handling of their coverage stack if they do eventually add insurance. A self-pay patient's [`Coverage`](/docs/api/fhir/resources/coverage) should set `subscriber`, `beneficiary`, `relationship`, `type`, and `payor` as follows:
+Many digital providers have a significant patient population that pay out-of-pocket. It is a best practice to create [`Coverage`](/docs/api/fhir/resources/coverage) resources for these patients as well, to allow flexible handling of their [coverage stack](#primary-vs-secondary-coverage) as their insurance situation evolves.
+
+A self-pay patient's [`Coverage`](/docs/api/fhir/resources/coverage) should set `subscriber`, `beneficiary`, `relationship`, `type`, and `payor` as follows:
 
 ```ts
 {
@@ -87,9 +106,9 @@ Many digital health companies have a significant patient population that pay out
 
 Most insurance cards have a set of codes, known as "classifiers", that identify important billing information for the subscriber's plan.
 
-The `Coverage.class` is used to store these classification values in an array of (`type`, `value`, `name` ) triples.
+The `Coverage.class` is used to store these classification values in an array of (`type`, `value`, `name` ) tuples.
 
-FHIR recommends using the [coverage class valueset](https://hl7.org/fhir/R4/codesystem-coverage-class.html) to represent the class type (system string `http://terminology.hl7.org/CodeSystem/coverage-class`). Below is a table of the coverage class codes in this valueset.
+FHIR recommends using the [coverage class valueset](https://hl7.org/fhir/R4/codesystem-coverage-class.html) to represent the class type. Below is a table of the coverage class codes in this valueset.
 
 | **Code**                                                                                  | **Definition**                                                              |
 | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
