@@ -526,7 +526,7 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
 
   // Priority 2: SearchParameter by exact match
   if (field.searchParams && field.searchParams.length === 1 && field.name === field.searchParams[0].code) {
-    return renderSearchParameterValue(resource, field.searchParams[0], field.elementDefinition);
+    return renderSearchParameterValue(resource, field.searchParams[0]);
   }
 
   // We don't know how to render this field definition
@@ -562,29 +562,12 @@ function renderPropertyValue(resource: Resource, elementDefinition: ElementDefin
  * Returns a fragment to be displayed in the search table for a search parameter.
  * @param resource The parent resource.
  * @param searchParam The search parameter.
- * @param elementDefinition Optional element definition.
  * @returns A React element or null.
  */
-function renderSearchParameterValue(
-  resource: Resource,
-  searchParam: SearchParameter,
-  elementDefinition: ElementDefinition | undefined
-): JSX.Element | null {
+function renderSearchParameterValue(resource: Resource, searchParam: SearchParameter): JSX.Element | null {
   const value = evalFhirPathTyped(searchParam.expression as string, [{ type: resource.resourceType, value: resource }]);
   if (!value || value.length === 0) {
     return null;
-  }
-
-  if (elementDefinition) {
-    return (
-      <ResourcePropertyDisplay
-        propertyType={value[0].type as PropertyType}
-        value={value[0].value}
-        maxWidth={200}
-        ignoreMissingValues={true}
-        link={false}
-      />
-    );
   }
 
   return (
