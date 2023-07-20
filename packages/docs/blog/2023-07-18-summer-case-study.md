@@ -1,6 +1,6 @@
 ---
 slug: summer-case-study
-title: Text Pediatricians in 15 minutes - Summer Health Case Study
+title: 24/7 Pediatrician Access - Summer Health Case Study
 authors:
   name: Reshma Khilnani
   title: Medplum Core Team
@@ -9,7 +9,7 @@ authors:
 tags: [pediatrics, auth, case-study]
 ---
 
-# Summer Health: Text Pediatricians in 15 minutes
+# Summer Health: 24/7 Pediatrician Access
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/H2fJVYG8LvQ?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
