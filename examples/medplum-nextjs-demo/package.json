@@ -12,13 +12,12 @@
   "dependencies": {
     "@emotion/react": "11.11.1",
     "@emotion/server": "11.11.0",
-    "@mantine/core": "6.0.17",
-    "@mantine/hooks": "6.0.17",
-    "@mantine/next": "6.0.17",
-    "@mantine/notifications": "6.0.17",
+    "@mantine/core": "6.0.16",
+    "@mantine/hooks": "6.0.16",
+    "@mantine/next": "6.0.16",
+    "@mantine/notifications": "6.0.16",
     "@medplum/core": "2.0.26",
     "@medplum/react": "2.0.26",
-    "@tabler/icons": "2.26.0",
     "next": "13.4.10",
     "react": "18.2.0",
     "react-dom": "18.2.0"
