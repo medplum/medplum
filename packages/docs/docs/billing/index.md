@@ -8,7 +8,7 @@ The FHIR spec supports [many resources](/products/billing#fhir-resources) relate
 
 For example, after a lab test is completed, a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport.mdx) is created and it and related resources like are automatically sent to a billing system after the report is finalized.
 
-For billing insurance, the [Coverage](/docs/api/fhir/resources/diagnosticreport.mdx) resource is critical for representing a patient's insurance. Refer to our [Patient Insurance](./patient-insurance) guide for more information no properly storing patient insurance information.
+For billing insurance, the [Coverage](/docs/api/fhir/resources/diagnosticreport.mdx) resource is critical for representing a patient's insurance. Refer to our [Patient Insurance](/docs/billing/patient-insurance) guide for more information no properly storing patient insurance information.
 
 ## Coding
 
