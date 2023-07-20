@@ -8,6 +8,7 @@ export interface DateTimeInputProps {
   name?: string;
   placeholder?: string;
   defaultValue?: string;
+  autoFocus?: boolean;
   required?: boolean;
   outcome?: OperationOutcome;
   onChange?: (value: string) => void;
@@ -26,11 +27,13 @@ export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
     <TextInput
       id={props.name}
       name={props.name}
+      data-autofocus={props.autoFocus}
       data-testid={props.name}
       placeholder={props.placeholder}
       required={props.required}
       type={getInputType()}
       defaultValue={convertIsoToLocal(props.defaultValue)}
+      autoFocus={props.autoFocus}
       error={getErrorsForInput(props.outcome, props.name)}
       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
         if (props.onChange) {

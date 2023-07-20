@@ -25,6 +25,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
           name={name}
           defaultValue={{ reference: props.defaultValue }}
           targetTypes={props.searchParam.target}
+          autoFocus={props.autoFocus}
           onChange={(newReference: Reference | undefined) => {
             if (newReference) {
               props.onChange(newReference.reference as string);
@@ -39,8 +40,10 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
       return (
         <Checkbox
           name={name}
+          data-autofocus={props.autoFocus}
           data-testid={name}
           defaultChecked={props.defaultValue === 'true'}
+          autoFocus={props.autoFocus}
           onChange={(e) => props.onChange(e.currentTarget.checked.toString())}
         />
       );
@@ -50,22 +53,33 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
         <TextInput
           type="date"
           name={name}
+          data-autofocus={props.autoFocus}
           data-testid={name}
           defaultValue={props.defaultValue}
+          autoFocus={props.autoFocus}
           onChange={(e) => props.onChange(e.currentTarget.value)}
         />
       );
 
     case SearchParameterType.DATETIME:
-      return <DateTimeInput name={name} defaultValue={props.defaultValue} onChange={props.onChange} />;
+      return (
+        <DateTimeInput
+          name={name}
+          defaultValue={props.defaultValue}
+          autoFocus={props.autoFocus}
+          onChange={props.onChange}
+        />
+      );
 
     case SearchParameterType.NUMBER:
       return (
         <TextInput
           type="number"
           name={name}
+          data-autofocus={props.autoFocus}
           data-testid={name}
           defaultValue={props.defaultValue}
+          autoFocus={props.autoFocus}
           onChange={(e) => props.onChange(e.currentTarget.value)}
         />
       );
@@ -75,6 +89,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
         <QuantityInput
           name={name}
           defaultValue={tryParseQuantity(props.defaultValue)}
+          autoFocus={props.autoFocus}
           onChange={(newQuantity: Quantity | undefined) => {
             if (newQuantity) {
               props.onChange(`${newQuantity.value}`);
@@ -89,6 +104,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
       return (
         <TextInput
           name={name}
+          data-autofocus={props.autoFocus}
           data-testid={name}
           defaultValue={props.defaultValue}
           autoFocus={props.autoFocus}

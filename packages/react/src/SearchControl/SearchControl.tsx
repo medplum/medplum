@@ -555,11 +555,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       <SearchFilterValueDialog
         key={state.filterDialogSearchParam?.code}
         visible={stateRef.current.filterDialogVisible}
-        title={'Input'}
+        title={state.filterDialogSearchParam?.code ? buildFieldNameString(state.filterDialogSearchParam.code) : ''}
         resourceType={resourceType}
         searchParam={state.filterDialogSearchParam}
         filter={state.filterDialogFilter}
-        defaultValue={''}
+        defaultValue=""
         onOk={(filter) => {
           emitSearchChange(addFilter(props.search, filter.code, filter.operator, filter.value));
           setState({

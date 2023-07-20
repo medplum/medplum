@@ -1,4 +1,4 @@
-import { Button, Modal } from '@mantine/core';
+import { Button, Grid, Modal } from '@mantine/core';
 import { Filter } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
@@ -29,18 +29,24 @@ export function SearchFilterValueDialog(props: SearchFilterValueDialogProps): JS
 
   return (
     <Modal title={props.title} size="xl" opened={props.visible} onClose={props.onCancel}>
-      <div style={{ width: 500 }}>
-        <Form onSubmit={onOk}>
-          <SearchFilterValueInput
-            resourceType={props.resourceType}
-            searchParam={props.searchParam}
-            defaultValue={value}
-            autoFocus={true}
-            onChange={setValue}
-          />
-        </Form>
-      </div>
-      <Button onClick={onOk}>OK</Button>
+      <Form onSubmit={onOk}>
+        <Grid>
+          <Grid.Col span={10}>
+            <SearchFilterValueInput
+              resourceType={props.resourceType}
+              searchParam={props.searchParam}
+              defaultValue={value}
+              autoFocus={true}
+              onChange={setValue}
+            />
+          </Grid.Col>
+          <Grid.Col span={2}>
+            <Button onClick={onOk} fullWidth>
+              OK
+            </Button>
+          </Grid.Col>
+        </Grid>
+      </Form>
     </Modal>
   );
 }
