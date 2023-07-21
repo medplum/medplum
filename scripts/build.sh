@@ -22,7 +22,9 @@ npm --version
 npx turbo run build
 
 # Test
-npx turbo run test -- --coverage
+# Run them separately because code coverage is resource intensive
+npx turbo run test --filter='./packages/*' -- --coverage
+npx turbo run test --filter='./examples/*'
 
 # Combine test coverage
 rm -rf coverage
