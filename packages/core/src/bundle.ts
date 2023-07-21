@@ -1,5 +1,7 @@
 import { Bundle, BundleEntry } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import { isReference } from './types';
+import { isUUID } from './utils';
 
 /**
  * More on Bundles can be found here
@@ -12,10 +14,20 @@ import { isReference } from './types';
  * @returns transaction type bundle
  */
 export function convertToTransactionBundle(bundle: Bundle): Bundle {
+  const idToUuid: Record<string, string> = {};
   for (const entry of bundle.entry || []) {
     delete entry.resource?.meta;
-    entry.fullUrl = 'urn:uuid:' + entry.resource?.id;
-    delete entry.resource?.id;
+    const id = entry.resource?.id;
+    // In some FHIR example bundles,they use human-readable ids, rather than true uuids.
+    if (id) {
+      if (isUUID(id)) {
+        idToUuid[id] = id;
+      } else {
+        idToUuid[id] = randomUUID();
+      }
+      entry.fullUrl = 'urn:uuid:' + idToUuid[id];
+      delete entry.resource?.id;
+    }
   }
   const input = bundle.entry;
   const jsonString = JSON.stringify(
@@ -28,15 +40,16 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
         resource: entry.resource,
       })),
     },
-    replacer,
+    (key, value) => referenceReplacer(key, value, idToUuid),
     2
   );
   return reorderBundle(JSON.parse(jsonString) as Bundle);
 }
 
-function replacer(key: string, value: string): string {
+function referenceReplacer(key: string, value: string, idToUuid: Record<string, string>): string {
   if (key === 'reference' && typeof value === 'string' && value.includes('/')) {
-    return 'urn:uuid:' + value.split('/')[1];
+    const id = value.split('/')[1];
+    return 'urn:uuid:' + idToUuid[id];
   }
   return value;
 }
