@@ -23,7 +23,7 @@ The examples below use the [CLI optional flags](/docs/cli#optional-flags).
 
 Medplum CLI stores credentials to be used in a future period without needing it to be entered in every command. By using the `profile` command, this helps with the ability to work with multiple FHIR servers.
 
-### Example: Setting a Profile
+### Setting a Profile
 
 In this example, we will set up a profile using `medplum profile set <profileName>` with the flags below:
 
@@ -35,23 +35,89 @@ In this example, we will set up a profile using `medplum profile set <profileNam
 - --authorize-url
 - --fhir-url-path
 
+### Syntax
+
 ```bash
-medplum profile set <profileName> --base-url <base-url> --fhir-url-path <fhir-url-path> --token-url <token-url> --client-id <client-id> --client-secret <client-secret>
+medplum profile set <profileName> \
+    --auth-type <auth-type> \
+    --base-url <base-url> \
+    --fhir-url-path <fhir-url-path> \
+    --token-url <token-url> \
+    --client-id <client-id> \
+    --client-secret <client-secret>
 ```
+
+| Accepted Auth Type   |
+|--------------------|
+| basic            |
+| client_credentials|
+| authorization_code|
 
 The profile will now be stored in a file directory in `~.medplum/<profileName>.json`
 
 Once you have a profile, you can connect with external FHIR servers with your profile using the `-p` flag. 
 
+### Example: Basic Auth
+
+```bash 
+medplum profile set example \
+    --auth-type "basic" \
+    --base-url "https://api.example.com" \
+    --fhir-url-path "fhir/R4" \
+    --client-id "MY_CLIENT_ID" \
+    --client-secret "MY_CLIENT_SECRET"
+```
+
+### Example: Client Credentials
+
+```bash
+medplum profile set example \
+    --auth-type "client_credentials" \
+    --base-url "https://api.example.com" \
+    --fhir-url-path "fhir/R4" \
+    --token-url "oauth2/token" \
+    --client-id "MY_CLIENT_ID" \
+    --client-secret "MY_CLIENT_SECRET"
+```
+
+### Example: User Login / Authorization Code
+
+```bash
+medplum profile set example \
+    --auth-type "authorization_code" \
+    --base-url "https://api.example.com" \
+    --fhir-url-path "fhir/R4" \
+    --authorize-url "oauth2/authorize" \
+    --token-url "oauth2/token"
+```
 
 Other profile commands include:
+
 #### `describe`
 
 To see the state of your credentials in on profile 
 
-Example:
+###### Syntax
+```bash
+medplum profile describe example
+```
+
+###### Example
 ```bash
 medplum profile describe <profileName>
+```
+
+#### `remove`
+Removing a profile
+
+###### Syntax
+```bash
+medplum profile remove <profileName>
+```
+
+###### Example
+```bash
+medplum profile remove example
 ```
 
 #### `list`
@@ -59,12 +125,6 @@ medplum profile describe <profileName>
 To see all of your profiles
 ```bash
 medplum profile list
-```
-
-#### `remove`
-Removing a profile
-```bash
-medplum profile remove <profileName>
 ```
 
 ## Example: Basic search
