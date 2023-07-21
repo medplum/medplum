@@ -28,14 +28,24 @@ npx turbo run test -- --coverage
 rm -rf coverage
 mkdir -p coverage/packages
 mkdir -p coverage/combined
-cp packages/app/coverage/coverage-final.json coverage/packages/coverage-app.json
-cp packages/cdk/coverage/coverage-final.json coverage/packages/coverage-cdk.json
-cp packages/cli/coverage/coverage-final.json coverage/packages/coverage-cli.json
-cp packages/core/coverage/coverage-final.json coverage/packages/coverage-core.json
-cp packages/fhir-router/coverage/coverage-final.json coverage/packages/coverage-fhir-router.json
-cp packages/mock/coverage/coverage-final.json coverage/packages/coverage-mock.json
-cp packages/react/coverage/coverage-final.json coverage/packages/coverage-react.json
-cp packages/server/coverage/coverage-final.json coverage/packages/coverage-server.json
+
+PACKAGES=(
+  "agent"
+  "app"
+  "cdk"
+  "cli"
+  "core"
+  "fhir-router"
+  "hl7"
+  "mock"
+  "react"
+  "server"
+)
+
+for package in ${PACKAGES[@]}; do
+  cp "packages/$package/coverage/coverage-final.json" "coverage/packages/coverage-$package.json"
+done
+
 npx nyc merge coverage/packages coverage/combined/coverage.json
 npx nyc report -t coverage/combined --report-dir coverage --reporter=lcov
 
