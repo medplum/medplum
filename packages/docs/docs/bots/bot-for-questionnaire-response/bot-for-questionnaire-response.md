@@ -183,6 +183,12 @@ import connectBotUrl from './connect-bot.png';
 
 <img alt='Connect Bot to Questionnaire' src={connectBotUrl} style={{maxHeight:'500px', width:'auto'}}/>
 
+:::caution Ordering of Subscription Events
+
+Because of the variable timing and routes of http traffic, the Medplum server cannot guarantee the order in which [`Subscription`](/docs/api/fhir/resources/subscription) webhooks are received by the client.
+
+:::
+
 ### 6. Watch it work
 
 Now if you [submit the form](#3-submit-the-form) again, you'll notice that a new [Patient](/docs/api/fhir/resources/patient) and [ServiceRequest](/docs/api/fhir/resources/servicerequest) have been created.
