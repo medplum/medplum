@@ -80,6 +80,8 @@ The following access policy grants read-only access to the "Patient" resource ty
 }
 ```
 
+Attempting to modify a read-only resource will result in an HTTP result of [`403: Forbidden`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403).
+
 ### Hidden fields
 
 The following access policy grants read-only access to the "Patient" resource type, but hides "name" and "address":
