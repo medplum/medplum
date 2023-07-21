@@ -185,7 +185,7 @@ import connectBotUrl from './connect-bot.png';
 
 :::caution Ordering of Subscription Events
 
-Because of the variable timing and routes of http traffic, the Medplum server cannot guarantee the order in which [`Subscription`](/docs/api/resources/subscription) webhooks are received by the client.
+Because of the variable timing and routes of http traffic, the Medplum server cannot guarantee the order in which [`Subscription`](/docs/api/fhir/resources/subscription) webhooks are received by the client.
 
 :::
 
