@@ -23,8 +23,23 @@ npx turbo run build
 
 # Test
 # Run them separately because code coverage is resource intensive
-npx turbo run test --filter='./packages/*' -- --coverage
-npx turbo run test --filter='./examples/*'
+
+for dir in `ls packages`; do
+  if test -f "packages/$dir/package.json"; then
+    pushd "packages/$dir"
+    npm run test -- --coverage
+    popd
+  fi
+done
+
+for dir in `ls examples`; do
+  if test -f "examples/$dir/package.json"; then
+    pushd "examples/$dir"
+    npm run test
+    popd
+  fi
+done
+
 
 # Combine test coverage
 rm -rf coverage
