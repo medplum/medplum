@@ -1,7 +1,6 @@
 import { Bundle, BundleEntry } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import { isReference } from './types';
-import { isUUID } from './utils';
+import { deepClone, isUUID } from './utils';
 
 /**
  * More on Bundles can be found here
@@ -15,6 +14,7 @@ import { isUUID } from './utils';
  */
 export function convertToTransactionBundle(bundle: Bundle): Bundle {
   const idToUuid: Record<string, string> = {};
+  bundle = deepClone(bundle);
   for (const entry of bundle.entry || []) {
     delete entry.resource?.meta;
     const id = entry.resource?.id;
@@ -23,7 +23,7 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
       if (isUUID(id)) {
         idToUuid[id] = id;
       } else {
-        idToUuid[id] = randomUUID();
+        idToUuid[id] = crypto.randomUUID();
       }
       entry.fullUrl = 'urn:uuid:' + idToUuid[id];
       delete entry.resource?.id;

@@ -1,7 +1,7 @@
 import { Button, Group, JsonInput, Tabs, Text, Title, useMantineTheme } from '@mantine/core';
 import { Dropzone, FileWithPath } from '@mantine/dropzone';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
+import { convertToTransactionBundle, normalizeErrorString } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import { IconUpload, IconX } from '@tabler/icons-react';
@@ -36,7 +36,11 @@ export function BatchPage(): JSX.Element {
     async (str: string) => {
       try {
         setOutput(undefined);
-        setOutput(await medplum.executeBatch(JSON.parse(str)));
+        let bundle = JSON.parse(str) as Bundle;
+        if (bundle.type !== 'batch' && bundle.type !== 'transaction') {
+          bundle = convertToTransactionBundle(bundle);
+        }
+        setOutput(await medplum.executeBatch(bundle));
         showNotification({ color: 'green', message: 'Success' });
       } catch (err) {
         showNotification({ color: 'red', message: normalizeErrorString(err) });
