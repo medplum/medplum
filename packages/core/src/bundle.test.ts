@@ -127,4 +127,39 @@ describe('convertToTransactionBundle', () => {
       'urn:uuid:9e1fe992-1e45-4a0e-8dae-cbb8490f449e',
     ]);
   });
+
+  test('Cancer Pathology Example', () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      id: 'us-pathology-content-bundle-example',
+      type: 'collection',
+      entry: [
+        {
+          fullUrl: 'http://hl7.org/fhir/us/cancer-reporting/Specimen/adrenal-example',
+          resource: {
+            resourceType: 'Specimen',
+            id: 'adrenal-example',
+            subject: { reference: 'Patient/JoelAlexPatient' },
+          },
+        },
+        {
+          fullUrl: 'http://hl7.org/fhir/us/cancer-reporting/Patient/JoelAlexPatient',
+          resource: {
+            resourceType: 'Patient',
+            id: 'JoelAlexPatient',
+            name: [
+              {
+                family: 'Joel',
+                given: ['Alex'],
+              },
+            ],
+            gender: 'male',
+          },
+        },
+      ],
+    };
+
+    const transaction = convertToTransactionBundle(bundle);
+    expect(transaction.entry?.map((e) => e.resource?.resourceType)).toMatchObject(['Patient', 'Specimen']);
+  });
 });
