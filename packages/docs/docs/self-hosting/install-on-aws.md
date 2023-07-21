@@ -253,6 +253,22 @@ See the [Creating and sharing Lambda layers](https://docs.aws.amazon.com/lambda/
 
 ## Ongoing
 
+### Upgrade AWS infrastructure
+
+Use CDK to upgrade the infrastructure.
+
+First run `cdk diff` to check for changes:
+
+```bash
+npx cdk diff -c config=medplum.[env name].config.json
+```
+
+Then run `cdk deploy` to apply changes:
+
+```bash
+npx cdk deploy -c config=medplum.[env name].config.json
+```
+
 ### Upgrade the app
 
 Use the Medplum CLI to upgrade the app. This will upgrade your app to the latest version.
