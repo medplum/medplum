@@ -26,6 +26,16 @@
             "code": "email",
             "display": "Email",
             "definition": "Email"
+          },
+          {
+            "code": "google-auth-required",
+            "display": "Google Auth Required",
+            "definition": "Google Auth Required"
+          },
+          {
+            "code": "graphql-introspection",
+            "display": "GraphQL Introspection",
+            "definition": "GraphQL Introspection"
           }
         ]
       }
@@ -189,14 +199,19 @@
             "definition": "Client"
           },
           {
+            "code": "exchange",
+            "display": "Exchange",
+            "definition": "Exchange"
+          },
+          {
             "code": "execute",
             "display": "Execute",
             "definition": "Execute"
           },
           {
-            "code": "password",
-            "display": "Password",
-            "definition": "Password"
+            "code": "external",
+            "display": "External",
+            "definition": "External"
           },
           {
             "code": "google",
@@ -204,9 +219,9 @@
             "definition": "Google"
           },
           {
-            "code": "external",
-            "display": "External",
-            "definition": "External"
+            "code": "password",
+            "display": "Password",
+            "definition": "Password"
           }
         ]
       }
@@ -315,6 +330,11 @@
         "valueSet": "https://medplum.com/fhir/ValueSet/async-job-status",
         "content": "complete",
         "concept": [
+          {
+            "code": "accepted",
+            "display": "Accepted",
+            "definition": "Accepted"
+          },
           {
             "code": "active",
             "display": "Active",

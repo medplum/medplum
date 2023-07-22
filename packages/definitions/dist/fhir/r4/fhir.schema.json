@@ -61144,7 +61144,9 @@
             "enum": [
               "bots",
               "cron",
-              "email"
+              "email",
+              "google-auth-required",
+              "graphql-introspection"
             ]
           },
           "type": "array"
@@ -61493,10 +61495,11 @@
           "description": "The authentication method used to obtain the code (password or google).",
           "enum": [
             "client",
+            "exchange",
             "execute",
-            "password",
+            "external",
             "google",
-            "external"
+            "password"
           ]
         },
         "authTime": {
@@ -62132,6 +62135,7 @@
         "status": {
           "description": "The status of the request.",
           "enum": [
+            "accepted",
             "active",
             "completed",
             "error"
@@ -62363,6 +62367,7 @@
         "status": {
           "description": "The status of the request.",
           "enum": [
+            "accepted",
             "active",
             "completed",
             "error"

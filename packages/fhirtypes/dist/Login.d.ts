@@ -84,7 +84,7 @@ export interface Login {
    * The authentication method used to obtain the code (password or
    * google).
    */
-  authMethod?: 'client' | 'execute' | 'password' | 'google' | 'external';
+  authMethod?: 'client' | 'exchange' | 'execute' | 'external' | 'google' | 'password';
 
   /**
    * Time when the End-User authentication occurred.
