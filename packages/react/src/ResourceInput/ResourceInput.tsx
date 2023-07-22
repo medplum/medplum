@@ -87,7 +87,7 @@ function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
   };
 }
 
-export function ResourceInput<T extends Resource = Resource>(props: ResourceInputProps<T>): JSX.Element {
+export function ResourceInput<T extends Resource = Resource>(props: ResourceInputProps<T>): JSX.Element | null {
   const medplum = useMedplum();
   const resourceType = props.resourceType;
   const defaultValue = useResource(props.defaultValue);
@@ -115,6 +115,13 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
     },
     [onChange]
   );
+
+  if (props.defaultValue && !defaultValue) {
+    // If a default value was specified, but the default resource is not loaded yet,
+    // then return null to avoid rendering the input until the default resource is loaded.
+    // The Mantine <MultiSelect> component does not reliably handle changes to defaultValue.
+    return null;
+  }
 
   return (
     <AsyncAutocomplete<T>
