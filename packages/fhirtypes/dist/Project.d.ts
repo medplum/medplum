@@ -80,7 +80,7 @@ export interface Project {
   /**
    * A list of optional features that are enabled for the project.
    */
-  features?: string[];
+  features?: ('bots' | 'cron' | 'email')[];
 
   /**
    * The default access policy for patients using open registration.

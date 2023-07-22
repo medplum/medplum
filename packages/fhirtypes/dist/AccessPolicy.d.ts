@@ -89,7 +89,7 @@ export interface AccessPolicyIpAccessRule {
    * Access rule can perform one of the following actions: &quot;allow&quot; |
    * &quot;block&quot;.
    */
-  action?: string;
+  action?: 'allow' | 'block';
 }
 
 /**

@@ -44,7 +44,7 @@ export interface AsyncJob {
   /**
    * The status of the request.
    */
-  status?: string;
+  status?: 'active' | 'completed' | 'error';
 
   /**
    * Indicates the server's time when the query is requested.

@@ -61141,7 +61141,11 @@
         "features": {
           "description": "A list of optional features that are enabled for the project.",
           "items": {
-            "$ref": "#/definitions/code"
+            "enum": [
+              "bots",
+              "cron",
+              "email"
+            ]
           },
           "type": "array"
         },
@@ -61487,7 +61491,13 @@
         },
         "authMethod": {
           "description": "The authentication method used to obtain the code (password or google).",
-          "$ref": "#/definitions/string"
+          "enum": [
+            "client",
+            "execute",
+            "password",
+            "google",
+            "external"
+          ]
         },
         "authTime": {
           "description": "Time when the End-User authentication occurred.",
@@ -61507,7 +61517,10 @@
         },
         "codeChallengeMethod": {
           "description": "OPTIONAL, defaults to \"plain\" if not present in the request.  Code verifier transformation method is \"S256\" or \"plain\".",
-          "$ref": "#/definitions/string"
+          "enum": [
+            "plain",
+            "S256"
+          ]
         },
         "refreshSecret": {
           "description": "Optional secure random string that can be used in an OAuth refresh token.",
@@ -61744,7 +61757,10 @@
         },
         "runtimeVersion": {
           "description": "The identifier of the bot runtime environment (i.e., vmcontext, awslambda, etc).",
-          "$ref": "#/definitions/string"
+          "enum": [
+            "awslambda",
+            "vmcontext"
+          ]
         },
         "photo": {
           "description": "Image of the bot.",
@@ -62115,7 +62131,11 @@
         },
         "status": {
           "description": "The status of the request.",
-          "$ref": "#/definitions/code"
+          "enum": [
+            "active",
+            "completed",
+            "error"
+          ]
         },
         "requestTime": {
           "description": "Indicates the server\u0027s time when the query is requested.",
@@ -62305,7 +62325,10 @@
         },
         "action": {
           "description": "Access rule can perform one of the following actions: \"allow\" | \"block\".",
-          "$ref": "#/definitions/string"
+          "enum": [
+            "allow",
+            "block"
+          ]
         }
       },
       "additionalProperties": false,
@@ -62339,7 +62362,11 @@
         },
         "status": {
           "description": "The status of the request.",
-          "$ref": "#/definitions/code"
+          "enum": [
+            "active",
+            "completed",
+            "error"
+          ]
         },
         "requestTime": {
           "description": "Indicates the server\u0027s time when the query is requested.",
