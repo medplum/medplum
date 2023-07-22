@@ -200,6 +200,10 @@
               "path" : "Project.features",
               "min" : 0,
               "max" : "*"
+            },
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/project-feature|4.0.1"
             }
           },
           {
@@ -1289,12 +1293,16 @@
             "min" : 0,
             "max" : "1",
             "type" : [{
-              "code" : "string"
+              "code" : "code"
             }],
             "base" : {
               "path" : "Bot.runtimeVersion",
               "min" : 0,
               "max" : "1"
+            },
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/bot-runtime-version|4.0.1"
             }
           },
           {
@@ -1576,12 +1584,16 @@
             "min" : 1,
             "max" : "1",
             "type" : [{
-              "code" : "string"
+              "code" : "code"
             }],
             "base" : {
               "path" : "Login.authMethod",
               "min" : 1,
               "max" : "1"
+            },
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/login-auth-method|4.0.1"
             }
           },
           {
@@ -1651,12 +1663,16 @@
             "min" : 0,
             "max" : "1",
             "type" : [{
-              "code" : "string"
+              "code" : "code"
             }],
             "base" : {
               "path" : "Login.codeChallengeMethod",
               "min" : 0,
               "max" : "1"
+            },
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/login-code-challenge-method|4.0.1"
             }
           },
           {
@@ -2610,12 +2626,16 @@
             "min" : 1,
             "max" : "1",
             "type" : [{
-              "code" : "string"
+              "code" : "code"
             }],
             "base" : {
               "path" : "AccessPolicy.ipAccessRule.action",
               "min" : 1,
               "max" : "1"
+            },
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/ip-access-rule-action|4.0.1"
             }
           }
         ]
@@ -3007,13 +3027,17 @@
             "min" : 1,
             "max" : "1",
             "base" : {
-              "path" : "ServiceRequest.status",
+              "path" : "BulkDataExport.status",
               "min" : 1,
               "max" : "1"
             },
             "type" : [{
               "code" : "code"
-            }]
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/async-job-status|4.0.1"
+            }
           },
           {
             "id" : "BulkDataExport.requestTime",
@@ -3105,14 +3129,6 @@
               "max" : "1"
             },
             "binding" : {
-              "extension" : [{
-                "url" : "http://hl7.org/fhir/StructureDefinition/elementdefinition-bindingName",
-                "valueString" : "ResourceType"
-              },
-              {
-                "url" : "http://hl7.org/fhir/StructureDefinition/elementdefinition-isCommonBinding",
-                "valueBoolean" : true
-              }],
               "strength" : "required",
               "description" : "One of the resource types defined as part of this version of FHIR.",
               "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types|4.0.1"
@@ -3163,14 +3179,6 @@
               "max" : "1"
             },
             "binding" : {
-              "extension" : [{
-                "url" : "http://hl7.org/fhir/StructureDefinition/elementdefinition-bindingName",
-                "valueString" : "ResourceType"
-              },
-              {
-                "url" : "http://hl7.org/fhir/StructureDefinition/elementdefinition-isCommonBinding",
-                "valueBoolean" : true
-              }],
               "strength" : "required",
               "description" : "One of the resource types defined as part of this version of FHIR.",
               "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types|4.0.1"
@@ -3221,14 +3229,6 @@
               "max" : "1"
             },
             "binding" : {
-              "extension" : [{
-                "url" : "http://hl7.org/fhir/StructureDefinition/elementdefinition-bindingName",
-                "valueString" : "ResourceType"
-              },
-              {
-                "url" : "http://hl7.org/fhir/StructureDefinition/elementdefinition-isCommonBinding",
-                "valueBoolean" : true
-              }],
               "strength" : "required",
               "description" : "One of the resource types defined as part of this version of FHIR.",
               "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types|4.0.1"
@@ -3721,13 +3721,17 @@
             "min" : 1,
             "max" : "1",
             "base" : {
-              "path" : "ServiceRequest.status",
+              "path" : "AsyncJob.status",
               "min" : 1,
               "max" : "1"
             },
             "type" : [{
               "code" : "code"
-            }]
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/async-job-status|4.0.1"
+            }
           },
           {
             "id" : "AsyncJob.requestTime",

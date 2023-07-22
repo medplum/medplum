@@ -1,0 +1,353 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/project-feature",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "project-feature",
+        "url": "https://medplum.com/fhir/CodeSystem/project-feature",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/project-feature",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "bots",
+            "display": "Bots",
+            "definition": "Bots"
+          },
+          {
+            "code": "cron",
+            "display": "Cron",
+            "definition": "Cron"
+          },
+          {
+            "code": "email",
+            "display": "Email",
+            "definition": "Email"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/project-feature",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "project-feature",
+        "url": "https://medplum.com/fhir/ValueSet/project-feature",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/project-feature"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/bot-runtime-version",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "bot-runtime-version",
+        "url": "https://medplum.com/fhir/CodeSystem/bot-runtime-version",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/bot-runtime-version",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "awslambda",
+            "display": "AWS Lambda",
+            "definition": "AWS Lambda"
+          },
+          {
+            "code": "vmcontext",
+            "display": "VM Context",
+            "definition": "VM Context"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/bot-runtime-version",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "bot-runtime-version",
+        "url": "https://medplum.com/fhir/ValueSet/bot-runtime-version",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/bot-runtime-version"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/bot-audit-event-trigger",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "bot-audit-event-trigger",
+        "url": "https://medplum.com/fhir/CodeSystem/bot-audit-event-trigger",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/bot-audit-event-trigger",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "always",
+            "display": "Always",
+            "definition": "Always"
+          },
+          {
+            "code": "never",
+            "display": "Never",
+            "definition": "Never"
+          },
+          {
+            "code": "on-error",
+            "display": "On error",
+            "definition": "On error"
+          },
+          {
+            "code": "on-output",
+            "display": "On output",
+            "definition": "On output"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/bot-audit-event-trigger",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "bot-audit-event-trigger",
+        "url": "https://medplum.com/fhir/ValueSet/bot-audit-event-trigger",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/bot-audit-event-trigger"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/bot-audit-event-destination",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "bot-audit-event-destination",
+        "url": "https://medplum.com/fhir/CodeSystem/bot-audit-event-destination",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/bot-audit-event-destination",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "log",
+            "display": "Log",
+            "definition": "Log"
+          },
+          {
+            "code": "resource",
+            "display": "Resource",
+            "definition": "Resource"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/bot-audit-event-destination",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "bot-audit-event-destination",
+        "url": "https://medplum.com/fhir/ValueSet/bot-audit-event-destination",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/bot-audit-event-destination"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/login-auth-method",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "login-auth-method",
+        "url": "https://medplum.com/fhir/CodeSystem/login-auth-method",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/login-auth-method",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "client",
+            "display": "Client",
+            "definition": "Client"
+          },
+          {
+            "code": "execute",
+            "display": "Execute",
+            "definition": "Execute"
+          },
+          {
+            "code": "password",
+            "display": "Password",
+            "definition": "Password"
+          },
+          {
+            "code": "google",
+            "display": "Google",
+            "definition": "Google"
+          },
+          {
+            "code": "external",
+            "display": "External",
+            "definition": "External"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/login-auth-method",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "login-auth-method",
+        "url": "https://medplum.com/fhir/ValueSet/login-auth-method",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/login-auth-method"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/login-code-challenge-method",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "login-code-challenge-method",
+        "url": "https://medplum.com/fhir/CodeSystem/login-code-challenge-method",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/login-code-challenge-method",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "plain",
+            "display": "Plain",
+            "definition": "Plain"
+          },
+          {
+            "code": "S256",
+            "display": "S256",
+            "definition": "S256"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/login-code-challenge-method",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "login-code-challenge-method",
+        "url": "https://medplum.com/fhir/ValueSet/login-code-challenge-method",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/login-code-challenge-method"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/ip-access-rule-action",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "ip-access-rule-action",
+        "url": "https://medplum.com/fhir/CodeSystem/ip-access-rule-action",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/ip-access-rule-action",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "allow",
+            "display": "Allow",
+            "definition": "Allow"
+          },
+          {
+            "code": "block",
+            "display": "Block",
+            "definition": "Block"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/ip-access-rule-action",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "ip-access-rule-action",
+        "url": "https://medplum.com/fhir/ValueSet/ip-access-rule-action",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/ip-access-rule-action"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/async-job-status",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "async-job-status",
+        "url": "https://medplum.com/fhir/CodeSystem/async-job-status",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/async-job-status",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "active",
+            "display": "Active",
+            "definition": "Active"
+          },
+          {
+            "code": "completed",
+            "display": "Completed",
+            "definition": "Completed"
+          },
+          {
+            "code": "error",
+            "display": "Error",
+            "definition": "Error"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/async-job-status",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "async-job-status",
+        "url": "https://medplum.com/fhir/ValueSet/async-job-status",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/async-job-status"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

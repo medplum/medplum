@@ -7,7 +7,7 @@ import { systemRepo } from '../fhir/repo';
  * Imports all built-in ValueSets and CodeSystems into the database.
  */
 export async function createValueSets(): Promise<void> {
-  const files = ['valuesets.json', 'v3-codesystems.json'];
+  const files = ['valuesets.json', 'v3-codesystems.json', 'valuesets-medplum.json'];
   for (const file of files) {
     const bundle = readJson('fhir/r4/' + file) as Bundle<CodeSystem | ValueSet>;
     for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
