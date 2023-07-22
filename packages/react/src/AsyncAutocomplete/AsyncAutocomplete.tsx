@@ -27,7 +27,8 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const [timer, setTimer] = useState<number>();
   const [abortController, setAbortController] = useState<AbortController>();
   const [autoSubmit, setAutoSubmit] = useState<boolean>();
-  const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>(defaultItems.map(toOption));
+  const [selected, setSelected] = useState<AsyncAutocompleteOption<T>[]>(defaultItems.map(toOption));
+  const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
 
   const lastValueRef = useRef<string>();
   lastValueRef.current = lastValue;
@@ -95,19 +96,27 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const handleChange = useCallback(
     (values: string[]): void => {
       const result: T[] = [];
+      const newSelected: AsyncAutocompleteOption<T>[] = [];
       for (const value of values) {
-        let item = optionsRef.current?.find((option) => option.value === value)?.resource;
-        if (!item && creatable !== false) {
-          item = (onCreate as (input: string) => T)(value);
+        let option = optionsRef.current?.find((option) => option.value === value);
+        let item = option?.resource;
+        if (!item && creatable !== false && onCreate) {
+          item = onCreate(value);
+          option = toOption(item);
         }
 
         if (item) {
           result.push(item);
         }
+
+        if (option) {
+          newSelected.push(option);
+        }
       }
       onChange(result);
+      setSelected(newSelected);
     },
-    [creatable, onChange, onCreate]
+    [creatable, onChange, onCreate, toOption]
   );
 
   const handleKeyDown = useCallback(
@@ -156,7 +165,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       searchable
       onKeyDown={handleKeyDown}
       onSearchChange={handleSearchChange}
-      data={options}
+      data={[...selected, ...options]}
       onFocus={handleTimer}
       onChange={handleChange}
       onCreate={handleCreate}

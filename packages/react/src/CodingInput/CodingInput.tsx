@@ -28,6 +28,7 @@ export function CodingInput(props: CodingInputProps): JSX.Element {
       name={props.name}
       placeholder={props.placeholder}
       defaultValue={value && codingToValueSetElement(value)}
+      maxSelectedValues={1}
       onChange={handleChange}
     />
   );

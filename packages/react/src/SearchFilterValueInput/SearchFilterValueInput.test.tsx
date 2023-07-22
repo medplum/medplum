@@ -142,12 +142,10 @@ describe('SearchFilterValueInput', () => {
 
     // Wait for the resource to load
     await act(async () => {
-      await waitFor(() => screen.getByDisplayValue('Test Organization'));
+      await waitFor(() => screen.getByText('Test Organization'));
     });
 
-    const input = screen
-      .getAllByRole('combobox')
-      .find((e) => e.getAttribute('name') === 'filter-value-id') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
     });
