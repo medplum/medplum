@@ -1,7 +1,8 @@
-import { Autocomplete, AutocompleteItem, Group, Loader, Text } from '@mantine/core';
-import { getDisplayString } from '@medplum/core';
-import { Patient, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import React, { forwardRef, useEffect, useState } from 'react';
+import { Group, Text } from '@mantine/core';
+import { getDisplayString, getReferenceString } from '@medplum/core';
+import { Patient, Reference, Resource } from '@medplum/fhirtypes';
+import React, { forwardRef, useCallback } from 'react';
+import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { useResource } from '../useResource/useResource';
@@ -25,7 +26,7 @@ const SEARCH_CODES: Record<string, string> = {
 };
 
 export interface ResourceInputProps<T extends Resource = Resource> {
-  readonly resourceType: ResourceType;
+  readonly resourceType: T['resourceType'];
   readonly name: string;
   readonly defaultValue?: T | Reference<T>;
   readonly placeholder?: string;
@@ -33,67 +34,66 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly onChange?: (value: T | undefined) => void;
 }
 
+function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
+  return {
+    value: getReferenceString(resource),
+    label: getDisplayString(resource),
+    resource,
+  };
+}
+
 export function ResourceInput<T extends Resource = Resource>(props: ResourceInputProps<T>): JSX.Element {
   const medplum = useMedplum();
+  const resourceType = props.resourceType;
   const defaultValue = useResource(props.defaultValue);
-  const [value, setValue] = useState<string>(defaultValue ? getDisplayString(defaultValue) : '');
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<AutocompleteItem[]>([]);
+  const onChange = props.onChange;
 
-  useEffect(() => {
-    if (defaultValue) {
-      setValue(getDisplayString(defaultValue));
-    }
-  }, [defaultValue, setValue]);
+  const loadValues = useCallback(
+    async (input: string, signal: AbortSignal): Promise<T[]> => {
+      const searchCode = SEARCH_CODES[resourceType] || 'name';
+      const searchParams = new URLSearchParams({
+        [searchCode]: input,
+        _count: '10',
+      });
 
-  async function loadValues(input: string): Promise<void> {
-    setLoading(true);
-    const searchCode = SEARCH_CODES[props.resourceType] || 'name';
-    const searchParams = new URLSearchParams({
-      [searchCode]: input,
-      _count: '10',
-    });
+      const resources = await medplum.searchResources(resourceType, searchParams, { signal });
+      return resources as unknown as T[];
+    },
+    [medplum, resourceType]
+  );
 
-    const resources = await medplum.searchResources(props.resourceType, searchParams);
-    setData(resources.map((resource) => ({ value: getDisplayString(resource), resource })));
-    setLoading(false);
-  }
-
-  async function handleChange(val: string): Promise<void> {
-    setValue(val);
-    return loadValues(val);
-  }
-
-  function handleSelect(item: AutocompleteItem): void {
-    setValue(item.value);
-    setData([]);
-    if (props.onChange) {
-      props.onChange(item.resource);
-    }
-  }
+  const handleChange = useCallback(
+    (newResources: T[]) => {
+      if (onChange) {
+        onChange(newResources[0]);
+      }
+    },
+    [onChange]
+  );
 
   return (
-    <Autocomplete
+    <AsyncAutocomplete<T>
       name={props.name}
       itemComponent={ItemComponent}
-      value={value}
-      data={data}
+      defaultValue={defaultValue}
       placeholder={props.placeholder}
-      onFocus={() => loadValues(value)}
+      maxSelectedValues={1}
+      toKey={getReferenceString}
+      toOption={toOption}
+      loadOptions={loadValues}
       onChange={handleChange}
-      onItemSubmit={handleSelect}
-      rightSection={loading ? <Loader size={16} /> : null}
+      clearable
     />
   );
 }
 
-const ItemComponent = forwardRef<HTMLDivElement, any>(({ value, resource, ...others }: any, ref) => {
+const ItemComponent = forwardRef<HTMLDivElement, any>(({ label, resource, ...others }: any, ref) => {
   return (
     <div ref={ref} {...others}>
       <Group noWrap>
         <ResourceAvatar value={resource} />
         <div>
-          <Text>{value}</Text>
+          <Text>{label}</Text>
           <Text size="xs" color="dimmed">
             {(resource as Patient).birthDate}
           </Text>
