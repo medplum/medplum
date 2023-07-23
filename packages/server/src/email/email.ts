@@ -1,4 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import { createTransport } from 'nodemailer';
 import { badRequest, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import MailComposer from 'nodemailer/lib/mail-composer';
@@ -16,8 +17,8 @@ import { logger } from '../logger';
  * @param options The MailComposer options.
  */
 export async function sendEmail(repo: Repository, options: Mail.Options): Promise<void> {
-  const sesClient = new SESv2Client({ region: getConfig().awsRegion });
-  const fromAddress = getConfig().supportEmail;
+  const config = getConfig();
+  const fromAddress = config.supportEmail;
   const toAddresses = buildAddresses(options.to);
   const ccAddresses = buildAddresses(options.cc);
   const bccAddresses = buildAddresses(options.bcc);
@@ -42,21 +43,35 @@ export async function sendEmail(repo: Repository, options: Mail.Options): Promis
   }
 
   logger.info('Sending email', { to: toAddresses?.join(', '), subject: options.subject });
-  await sesClient.send(
-    new SendEmailCommand({
-      FromEmailAddress: fromAddress,
-      Destination: {
-        ToAddresses: toAddresses,
-        CcAddresses: ccAddresses,
-        BccAddresses: bccAddresses,
+
+  if (config.smtp) {
+    const transport = createTransport({
+      host: config.smtp.host,
+      port: config.smtp.port,
+      auth: {
+        user: config.smtp.username,
+        pass: config.smtp.password,
       },
-      Content: {
-        Raw: {
-          Data: msg,
+    });
+    await transport.sendMail(options);
+  } else {
+    const sesClient = new SESv2Client({ region: config.awsRegion });
+    await sesClient.send(
+      new SendEmailCommand({
+        FromEmailAddress: fromAddress,
+        Destination: {
+          ToAddresses: toAddresses,
+          CcAddresses: ccAddresses,
+          BccAddresses: bccAddresses,
         },
-      },
-    })
-  );
+        Content: {
+          Raw: {
+            Data: msg,
+          },
+        },
+      })
+    );
+  }
 }
 
 function buildAddresses(input: string | Address | (string | Address)[] | undefined): string[] | undefined {
