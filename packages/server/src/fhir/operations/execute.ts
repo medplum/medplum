@@ -1,7 +1,27 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { allOk, badRequest, createReference, getIdentifier, Hl7Message, Operator, resolveId } from '@medplum/core';
-import { AuditEvent, Bot, Login, Organization, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import {
+  allOk,
+  badRequest,
+  createReference,
+  getIdentifier,
+  Hl7Message,
+  MedplumClient,
+  Operator,
+  resolveId,
+} from '@medplum/core';
+import {
+  AuditEvent,
+  Binary,
+  Bot,
+  Login,
+  Organization,
+  Project,
+  ProjectMembership,
+  Reference,
+} from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import fetch from 'node-fetch';
+import { Readable } from 'node:stream';
 import vm from 'node:vm';
 import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
@@ -11,6 +31,7 @@ import { AuditEventOutcome } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
 import { sendOutcome } from '../outcomes';
 import { Repository, systemRepo } from '../repo';
+import { getBinaryStorage } from '../storage';
 
 export const EXECUTE_CONTENT_TYPES = [
   'application/json',
@@ -248,7 +269,23 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
   const secrets = await getBotSecrets(bot);
   const botConsole = new MockConsole();
 
+  const codeUrl = bot.executableCode?.url;
+  if (!codeUrl) {
+    return { success: false, logResult: 'No executable code' };
+  }
+  if (!codeUrl.startsWith('Binary/')) {
+    return { success: false, logResult: 'Executable code is not a Binary' };
+  }
+
+  // const binary = await systemRepo.readResource<Binary>('Binary', resolveId(bot.executableCode.url) as string);
+  const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
+  const stream = await getBinaryStorage().readBinary(binary);
+  const code = await readStreamToString(stream);
+
   const sandbox = {
+    Hl7Message,
+    MedplumClient,
+    fetch,
     console: botConsole,
     event: {
       baseUrl: config.baseUrl,
@@ -264,13 +301,14 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
   };
 
   // Wrap code in an async block for top-level await support
-  // const wrappedCode = '(async () => {' + bot.code + '})();';
-  const wrappedCode = `const { Hl7Message, MedplumClient } = require("@medplum/core");
-  const fetch = require("node-fetch");
+  const wrappedCode = `
+  const exports = {};
 
-  ${bot.code}
+  // Start user code
+  ${code}
+  // End user code
 
-  async function main() {
+  (async () => {
     const { baseUrl, accessToken, input, contentType, secrets } = event;
     const medplum = new MedplumClient({
       baseUrl,
@@ -296,9 +334,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
       }
       throw err;
     }
-  }
-
-  return main();
+  })();
   `;
 
   // Return the result of the code execution
@@ -403,4 +439,12 @@ async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDes
     outcome,
     outcomeDesc,
   });
+}
+
+async function readStreamToString(stream: Readable): Promise<string> {
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
