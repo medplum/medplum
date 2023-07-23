@@ -1,10 +1,10 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { createTransport } from 'nodemailer';
 import { badRequest, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
+import { createTransport } from 'nodemailer';
 import MailComposer from 'nodemailer/lib/mail-composer';
 import Mail, { Address } from 'nodemailer/lib/mailer';
-import { getConfig } from '../config';
+import { getConfig, MedplumSmtpConfig } from '../config';
 import { Repository } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { logger } from '../logger';
@@ -20,8 +20,6 @@ export async function sendEmail(repo: Repository, options: Mail.Options): Promis
   const config = getConfig();
   const fromAddress = config.supportEmail;
   const toAddresses = buildAddresses(options.to);
-  const ccAddresses = buildAddresses(options.cc);
-  const bccAddresses = buildAddresses(options.bcc);
 
   // Always set the from and sender to the support email address
   options.from = fromAddress;
@@ -35,45 +33,20 @@ export async function sendEmail(repo: Repository, options: Mail.Options): Promis
   // "if set to true then fails with an error when a node tries to load content from a file"
   options.disableFileAccess = true;
 
-  let msg: Uint8Array;
-  try {
-    msg = await buildRawMessage(options);
-  } catch (err) {
-    throw new OperationOutcomeError(badRequest('Invalid email options: ' + normalizeErrorString(err)), err);
-  }
-
   logger.info('Sending email', { to: toAddresses?.join(', '), subject: options.subject });
 
   if (config.smtp) {
-    const transport = createTransport({
-      host: config.smtp.host,
-      port: config.smtp.port,
-      auth: {
-        user: config.smtp.username,
-        pass: config.smtp.password,
-      },
-    });
-    await transport.sendMail(options);
+    await sendEmailViaSmpt(config.smtp, options);
   } else {
-    const sesClient = new SESv2Client({ region: config.awsRegion });
-    await sesClient.send(
-      new SendEmailCommand({
-        FromEmailAddress: fromAddress,
-        Destination: {
-          ToAddresses: toAddresses,
-          CcAddresses: ccAddresses,
-          BccAddresses: bccAddresses,
-        },
-        Content: {
-          Raw: {
-            Data: msg,
-          },
-        },
-      })
-    );
+    await sendEmailViaSes(options);
   }
 }
 
+/**
+ * Converts nodemailer addresses to an array of strings.
+ * @param input nodemailer address input.
+ * @returns Array of string addresses.
+ */
 function buildAddresses(input: string | Address | (string | Address)[] | undefined): string[] | undefined {
   if (!input) {
     return undefined;
@@ -84,6 +57,11 @@ function buildAddresses(input: string | Address | (string | Address)[] | undefin
   return [addressToString(input) as string];
 }
 
+/**
+ * Converts a nodemailer address to a string.
+ * @param address nodemailer address input.
+ * @returns String address.
+ */
 function addressToString(address: Address | string | undefined): string | undefined {
   if (address) {
     if (typeof address === 'string') {
@@ -96,6 +74,11 @@ function addressToString(address: Address | string | undefined): string | undefi
   return undefined;
 }
 
+/**
+ * Builds a raw email message using nodemailer MailComposer.
+ * @param options The nodemailer options.
+ * @returns The raw email message.
+ */
 function buildRawMessage(options: Mail.Options): Promise<Uint8Array> {
   const msg = new MailComposer(options);
   return new Promise((resolve, reject) => {
@@ -150,4 +133,57 @@ async function processAttachment(repo: Repository, attachment: Mail.Attachment):
     // And then delete the original path
     delete attachment.path;
   }
+}
+
+/**
+ * Sends an email via SMTP.
+ * @param smtpConfig The SMTP configuration.
+ * @param options The nodemailer options.
+ */
+async function sendEmailViaSmpt(smtpConfig: MedplumSmtpConfig, options: Mail.Options): Promise<void> {
+  const transport = createTransport({
+    host: smtpConfig.host,
+    port: smtpConfig.port,
+    auth: {
+      user: smtpConfig.username,
+      pass: smtpConfig.password,
+    },
+  });
+  await transport.sendMail(options);
+}
+
+/**
+ * Sends an email via AWS SES.
+ * @param options The nodemailer options.
+ */
+async function sendEmailViaSes(options: Mail.Options): Promise<void> {
+  const config = getConfig();
+  const fromAddress = config.supportEmail;
+  const toAddresses = buildAddresses(options.to);
+  const ccAddresses = buildAddresses(options.cc);
+  const bccAddresses = buildAddresses(options.bcc);
+
+  let msg: Uint8Array;
+  try {
+    msg = await buildRawMessage(options);
+  } catch (err) {
+    throw new OperationOutcomeError(badRequest('Invalid email options: ' + normalizeErrorString(err)), err);
+  }
+
+  const sesClient = new SESv2Client({ region: config.awsRegion });
+  await sesClient.send(
+    new SendEmailCommand({
+      FromEmailAddress: fromAddress,
+      Destination: {
+        ToAddresses: toAddresses,
+        CcAddresses: ccAddresses,
+        BccAddresses: bccAddresses,
+      },
+      Content: {
+        Raw: {
+          Data: msg,
+        },
+      },
+    })
+  );
 }

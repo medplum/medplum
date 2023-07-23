@@ -63,10 +63,10 @@ export interface MedplumRedisConfig {
 }
 
 export interface MedplumSmtpConfig {
-  host?: string;
-  port?: number;
-  username?: string;
-  password?: string;
+  host: string;
+  port: number;
+  username: string;
+  password: string;
 }
 
 let cachedConfig: MedplumServerConfig | undefined = undefined;
