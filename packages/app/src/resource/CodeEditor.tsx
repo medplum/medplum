@@ -4,7 +4,7 @@ import { sendCommand } from '../utils';
 export interface CodeEditorProps {
   language: 'typescript' | 'json';
   module?: 'commonjs' | 'esnext';
-  defaultValue: string;
+  defaultValue?: string;
   iframeRef?: React.RefObject<HTMLIFrameElement>;
   testId?: string;
   minHeight?: string;
@@ -23,7 +23,11 @@ export function CodeEditor(props: CodeEditorProps): JSX.Element {
       style={{ width: '100%', height: '100%', minHeight: props.minHeight }}
       ref={props.iframeRef}
       data-testid={props.testId}
-      onLoad={(e) => sendCommand(e.currentTarget as HTMLIFrameElement, { command: 'setValue', value: code })}
+      onLoad={(e) => {
+        if (code) {
+          sendCommand(e.currentTarget as HTMLIFrameElement, { command: 'setValue', value: code }).catch(console.error);
+        }
+      }}
     />
   );
 }

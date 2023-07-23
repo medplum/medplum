@@ -3,6 +3,7 @@
 
 import {
   AccessPolicy,
+  Attachment,
   Binary,
   BulkDataExport,
   Bundle,
@@ -1600,6 +1601,44 @@ export class MedplumClient extends EventTarget {
   async createResourceIfNoneExist<T extends Resource>(resource: T, query: string, options?: RequestInit): Promise<T> {
     return ((await this.searchOne(resource.resourceType, query, options)) ??
       this.createResource(resource, options)) as Promise<T>;
+  }
+
+  /**
+   * Creates a FHIR `Attachment` with the provided data content.
+   *
+   * This is a convenience method for creating a `Binary` resource and then creating an `Attachment` element.
+   *
+   * The `data` parameter can be a string or a `File` object.
+   *
+   * A `File` object often comes from a `<input type="file">` element.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const result = await medplum.createAttachment(myFile, 'test.jpg', 'image/jpeg');
+   * console.log(result);
+   * ```
+   *
+   * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
+   * @category Create
+   * @param data The binary data to upload.
+   * @param filename Optional filename for the binary.
+   * @param contentType Content type for the binary.
+   * @param onProgress Optional callback for progress events.
+   * @returns The result of the create operation.
+   */
+  async createAttachment(
+    data: string | File | Blob | Uint8Array,
+    filename: string | undefined,
+    contentType: string,
+    onProgress?: (e: ProgressEvent) => void
+  ): Promise<Attachment> {
+    const binary = await this.createBinary(data, filename, contentType, onProgress);
+    return {
+      contentType,
+      url: binary.url,
+      title: filename,
+    };
   }
 
   /**

@@ -1154,6 +1154,24 @@ describe('Client', () => {
     }
   });
 
+  test('Create attachment', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.createAttachment('Hello world', undefined, 'text/plain');
+    expect(result).toBeDefined();
+    expect(fetch).toBeCalledWith(
+      'https://api.medplum.com/fhir/R4/Binary',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Accept: 'application/fhir+json',
+          'Content-Type': 'text/plain',
+          'X-Medplum': 'extended',
+        },
+      })
+    );
+  });
+
   test('Create binary', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });

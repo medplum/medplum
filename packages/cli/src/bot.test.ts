@@ -110,8 +110,8 @@ describe('CLI Bots', () => {
     await main(['node', 'index.js', 'bot', 'save', 'hello-world']);
     expect(console.log).toBeCalledWith(expect.stringMatching(/Success/));
     const check = await medplum.readResource('Bot', bot.id as string);
-    expect(check.code).toBeDefined();
-    expect(check.code).not.toEqual('');
+    expect(check.code).toBeUndefined();
+    expect(check.sourceCode).toBeDefined();
   });
 
   test('Deploy bot success', async () => {
@@ -137,8 +137,8 @@ describe('CLI Bots', () => {
     await main(['node', 'index.js', 'bot', 'deploy', 'hello-world']);
     expect(console.log).toBeCalledWith(expect.stringMatching(/Success/));
     const check = await medplum.readResource('Bot', bot.id as string);
-    expect(check.code).toBeDefined();
-    expect(check.code).not.toEqual('');
+    expect(check.code).toBeUndefined();
+    expect(check.sourceCode).toBeDefined();
   });
 
   test('Deploy bot for multiple bot with wildcards ', async () => {
@@ -294,8 +294,8 @@ describe('CLI Bots', () => {
     await main(['node', 'index.js', 'save-bot', 'hello-world']);
     expect(console.log).toBeCalledWith(expect.stringMatching(/Success/));
     const check = await medplum.readResource('Bot', bot.id as string);
-    expect(check.code).toBeDefined();
-    expect(check.code).not.toEqual('');
+    expect(check.code).toBeUndefined();
+    expect(check.sourceCode).toBeDefined();
   });
 
   test('Deprecate Deploy bot success', async () => {
@@ -321,8 +321,8 @@ describe('CLI Bots', () => {
     await main(['node', 'index.js', 'deploy-bot', 'hello-world']);
     expect(console.log).toBeCalledWith(expect.stringMatching(/Success/));
     const check = await medplum.readResource('Bot', bot.id as string);
-    expect(check.code).toBeDefined();
-    expect(check.code).not.toEqual('');
+    expect(check.code).toBeUndefined();
+    expect(check.sourceCode).toBeDefined();
   });
 
   test('Deprecate Deploy bot for multiple bot with wildcards ', async () => {

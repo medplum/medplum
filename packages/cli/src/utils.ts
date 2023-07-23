@@ -1,7 +1,7 @@
 import { MedplumClient } from '@medplum/core';
 import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
 import { existsSync, readFileSync, writeFile } from 'fs';
-import { resolve } from 'path';
+import { basename, resolve } from 'path';
 import internal from 'stream';
 import tar from 'tar';
 
@@ -26,29 +26,30 @@ export function prettyPrint(input: unknown): void {
 }
 
 export async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: Bot): Promise<void> {
-  const code = readFileContents(botConfig.source);
+  const codePath = botConfig.source;
+  const code = readFileContents(codePath);
   if (!code) {
     return;
   }
 
   try {
-    console.log('Update bot code.....');
+    console.log('Saving source code...');
+    const sourceCode = await medplum.createAttachment(code, basename(codePath), getCodeContentType(codePath));
+
+    console.log('Updating bot.....');
     const updateResult = await medplum.updateResource({
       ...bot,
-      code,
+      sourceCode,
     });
-    if (!updateResult) {
-      console.log('Bot not modified');
-    } else {
-      console.log('Success! New bot version: ' + updateResult.meta?.versionId);
-    }
+    console.log('Success! New bot version: ' + updateResult.meta?.versionId);
   } catch (err) {
     console.log('Update error: ', err);
   }
 }
 
 export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: Bot): Promise<void> {
-  const code = readFileContents(botConfig.dist ?? botConfig.source);
+  const codePath = botConfig.dist ?? botConfig.source;
+  const code = readFileContents(codePath);
   if (!code) {
     return;
   }
@@ -179,4 +180,14 @@ export function getUnsupportedExtension(): Extension {
       },
     ],
   };
+}
+
+function getCodeContentType(filename: string): string {
+  if (filename.endsWith('.ts')) {
+    return 'application/typescript';
+  }
+  if (filename.endsWith('.js')) {
+    return 'application/javascript';
+  }
+  return 'text/plain';
 }

@@ -1,6 +1,6 @@
 import { Button, Grid, Group, Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
+import { normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
@@ -14,6 +14,7 @@ export function BotEditor(): JSX.Element | null {
   const medplum = useMedplum();
   const { id } = useParams() as { id: string };
   const [bot, setBot] = useState<Bot>();
+  const [defaultCode, setDefaultCode] = useState<string | undefined>(undefined);
   const codeFrameRef = useRef<HTMLIFrameElement>(null);
   const inputFrameRef = useRef<HTMLIFrameElement>(null);
   const outputFrameRef = useRef<HTMLIFrameElement>(null);
@@ -22,7 +23,10 @@ export function BotEditor(): JSX.Element | null {
   useEffect(() => {
     medplum
       .readResource('Bot', id)
-      .then(setBot)
+      .then(async (newBot: Bot) => {
+        setBot(newBot);
+        setDefaultCode(await getBotCode(newBot));
+      })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [medplum, id]);
 
@@ -46,13 +50,28 @@ export function BotEditor(): JSX.Element | null {
       setLoading(true);
       try {
         const code = await getCode();
-        await medplum.patchResource('Bot', id, [
-          {
+        const sourceCode = await medplum.createAttachment(code, 'index.ts', 'application/typescript');
+        const operations: PatchOperation[] = [];
+        if (bot?.sourceCode) {
+          operations.push({
             op: 'replace',
+            path: '/sourceCode',
+            value: sourceCode,
+          });
+        } else {
+          operations.push({
+            op: 'add',
+            path: '/sourceCode',
+            value: sourceCode,
+          });
+        }
+        if (bot?.code) {
+          operations.push({
+            op: 'remove',
             path: '/code',
-            value: code,
-          },
-        ]);
+          });
+        }
+        await medplum.patchResource('Bot', id, operations);
         showNotification({ color: 'green', message: 'Saved' });
       } catch (err) {
         showNotification({ color: 'red', message: normalizeErrorString(err) });
@@ -60,7 +79,7 @@ export function BotEditor(): JSX.Element | null {
         setLoading(false);
       }
     },
-    [medplum, id, getCode]
+    [medplum, id, bot, getCode]
   );
 
   const deployBot = useCallback(
@@ -116,7 +135,7 @@ export function BotEditor(): JSX.Element | null {
             language="typescript"
             module="commonjs"
             testId="code-frame"
-            defaultValue={bot.code || ''}
+            defaultValue={defaultCode}
             minHeight="528px"
           />
           <Group position="right" spacing="xs">
@@ -160,4 +179,15 @@ export function BotEditor(): JSX.Element | null {
       </Grid.Col>
     </Grid>
   );
+}
+
+async function getBotCode(bot: Bot): Promise<string | undefined> {
+  if (bot.sourceCode?.url) {
+    // Fetch the source code contents
+    const response = await fetch(bot.sourceCode.url);
+    const text = await response.text();
+    return text;
+  }
+
+  return bot.code;
 }
