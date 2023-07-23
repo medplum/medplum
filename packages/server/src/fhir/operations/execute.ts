@@ -264,10 +264,11 @@ function parseLambdaLog(logResult: string): string {
  */
 async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutionResult> {
   const { bot, runAs, input, contentType } = request;
+
   const config = getConfig();
-  const accessToken = await getBotAccessToken(runAs);
-  const secrets = await getBotSecrets(bot);
-  const botConsole = new MockConsole();
+  if (!config.vmContextBotsEnabled) {
+    return { success: false, logResult: 'VM Context bots not enabled on this server' };
+  }
 
   const codeUrl = bot.executableCode?.url;
   if (!codeUrl) {
@@ -277,10 +278,13 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
     return { success: false, logResult: 'Executable code is not a Binary' };
   }
 
-  // const binary = await systemRepo.readResource<Binary>('Binary', resolveId(bot.executableCode.url) as string);
   const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
   const stream = await getBinaryStorage().readBinary(binary);
   const code = await readStreamToString(stream);
+
+  const accessToken = await getBotAccessToken(runAs);
+  const secrets = await getBotSecrets(bot);
+  const botConsole = new MockConsole();
 
   const sandbox = {
     Hl7Message,

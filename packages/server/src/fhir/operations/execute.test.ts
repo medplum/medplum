@@ -1,9 +1,9 @@
+import { InvokeCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
 import { Bot } from '@medplum/fhirtypes';
+import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
-import { InvokeCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
 
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
@@ -276,5 +276,57 @@ describe('Execute', () => {
       .send({ foo: 'bar' });
     expect(res.status).toBe(200);
     expect(res.body.foo).toBe('bar');
+  });
+
+  test('VM context bot success', async () => {
+    // Create a bot with empty code
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'vmcontext',
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as Bot;
+
+    // Deploy the bot
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+          exports.handler = async function () {
+            return { msg: 'test' }
+          };
+      `,
+      });
+    expect(res2.status).toBe(200);
+
+    // Execute the bot success
+    const res3 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res3.status).toBe(400);
+
+    // Temporarily enable VM context bots
+    getConfig().vmContextBotsEnabled = true;
+
+    // Execute the bot success
+    const res4 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res4.status).toBe(200);
+    expect(res4.body).toMatchObject({ msg: 'test' });
+
+    // Disable VM context bots
+    getConfig().vmContextBotsEnabled = false;
   });
 });
