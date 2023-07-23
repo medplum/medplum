@@ -25,7 +25,7 @@ aws s3 cp dist/ s3://graphiql.medplum.com/ \
 aws s3 cp dist/ s3://graphiql.medplum.com/ \
   --region us-east-1 \
   --recursive \
-  --content-type "application/javascript" \
+  --content-type "text/javascript" \
   --cache-control "public, max-age=31536000" \
   --exclude "*" \
   --include "*.js"

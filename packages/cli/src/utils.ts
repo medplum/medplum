@@ -184,10 +184,10 @@ export function getUnsupportedExtension(): Extension {
 
 function getCodeContentType(filename: string): string {
   if (filename.endsWith('.ts')) {
-    return 'application/typescript';
+    return 'text/typescript';
   }
   if (filename.endsWith('.js')) {
-    return 'application/javascript';
+    return 'text/javascript';
   }
   return 'text/plain';
 }

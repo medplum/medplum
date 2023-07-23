@@ -133,17 +133,17 @@ async function uploadAppToS3(tmpDir: string, bucketName: string): Promise<void> 
     ['css/**/*.css.map', 'application/json', true],
     ['img/**/*.png', 'image/png', true],
     ['img/**/*.svg', 'image/svg+xml', true],
-    ['js/**/*.js', 'application/javascript', true],
+    ['js/**/*.js', 'text/javascript', true],
     ['js/**/*.js.map', 'application/json', true],
     ['js/**/*.txt', 'text/plain', true],
     ['favicon.ico', 'image/vnd.microsoft.icon', true],
     ['robots.txt', 'text/plain', true],
-    ['workbox-*.js', 'application/javascript', true],
+    ['workbox-*.js', 'text/javascript', true],
     ['workbox-*.js.map', 'application/json', true],
 
     // Not cached
     ['manifest.webmanifest', 'application/manifest+json', false],
-    ['service-worker.js', 'application/javascript', false],
+    ['service-worker.js', 'text/javascript', false],
     ['service-worker.js.map', 'application/json', false],
     ['index.html', 'text/html', false],
   ];

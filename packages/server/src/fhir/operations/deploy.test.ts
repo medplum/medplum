@@ -7,24 +7,35 @@ import {
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
-import 'aws-sdk-client-mock-jest';
-
 import { Bot } from '@medplum/fhirtypes';
+import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { mkdtempSync, rmSync } from 'fs';
+import { sep } from 'path';
 import request from 'supertest';
-import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
-
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config';
 import { initTestAuth } from '../../test.setup';
 
 const app = express();
+const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
 let accessToken: string;
+let mockLambdaClient: AwsClientStub<LambdaClient>;
 
 describe('Deploy', () => {
-  let mockLambdaClient: AwsClientStub<LambdaClient>;
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    accessToken = await initTestAuth();
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+    rmSync(binaryDir, { recursive: true, force: true });
+  });
 
   beforeEach(() => {
     let created = false;
@@ -87,16 +98,6 @@ describe('Deploy', () => {
     mockLambdaClient.restore();
   });
 
-  beforeAll(async () => {
-    const config = await loadTestConfig();
-    await initApp(app, config);
-    accessToken = await initTestAuth();
-  });
-
-  afterAll(async () => {
-    await shutdownApp();
-  });
-
   test('Happy path', async () => {
     // Step 1: Create a bot
     const res1 = await request(app)
@@ -115,6 +116,7 @@ describe('Deploy', () => {
         `,
       });
     expect(res1.status).toBe(201);
+
     const bot = res1.body as Bot;
     const name = `medplum-bot-lambda-${bot.id}`;
 
@@ -123,7 +125,14 @@ describe('Deploy', () => {
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', 'application/fhir+json')
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({});
+      .send({
+        code: `
+        export async function handler() {
+          console.log('input', input);
+          return input;
+        }
+        `,
+      });
     expect(res2.status).toBe(200);
 
     expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
@@ -142,7 +151,14 @@ describe('Deploy', () => {
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', 'application/fhir+json')
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({});
+      .send({
+        code: `
+        export async function handler() {
+          console.log('input', input);
+          return input;
+        }
+        `,
+      });
     expect(res3.status).toBe(200);
 
     expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
@@ -183,9 +199,16 @@ describe('Deploy', () => {
     // This should fail because bots are not enabled
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${res2.body.id}/$deploy`)
-      .set('Content-Type', 'text/plain')
+      .set('Content-Type', 'application/json')
       .set('Authorization', 'Bearer ' + accessToken)
-      .send('input');
+      .send({
+        code: `
+        export async function handler() {
+          console.log('input', input);
+          return input;
+        }
+        `,
+      });
     expect(res3.status).toBe(400);
     expect(res3.body.issue[0].details.text).toEqual('Bots not enabled');
   });

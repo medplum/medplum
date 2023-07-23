@@ -198,7 +198,6 @@ const BLOCKED_FILE_EXTENSIONS = [
   '.isp',
   '.iso',
   '.jar',
-  '.js',
   '.jse',
   '.lib',
   '.lnk',
@@ -241,7 +240,6 @@ const BLOCKED_CONTENT_TYPES = [
   'application/vnd.microsoft.portable-executable',
   'application/vnd.rar',
   'application/zip',
-  'text/javascript',
 ];
 
 /**

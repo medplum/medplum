@@ -50,7 +50,7 @@ export function BotEditor(): JSX.Element | null {
       setLoading(true);
       try {
         const code = await getCode();
-        const sourceCode = await medplum.createAttachment(code, 'index.ts', 'application/typescript');
+        const sourceCode = await medplum.createAttachment(code, 'index.ts', 'text/typescript');
         const operations: PatchOperation[] = [];
         if (bot?.sourceCode) {
           operations.push({
