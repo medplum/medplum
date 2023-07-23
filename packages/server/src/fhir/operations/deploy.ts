@@ -138,8 +138,9 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
 
     // Deploy the bot
     if (updatedBot.runtimeVersion === 'awslambda') {
-      await deployLambda(updatedBot, code as string);
+      await deployLambda(updatedBot, code);
     }
+
     sendOutcome(res, allOk);
   } catch (err) {
     sendOutcome(res, badRequest((err as Error).message));
