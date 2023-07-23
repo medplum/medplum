@@ -1,12 +1,14 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { Hl7Message, Operator, badRequest, createReference, getIdentifier, resolveId, allOk } from '@medplum/core';
+import { allOk, badRequest, createReference, getIdentifier, Hl7Message, Operator, resolveId } from '@medplum/core';
 import { AuditEvent, Bot, Login, Organization, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import vm from 'node:vm';
 import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
 import { generateAccessToken } from '../../oauth/keys';
 import { AuditEventOutcome } from '../../util/auditevent';
+import { MockConsole } from '../../util/console';
 import { sendOutcome } from '../outcomes';
 import { Repository, systemRepo } from '../repo';
 
@@ -119,6 +121,8 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
 
   if (bot.runtimeVersion === 'awslambda') {
     return runInLambda(request);
+  } else if (bot.runtimeVersion === 'vmcontext') {
+    return runInVmContext(request);
   } else {
     return { success: false, logResult: 'Unsupported bot runtime' };
   }
@@ -142,29 +146,8 @@ export async function isBotEnabled(bot: Bot): Promise<boolean> {
 async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionResult> {
   const { bot, runAs, input, contentType } = request;
   const config = getConfig();
-
-  // Create the Login resource
-  const login = await systemRepo.createResource<Login>({
-    resourceType: 'Login',
-    authMethod: 'execute',
-    user: runAs.user,
-    membership: createReference(runAs),
-    authTime: new Date().toISOString(),
-    scope: 'openid',
-  });
-
-  // Create the access token
-  const accessToken = await generateAccessToken({
-    login_id: login.id as string,
-    sub: resolveId(runAs.user?.reference as Reference) as string,
-    username: resolveId(runAs.user?.reference as Reference) as string,
-    profile: runAs.profile?.reference as string,
-    scope: 'openid',
-  });
-
-  // Get the project secrets
-  const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
-  const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
+  const accessToken = await getBotAccessToken(runAs);
+  const secrets = await getBotSecrets(bot);
 
   const client = new LambdaClient({ region: config.awsRegion });
   const name = getLambdaFunctionName(bot);
@@ -251,6 +234,117 @@ function parseLambdaLog(logResult: string): string {
     result.push(line);
   }
   return result.join('\n');
+}
+
+/**
+ * Executes a Bot in an AWS Lambda.
+ * @param request The bot request.
+ * @returns The bot execution result.
+ */
+async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutionResult> {
+  const { bot, runAs, input, contentType } = request;
+  const config = getConfig();
+  const accessToken = await getBotAccessToken(runAs);
+  const secrets = await getBotSecrets(bot);
+  const botConsole = new MockConsole();
+
+  const sandbox = {
+    console: botConsole,
+    event: {
+      baseUrl: config.baseUrl,
+      accessToken,
+      input: input instanceof Hl7Message ? input.toString() : input,
+      contentType,
+      secrets,
+    },
+  };
+
+  const options: vm.RunningScriptOptions = {
+    timeout: 10000,
+  };
+
+  // Wrap code in an async block for top-level await support
+  // const wrappedCode = '(async () => {' + bot.code + '})();';
+  const wrappedCode = `const { Hl7Message, MedplumClient } = require("@medplum/core");
+  const fetch = require("node-fetch");
+
+  ${bot.code}
+
+  async function main() {
+    const { baseUrl, accessToken, input, contentType, secrets } = event;
+    const medplum = new MedplumClient({
+      baseUrl,
+      fetch,
+    });
+    medplum.setAccessToken(accessToken);
+    try {
+      return await exports.handler(medplum, {
+        input:
+          contentType === "x-application/hl7-v2+er7"
+            ? Hl7Message.parse(input)
+            : input,
+        contentType,
+        secrets,
+      });
+    } catch (err) {
+      if (err instanceof Error) {
+        console.log("Unhandled error: " + err.message + "\\n" + err.stack);
+      } else if (typeof err === "object") {
+        console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
+      } else {
+        console.log("Unhandled error: " + err);
+      }
+      throw err;
+    }
+  }
+
+  return main();
+  `;
+
+  // Return the result of the code execution
+  try {
+    const returnValue = (await vm.runInNewContext(wrappedCode, sandbox, options)) as any;
+    return {
+      success: true,
+      logResult: botConsole.toString(),
+      returnValue,
+    };
+  } catch (err) {
+    botConsole.log('Error', (err as Error).message);
+    return {
+      success: false,
+      logResult: botConsole.toString(),
+    };
+  }
+}
+
+async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
+  // Create the Login resource
+  const login = await systemRepo.createResource<Login>({
+    resourceType: 'Login',
+    authMethod: 'execute',
+    user: runAs.user,
+    membership: createReference(runAs),
+    authTime: new Date().toISOString(),
+    scope: 'openid',
+  });
+
+  // Create the access token
+  const accessToken = await generateAccessToken({
+    login_id: login.id as string,
+    sub: resolveId(runAs.user?.reference as Reference) as string,
+    username: resolveId(runAs.user?.reference as Reference) as string,
+    profile: runAs.profile?.reference as string,
+    scope: 'openid',
+  });
+
+  return accessToken;
+}
+
+async function getBotSecrets(bot: Bot): Promise<Record<string, string>> {
+  const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
+  const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
+  return secrets;
 }
 
 function getResponseContentType(req: Request): string {
