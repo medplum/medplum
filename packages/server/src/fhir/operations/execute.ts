@@ -117,10 +117,6 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
     return { success: false, logResult: 'Bots not enabled' };
   }
 
-  if (!bot.code) {
-    return { success: false, logResult: 'Ignore bots with no code' };
-  }
-
   if (bot.runtimeVersion === 'awslambda') {
     return runInLambda(request);
   } else {

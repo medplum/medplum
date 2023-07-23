@@ -157,12 +157,6 @@ describe('Execute', () => {
         resourceType: 'Bot',
         name: 'Test Bot',
         runtimeVersion: 'unsupported',
-        code: `
-        export async function handler() {
-          console.log('input', input);
-          return input;
-        }
-        `,
       });
     expect(res1.status).toBe(201);
     const bot = res1.body as Bot;
@@ -172,7 +166,14 @@ describe('Execute', () => {
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', 'application/fhir+json')
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({});
+      .send({
+        code: `
+        export async function handler() {
+          console.log('input', input);
+          return input;
+        }
+        `,
+      });
     expect(res2.status).toBe(200);
 
     // Step 3: Execute the bot

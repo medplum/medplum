@@ -8,7 +8,7 @@ import {
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, getReferenceString } from '@medplum/core';
 import { Binary, Bot } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import JSZip from 'jszip';
@@ -131,7 +131,7 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
       ...bot,
       executableCode: {
         contentType,
-        url: binary.url,
+        url: getReferenceString(binary),
         title: filename,
       },
     });
