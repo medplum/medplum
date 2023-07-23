@@ -45,7 +45,7 @@ export interface BulkDataExport {
   /**
    * The status of the request.
    */
-  status?: string;
+  status?: 'accepted' | 'active' | 'completed' | 'error';
 
   /**
    * Indicates the server's time when the query is requested.

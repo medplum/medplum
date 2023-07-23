@@ -84,7 +84,7 @@ export interface Login {
    * The authentication method used to obtain the code (password or
    * google).
    */
-  authMethod?: string;
+  authMethod?: 'client' | 'exchange' | 'execute' | 'external' | 'google' | 'password';
 
   /**
    * Time when the End-User authentication occurred.
@@ -118,7 +118,7 @@ export interface Login {
    * OPTIONAL, defaults to &quot;plain&quot; if not present in the request.  Code
    * verifier transformation method is &quot;S256&quot; or &quot;plain&quot;.
    */
-  codeChallengeMethod?: string;
+  codeChallengeMethod?: 'plain' | 'S256';
 
   /**
    * Optional secure random string that can be used in an OAuth refresh

@@ -45,7 +45,7 @@ export interface LoginRequest {
   readonly clientId?: string;
   readonly launchId?: string;
   readonly codeChallenge?: string;
-  readonly codeChallengeMethod?: string;
+  readonly codeChallengeMethod?: 'plain' | 'S256';
   readonly googleCredentials?: GoogleCredentialClaims;
   readonly remoteAddress?: string;
   readonly userAgent?: string;
