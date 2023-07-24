@@ -141,6 +141,32 @@ describe('CLI Bots', () => {
     expect(check.sourceCode).toBeDefined();
   });
 
+  test('Deploy bot without dist success', async () => {
+    // Create the bot
+    const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+    expect(bot.code).toBeUndefined();
+
+    // Setup bot config
+    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+      JSON.stringify({
+        bots: [
+          {
+            name: 'hello-world',
+            id: bot.id,
+            source: 'src/hello-world.ts',
+          },
+        ],
+      })
+    );
+
+    await main(['node', 'index.js', 'bot', 'deploy', 'hello-world']);
+    expect(console.log).toBeCalledWith(expect.stringMatching(/Success/));
+    const check = await medplum.readResource('Bot', bot.id as string);
+    expect(check.code).toBeUndefined();
+    expect(check.sourceCode).toBeDefined();
+  });
+
   test('Deploy bot for multiple bot with wildcards ', async () => {
     // Create the bot
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });

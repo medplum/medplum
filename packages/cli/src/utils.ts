@@ -1,7 +1,7 @@
 import { MedplumClient } from '@medplum/core';
 import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
 import { existsSync, readFileSync, writeFile } from 'fs';
-import { basename, resolve } from 'path';
+import { basename, extname, resolve } from 'path';
 import internal from 'stream';
 import tar from 'tar';
 
@@ -182,12 +182,13 @@ export function getUnsupportedExtension(): Extension {
   };
 }
 
-function getCodeContentType(filename: string): string {
-  if (filename.endsWith('.ts')) {
-    return 'text/typescript';
-  }
-  if (filename.endsWith('.js')) {
+export function getCodeContentType(filename: string): string {
+  const ext = extname(filename).toLowerCase();
+  if (['.cjs', '.mjs', '.js'].includes(ext)) {
     return 'text/javascript';
+  }
+  if (['.cts', '.mts', '.ts'].includes(ext)) {
+    return 'text/typescript';
   }
   return 'text/plain';
 }
