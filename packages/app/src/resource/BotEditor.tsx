@@ -1,6 +1,6 @@
 import { Button, Grid, Group, Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString, PatchOperation } from '@medplum/core';
+import { isUUID, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
@@ -25,7 +25,7 @@ export function BotEditor(): JSX.Element | null {
       .readResource('Bot', id)
       .then(async (newBot: Bot) => {
         setBot(newBot);
-        setDefaultCode(await getBotCode(newBot));
+        setDefaultCode(await getBotCode(medplum, newBot));
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [medplum, id]);
@@ -175,12 +175,15 @@ export function BotEditor(): JSX.Element | null {
   );
 }
 
-async function getBotCode(bot: Bot): Promise<string | undefined> {
+async function getBotCode(medplum: MedplumClient, bot: Bot): Promise<string | undefined> {
   if (bot.sourceCode?.url) {
-    // Fetch the source code contents
-    const response = await fetch(bot.sourceCode.url);
-    const text = await response.text();
-    return text;
+    // Medplum storage service does not allow CORS requests for security reasons.
+    // So instead, we have to use the FHIR Binary API to fetch the source code.
+    // Example: https://storage.staging.medplum.com/binary/272a11dc-5b01-4c05-a14e-5bf53117e1e9/69303e8d-36f2-4417-b09b-60c15f221b09?Expires=...
+    // The Binary ID is the first UUID in the URL.
+    const binaryId = bot.sourceCode.url?.split('/')?.find(isUUID) as string;
+    const blob = await medplum.download(medplum.fhirUrl('Binary', binaryId));
+    await blob.text();
   }
 
   return bot.code;
