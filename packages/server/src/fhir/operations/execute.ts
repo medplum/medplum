@@ -26,6 +26,7 @@ import vm from 'node:vm';
 import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
+import { logger } from '../../logger';
 import { generateAccessToken } from '../../oauth/keys';
 import { AuditEventOutcome } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
@@ -254,7 +255,7 @@ function parseLambdaLog(logResult: string): string {
     }
     result.push(line);
   }
-  return result.join('\n');
+  return result.join('\n').trim();
 }
 
 /**
@@ -408,12 +409,21 @@ function isJsonContentType(contentType: string): boolean {
  * @param outcomeDesc The outcome description text.
  */
 async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDesc: string): Promise<void> {
+  const trigger = bot.auditEventTrigger ?? 'always';
+  if (
+    trigger === 'never' ||
+    (trigger === 'on-error' && outcome === AuditEventOutcome.Success) ||
+    (trigger === 'on-output' && outcomeDesc.length === 0)
+  ) {
+    return;
+  }
+
   const maxDescLength = 10 * 1024;
   if (outcomeDesc.length > maxDescLength) {
     outcomeDesc = outcomeDesc.substring(outcomeDesc.length - maxDescLength);
   }
 
-  await systemRepo.createResource<AuditEvent>({
+  const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
       project: bot.meta?.project,
@@ -442,7 +452,15 @@ async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDes
     ],
     outcome,
     outcomeDesc,
-  });
+  };
+
+  const destination = bot.auditEventDestination ?? ['resource'];
+  if (destination.includes('resource')) {
+    await systemRepo.createResource<AuditEvent>(auditEvent);
+  }
+  if (destination.includes('log')) {
+    logger.logAuditEvent(auditEvent);
+  }
 }
 
 async function readStreamToString(stream: Readable): Promise<string> {
