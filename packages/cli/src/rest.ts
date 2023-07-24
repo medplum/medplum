@@ -1,6 +1,6 @@
 import { convertToTransactionBundle } from '@medplum/core';
 import { createMedplumCommand } from './util/command';
-import { checkIfProfileExists, prettyPrint } from './utils';
+import { checkForProfile, prettyPrint } from './utils';
 import { createMedplumClient } from './util/client';
 
 export const deleteObject = createMedplumCommand('delete');
@@ -18,7 +18,7 @@ get
   .argument('<url>', 'Resource/$id')
   .option('--as-transaction', 'Print out the bundle as a transaction type')
   .action(async (url, options) => {
-    if (!checkIfProfileExists(options)) {
+    if (!checkForProfile(options)) {
       return;
     }
     const medplum = await createMedplumClient(options, options.profile);
@@ -37,7 +37,7 @@ patch.arguments('<url> <body>').action(async (url, body, options) => {
 });
 
 post.arguments('<url> <body>').action(async (url, body, options) => {
-  if (!checkIfProfileExists(options)) {
+  if (!checkForProfile(options)) {
     return;
   }
   const medplum = await createMedplumClient(options, options.profile);

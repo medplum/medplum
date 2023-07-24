@@ -6,7 +6,7 @@ import { resolve } from 'path';
 import { createInterface } from 'readline';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
-import { checkIfProfileExists, getUnsupportedExtension, prettyPrint } from './utils';
+import { checkForProfile, getUnsupportedExtension, prettyPrint } from './utils';
 
 const bulkExportCommand = createMedplumCommand('export');
 const bulkImportCommand = createMedplumCommand('import');
@@ -28,13 +28,13 @@ bulkExportCommand
     'optional target directory to save files from the bulk export operations.'
   )
   .action(async (options) => {
-    if (!checkIfProfileExists(options)) {
+    if (!checkForProfile(options)) {
       return;
     }
     const { exportLevel, types, since, targetDirectory, profile } = options;
     const medplum = await createMedplumClient(options, profile);
     const response = await medplum.bulkExport(exportLevel, types, since);
-    console.log(response);
+
     response.output?.forEach(async ({ type, url }) => {
       const fileUrl = new URL(url as string);
       const data = await medplum.download(url as string);

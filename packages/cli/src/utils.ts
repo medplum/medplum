@@ -182,7 +182,7 @@ export function getUnsupportedExtension(): Extension {
   };
 }
 
-export function checkIfProfileExists(options: any): boolean {
+export function checkForProfile(options: any): boolean {
   if (options.profile) {
     const storage = new FileSystemStorage(options.profile);
     const optionsObject = storage.getObject('options');
