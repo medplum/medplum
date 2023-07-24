@@ -33,7 +33,7 @@ export function initWebSockets(server: http.Server): void {
     await redisSubscriber.subscribe(channel);
 
     redisSubscriber.on('message', (channel: string, message: string) => {
-      logger.debug('[WS] redis message', channel, message);
+      logger.debug('[WS] redis message', { channel, message });
       socket.send(message, { binary: false });
     });
 

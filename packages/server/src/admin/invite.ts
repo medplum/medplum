@@ -52,7 +52,10 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
     const { membership } = await inviteUser(inviteRequest);
     res.status(200).json(membership);
   } catch (err: any) {
-    logger.info(err);
+    logger.info('Error inviting user to project', {
+      project: projectId,
+      error: err,
+    });
     res.status(200).json({ error: err });
   }
 }
@@ -135,7 +138,7 @@ async function createUser(request: ServerInviteRequest): Promise<User> {
   const { firstName, lastName, externalId } = request;
   const email = request.email?.toLowerCase();
   const password = request.password ?? generateSecret(16);
-  logger.info('Create user ' + email);
+  logger.info('User creation request received', { email });
   const passwordHash = await bcryptHashPassword(password);
 
   let project: Reference<Project> | undefined = undefined;
@@ -156,7 +159,7 @@ async function createUser(request: ServerInviteRequest): Promise<User> {
     project,
   });
 
-  logger.info('Created: ' + result.id);
+  logger.info('User created', { id: result.id, email });
   return result;
 }
 

@@ -166,7 +166,7 @@ async function verifyCode(idp: IdentityProvider, code: string): Promise<Record<s
     const tokens = await response.json();
     return parseJWTPayload(tokens.id_token);
   } catch (err) {
-    logger.warn('Failed to verify code', err);
+    logger.warn('Failed to verify authorization code', { error: err });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 }

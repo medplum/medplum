@@ -186,7 +186,7 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
   try {
     verifyResult = await verifyJwt(idTokenHint);
   } catch (err) {
-    logger.debug('Error verifying id_token_hint', err);
+    logger.debug('Error verifying id_token_hint', { error: err });
     return undefined;
   }
 

@@ -700,17 +700,17 @@ export async function getExternalUserInfo(
       },
     });
   } catch (err) {
-    logger.warn('Failed to verify code', err);
+    logger.warn('Error while verifying external auth code', { error: err });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
   if (response.status === 429) {
-    logger.warn(`Auth rate limit exceeded: url=${idp.userInfoUrl} clientId=${idp.clientId}`);
+    logger.warn('Auth rate limit exceeded', { url: idp.userInfoUrl, clientId: idp.clientId });
     throw new OperationOutcomeError(tooManyRequests);
   }
 
   if (response.status !== 200) {
-    logger.warn('Failed to verify code', response.status);
+    logger.warn('Failed to verify external authorization code', { status: response.status });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
@@ -720,16 +720,16 @@ export async function getExternalUserInfo(
     try {
       text = await response.text();
     } catch (err) {
-      logger.debug('Failed to get response text', err);
+      logger.debug('Failed to get response text', { error: err });
     }
-    logger.warn('Failed to verify code, non-JSON response', text);
+    logger.warn('Failed to verify external authorization code, non-JSON response', { text });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
   try {
     return await response.json();
   } catch (err) {
-    logger.warn('Failed to verify code', err);
+    logger.warn('Failed to verify external authorization code', { error: err });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 }

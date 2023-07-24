@@ -41,7 +41,7 @@ export async function sendEmail(repo: Repository, options: Mail.Options): Promis
     throw new OperationOutcomeError(badRequest('Invalid email options: ' + normalizeErrorString(err)), err);
   }
 
-  logger.info(`Sending email to ${toAddresses?.join(', ')} subject "${options.subject}"`);
+  logger.info('Sending email', { to: toAddresses?.join(', '), subject: options.subject });
   await sesClient.send(
     new SendEmailCommand({
       FromEmailAddress: fromAddress,

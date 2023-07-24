@@ -135,7 +135,7 @@ export async function createUser(request: NewUserRequest): Promise<User> {
     return Promise.reject(badRequest('Password found in breach database', 'password'));
   }
 
-  logger.info('Create user ' + email);
+  logger.info('User creation request received', { email });
   const passwordHash = await bcryptHashPassword(password);
   const result = await systemRepo.createResource<User>({
     resourceType: 'User',
@@ -145,7 +145,7 @@ export async function createUser(request: NewUserRequest): Promise<User> {
     passwordHash,
     project: projectId ? { reference: `Project/${projectId}` } : undefined,
   });
-  logger.info('Created: ' + result.id);
+  logger.info('User created', { id: result.id, email });
   return result;
 }
 

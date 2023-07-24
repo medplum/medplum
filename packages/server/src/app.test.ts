@@ -3,6 +3,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config';
 import { getClient } from './database';
+import { logger } from './logger';
 
 describe('App', () => {
   test('Get HTTP config', async () => {
@@ -84,10 +85,11 @@ describe('App', () => {
 
     // Mock database disconnect
     // Error should be logged, but should not crash the server
-    console.log = jest.fn();
+    // console.log = jest.fn();
+    const loggerError = jest.spyOn(logger, 'error').mockReturnValueOnce();
     const error = new Error('Mock database disconnect');
     getClient().emit('error', error);
-    expect(console.log).toHaveBeenCalledWith('ERROR', expect.anything(), 'Database connection error', error);
+    expect(loggerError).toHaveBeenCalledWith('Database connection error', error);
 
     await shutdownApp();
   });

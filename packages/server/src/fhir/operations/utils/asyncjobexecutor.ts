@@ -26,8 +26,10 @@ export class AsyncJobExecutor {
     }
 
     this.run(callback)
-      .then(() => logger.info(`${callback.name} AsyncJob: ${this.resource?.id} is completed`))
-      .catch((err) => logger.error(`${callback.name} AsyncJob: ${this.resource?.id} failed: ${err}`));
+      .then(() => logger.info('Async job completed', { name: callback.name, asyncJobId: this.resource?.id }))
+      .catch((err) =>
+        logger.error('Async job failed', { name: callback.name, asyncJobId: this.resource?.id, error: err })
+      );
   }
 
   async run(callback: () => Promise<any>): Promise<void> {
