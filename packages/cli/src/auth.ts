@@ -4,6 +4,7 @@ import { exec } from 'child_process';
 import { createServer } from 'http';
 import { createMedplumCommand } from './util/command';
 import { createMedplumClient } from './util/client';
+import { checkIfProfileExists, createProfile, getProfileOptions } from './utils';
 
 const clientId = 'medplum-cli';
 const redirectUri = 'http://localhost:9615';
@@ -17,7 +18,12 @@ login.action(async (options) => {
     console.log('Basic authentication does not require login');
     return;
   }
-  await startLogin(medplum);
+  if (options.profile && !checkIfProfileExists(options.profile)) {
+    console.log(`Creating new profile...`);
+    createProfile(options.profile, options);
+  }
+  const profile = getProfileOptions(options.profile);
+  await startLogin(medplum, profile);
 });
 
 whoami.action(async (options) => {
@@ -25,8 +31,14 @@ whoami.action(async (options) => {
   printMe(medplum);
 });
 
-async function startLogin(medplum: MedplumClient): Promise<void> {
+async function startLogin(medplum: MedplumClient, profile: any): Promise<void> {
   await startWebServer(medplum);
+
+  if (profile.authType && profile.authType === 'jwt-bearer') {
+    await medplum.startJwtBearerLogin(profile.clientId, profile.assertion, profile.scope);
+    return;
+  } 
+
   const loginUrl = new URL(medplum.getAuthorizeUrl());
   loginUrl.searchParams.set('client_id', clientId);
   loginUrl.searchParams.set('redirect_uri', redirectUri);
