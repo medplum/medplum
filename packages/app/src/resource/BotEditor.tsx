@@ -65,12 +65,6 @@ export function BotEditor(): JSX.Element | null {
             value: sourceCode,
           });
         }
-        if (bot?.code) {
-          operations.push({
-            op: 'remove',
-            path: '/code',
-          });
-        }
         await medplum.patchResource('Bot', id, operations);
         showNotification({ color: 'green', message: 'Saved' });
       } catch (err) {

@@ -193,7 +193,7 @@ describe('Deploy', () => {
     expect(res2.status).toBe(201);
     expect(res2.body.resourceType).toBe('Bot');
     expect(res2.body.id).toBeDefined();
-    expect(res2.body.code).toBeDefined();
+    expect(res2.body.sourceCode).toBeDefined();
 
     // Try to deploy the bot
     // This should fail because bots are not enabled
