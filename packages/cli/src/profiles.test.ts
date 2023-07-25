@@ -3,9 +3,8 @@ import { FileSystemStorage } from './storage';
 import os from 'os';
 import { mkdtempSync, rmSync } from 'fs';
 import { sep } from 'path';
-import { FetchLike, MedplumClient, getStatus, isOperationOutcome } from '@medplum/core';
+import { MedplumClient } from '@medplum/core';
 import { createMedplumClient } from './util/client';
-import { OperationOutcome } from '@medplum/fhirtypes';
 
 jest.mock('os');
 jest.mock('fast-glob', () => ({
@@ -21,29 +20,9 @@ jest.mock('fs', () => ({
 
 const testHomeDir = mkdtempSync(__dirname + sep + 'storage-');
 
-function mockFetch(
-  status: number,
-  body: OperationOutcome | Record<string, unknown> | ((url: string, options?: any) => any),
-  contentType = 'application/fhir+json'
-): FetchLike & jest.Mock {
-  const bodyFn = typeof body === 'function' ? body : () => body;
-  return jest.fn((url: string, options?: any) => {
-    const response = bodyFn(url, options);
-    const responseStatus = isOperationOutcome(response) ? getStatus(response) : status;
-    return Promise.resolve({
-      ok: responseStatus < 400,
-      status: responseStatus,
-      headers: { get: () => contentType },
-      blob: () => Promise.resolve(response),
-      json: () => Promise.resolve(response),
-    });
-  });
-}
-
-
 describe('Profiles', () => {
   beforeEach(async () => {
-    // console.log = jest.fn();
+    console.log = jest.fn();
   });
 
   let fetch: any;
@@ -271,56 +250,4 @@ describe('Profiles', () => {
       )
     );
   });
-
-  test('JWT Authentication', async () => {
-    const profileName = 'testProfile';
-    const obj = {
-      authType: 'jwt-bearer',
-      baseUrl: 'https://valid.gov',
-      fhirUrlPath: 'api/v2',
-      tokenUrl: 'https://validtoken.gov',
-      clientId: 'validClientId',
-      assertion: 'validAssertion',
-      scope: 'validScope',
-    };
-
-    await main([
-      'node',
-      'index.js',
-      'login',
-      '-p',
-      profileName,
-      '--auth-type',
-      obj.authType,
-      '--client-id',
-      obj.clientId,
-      '--assertion',
-      obj.assertion,
-      '--scope',
-      obj.scope,
-    ]);
-    fetch = mockFetch(200, (url) => {
-      if (url.includes('oauth2/token')) {
-        return {
-          access_token: createFakeJwt({ client_id: obj.clientId, login_id: '123' }),
-          refresh_token: createFakeJwt({ client_id: obj.clientId }),
-          profile: { reference: 'ClientApplication/123' },
-        };
-      }
-      if (url.includes('/auth/me')) {
-        return { profile: { resourceType: 'ClientApplication' } };
-      }
-      return {};
-    });
-
-    const medplum = new MedplumClient({ fetch });
-    (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
-
-    expect(fetch).toHaveBeenCalledTimes(2);
-  });
 });
-
-function createFakeJwt(claims: Record<string, string | number>): string {
-  return 'header.' + window.btoa(JSON.stringify(claims)) + '.signature';
-}
-

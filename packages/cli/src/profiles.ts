@@ -52,6 +52,6 @@ describeProfile
   .argument('<profileName>', 'Name of the profile')
   .description('Describes a profile')
   .action(async (profileName) => {
-    getProfileOptions(profileName);
-    console.log(profile);
+    const profileOptions = getProfileOptions(profileName);
+    console.log(profileOptions);
   });
