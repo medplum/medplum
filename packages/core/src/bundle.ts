@@ -1,6 +1,7 @@
 import { Bundle, BundleEntry } from '@medplum/fhirtypes';
+import { generateId } from './crypto';
 import { isReference } from './types';
-import { deepClone, isUUID } from './utils';
+import { deepClone } from './utils';
 
 /**
  * More on Bundles can be found here
@@ -18,13 +19,9 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
   for (const entry of bundle.entry || []) {
     delete entry.resource?.meta;
     const id = entry.resource?.id;
-    // In some FHIR example bundles,they use human-readable ids, rather than true uuids.
     if (id) {
-      if (isUUID(id)) {
-        idToUuid[id] = id;
-      } else {
-        idToUuid[id] = crypto.randomUUID();
-      }
+      idToUuid[id] = generateId();
+
       entry.fullUrl = 'urn:uuid:' + idToUuid[id];
       delete entry.resource?.id;
     }
@@ -47,9 +44,16 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
 }
 
 function referenceReplacer(key: string, value: string, idToUuid: Record<string, string>): string {
-  if (key === 'reference' && typeof value === 'string' && value.includes('/')) {
-    const id = value.split('/')[1];
-    return 'urn:uuid:' + idToUuid[id];
+  if (key === 'reference' && typeof value === 'string') {
+    let id;
+    if (value.includes('/')) {
+      id = value.split('/')[1];
+    } else if (value.startsWith('urn:uuid:')) {
+      id = value.slice(9);
+    }
+    if (id) {
+      return 'urn:uuid:' + idToUuid[id];
+    }
   }
   return value;
 }

@@ -1,5 +1,4 @@
 import { Bundle, BundleEntry, Resource, Specimen } from '@medplum/fhirtypes';
-import { webcrypto } from 'crypto';
 import { convertToTransactionBundle } from './bundle';
 import { isUUID } from './utils';
 
@@ -23,8 +22,23 @@ function createResourceWithReference<T extends Resource>(
 }
 
 describe('Bundle tests', () => {
-  beforeAll(() => {
-    Object.defineProperty(globalThis, 'crypto', { value: webcrypto });
+  beforeEach(() => {
+    jest
+      .spyOn(global.Math, 'random')
+      .mockReturnValueOnce(0.1)
+      .mockReturnValueOnce(0.2)
+      .mockReturnValueOnce(0.3)
+      .mockReturnValueOnce(0.4)
+      .mockReturnValueOnce(0.5)
+      .mockReturnValueOnce(0.6)
+      .mockReturnValueOnce(0.7)
+      .mockReturnValueOnce(0.8)
+      .mockReturnValueOnce(0.9)
+      .mockReturnValueOnce(0.0);
+  });
+
+  afterEach(() => {
+    jest.spyOn(global.Math, 'random').mockRestore();
   });
 
   describe('FHIR Bundle Download', () => {
@@ -75,10 +89,7 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      expect(reorderedBundle?.entry?.map((e) => e.fullUrl)).toEqual([
-        'urn:uuid:70653c8f-95e1-4b4e-84e8-8d64c15e4a13',
-        'urn:uuid:3d8b6e96-6de4-48c1-b7ff-e2c26c924620',
-      ]);
+      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toEqual(['Patient', 'DiagnosticReport']);
     });
 
     test('reorders a bundle with a cycle', () => {
@@ -97,11 +108,13 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      expect(reorderedBundle?.entry?.map((e) => e.fullUrl)).toEqual([
-        'urn:uuid:c3d8f926-1f10-41b5-bd20-1d3d6e1f63b5',
-        'urn:uuid:b3e7d3f5-f7c0-41c3-b1c2-8b39e271b2c8',
-        'urn:uuid:c3d8f926-1f10-41b5-bd20-1d3d6e1f63b5',
-        'urn:uuid:b3e7d3f5-f7c0-41c3-b1c2-8b39e271b2c8',
+      console.debug(reorderedBundle?.entry?.map((e) => e.resource?.resourceType));
+
+      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toEqual([
+        'ServiceRequest',
+        'Specimen',
+        'ServiceRequest',
+        'Specimen',
       ]);
       expect(reorderedBundle?.entry?.map((e) => e.request?.method)).toEqual(['POST', 'POST', 'PUT', 'PUT']);
     });
@@ -128,11 +141,11 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      expect(reorderedBundle.entry?.map((e) => e.fullUrl)).toEqual([
-        'urn:uuid:ca760a2b-3f5d-4c85-9087-b8b6422970a8',
-        'urn:uuid:e2d7f292-1e1d-4d5c-9f3a-fae792856f71',
-        'urn:uuid:76cdff91-2a4d-4c57-8922-2f2ea17f6756',
-        'urn:uuid:9e1fe992-1e45-4a0e-8dae-cbb8490f449e',
+      expect(reorderedBundle.entry?.map((e) => e.resource?.resourceType)).toEqual([
+        'Patient',
+        'Observation',
+        'ServiceRequest',
+        'DiagnosticReport',
       ]);
     });
 
