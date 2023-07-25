@@ -15,6 +15,7 @@ describe('BotEditor', () => {
   async function setup(url: string): Promise<void> {
     if (!medplum) {
       medplum = new MockClient();
+      jest.spyOn(medplum, 'download').mockImplementation(async () => ({ text: async () => 'test' }));
     }
 
     // Mock bot operations
@@ -52,6 +53,7 @@ describe('BotEditor', () => {
   test('Bot editor', async () => {
     await setup('/Bot/123/editor');
     await waitFor(() => screen.getByText('Editor'));
+    await waitFor(() => screen.getByTestId('code-frame'));
     expect(screen.getByText('Editor')).toBeInTheDocument();
 
     await act(async () => {
