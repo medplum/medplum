@@ -23,7 +23,7 @@ While there are other proprietary drug databases with their proprietary code sys
 
 ## RxNorm
 
-RxNorm is the preferred code system of the [U.S. Core](/docs/fhir-datastore/understanding-uscdi-dataclasses) and the National Institutes of Health (NIH), as well as most FHIR profiles.
+RxNorm is the preferred code system of the [US Core Medication Profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-medication.html) and the National Institutes of Health (NIH), as well as most FHIR profiles.
 
 RXNorm is a hierarchical code system, that allows for different levels of specificity, depending on the application. The RXNorm vocabulary establishes standard names and identifiers for combinations of ingredients, strengths, and dose forms. This is the information doctors typically include when they write a prescription because they often can’t know the specific product that will be used to fill it.
 
@@ -65,7 +65,6 @@ However, there are connections between the two code systems, as a drug product c
 {
   text: 'Tylenol 325 MG Oral Tablet'
   coding: [
-    //
     {
       system: 'http://hl7.org/fhir/sid/ndc',
       code: '50580045850'
@@ -77,6 +76,24 @@ However, there are connections between the two code systems, as a drug product c
   ]
 }
 ```
+
+## Other Drug databases
+
+While this guide focuses on RxNorm and NDC, there are a few other popular drug databases in commercial use:
+
+### First Databank (FDB)
+
+[First Databank (FDB)](https://www.fdbhealth.com/) is a _private_ company that provides drug databases covering various aspects of drug information, including drug interactions, contraindications, clinical decision support.
+
+FDB is very popular in both hospital and retail pharmacy settings due to its extensive data, which support a variety of clinical and operational use cases. Its commercial nature means that it has extensive coverage, including many over-the-counter medications and nutritional products not included in other databases.
+
+While access to the [FDB MedKnowledge](https://www.fdbhealth.com/solutions/medknowledge-drug-database) database requires a paid subscription, HL7 has created a [placeholder code system](https://terminology.hl7.org/2.1.0/CodeSystem-FDDC.html) to reference these codes.
+
+### National Drug Data File (NDB)
+
+The NDB, also known as the National Drug File - Reference Terminology (NDF-RT), is maintained by the U.S. Department of Veterans Affairs. NDF-RT is typically used in decision support systems for medication therapy management, drug formulary checks, medication safety checks, and population-based analyses of drug effects.
+
+NDB/NDF-RT is less popular compared to RxNorm and FDB. However, it is still widely used within the U.S. Department of Veterans Affairs, and by some EHR vendors and researchers, due to its comprehensive data on drug characteristics.
 
 ## See Also
 
