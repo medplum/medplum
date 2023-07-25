@@ -6,11 +6,12 @@ import { randomUUID } from 'crypto';
 import { Request } from 'express';
 import { mkdtempSync, rmSync } from 'fs';
 import { simpleParser } from 'mailparser';
+import nodemailer, { Transporter } from 'nodemailer';
 import Mail from 'nodemailer/lib/mailer';
 import { sep } from 'path';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { getConfig, loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { sendEmail } from './email';
@@ -243,5 +244,33 @@ describe('Email', () => {
 
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);
+  });
+
+  test('Send via SMTP', async () => {
+    const config = getConfig();
+    config.smtp = {
+      host: 'smtp.example.com',
+      port: 587,
+      username: 'user',
+      password: 'pass',
+    };
+
+    const sendMail = jest.fn().mockResolvedValue({ messageId: '123' });
+    const createTransportSpy = jest.spyOn(nodemailer, 'createTransport');
+    createTransportSpy.mockReturnValue({ sendMail } as unknown as Transporter);
+
+    const toAddresses = 'alice@example.com';
+    await sendEmail(systemRepo, {
+      to: toAddresses,
+      cc: 'bob@example.com',
+      subject: 'Hello',
+      text: 'Hello Alice',
+    });
+
+    expect(createTransportSpy).toBeCalledTimes(1);
+    expect(sendMail).toBeCalledTimes(1);
+    expect(mockSESv2Client.send.callCount).toBe(0);
+
+    config.smtp = undefined;
   });
 });

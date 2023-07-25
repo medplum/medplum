@@ -23,6 +23,7 @@ export interface MedplumServerConfig {
   supportEmail: string;
   database: MedplumDatabaseConfig;
   redis: MedplumRedisConfig;
+  smtp?: MedplumSmtpConfig;
   googleClientId?: string;
   googleClientSecret?: string;
   recaptchaSiteKey?: string;
@@ -59,6 +60,13 @@ export interface MedplumRedisConfig {
   host?: string;
   port?: number;
   password?: string;
+}
+
+export interface MedplumSmtpConfig {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
 }
 
 let cachedConfig: MedplumServerConfig | undefined = undefined;
