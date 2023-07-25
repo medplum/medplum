@@ -116,7 +116,7 @@ export function BotEditor(): JSX.Element | null {
     [medplum, id, getSampleInput]
   );
 
-  if (!bot) {
+  if (!bot || defaultCode === undefined) {
     return null;
   }
 
@@ -175,7 +175,7 @@ export function BotEditor(): JSX.Element | null {
   );
 }
 
-async function getBotCode(medplum: MedplumClient, bot: Bot): Promise<string | undefined> {
+async function getBotCode(medplum: MedplumClient, bot: Bot): Promise<string> {
   if (bot.sourceCode?.url) {
     // Medplum storage service does not allow CORS requests for security reasons.
     // So instead, we have to use the FHIR Binary API to fetch the source code.
@@ -183,8 +183,8 @@ async function getBotCode(medplum: MedplumClient, bot: Bot): Promise<string | un
     // The Binary ID is the first UUID in the URL.
     const binaryId = bot.sourceCode.url?.split('/')?.find(isUUID) as string;
     const blob = await medplum.download(medplum.fhirUrl('Binary', binaryId));
-    await blob.text();
+    return blob.text();
   }
 
-  return bot.code;
+  return bot.code ?? '';
 }
