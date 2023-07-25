@@ -33,18 +33,16 @@ whoami.action(async (options) => {
 });
 
 async function startLogin(medplum: MedplumClient, profile: any): Promise<void> {
-  if (!profile || !profile.authType) {
+  if (!profile?.authType) {
     await medplumAuthorizationCodeLogin(medplum);
     return;
   }
   if (profile.authType === 'jwt-bearer') {
     console.log('Starting JWT login...');
     await medplum.startJwtBearerLogin(profile.clientId, profile.assertion, profile.scope);
-    return;
   } else if (profile.authType === 'token-exchange') {
     console.log('Starting token exchange login...');
     await medplum.exchangeExternalAccessToken(profile.accessToken);
-    return;
   }
 }
 
