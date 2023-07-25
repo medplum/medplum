@@ -13,7 +13,7 @@ export const whoami = createMedplumCommand('whoami');
 
 login.action(async (options) => {
   const medplum = await createMedplumClient(options);
-  if (options.authType && options.authType === 'basic') {
+  if (options.authType === 'basic') {
     console.log('Basic authentication does not require login');
     return;
   }

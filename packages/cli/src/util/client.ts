@@ -33,7 +33,7 @@ export async function createMedplumClient(options: MedplumClientOptions, profile
 }
 
 function getClientValues(options: MedplumClientOptions, storage: FileSystemStorage): MedplumClientOptions {
-  const storageOptions: any = storage.getObject('options');
+  const storageOptions = storage.getObject('options') as MedplumClientOptions;
   const baseUrl =
     options.baseUrl ?? storageOptions?.baseUrl ?? process.env['MEDPLUM_BASE_URL'] ?? 'https://api.medplum.com/';
   const fhirUrlPath = options.fhirUrlPath ?? storageOptions?.fhirUrlPath ?? process.env['MEDPLUM_FHIR_URL_PATH'] ?? '';

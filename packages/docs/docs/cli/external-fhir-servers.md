@@ -47,19 +47,19 @@ medplum profile set <profileName> \
     --client-secret <client-secret>
 ```
 
-| Accepted Auth Type   |
-|--------------------|
-| basic            |
-| client_credentials|
-| authorization_code|
+| Accepted Auth Type |
+| ------------------ |
+| basic              |
+| client_credentials |
+| authorization_code |
 
 The profile will now be stored in a file directory in `~.medplum/<profileName>.json`
 
-Once you have a profile, you can connect with external FHIR servers with your profile using the `-p` flag. 
+Once you have a profile, you can connect with external FHIR servers with your profile using the `-p` flag.
 
 ### Example: Basic Auth
 
-```bash 
+```bash
 medplum profile set example \
     --auth-type "basic" \
     --base-url "https://api.example.com" \
@@ -84,7 +84,6 @@ medplum profile set example \
 
 ```bash
 medplum profile set example \
-    --auth-type "authorization_code" \
     --base-url "https://api.example.com" \
     --fhir-url-path "fhir/R4" \
     --authorize-url "oauth2/authorize" \
@@ -95,27 +94,32 @@ Other profile commands include:
 
 #### `describe`
 
-To see the state of your credentials in on profile 
+To see the state of your credentials in on profile
 
 ###### Syntax
+
 ```bash
 medplum profile describe example
 ```
 
 ###### Example
+
 ```bash
 medplum profile describe <profileName>
 ```
 
 #### `remove`
+
 Removing a profile
 
 ###### Syntax
+
 ```bash
 medplum profile remove <profileName>
 ```
 
 ###### Example
+
 ```bash
 medplum profile remove example
 ```
@@ -123,6 +127,7 @@ medplum profile remove example
 #### `list`
 
 To see all of your profiles
+
 ```bash
 medplum profile list
 ```
@@ -158,8 +163,9 @@ medplum profile set bcda-sandbox --base-url https://sandbox.bcda.cms.gov --fhir-
 ```
 
 And then run
+
 ```bash
-medplum bulk export -p bcda-sandbox -e Group/all 
+medplum bulk export -p bcda-sandbox -e Group/all
 ```
 
 ## Next Steps
