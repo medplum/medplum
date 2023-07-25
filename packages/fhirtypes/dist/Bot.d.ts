@@ -82,11 +82,6 @@ export interface Bot {
   cronString?: string;
 
   /**
-   * Bot logic script.
-   */
-  code?: string;
-
-  /**
    * A code that classifies the service for searching, sorting and display
    * purposes (e.g. &quot;Surgical Procedure&quot;).
    */
@@ -96,4 +91,34 @@ export interface Bot {
    * Optional flag to indicate that the bot should be run as the user.
    */
   runAsUser?: boolean;
+
+  /**
+   * Criteria for creating an AuditEvent as a result of the bot invocation.
+   * Possible values are 'always', 'never', 'on-error', or 'on-output'.
+   * Default value is 'always'.
+   */
+  auditEventTrigger?: 'always' | 'never' | 'on-error' | 'on-output';
+
+  /**
+   * The destination system in which the AuditEvent is to be sent. Possible
+   * values are 'log' or 'resource'. Default value is 'resource'.
+   */
+  auditEventDestination?: ('log' | 'resource')[];
+
+  /**
+   * Bot logic in original source code form written by developers.
+   */
+  sourceCode?: Attachment;
+
+  /**
+   * Bot logic in executable form as a result of compiling and bundling
+   * source code.
+   */
+  executableCode?: Attachment;
+
+  /**
+   * DEPRECATED Bot logic script. Use Bot.sourceCode or Bot.executableCode
+   * instead.
+   */
+  code?: string;
 }

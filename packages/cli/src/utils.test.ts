@@ -1,6 +1,6 @@
 import { Writable } from 'stream';
 import tar from 'tar';
-import { safeTarExtractor } from './utils';
+import { getCodeContentType, safeTarExtractor } from './utils';
 
 jest.mock('tar', () => ({
   x: jest.fn(),
@@ -51,5 +51,18 @@ describe('CLI utils', () => {
     } catch (err) {
       expect((err as Error).message).toEqual('Tar extractor reached max size');
     }
+  });
+
+  test('getCodeContentType', () => {
+    expect(getCodeContentType('foo.cjs')).toEqual('text/javascript');
+    expect(getCodeContentType('foo.js')).toEqual('text/javascript');
+    expect(getCodeContentType('foo.mjs')).toEqual('text/javascript');
+
+    expect(getCodeContentType('foo.cts')).toEqual('text/typescript');
+    expect(getCodeContentType('foo.mts')).toEqual('text/typescript');
+    expect(getCodeContentType('foo.ts')).toEqual('text/typescript');
+
+    expect(getCodeContentType('foo.txt')).toEqual('text/plain');
+    expect(getCodeContentType('foo')).toEqual('text/plain');
   });
 });

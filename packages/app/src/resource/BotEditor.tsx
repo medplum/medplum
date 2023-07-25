@@ -1,6 +1,6 @@
 import { Button, Grid, Group, Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
+import { isUUID, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
@@ -14,6 +14,7 @@ export function BotEditor(): JSX.Element | null {
   const medplum = useMedplum();
   const { id } = useParams() as { id: string };
   const [bot, setBot] = useState<Bot>();
+  const [defaultCode, setDefaultCode] = useState<string | undefined>(undefined);
   const codeFrameRef = useRef<HTMLIFrameElement>(null);
   const inputFrameRef = useRef<HTMLIFrameElement>(null);
   const outputFrameRef = useRef<HTMLIFrameElement>(null);
@@ -22,7 +23,10 @@ export function BotEditor(): JSX.Element | null {
   useEffect(() => {
     medplum
       .readResource('Bot', id)
-      .then(setBot)
+      .then(async (newBot: Bot) => {
+        setBot(newBot);
+        setDefaultCode(await getBotCode(medplum, newBot));
+      })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [medplum, id]);
 
@@ -46,13 +50,22 @@ export function BotEditor(): JSX.Element | null {
       setLoading(true);
       try {
         const code = await getCode();
-        await medplum.patchResource('Bot', id, [
-          {
+        const sourceCode = await medplum.createAttachment(code, 'index.ts', 'text/typescript');
+        const operations: PatchOperation[] = [];
+        if (bot?.sourceCode) {
+          operations.push({
             op: 'replace',
-            path: '/code',
-            value: code,
-          },
-        ]);
+            path: '/sourceCode',
+            value: sourceCode,
+          });
+        } else {
+          operations.push({
+            op: 'add',
+            path: '/sourceCode',
+            value: sourceCode,
+          });
+        }
+        await medplum.patchResource('Bot', id, operations);
         showNotification({ color: 'green', message: 'Saved' });
       } catch (err) {
         showNotification({ color: 'red', message: normalizeErrorString(err) });
@@ -60,7 +73,7 @@ export function BotEditor(): JSX.Element | null {
         setLoading(false);
       }
     },
-    [medplum, id, getCode]
+    [medplum, id, bot, getCode]
   );
 
   const deployBot = useCallback(
@@ -103,7 +116,7 @@ export function BotEditor(): JSX.Element | null {
     [medplum, id, getSampleInput]
   );
 
-  if (!bot) {
+  if (!bot || defaultCode === undefined) {
     return null;
   }
 
@@ -116,7 +129,7 @@ export function BotEditor(): JSX.Element | null {
             language="typescript"
             module="commonjs"
             testId="code-frame"
-            defaultValue={bot.code || ''}
+            defaultValue={defaultCode}
             minHeight="528px"
           />
           <Group position="right" spacing="xs">
@@ -160,4 +173,18 @@ export function BotEditor(): JSX.Element | null {
       </Grid.Col>
     </Grid>
   );
+}
+
+async function getBotCode(medplum: MedplumClient, bot: Bot): Promise<string> {
+  if (bot.sourceCode?.url) {
+    // Medplum storage service does not allow CORS requests for security reasons.
+    // So instead, we have to use the FHIR Binary API to fetch the source code.
+    // Example: https://storage.staging.medplum.com/binary/272a11dc-5b01-4c05-a14e-5bf53117e1e9/69303e8d-36f2-4417-b09b-60c15f221b09?Expires=...
+    // The Binary ID is the first UUID in the URL.
+    const binaryId = bot.sourceCode.url?.split('/')?.find(isUUID) as string;
+    const blob = await medplum.download(medplum.fhirUrl('Binary', binaryId));
+    return blob.text();
+  }
+
+  return bot.code ?? '';
 }

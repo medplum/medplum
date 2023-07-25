@@ -1338,21 +1338,6 @@
             }
           },
           {
-            "id" : "Bot.code",
-            "path" : "Bot.code",
-            "definition" : "Bot logic script.",
-            "min" : 0,
-            "max" : "1",
-            "type" : [{
-              "code" : "string"
-            }],
-            "base" : {
-              "path" : "Bot.code",
-              "min" : 0,
-              "max" : "1"
-            }
-          },
-          {
             "id" : "Bot.category",
             "path" : "Bot.category",
             "short" : "Classification of service",
@@ -1380,6 +1365,89 @@
             }],
             "base" : {
               "path" : "Bot.runAsUser",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Bot.auditEventTrigger",
+            "path" : "Bot.auditEventTrigger",
+            "definition" : "Criteria for creating an AuditEvent as a result of the bot invocation. Possible values are 'always', 'never', 'on-error', or 'on-output'. Default value is 'always'.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Bot.auditEventTrigger",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/bot-audit-event-trigger|4.0.1"
+            }
+          },
+          {
+            "id" : "Bot.auditEventDestination",
+            "path" : "Bot.auditEventDestination",
+            "definition" : "The destination system in which the AuditEvent is to be sent. Possible values are 'log' or 'resource'. Default value is 'resource'.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "Bot.auditEventDestination",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/bot-audit-event-destination|4.0.1"
+            }
+          },
+          {
+            "id" : "Bot.sourceCode",
+            "path" : "Bot.sourceCode",
+            "definition" : "Bot logic in original source code form written by developers.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Bot.sourceCode",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Attachment"
+            }]
+          },
+          {
+            "id" : "Bot.executableCode",
+            "path" : "Bot.executableCode",
+            "definition" : "Bot logic in executable form as a result of compiling and bundling source code.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Bot.executableCode",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Attachment"
+            }]
+          },
+          {
+            "id" : "Bot.code",
+            "path" : "Bot.code",
+            "definition" : "DEPRECATED Bot logic script. Use Bot.sourceCode or Bot.executableCode instead.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Bot.code",
               "min" : 0,
               "max" : "1"
             }

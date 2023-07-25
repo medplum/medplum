@@ -42,6 +42,7 @@ export interface MedplumServerConfig {
   bcryptHashSalt: number;
   introspectionEnabled?: boolean;
   keepAliveTimeout?: number;
+  vmContextBotsEnabled?: boolean;
 }
 
 /**

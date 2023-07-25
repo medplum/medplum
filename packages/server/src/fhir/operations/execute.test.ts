@@ -1,9 +1,9 @@
+import { InvokeCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
 import { Bot } from '@medplum/fhirtypes';
+import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
-import { InvokeCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
 
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
@@ -157,12 +157,6 @@ describe('Execute', () => {
         resourceType: 'Bot',
         name: 'Test Bot',
         runtimeVersion: 'unsupported',
-        code: `
-        export async function handler() {
-          console.log('input', input);
-          return input;
-        }
-        `,
       });
     expect(res1.status).toBe(201);
     const bot = res1.body as Bot;
@@ -172,7 +166,14 @@ describe('Execute', () => {
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', 'application/fhir+json')
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({});
+      .send({
+        code: `
+        export async function handler() {
+          console.log('input', input);
+          return input;
+        }
+        `,
+      });
     expect(res2.status).toBe(200);
 
     // Step 3: Execute the bot
@@ -206,7 +207,7 @@ describe('Execute', () => {
     expect(res2.status).toBe(201);
     expect(res2.body.resourceType).toBe('Bot');
     expect(res2.body.id).toBeDefined();
-    expect(res2.body.code).toBeDefined();
+    expect(res2.body.sourceCode).toBeDefined();
 
     // Try to execute the bot
     // This should fail because bots are not enabled
@@ -275,5 +276,93 @@ describe('Execute', () => {
       .send({ foo: 'bar' });
     expect(res.status).toBe(200);
     expect(res.body.foo).toBe('bar');
+  });
+
+  test('VM context bot success', async () => {
+    // Temporarily enable VM context bots
+    getConfig().vmContextBotsEnabled = true;
+
+    // Create a bot with empty code
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'vmcontext',
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as Bot;
+
+    // Try to execute before deploying
+    // This should fail
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue[0].details.text).toEqual('No executable code');
+
+    // Update the bot with an invalid code URL
+    const res3 = await request(app)
+      .put(`/fhir/R4/Bot/${bot.id}`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        ...bot,
+        executableCode: {
+          contentType: 'text/javascript',
+          url: 'https://example.com/invalid.js',
+        },
+      });
+    expect(res3.status).toBe(200);
+
+    // Try to execute with invalid code URL
+    // This should fail
+    const res4 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res4.status).toBe(400);
+    expect(res4.body.issue[0].details.text).toEqual('Executable code is not a Binary');
+
+    // Deploy the bot
+    const res5 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+          exports.handler = async function () {
+            return { msg: 'test' }
+          };
+      `,
+      });
+    expect(res5.status).toBe(200);
+
+    // Execute the bot success
+    const res6 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res6.status).toBe(200);
+    expect(res6.body).toMatchObject({ msg: 'test' });
+
+    // Disable VM context bots
+    getConfig().vmContextBotsEnabled = false;
+
+    // Try to execute when VM context bots are disabled
+    // This should fail
+    const res7 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res7.status).toBe(400);
+    expect(res7.body.issue[0].details.text).toEqual('VM Context bots not enabled on this server');
   });
 });
