@@ -12,8 +12,8 @@ export function createMedplumCommand(name: string): Command {
     .addOption(
       new Option('--auth-type <authType>', 'Type of authentication').choices([
         'basic',
-        'client_credentials',
-        'authorization_code',
+        'client-credentials',
+        'authorization-code',
         'jwt-bearer',
         'token-exchange',
       ])

@@ -50,8 +50,8 @@ medplum profile set <profileName> \
 | Accepted Auth Type |
 | ------------------ |
 | basic              |
-| client_credentials |
-| authorization_code |
+| client-credentials |
+| authorization-code |
 
 The profile will now be stored in a file directory in `~.medplum/<profileName>.json`
 
@@ -72,7 +72,7 @@ medplum profile set example \
 
 ```bash
 medplum profile set example \
-    --auth-type "client_credentials" \
+    --auth-type "client-credentials" \
     --base-url "https://api.example.com" \
     --fhir-url-path "fhir/R4" \
     --token-url "oauth2/token" \
