@@ -1475,8 +1475,8 @@ export class Repository extends BaseRepository implements FhirRepository {
             // If the patient has an account, then use it as the resource account.
             return patient.meta.account;
           }
-        } catch (err) {
-          logger.debug('Error setting patient compartment', { error: err });
+        } catch (err: any) {
+          logger.debug('Error setting patient compartment', err);
         }
       }
     }

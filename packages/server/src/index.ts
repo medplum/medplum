@@ -4,11 +4,11 @@ import { loadConfig } from './config';
 import { logger, parseLogLevel } from './logger';
 
 export async function main(configName: string): Promise<void> {
-  process.on('unhandledRejection', (err) => {
-    logger.error('Unhandled promise rejection', { error: err });
+  process.on('unhandledRejection', (err: any) => {
+    logger.error('Unhandled promise rejection', err);
   });
   process.on('uncaughtException', (err) => {
-    logger.error('Uncaught exception thrown', { error: err });
+    logger.error('Uncaught exception thrown', err);
     process.exit(1);
   });
 

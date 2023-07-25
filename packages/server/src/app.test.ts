@@ -67,14 +67,18 @@ describe('App', () => {
     console.log = jest.fn();
     const app = express();
     app.get('/throw', () => {
-      throw new Error('Error');
+      throw new Error('Catastrophe!');
     });
     const config = await loadTestConfig();
     await initApp(app, config);
     const res = await request(app).get('/throw');
     expect(res.status).toBe(500);
     expect(res.body).toMatchObject({ msg: 'Internal Server Error' });
-    expect(console.log).toHaveBeenCalled();
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /^\{"level":"ERROR","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"Unhandled error","error":"Error: Catastrophe!"\}$/
+      )
+    );
     await shutdownApp();
   });
 

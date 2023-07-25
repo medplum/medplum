@@ -45,6 +45,9 @@ export const logger = {
   },
 
   log(level: string, msg: string, data?: Record<string, any>): void {
+    if (data instanceof Error) {
+      data = { error: data.toString() };
+    }
     console.log(
       JSON.stringify({
         level,
