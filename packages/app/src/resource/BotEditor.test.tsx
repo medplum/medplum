@@ -15,7 +15,7 @@ describe('BotEditor', () => {
   async function setup(url: string): Promise<void> {
     if (!medplum) {
       medplum = new MockClient();
-      jest.spyOn(medplum, 'download').mockImplementation(async () => ({ text: async () => 'test' }));
+      jest.spyOn(medplum, 'download').mockImplementation(async () => ({ text: async () => 'test' } as unknown as Blob));
     }
 
     // Mock bot operations
