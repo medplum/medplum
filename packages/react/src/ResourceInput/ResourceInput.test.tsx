@@ -1,5 +1,5 @@
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { ResourceInput, ResourceInputProps } from './ResourceInput';
@@ -46,7 +46,8 @@ describe('ResourceInput', () => {
         placeholder: 'Test',
       });
     });
-    expect(screen.getByPlaceholderText('Test')).toBeInTheDocument();
+    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
   test('Use autocomplete', async () => {
@@ -103,7 +104,7 @@ describe('ResourceInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByDisplayValue('Homer Simpson')).toBeDefined();
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(onChange).toHaveBeenCalled();
   });
 });

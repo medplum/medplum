@@ -527,7 +527,11 @@ class MockFetchClient {
 
     let body = undefined;
     if (options.body) {
-      body = JSON.parse(options.body);
+      try {
+        body = JSON.parse(options.body);
+      } catch (err) {
+        body = options.body;
+      }
     }
 
     const request: FhirRequest = {

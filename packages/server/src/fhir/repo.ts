@@ -544,8 +544,9 @@ export class Repository extends BaseRepository implements FhirRepository {
       const elapsedTime = Number(process.hrtime.bigint() - start);
       const MILLISECONDS = 1e6; // Conversion factor from ns to ms
       if (elapsedTime > 10 * MILLISECONDS) {
-        logger.warn('High validator latency', {
-          resource: `${resource.resourceType}/${resource.id}`,
+        logger.debug('High validator latency', {
+          resourceType: resource.resourceType,
+          id: resource.id,
           time: elapsedTime / MILLISECONDS,
         });
       }

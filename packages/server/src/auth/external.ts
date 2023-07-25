@@ -23,7 +23,7 @@ export interface ExternalAuthState {
   nonce?: string;
   launch?: string;
   codeChallenge?: string;
-  codeChallengeMethod?: string;
+  codeChallengeMethod?: 'plain' | 'S256';
   redirectUri?: string;
 }
 

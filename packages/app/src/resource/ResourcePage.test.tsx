@@ -140,7 +140,7 @@ describe('ResourcePage', () => {
 
     // Select "Test Bot" in the bot input field
 
-    const input = screen.getByRole('combobox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
 
     // Enter "Simpson"
     await act(async () => {

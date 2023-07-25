@@ -34,7 +34,7 @@ export function CodeInput(props: CodeInputProps): JSX.Element {
       defaultValue={codeToValueSetElement(value)}
       onChange={handleChange}
       creatable={props.creatable}
-      maxSelectedValues={props.maxSelectedValues}
+      maxSelectedValues={props.maxSelectedValues ?? 1}
       clearSearchOnChange={props.clearSearchOnChange}
       clearable={props.clearable}
     />

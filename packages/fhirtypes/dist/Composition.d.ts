@@ -169,7 +169,7 @@ export interface Composition {
   /**
    * The code specifying the level of confidentiality of the Composition.
    */
-  confidentiality?: string;
+  confidentiality?: 'U' | 'L' | 'M' | 'N' | 'R' | 'V';
 
   /**
    * A participant who has attested to the accuracy of the
