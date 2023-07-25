@@ -16,7 +16,7 @@ export async function createProfile(
   lastName: string,
   email: string | undefined
 ): Promise<ProfileResource> {
-  logger.info(`Create ${resourceType}: ${firstName} ${lastName}`);
+  logger.info('Creating profile', { resourceType, firstName, lastName });
   let telecom: ContactPoint[] | undefined = undefined;
   if (email) {
     telecom = [{ system: 'email', use: 'work', value: email }];
@@ -34,7 +34,7 @@ export async function createProfile(
     ],
     telecom,
   });
-  logger.info('Created: ' + result.id);
+  logger.info('Created profile', { id: result.id });
   return result;
 }
 
@@ -44,7 +44,7 @@ export async function createProjectMembership(
   profile: ProfileResource,
   details?: Partial<ProjectMembership>
 ): Promise<ProjectMembership> {
-  logger.info('Create project membership: ' + project.name);
+  logger.info('Creating project membership', { name: project.name });
   const result = await systemRepo.createResource<ProjectMembership>({
     ...details,
     resourceType: 'ProjectMembership',
@@ -52,7 +52,7 @@ export async function createProjectMembership(
     user: createReference(user),
     profile: createReference(profile),
   });
-  logger.info('Created: ' + result.id);
+  logger.info('Created project memberships', { id: result.id });
   return result;
 }
 

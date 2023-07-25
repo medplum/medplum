@@ -50,8 +50,8 @@ async function startExport(req: Request, res: Response, exportType: string): Pro
   const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
   exportResources(exporter, project, types, exportType)
-    .then(() => logger.info(`${exportType} level export for ${project.id} is completed`))
-    .catch((err) => logger.error(`${exportType} level export for  ${project.id} failed: ${err}`));
+    .then(() => logger.info('Export completed', { exportType, id: project.id }))
+    .catch((err) => logger.error('Export failure', { exportType, id: project.id, error: err }));
 
   sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
 }

@@ -126,9 +126,9 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
 });
 
 export async function deployLambda(client: LambdaClient, name: string, code: string): Promise<void> {
-  logger.info('Deploying lambda function for bot: ' + name);
+  logger.info('Deploying lambda function for bot', { name });
   const zipFile = await createZipFile(code);
-  logger.debug('Lambda function zip size: ' + zipFile.byteLength);
+  logger.debug('Lambda function zip size', { bytes: zipFile.byteLength });
 
   const exists = await lambdaExists(client, name);
   if (!exists) {

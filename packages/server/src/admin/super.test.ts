@@ -142,8 +142,9 @@ describe('Super Admin routes', () => {
   });
 
   test('Rebuild ValueSetElements as super admin with respond-async error', async () => {
+    const err = new Error('createvalueSet test error');
     (createValueSets as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
-      return Promise.reject(new Error('createvalueSet test error'));
+      return Promise.reject(err);
     });
     const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
 
@@ -155,7 +156,7 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toEqual(202);
-    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.stringContaining('createvalueSet test error'));
+    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ error: err }));
   });
 
   test('Rebuild ValueSetElements access denied', async () => {
@@ -197,8 +198,9 @@ describe('Super Admin routes', () => {
   });
 
   test('Rebuild StructureDefinitions as super admin with respond-async error', async () => {
+    const err = new Error('structuredefinitions test error');
     (createStructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
-      return Promise.reject(new Error('structuredefinitions test error'));
+      return Promise.reject(err);
     });
     const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
 
@@ -210,7 +212,7 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toEqual(202);
-    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.stringContaining('structuredefinitions test error'));
+    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ error: err }));
   });
 
   test('Rebuild StructureDefinitions access denied', async () => {
@@ -252,8 +254,9 @@ describe('Super Admin routes', () => {
   });
 
   test('Rebuild searchparameters as super admin with respond-async error', async () => {
+    const err = new Error('rebuild searchparameters test error');
     (createSearchParameters as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
-      return Promise.reject(new Error('rebuild searchparameters test error'));
+      return Promise.reject(err);
     });
     const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
 
@@ -265,7 +268,7 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toEqual(202);
-    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.stringContaining('rebuild searchparameters test error'));
+    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ error: err }));
   });
 
   test('Rebuild SearchParameters access denied', async () => {
@@ -331,8 +334,9 @@ describe('Super Admin routes', () => {
   });
 
   test('Reindex with respond-async error', async () => {
+    const err = new Error('reindex test error');
     jest.spyOn(systemRepo, 'reindexResourceType').mockImplementationOnce((): Promise<any> => {
-      return Promise.reject(new Error('reindex test error'));
+      return Promise.reject(err);
     });
     const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
 
@@ -346,7 +350,7 @@ describe('Super Admin routes', () => {
       });
 
     expect(res.status).toEqual(202);
-    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.stringContaining('reindex test error'));
+    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ error: err }));
   });
 
   test('Rebuild compartments access denied', async () => {
@@ -401,8 +405,9 @@ describe('Super Admin routes', () => {
   });
 
   test('Rebuild compartments with respond-async error', async () => {
+    const err = new Error('rebuildCompartmentsForResourceType test error');
     jest.spyOn(systemRepo, 'rebuildCompartmentsForResourceType').mockImplementationOnce((): Promise<any> => {
-      return Promise.reject(new Error('rebuildCompartmentsForResourceType test error'));
+      return Promise.reject(err);
     });
     const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
 
@@ -416,9 +421,7 @@ describe('Super Admin routes', () => {
       });
 
     expect(res.status).toEqual(202);
-    expect(loggerErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('rebuildCompartmentsForResourceType test error')
-    );
+    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ error: err }));
   });
 
   test('Set password access denied', async () => {

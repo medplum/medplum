@@ -80,7 +80,6 @@ import { rewriteAttachments, RewriteMode } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, Operator, SelectQuery } from './sql';
 import { getSearchParameters } from './structure';
-import { formatDuration } from '../util/time';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -535,18 +534,21 @@ export class Repository extends BaseRepository implements FhirRepository {
         try {
           await this.validateProfiles(resource, profileUrls);
         } catch (err) {
-          logger.error(`Profile validation error on ${resource.resourceType}/${resource.id}: ${err}`);
+          logger.error('Profile validation error', {
+            resource: `${resource.resourceType}/${resource.id}`,
+            err,
+          });
         }
       }
 
       const elapsedTime = Number(process.hrtime.bigint() - start);
       const MILLISECONDS = 1e6; // Conversion factor from ns to ms
       if (elapsedTime > 10 * MILLISECONDS) {
-        logger.debug(
-          `High validator latency on ${resource.resourceType}/${resource.id}: time=${(
-            elapsedTime / MILLISECONDS
-          ).toPrecision(3)} ms`
-        );
+        logger.debug('High validator latency', {
+          resourceType: resource.resourceType,
+          id: resource.id,
+          time: elapsedTime / MILLISECONDS,
+        });
       }
     } else {
       validateResourceWithJsonSchema(resource);
@@ -559,15 +561,20 @@ export class Repository extends BaseRepository implements FhirRepository {
       const profile = await this.loadProfile(url);
       const loadTime = Number(process.hrtime.bigint() - loadStart);
       if (!profile) {
-        logger.warn(`Unknown profile referenced in ${resource.resourceType}/${resource.id}: ${url}`);
+        logger.warn('Unknown profile referenced', {
+          resource: `${resource.resourceType}/${resource.id}`,
+          url,
+        });
         continue;
       }
       const validateStart = process.hrtime.bigint();
       validate(resource, profile);
       const validateTime = Number(process.hrtime.bigint() - validateStart);
-      logger.debug(
-        `Profile validation timing: load=${formatDuration(loadTime)}; validate=${formatDuration(validateTime)}`
-      );
+      logger.debug('Profile loaded', {
+        url,
+        loadTime,
+        validateTime,
+      });
     }
   }
 
@@ -730,7 +737,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         (resource.meta as Meta).compartment = this.getCompartments(resource);
         await this.updateResourceImpl(JSON.parse(row.content) as Resource, false);
       } catch (err) {
-        logger.error('Failed to rebuild compartments for resource', normalizeErrorString(err));
+        logger.error('Failed to rebuild compartments for resource', { error: normalizeErrorString(err) });
       }
     });
   }
@@ -754,7 +761,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       try {
         await this.reindexResourceImpl(JSON.parse(row.content) as Resource);
       } catch (err) {
-        logger.error('Failed to reindex resource', normalizeErrorString(err));
+        logger.error('Failed to reindex resource', { error: normalizeErrorString(err) });
       }
     });
   }
@@ -1468,7 +1475,7 @@ export class Repository extends BaseRepository implements FhirRepository {
             // If the patient has an account, then use it as the resource account.
             return patient.meta.account;
           }
-        } catch (err) {
+        } catch (err: any) {
           logger.debug('Error setting patient compartment', err);
         }
       }

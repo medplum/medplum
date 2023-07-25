@@ -224,7 +224,7 @@ async function followCanonicalElements(
         filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
       });
       if (linkedResources.length > 1) {
-        logger.warn(`Warning: Found more than 1 resource with canonical URL ${url}`);
+        logger.warn('Found more than 1 resource with canonical URL', { url });
       }
 
       // Cache here to speed up subsequent loop iterations

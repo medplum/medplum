@@ -4,17 +4,15 @@ import { loadConfig } from './config';
 import { logger, parseLogLevel } from './logger';
 
 export async function main(configName: string): Promise<void> {
-  process.on('unhandledRejection', (err) => {
+  process.on('unhandledRejection', (err: any) => {
     logger.error('Unhandled promise rejection', err);
   });
   process.on('uncaughtException', (err) => {
-    logger.error(err, 'Uncaught Exception thrown');
+    logger.error('Uncaught exception thrown', err);
     process.exit(1);
   });
 
-  logger.info('Starting Medplum Server...');
-  logger.info('configName: ' + configName);
-
+  logger.info('Starting Medplum Server...', { configName });
   const config = await loadConfig(configName);
   if (config.logLevel) {
     logger.level = parseLogLevel(config.logLevel);
@@ -23,7 +21,7 @@ export async function main(configName: string): Promise<void> {
   const app = await initApp(express(), config);
   const server = app.listen(config.port);
   server.keepAliveTimeout = config.keepAliveTimeout ?? 90000;
-  logger.info('Server started on port', config.port);
+  logger.info('Server started', { port: config.port });
 }
 
 if (require.main === module) {
