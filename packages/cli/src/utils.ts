@@ -4,7 +4,6 @@ import { existsSync, readFileSync, writeFile } from 'fs';
 import { resolve } from 'path';
 import internal from 'stream';
 import tar from 'tar';
-import { FileSystemStorage } from './storage';
 
 interface MedplumConfig {
   readonly baseUrl?: string;
@@ -180,16 +179,4 @@ export function getUnsupportedExtension(): Extension {
       },
     ],
   };
-}
-
-export function checkForProfile(options: any): boolean {
-  if (options.profile) {
-    const storage = new FileSystemStorage(options.profile);
-    const optionsObject = storage.getObject('options');
-    if (!optionsObject) {
-      console.log(`Profile ${options.profile} does not exist`);
-      return false;
-    }
-  }
-  return true;
 }

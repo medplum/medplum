@@ -4,9 +4,13 @@ import { FileSystemStorage } from '../storage';
 export async function createMedplumClient(options: MedplumClientOptions, profileName?: string): Promise<MedplumClient> {
   const profile = profileName ?? 'default';
   const storage = new FileSystemStorage(profile);
-  const { baseUrl, fhirUrlPath, accessToken, tokenUrl, authorizeUrl, fetchApi, clientId, clientSecret } =
-    getClientValues(options, storage);
+  checkForProfile(storage, profile);
 
+  const { baseUrl, fhirUrlPath, accessToken, tokenUrl, authorizeUrl, clientId, clientSecret } = getClientValues(
+    options,
+    storage
+  );
+  const fetchApi = options.fetch ?? fetch;
   const medplumClient = new MedplumClient({
     fetch: fetchApi,
     baseUrl,
@@ -28,7 +32,7 @@ export async function createMedplumClient(options: MedplumClientOptions, profile
   return medplumClient;
 }
 
-function getClientValues(options: MedplumClientOptions, storage: FileSystemStorage): Record<string, any> {
+function getClientValues(options: MedplumClientOptions, storage: FileSystemStorage): MedplumClientOptions {
   const storageOptions: any = storage.getObject('options');
   const baseUrl =
     options.baseUrl ?? storageOptions?.baseUrl ?? process.env['MEDPLUM_BASE_URL'] ?? 'https://api.medplum.com/';
@@ -39,14 +43,22 @@ function getClientValues(options: MedplumClientOptions, storage: FileSystemStora
   const authorizeUrl =
     options.authorizeUrl ?? storageOptions?.authorizeUrl ?? process.env['MEDPLUM_AUTHORIZE_URL'] ?? '';
 
-  const fetchApi = options.fetch ?? fetch;
-
   const clientId = options.clientId ?? storageOptions?.clientId ?? process.env['MEDPLUM_CLIENT_ID'];
   const clientSecret = options.clientSecret ?? storageOptions?.clientSecret ?? process.env['MEDPLUM_CLIENT_SECRET'];
 
-  return { baseUrl, fhirUrlPath, accessToken, tokenUrl, authorizeUrl, fetchApi, clientId, clientSecret };
+  return { baseUrl, fhirUrlPath, accessToken, tokenUrl, authorizeUrl, clientId, clientSecret };
 }
 
 export function onUnauthenticated(): void {
   console.log('Unauthenticated: run `npx medplum login` to sign in');
+}
+
+function checkForProfile(storage: FileSystemStorage, profile: string): void {
+  if (profile === 'default') {
+    return;
+  }
+  const optionsObject = storage.getObject('options');
+  if (!optionsObject) {
+    throw new Error(`Profile ${profile} does not exist`);
+  }
 }
