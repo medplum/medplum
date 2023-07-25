@@ -33,22 +33,16 @@ whoami.action(async (options) => {
 });
 
 async function startLogin(medplum: MedplumClient, profile: any): Promise<void> {
-  if (!profile) {
-    await medplumNoProfileLogin(medplum);
+  if (profile.authType === 'jwt-bearer') {
+    console.log('Starting JWT login...');
+    await medplum.startJwtBearerLogin(profile.clientId, profile.assertion, profile.scope);
+    return;
+  } else if (profile.authType === 'token-exchange') {
+    console.log('Starting token exchange login...');
+    await medplum.exchangeExternalAccessToken(profile.accessToken);
     return;
   }
-  switch (profile.authType) {
-    case 'jwt-bearer':
-      console.log('Starting JWT login...');
-      await medplum.startJwtBearerLogin(profile.clientId, profile.assertion, profile.scope);
-      return;
-    case 'token-exchange':
-      console.log('Starting token exchange login...');
-      await medplum.exchangeExternalAccessToken(profile.accessToken);
-      return;
-    default:
-      console.log(`Unsupported auth type: ${profile.authType}`);
-  }
+  await medplumAuthorizationCodeLogin(medplum);
 }
 
 async function startWebServer(medplum: MedplumClient): Promise<void> {
@@ -113,7 +107,7 @@ function printMe(medplum: MedplumClient): void {
   }
 }
 
-async function medplumNoProfileLogin(medplum: MedplumClient): Promise<void> {
+async function medplumAuthorizationCodeLogin(medplum: MedplumClient): Promise<void> {
   await startWebServer(medplum);
   const loginUrl = new URL(medplum.getAuthorizeUrl());
   loginUrl.searchParams.set('client_id', clientId);

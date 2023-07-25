@@ -44,7 +44,10 @@ medplum profile set <profileName> \
     --fhir-url-path <fhir-url-path> \
     --token-url <token-url> \
     --client-id <client-id> \
-    --client-secret <client-secret>
+    --client-secret <client-secret> \
+    --assertion <assertion> \
+    --scope <scope> \
+    --access-token <access-token>
 ```
 
 | Accepted Auth Type |
@@ -52,6 +55,8 @@ medplum profile set <profileName> \
 | basic              |
 | client-credentials |
 | authorization-code |
+| jwt-bearer         |
+| token-exchange     |
 
 The profile will now be stored in a file directory in `~.medplum/<profileName>.json`
 
@@ -78,6 +83,31 @@ medplum profile set example \
     --token-url "oauth2/token" \
     --client-id "MY_CLIENT_ID" \
     --client-secret "MY_CLIENT_SECRET"
+```
+
+### Example: JWT
+
+```bash
+medplum profile set example \
+    --auth-type "jwt-bearer" \
+    --base-url "https://api.example.com" \
+    --fhir-url-path "fhir/R4" \
+    --token-url "oauth2/token" \
+    --client-id "MY_CLIENT_ID" \
+    --assertion "ASSERTION" \
+    --scope "openid profile"
+```
+
+### Example: Token Exchange
+
+```bash
+medplum profile set example \
+    --auth-type "token-exchange" \
+    --base-url "https://api.example.com" \
+    --fhir-url-path "fhir/R4" \
+    --token-url "oauth2/token" \
+    --client-id "MY_CLIENT_ID" \
+    --access-token "ACCESS_TOKEN"
 ```
 
 ### Example: User Login / Authorization Code
