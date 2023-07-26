@@ -12,23 +12,33 @@
   "dependencies": {
     "@emotion/react": "11.11.1",
     "@emotion/server": "11.11.0",
-    "@mantine/core": "6.0.16",
-    "@mantine/hooks": "6.0.16",
-    "@mantine/next": "6.0.16",
-    "@mantine/notifications": "6.0.16",
+    "@mantine/core": "6.0.17",
+    "@mantine/hooks": "6.0.17",
+    "@mantine/next": "6.0.17",
+    "@mantine/notifications": "6.0.17",
     "@medplum/core": "2.0.28",
+    "@medplum/eslint-config": "2.0.28",
     "@medplum/react": "2.0.28",
-    "next": "13.4.10",
+    "next": "13.4.12",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "2.0.28",
-    "@types/node": "20.4.2",
-    "@types/react": "18.2.15",
+    "@types/node": "20.4.5",
+    "@types/react": "18.2.17",
     "@types/react-dom": "18.2.7",
-    "eslint": "8.44.0",
-    "eslint-config-next": "13.4.9",
+    "eslint-config-next": "13.4.12",
     "typescript": "5.1.6"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config",
+      "next/core-web-vitals"
+    ]
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true
   }
 }

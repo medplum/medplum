@@ -10,29 +10,28 @@
   },
   "devDependencies": {
     "@emotion/react": "11.11.1",
-    "@mantine/core": "6.0.16",
-    "@mantine/hooks": "6.0.16",
-    "@mantine/notifications": "6.0.16",
+    "@mantine/core": "6.0.17",
+    "@mantine/hooks": "6.0.17",
+    "@mantine/notifications": "6.0.17",
     "@medplum/core": "2.0.28",
+    "@medplum/eslint-config": "2.0.28",
     "@medplum/fhirtypes": "2.0.28",
     "@medplum/react": "2.0.28",
-    "@tabler/icons-react": "2.25.0",
-    "@types/node": "20.4.2",
-    "@types/react": "18.2.15",
+    "@tabler/icons-react": "2.29.0",
+    "@types/node": "20.4.5",
+    "@types/react": "18.2.17",
     "@types/react-dom": "18.2.7",
-    "@typescript-eslint/eslint-plugin": "5.60.1",
-    "@typescript-eslint/parser": "5.60.1",
     "@vitejs/plugin-react": "4.0.3",
-    "eslint": "8.44.0",
-    "eslint-config-prettier": "8.8.0",
-    "eslint-plugin-prettier": "4.2.1",
-    "eslint-plugin-react-hooks": "4.6.0",
-    "prettier": "2.8.8",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "6.14.1",
+    "react-router-dom": "6.14.2",
     "typescript": "5.1.6",
-    "vite": "4.4.3"
+    "vite": "4.4.7"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
   },
   "prettier": {
     "printWidth": 120,
