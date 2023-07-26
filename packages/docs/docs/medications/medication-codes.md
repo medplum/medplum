@@ -4,6 +4,10 @@ keywords:
   - ndc
   - drugs
   - drug codes
+  - medications
+tags:
+  - medications
+  - rxnorm
 ---
 
 # Medication Code Systems
@@ -27,31 +31,32 @@ RxNorm is the preferred code system of the [US Core Medication Profile](https://
 
 RXNorm is a hierarchical code system, that allows for different levels of specificity, depending on the application. The RXNorm vocabulary establishes standard names and identifiers for combinations of ingredients, strengths, and dose forms. This is the information doctors typically include when they write a prescription because they often can’t know the specific product that will be used to fill it.
 
-RXNorm _also_ allows the representation of generics, non-brand specific medications, and explicit dose form, strength, and packaging types, making it flexible and comprehensive.
+Each level of the RxNorm hierarchy is called a "term type" (TTY), and each element is called a "concept". Each concept in has a unique numeric code, know as it's **RxCUI**. The RXNorm hierarchy has separate codes for brand name vs. generic drugs, drug name synonyms, as well as explicit dose form, strength, and packaging types.
 
-Each level of the RxNorm hierarchy is called a "term type" (TTY), and each element is called a "concept". Each concept in has a unique numeric code, know as it's **RxCUI**.
+The [RxNAV](https://mor.nlm.nih.gov/RxNav/) browser is a useful tool to explore the RxNorm system.
 
-The [RxNAV](https://mor.nlm.nih.gov/RxNav/) browser is a useful tool to explore the RxNorm system. The table below shows a the range of term types for the antidepressant Prozac:
+The table below shows a the range of term types for the antidepressant Prozac:
 
-| TTY  | Name                             | Description                                                                                                                                                                                        | Example Concept                  | RxCUI   |
-| ---- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------- |
-| IN   | Ingredient                       | A compound or moiety that gives the drug its distinctive clinical properties. Ingredients generally use the United States Adopted Name (USAN).                                                     | Fluoxetine                       | 4493    |
-| PIN  | Precise Ingredient               | A specified form of the ingredient that may or may not be clinically active. Most precise ingredients are salt or isomer forms.                                                                    | Fluoxetine Hydrochloride         | 227224  |
-| MIN  | Multiple Ingredients             | Two or more ingredients appearing together in a single drug preparation, created from SCDF. In rare cases when IN/PIN or PIN/PIN combinations of the same base ingredient exist, created from SCD. | Fluoxetine / Olanzapine          | 611247  |
-| SCDC | Semantic Clinical Drug Component | Ingredient + Strength                                                                                                                                                                              | Fluoxetine 40 mg                 | 330341  |
-| SCDF | Semantic Clinical Drug Form      | Ingredient + Dose Form                                                                                                                                                                             | FLUoxetine Oral Capsule          | 372231  |
-| SCDG | Semantic Clinical Drug Group     | Ingredient + Dose Form Group                                                                                                                                                                       | Fluoxetine Oral Product          | 1160836 |
-| SCD  | Semantic Clinical Drug           | Ingredient + Strength + Dose Form                                                                                                                                                                  | FLUoxetine 40 MG Oral Capsule    | 313989  |
-| BN   | Brand Name                       | A proprietary name for a family of products containing a specific active ingredient.                                                                                                               | Prozac                           | 58827   |
-| SBDC | Semantic Branded Drug Component  | Ingredient + Strength + Brand Name                                                                                                                                                                 | fluoxetine 40 MG [PROzac]        | 574512  |
-| SBDF | Semantic Branded Drug Form       | Ingredient + Dose Form + Brand Name                                                                                                                                                                | FLUoxetine Oral Capsule [PROzac] | 93904   |
-| SBDG | Semantic Branded Drug Group      | Brand Name + Dose Form Group                                                                                                                                                                       | Prozac Pill                      | 1182487 |
-| SBD  | Semantic Branded Drug            | Ingredient + Strength + Dose Form + Brand Name                                                                                                                                                     | Prozac 40 MG Oral Capsule        | 261287  |
-| PSN  | Prescribable Name                | Synonym of another TTY, given for clarity and for display purposes in electronic prescribing applications. Only one PSN per concept.                                                               | PROzac 40 MG Oral Capsule        |         |
-| DF   | Dose Form                        | See [Appendix 2](https://www.nlm.nih.gov/research/umls/rxnorm/docs/2016/appendix2.html) for a full list of Dose Forms.                                                                             | Oral Capsule                     | 316965  |
-| DFG  | Dose Form Group                  | See [Appendix 3](https://www.nlm.nih.gov/research/umls/rxnorm/docs/2016/appendix3.html) for a full list of Dose Form Groups.                                                                       | Pill                             | 1151133 |
+| TTY  | Name                             | Description                                                                                                                                                                                        | Example Concept                                           | RxCUI   |
+| ---- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------- |
+| IN   | Ingredient                       | A compound or moiety that gives the drug its distinctive clinical properties. Ingredients generally use the United States Adopted Name (USAN).                                                     | Fluoxetine                                                | 4493    |
+| PIN  | Precise Ingredient               | A specified form of the ingredient that may or may not be clinically active. Most precise ingredients are salt or isomer forms.                                                                    | Fluoxetine Hydrochloride                                  | 227224  |
+| MIN  | Multiple Ingredients             | Two or more ingredients appearing together in a single drug preparation, created from SCDF. In rare cases when IN/PIN or PIN/PIN combinations of the same base ingredient exist, created from SCD. | Fluoxetine / Olanzapine                                   | 611247  |
+| SCDC | Semantic Clinical Drug Component | Ingredient + Strength                                                                                                                                                                              | Fluoxetine 40 mg                                          | 330341  |
+| SCDF | Semantic Clinical Drug Form      | Ingredient + Dose Form                                                                                                                                                                             | FLUoxetine Oral Capsule                                   | 372231  |
+| SCDG | Semantic Clinical Drug Group     | Ingredient + Dose Form Group                                                                                                                                                                       | Fluoxetine Oral Product                                   | 1160836 |
+| SCD  | Semantic Clinical Drug           | Ingredient + Strength + Dose Form                                                                                                                                                                  | FLUoxetine 40 MG Oral Capsule                             | 313989  |
+| BN   | Brand Name                       | A proprietary name for a family of products containing a specific active ingredient.                                                                                                               | Prozac                                                    | 58827   |
+| SBDC | Semantic Branded Drug Component  | Ingredient + Strength + Brand Name                                                                                                                                                                 | fluoxetine 40 MG [PROzac]                                 | 574512  |
+| SBDF | Semantic Branded Drug Form       | Ingredient + Dose Form + Brand Name                                                                                                                                                                | FLUoxetine Oral Capsule [PROzac]                          | 93904   |
+| SBDG | Semantic Branded Drug Group      | Brand Name + Dose Form Group                                                                                                                                                                       | Prozac Pill                                               | 1182487 |
+| SBD  | Semantic Branded Drug            | Ingredient + Strength + Dose Form + Brand Name                                                                                                                                                     | Prozac 40 MG Oral Capsule                                 | 261287  |
+| PSN  | Prescribable Name                | Synonym of another TTY, given for clarity and for display purposes in electronic prescribing applications. Only one PSN per concept.                                                               | PROzac 40 MG Oral Capsule                                 |         |
+| SY   | Synonym                          | Synonym of another TTY, given for clarity.                                                                                                                                                         | fluoxetine 40 MG (as fluoxetine HCl 44.8 MG) Oral Capsule |         |
+| DF   | Dose Form                        | See [Appendix 2](https://www.nlm.nih.gov/research/umls/rxnorm/docs/2016/appendix2.html) for a full list of Dose Forms.                                                                             | Oral Capsule                                              | 316965  |
+| DFG  | Dose Form Group                  | See [Appendix 3](https://www.nlm.nih.gov/research/umls/rxnorm/docs/2016/appendix3.html) for a full list of Dose Form Groups.                                                                       | Pill                                                      | 1151133 |
 
-(source: https://www.nlm.nih.gov/research/umls/rxnorm/docs/appendix5.html)
+source: https://www.nlm.nih.gov/research/umls/rxnorm/docs/appendix5.html
 
 ## NDC
 
