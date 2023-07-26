@@ -13,7 +13,7 @@ Creating, updating and embedding FHIR Questionnaires for both patients and pract
 
 ## Other Resources
 
-- [Questionnaire Core Extensions](http://hl7.org/fhir/R4/questionnaire-profiles.html#extensions) - Because of the wide variety of data collection applications, the [`Questionnaire`](/docs/fhir/resources/questionnaire) resource has the most "core extensions" of any FHIR resource.
+- [Questionnaire Core Extensions](http://hl7.org/fhir/R4/questionnaire-profiles.html#extensions) - Because of the wide variety of data collection applications, the [`Questionnaire`](/docs/api/fhir/resources/questionnaire) resource has the most "core extensions" of any FHIR resource.
 - [Structured Data Capture (SDC) Implementation Guide](http://hl7.org/fhir/uv/sdc/) - A collection of profiles, extensions, and best practices for advanced questionnaire use cases.
   - [Modular Forms](http://hl7.org/fhir/uv/sdc/modular.html) - Reuse sections and questions between questionnaires
   - [Advanced Rendering](http://hl7.org/fhir/uv/sdc/rendering.html) - Additional extensions to inform how a questionnaire is displayed.
