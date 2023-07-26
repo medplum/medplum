@@ -173,6 +173,15 @@ export interface MedplumClientOptions {
   fetch?: FetchLike;
 
   /**
+   * The profile name.
+   *
+   * This is for handling multiple profiles to access different FHIR Servers
+   *
+   * If undefined, the default profile is "default".
+   */
+  profile?: string;
+
+  /**
    * Storage implementation.
    *
    * Default is window.localStorage (if available), this is the common implementation for use in the browser, or an in-memory storage implementation.  If using Medplum on a server it may be useful to provide a custom storage implementation, for example using redis, a database or a file based storage.  Medplum CLI is an an example of `FileSystemStorage`, for reference.

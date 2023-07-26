@@ -18,7 +18,7 @@ get
   .argument('<url>', 'Resource/$id')
   .option('--as-transaction', 'Print out the bundle as a transaction type')
   .action(async (url, options) => {
-    const medplum = await createMedplumClient(options, options.profile);
+    const medplum = await createMedplumClient(options);
     const response = await medplum.get(cleanUrl(url, options));
     if (options.asTransaction) {
       prettyPrint(convertToTransactionBundle(response));
@@ -34,7 +34,7 @@ patch.arguments('<url> <body>').action(async (url, body, options) => {
 });
 
 post.arguments('<url> <body>').action(async (url, body, options) => {
-  const medplum = await createMedplumClient(options, options.profile);
+  const medplum = await createMedplumClient(options);
 
   prettyPrint(await medplum.post(cleanUrl(url, options), parseBody(body)));
 });

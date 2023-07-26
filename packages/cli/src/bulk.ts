@@ -28,8 +28,8 @@ bulkExportCommand
     'optional target directory to save files from the bulk export operations.'
   )
   .action(async (options) => {
-    const { exportLevel, types, since, targetDirectory, profile } = options;
-    const medplum = await createMedplumClient(options, profile);
+    const { exportLevel, types, since, targetDirectory } = options;
+    const medplum = await createMedplumClient(options);
     const response = await medplum.bulkExport(exportLevel, types, since);
 
     response.output?.forEach(async ({ type, url }) => {

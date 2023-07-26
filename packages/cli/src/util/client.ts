@@ -1,8 +1,8 @@
 import { MedplumClient, MedplumClientOptions } from '@medplum/core';
 import { FileSystemStorage } from '../storage';
 
-export async function createMedplumClient(options: MedplumClientOptions, profileName?: string): Promise<MedplumClient> {
-  const profile = profileName ?? 'default';
+export async function createMedplumClient(options: MedplumClientOptions): Promise<MedplumClient> {
+  const profile = options.profile ?? 'default';
   const storage = new FileSystemStorage(profile);
   checkForProfile(storage, profile);
 
