@@ -221,3 +221,14 @@ export function getProfileOptions(profileName: string): any {
   const storage = new FileSystemStorage(profileName);
   return storage.getObject('options');
 }
+
+export function createProfile(profileName: string, options: any): void {
+  const storage = new FileSystemStorage(profileName);
+  storage.setObject('options', options);
+  console.log(`${profileName} profile created`);
+}
+
+export function getProfileOptions(profileName: string): any {
+  const storage = new FileSystemStorage(profileName);
+  return storage.getObject('options');
+}
