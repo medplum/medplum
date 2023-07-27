@@ -49,74 +49,74 @@ Example Drug Characteristics
 
 ```ts
 {
-  "resourceType": "MedicationKnowledge",
-  "code": {
-    "text": "acetaminophen 325 MG [Tylenol]",
-    "coding": [
+  resourceType: 'MedicationKnowledge',
+  code: {
+    text: 'acetaminophen 325 MG [Tylenol]',
+    coding: [
       {
-        "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-        "code": "569998"
+        system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+        code: '569998',
       },
       {
-        "system": "http://hl7.org/fhir/sid/ndc",
-        "code": "5058049501"
-      }
-    ]
+        system: 'http://hl7.org/fhir/sid/ndc',
+        code: '5058049501',
+      },
+    ],
   },
-  "drugCharacteristic": [
+  drugCharacteristic: [
     {
-      "type": {
-        "text": "Color",
-        "coding": [
+      type: {
+        text: 'Color',
+        coding: [
           {
-            "system": "http://terminology.hl7.org/CodeSystem/medicationknowledge-characteristic",
-            "code": "color"
-          }
-        ]
+            system: 'http://terminology.hl7.org/CodeSystem/medicationknowledge-characteristic',
+            code: 'color',
+          },
+        ],
       },
-      "valueString": "white"
+      valueString: 'white',
     },
     {
-      "type": {
-        "text": "Imprint Code",
-        "coding": [
+      type: {
+        text: 'Imprint Code',
+        coding: [
           {
-            "system": "http://terminology.hl7.org/CodeSystem/medicationknowledge-characteristic",
-            "code": "imprintcd"
-          }
-        ]
+            system: 'http://terminology.hl7.org/CodeSystem/medicationknowledge-characteristic',
+            code: 'imprintcd',
+          },
+        ],
       },
-      "valueString": "Tylenol"
-    }
+      valueString: 'Tylenol',
+    },
   ],
-  "amount": {
-    "value": 100,
-    "unit": "{tbl}"
+  amount: {
+    value: 100,
+    unit: '{tbl}',
   },
-  "packaging": {
-    "type": {
-      "text": "Bottle",
-      "coding": [
+  packaging: {
+    type: {
+      text: 'Bottle',
+      coding: [
         {
-          "system": "http://terminology.hl7.org/CodeSystem/medicationknowledge-package-type",
-          "code": "bot",
-          "display": "Bottle"
-        }
-      ]
+          system: 'http://terminology.hl7.org/CodeSystem/medicationknowledge-package-type',
+          code: 'bot',
+          display: 'Bottle',
+        },
+      ],
     },
-    "quantity": {
-      "value": 100,
-      "unit": "{tbl}"
-    }
+    quantity: {
+      value: 100,
+      unit: '{tbl}',
+    },
   },
-  "doseForm": {
-    "text": "tablet"
+  doseForm: {
+    text: 'tablet',
   },
-  "intendedRoute": [
+  intendedRoute: [
     {
-      "text": "oral"
-    }
-  ]
+      text: 'oral',
+    },
+  ],
   //...
 }
 ```
@@ -142,141 +142,145 @@ The `MedicationKnowledge.ingredients` field is used for listing ingredients of c
 
 The `MedicationKnowledge.amount` field indicates the total amount of the compound to be dispensed.
 
-For each ingredient, the `strength` is stored as a ratio of the total volume (e.g. 1mg / 100mg). The field `ingredient.active` indicates which of the listed ingredients are active.
+For each ingredient, the `strength` is stored as a ratio of the total volume (e.g. 1g per 100g). The field `ingredient.active` indicates which of the listed ingredients are active.
 
 ```ts
 {
-"resourceType": "MedicationKnowledge",
-// Dispense 200g total
-"amount": {
-  "value": 200,
-  "unit": "g"
-},
-// Each ingredient strength is listed as a ratio out of 100g
-"ingredient": [
-  {
-    "isActive": true,
-    "itemCodeableConcept": {
-      "text": "Baclofen powder",
-      "coding": [
-        {
-          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-          "code": "1292"
-        }
-      ]
-    },
-    "strength": {
-      "numerator": {
-        "value": 5,
-        "unit": "g"
-      },
-      "denominator": {
-        "value": 100,
-        "unit": "g"
-      }
-    }
+  resourceType: 'MedicationKnowledge',
+  // Dispense 200g total
+  amount: {
+    value: 200,
+    unit: 'g',
+    system: 'http://unitsofmeasure.org',
   },
-  {
-    "isActive": true,
-    "itemCodeableConcept": {
-      "text": "Ketoprofen powder",
-      "coding": [
-        {
-          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-          "code": "6142"
-        }
-      ]
-    },
-    "strength": {
-      "numerator": {
-        "value": 10,
-        "unit": "g"
+  // Each ingredient strength is listed as a ratio out of 100g
+  ingredient: [
+    {
+      isActive: true,
+      itemCodeableConcept: {
+        text: 'Baclofen powder',
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '1292',
+          },
+        ],
       },
-      "denominator": {
-        "value": 100,
-        "unit": "g"
-      }
-    }
+      strength: {
+        numerator: {
+          value: 5,
+          unit: 'g',
+          system: 'http://unitsofmeasure.org',
+        },
+        denominator: {
+          value: 100,
+          unit: 'g',
+          system: 'http://unitsofmeasure.org',
+        },
+      },
+    },
+    {
+      isActive: true,
+      itemCodeableConcept: {
+        text: 'Ketoprofen powder',
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '6142',
+          },
+        ],
+      },
+      strength: {
+        numerator: {
+          value: 10,
+          unit: 'g',
+          system: 'http://unitsofmeasure.org',
+        },
+        denominator: {
+          value: 100,
+          unit: 'g',
+        },
+      },
+    },
+    {
+      isActive: true,
+      itemCodeableConcept: {
+        text: 'Capcaicin 0.75 mg/mL topical lotion',
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '1992',
+          },
+        ],
+      },
+      strength: {
+        numerator: {
+          value: 0.075,
+          unit: 'g',
+        },
+        denominator: {
+          value: 100,
+          unit: 'g',
+        },
+      },
+    },
+    {
+      isActive: true,
+      itemCodeableConcept: {
+        text: 'Tetracaine 10 mg/mL topical cream',
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '10391',
+          },
+        ],
+      },
+      strength: {
+        numerator: {
+          value: 2,
+          unit: 'g',
+        },
+        denominator: {
+          value: 100,
+          unit: 'g',
+        },
+      },
+    },
+    {
+      isActive: false,
+      itemCodeableConcept: {
+        text: 'PLO flowable Pluronic Lecithin Organogel',
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '012345',
+          },
+        ],
+      },
+      strength: {
+        numerator: {
+          value: 82.9,
+          unit: 'g',
+        },
+        denominator: {
+          value: 100,
+          unit: 'g',
+        },
+      },
+    },
+  ],
+  packaging: {
+    type: {
+      text: 'Tube',
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/medicationknowledge-package-type',
+          code: 'tube',
+          display: 'Tube',
+        },
+      ],
+    },
   },
-  {
-    "isActive": true,
-    "itemCodeableConcept": {
-      "text": "Capcaicin 0.75 mg/mL topical lotion",
-      "coding": [
-        {
-          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-          "code": "1992"
-        }
-      ]
-    },
-    "strength": {
-      "numerator": {
-        "value": 0.075,
-        "unit": "g"
-      },
-      "denominator": {
-        "value": 100,
-        "unit": "g"
-      }
-    }
-  },
-  {
-    "isActive": true,
-    "itemCodeableConcept": {
-      "text": "Tetracaine 10 mg/mL topical cream",
-      "coding": [
-        {
-          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-          "code": "10391"
-        }
-      ]
-    },
-    "strength": {
-      "numerator": {
-        "value": 2,
-        "unit": "g"
-      },
-      "denominator": {
-        "value": 100,
-        "unit": "g"
-      }
-    }
-  },
-  {
-    "isActive": false,
-    "itemCodeableConcept": {
-      "text": "PLO flowable Pluronic Lecithin Organogel",
-      "coding": [
-        {
-          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-          "code": "012345"
-        }
-      ]
-    },
-    "strength": {
-      "numerator": {
-        "value": 82.9,
-        "unit": "g"
-      },
-      "denominator": {
-        "value": 100,
-        "unit": "g"
-      }
-    }
-  }
-],
-"packaging": {
-  "type": {
-    "text": "Tube",
-    "coding": [
-      {
-        "system": "http://terminology.hl7.org/CodeSystem/medicationknowledge-package-type",
-        "code": "tube",
-        "display": "Tube"
-      }
-    ]
-  }
-}
 //...
 }
 ```
