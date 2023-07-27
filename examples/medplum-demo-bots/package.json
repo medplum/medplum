@@ -19,7 +19,7 @@
     "@medplum/eslint-config": "2.0.28",
     "@medplum/fhirtypes": "2.0.28",
     "@medplum/mock": "2.0.28",
-    "@types/node": "20.4.2",
+    "@types/node": "20.4.5",
     "@types/node-fetch": "2.6.4",
     "@types/ssh2-sftp-client": "9.0.0",
     "@vitest/coverage-v8": "0.33.0",
@@ -28,7 +28,7 @@
     "node-fetch": "2.6.12",
     "pdfmake": "0.2.7",
     "ssh2-sftp-client": "9.1.0",
-    "stripe": "12.13.0",
+    "stripe": "12.14.0",
     "typescript": "5.1.6",
     "vitest": "0.33.0"
   },
@@ -42,6 +42,6 @@
     "singleQuote": true
   },
   "dependencies": {
-    "esbuild": "0.18.12"
+    "esbuild": "0.18.17"
   }
 }
