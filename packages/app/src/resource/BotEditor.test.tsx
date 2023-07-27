@@ -10,11 +10,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
 
 describe('BotEditor', () => {
-  async function setup(url: string, medplum?: MockClient): Promise<void> {
-    if (!medplum) {
-      medplum = new MockClient();
-      jest.spyOn(medplum, 'download').mockImplementation(async () => ({ text: async () => 'test' } as unknown as Blob));
-    }
+  async function setup(url: string, medplum = new MockClient()): Promise<void> {
+    jest.spyOn(medplum, 'download').mockImplementation(async () => ({ text: async () => 'test' } as unknown as Blob));
 
     // Mock bot operations
     medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);
@@ -231,8 +228,6 @@ describe('BotEditor', () => {
     await act(async () => {
       fireEvent.change(contentTypeInput, { target: { value: 'x-application/hl7-v2+er7' } });
     });
-
-    // Wait for the HL7 message to load
 
     await act(async () => {
       fireEvent.click(screen.getByText('Execute'));

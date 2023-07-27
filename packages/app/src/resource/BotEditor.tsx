@@ -187,10 +187,7 @@ export function BotEditor(): JSX.Element | null {
               { label: 'FHIR', value: 'application/fhir+json' },
               { label: 'HL7', value: 'x-application/hl7-v2+er7' },
             ]}
-            onChange={(e) => {
-              console.log('CODY setContentType(e.currentTarget.value);', e.currentTarget.value);
-              setContentType(e.currentTarget.value);
-            }}
+            onChange={(e) => setContentType(e.currentTarget.value)}
           />
           {contentType === 'application/fhir+json' ? (
             <JsonInput value={fhirInput} onChange={(newValue) => setFhirInput(newValue)} minRows={15} />
