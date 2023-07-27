@@ -2489,6 +2489,8 @@ export class MedplumClient extends EventTarget {
         console.error('Error parsing response', response.status, err);
         throw err;
       }
+    } else {
+      obj = await response.text();
     }
 
     if (response.status >= 400) {

@@ -216,6 +216,7 @@ class MockFetchClient {
       } as unknown as Headers,
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),
+      text: () => Promise.resolve(response),
     });
   }
 
