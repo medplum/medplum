@@ -359,6 +359,25 @@ describe('GraphQL', () => {
     expect(res.body.data.PatientList.length).toBe(1);
   });
 
+  test('Search with _filter', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+      {
+        PatientList(_filter: "name eq smith") {
+          id
+          name { given }
+        }
+      }
+    `,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.data.PatientList).toBeDefined();
+  });
+
   test('Search with _count', async () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
