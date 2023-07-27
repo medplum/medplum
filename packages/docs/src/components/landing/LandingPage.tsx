@@ -203,7 +203,7 @@ export function LandingPage(): JSX.Element {
                 </CardButton>
               </Card>
               <Card>
-                <h3>Not a developoer?</h3>
+                <h3>Not a developer?</h3>
                 <p>Let’s talk about how Medplum can help your dev team ship faster.</p>
                 <CardButton href="mailto:hello@medplum.com" alt="Learn more about FHIR Basics">
                   Email us
