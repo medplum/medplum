@@ -5,6 +5,12 @@ tags:
   - tasks
 ---
 
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+import ExampleCode from '!!raw-loader!@site/..//examples/src/careplans/tasks.ts';
+
 # Using `Tasks` to Manage Workflow
 
 ## Introduction
@@ -72,17 +78,42 @@ While these terms might feel awkward in a digital health setting, Medplum recomm
 
 ## Task assignment
 
-`Task.owner` indicates the party responsible for _performing_ the task. This can either be an individual ([`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), [`Patient`](/docs/api/fhir/resources/patient), [`RelatedPerson`](/docs/api/fhir/resources/relatedperson)) or a group ([`Organization`](/docs/api/fhir/resources/organization), [`HealthcareService`](/docs/api/fhir/resources/healthcareservice), [`CareTeam`](/docs/api/fhir/resources/careteam)). You can search for all unassigned tasks (i.e those without owners), using the [`:missing`](/docs/search/basic-search#missing) search modifier.
-
 `Task.for` indicates who _benefits_ from the task, and is most commonly the patient for whom care is being delivered.
 
-:::note Assigning tasks to roles
+`Task.owner` indicates the party responsible for _performing_ the task. This can either:
+
+- An individual: [`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), [`Patient`](/docs/api/fhir/resources/patient), [`RelatedPerson`](/docs/api/fhir/resources/relatedperson)
+- A group: [`Organization`](/docs/api/fhir/resources/organization), [`HealthcareService`](/docs/api/fhir/resources/healthcareservice), [`CareTeam`](/docs/api/fhir/resources/careteam)
+
+You can search for all unassigned tasks, using the [`:missing`](/docs/search/basic-search#missing) search modifier.
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchMissingTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="searchMissingCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchMissingCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+:::tip Assigning tasks to roles
 
 A common pattern is telehealth practices to assign to assign tasks to all practitioners with a given role (e.g. clinical specialty, level of credential, etc.). `Task.performerType` is a searchable element that can be used to indicate which roles can/should perform this task.
 
-It is a best practice to select these roles from a standard code system to promote interoperability. The [US Core Guidelines](/docs/fhir-datastore/understanding-uscdi-dataclasses) recommend using the [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) valueset for `performerType`. The table below contains SNOMED code for the common roles used in digital healthcare.
+It is a best practice to select these roles from a standard code system to promote interoperability. The [US Core Guidelines](/docs/fhir-datastore/understanding-uscdi-dataclasses) recommend using the [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) valueset for `performerType`.
 
 In rare instances, SNOMED might not contain an appropriate code for a given role (e.g. Customer Service Representative). Medplum recommends using the [Standard Occupational Classification (SOC)](https://www.bls.gov/soc/) codes published by the Bureau of Labor Statistics.
+
+The table below contains SNOMED code for the common roles used in digital healthcare. Use can use the [SNOMED online browser](https://browser.ihtsdotools.org/?perspective=full&conceptId1=223366009&edition=MAIN/2023-06-30&release=&languages=en) to search for additional codes.
 
 | Name                       | SNOMED Code                                                                                                                                                    | SOC Code                                                  |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
@@ -144,7 +175,7 @@ The `Task.executionPeriod` field describes the time period over which the [`Task
 
 ## Task comments
 
-`Task.note`` can be used to capture narrative text that is not represented elsewhere in the resource.
+`Task.note` can be used to capture narrative text that is not represented elsewhere in the resource.
 
 The most common usage for this field is to record comments from the task assignee as they work on the task. When used this way, it is a best practice to include the `author` and `time` fields in the [`Annotation`](/docs/api/fhir/datatypes/annotation).
 
@@ -164,7 +195,7 @@ While task hierarchy functionality is powerful, it can be complex to maintain an
 | ----------------------------------------------- | ----------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | Complete patient intake questionnaire           | New Patient. Care Coordinator | `Questionnaire`      | <ol><li>Questionnaire sent to patient</li><li>First reminder sent</li><li>Second reminder sent</li><li>Questionnaire completed by patient</li><li>Responses reviewed by care coordinator</li></ol> | Use `Task.output` to reference resulting `QuestionnaireResponse` |
 | Review lab report                               | Physician                     | `DiagnosticReport`   | <ol><li>Report Available</li><li>Assigned to physician</li><li>Reviewed by physician</li><li>Discussed with patient</li></ol>                                                                      |                                                                  |
-| Verify patient identity (e.g. driver's license) | Patient. Care Coordinator     | `DocumentReference`  | <ol><li>Identification document requested</li><li>Documentation received</li><li>Documentation received</li><li>Documentation verified</li></ol>                                                   | See also:                                                        |
+| Verify patient identity (e.g. driver's license) | Patient. Care Coordinator     | `DocumentReference`  | <ol><li>Identification document requested</li><li>Documentation received</li><li>Documentation received</li><li>Documentation verified</li></ol>                                                   |                                                                  |
 | Complete encounter notes                        | Physician                     | `ClinicalImpression` | <ol><li>Encounter complete. Physician note required</li><li>Note drafted</li> <li>Note finalized</li></ol>                                                                                         | Use `Task.encounter` to reference the original encounter         |
 
 ## See Also
