@@ -6,7 +6,7 @@ import {
   Hl7Message,
   Hl7Segment,
   MedplumClient,
-  parseHl7Date,
+  parseHl7DateTime,
   streamToBuffer,
 } from '@medplum/core';
 import {
@@ -103,7 +103,7 @@ export async function processOruMessage(
 ): Promise<void> {
   // Parse the HL7 MSH segment
   // See: https://v2plus.hl7.org/2021Jan/segment-definition/MSH.html
-  const messageType = message.get('MSH')?.get(8)?.get(0);
+  const messageType = message.header.getComponent(9, 1);
 
   // Message type should be "ORU"
   if (messageType !== 'ORU') {
@@ -113,7 +113,7 @@ export async function processOruMessage(
 
   // Parse the HL7 PID segment to read the patient id
   // See: https://v2plus.hl7.org/2021Jan/segment-definition/PID.html
-  const orderId = message.get('PID')?.get(2)?.toString();
+  const orderId = message.getSegment('PID')?.getComponent(2, 1);
 
   if (!orderId || orderId.length === 0) {
     throw new Error('Missing order id');
@@ -142,8 +142,7 @@ export async function processOruMessage(
 
   // Update the collection date of each specimen associated with the order
   // See: https://v2plus.hl7.org/2021Jan/segment-definition/OBR.html
-  const collectionDate = parseHl7Date(message.get('OBR')?.get(14).toString(), {
-    seconds: false,
+  const collectionDate = parseHl7DateTime(message.getSegment('OBR')?.getField(14)?.toString(), {
     tzOffset: PARTNER_TIMEZONE,
   });
 
@@ -244,16 +243,17 @@ async function getCancellationReason(
 ): Promise<CodeableConcept | undefined> {
   // Read the first OBR Segment to find the order status
   // See: https://v2plus.hl7.org/2021Jan/segment-definition/OBR.html
-  const obrIndex = message.segments.findIndex((segment) => segment.get(0).get(0) === 'OBR');
-  const obrStatus = OBSERVATION_STATUS[message.segments[obrIndex]?.get(25).get(0)];
+  const obrIndex = message.segments.findIndex((segment) => segment.name === 'OBR');
+  const obr = message.getSegment(obrIndex);
+  const obrStatus = OBSERVATION_STATUS[obr?.getComponent(25, 1) as string];
 
   const isCancelled = obrStatus === 'cancelled';
 
   // If the order was cancelled, read the following note (NTE) segment to extract the cancellation reason
   // Note: How this cancellation reason is sent will differ across LIS/EHR systems
   if (isCancelled) {
-    const obrNote = message.segments[obrIndex + 1];
-    const noteText = obrNote.get(3).toString().toUpperCase();
+    const obrNote = message.getSegment(obrIndex + 1) as Hl7Segment;
+    const noteText = obrNote.getField(3).toString().toUpperCase();
     // Create a note on the order to describe the cancellation reason
     if (!serviceRequest.note) {
       serviceRequest.note = [];
@@ -328,18 +328,17 @@ function processObxSegments(
 
   // Loop through all segments, handling observation segments (OBX) and note segments (nte)
   for (const segment of message.segments) {
-    // We're starting to process a new observation, so enqueue the previous observation
-    if (segment.get(0).toString() === 'OBX') {
+    if (segment.name === 'OBX') {
+      // We're starting to process a new observation, so enqueue the previous observation
       if (prevObservation) {
         observations.push(prevObservation);
       }
 
       prevObservation = processObservation(segment, serviceRequest, performer);
-    }
-    // Handle associated notes
-    // See https://v2plus.hl7.org/2021Jan/segment-definition/NTE.html
-    else if (segment.get(0).toString() === 'NTE') {
-      const noteText = segment.get(3).toString();
+    } else if (segment.name === 'NTE') {
+      // Handle associated notes
+      // See https://v2plus.hl7.org/2021Jan/segment-definition/NTE.html
+      const noteText = segment.getComponent(3, 1).toString();
 
       if (!prevObservation) {
         console.warn(`Warning: Received the following note with no observation: '${noteText}'`);
@@ -358,6 +357,7 @@ function processObxSegments(
 
   return observations;
 }
+
 /**
  * Convert an OBX segment into a FHIR `Observation` resource. This function handles two different types of OBX messages
  * NM - Numerical Observations
@@ -377,11 +377,11 @@ function processObservation(
 ): Observation | undefined {
   // Convert the reported code into a standard LOINC code
   // Note: The reported coding scheme will vary across labs
-  const reportedCode = segment.get(3).get(3);
+  const reportedCode = segment.getComponent(3, 4);
   const code = LOINC_CODES[reportedCode];
 
   if (!code) {
-    console.error(`Unrecognized code '${segment.get(3).toString()}'. Skipping....`);
+    console.error(`Unrecognized code '${segment.getField(3)?.toString()}'. Skipping....`);
     return undefined;
   }
 
@@ -390,24 +390,24 @@ function processObservation(
     basedOn: [createReference(serviceRequest)],
     code,
     subject: serviceRequest.subject,
-    status: OBSERVATION_STATUS[segment.get(11).get(0)],
-    issued: parseHl7Date(segment.get(14)?.get(0)),
+    status: OBSERVATION_STATUS[segment.getComponent(11, 1)],
+    issued: parseHl7DateTime(segment.getComponent(14, 1)),
 
     performer: [createReference(performer)],
     specimen: serviceRequest.specimen?.[0],
   };
 
   // Extract numerical value and units
-  const valueType = segment.get(2).get(0);
-  const value = segment.get(5).get(0);
-  const unit = segment.get(6).get(0);
-  const refRange = segment.get(7).get(0);
+  const valueType = segment.getComponent(2, 1);
+  const value = segment.getComponent(5, 1);
+  const unit = segment.getComponent(6, 1);
+  const refRange = segment.getComponent(7, 1);
   let quantity: Quantity | undefined = { unit, system: 'http://unitsofmeasure.org' };
   let interpretation: CodeableConcept | undefined;
 
   if (valueType === 'NM') {
     // If it's a numerical observation, populate a valueQuantity
-    interpretation = INTERPRETATION_CODES[segment.get(8).get(0)];
+    interpretation = INTERPRETATION_CODES[segment.getComponent(8, 1)];
     quantity.value = Number.parseFloat(value);
   } else if (valueType === 'ST') {
     // If it's a structured text field, check for the following conditions:
@@ -474,10 +474,10 @@ async function uploadEmbeddedPdfs(
   message: Hl7Message
 ): Promise<Media[]> {
   // Upload PDF reports
-  const pdfLines = message.segments.filter((seg) => seg.get(3)?.get(1) === 'PDFBASE64');
+  const pdfLines = message.segments.filter((seg) => seg.getComponent(3, 2) === 'PDFBASE64');
   const media = await Promise.all(
     pdfLines.map(async (segment: Hl7Segment) => {
-      const encodedData = segment.get(5).get(4);
+      const encodedData = segment.getComponent(5, 5);
       const decodedData = Buffer.from(encodedData, 'base64');
       return medplum.uploadMedia(decodedData, 'application/pdf', fileName, {
         subject: report.subject,
