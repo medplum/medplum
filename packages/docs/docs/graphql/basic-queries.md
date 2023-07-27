@@ -95,7 +95,7 @@ See the "[Searching Resources](https://hl7.org/fhir/r4/graphql.html#searching)" 
 
 :::caution Search Modifiers
 
-The [official FHIR GraphQL specification](https://hl7.org/fhir/R4/graphql.html) currently does not support [search modifiers](/docs/search/basic-search#search-modifiers) such as `:not`, `:missing`, and `:contains`. If you'd like to participate or learn more, join the discussion [here] (https://chat.fhir.org/#narrow/stream/192326-graphql/topic/Search.20Modifiers.20in.20GraphQL/near/340283410).
+The [official FHIR GraphQL specification](https://hl7.org/fhir/R4/graphql.html) currently does not support [search modifiers](/docs/search/basic-search#search-modifiers) such as `:not`, `:missing`, and `:contains`. If you'd like to participate or learn more, join the discussion [here](https://chat.fhir.org/#narrow/stream/192326-graphql/topic/Search.20Modifiers.20in.20GraphQL/near/340283410).
 
 :::
 
