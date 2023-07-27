@@ -3,49 +3,100 @@ keywords:
   - drugs
   - formulary
   - medication
+  - pharmacy
+tags: 
+  - administration
+  - medication
+  - pharmacy
 ---
 
 # Modeling a Formulary
 
-## Introduction
+A "formulary" refers to a catalog of drugs offered by your organization. When implementing a custom EMR, Digital Health Clinical administrators often curate a formulary of relevant drugs, along with relevant metadata, to assist prescribing physicians, pharmacists, and patients.
 
-A formulary is a catalog of drugs offered by your organization. When implementing a custom EMR, you may want to include essential metadata about these drugs to help prescribing physicians, pharmacists, and patients.
+This guide covers the basics of how to use the [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resource to build a formulary in FHIR. It will cover: 
 
-The principal resource for building a digital formulary is the [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resource. This guide aims to explore the most pertinent attributes of [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) for digital health providers.
+- How to annotate medications with the proper codes.
+- How to represent physical characteristics about the medication and its package.
+- How to categorize medications in the formulary.
+- How represent compounded medications.
+- How to represent relationships between medications.
 
-This guide is informed by the [DaVinci Payer Data Exchange (PDex) US Drug Formulary](https://build.fhir.org/ig/HL7/davinci-pdex-formulary/index.html) implementation guide. [The Da Vinci Project](http://www.hl7.org/about/davinci/index.cfm) includes industry leaders, including Humana, Cigna, and Optum, who are using FHIR to support value-based care. You can check out how Humana implements this API [here](https://developers.humana.com/apis/drug-formulary-api/doc).
+This guide is informed by the [DaVinci Payer Data Exchange (PDex) US Drug Formulary](https://build.fhir.org/ig/HL7/davinci-pdex-formulary/index.html) implementation guide, which was authored by industry leaders, including Humana, Cigna, and Optum.
 
-## Drug Code
+## Medication Code
 
-When defining `MedicationKnowledge.code`, it's highly recommended to use RxNorm as the primary coding system. The Da Vinci guide distinguishes two different types of codes: "semantic drugs" (mandatory) and "semantic drug form group" (optional).
+When defining `MedicationKnowledge.code`, it's highly recommended to use RxNorm as the primary coding system. RxNorm is an international standard that normalizes drug names from many different data sources. 
 
-- "Semantic drugs" equate to the RxNorm term types of `Semantic Clinical Drug (SCD)`, `Semantic Branded Drug (SBD)`, `Generic Pack (GPCK)`, or `Branded Pack (BPCK)`,
-- "Semantic drug form group" matches the term types of `Semantic Clinical Drug Form (SCDG)` and `Semantic Branded Drug Form Group (SBDG)`.
+RxNorm has codes for medications with different levels of specificity, called "term types". Refer to our [RxNorm guide](./medication-codes) for a detailed understanding of the term-type hierarchy.
 
-For a deeper understanding of RxNorm, refer to our [RxNorm guide](./medication-codes).
+The [Da Vinci formulary guide](https://build.fhir.org/ig/HL7/davinci-pdex-formulary/index.html) recommends using the following term type when creating a formulary to achieve the appropriate level of specificity
 
-## Drug Characteristics
+| Term Types                                                   | Requirement | Example                                                      | RxCUI   |
+| ------------------------------------------------------------ | ----------- | ------------------------------------------------------------ | ------- |
+| Semantic Clinical Drug (`SCD`) <br />Semantic Branded Drug (`SBD`)  <br />Generic Pack (`GPCK`) <br />Branded Pack (`BPCK`) | Required    | acetaminophen 325 MG / oxycodone hydrochloride 5 MG Oral Tablet [Percocet] | 1049640 |
+| Semantic Clinical Drug Form (`SCDG`) <br />Semantic Branded Drug Form Group (`SBDG`) | Optional    | Percocet Pill                                                | 1185784 |
 
-Details about the physical characteristics of a drug, such as its color, shape, size, and imprint, can be found in the `drugCharacteristics` section of the [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resource. The [Medication knowledge characteristic code](http://hl7.org/fhir/R4/valueset-medicationknowledge-characteristic.html) valueset can be a handy reference for examples of `MedicationKnowledge.drugCharacteristics.type`.
+You can use the [RxNav](https://mor.nlm.nih.gov/RxNav/) browser to search for RxNorm codes for your formulary.
 
-Other metadata fields to note include `packaging`, `doseForm`, and `intendedRoute`.
+Below is an example  [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge)  with both `SBD` and `SBDG` codes: 
 
-- The `packaging` attribute represents the type of packaging and quantity of the drug in the package. For instance, `'{tbl}'` is used to indicate a tablet. More details can be found in the [MedicationKnowledge Package Type Codes](http://hl7.org/fhir/R4/valueset-medicationknowledge-package-type.html) and the guide to [units of measure](https://terminology.hl7.org/4.0.0/ValueSet-v3-UnitsOfMeasureCaseSensitive.html).
-- The `doseForm` attribute is used to indicate the physical form of the medication, for example, whether it is a liquid, powder, pill, etc. The [SNOMED Form Codes](http://hl7.org/fhir/R4/valueset-medication-form-codes.html) can be used for reference.
-- The `intendedRoute` attribute suggests how the drug is to be ingested, whether orally, intravenously, etc. The [SNOMED Route Codes](http://hl7.org/fhir/R4/valueset-route-codes.html) are available for more information.
+```ts
+{
+  resourceType: "MedicationKnowledge",
+  code: {
+    coding: [
+      {
+        system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+        code: "1049640",
+        display: "acetaminophen 325 MG / oxycodone hydrochloride 5 MG Oral Tablet [Percocet]"
+      },
+      {
+        system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+        code: "1185784",
+        display: "Percocet Pill"
+      }
+    ]
+  }
+}
+```
 
-We will be providing a comprehensive example of a [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resource that incorporates drugCharacteristics, packaging, doseForm, and intendedRoute.
 
-:::note A note about units
 
-All units for medication quantities are [UCUM units of measure](https://terminology.hl7.org/4.0.0/ValueSet-v3-UnitsOfMeasureCaseSensitive.html). This includes standard SI units, as well as healthcare specific unit codes. A common unit for medications is `{tbl}`, which stands for "tablets", which is useful for quantifying the amount of medication in a package.
+## Branded vs. Generic Medications
+
+RxNorm term types `SBD`, `BPCK`, and `SBDG` all refer to specific brand names for a given drug. Including branded drugs in your formulary indicates that physicians may only prescribe a specific brand. 
+
+In contrast, using generic term types (`SCD`, `GPCK`, `SCDG`) indicates that physicians may prescribe *any* brand of the medication.
+
+:::tip Prescribeable vs. Dispensable Medications
+
+While most Medplum applications will include *either* generic *or* branded versions of a medication, some advanced implementations may include both. This is especially common with providers that own their own pharmacy. 
+
+In these implementations, generic codes would be used by physicians to *prescribe* the medication, whereas pharmacies branded medications would be used to *dispense* the medication. See [Medication Relationships](#medication-relationships) for details on how to represent the link between branded and generic [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge)  resources.
 
 :::
 
+
+
+## Medication Characteristics
+
+The [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resources can also be used to store details about the physical characteristics of a medication, as well as its packaging and form. 
+
+The table below summarizes the most important medication metadata elements.
+
+| Element               | Description                                                  | Relevant Valueset                                            |
+| --------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `drugCharacteristics` | Physical characteristics of the medication (color, shape, imprint, etc.) | [Medication knowledge characteristic code](http://hl7.org/fhir/R4/valueset-medicationknowledge-characteristic.html) |
+| `doseForm`            | Physical form of the drug (pill, powder, liquid, etc.)       | [SNOMED Form Codes](http://hl7.org/fhir/R4/valueset-medication-form-codes.html) |
+| `packaging`           | Description of the medication package (bottle, blister pack, etc.) | [MedicationKnowledge Package Type Codes](http://hl7.org/fhir/R4/valueset-medicationknowledge-package-type.html) |
+| `intendedRoute`       | Method of ingestion (oral, intravenous, etc.)                | [SNOMED Route Codes](http://hl7.org/fhir/R4/valueset-route-codes.html) |
+
 <details>
 <summary>
-Example Drug Characteristics
+Example of Drug Characteristics
 </summary>
+
 
 ```ts
 {
@@ -91,7 +142,9 @@ Example Drug Characteristics
   ],
   amount: {
     value: 100,
-    unit: '{tbl}',
+    unit: 'tablets',
+    system: 'http://terminology.hl7.org/ValueSet/v3-UnitsOfMeasureCaseSensitive',
+    code: '{tbl}'
   },
   packaging: {
     type: {
@@ -106,15 +159,30 @@ Example Drug Characteristics
     },
     quantity: {
       value: 100,
-      unit: '{tbl}',
+      unit: 'tablets',
+      system: 'http://terminology.hl7.org/ValueSet/v3-UnitsOfMeasureCaseSensitive',
+      code: '{tbl}'
     },
   },
   doseForm: {
-    text: 'tablet',
+    coding: [
+      {
+        display: 'Tablet'
+        code: '385055001'
+        system: 'http://snomed.info/sct',                
+      }
+    ]
   },
   intendedRoute: [
     {
-      text: 'oral',
+      text: 'oral'
+      coding: [
+        {
+      		display: 'Oral use',
+      		code: '26643006',
+          system: 'http://snomed.info/sct'
+        }      
+      ]
     },
   ],
   //...
@@ -123,26 +191,40 @@ Example Drug Characteristics
 
 </details>
 
-## Drug Classifications and Regulations
+
+
+:::caution A note about units
+
+All units for medication quantities are [UCUM units of measure](https://terminology.hl7.org/4.0.0/ValueSet-v3-UnitsOfMeasureCaseSensitive.html). This includes standard SI units, as well as non-standard healthcare units. A common unit for medications is `{tbl}`, which stands for "tablets", which is useful for quantifying the amount of medication in a package.
+
+:::
+
+## Classifications and Regulations
 
 The `MedicationKnowledge.productType` field can be used to categorize the drug within the formulary, potentially along multiple dimensions. This field can also be used to describe:
 
 - Whether a drug is generic or branded
-- Whether the drug is prescribable
-- Whether the drug is dispensable
 - Whether the drug requires a prescription (see: [Legal status of Supply](https://build.fhir.org/valueset-legal-status-of-supply.html))
 
-The `MedicationKnowledge.regulatory` contains crucial regulatory information related to drug dispensing, such as maximum permissible units and substitution regulations. In particular, `MedicationKnowledge.regulatory.schedule.schedule` is used for specifying the regulatory schedule for controlled substances.
+:::caution Representing Controlled Substance Schedules
 
-Refer to the [HL7 Controlled Substances Schedule](https://terminology.hl7.org/ValueSet-v2-0477.html) for an example valueset for substances subject to the U.S. Controlled Substances Act (CSA).
+Certain medications, including narcotics, are classified into schedules based on the U.S. Controlled Substances Act (CSA).  `MedicationKnowledge.regulatory.schedule` is used for specifying the regulatory schedule for any medications subject to these restrictions.
+
+Refer to the [HL7 Controlled Substances Schedule](https://terminology.hl7.org/ValueSet-v2-0477.html) for an example valueset.
+
+
+:::
 
 ## Compounded Medications
 
-The `MedicationKnowledge.ingredients` field is used for listing ingredients of compounded medications, with RxNorm as the preferred code system for reach ingredient.
+For medications that must be mixed before being dispensed, the `MedicationKnowledge.ingredients` field is used for listing ingredients of compounded medications, with RxNorm as the preferred code system for each ingredient.
 
-The `MedicationKnowledge.amount` field indicates the total amount of the compound to be dispensed.
+The `MedicationKnowledge.amount` field indicates the total amount of the compound to be dispensed, and the `strength` of each ingredient is stored as a ratio of the total volume (e.g. 1g per 100g). 
 
-For each ingredient, the `strength` is stored as a ratio of the total volume (e.g. 1g per 100g). The field `ingredient.active` indicates which of the listed ingredients are active.
+ `ingredient.active` indicates which of the listed ingredients are active.
+
+<details>
+	<summary>Example Compounded Medication</summary>
 
 ```ts
 {
@@ -285,9 +367,15 @@ For each ingredient, the `strength` is stored as a ratio of the total volume (e.
 }
 ```
 
-## Related Drugs
+</details>
 
-Relationships between drugs, for example brand names vs. generics, bioequivalent products, etc. are modeled using the `MedicationKnowledge.relatedMedicationKnowledge` field. Refer to the [RxNORM relationship codes](https://www.nlm.nih.gov/research/umls/rxnorm/docs/appendix1.html) for an example code system of relationships between drugs.
+## Medication Relationships
+
+Advanced implementations might want to model structured relationships between medications. For example, administrators  might want to link  [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resources representing generic and branded medications, to aid in fulfillment (see [Branded vs. Generic Medications](#branded-vs-generic-medications))
+
+ Relationships between drugs in the formulary are modeled using the `MedicationKnowledge.relatedMedicationKnowledge` field. The type of each relationship is specified by `MedicationKnowledge.relatedMedicationKnowledge.type`. 
+
+Refer to the [RxNORM relationship codes](https://www.nlm.nih.gov/research/umls/rxnorm/docs/appendix1.html) for an example code system of relationships between drugs.
 
 ## Images and Other Documents
 
