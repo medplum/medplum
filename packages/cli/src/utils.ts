@@ -4,6 +4,7 @@ import { existsSync, readFileSync, writeFile } from 'fs';
 import { basename, extname, resolve } from 'path';
 import internal from 'stream';
 import tar from 'tar';
+import { FileSystemStorage } from './storage';
 
 interface MedplumConfig {
   readonly baseUrl?: string;
@@ -207,4 +208,15 @@ export function getCodeContentType(filename: string): string {
     return ContentType.TYPESCRIPT;
   }
   return ContentType.TEXT;
+}
+
+export function createProfile(profileName: string, options: any): void {
+  const storage = new FileSystemStorage(profileName);
+  storage.setObject('options', options);
+  console.log(`${profileName} profile created`);
+}
+
+export function getProfileOptions(profileName: string): any {
+  const storage = new FileSystemStorage(profileName);
+  return storage.getObject('options');
 }
