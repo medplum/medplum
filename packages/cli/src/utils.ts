@@ -21,6 +21,22 @@ interface MedplumBotConfig {
   readonly dist?: string;
 }
 
+export interface Profile {
+  readonly profile?: string;
+  readonly authType?: string;
+  readonly baseUrl?: string;
+  readonly clientId?: string;
+  readonly clientSecret?: string;
+  readonly tokenUrl?: string;
+  readonly authorizeUrl?: string;
+  readonly fhirUrlPath?: string;
+  readonly scope?: string;
+  readonly accessToken?: string;
+  readonly callbackUrl?: string;
+  readonly subject?: string;
+  readonly audience?: string;
+}
+
 export function prettyPrint(input: unknown): void {
   console.log(JSON.stringify(input, null, 2));
 }
