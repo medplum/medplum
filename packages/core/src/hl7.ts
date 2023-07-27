@@ -23,17 +23,19 @@ export class Hl7Context {
   ) {}
 
   /**
+   * Returns the MSH-1 field value based on the configured separators.
+   * @returns The HL7 MSH-1 field value.
+   */
+  getMsh1(): string {
+    return this.fieldSeparator;
+  }
+
+  /**
    * Returns the MSH-2 field value based on the configured separators.
    * @returns The HL7 MSH-2 field value.
    */
   getMsh2(): string {
-    return (
-      this.fieldSeparator +
-      this.componentSeparator +
-      this.repetitionSeparator +
-      this.escapeCharacter +
-      this.subcomponentSeparator
-    );
+    return this.componentSeparator + this.repetitionSeparator + this.escapeCharacter + this.subcomponentSeparator;
   }
 }
 
@@ -140,7 +142,7 @@ export class Hl7Message {
           receivingFacility,
           sendingApp,
           sendingFacility,
-          now.toISOString(),
+          formatHl7DateTime(now),
           '',
           this.buildAckMessageType(msh),
           now.getTime().toString(),
@@ -252,10 +254,14 @@ export class Hl7Segment {
       // MSH segments require special handling due to field separator
       if (index === 1) {
         // MSH.1 is the field separator
-        return Hl7Field.parse(this.context.fieldSeparator, this.context);
+        return new Hl7Field([[this.context.getMsh1()]], this.context);
       }
-      if (index > 1) {
-        // MSH.2 through MSH.n are offset by 1
+      if (index === 2) {
+        // MSH.2 is the encoding characters
+        return new Hl7Field([[this.context.getMsh2()]], this.context);
+      }
+      if (index > 2) {
+        // MSH.3 through MSH.n are offset by 1
         return this.fields[index - 1];
       }
     }
@@ -280,7 +286,7 @@ export class Hl7Segment {
    * @returns The string value of the specified component.
    */
   getComponent(fieldIndex: number, component: number, subcomponent?: number, repetition = 0): string {
-    return this.getField(fieldIndex).getComponent(component, subcomponent, repetition);
+    return this.getField(fieldIndex)?.getComponent(component, subcomponent, repetition) ?? '';
   }
 
   /**
@@ -381,37 +387,115 @@ export class Hl7Field {
   }
 }
 
-interface Hl7DateParseOptions {
-  seconds?: boolean;
+export interface Hl7DateParseOptions {
+  /**
+   * Default timezone offset.
+   * Example: "-0500"
+   */
   tzOffset?: string;
 }
 
 /**
  * Returns a formatted string representing the date in ISO-8601 format.
- * @param hl7Date Date string.
- * @param options Optional configuration Object
+ *
+ * HL7-Definition V2
+ * Specifies a point in time using a 24-hour clock notation.
+ *
+ * Format: YYYY[MM[DD[HH[MM[SS[. S[S[S[S]]]]]]]]][+/-ZZZZ].
+ *
+ * @param hl7DateTime Date/time string.
+ * @param options Optional parsing options.
  * @returns The date in ISO-8601 format.
  */
-export function parseHl7Date(hl7Date: string | undefined, options?: Hl7DateParseOptions): string | undefined {
-  if (!hl7Date) {
+export function parseHl7DateTime(hl7DateTime: string | undefined, options?: Hl7DateParseOptions): string | undefined {
+  if (!hl7DateTime) {
     return undefined;
   }
 
-  options = { ...{ seconds: true, tzOffset: 'Z' }, ...options };
+  const year = parseIntOrDefault(hl7DateTime.slice(0, 4), 0);
+  const month = parseIntOrDefault(hl7DateTime.slice(4, 6), 1) - 1; // Months are 0-indexed in JavaScript Date
+  const day = parseIntOrDefault(hl7DateTime.slice(6, 8), 1); // Default to first day of month
+  const hour = parseIntOrDefault(hl7DateTime.slice(8, 10), 0);
+  const minute = parseIntOrDefault(hl7DateTime.slice(10, 12), 0);
+  const second = parseIntOrDefault(hl7DateTime.slice(12, 14), 0);
 
-  const year = Number.parseInt(hl7Date.substring(0, 4), 10);
-  const month = Number.parseInt(hl7Date.substring(4, 6), 10);
-  const date = Number.parseInt(hl7Date.substring(6, 8), 10);
-  const hours = Number.parseInt(hl7Date.substring(8, 10), 10);
-  const minutes = Number.parseInt(hl7Date.substring(10, 12), 10);
+  let millisecond = 0;
+  if (hl7DateTime.includes('.')) {
+    millisecond = parseIntOrDefault(hl7DateTime.slice(15, 19), 0);
+  }
 
-  const seconds = options.seconds ? Number.parseInt(hl7Date.substring(12, 14), 10) : 0;
+  let date = new Date(Date.UTC(year, month, day, hour, minute, second, millisecond));
 
-  return `${pad2(year)}-${pad2(month)}-${pad2(date)}T${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}.000${
-    options.tzOffset
-  }`;
+  const tzOffset = parseTimeZoneOffset(hl7DateTime, options?.tzOffset);
+  if (tzOffset !== 0) {
+    date = new Date(date.getTime() - tzOffset);
+  }
+
+  return date.toISOString();
 }
 
-function pad2(n: number): string {
-  return n.toString().padStart(2, '0');
+/**
+ * Parses an integer value from a string.
+ * @param str The string to parse.
+ * @param defaultValue The default value to return if the string is not a number.
+ * @returns The parsed integer value, or the default value if the string is not a number.
+ */
+function parseIntOrDefault(str: string, defaultValue: number): number {
+  const result = parseInt(str, 10);
+  return isNaN(result) ? defaultValue : result;
+}
+
+/**
+ * Returns the timezone offset in milliseconds.
+ * @param hl7DateTime The HL7 date/time string.
+ * @param defaultOffset Optional default timezone offset.
+ * @returns The timezone offset in milliseconds.
+ */
+function parseTimeZoneOffset(hl7DateTime: string, defaultOffset?: string): number {
+  let offsetStr = defaultOffset;
+
+  const plusIndex = hl7DateTime.indexOf('+');
+  if (plusIndex !== -1) {
+    offsetStr = hl7DateTime.slice(plusIndex);
+  }
+
+  const minusIndex = hl7DateTime.indexOf('-');
+  if (minusIndex !== -1) {
+    offsetStr = hl7DateTime.slice(minusIndex);
+  }
+
+  if (!offsetStr) {
+    return 0;
+  }
+
+  const sign = offsetStr.startsWith('-') ? -1 : 1;
+
+  // Remove plus, minus, and optional colon
+  offsetStr = offsetStr.slice(1).replace(':', '');
+
+  const hour = parseInt(offsetStr.slice(0, 2), 10);
+  const minute = parseInt(offsetStr.slice(2, 4), 10);
+  return sign * (hour * 60 * 60 * 1000 + minute * 60 * 1000);
+}
+
+/**
+ * Formats an ISO date/time string into an HL7 date/time string.
+ * @param isoDate The ISO date/time string.
+ * @returns The HL7 date/time string.
+ */
+export function formatHl7DateTime(isoDate: Date | string): string {
+  const date = isoDate instanceof Date ? isoDate : new Date(isoDate);
+  const isoString = date.toISOString();
+
+  // Replace "T" and all dashes (-) and colons (:) with empty strings
+  // Replace Z with "+0000"
+  // Replace the last 3 digits before 'Z' with the 4-digit milliseconds
+  let result = isoString.replace(/[-:T]/g, '').replace(/(\.\d+)?Z$/, '');
+
+  const milliseconds = date.getUTCMilliseconds();
+  if (milliseconds > 0) {
+    result += '.' + milliseconds.toString();
+  }
+
+  return result;
 }

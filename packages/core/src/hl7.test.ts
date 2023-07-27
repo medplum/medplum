@@ -1,4 +1,4 @@
-import { Hl7Field, Hl7Message, Hl7Segment, parseHl7Date } from './hl7';
+import { formatHl7DateTime, Hl7Field, Hl7Message, Hl7Segment, parseHl7DateTime } from './hl7';
 
 describe('HL7', () => {
   test('Unsupported encoding', () => {
@@ -29,6 +29,13 @@ describe('HL7', () => {
     expect(ack.segments.length).toBe(2);
     expect(ack.segments[0].name).toBe('MSH');
     expect(ack.segments[1].name).toBe('MSA');
+
+    const header = ack.header;
+    expect(header.name).toBe('MSH');
+    expect(header.getField(0)?.toString()).toBe('MSH');
+    expect(header.getField(1)?.toString()).toBe('|');
+    expect(header.getField(2)?.toString()).toBe('^~\\&');
+    expect(header.toString().substring(0, 9)).toBe('MSH|^~\\&|');
   });
 
   test('ACK', () => {
@@ -419,38 +426,76 @@ OBX|9|ST|TR_EXPECTEDVALUES^TR_EXPECTEDVALUES^99ROC^S_OTHER^Other·Supplemental^I
 
 describe('Date time parsing', () => {
   test('Undefined for empty input', () => {
-    expect(parseHl7Date(undefined)).toBeUndefined();
+    expect(parseHl7DateTime(undefined)).toBeUndefined();
   });
 
   test('Correct ISO-8601 format with default options', () => {
     const hl7Date = '20230508103000';
     const expectedResult = '2023-05-08T10:30:00.000Z';
-    expect(parseHl7Date(hl7Date)).toBe(expectedResult);
+    expect(parseHl7DateTime(hl7Date)).toBe(expectedResult);
   });
 
   test('Correct ISO-8601 format without seconds', () => {
     const hl7Date = '202305081030';
-    const options = { seconds: false };
+    const options = {};
     const expectedResult = '2023-05-08T10:30:00.000Z';
-    expect(parseHl7Date(hl7Date, options)).toBe(expectedResult);
+    expect(parseHl7DateTime(hl7Date, options)).toBe(expectedResult);
   });
 
   test('Correct ISO-8601 format with custom timezone offset', () => {
     const hl7Date = '20230508103000';
     const options = { tzOffset: '+02:00' };
-    const expectedResult = '2023-05-08T10:30:00.000+02:00';
-    expect(parseHl7Date(hl7Date, options)).toBe(expectedResult);
+    const expectedResult = '2023-05-08T08:30:00.000Z';
+    expect(parseHl7DateTime(hl7Date, options)).toBe(expectedResult);
   });
 
   test('Correct date strings with seconds', () => {
     const hl7Date = '20230508103045';
     const expectedResult = '2023-05-08T10:30:45.000Z';
-    expect(parseHl7Date(hl7Date)).toBe(expectedResult);
+    expect(parseHl7DateTime(hl7Date)).toBe(expectedResult);
   });
 
   test('Correct date strings with partial seconds', () => {
     const hl7Date = '2023050810304';
     const expectedResult = '2023-05-08T10:30:04.000Z';
-    expect(parseHl7Date(hl7Date)).toBe(expectedResult);
+    expect(parseHl7DateTime(hl7Date)).toBe(expectedResult);
+  });
+
+  test('Optional milliseconds', () => {
+    const hl7Date = '20230508103004.123';
+    const expectedResult = '2023-05-08T10:30:04.123Z';
+    expect(parseHl7DateTime(hl7Date)).toBe(expectedResult);
+  });
+
+  test('Plus time zone offset', () => {
+    const hl7Date = '20230508103004+0200';
+    const expectedResult = '2023-05-08T08:30:04.000Z';
+    expect(parseHl7DateTime(hl7Date)).toBe(expectedResult);
+  });
+
+  test('Minus time zone offset', () => {
+    const hl7Date = '20230508103004-0200';
+    const expectedResult = '2023-05-08T12:30:04.000Z';
+    expect(parseHl7DateTime(hl7Date)).toBe(expectedResult);
+  });
+});
+
+describe('Date time formatting', () => {
+  test('Date object', () => {
+    const isoDateTime = new Date('2023-05-08T10:30:04.000Z');
+    const expectedResult = '20230508103004';
+    expect(formatHl7DateTime(isoDateTime)).toBe(expectedResult);
+  });
+
+  test('ISO string', () => {
+    const isoDateTime = '2023-05-08T10:30:04.000Z';
+    const expectedResult = '20230508103004';
+    expect(formatHl7DateTime(isoDateTime)).toBe(expectedResult);
+  });
+
+  test('With milliseconds', () => {
+    const isoDateTime = '2023-05-08T10:30:04.123Z';
+    const expectedResult = '20230508103004.123';
+    expect(formatHl7DateTime(isoDateTime)).toBe(expectedResult);
   });
 });

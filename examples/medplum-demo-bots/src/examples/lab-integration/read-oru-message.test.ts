@@ -241,7 +241,7 @@ describe('Read from Partner Lab', () => {
 
     // Check that Specimen collection dates have been set
     const checkSpecimen1 = await medplum.readReference(serviceRequest.specimen?.[0] as Reference<Specimen>);
-    expect(checkSpecimen1.receivedTime).toBe('2023-02-09T11:43:00.000-05:00');
+    expect(checkSpecimen1.receivedTime).toBe('2023-02-09T16:43:00.000Z');
 
     // Check that a PDF has been uploaded
     expect(createBinarySpy).toHaveBeenCalled();

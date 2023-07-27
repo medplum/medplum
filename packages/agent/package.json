@@ -15,8 +15,9 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "build": "npm run clean && tsc",
-    "test": "jest"
+    "build": "npm run clean && tsc && node esbuild.mjs",
+    "test": "jest",
+    "package": "pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output dist/medplum-agent-win-x64.exe"
   },
   "dependencies": {
     "@medplum/core": "*",

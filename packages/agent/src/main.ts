@@ -39,7 +39,7 @@ export class App {
   private async handler(event: Hl7MessageEvent): Promise<void> {
     try {
       console.log('Received:');
-      console.log(event.message.toString());
+      console.log(event.message.toString().replaceAll('\r', '\n'));
 
       await this.medplum.post(
         this.medplum.fhirUrl('Bot', this.bot.id as string, '$execute'),
@@ -49,7 +49,7 @@ export class App {
 
       const ack = event.message.buildAck();
       console.log('Response:');
-      console.log(ack.toString());
+      console.log(ack.toString().replaceAll('\r', '\n'));
       event.send(ack);
     } catch (err) {
       console.log('HL7 error', err);
