@@ -1,7 +1,7 @@
 import { createReference, MedplumClient } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { randomUUID } from 'crypto';
+import { randomUUID, webcrypto } from 'crypto';
 import { main } from '.';
 import { createMedplumClient } from './util/client';
 import { mkdtempSync, rmSync } from 'fs';
@@ -75,6 +75,7 @@ describe('CLI rest', () => {
   });
 
   test('Get command with as-transaction flag', async () => {
+    Object.defineProperty(globalThis, 'crypto', { value: webcrypto });
     await medplum.createResource<Patient>({ resourceType: 'Patient' });
     await main(['node', 'index.js', 'get', '--as-transaction', `Patient?_count=2`]);
     expect(console.log).toBeCalledWith(expect.stringMatching('urn:uuid'));

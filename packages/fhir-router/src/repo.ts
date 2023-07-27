@@ -1,17 +1,18 @@
 import {
+  OperationOutcomeError,
+  SearchRequest,
+  SortRule,
   badRequest,
   deepClone,
   evalFhirPath,
+  generateId,
   globalSchema,
   matchesSearchRequest,
   normalizeOperationOutcome,
   notFound,
-  OperationOutcomeError,
-  SearchRequest,
-  SortRule,
 } from '@medplum/core';
 import { Bundle, BundleEntry, Reference, Resource } from '@medplum/fhirtypes';
-import { applyPatch, Operation } from 'rfc6902';
+import { Operation, applyPatch } from 'rfc6902';
 
 /**
  * The FhirRepository interface defines the methods that are required to implement a FHIR repository.
@@ -360,17 +361,3 @@ const sortComparator = <T extends Resource>(a: T, b: T, sortRule: SortRule): num
   const bStr = JSON.stringify(evalFhirPath(expression, b));
   return aStr.localeCompare(bStr) * (sortRule.descending ? -1 : 1);
 };
-
-/**
- * Cross platform random UUID generator
- * Note that this is not intended for production use, but rather for testing
- * This should be replaced when crypto.randomUUID is fully supported
- * See: https://stackoverflow.com/revisions/2117523/28
- * @returns A random UUID.
- */
-const generateId = (): string =>
-  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
