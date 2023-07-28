@@ -29,7 +29,7 @@ One of `valueString`, `valueBoolean`, `valueDecimal`, `valueInteger` should be s
   <TabItem value="ts" label="Typescript">
 
 ```ts
-await medplum.post(`admin/projects/${projectId}/secrets`, [
+await medplum.post(`admin/projects/:projectId/secrets`, [
   {
     name: 'myLuckyNumber',
     valueInteger: 42,
