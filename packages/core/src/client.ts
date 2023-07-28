@@ -36,6 +36,7 @@ import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
 import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
+import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
 import { isMedplumAccessToken, parseJWTPayload } from './jwt';
 import {
@@ -667,7 +668,7 @@ export class MedplumClient extends EventTarget {
     this.refreshToken = undefined;
     this.sessionDetails = undefined;
     this.medplumServer = undefined;
-    this.dispatchEvent(new Event('change'));
+    this.dispatchEvent({ type: 'change' });
   }
 
   /**
@@ -2184,7 +2185,7 @@ export class MedplumClient extends EventTarget {
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
           this.sessionDetails = result;
-          this.dispatchEvent(new Event('change'));
+          this.dispatchEvent({ type: 'change' });
           resolve(result.profile);
         })
         .catch(reject);
@@ -2863,7 +2864,7 @@ export class MedplumClient extends EventTarget {
     const options = {
       method: 'POST',
       headers: { 'Content-Type': ContentType.FORM_URL_ENCODED },
-      body: formBody,
+      body: formBody.toString(),
       credentials: 'include',
     };
     const headers = options.headers as Record<string, string>;
@@ -2947,7 +2948,7 @@ export class MedplumClient extends EventTarget {
   private retryCatch(retryNumber: number, maxRetries: number, err: Error): void {
     // This is for the 1st retry to avoid multiple notifications
     if (err.message === 'Failed to fetch' && retryNumber === 1) {
-      this.dispatchEvent(new Event('offline'));
+      this.dispatchEvent({ type: 'offline' });
     }
     if (retryNumber >= maxRetries - 1) {
       throw err;

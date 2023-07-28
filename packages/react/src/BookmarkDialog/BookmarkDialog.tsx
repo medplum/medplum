@@ -30,7 +30,7 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
       .then((res) => {
         // refresh current config menu
         config.menu = res.menu;
-        medplum.dispatchEvent(new Event('change'));
+        medplum.dispatchEvent({ type: 'change' });
         showNotification({ color: 'green', message: 'Success' });
         props.onOk();
       })
