@@ -80,19 +80,15 @@ Example Response:
 
 ```ts
 {
-  resourceType: 'Bot',
-  name: 'Hello World Client',
-  description: 'Client App for Medplum Hello World',
-  runtimeVersion: 'awslambda',
-  sourceCode: {
-    contentType: 'text/typescript',
-    title: 'index.ts',
-    url: 'Binary/:uuid'
-  },
-  id: ':bot-uuid',
   meta: {
     project: ':projectId',
     //...
   },
+  resourceType: 'ClientApplication',
+  name: 'Hello World Client',
+  id: ':clientId',
+  secret: ':clientSecret',
+  description: 'Client App for Medplum Hello World',
+  redirectUri: 'https://example.com/redirect'
 }
 ```
