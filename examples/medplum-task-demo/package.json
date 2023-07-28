@@ -1,7 +1,7 @@
 {
   "name": "medplum-task-demo",
   "private": true,
-  "version": "2.0.28",
+  "version": "2.0.29",
   "description": "Medplum Task Demo",
   "scripts": {
     "dev": "vite",
@@ -13,10 +13,10 @@
     "@mantine/core": "6.0.17",
     "@mantine/hooks": "6.0.17",
     "@mantine/notifications": "6.0.17",
-    "@medplum/core": "2.0.28",
-    "@medplum/eslint-config": "2.0.28",
-    "@medplum/fhirtypes": "2.0.28",
-    "@medplum/react": "2.0.28",
+    "@medplum/core": "2.0.29",
+    "@medplum/eslint-config": "2.0.29",
+    "@medplum/fhirtypes": "2.0.29",
+    "@medplum/react": "2.0.29",
     "@tabler/icons-react": "2.29.0",
     "@types/node": "20.4.5",
     "@types/react": "18.2.17",
