@@ -1,11 +1,14 @@
-name: Publish
+name: Publish and Sync Repos
 # Based on: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
 on:
   push:
+    branches: [main]
     tags:
       - 'v*'
+
 jobs:
   build:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     name: Build
     runs-on: ubuntu-latest
     steps:
@@ -39,3 +42,29 @@ jobs:
         run: ./scripts/publish.sh
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          
+  check_changes_and_update_repos:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    name: Code Changes
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set script permissions
+        run: |
+          chmod +x ./scripts/check-changes.sh
+          chmod +x ./scripts/update-example-changes.sh
+      - name: Check for changes in specified path
+        id: check_changes
+        run: |
+          echo "changed_paths=$(./scripts/check-changes.sh ${{ github.event.before }} ${{ github.event.after }})" >> $GITHUB_ENV
+      - name: Update listening repos, create PR, and clean up
+        if: env.changed_paths != ''
+        run: |
+          ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}" "${{ env.changed_paths }}"
