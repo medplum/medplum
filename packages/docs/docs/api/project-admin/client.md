@@ -26,7 +26,7 @@ Creates a new [ClientApplication](/docs/api/fhir/medplum/clientapplication). Pos
 }
 ```
 
-### Example
+### Example request
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
@@ -76,7 +76,7 @@ curl https://api.medplum.com/admin/projects/:projectId/client \
   </TabItem>
 </Tabs>
 
-Example Response:
+### Example Response
 
 ```ts
 {

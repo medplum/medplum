@@ -56,7 +56,7 @@ Overwrites project-level site configurations stored in `Project.site`.
 }[]
 ```
 
-### Example
+### Example request
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
@@ -133,7 +133,8 @@ curl https://api.medplum.com/admin/projects/:projectId/sites \
   </TabItem>
 </Tabs>
 
-Example Response:
+### Example Response
+
 Returns the updated [`Project`](/docs/api/fhir/medplum/project) resource
 
 ```ts

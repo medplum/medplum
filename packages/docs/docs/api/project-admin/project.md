@@ -7,6 +7,8 @@ import TabItem from '@theme/TabItem';
 
 Returns a partial [`Project`](/docs/api/fhir/medplum/project) resource based on its `projectId`
 
+### Example request
+
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
 
@@ -32,7 +34,7 @@ curl https://api.medplum.com/admin/projects/:projectId \
   </TabItem>
 </Tabs>
 
-Example Response:
+### Example response
 
 ```ts
 {

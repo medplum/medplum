@@ -17,7 +17,7 @@ Creates a new [Medplum Bot](/docs/). Posting to this endpoint creates a [`Bot`](
 }
 ```
 
-### Example
+### Example request
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
@@ -64,7 +64,7 @@ curl https://api.medplum.com/admin/projects/:projectId/bot \
   </TabItem>
 </Tabs>
 
-Example Response:
+### Example Response
 
 ```ts
 {

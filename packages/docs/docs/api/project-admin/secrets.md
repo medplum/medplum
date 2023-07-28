@@ -23,7 +23,7 @@ Overwrites project-level secrets stored in `Project.secret`.
 
 One of `valueString`, `valueBoolean`, `valueDecimal`, `valueInteger` should be set
 
-### Example
+### Example request
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
@@ -80,7 +80,8 @@ curl https://api.medplum.com/admin/projects/:projectId/secrets \
   </TabItem>
 </Tabs>
 
-Example Response:
+### Example response
+
 Returns the updated [`Project`](/docs/api/fhir/medplum/project) resource
 
 ```ts

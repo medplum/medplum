@@ -35,7 +35,7 @@ Invite a new user to the project. This will perform the following actions:
 
 - Either `email` or `externalId` is required.
 
-### Example
+### Examples
 
 #### Inviting a Practitioner
 
