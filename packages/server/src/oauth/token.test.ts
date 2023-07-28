@@ -1,4 +1,11 @@
-import { createReference, OAuthGrantType, OAuthTokenType, parseJWTPayload, parseSearchDefinition } from '@medplum/core';
+import {
+  ContentType,
+  createReference,
+  OAuthGrantType,
+  OAuthTokenType,
+  parseJWTPayload,
+  parseSearchDefinition,
+} from '@medplum/core';
 import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -1447,7 +1454,7 @@ describe('OAuth2 Token', () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
       json: () => ({ email }),
-      headers: { get: () => 'application/json' },
+      headers: { get: () => ContentType.JSON },
     }));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
@@ -1467,7 +1474,7 @@ describe('OAuth2 Token', () => {
         throw new Error('Invalid JSON');
       },
       text: () => 'Unexpected error',
-      headers: { get: () => 'text/plain' },
+      headers: { get: () => ContentType.TEXT },
     }));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
@@ -1484,7 +1491,7 @@ describe('OAuth2 Token', () => {
   test('Too many requests', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 429,
-      headers: { get: () => 'application/json' },
+      headers: { get: () => ContentType.JSON },
     }));
 
     const res = await request(app).post('/oauth2/token').type('form').send({

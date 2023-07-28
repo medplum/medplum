@@ -1,6 +1,7 @@
 import {
   allOk,
   badRequest,
+  ContentType,
   getStatus,
   indexStructureDefinition,
   LoginState,
@@ -212,7 +213,7 @@ class MockFetchClient {
       ok: true,
       status: response?.resourceType === 'OperationOutcome' ? getStatus(response) : 200,
       headers: {
-        get: () => 'application/fhir+json',
+        get: () => ContentType.FHIR_JSON,
       } as unknown as Headers,
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),

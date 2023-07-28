@@ -1,3 +1,4 @@
+import { ContentType } from '@medplum/core';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
@@ -29,7 +30,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .post(`/dicom/PS3/studies`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({});
     expect(res.status).toBe(200);
   });
@@ -45,7 +46,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .post(`/dicom/PS3/studies/123`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({});
     expect(res.status).toBe(200);
   });

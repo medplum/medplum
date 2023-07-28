@@ -1,9 +1,9 @@
+import { ContentType, MedplumClient } from '@medplum/core';
+import { mkdtempSync, rmSync } from 'fs';
+import os from 'os';
+import { sep } from 'path';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
-import os from 'os';
-import { mkdtempSync, rmSync } from 'fs';
-import { sep } from 'path';
-import { MedplumClient } from '@medplum/core';
 import { createMedplumClient } from './util/client';
 
 jest.mock('os');
@@ -32,7 +32,7 @@ describe('Profiles', () => {
       if (url.includes('/$export?_since=200')) {
         return {
           status: 200,
-          headers: { get: () => 'application/fhir+json' },
+          headers: { get: () => ContentType.FHIR_JSON },
           json: jest.fn(async () => {
             return {
               resourceType: 'OperationOutcome',
@@ -72,7 +72,7 @@ describe('Profiles', () => {
           headers: {
             get(name: string): string | undefined {
               return {
-                'content-type': 'application/fhir+json',
+                'content-type': ContentType.FHIR_JSON,
                 'content-location': 'bulkdata/id/status',
               }[name];
             },
@@ -85,7 +85,7 @@ describe('Profiles', () => {
           count++;
           return {
             status: 202,
-            headers: { get: () => 'application/fhir+json' },
+            headers: { get: () => ContentType.FHIR_JSON },
             json: jest.fn(async () => {
               return {};
             }),
@@ -95,7 +95,7 @@ describe('Profiles', () => {
 
       return {
         status: 200,
-        headers: { get: () => 'application/fhir+json' },
+        headers: { get: () => ContentType.FHIR_JSON },
         json: jest.fn(async () => ({
           transactionTime: '2023-05-18T22:55:31.280Z',
           request: 'https://api.medplum.com/fhir/R4/$export?_type=Observation',

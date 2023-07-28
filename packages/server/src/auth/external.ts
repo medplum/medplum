@@ -1,4 +1,4 @@
-import { badRequest, OAuthGrantType, OperationOutcomeError, parseJWTPayload } from '@medplum/core';
+import { badRequest, ContentType, OAuthGrantType, OperationOutcomeError, parseJWTPayload } from '@medplum/core';
 import { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
@@ -156,9 +156,9 @@ async function verifyCode(idp: IdentityProvider, code: string): Promise<Record<s
     const response = await fetch(idp.tokenUrl as string, {
       method: 'POST',
       headers: {
-        Accept: 'application/json',
+        Accept: ContentType.JSON,
         Authorization: `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': ContentType.FORM_URL_ENCODED,
       },
       body: params.toString(),
     });

@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { ContentType, createReference } from '@medplum/core';
 import {
   Address,
   Communication,
@@ -218,7 +218,7 @@ export const HomerSimpson: Patient = {
   ],
   photo: [
     {
-      contentType: 'image/png',
+      contentType: ContentType.PNG,
       url: 'https://www.medplum.com/img/homer-simpson.png',
     },
   ],
@@ -295,7 +295,7 @@ export const HomerSimpsonPreviousVersion: Patient = {
   ],
   photo: [
     {
-      contentType: 'image/png',
+      contentType: ContentType.PNG,
       url: 'https://www.medplum.com/img/homer-simpson.png',
     },
   ],
@@ -341,7 +341,7 @@ export const HomerMedia: Media = {
   },
   encounter: createReference(HomerEncounter),
   content: {
-    contentType: 'text/plain',
+    contentType: ContentType.TEXT,
     url: 'https://example.com/test.txt',
   },
 };

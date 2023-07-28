@@ -2,6 +2,7 @@ import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import {
   allOk,
   badRequest,
+  ContentType,
   createReference,
   getIdentifier,
   Hl7Message,
@@ -34,12 +35,7 @@ import { sendOutcome } from '../outcomes';
 import { Repository, systemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
 
-export const EXECUTE_CONTENT_TYPES = [
-  'application/json',
-  'application/fhir+json',
-  'text/plain',
-  'x-application/hl7-v2+er7',
-];
+export const EXECUTE_CONTENT_TYPES = [ContentType.JSON, ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
 
 export interface BotExecutionRequest {
   readonly bot: Bot;
@@ -395,11 +391,11 @@ function getResponseContentType(req: Request): string {
   }
 
   // Default to FHIR
-  return 'application/fhir+json';
+  return ContentType.FHIR_JSON;
 }
 
 function isJsonContentType(contentType: string): boolean {
-  return contentType === 'application/json' || contentType === 'application/fhir+json';
+  return contentType === ContentType.JSON || contentType === ContentType.FHIR_JSON;
 }
 
 /**

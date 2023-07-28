@@ -1,4 +1,4 @@
-import { createReference, getReferenceString } from '@medplum/core';
+import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import { Binary, Encounter, Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -225,7 +225,7 @@ describe('GraphQL', () => {
     const res1 = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send(introspectionRequest);
     expect(res1.status).toBe(200);
     expect(res1.headers['cache-control']).toBe('public, max-age=31536000');
@@ -236,7 +236,7 @@ describe('GraphQL', () => {
     const res2 = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send(introspectionRequest);
     expect(res2.status).toBe(200);
     expect(res2.text).toEqual(res1.text);
@@ -247,7 +247,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `{
           __schema {
@@ -266,7 +266,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `{
           __type(name: "Patient") {
@@ -283,7 +283,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
       {
@@ -305,7 +305,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
       {
@@ -325,7 +325,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
       {
@@ -344,7 +344,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
       {
@@ -382,7 +382,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
       {
@@ -401,7 +401,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
       {
@@ -420,7 +420,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
       {
@@ -444,7 +444,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
       {
@@ -468,7 +468,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
         {
@@ -501,7 +501,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
         {
@@ -535,7 +535,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
       {
@@ -561,7 +561,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
       {
@@ -589,7 +589,7 @@ describe('GraphQL', () => {
     const res1 = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
         {
@@ -619,7 +619,7 @@ describe('GraphQL', () => {
     const res2 = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
         {
@@ -666,7 +666,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + bobAccessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
         {
@@ -709,7 +709,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + bobAccessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
       {
@@ -728,7 +728,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + bobAccessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
       {
@@ -758,7 +758,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + bobAccessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
       {
@@ -777,7 +777,7 @@ describe('GraphQL', () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')
       .set('Authorization', 'Bearer ' + bobAccessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         query: `
       {

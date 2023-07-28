@@ -1,4 +1,4 @@
-import { badRequest } from '@medplum/core';
+import { badRequest, ContentType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
@@ -129,24 +129,24 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   );
   app.use(
     text({
-      type: ['text/plain', 'x-application/hl7-v2+er7'],
+      type: [ContentType.TEXT, ContentType.HL7_V2],
     })
   );
   app.use(
     json({
-      type: ['application/json', 'application/fhir+json', 'application/json-patch+json'],
+      type: [ContentType.JSON, ContentType.FHIR_JSON, ContentType.JSON_PATCH],
       limit: config.maxJsonSize,
     })
   );
   app.use(
     hl7BodyParser({
-      type: ['x-application/hl7-v2+er7'],
+      type: [ContentType.HL7_V2],
     })
   );
 
   const apiRouter = Router();
   apiRouter.get('/', (_req, res) => res.sendStatus(200));
-  apiRouter.get('/robots.txt', (_req, res) => res.type('text/plain').send('User-agent: *\nDisallow: /'));
+  apiRouter.get('/robots.txt', (_req, res) => res.type(ContentType.TEXT).send('User-agent: *\nDisallow: /'));
   apiRouter.get('/healthcheck', asyncWrap(healthcheckHandler));
   apiRouter.get('/openapi.json', openApiHandler);
   apiRouter.use('/.well-known/', wellKnownRouter);

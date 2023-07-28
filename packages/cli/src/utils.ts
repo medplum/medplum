@@ -1,4 +1,4 @@
-import { MedplumClient } from '@medplum/core';
+import { ContentType, MedplumClient } from '@medplum/core';
 import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
 import { existsSync, readFileSync, writeFile } from 'fs';
 import { basename, extname, resolve } from 'path';
@@ -185,10 +185,10 @@ export function getUnsupportedExtension(): Extension {
 export function getCodeContentType(filename: string): string {
   const ext = extname(filename).toLowerCase();
   if (['.cjs', '.mjs', '.js'].includes(ext)) {
-    return 'text/javascript';
+    return ContentType.JAVASCRIPT;
   }
   if (['.cts', '.mts', '.ts'].includes(ext)) {
-    return 'text/typescript';
+    return ContentType.TYPESCRIPT;
   }
-  return 'text/plain';
+  return ContentType.TEXT;
 }

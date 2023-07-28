@@ -1,4 +1,4 @@
-import { createReference, normalizeErrorString } from '@medplum/core';
+import { ContentType, createReference, normalizeErrorString } from '@medplum/core';
 import {
   ActivityDefinition,
   Bundle,
@@ -508,7 +508,7 @@ async function createResource<T extends Resource>(resource: T, token?: string): 
   const res = await request(app)
     .post(`/fhir/R4/${resource.resourceType}`)
     .set('Authorization', 'Bearer ' + currentToken)
-    .set('Content-Type', 'application/fhir+json')
+    .set('Content-Type', ContentType.FHIR_JSON)
     .send(resource);
   expect(res.status).toBe(201);
   return res.body;

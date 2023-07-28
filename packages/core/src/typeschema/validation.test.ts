@@ -1,3 +1,4 @@
+import { readJson } from '@medplum/definitions';
 import {
   Account,
   Appointment,
@@ -19,12 +20,12 @@ import {
 } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { validate } from './validation';
-import { indexStructureDefinitionBundle } from '../types';
-import { readJson } from '@medplum/definitions';
-import { loadDataTypes } from './types';
+import { ContentType } from '../contenttype';
 import { OperationOutcomeError } from '../outcomes';
+import { indexStructureDefinitionBundle } from '../types';
 import { createReference } from '../utils';
+import { loadDataTypes } from './types';
+import { validate } from './validation';
 
 describe('FHIR resource validation', () => {
   let observationProfile: StructureDefinition;
@@ -797,7 +798,7 @@ describe('Legacy tests for parity checking', () => {
   });
 
   test('base64Binary', () => {
-    const binary: Binary = { resourceType: 'Binary', contentType: 'text/plain' };
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
 
     binary.data = 123 as unknown as string;
     expect(() => validate(binary)).toThrowError('Invalid JSON type: expected string, but got number (Binary.data)');

@@ -1,4 +1,4 @@
-import { MedplumClient, normalizeErrorString } from '@medplum/core';
+import { ContentType, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { EventLogger } from 'node-windows';
@@ -7,8 +7,6 @@ const log = new EventLogger({
   source: 'MedplumService',
   eventLog: 'SYSTEM',
 });
-
-const HL7_CONTENT_TYPE = 'x-application/hl7-v2+er7';
 
 export class App {
   readonly log: EventLogger;
@@ -44,7 +42,7 @@ export class App {
       await this.medplum.post(
         this.medplum.fhirUrl('Bot', this.bot.id as string, '$execute'),
         event.message.toString(),
-        HL7_CONTENT_TYPE
+        ContentType.HL7_V2
       );
 
       const ack = event.message.buildAck();

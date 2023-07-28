@@ -1,4 +1,4 @@
-import { allOk, getStatus, isOk, OperationOutcomeError, validateResource } from '@medplum/core';
+import { allOk, ContentType, getStatus, isOk, OperationOutcomeError, validateResource } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
@@ -50,7 +50,7 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
 
     // Unless already set, use the FHIR content type
     if (!res.get('Content-Type')) {
-      res.contentType('application/fhir+json');
+      res.contentType(ContentType.FHIR_JSON);
     }
 
     return res.json(data);
@@ -199,7 +199,7 @@ protectedRoutes.use(
 );
 
 export function isFhirJsonContentType(req: Request): boolean {
-  return !!(req.is('application/json') || req.is('application/fhir+json'));
+  return !!(req.is(ContentType.JSON) || req.is(ContentType.FHIR_JSON));
 }
 
 export async function sendResponse(res: Response, outcome: OperationOutcome, body: Resource): Promise<void> {

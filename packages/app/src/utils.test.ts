@@ -1,4 +1,4 @@
-import { exportJSONFile } from './utils';
+import { exportJsonFile } from './utils';
 
 let jsonFile: any;
 describe('JSON File Download', () => {
@@ -31,7 +31,7 @@ describe('JSON File Download', () => {
     URL.createObjectURL = jest.fn(() => 'blob:http://localhost/blob');
     URL.revokeObjectURL = jest.fn();
 
-    exportJSONFile(jsonFile.entry);
+    exportJsonFile(jsonFile.entry);
 
     expect(URL.revokeObjectURL).toBeCalled();
   });

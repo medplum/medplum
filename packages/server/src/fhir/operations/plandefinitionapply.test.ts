@@ -1,4 +1,4 @@
-import { createReference, getReferenceString } from '@medplum/core';
+import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import { OperationOutcome, Patient, Questionnaire, RequestGroup, Task } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -32,7 +32,7 @@ describe('PlanDefinition apply', () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Questionnaire`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Questionnaire',
         status: 'active',
@@ -53,7 +53,7 @@ describe('PlanDefinition apply', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/PlanDefinition`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
@@ -71,7 +71,7 @@ describe('PlanDefinition apply', () => {
     const res3 = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
         name: [{ given: ['Workflow'], family: 'Demo' }],
@@ -82,7 +82,7 @@ describe('PlanDefinition apply', () => {
     const res4 = await request(app)
       .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -121,7 +121,7 @@ describe('PlanDefinition apply', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/PlanDefinition`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
@@ -132,7 +132,7 @@ describe('PlanDefinition apply', () => {
     const res4 = await request(app)
       .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'text/plain')
+      .set('Content-Type', ContentType.TEXT)
       .send('hello');
     expect(res4.status).toBe(400);
     expect(res4.text).toEqual('Unsupported content type');
@@ -142,7 +142,7 @@ describe('PlanDefinition apply', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/PlanDefinition`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
@@ -153,7 +153,7 @@ describe('PlanDefinition apply', () => {
     const res4 = await request(app)
       .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
       });
@@ -165,7 +165,7 @@ describe('PlanDefinition apply', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/PlanDefinition`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
@@ -176,7 +176,7 @@ describe('PlanDefinition apply', () => {
     const res4 = await request(app)
       .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Parameters',
         parameter: [],
@@ -189,7 +189,7 @@ describe('PlanDefinition apply', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/PlanDefinition`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
@@ -205,7 +205,7 @@ describe('PlanDefinition apply', () => {
     const res3 = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
         name: [{ given: ['Workflow'], family: 'Demo' }],
@@ -215,7 +215,7 @@ describe('PlanDefinition apply', () => {
     const res4 = await request(app)
       .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Parameters',
         parameter: [

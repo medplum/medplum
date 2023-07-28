@@ -34,6 +34,7 @@ import {
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
+import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { Hl7Message } from './hl7';
 import { isMedplumAccessToken, parseJWTPayload } from './jwt';
@@ -55,9 +56,6 @@ export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
 const DEFAULT_CACHE_TIME = 60000; // 60 seconds
-const JSON_CONTENT_TYPE = 'application/json';
-const FHIR_CONTENT_TYPE = 'application/fhir+json';
-const PATCH_CONTENT_TYPE = 'application/json-patch+json';
 
 const system: Device = { resourceType: 'Device', id: 'system', deviceName: [{ name: 'System' }] };
 
@@ -813,7 +811,7 @@ export class MedplumClient extends EventTarget {
   patch(url: URL | string, operations: PatchOperation[], options: RequestInit = {}): Promise<any> {
     url = url.toString();
     this.setRequestBody(options, operations);
-    this.setRequestContentType(options, PATCH_CONTENT_TYPE);
+    this.setRequestContentType(options, ContentType.JSON_PATCH);
     this.invalidateUrl(url);
     return this.request('PATCH', url, options);
   }
@@ -2044,7 +2042,7 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the operation outcome.
    */
   sendEmail(email: MailOptions, options?: RequestInit): Promise<OperationOutcome> {
-    return this.post('email/v1/send', email, 'application/json', options);
+    return this.post('email/v1/send', email, ContentType.JSON, options);
   }
 
   /**
@@ -2095,7 +2093,7 @@ export class MedplumClient extends EventTarget {
    * @returns The GraphQL result.
    */
   graphql(query: string, operationName?: string | null, variables?: any, options?: RequestInit): Promise<any> {
-    return this.post(this.fhirUrl('$graphql'), { query, operationName, variables }, JSON_CONTENT_TYPE, options);
+    return this.post(this.fhirUrl('$graphql'), { query, operationName, variables }, ContentType.JSON, options);
   }
 
   /**
@@ -2612,11 +2610,11 @@ export class MedplumClient extends EventTarget {
       headers = {};
       options.headers = headers;
     }
-    headers['Accept'] = FHIR_CONTENT_TYPE;
+    headers['Accept'] = ContentType.FHIR_JSON;
     headers['X-Medplum'] = 'extended';
 
     if (options.body && !headers['Content-Type']) {
-      headers['Content-Type'] = FHIR_CONTENT_TYPE;
+      headers['Content-Type'] = ContentType.FHIR_JSON;
     }
 
     if (this.accessToken) {
@@ -2864,7 +2862,7 @@ export class MedplumClient extends EventTarget {
   private async fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
     const options = {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: { 'Content-Type': ContentType.FORM_URL_ENCODED },
       body: formBody,
       credentials: 'include',
     };

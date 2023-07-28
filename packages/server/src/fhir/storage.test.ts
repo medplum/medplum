@@ -7,6 +7,7 @@ import { Request } from 'express';
 import fs from 'fs';
 import internal, { Readable } from 'stream';
 
+import { ContentType } from '@medplum/core';
 import { loadTestConfig } from '../config';
 import { getBinaryStorage, initBinaryStorage } from './storage';
 
@@ -50,7 +51,7 @@ describe('Storage', () => {
     req.push('foo');
     req.push(null);
     (req as any).headers = {};
-    await storage.writeBinary(binary, 'test.txt', 'text/plain', req as Request);
+    await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req as Request);
 
     // Request the binary
     const stream = await storage.readBinary(binary);
@@ -88,13 +89,13 @@ describe('Storage', () => {
     const sdkStream = sdkStreamMixin(req);
     mockS3Client.on(GetObjectCommand).resolves({ Body: sdkStream });
 
-    await storage.writeBinary(binary, 'test.txt', 'text/plain', req as Request);
+    await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req as Request);
 
     expect(mockS3Client.send.callCount).toBe(1);
     expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
       Bucket: 'foo',
       Key: 'binary/123/456',
-      ContentType: 'text/plain',
+      ContentType: ContentType.TEXT,
     });
 
     // Read a file
@@ -148,7 +149,7 @@ describe('Storage', () => {
     const binary = null as unknown as Binary;
     const stream = null as unknown as internal.Readable;
     try {
-      await storage.writeBinary(binary, 'test.exe', 'text/plain', stream);
+      await storage.writeBinary(binary, 'test.exe', ContentType.TEXT, stream);
       fail('Expected error');
     } catch (err) {
       expect((err as Error).message).toEqual('Invalid file extension');

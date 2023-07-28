@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { ContentType, createReference } from '@medplum/core';
 import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -136,7 +136,7 @@ describe('Auth middleware', () => {
     const res = await request(app)
       .post('/fhir/R4/Patient')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'))
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
         name: [
@@ -155,7 +155,7 @@ describe('Auth middleware', () => {
     const res = await request(app)
       .post('/fhir/R4/Patient')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'))
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Patient',

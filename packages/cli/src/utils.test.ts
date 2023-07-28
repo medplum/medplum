@@ -1,3 +1,4 @@
+import { ContentType } from '@medplum/core';
 import { Writable } from 'stream';
 import tar from 'tar';
 import { getCodeContentType, safeTarExtractor } from './utils';
@@ -54,15 +55,15 @@ describe('CLI utils', () => {
   });
 
   test('getCodeContentType', () => {
-    expect(getCodeContentType('foo.cjs')).toEqual('text/javascript');
-    expect(getCodeContentType('foo.js')).toEqual('text/javascript');
-    expect(getCodeContentType('foo.mjs')).toEqual('text/javascript');
+    expect(getCodeContentType('foo.cjs')).toEqual(ContentType.JAVASCRIPT);
+    expect(getCodeContentType('foo.js')).toEqual(ContentType.JAVASCRIPT);
+    expect(getCodeContentType('foo.mjs')).toEqual(ContentType.JAVASCRIPT);
 
-    expect(getCodeContentType('foo.cts')).toEqual('text/typescript');
-    expect(getCodeContentType('foo.mts')).toEqual('text/typescript');
-    expect(getCodeContentType('foo.ts')).toEqual('text/typescript');
+    expect(getCodeContentType('foo.cts')).toEqual(ContentType.TYPESCRIPT);
+    expect(getCodeContentType('foo.mts')).toEqual(ContentType.TYPESCRIPT);
+    expect(getCodeContentType('foo.ts')).toEqual(ContentType.TYPESCRIPT);
 
-    expect(getCodeContentType('foo.txt')).toEqual('text/plain');
-    expect(getCodeContentType('foo')).toEqual('text/plain');
+    expect(getCodeContentType('foo.txt')).toEqual(ContentType.TEXT);
+    expect(getCodeContentType('foo')).toEqual(ContentType.TEXT);
   });
 });

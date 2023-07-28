@@ -1,18 +1,18 @@
-import { createReference, getReferenceString, Operator, stringify } from '@medplum/core';
+import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
+import { ContentType, createReference, getReferenceString, Operator, stringify } from '@medplum/core';
 import { AuditEvent, Bot, Observation, Patient, Project, ProjectMembership, Subscription } from '@medplum/fhirtypes';
+import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import { Job } from 'bullmq';
 import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';
-import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
-import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { getClient } from '../database';
 import { Repository, systemRepo } from '../fhir/repo';
 import { createTestProject } from '../test.setup';
-import { closeSubscriptionWorker, execSubscriptionJob, getSubscriptionQueue } from './subscription';
 import { AuditEventOutcome } from '../util/auditevent';
+import { closeSubscriptionWorker, execSubscriptionJob, getSubscriptionQueue } from './subscription';
 
 jest.mock('node-fetch');
 
@@ -213,7 +213,7 @@ describe('Subscription Worker', () => {
         method: 'POST',
         body: stringify(patient),
         headers: {
-          'Content-Type': 'application/fhir+json',
+          'Content-Type': ContentType.FHIR_JSON,
           Authorization: 'Basic xyz',
         },
       })
@@ -336,7 +336,7 @@ describe('Subscription Worker', () => {
         method: 'POST',
         body: '{}',
         headers: {
-          'Content-Type': 'application/fhir+json',
+          'Content-Type': ContentType.FHIR_JSON,
           'X-Medplum-Deleted-Resource': `Patient/${patient.id}`,
         },
       })
@@ -389,7 +389,7 @@ describe('Subscription Worker', () => {
         method: 'POST',
         body,
         headers: {
-          'Content-Type': 'application/fhir+json',
+          'Content-Type': ContentType.FHIR_JSON,
           'X-Signature': signature,
         },
       })
@@ -442,7 +442,7 @@ describe('Subscription Worker', () => {
         method: 'POST',
         body,
         headers: {
-          'Content-Type': 'application/fhir+json',
+          'Content-Type': ContentType.FHIR_JSON,
           'X-Signature': signature,
         },
       })
