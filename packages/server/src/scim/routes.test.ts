@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { ContentType, createReference } from '@medplum/core';
 import { AccessPolicy } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -59,7 +59,7 @@ describe('SCIM Routes', () => {
     const res1 = await request(app)
       .post(`/scim/v2/Users`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
         userType: 'Patient',
@@ -88,7 +88,7 @@ describe('SCIM Routes', () => {
     const updateResponse = await request(app)
       .put(`/scim/v2/Users/${res1.body.id}`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         ...res1.body,
         externalId: randomUUID(),
@@ -114,7 +114,7 @@ describe('SCIM Routes', () => {
     const res = await request(app)
       .post(`/scim/v2/Users`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
         name: {

@@ -1,3 +1,4 @@
+import { ContentType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -30,7 +31,7 @@ describe('Measure evaluate-measure', () => {
       const patientResponse = await request(app)
         .post(`/fhir/R4/Patient`)
         .set('Authorization', 'Bearer ' + accessToken)
-        .set('Content-Type', 'application/fhir+json')
+        .set('Content-Type', ContentType.FHIR_JSON)
         .send({
           resourceType: 'Patient',
           active: true,
@@ -43,7 +44,7 @@ describe('Measure evaluate-measure', () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Measure`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Measure',
         status: 'active',
@@ -75,7 +76,7 @@ describe('Measure evaluate-measure', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/Measure/${res1.body.id}/$evaluate-measure`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -110,7 +111,7 @@ describe('Measure evaluate-measure', () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Measure`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Measure',
         status: 'active',
@@ -120,7 +121,7 @@ describe('Measure evaluate-measure', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/Measure/${res1.body.id}/$evaluate-measure`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'text/plain')
+      .set('Content-Type', ContentType.TEXT)
       .send('hello');
     expect(res2.status).toBe(400);
     expect(res2.text).toEqual('Unsupported content type');
@@ -130,7 +131,7 @@ describe('Measure evaluate-measure', () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Measure`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Measure',
         status: 'active',
@@ -140,7 +141,7 @@ describe('Measure evaluate-measure', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/Measure/${res1.body.id}/$evaluate-measure`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
       });
@@ -152,7 +153,7 @@ describe('Measure evaluate-measure', () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Measure`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Measure',
         status: 'active',
@@ -162,7 +163,7 @@ describe('Measure evaluate-measure', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/Measure/${res1.body.id}/$evaluate-measure`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -178,7 +179,7 @@ describe('Measure evaluate-measure', () => {
     const res3 = await request(app)
       .post(`/fhir/R4/Measure/${res1.body.id}/$evaluate-measure`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Parameters',
         parameter: [

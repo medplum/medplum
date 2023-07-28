@@ -1,3 +1,4 @@
+import { ContentType } from '@medplum/core';
 import { ContactPoint } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -79,7 +80,7 @@ describe('OAuth2 UserInfo', () => {
     const res3 = await request(app)
       .patch(`/fhir/R4/${res2.body.profile.reference}`)
       .set('Authorization', 'Bearer ' + res2.body.access_token)
-      .type('application/json-patch+json')
+      .type(ContentType.JSON_PATCH)
       .send([
         {
           op: 'replace',
@@ -125,7 +126,7 @@ describe('OAuth2 UserInfo', () => {
     const res4 = await request(app)
       .put(`/fhir/R4/${res2.body.profile.reference}`)
       .set('Authorization', 'Bearer ' + res2.body.access_token)
-      .type('application/fhir+json')
+      .type(ContentType.FHIR_JSON)
       .send({
         ...res3.body,
         address: [{ city: address }],

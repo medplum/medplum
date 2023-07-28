@@ -1,3 +1,4 @@
+import { ContentType } from '@medplum/core';
 import { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -116,7 +117,7 @@ describe('Token Exchange', () => {
   test('Unknown user', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
-      headers: { get: () => 'application/json' },
+      headers: { get: () => ContentType.JSON },
       json: () => ({ email: 'not-found@' + domain }),
     }));
 
@@ -131,7 +132,7 @@ describe('Token Exchange', () => {
   test('ClientApplication success', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
-      headers: { get: () => 'application/json' },
+      headers: { get: () => ContentType.JSON },
       json: () => ({ email }),
     }));
 
@@ -146,7 +147,7 @@ describe('Token Exchange', () => {
   test('Missing projectId success', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
-      headers: { get: () => 'application/json' },
+      headers: { get: () => ContentType.JSON },
       json: () => ({ email }),
     }));
 
@@ -161,7 +162,7 @@ describe('Token Exchange', () => {
   test('Invalid token request', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
-      headers: { get: () => 'text/plain' },
+      headers: { get: () => ContentType.TEXT },
       json: () => {
         throw new Error('Invalid JSON');
       },
@@ -180,7 +181,7 @@ describe('Token Exchange', () => {
   test('Subject auth success', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
-      headers: { get: () => 'application/json' },
+      headers: { get: () => ContentType.JSON },
       json: () => ({ email: '', sub: externalId }),
     }));
 

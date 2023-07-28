@@ -1,4 +1,5 @@
 import { Attachment, CodeableConcept, ObservationDefinition, Patient, Resource } from '@medplum/fhirtypes';
+import { ContentType } from './contenttype';
 import {
   arrayBufferToBase64,
   arrayBufferToHex,
@@ -8,13 +9,15 @@ import {
   createReference,
   deepClone,
   deepEquals,
+  deepIncludes,
   findObservationInterval,
   findObservationReferenceRange,
+  findResourceByCode,
   getCodeBySystem,
   getDateProperty,
   getDisplayString,
-  getExtensionValue,
   getExtension,
+  getExtensionValue,
   getIdentifier,
   getImageSrc,
   getQuestionnaireAnswers,
@@ -28,11 +31,9 @@ import {
   preciseLessThanOrEquals,
   preciseRound,
   resolveId,
+  ResourceWithCode,
   setCodeBySystem,
   stringify,
-  findResourceByCode,
-  ResourceWithCode,
-  deepIncludes,
 } from './utils';
 
 if (typeof btoa === 'undefined') {
@@ -124,7 +125,7 @@ describe('Core Utils', () => {
         photo: [
           {
             url: 'http://abc/xyz.txt',
-            contentType: 'text/plain',
+            contentType: ContentType.TEXT,
           },
         ],
       })

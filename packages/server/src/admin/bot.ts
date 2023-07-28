@@ -1,4 +1,4 @@
-import { createReference, getReferenceString } from '@medplum/core';
+import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import { AccessPolicy, Binary, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -40,7 +40,7 @@ export interface CreateBotRequest {
 
 export async function createBot(repo: Repository, request: CreateBotRequest): Promise<Bot> {
   const filename = 'index.ts';
-  const contentType = 'text/typescript';
+  const contentType = ContentType.TYPESCRIPT;
   const binary = await repo.createResource<Binary>({
     resourceType: 'Binary',
     contentType,

@@ -7,6 +7,7 @@ import {
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
+import { ContentType } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
@@ -102,7 +103,7 @@ describe('Deploy', () => {
     // Step 1: Create a bot
     const res1 = await request(app)
       .post(`/fhir/R4/Bot`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
@@ -123,7 +124,7 @@ describe('Deploy', () => {
     // Step 2: Deploy the bot
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         code: `
@@ -149,7 +150,7 @@ describe('Deploy', () => {
     // Step 3: Update the bot
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         code: `
@@ -199,7 +200,7 @@ describe('Deploy', () => {
     // This should fail because bots are not enabled
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${res2.body.id}/$deploy`)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         code: `

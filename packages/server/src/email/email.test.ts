@@ -1,5 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { getReferenceString, normalizeOperationOutcome, notFound } from '@medplum/core';
+import { ContentType, getReferenceString, normalizeOperationOutcome, notFound } from '@medplum/core';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
@@ -135,7 +135,7 @@ describe('Email', () => {
     // Create a binary
     const binary = await systemRepo.createResource({
       resourceType: 'Binary',
-      contentType: 'text/plain',
+      contentType: ContentType.TEXT,
     });
 
     // Emulate upload
@@ -143,7 +143,7 @@ describe('Email', () => {
     req.push('hello world');
     req.push(null);
     (req as any).headers = {};
-    await getBinaryStorage().writeBinary(binary, 'hello.txt', 'text/plain', req as Request);
+    await getBinaryStorage().writeBinary(binary, 'hello.txt', ContentType.TEXT, req as Request);
 
     await sendEmail(systemRepo, {
       to: 'alice@example.com',

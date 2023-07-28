@@ -1,6 +1,6 @@
 import {
   badRequest,
-  tooManyRequests,
+  ContentType,
   createReference,
   Filter,
   getDateProperty,
@@ -9,6 +9,7 @@ import {
   Operator,
   ProfileResource,
   resolveId,
+  tooManyRequests,
 } from '@medplum/core';
 import {
   AccessPolicy,
@@ -695,7 +696,7 @@ export async function getExternalUserInfo(
     response = await fetch(idp.userInfoUrl as string, {
       method: 'GET',
       headers: {
-        Accept: 'application/json',
+        Accept: ContentType.JSON,
         Authorization: `Bearer ${externalAccessToken}`,
       },
     });
@@ -715,7 +716,7 @@ export async function getExternalUserInfo(
   }
 
   // Make sure content type is json
-  if (!response.headers.get('content-type')?.includes('application/json')) {
+  if (!response.headers.get('content-type')?.includes(ContentType.JSON)) {
     let text = '';
     try {
       text = await response.text();

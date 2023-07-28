@@ -15,6 +15,7 @@ import {
 } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { ContentType } from './contenttype';
 import { OperationOutcomeError } from './outcomes';
 import { validateResource, validateResourceType } from './schema';
 import { indexStructureDefinitionBundle } from './types';
@@ -218,7 +219,7 @@ describe('FHIR schema', () => {
   });
 
   test('base64Binary', () => {
-    const binary: Binary = { resourceType: 'Binary', contentType: 'text/plain' };
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
 
     binary.data = 123 as unknown as string;
     expect(() => validateResource(binary)).toThrowError('Invalid type for base64Binary');

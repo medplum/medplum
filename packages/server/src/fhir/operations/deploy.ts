@@ -8,7 +8,7 @@ import {
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
-import { allOk, badRequest, getReferenceString } from '@medplum/core';
+import { allOk, badRequest, ContentType, getReferenceString } from '@medplum/core';
 import { Binary, Bot } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import JSZip from 'jszip';
@@ -117,7 +117,7 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
 
   try {
     const filename = 'index.js';
-    const contentType = 'text/javascript';
+    const contentType = ContentType.JAVASCRIPT;
 
     // Create a Binary for the executable code
     const binary = await repo.createResource<Binary>({

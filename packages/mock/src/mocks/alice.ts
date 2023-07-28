@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { ContentType, createReference } from '@medplum/core';
 import { Organization, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 
 export const TestOrganization: Organization = {
@@ -37,7 +37,7 @@ export const DrAliceSmith: Practitioner = {
   ],
   photo: [
     {
-      contentType: 'image/png',
+      contentType: ContentType.PNG,
       url: 'https://www.medplum.com/img/cdc-femaledoc.png',
     },
   ],

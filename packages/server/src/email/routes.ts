@@ -1,4 +1,4 @@
-import { allOk, forbidden } from '@medplum/core';
+import { allOk, ContentType, forbidden } from '@medplum/core';
 import { Project } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { body, check, validationResult } from 'express-validator';
@@ -12,7 +12,7 @@ export const emailRouter = Router();
 emailRouter.use(authenticateToken);
 
 const sendEmailValidators = [
-  check('content-type').equals('application/json'),
+  check('content-type').equals(ContentType.JSON),
   body('to').notEmpty().withMessage('To is required'),
   body('subject').notEmpty().withMessage('Subject is required'),
 ];

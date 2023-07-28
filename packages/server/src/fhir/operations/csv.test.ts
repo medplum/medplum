@@ -1,3 +1,4 @@
+import { ContentType } from '@medplum/core';
 import { ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -25,7 +26,7 @@ describe('CSV Export', () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
         name: [
@@ -60,7 +61,7 @@ describe('CSV Export', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
       });
@@ -106,7 +107,7 @@ describe('CSV Export', () => {
     const res1 = await request(app)
       .post(`/fhir/R4/ServiceRequest`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send(serviceRequest);
     expect(res1.status).toBe(201);
 
@@ -148,7 +149,7 @@ describe('CSV Export', () => {
     const res1 = await request(app)
       .post(`/fhir/R4/ServiceRequest`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send(serviceRequest);
     expect(res1.status).toBe(201);
 

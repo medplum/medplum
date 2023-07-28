@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { ContentType, createReference } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -25,7 +25,7 @@ describe('Patient Everything Operation', () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
@@ -41,7 +41,7 @@ describe('Patient Everything Operation', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/Observation`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Observation',
         status: 'final',
@@ -56,7 +56,7 @@ describe('Patient Everything Operation', () => {
     const res3 = await request(app)
       .post(`/fhir/R4/Condition`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Condition',
         code: { coding: [{ system: 'http://loinc.org', code: '12345-6' }] },

@@ -20,6 +20,7 @@ import {
   NewProjectRequest,
   NewUserRequest,
 } from './client';
+import { ContentType } from './contenttype';
 import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
 import { createReference, ProfileResource } from './utils';
 
@@ -62,7 +63,7 @@ const schemaResponse = {
 function mockFetch(
   status: number,
   body: OperationOutcome | Record<string, unknown> | ((url: string, options?: any) => any),
-  contentType = 'application/fhir+json'
+  contentType = ContentType.FHIR_JSON
 ): FetchLike & jest.Mock {
   const bodyFn = typeof body === 'function' ? body : () => body;
   return jest.fn((url: string, options?: any) => {
@@ -602,7 +603,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
           Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
           'X-Medplum': 'extended',
         },
@@ -629,7 +630,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
           Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
           'X-Medplum': 'extended',
         },
@@ -667,7 +668,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
           Authorization: `Bearer ${accessToken}`,
           'X-Medplum': 'extended',
         },
@@ -679,7 +680,7 @@ describe('Client', () => {
         method: 'POST',
         headers: {
           Authorization: 'Basic ' + encodeBase64(clientId + ':' + clientSecret),
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': ContentType.FORM_URL_ENCODED,
         },
       })
     );
@@ -715,7 +716,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
           Authorization: `Bearer ${accessToken}`,
           'X-Medplum': 'extended',
         },
@@ -727,7 +728,7 @@ describe('Client', () => {
         method: 'POST',
         headers: {
           Authorization: 'Basic ' + encodeBase64(clientId + ':' + clientSecret),
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': ContentType.FORM_URL_ENCODED,
         },
       })
     );
@@ -1046,8 +1047,8 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
-          'Content-Type': 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.FHIR_JSON,
           'X-Medplum': 'extended',
         },
       })
@@ -1109,8 +1110,8 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'PUT',
         headers: {
-          Accept: 'application/fhir+json',
-          'Content-Type': 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.FHIR_JSON,
           'X-Medplum': 'extended',
         },
       })
@@ -1157,15 +1158,15 @@ describe('Client', () => {
   test('Create attachment', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const result = await client.createAttachment('Hello world', undefined, 'text/plain');
+    const result = await client.createAttachment('Hello world', undefined, ContentType.TEXT);
     expect(result).toBeDefined();
     expect(fetch).toBeCalledWith(
       'https://api.medplum.com/fhir/R4/Binary',
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
-          'Content-Type': 'text/plain',
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.TEXT,
           'X-Medplum': 'extended',
         },
       })
@@ -1175,15 +1176,15 @@ describe('Client', () => {
   test('Create binary', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const result = await client.createBinary('Hello world', undefined, 'text/plain');
+    const result = await client.createBinary('Hello world', undefined, ContentType.TEXT);
     expect(result).toBeDefined();
     expect(fetch).toBeCalledWith(
       'https://api.medplum.com/fhir/R4/Binary',
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
-          'Content-Type': 'text/plain',
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.TEXT,
           'X-Medplum': 'extended',
         },
       })
@@ -1193,15 +1194,15 @@ describe('Client', () => {
   test('Create binary with filename', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const result = await client.createBinary('Hello world', 'hello.txt', 'text/plain');
+    const result = await client.createBinary('Hello world', 'hello.txt', ContentType.TEXT);
     expect(result).toBeDefined();
     expect(fetch).toBeCalledWith(
       'https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt',
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
-          'Content-Type': 'text/plain',
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.TEXT,
           'X-Medplum': 'extended',
         },
       })
@@ -1227,7 +1228,7 @@ describe('Client', () => {
 
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const promise = client.createBinary('Hello world', undefined, 'text/plain', onProgress);
+    const promise = client.createBinary('Hello world', undefined, ContentType.TEXT, onProgress);
     expect(xhrMock.open).toBeCalled();
     expect(xhrMock.setRequestHeader).toBeCalled();
 
@@ -1274,7 +1275,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
           'Content-Type': 'application/pdf',
           'X-Medplum': 'extended',
         },
@@ -1298,7 +1299,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
           'Content-Type': 'application/pdf',
           'X-Medplum': 'extended',
         },
@@ -1730,8 +1731,8 @@ describe('Client', () => {
         expect.objectContaining({
           method: 'POST',
           headers: {
-            Accept: 'application/fhir+json',
-            'Content-Type': 'application/fhir+json',
+            Accept: ContentType.FHIR_JSON,
+            'Content-Type': ContentType.FHIR_JSON,
             'X-Medplum': 'extended',
           },
           body: expect.stringContaining('Bundle'),
@@ -1754,7 +1755,7 @@ describe('Client', () => {
         expect.objectContaining({
           method: 'POST',
           headers: {
-            'Content-Type': 'application/fhir+json',
+            'Content-Type': ContentType.FHIR_JSON,
             'X-Medplum': 'extended',
             ...options.headers,
           },
@@ -1778,8 +1779,8 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
-          'Content-Type': 'application/json',
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.JSON,
           'X-Medplum': 'extended',
         },
         body: expect.stringContaining('alice@example.com'),
@@ -1824,7 +1825,7 @@ describe('Client', () => {
   test('setAccessToken', async () => {
     const fetch = jest.fn(async () => ({
       status: 200,
-      headers: { get: () => 'application/fhir+json' },
+      headers: { get: () => ContentType.FHIR_JSON },
       json: async () => ({ resourceType: 'Patient' }),
     }));
 
@@ -1857,8 +1858,8 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
-          'Content-Type': 'application/json',
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.JSON,
           'X-Medplum': 'extended',
         },
         body: expect.stringContaining('Patient'),
@@ -1906,7 +1907,7 @@ describe('Client', () => {
       headers: {
         get(name: string): string | undefined {
           return {
-            'content-type': 'application/fhir+json',
+            'content-type': ContentType.FHIR_JSON,
           }[name];
         },
       },
@@ -1989,7 +1990,7 @@ describe('Client', () => {
       }
       return {
         status: 200,
-        headers: { get: () => 'application/fhir+json' },
+        headers: { get: () => ContentType.FHIR_JSON },
         json: async () => ({ resourceType: 'Patient' }),
       };
     });
@@ -2019,11 +2020,11 @@ describe('Client', () => {
   test('Handle HL7 response', async () => {
     const fetch = jest.fn(async () => ({
       status: 200,
-      headers: { get: () => 'x-application/hl7-v2+er7' },
+      headers: { get: () => ContentType.HL7_V2 },
       text: async () => 'MSH|^~\\&|1|\r\n',
     }));
     const client = new MedplumClient({ fetch });
-    const response = await client.post('/$process-message', 'MSH|^~\\&|1|\r\n', 'x-application/hl7-v2+er7');
+    const response = await client.post('/$process-message', 'MSH|^~\\&|1|\r\n', ContentType.HL7_V2);
     expect(response).toBeDefined();
     expect(response).toEqual('MSH|^~\\&|1|\r\n');
   });
@@ -2032,7 +2033,7 @@ describe('Client', () => {
     // Handle the ugly case where server returns JSON header but non-JSON body
     const fetch = jest.fn(async () => ({
       status: 200,
-      headers: { get: () => 'application/json' },
+      headers: { get: () => ContentType.JSON },
       json: () => Promise.reject(new Error('Not JSON')),
     }));
     console.error = jest.fn();
@@ -2055,7 +2056,7 @@ describe('Client', () => {
         if (url.includes('/$export?_since=200')) {
           return {
             status: 200,
-            headers: { get: () => 'application/fhir+json' },
+            headers: { get: () => ContentType.FHIR_JSON },
             json: jest.fn(async () => {
               return {
                 resourceType: 'OperationOutcome',
@@ -2095,7 +2096,7 @@ describe('Client', () => {
             headers: {
               get(name: string): string | undefined {
                 return {
-                  'content-type': 'application/fhir+json',
+                  'content-type': ContentType.FHIR_JSON,
                   'content-location': 'bulkdata/id/status',
                 }[name];
               },
@@ -2117,7 +2118,7 @@ describe('Client', () => {
 
         return {
           status: 200,
-          headers: { get: () => 'application/fhir+json' },
+          headers: { get: () => ContentType.FHIR_JSON },
           json: jest.fn(async () => ({
             transactionTime: '2023-05-18T22:55:31.280Z',
             request: 'https://api.medplum.com/fhir/R4/$export?_type=Observation',
@@ -2141,7 +2142,7 @@ describe('Client', () => {
         expect.stringContaining('/$export'),
         expect.objectContaining({
           headers: {
-            Accept: 'application/fhir+json',
+            Accept: ContentType.FHIR_JSON,
             Prefer: 'respond-async',
             'X-Medplum': 'extended',
           },
@@ -2203,7 +2204,7 @@ describe('Client', () => {
             };
           }),
           headers: {
-            get: (key: string) => (key === 'content-type' ? 'application/fhir+json' : null),
+            get: (key: string) => (key === 'content-type' ? ContentType.FHIR_JSON : null),
           },
         };
       });
@@ -2262,7 +2263,7 @@ describe('Client', () => {
               return 'https://example.com/content-location/1';
             }
             if (key.toLowerCase() === 'content-type') {
-              return 'application/fhir+json';
+              return ContentType.FHIR_JSON;
             }
             return null;
           },
@@ -2280,7 +2281,7 @@ describe('Client', () => {
               return 'https://example.com/content-location/1';
             }
             if (key.toLowerCase() === 'content-type') {
-              return 'application/fhir+json';
+              return ContentType.FHIR_JSON;
             }
             return null;
           },
@@ -2298,7 +2299,7 @@ describe('Client', () => {
               return 'https://example.com/location/1';
             }
             if (key.toLowerCase() === 'content-type') {
-              return 'application/fhir+json';
+              return ContentType.FHIR_JSON;
             }
             return null;
           },
@@ -2310,7 +2311,7 @@ describe('Client', () => {
       fetch.mockImplementationOnce(async () => ({
         ok: true,
         status: 201,
-        headers: { get: () => 'application/fhir+json' },
+        headers: { get: () => ContentType.FHIR_JSON },
         json: async () => ({ resourceType: 'Patient' }),
       }));
 

@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 
+import { ContentType } from '@medplum/core';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config';
@@ -53,7 +54,7 @@ describe('Execute', () => {
 
     const res = await request(app)
       .post(`/fhir/R4/Bot`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
@@ -78,7 +79,7 @@ describe('Execute', () => {
   test('Submit plain text', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-      .set('Content-Type', 'text/plain')
+      .set('Content-Type', ContentType.TEXT)
       .set('Authorization', 'Bearer ' + accessToken)
       .send('input');
     expect(res.status).toBe(200);
@@ -89,7 +90,7 @@ describe('Execute', () => {
   test('Submit FHIR with content type', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Patient',
@@ -118,7 +119,7 @@ describe('Execute', () => {
 
     const res = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-      .set('Content-Type', 'x-application/hl7-v2+er7')
+      .set('Content-Type', ContentType.HL7_V2)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(text);
     expect(res.status).toBe(200);
@@ -129,7 +130,7 @@ describe('Execute', () => {
     // Create a bot with empty code
     const res1 = await request(app)
       .post(`/fhir/R4/Bot`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
@@ -142,7 +143,7 @@ describe('Execute', () => {
     // Execute the bot
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res2.status).toBe(400);
@@ -151,7 +152,7 @@ describe('Execute', () => {
   test('Unsupported runtime version', async () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Bot`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
@@ -164,7 +165,7 @@ describe('Execute', () => {
     // Step 2: Publish the bot
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         code: `
@@ -179,7 +180,7 @@ describe('Execute', () => {
     // Step 3: Execute the bot
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res3.status).toBe(400);
@@ -213,7 +214,7 @@ describe('Execute', () => {
     // This should fail because bots are not enabled
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${res2.body.id}/$execute`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res3.status).toBe(400);
@@ -242,7 +243,7 @@ describe('Execute', () => {
   test('Execute by identifier', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Bot/$execute?identifier=${bot.identifier?.[0]?.system}|${bot.identifier?.[0]?.value}`)
-      .set('Content-Type', 'text/plain')
+      .set('Content-Type', ContentType.TEXT)
       .set('Authorization', 'Bearer ' + accessToken)
       .send('input');
     expect(res.status).toBe(200);
@@ -253,7 +254,7 @@ describe('Execute', () => {
   test('Missing parameters', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Bot/$execute`)
-      .set('Content-Type', 'text/plain')
+      .set('Content-Type', ContentType.TEXT)
       .set('Authorization', 'Bearer ' + accessToken)
       .send('input');
     expect(res.status).toBe(400);
@@ -272,7 +273,7 @@ describe('Execute', () => {
     const res = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute/RequestGroup`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({ foo: 'bar' });
     expect(res.status).toBe(200);
     expect(res.body.foo).toBe('bar');
@@ -285,7 +286,7 @@ describe('Execute', () => {
     // Create a bot with empty code
     const res1 = await request(app)
       .post(`/fhir/R4/Bot`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
@@ -299,7 +300,7 @@ describe('Execute', () => {
     // This should fail
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res2.status).toBe(400);
@@ -308,12 +309,12 @@ describe('Execute', () => {
     // Update the bot with an invalid code URL
     const res3 = await request(app)
       .put(`/fhir/R4/Bot/${bot.id}`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         ...bot,
         executableCode: {
-          contentType: 'text/javascript',
+          contentType: ContentType.JAVASCRIPT,
           url: 'https://example.com/invalid.js',
         },
       });
@@ -323,7 +324,7 @@ describe('Execute', () => {
     // This should fail
     const res4 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res4.status).toBe(400);
@@ -332,7 +333,7 @@ describe('Execute', () => {
     // Deploy the bot
     const res5 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         code: `
@@ -346,7 +347,7 @@ describe('Execute', () => {
     // Execute the bot success
     const res6 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res6.status).toBe(200);
@@ -359,7 +360,7 @@ describe('Execute', () => {
     // This should fail
     const res7 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res7.status).toBe(400);

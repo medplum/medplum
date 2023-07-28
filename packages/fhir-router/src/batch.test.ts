@@ -1,4 +1,5 @@
 import {
+  ContentType,
   createReference,
   getReferenceString,
   indexSearchParameterBundle,
@@ -576,7 +577,7 @@ describe('Batch', () => {
           },
           resource: {
             resourceType: 'Binary',
-            contentType: 'application/json-patch+json',
+            contentType: ContentType.JSON_PATCH,
             data: Buffer.from(JSON.stringify([{ op: 'add', path: '/active', value: true }]), 'utf8').toString('base64'),
           },
         },
@@ -609,7 +610,7 @@ describe('Batch', () => {
           },
           resource: {
             resourceType: 'Binary',
-            contentType: 'application/json-patch+json',
+            contentType: ContentType.JSON_PATCH,
             data: Buffer.from(JSON.stringify([{ op: 'replace', path: 'status', value: 'final' }]), 'utf8').toString(
               'base64'
             ),
@@ -647,7 +648,7 @@ describe('Batch', () => {
           },
           resource: {
             resourceType: 'Binary',
-            contentType: 'application/json-patch+json',
+            contentType: ContentType.JSON_PATCH,
             data: Buffer.from(JSON.stringify([{ op: 'not-an-op', path: '/status', value: 'final' }]), 'utf8').toString(
               'base64'
             ),
@@ -1006,7 +1007,7 @@ describe('Batch', () => {
               channel: {
                 type: 'rest-hook',
                 endpoint: 'urn:uuid:32178250-67a4-4ec9-89bc-d16f1d619403',
-                payload: 'application/fhir+json',
+                payload: ContentType.FHIR_JSON,
               },
             },
           },

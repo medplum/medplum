@@ -1,4 +1,5 @@
 import {
+  ContentType,
   createReference,
   getStatus,
   normalizeErrorString,
@@ -43,7 +44,7 @@ type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: str
  * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
  */
 export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: Response) => {
-  if (!req.is('application/x-www-form-urlencoded')) {
+  if (!req.is(ContentType.FORM_URL_ENCODED)) {
     res.status(400).send('Unsupported content type');
     return;
   }

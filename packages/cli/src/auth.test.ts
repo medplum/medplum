@@ -1,4 +1,4 @@
-import { MedplumClient } from '@medplum/core';
+import { ContentType, MedplumClient } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import cp from 'child_process';
 import fs from 'fs';
@@ -63,14 +63,14 @@ describe('CLI auth', () => {
     const req1 = { url: '/favicon.ico' };
     const res1 = { writeHead: jest.fn(), end: jest.fn() };
     await handler(req1, res1);
-    expect(res1.writeHead).toBeCalledWith(404, { 'Content-Type': 'text/plain' });
+    expect(res1.writeHead).toBeCalledWith(404, { 'Content-Type': ContentType.TEXT });
     expect(res1.end).toBeCalledWith('Not found');
 
     // Simulate the redirect
     const req2 = { url: '/?code=123' };
     const res2 = { writeHead: jest.fn(), end: jest.fn() };
     await handler(req2, res2);
-    expect(res2.writeHead).toBeCalledWith(200, { 'Content-Type': 'text/plain' });
+    expect(res2.writeHead).toBeCalledWith(200, { 'Content-Type': ContentType.TEXT });
     expect(res2.end).toBeCalledWith('Signed in as Alice Smith. You may close this window.');
     expect(medplum.getActiveLogin()).toBeDefined();
   });

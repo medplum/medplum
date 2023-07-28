@@ -1,3 +1,4 @@
+import { ContentType } from '@medplum/core';
 import { BulkDataExportOutput, Group, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -27,7 +28,7 @@ describe('Group Export', () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
@@ -43,7 +44,7 @@ describe('Group Export', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
         name: [{ given: ['Bob'], family: 'Jones' }],
@@ -59,7 +60,7 @@ describe('Group Export', () => {
     const res3 = await request(app)
       .post(`/fhir/R4/Observation`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Observation',
         status: 'final',
@@ -72,7 +73,7 @@ describe('Group Export', () => {
     const res4 = await request(app)
       .post(`/fhir/R4/Device`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Device',
       });
@@ -82,7 +83,7 @@ describe('Group Export', () => {
     const res5 = await request(app)
       .post(`/fhir/R4/Group`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Group',
         type: 'person',
@@ -138,7 +139,7 @@ describe('Group Export', () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
@@ -155,7 +156,7 @@ describe('Group Export', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/Observation`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Observation',
@@ -181,7 +182,7 @@ describe('Group Export', () => {
     const res4 = await request(app)
       .post(`/fhir/R4/Group`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Group',
         type: 'person',
@@ -229,7 +230,7 @@ describe('Group Export', () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
@@ -246,7 +247,7 @@ describe('Group Export', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/Observation`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Observation',
@@ -260,7 +261,7 @@ describe('Group Export', () => {
     const res3 = await request(app)
       .post(`/fhir/R4/Group`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Group',
         type: 'person',
@@ -295,7 +296,7 @@ describe('Group Export', () => {
     const groupRes = await request(app)
       .post(`/fhir/R4/Group`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Group',
         type: 'person',

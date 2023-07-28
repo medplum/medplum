@@ -1,4 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import { ContentType } from '@medplum/core';
 import express from 'express';
 import { simpleParser } from 'mailparser';
 import request from 'supertest';
@@ -28,7 +29,7 @@ describe('Email API Routes', () => {
   });
 
   test('Unauthenticated', async () => {
-    const res = await request(app).post(`/email/v1/send`).set('Content-Type', 'application/json').send({
+    const res = await request(app).post(`/email/v1/send`).set('Content-Type', ContentType.JSON).send({
       to: 'alice@example.com',
       subject: 'Subject',
       text: 'Body',
@@ -42,7 +43,7 @@ describe('Email API Routes', () => {
     const res = await request(app)
       .post(`/email/v1/send`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'text/plain')
+      .set('Content-Type', ContentType.TEXT)
       .send('hello');
     expect(res.status).toBe(400);
   });
@@ -51,7 +52,7 @@ describe('Email API Routes', () => {
     const res = await request(app)
       .post(`/email/v1/send`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         to: 'alice@example.com',
         subject: 'Subject',

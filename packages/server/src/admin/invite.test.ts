@@ -1,5 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { getReferenceString } from '@medplum/core';
+import { ContentType, getReferenceString } from '@medplum/core';
 import { BundleEntry, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -375,7 +375,7 @@ describe('Admin Invite', () => {
     const res8 = await request(app)
       .post('/admin/projects/' + project.id + '/invite')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'))
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', ContentType.JSON)
       .send({
         resourceType: 'Patient',
         firstName: 'Bob',

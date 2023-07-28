@@ -1,5 +1,6 @@
 import { CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { ContentType } from '@medplum/core';
 import fastGlob from 'fast-glob';
 import { createReadStream, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import fetch from 'node-fetch';
@@ -129,22 +130,22 @@ async function uploadAppToS3(tmpDir: string, bucketName: string): Promise<void> 
     // Cached
     // These files generally have a hash, so they can be cached forever
     // It is important to upload them first to avoid broken references from index.html
-    ['css/**/*.css', 'text/css', true],
-    ['css/**/*.css.map', 'application/json', true],
-    ['img/**/*.png', 'image/png', true],
+    ['css/**/*.css', ContentType.CSS, true],
+    ['css/**/*.css.map', ContentType.JSON, true],
+    ['img/**/*.png', ContentType.PNG, true],
     ['img/**/*.svg', 'image/svg+xml', true],
-    ['js/**/*.js', 'text/javascript', true],
-    ['js/**/*.js.map', 'application/json', true],
-    ['js/**/*.txt', 'text/plain', true],
-    ['favicon.ico', 'image/vnd.microsoft.icon', true],
-    ['robots.txt', 'text/plain', true],
-    ['workbox-*.js', 'text/javascript', true],
-    ['workbox-*.js.map', 'application/json', true],
+    ['js/**/*.js', ContentType.JAVASCRIPT, true],
+    ['js/**/*.js.map', ContentType.JSON, true],
+    ['js/**/*.txt', ContentType.TEXT, true],
+    ['favicon.ico', ContentType.FAVICON, true],
+    ['robots.txt', ContentType.TEXT, true],
+    ['workbox-*.js', ContentType.JAVASCRIPT, true],
+    ['workbox-*.js.map', ContentType.JSON, true],
 
     // Not cached
     ['manifest.webmanifest', 'application/manifest+json', false],
-    ['service-worker.js', 'text/javascript', false],
-    ['service-worker.js.map', 'application/json', false],
+    ['service-worker.js', ContentType.JAVASCRIPT, false],
+    ['service-worker.js.map', ContentType.JSON, false],
     ['index.html', 'text/html', false],
   ];
   for (const uploadPattern of uploadPatterns) {

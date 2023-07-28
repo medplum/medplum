@@ -1,4 +1,4 @@
-import { MedplumClient, resolveId } from '@medplum/core';
+import { ContentType, MedplumClient, resolveId } from '@medplum/core';
 import { Patient, Reference, Resource, Specimen } from '@medplum/fhirtypes';
 
 /**
@@ -80,8 +80,8 @@ export function getProjectId(medplum: MedplumClient): string {
  * @param jsonString The JSON string.
  * @param fileName Optional file name. Default is based on current timestamp.
  */
-export function exportJSONFile(jsonString: string, fileName?: string): void {
-  const blobForExport = new Blob([jsonString], { type: 'application/json' });
+export function exportJsonFile(jsonString: string, fileName?: string): void {
+  const blobForExport = new Blob([jsonString], { type: ContentType.JSON });
   const url = URL.createObjectURL(blobForExport);
 
   const link = document.createElement('a');

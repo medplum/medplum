@@ -1,4 +1,4 @@
-import { isResourceType, TypeSchema } from '@medplum/core';
+import { ContentType, isResourceType, TypeSchema } from '@medplum/core';
 import {
   CapabilityStatement,
   CapabilityStatementRest,
@@ -53,7 +53,7 @@ const baseStmt: CapabilityStatement = {
   ],
   fhirVersion: '4.0.1',
   format: ['json'],
-  patchFormat: ['application/json-patch+json'],
+  patchFormat: [ContentType.JSON_PATCH],
 };
 
 /**

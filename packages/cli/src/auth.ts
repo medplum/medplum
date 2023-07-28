@@ -1,9 +1,9 @@
-import { MedplumClient, getDisplayString, normalizeErrorString } from '@medplum/core';
-import { platform } from 'os';
+import { ContentType, getDisplayString, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { exec } from 'child_process';
 import { createServer } from 'http';
-import { createMedplumCommand } from './util/command';
+import { platform } from 'os';
 import { createMedplumClient } from './util/client';
+import { createMedplumCommand } from './util/command';
 
 const clientId = 'medplum-cli';
 const redirectUri = 'http://localhost:9615';
@@ -43,16 +43,16 @@ async function startWebServer(medplum: MedplumClient): Promise<void> {
     if (url.pathname === '/' && code) {
       try {
         const profile = await medplum.processCode(code, { clientId, redirectUri });
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.writeHead(200, { 'Content-Type': ContentType.TEXT });
         res.end(`Signed in as ${getDisplayString(profile)}. You may close this window.`);
       } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.writeHead(400, { 'Content-Type': ContentType.TEXT });
         res.end(`Error: ${normalizeErrorString(err)}`);
       } finally {
         server.close();
       }
     } else {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.writeHead(404, { 'Content-Type': ContentType.TEXT });
       res.end('Not found');
     }
   }).listen(9615);

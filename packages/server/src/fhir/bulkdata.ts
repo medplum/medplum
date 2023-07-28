@@ -1,3 +1,4 @@
+import { ContentType } from '@medplum/core';
 import { BulkDataExport } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
@@ -31,7 +32,7 @@ bulkDataRouter.get(
       output: bulkDataExport.output || [],
       error: bulkDataExport.error || [],
     });
-    res.status(200).type('application/json').json(json);
+    res.status(200).type(ContentType.JSON).json(json);
   })
 );
 
