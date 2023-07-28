@@ -444,7 +444,8 @@ class MockFetchClient {
 
   private mockOAuthHandler(_method: string, path: string, options: any): any {
     if (path.startsWith('oauth2/token')) {
-      const clientId = (options.body as URLSearchParams).get('client_id') ?? 'my-client-id';
+      const formBody = new URLSearchParams(options.body);
+      const clientId = formBody.get('client_id') ?? 'my-client-id';
       return {
         access_token: 'header.' + base64Encode(JSON.stringify({ client_id: clientId })) + '.signature',
       };
