@@ -22,6 +22,10 @@ Build a custom experience for clinical research including schedule of assessment
 
 Build a custom LIS/LIMS that includes panel management, machine interfacing, quality reporting, dashboards and more. A lab network allows a streamlined experience for ordering lab tests via application or API and handles all of the complex business operations. [Learn More](/solutions/lab)
 
+## Pediatrics
+
+Build an application that supports common pediatric patterns such as parental access, messaging integrations, tasking, educational material and more. [Learn More](/solutions/pediatrics)
+
 ## CMS FHIR for Payors
 
 Quickly comply with CMS 9115 FHIR requirements for payors with easy to implement interfaces and turnkey solution for CARIN Blue Button and DaVinci Implementation Guides. [Learn More](/docs/compliance/cms-fhir)
@@ -30,13 +34,13 @@ Quickly comply with CMS 9115 FHIR requirements for payors with easy to implement
 
 Highly customizable internal service that supports integrations that are common in healthcare such as FHIR and Smart-on-FHIR integrations, HL7 connections, SFTP, Lab data, home health integrations, logistics providers and more. Available hosted or self-hosted. [Learn More](/products/integration)
 
+## Remote Patient Monitoring
+
+Build and implement a custom, robust remote patient monitoring program. Read a [case study](/blog/codex-and-the-power-of-g10) on the topic.
+
 ## Sidecar Application
 
 Build an application that reads and writes data to common medical records systems such as Epic, Cerner or Athena.
-
-## Pediatrics
-
-Build an application that supports common pediatric patterns such as parental access, messaging integrations, educational material and more.
 
 ## Durable Medical Equipment
 
@@ -49,7 +53,3 @@ With standards-compliant data, it is possible to build population health reports
 ## Clinical Decision Support
 
 Build clinical decision support applications that are data driven and in context.
-
-## Remote Patient Monitoring
-
-Build and implement a custom, robust remote patient monitoring program.
