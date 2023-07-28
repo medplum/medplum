@@ -3,50 +3,50 @@
     {
       "name": "hello-patient",
       "id": "",
-      "source": "src/examples/hello-patient.ts",
-      "dist": "dist/examples/hello-patient.js"
+      "source": "src/hello-patient.ts",
+      "dist": "dist/hello-patient.js"
     },
     {
       "name": "patient-intake",
       "id": "",
-      "source": "src/examples/patient-intake.ts",
-      "dist": "dist/examples/patient-intake.js"
+      "source": "src/patient-intake.ts",
+      "dist": "dist/patient-intake.js"
     },
     {
       "name": "create-pdf",
       "id": "",
-      "source": "src/examples/create-pdf.ts",
-      "dist": "dist/examples/create-pdf.js"
+      "source": "src/create-pdf.ts",
+      "dist": "dist/create-pdf.js"
     },
     {
       "name": "sample-account-setup",
       "id": "",
-      "source": "src/examples/sample-account-setup.ts",
-      "dist": "dist/examples/sample-account-setup.js"
+      "source": "src/sample-account-setup.ts",
+      "dist": "dist/sample-account-setup.js"
     },
     {
       "name": "sample-account-staging",
       "id": "",
-      "source": "src/examples/sample-account-setup.ts",
-      "dist": "dist/examples/sample-account-setup.js"
+      "source": "src/sample-account-setup.ts",
+      "dist": "dist/sample-account-setup.js"
     },
     {
       "name": "hl7-bot",
       "id": "",
-      "source": "src/examples/hl7-bot.ts",
-      "dist": "dist/examples/hl7-bot.js"
+      "source": "src/hl7-bot.ts",
+      "dist": "dist/hl7-bot.js"
     },
     {
       "name": "finalize-report",
       "id": "",
-      "source": "src/examples/finalize-report.ts",
-      "dist": "dist/examples/finalize-report.js"
+      "source": "src/finalize-report.ts",
+      "dist": "dist/finalize-report.js"
     },
     {
       "name": "stripe-create-invoice",
       "id": "",
-      "source": "src/examples/stripe-bots/stripe-create-invoice.ts",
-      "dist": "dist/examples/stripe-bots/stripe-create-invoice.js"
+      "source": "src/stripe-bots/stripe-create-invoice.ts",
+      "dist": "dist/stripe-bots/stripe-create-invoice.js"
     }
   ]
 }
