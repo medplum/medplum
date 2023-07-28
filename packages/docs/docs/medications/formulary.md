@@ -19,7 +19,7 @@ This guide covers the basics of how to use the [`MedicationKnowledge`](/docs/api
 - How to annotate medications with the proper codes.
 - How to represent physical characteristics about the medication and its package.
 - How to categorize medications in the formulary.
-- How represent compounded medications.
+- How to represent compounded medications.
 - How to represent relationships between medications.
 
 This guide is informed by the [DaVinci Payer Data Exchange (PDex) US Drug Formulary](https://build.fhir.org/ig/HL7/davinci-pdex-formulary/index.html) implementation guide, which was authored by industry leaders, including Humana, Cigna, and Optum.
