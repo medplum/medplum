@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cli",
-  "version": "2.0.28",
+  "version": "2.0.29",
   "description": "Medplum Command Line Interface",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
