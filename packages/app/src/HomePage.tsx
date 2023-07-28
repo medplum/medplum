@@ -15,7 +15,7 @@ import { Bundle, ResourceType, UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { exportJSONFile } from './utils';
+import { exportJsonFile } from './utils';
 
 const useStyles = createStyles((theme) => {
   return {
@@ -88,7 +88,7 @@ export function HomePage(): JSX.Element {
         }}
         onExportTransactionBundle={async () => {
           getTransactionBundle(search, medplum)
-            .then((bundle) => exportJSONFile(JSON.stringify(bundle, undefined, 2)))
+            .then((bundle) => exportJsonFile(JSON.stringify(bundle, undefined, 2)))
             .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
         }}
         onDelete={(ids: string[]) => {
