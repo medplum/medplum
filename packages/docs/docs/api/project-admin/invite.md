@@ -8,12 +8,12 @@ import TabItem from '@theme/TabItem';
 Invite a new user to the project. This will perform the following actions:
 
 1. Search for an existing user with the provided `email`, if given
-2. Search for an existing profile resource ([Patient](/docs/api/fhir/resources/patient), [Practitioner](/docs/api/fhir/resources/practitioner), or [RelatedPerson](/docs/api/fhir/resources/relatedperson))
+2. Search for an existing profile resource ([`Patient``](/docs/api/fhir/resources/patient), [`Practitioner`](/docs/api/fhir/resources/practitioner), or [`RelatedPerson`](/docs/api/fhir/resources/relatedperson))
 3. Create a new User, if no existing User was found,
    1. Set the password if `password` is given
    2. Generate a password reset url
 4. Create a new profile resource, if no existing profile was found
-5. Create a corresponding [ProjectMembership](/docs/api/fhir/medplum/projectmembership) resource, for the (user, profile) pair
+5. Create a corresponding [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resource, for the (user, profile) pair
 6. Send an invite email, if `sendEmail` is `true`
 
 ### Parameters
@@ -91,7 +91,7 @@ curl https://api.medplum.com/admin/projects/:projectId/invite \
 
 Example Response:
 
-Returns the [ProjectMembership](/docs/api/fhir/medplum/projectmembership) associated with the new user
+Returns the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) associated with the new user
 
 ```ts
 {
@@ -162,7 +162,7 @@ curl https://api.medplum.com/admin/projects/:projectId/invite \
 
 Example Response:
 
-Returns the [ProjectMembership](/docs/api/fhir/medplum/projectmembership) associated with the new user
+Returns the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) associated with the new user
 
 ```ts
 {
