@@ -1,5 +1,3 @@
-import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
-
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
@@ -11,21 +9,26 @@ Returns a partial [`Project`](/docs/api/fhir/medplum/project) resource based on 
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
-    <MedplumCodeBlock language="ts" selectBlocks="">
-      {"medplum.get('admin/projects/:projectId')"}
-    </MedplumCodeBlock>
+
+```ts
+await medplum.get('admin/projects/:projectId');
+```
+
   </TabItem>
   <TabItem value="cli" label="CLI">
-    <MedplumCodeBlock language="bash" selectBlocks="">
-      {'medplum get admin/projects/:projectId'}
-    </MedplumCodeBlock>
+
+```bash
+medplum get admin/projects/:projectId
+```
+
   </TabItem>
   <TabItem value="curl" label="cURL">
-    <MedplumCodeBlock language="bash" selectBlocks="">
-      {
-`curl https://api.medplum.com/admin/projects/:projectId \\
-  -H "Authorization: Bearer $TOKEN"`}
-    </MedplumCodeBlock>
+
+```bash
+curl https://api.medplum.com/admin/projects/:projectId \\
+-H "Authorization: Bearer $TOKEN"
+```
+
   </TabItem>
 </Tabs>
 
