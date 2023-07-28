@@ -25,7 +25,7 @@ medplum get admin/projects/:projectId
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl https://api.medplum.com/admin/projects/:projectId \\
+curl https://api.medplum.com/admin/projects/:projectId \
 -H "Authorization: Bearer $TOKEN"
 ```
 
