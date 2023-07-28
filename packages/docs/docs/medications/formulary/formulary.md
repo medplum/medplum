@@ -12,7 +12,7 @@ tags:
 
 # Modeling a Formulary
 
-A "formulary" refers to a catalog of drugs offered by your organization. When implementing a custom EMR, Digital Health Clinical administrators often curate a formulary of relevant drugs, along with relevant metadata, to assist prescribing physicians, pharmacists, and patients.
+A "formulary" refers to a catalog of drugs offered by your organization. When implementing a custom EMR, Digital Health clinical administrators often curate a formulary of relevant drugs, along with relevant metadata, to assist prescribing physicians, pharmacists, and patients.
 
 This guide covers the basics of how to use the [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resource, which represents a type of medication that can be ordered. It will cover:
 
@@ -23,6 +23,10 @@ This guide covers the basics of how to use the [`MedicationKnowledge`](/docs/api
 - How to represent relationships between medications.
 
 This guide is informed by the [DaVinci Payer Data Exchange (PDex) US Drug Formulary](https://build.fhir.org/ig/HL7/davinci-pdex-formulary/index.html) implementation guide, which was authored by industry leaders, including Humana, Cigna, and Optum.
+
+:::tip Sample Data
+You can download the examples in this guide [here](./formulary-examples.json), and upload them to your project using the [Medplum Batch Upload Tool](/docs/tutorials/importing-sample-data#batch-upload-tool)
+:::
 
 ## Medication Code
 
@@ -377,6 +381,6 @@ For these external files, implementers should create a [`DocumentReference`](/do
 
 ## See Also
 
-- Guide on [Medication Code Systems](./medication-codes.md)
+- Guide on [Medication Code Systems](../medication-codes)
 - [DaVinci Payer Data Exchange (PDex) US Drug Formulary](https://build.fhir.org/ig/HL7/davinci-pdex-formulary/index.html) implementation guide
 - [Humana Drug Formulary API](https://developers.humana.com/apis/drug-formulary-api/doc)
