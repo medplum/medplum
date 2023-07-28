@@ -10,7 +10,7 @@ keywords:
 ---
 
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
-import Example from '!!raw-loader!@site/../../examples/medplum-demo-bots/src/examples/candid-health/send-to-candid.test.ts';
+import Example from '!!raw-loader!@site/../../examples/medplum-demo-bots/src/candid-health/send-to-candid.test.ts';
 
 # Representing Patient Insurance Coverage
 
@@ -162,7 +162,7 @@ Digital health implementations often need to store photos of a patient's insuran
 
 Below is a detailed example of a [`Coverage`](/docs/api/fhir/resources/coverage) resource, tagged with the appropriate code systems. This example conforms to the US Core guidelines.
 
-This example has been tested as part of the the [Medplum Candid Demo Bot](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/examples/candid-health), a [Medplum Bot](/docs/bots) that submits insurance information to [Candid Health](https://www.joincandidhealth.com/) for reimbursement. Check out the [full bot](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/examples/candid-health/send-to-candid.ts) for an example of how to submit FHIR resources to the Candid API.
+This example has been tested as part of the the [Medplum Candid Demo Bot](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/candid-health), a [Medplum Bot](/docs/bots) that submits insurance information to [Candid Health](https://www.joincandidhealth.com/) for reimbursement. Check out the [full bot](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/candid-health/send-to-candid.ts) for an example of how to submit FHIR resources to the Candid API.
 
 <MedplumCodeBlock language="ts" selectBlocks="exampleCoverage">
     {Example}
@@ -172,4 +172,4 @@ This example has been tested as part of the the [Medplum Candid Demo Bot](https:
 
 - [US Core Guidelines](https://www.medplum.com/docs/fhir-datastore/understanding-uscdi-dataclasses)
 - [CARIN Digital Insurance Card Guide](http://hl7.org/fhir/us/insurance-card/)
-- [Medplum Candid Demo Bot](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/examples/candid-health)
+- [Medplum Candid Demo Bot](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/candid-health)
