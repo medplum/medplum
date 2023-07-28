@@ -1,12 +1,19 @@
 import {
   CloudFormationClient,
+  CloudFormationClientResolvedConfig,
   DescribeStackResourcesCommand,
   DescribeStacksCommand,
   ListStacksCommand,
+  ServiceInputTypes,
+  ServiceOutputTypes,
 } from '@aws-sdk/client-cloudformation';
-import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { mockClient } from 'aws-sdk-client-mock';
+import {
+  CloudFrontClient,
+  CloudFrontClientResolvedConfig,
+  CreateInvalidationCommand,
+} from '@aws-sdk/client-cloudfront';
+import { PutObjectCommand, S3Client, S3ClientResolvedConfig } from '@aws-sdk/client-s3';
+import { AwsStub, mockClient } from 'aws-sdk-client-mock';
 import fastGlob from 'fast-glob';
 import fs from 'fs';
 import fetch from 'node-fetch';
@@ -42,9 +49,13 @@ jest.mock('tar', () => ({
 
 const { Response: NodeFetchResponse } = jest.requireActual('node-fetch');
 
+let cfMock: AwsStub<ServiceInputTypes, ServiceOutputTypes, CloudFormationClientResolvedConfig>;
+let s3Mock: AwsStub<ServiceInputTypes, ServiceOutputTypes, S3ClientResolvedConfig>;
+let cloudFrontMock: AwsStub<ServiceInputTypes, ServiceOutputTypes, CloudFrontClientResolvedConfig>;
+
 describe('update-app command', () => {
-  beforeAll(() => {
-    const cfMock = mockClient(CloudFormationClient);
+  beforeEach(() => {
+    cfMock = mockClient(CloudFormationClient);
 
     cfMock.on(ListStacksCommand).resolves({
       StackSummaries: [
@@ -120,10 +131,14 @@ describe('update-app command', () => {
       StackResources: [],
     });
 
-    const s3Mock = mockClient(S3Client);
+    s3Mock = mockClient(S3Client);
     s3Mock.on(PutObjectCommand).resolves({});
 
-    const cloudFrontMock = mockClient(CloudFrontClient);
+    cloudFrontMock = mockClient(CloudFrontClient) as AwsStub<
+      ServiceInputTypes,
+      ServiceOutputTypes,
+      CloudFrontClientResolvedConfig
+    >;
     cloudFrontMock.on(CreateInvalidationCommand).resolves({});
   });
 
@@ -195,6 +210,76 @@ describe('update-app command', () => {
     expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
     expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
     expect(console.log).toBeCalledWith('Done');
+    expect(s3Mock.calls()).toHaveLength(1);
+    expect(cloudFrontMock.calls()).toHaveLength(1);
+  });
+
+  test('Update app dryrun', async () => {
+    console.log = jest.fn();
+
+    // Mock the config file
+    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as jest.Mock).mockReturnValueOnce(
+      JSON.stringify({
+        baseUrl: 'https://api.staging.medplum.com/',
+        clientId: '',
+        googleClientId: '659647315343-c0p9rkl3pq38q18r13bkrchs4iqjogv1.apps.googleusercontent.com',
+        recaptchaSiteKey: '6LfXscQdAAAAAKlNFAoXqjliz0xbR8hvQw_pZfb2',
+        registerEnabled: true,
+      })
+    );
+
+    // Mock the 2 fetch requests
+    (fetch as jest.MockedFunction<typeof fetch>)
+      // First request is for the package metadata
+      .mockResolvedValueOnce(
+        new NodeFetchResponse('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 })
+      )
+      // Second request is for the tarball
+      .mockResolvedValueOnce(
+        new NodeFetchResponse(
+          new Readable({
+            read() {
+              this.push(null); // Signal the end of the stream
+            },
+          }),
+          { status: 200 }
+        )
+      );
+
+    // Mock the tar extract
+    (tar.x as jest.Mock).mockReturnValueOnce(
+      new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        },
+      })
+    );
+
+    // Mock the readdirSync to list files to replace variables
+    (fs.readdirSync as jest.Mock).mockImplementation((folderName) => {
+      if (folderName.endsWith('dist')) {
+        return [{ name: 'js', isDirectory: () => true, isFile: () => false }];
+      }
+      return [
+        { name: 'main.js', isDirectory: () => false, isFile: () => true },
+        { name: 'nonejsfile', isDirectory: () => false, isFile: () => true },
+      ];
+    });
+
+    // Mock the readFileSync to read the file to replace variables
+    (fs.readFileSync as jest.Mock).mockReturnValueOnce('console.log("Hello, world!");');
+
+    // Mock the glob search for files to upload
+    (fastGlob.sync as jest.Mock).mockReturnValueOnce(['index.html']);
+
+    await main(['node', 'index.js', 'aws', 'update-app', 'dev', '--dryrun']);
+
+    expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
+    expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
+    expect(console.log).toBeCalledWith('Done');
+    expect(s3Mock.calls()).toHaveLength(0);
+    expect(cloudFrontMock.calls()).toHaveLength(0);
   });
 
   test('Update app command without optional configs', async () => {

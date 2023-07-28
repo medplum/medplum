@@ -29,4 +29,8 @@ aws
   .alias('deploy-app')
   .description('Update the app site')
   .argument('<tag>')
+  .option(
+    '--dryrun',
+    'Displays the operations that would be performed using the specified command without actually running them.'
+  )
   .action(updateAppCommand);
