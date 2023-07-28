@@ -36,6 +36,10 @@ Allow patients to message their provider or care team in a chat-like interface. 
 
 Giving patients access to only their data can be enabled via [access controls](/docs/auth/access-control).
 
+## Case Studies
+
+- At home lab provider [Lumba Health](https://lumba.health/) used the `foomedical` template to build [my.lumba.health](https://my.lumba.health/) patient records portal.
+
 ## Demos and Reference Material
 
 - Sample app [Foo Medical](https://www.foomedical.com) live for testing
