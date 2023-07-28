@@ -16,7 +16,7 @@ function Logos(): JSX.Element {
   return (
     <>
       <img src="/img/logos/kit.webp" width={71} height={36} alt="Kit" />
-      <img src="/img/logos/miga-health.webp" width={193} height={36} alt="Miga Health" />
+      <img src="/img/logos/miga.webp" width={145} height={55} alt="Miga Health" />
       <img src="/img/logos/ro.webp" width={57} height={56} alt="Ro" />
       <img src="/img/logos/human-first.webp" width={219} height={30} alt="Human First" />
       <img src="/img/logos/cdc.webp" width={65} height={48} alt="CDC" />
