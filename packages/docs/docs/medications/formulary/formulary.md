@@ -381,6 +381,6 @@ For these external files, implementers should create a [`DocumentReference`](/do
 
 ## See Also
 
-- Guide on [Medication Code Systems](../medication-codes)
+- Guide on [Medication Code Systems](./medication-codes)
 - [DaVinci Payer Data Exchange (PDex) US Drug Formulary](https://build.fhir.org/ig/HL7/davinci-pdex-formulary/index.html) implementation guide
 - [Humana Drug Formulary API](https://developers.humana.com/apis/drug-formulary-api/doc)
