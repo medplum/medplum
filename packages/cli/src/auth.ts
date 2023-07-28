@@ -141,13 +141,12 @@ async function createClient(medplum: MedplumClient, profile: Profile): Promise<C
     clientId: profile.clientId,
     clientSecret: profile.clientSecret,
   };
-
+  console.log('in here');
   const clientApplication = await medplum.createResource<ClientApplication>({
     resourceType: 'ClientApplication',
     name: profile.profile,
     identityProvider,
   });
-
   return clientApplication;
 }
 
