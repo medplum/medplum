@@ -108,8 +108,6 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      console.debug(reorderedBundle?.entry?.map((e) => e.resource?.resourceType));
-
       expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toEqual([
         'ServiceRequest',
         'Specimen',

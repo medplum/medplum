@@ -2016,6 +2016,18 @@ describe('Client', () => {
     }
   });
 
+  test('Handle HL7 response', async () => {
+    const fetch = jest.fn(async () => ({
+      status: 200,
+      headers: { get: () => 'x-application/hl7-v2+er7' },
+      text: async () => 'MSH|^~\\&|1|\r\n',
+    }));
+    const client = new MedplumClient({ fetch });
+    const response = await client.post('/$process-message', 'MSH|^~\\&|1|\r\n', 'x-application/hl7-v2+er7');
+    expect(response).toBeDefined();
+    expect(response).toEqual('MSH|^~\\&|1|\r\n');
+  });
+
   test('Log non-JSON response', async () => {
     // Handle the ugly case where server returns JSON header but non-JSON body
     const fetch = jest.fn(async () => ({
