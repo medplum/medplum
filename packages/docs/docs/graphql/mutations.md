@@ -15,7 +15,11 @@ Medplum implements the draft [FHIR GraphQL Mutation spec](https://hl7.org/fhir/R
 
 Here are examples of mutations for the `Patient` resource. You can test these mutations at [graphiql.medplum.com](https://graphiql.medplum.com/)
 
-### Create Mutation
+## Create Mutation
+
+You can create a resource using the `[resourceType]Create` mutation.
+
+To create a [`Patient`](/docs/api/fhir/resources/patient):
 
 <Tabs groupId="language">
   <TabItem value="graphql" label="GraphQL">
@@ -24,7 +28,7 @@ Here are examples of mutations for the `Patient` resource. You can test these mu
     </MedplumCodeBlock>
   </TabItem>
   <TabItem value="ts" label="Typescript">
-    <MedplumCodeBlock language="graphql" selectBlocks="MutationCreatePatient">
+    <MedplumCodeBlock language="ts" selectBlocks="MutationCreatePatient">
       {ExampleCode}
     </MedplumCodeBlock>
   </TabItem>
@@ -37,6 +41,8 @@ Here are examples of mutations for the `Patient` resource. You can test these mu
   </MedplumCodeBlock>
 </details>
 
+### Aliasing the output
+
 Just as with GraphQL queries, you can alias the newly created resource.
 
 <Tabs groupId="language">
@@ -46,7 +52,7 @@ Just as with GraphQL queries, you can alias the newly created resource.
     </MedplumCodeBlock>
   </TabItem>
   <TabItem value="ts" label="Typescript">
-    <MedplumCodeBlock language="graphql" selectBlocks="MutationCreatePatientAliased">
+    <MedplumCodeBlock language="ts" selectBlocks="MutationCreatePatientAliased">
       {ExampleCode}
     </MedplumCodeBlock>
   </TabItem>
@@ -59,7 +65,26 @@ Just as with GraphQL queries, you can alias the newly created resource.
   </MedplumCodeBlock>
 </details>
 
-### Update Mutation
+### Built-in types
+
+Medplum's graphQL schema provides type definitions for complex nested fields (aka "[Backbone Elements](https://www.hl7.org/fhir/R4/backboneelement.html#BackboneElement)"). These can be used to simplify arguments to your custom mutations.
+
+This examples demonstrates how to create a mutation that creates a [`Communication`](/docs/api/fhir/resources/communication) resource and takes an array of `CommunicationPayload` types as a parameter:
+
+<Tabs groupId="language">
+  <TabItem value="graphql" label="GraphQL">
+    <MedplumCodeBlock language="graphql" selectBlocks="MutationCreateCommunicationGraphQL">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="MutationCreateCommunication">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+## Update Mutation
 
 <Tabs groupId="language">
   <TabItem value="graphql" label="GraphQL">
@@ -68,7 +93,7 @@ Just as with GraphQL queries, you can alias the newly created resource.
     </MedplumCodeBlock>
   </TabItem>
   <TabItem value="ts" label="Typescript">
-    <MedplumCodeBlock language="graphql" selectBlocks="MutationPatientUpdateTS">
+    <MedplumCodeBlock language="ts" selectBlocks="MutationPatientUpdateTS">
       {ExampleCode}
     </MedplumCodeBlock>
   </TabItem>
@@ -81,7 +106,7 @@ Just as with GraphQL queries, you can alias the newly created resource.
   </MedplumCodeBlock>
 </details>
 
-### Delete Mutation
+## Delete Mutation
 
 <Tabs groupId="language">
   <TabItem value="graphql" label="GraphQL">
@@ -90,7 +115,7 @@ Just as with GraphQL queries, you can alias the newly created resource.
     </MedplumCodeBlock>
   </TabItem>
   <TabItem value="ts" label="Typescript">
-    <MedplumCodeBlock language="graphql" selectBlocks="MutationPatientDeleteTS">
+    <MedplumCodeBlock language="ts" selectBlocks="MutationPatientDeleteTS">
       {ExampleCode}
     </MedplumCodeBlock>
   </TabItem>
