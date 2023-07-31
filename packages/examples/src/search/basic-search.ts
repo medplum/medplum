@@ -208,3 +208,39 @@ await medplum.searchResources('Observation', { 'value-quantity': 'lt40,gt60' });
 // OR
 await medplum.searchResources('Observation', 'value-quantity=lt40,gt60');
 // end-block searchExclusiveRange
+
+// start-block searchSort
+await medplum.searchResources('RiskAssessment', { _sort: 'probability,date' });
+// OR
+await medplum.searchResources('RiskAssessment', '_sort=probability,date');
+// end-block searchSort
+
+/*
+// start-block searchSortCurl
+https://api.medplum.com/fhir/R4/RiskAssessment?_sort=probability,date
+// end-block searchSortCurl
+*/
+
+// start-block searchSortDescending
+await medplum.searchResources('RiskAssessment', { _sort: '-probability' });
+// OR
+await medplum.searchResources('RiskAssessment', '_sort=-probability');
+// end-block searchSortDescending
+
+/*
+// start-block searchSortDescendingCurl
+https://api.medplum.com/fhir/R4/RiskAssessment?_sort=-probability
+// end-block searchSortDescendingCurl
+*/
+
+// start-block searchSortByLastUpdated
+await medplum.searchResources('RiskAssessment', { _sort: '-_lastUpdated' });
+// OR
+await medplum.searchResources('RiskAssessment', '_sort=-_lastUpdated');
+// end-block searchSortByLastUpdated
+
+/*
+// start-block searchSortByLastUpdatedCurl
+https://api.medplum.com/fhir/R4/RiskAssessment?_sort=-_lastUpdated
+// end-block searchSortByLastUpdatedCurl
+*/
