@@ -1,14 +1,9 @@
 import { Hl7Message } from '@medplum/core';
-import { Socket } from 'net';
-import { CR, FS, VT } from './constants';
+import { Hl7Connection } from './connection';
 
 export class Hl7MessageEvent extends Event {
-  constructor(public readonly socket: Socket, public readonly message: Hl7Message) {
+  constructor(public readonly connection: Hl7Connection, public readonly message: Hl7Message) {
     super('message');
-  }
-
-  send(reply: Hl7Message): void {
-    this.socket.write(VT + reply.toString() + FS + CR);
   }
 }
 

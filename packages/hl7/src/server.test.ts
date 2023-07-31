@@ -1,20 +1,21 @@
 import { Hl7Message } from '@medplum/core';
 import { Hl7Client } from './client';
-import { Hl7MessageEvent } from './events';
 import { Hl7Server } from './server';
 
 describe('HL7 Server', () => {
   test('Start and stop', () => {
-    const server = new Hl7Server();
+    const server = new Hl7Server(() => undefined);
     server.start(1234);
     server.stop();
   });
 
   test('Send and receive', async () => {
-    const server = new Hl7Server();
-    server.addEventListener('message', (event: Hl7MessageEvent) => {
-      event.send(event.message.buildAck());
+    const server = new Hl7Server((connection) => {
+      connection.addEventListener('message', ({ message }) => {
+        connection.send(message.buildAck());
+      });
     });
+
     server.start(1234);
 
     const client = new Hl7Client({
