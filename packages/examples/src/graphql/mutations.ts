@@ -148,6 +148,55 @@ console.log(responseAliased);
 // end-block MutationCreatePatientGraphQLAliased
 */
 
+// start-block MutationCreateCommunication
+const communication = await medplum.graphql(`
+# Use the built-in type CommunicationPayloadCreate as a parameter
+mutation CreateCommunicationWithPayload($payload: [CommunicationPayloadCreate!]!) {
+  CommunicationCreate(res: {
+    resourceType: "Communication",
+    status: "draft",
+    payload: $payload
+  })
+  # Specify which of the newly created fields to return in the response
+  {
+    id,
+    resourceType,
+    payload {
+      contentString,
+      contentAttachment {
+        url
+      }
+    }
+  }
+}`);
+// end-block MutationCreateCommunication
+
+console.log(communication);
+
+/*
+// start-block MutationCreateCommunicationGraphQL
+  # Use the built-in type `CommunicationPayloadCreate` as a parameter
+  mutation CreateCommunicationWithPayload($payload: [CommunicationPayloadCreate!]!) {
+  CommunicationCreate(res: {
+    resourceType: "Communication",
+    status: "draft",
+    payload: $payload
+  })
+  # Specify which of the newly created fields to return in the response
+  {
+    id,
+    resourceType,
+    payload {
+      contentString,
+      contentAttachment {
+        url
+      }
+    }
+  }
+}
+// end-block MutationCreateCommunicationGraphQL
+*/
+
 // start-block MutationPatientUpdateTS
 const update = await medplum.graphql(`
 mutation {
