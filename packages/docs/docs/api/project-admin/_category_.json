@@ -1,0 +1,11 @@
+{
+  "label": "Project Admin",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "slug": "/api/project-admin",
+    "title": "Project Admin",
+    "description": "Project Admin Endpoints",
+    "keywords": ["admin", "project"]
+  }
+}
