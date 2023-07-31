@@ -6,6 +6,22 @@ import { resolve, sep } from 'path';
 import { pipeline, Readable } from 'stream';
 import { getConfig } from '../config';
 
+/**
+ * Binary input type.
+ *
+ * This represents a possible input to the writeBinary function.
+ *
+ * Node.js pipeline types:
+ * type PipelineSource<T> = Iterable<T> | AsyncIterable<T> | NodeJS.ReadableStream | PipelineSourceFunction<T>;
+ *
+ * S3 input types:
+ * export type NodeJsRuntimeStreamingBlobPayloadInputTypes = string | Uint8Array | Buffer | Readable;
+ *
+ * node-fetch body types:
+ * Note that while the Fetch Standard requires the property to always be a WHATWG ReadableStream, in node-fetch it is a Node.js Readable stream.
+ */
+export type BinarySource = Readable | string;
+
 let binaryStorage: BinaryStorage | undefined = undefined;
 
 export function initBinaryStorage(type?: string): void {
@@ -33,14 +49,10 @@ interface BinaryStorage {
     binary: Binary,
     filename: string | undefined,
     contentType: string | undefined,
-    stream: Readable | NodeJS.ReadableStream | string
+    stream: BinarySource
   ): Promise<void>;
 
-  writeFile(
-    key: string,
-    contentType: string | undefined,
-    stream: Readable | NodeJS.ReadableStream | string
-  ): Promise<void>;
+  writeFile(key: string, contentType: string | undefined, stream: BinarySource): Promise<void>;
 
   readBinary(binary: Binary): Promise<Readable>;
 }
@@ -63,17 +75,13 @@ class FileSystemStorage implements BinaryStorage {
     binary: Binary,
     filename: string | undefined,
     contentType: string | undefined,
-    stream: Readable | NodeJS.ReadableStream | string
+    stream: BinarySource
   ): Promise<void> {
     checkFileMetadata(filename, contentType);
     return this.writeFile(this.getKey(binary), contentType, stream);
   }
 
-  async writeFile(
-    key: string,
-    _contentType: string | undefined,
-    input: Readable | NodeJS.ReadableStream | string
-  ): Promise<void> {
+  async writeFile(key: string, _contentType: string | undefined, input: BinarySource): Promise<void> {
     const fullPath = resolve(this.baseDir, key);
     const dir = fullPath.substring(0, fullPath.lastIndexOf(sep));
     if (!existsSync(dir)) {
@@ -133,7 +141,7 @@ class S3Storage implements BinaryStorage {
     binary: Binary,
     filename: string | undefined,
     contentType: string | undefined,
-    stream: Readable | NodeJS.ReadableStream | string
+    stream: BinarySource
   ): Promise<void> {
     checkFileMetadata(filename, contentType);
     return this.writeFile(this.getKey(binary), contentType, stream);
@@ -165,18 +173,14 @@ class S3Storage implements BinaryStorage {
    * @param contentType Optional binary content type.
    * @param stream The Node.js stream of readable content.
    */
-  async writeFile(
-    key: string,
-    contentType: string | undefined,
-    stream: Readable | NodeJS.ReadableStream | string
-  ): Promise<void> {
+  async writeFile(key: string, contentType: string | undefined, stream: BinarySource): Promise<void> {
     const upload = new Upload({
       params: {
         Bucket: this.bucket,
         Key: key,
         CacheControl: 'max-age=3600, s-maxage=86400',
         ContentType: contentType ?? 'application/octet-stream',
-        Body: stream as Readable | ReadableStream | string,
+        Body: stream,
       },
       client: this.client,
       queueSize: 3,
