@@ -1,5 +1,5 @@
 import { createStyles, Group, List, Stack, Text, Title } from '@mantine/core';
-import { capitalize, formatCodeableConcept, formatDateTime, formatObservationValue } from '@medplum/core';
+import { capitalize, formatCodeableConcept, formatDateTime, formatObservationValue, isReference } from '@medplum/core';
 import {
   Annotation,
   DiagnosticReport,
@@ -207,7 +207,7 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
       <tbody>
         {props.value?.map((observation) => (
           <ObservationRow
-            key={`obs-${observation.id}`}
+            key={`obs-${isReference(observation) ? observation.reference : observation.id}`}
             hideObservationNotes={props.hideObservationNotes}
             value={observation}
           />
