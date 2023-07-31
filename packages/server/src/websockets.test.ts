@@ -2,7 +2,7 @@ import express, { Express } from 'express';
 import { Server } from 'http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from './app';
-import { MedplumServerConfig, loadTestConfig } from './config';
+import { loadTestConfig, MedplumServerConfig } from './config';
 
 let app: Express;
 let config: MedplumServerConfig;
@@ -25,7 +25,7 @@ describe('WebSockets', () => {
 
   test('Connect', async () => {
     await request(server)
-      .ws('/ws')
+      .ws('/ws/echo')
       .sendText('foo')
       .expectText('foo')
       .sendText('abc')

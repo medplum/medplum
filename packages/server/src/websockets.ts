@@ -10,10 +10,9 @@ import { systemRepo } from './fhir/repo';
 import { logger } from './logger';
 import { getRedis } from './redis';
 
-const handlerMap: Record<string, (socket: ws.WebSocket) => Promise<void>> = {
-  '/ws/echo': handleEchoConnection,
-  '/ws/agent': handleAgentConnection,
-};
+const handlerMap = new Map<string, (socket: ws.WebSocket) => Promise<void>>();
+handlerMap.set('/ws/echo', handleEchoConnection);
+handlerMap.set('/ws/agent', handleAgentConnection);
 
 let wsServer: ws.Server | undefined = undefined;
 
@@ -32,12 +31,14 @@ export function initWebSockets(server: http.Server): void {
     // See: https://github.com/websockets/ws/blob/master/doc/ws.md#websocketbinarytype
     socket.binaryType = 'nodebuffer';
 
-    const handler = handlerMap[request.url as string] as (socket: ws.WebSocket) => Promise<void>;
-    await handler(socket);
+    const handler = handlerMap.get(request.url as string);
+    if (handler) {
+      await handler(socket);
+    }
   });
 
   server.on('upgrade', (request, socket, head) => {
-    if (request.url && request.url in handlerMap) {
+    if (request.url && handlerMap.has(request.url)) {
       wsServer?.handleUpgrade(request, socket, head, (socket) => {
         wsServer?.emit('connection', socket, request);
       });
