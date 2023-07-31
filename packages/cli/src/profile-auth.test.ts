@@ -3,7 +3,6 @@ import os from 'os';
 import { mkdtempSync, rmSync } from 'fs';
 import { sep } from 'path';
 import { createMedplumClient } from './util/client';
-import { MockClient } from '@medplum/mock';
 import { FileSystemStorage } from './storage';
 import { FetchLike, MedplumClient, getStatus, isOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
@@ -23,11 +22,9 @@ jest.mock('fs', () => ({
 const testHomeDir = mkdtempSync(__dirname + sep + 'storage-');
 
 const originalWindow = globalThis.window;
-let medplum: MedplumClient;
 
 describe('Profiles Auth', () => {
   beforeEach(async () => {
-    medplum = new MockClient();
     console.log = jest.fn();
   });
 
