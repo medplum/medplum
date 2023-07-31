@@ -553,6 +553,22 @@ describe('SignInForm', () => {
     expect(props.onRegister).toBeCalled();
   });
 
+  test('Disable Email', async () => {
+    const onSuccess = jest.fn();
+
+    await act(async () => {
+      await setup({
+        onSuccess,
+        disableEmailAuth: true,
+        googleClientId: '123',
+      });
+    });
+
+    expect(screen.queryByText('Email', { exact: false })).toBeNull();
+    expect(screen.queryByText('Next')).toBeNull();
+    expect(screen.queryByText('or')).toBeNull();
+  });
+
   test('Disable Google auth', async () => {
     const google = {
       accounts: {

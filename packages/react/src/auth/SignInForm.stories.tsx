@@ -61,3 +61,19 @@ export function WithGoogle(): JSX.Element {
     </>
   );
 }
+
+export function GoogleOnly(): JSX.Element {
+  return (
+    <>
+      <SignInForm
+        onSuccess={() => alert('Signed in!')}
+        onForgotPassword={() => alert('Forgot password')}
+        googleClientId="xyz"
+        disableEmailAuth
+      >
+        <Logo size={32} />
+        <Title>Sign in to Medplum</Title>
+      </SignInForm>
+    </>
+  );
+}
