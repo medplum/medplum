@@ -2,7 +2,7 @@ import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { Binary } from '@medplum/fhirtypes';
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, sep } from 'path';
 import { pipeline, Readable } from 'stream';
 import { getConfig } from '../config';
 
@@ -33,7 +33,13 @@ interface BinaryStorage {
     binary: Binary,
     filename: string | undefined,
     contentType: string | undefined,
-    stream: Readable | NodeJS.ReadableStream
+    stream: Readable | NodeJS.ReadableStream | string
+  ): Promise<void>;
+
+  writeFile(
+    key: string,
+    contentType: string | undefined,
+    stream: Readable | NodeJS.ReadableStream | string
   ): Promise<void>;
 
   readBinary(binary: Binary): Promise<Readable>;
@@ -53,18 +59,27 @@ class FileSystemStorage implements BinaryStorage {
     }
   }
 
-  async writeBinary(
+  writeBinary(
     binary: Binary,
     filename: string | undefined,
     contentType: string | undefined,
-    input: Readable | NodeJS.ReadableStream
+    stream: Readable | NodeJS.ReadableStream | string
   ): Promise<void> {
     checkFileMetadata(filename, contentType);
-    const dir = this.getDir(binary);
+    return this.writeFile(this.getKey(binary), contentType, stream);
+  }
+
+  async writeFile(
+    key: string,
+    _contentType: string | undefined,
+    input: Readable | NodeJS.ReadableStream | string
+  ): Promise<void> {
+    const fullPath = resolve(this.baseDir, key);
+    const dir = fullPath.substring(0, fullPath.lastIndexOf(sep));
     if (!existsSync(dir)) {
-      mkdirSync(dir);
+      mkdirSync(dir, { recursive: true });
     }
-    const writeStream = createWriteStream(this.getPath(binary), { flags: 'w' });
+    const writeStream = createWriteStream(fullPath, { flags: 'w' });
     return new Promise((resolve, reject) => {
       pipeline(input, writeStream, (err) => {
         if (err) {
@@ -84,12 +99,12 @@ class FileSystemStorage implements BinaryStorage {
     return createReadStream(filePath);
   }
 
-  private getDir(binary: Binary): string {
-    return resolve(this.baseDir, binary.id as string);
+  private getKey(binary: Binary): string {
+    return binary.id + sep + binary.meta?.versionId;
   }
 
   private getPath(binary: Binary): string {
-    return resolve(this.getDir(binary), binary.meta?.versionId as string);
+    return resolve(this.baseDir, this.getKey(binary));
   }
 }
 
@@ -108,6 +123,24 @@ class S3Storage implements BinaryStorage {
 
   /**
    * Writes a binary blob to S3.
+   * @param binary The binary resource destination.
+   * @param filename Optional binary filename.
+   * @param contentType Optional binary content type.
+   * @param stream The Node.js stream of readable content.
+   * @returns Promise that resolves when the write is complete.
+   */
+  writeBinary(
+    binary: Binary,
+    filename: string | undefined,
+    contentType: string | undefined,
+    stream: Readable | NodeJS.ReadableStream | string
+  ): Promise<void> {
+    checkFileMetadata(filename, contentType);
+    return this.writeFile(this.getKey(binary), contentType, stream);
+  }
+
+  /**
+   * Writes a file to S3.
    *
    * Early implementations used the simple "PutObjectCommand" to write the blob to S3.
    * However, PutObjectCommand does not support streaming.
@@ -128,25 +161,22 @@ class S3Storage implements BinaryStorage {
    *
    * Learn more:
    * https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Expiration.html
-   * @param binary The binary resource destination.
-   * @param filename Optional binary filename.
+   * @param key The S3 key.
    * @param contentType Optional binary content type.
    * @param stream The Node.js stream of readable content.
    */
-  async writeBinary(
-    binary: Binary,
-    filename: string | undefined,
+  async writeFile(
+    key: string,
     contentType: string | undefined,
-    stream: Readable | NodeJS.ReadableStream
+    stream: Readable | NodeJS.ReadableStream | string
   ): Promise<void> {
-    checkFileMetadata(filename, contentType);
     const upload = new Upload({
       params: {
         Bucket: this.bucket,
-        Key: this.getKey(binary),
+        Key: key,
         CacheControl: 'max-age=3600, s-maxage=86400',
         ContentType: contentType ?? 'application/octet-stream',
-        Body: stream as Readable | ReadableStream,
+        Body: stream as Readable | ReadableStream | string,
       },
       client: this.client,
       queueSize: 3,
