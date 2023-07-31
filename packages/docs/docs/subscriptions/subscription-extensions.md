@@ -247,22 +247,27 @@ If you use custom success codes, you will need to implement ALL of the HTTP stat
 }
 ```
 
-## fhirPathCritera
+## Expression based criteria
 
-Medplum offers an extension for triggering subscriptions based on a string expression. This string expression takes in two variables: `%previous` and `%current`. These two variables are the same resource and are compared to one another. The expression should return either `true` or `false`.
+Medplum offers an extension (`fhir-path-criteria-expression`) for triggering subscriptions based on more complex conditional logic using a [fhirpath expression](http://hl7.org/fhirpath/N1/). This expression takes in two variables:
 
-Here is an example `subscription` resource with a fhirPathCriteria expression that compares the Patient resource:
+- `%previous`: The state of the resource _before_ the triggering event
+- `%current`: The state of the resource _after_ the triggering event.
+
+The expression should return either `true` or `false`.
+
+Here is an example `subscription` resource with a `fhir-path-criteria-expression` expression that only fires if a [`Patient`](/docs/api/fhir/resources/patient) has changed their name:
 
 ```json
 {
   "resourceType": "Subscription",
-  "reason": "test",
+  "reason": "Patient Name Change",
   "status": "active",
-  "criteria": "DiagnosticReport?status=completed",
   "channel": {
     "type": "rest-hook",
     "endpoint": "https://example.com/webhook"
   },
+  "criteria": "Patient",
   "extension": [
     {
       "url": "https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression",
