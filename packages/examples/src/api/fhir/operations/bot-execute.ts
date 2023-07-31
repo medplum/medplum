@@ -4,9 +4,14 @@ const medplum = new MedplumClient();
 
 export async function executeById(id: string): Promise<void> {
   // start-block execute-by-id
-  const result = await medplum.executeBot(id, { input: '...' });
+  const result = await medplum.executeBot(id, { input: { foo: 'bar' } });
   console.log(result);
   // end-block execute-by-id
+
+  // start-block execute-by-id-get
+  const getResult = await medplum.get(medplum.fhirUrl('Bot', id, '$execute', 'foo=bar'));
+  console.log(getResult);
+  // end-block execute-by-id-get
 }
 
 export async function executeByIdentifier(): Promise<void> {

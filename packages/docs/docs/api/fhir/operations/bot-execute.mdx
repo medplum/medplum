@@ -2,6 +2,9 @@
 sidebar_position: 6
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/bot-execute.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
@@ -15,15 +18,38 @@ If you're not familiar with Medplum Bots, you may want to review [Bot Basics](/d
 
 Invoke a bot by ID when you know the Bot's ID in advance.
 
+### Finding your Bot Id
+
 You can find the `id` of your Bot by clicking on the **Details** tab of the Bot resource. In this example, it is ` 43ac3060-ff20-49e8-9682-bf91ab3a5191`
 
 <img src="/img/app/bots/find_bot_id.png" width="50%" height="50%" alt="Find your Bot ID" title="Find your Bot ID" />
+
+### Using POST
 
 ```
 POST [base]/Bot/[id]/$execute
 ```
 
-For example:
+#### Examples
+
+<Tabs>
+  <TabItem value="ts" label="TypeScript">
+
+The [MedplumClient](/docs/sdk/classes/MedplumClient) TypeScript class provides a `executeBot` convenience method
+
+  <MedplumCodeBlock language='ts' selectBlocks='execute-by-id'>
+    {ExampleCode}
+  </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+
+```bash
+medplum login
+medplum post '<resourceType>/<id>/$resend' {}
+```
+
+  </TabItem>
+  <TabItem value="curl" label="cURL">
 
 ```bash
 curl 'https://api.medplum.com/fhir/R4/Bot/MY_BOT_ID/$execute' \
@@ -33,7 +59,44 @@ curl 'https://api.medplum.com/fhir/R4/Bot/MY_BOT_ID/$execute' \
   -d '{"foo":"bar"}'
 ```
 
-The [MedplumClient](/docs/sdk/classes/MedplumClient) TypeScript class provides a `executeBot` convenience method:
+  </TabItem>
+</Tabs>
+
+### Using GET
+
+```
+GET [base]/Bot/[id]/$execute
+```
+
+<Tabs>
+  <TabItem value="ts" label="TypeScript">
+
+{' '}
+<MedplumCodeBlock language="ts" selectBlocks="execute-by-id-get">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+
+```bash
+medplum login
+medplum post '<resourceType>/<id>/$resend' {}
+```
+
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/Bot/MY_BOT_ID/$execute' \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
+  -d '{"foo":"bar"}'
+```
+
+  </TabItem>
+</Tabs>
 
 <MedplumCodeBlock language="ts" selectBlocks="execute-by-id" showLineNumbers>
   {ExampleCode}
