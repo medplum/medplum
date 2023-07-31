@@ -37,6 +37,88 @@ describe('Profiles Auth', () => {
     rmSync(testHomeDir, { recursive: true, force: true });
   });
 
+  test('External Auth', async () => {
+    const profileName = 'externalProfile';
+    const externalObj = {
+      authType: 'external-auth',
+      baseUrl: 'https://valid.gov',
+      fhirUrlPath: 'api/v2',
+      tokenUrl: 'https://validtoken.gov',
+      clientId: 'validClientId',
+      clientSecret: 'validClientSecret',
+      scope: 'validScope',
+      audience: 'validAudience',
+      authorizeUrl: 'https://valid.gov/authorize',
+      subject: 'validSubject',
+      subjectToken: 'xyz',
+    };
+
+    const accessTokenFromClientId = createFakeJwt({ client_id: 'test-client-id', login_id: '123' });
+    const refreshTokenFromClientId = createFakeJwt({ client_id: 'test-client-id' });
+
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('R4/ClientApplication')) {
+        return {
+          resourceType: 'ClientApplication',
+          id: '123',
+          identityProvider: {
+            authorizeUrl: externalObj.authorizeUrl,
+            tokenUrl: externalObj.tokenUrl,
+            clientId: externalObj.clientId,
+            clientSecret: externalObj.clientSecret,
+          },
+        };
+      }
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token: accessTokenFromClientId,
+          refresh_token: refreshTokenFromClientId,
+          profile: { reference: 'ClientApplication/123' },
+        };
+      }
+      if (url.includes('/auth/me')) {
+        return { profile: { resourceType: 'ClientApplication' } };
+      }
+      return {};
+    });
+
+    const profile = new FileSystemStorage(profileName);
+
+    const medplum = new MedplumClient({ fetch, storage: profile });
+    (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+
+    await main([
+      'node',
+      'index.js',
+      'login',
+      '-p',
+      profileName,
+      '--auth-type',
+      externalObj.authType,
+      '--client-id',
+      externalObj.clientId,
+      '--scope',
+      externalObj.scope,
+      '--authorize-url',
+      externalObj.authorizeUrl,
+      '--subject',
+      externalObj.subject,
+      '--audience',
+      externalObj.audience,
+      '--client-secret',
+      externalObj.clientSecret,
+      '--subject-token',
+      externalObj.subjectToken,
+    ]);
+
+
+    expect(profile.getObject('activeLogin')).toEqual({
+      accessToken: accessTokenFromClientId,
+      refreshToken: refreshTokenFromClientId,
+      profile: { reference: 'ClientApplication/123' },
+    });
+  });
+
   test('JWT Bearer', async () => {
     const profileName = 'jwtProfile';
     const jwtObj = {

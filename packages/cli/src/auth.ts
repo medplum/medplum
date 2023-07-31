@@ -46,6 +46,10 @@ async function startLogin(medplum: MedplumClient, profile: Profile): Promise<voi
     console.log('Starting JWT login...');
     const clientApplication = await createClient(medplum, profile);
     await jwtBearerLogin(medplum, profile, clientApplication);
+  } else if (profile.authType === 'external-auth') {
+    console.log('Start External Auth login...');
+    const clientApplication = await createClient(medplum, profile);
+    await externalAuthLogin(medplum, profile, clientApplication);
   }
 }
 
@@ -178,4 +182,15 @@ async function jwtBearerLogin(
   const signedToken = `${token}.${signature}`;
 
   await medplum.startJwtBearerLogin(clientApplication.id as string, signedToken, profile.scope as string);
+}
+
+async function externalAuthLogin(
+  medplum: MedplumClient,
+  profile: Profile,
+  clientApplication: ClientApplication
+): Promise<void> {
+  if (!profile.subjectToken) {
+    throw new Error('Access token is required for token exchange');
+  }
+  await medplum.exchangeExternalAccessToken(profile.subjectToken, clientApplication.id as string);
 }

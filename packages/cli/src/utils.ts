@@ -32,7 +32,7 @@ export interface Profile {
   readonly authorizeUrl?: string;
   readonly fhirUrlPath?: string;
   readonly scope?: string;
-  readonly accessToken?: string;
+  readonly subjectToken?: string;
   readonly callbackUrl?: string;
   readonly subject?: string;
   readonly audience?: string;

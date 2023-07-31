@@ -9,7 +9,7 @@ export function createMedplumCommand(name: string): Command {
     .option('--authorize-url <authorizeUrl>', 'FHIR server authorize url')
     .option('--fhir-url-path <fhirUrlPath>', 'FHIR server url path')
     .option('--scope <scope>', 'JWT scope')
-    .option('--access-token <accessToken>', 'Access token for token exchange authentication')
+    .option('--subject-token <subjectToken>', 'Subject token for external auth')
     .option('--callback-url <callbackUrl>', 'Callback URL for authorization code flow')
     .option('--subject <subject>', 'Subject for JWT authentication')
     .option('--audience <audience>', 'Audience for JWT authentication')
@@ -20,6 +20,7 @@ export function createMedplumCommand(name: string): Command {
         'client-credentials',
         'authorization-code',
         'jwt-bearer',
+        'external-auth',
       ])
     );
 }
