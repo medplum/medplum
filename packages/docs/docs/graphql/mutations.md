@@ -19,7 +19,7 @@ Here are examples of mutations for the `Patient` resource. You can test these mu
 
 You can create a resource using the `[resourceType]Create` mutation.
 
-To create a [`Patient`](/docs/api/fhir/resourcs/patient):
+To create a [`Patient`](/docs/api/fhir/resources/patient):
 
 <Tabs groupId="language">
   <TabItem value="graphql" label="GraphQL">
