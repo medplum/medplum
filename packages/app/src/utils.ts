@@ -87,7 +87,7 @@ export function exportJsonFile(jsonString: string, fileName?: string): void {
   const link = document.createElement('a');
   link.href = url;
 
-  const linkName = fileName ? fileName : new Date().toISOString().replace(/\D/g, '');
+  const linkName = fileName ?? new Date().toISOString().replace(/\D/g, '');
   link.download = `${linkName}.json`;
 
   document.body.appendChild(link);

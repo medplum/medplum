@@ -1,19 +1,19 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import { evalFhirPathTyped, getTypedPropertyValue, toTypedValue } from '../fhirpath';
+import { OperationOutcomeError, validationError } from '../outcomes';
+import { createStructureIssue } from '../schema';
+import { isResource, PropertyType, TypedValue } from '../types';
+import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 import {
+  Constraint,
   ElementValidator,
   getDataType,
-  parseStructureDefinition,
   InternalTypeSchema,
+  parseStructureDefinition,
   SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
-  Constraint,
 } from './types';
-import { OperationOutcomeError, validationError } from '../outcomes';
-import { PropertyType, TypedValue, isResource } from '../types';
-import { evalFhirPathTyped, getTypedPropertyValue, toTypedValue } from '../fhirpath';
-import { createStructureIssue } from '../schema';
-import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
