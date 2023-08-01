@@ -54,7 +54,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
   } catch (err: any) {
     logger.info('Error inviting user to project', {
       project: projectId,
-      error: err,
+      error: err.toString(),
     });
     res.status(200).json({ error: err });
   }

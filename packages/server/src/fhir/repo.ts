@@ -533,10 +533,10 @@ export class Repository extends BaseRepository implements FhirRepository {
       if (profileUrls) {
         try {
           await this.validateProfiles(resource, profileUrls);
-        } catch (err) {
+        } catch (err: any) {
           logger.error('Profile validation error', {
             resource: `${resource.resourceType}/${resource.id}`,
-            err,
+            error: err.toString(),
           });
         }
       }
