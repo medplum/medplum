@@ -21,7 +21,7 @@ LOINC (Logical Observation Identifiers Names and Codes) was established with the
 
 This guide aims to provide a basic understanding of LOINC codes and how they are applied in practice.
 
-Adopting your clinical data to LOINC codes help:
+Adopting LOINC codes for clinical data helps:
 
 - Leverage clinical best practices for recording patient data
 - Streamline [CLIA/CAP](https://www.medplum.com/docs/compliance/clia-cap) and [ONC certification](https://www.medplum.com/docs/compliance/onc)
