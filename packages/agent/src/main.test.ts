@@ -2,6 +2,7 @@ import { allOk, Hl7Message } from '@medplum/core';
 import { Bot, Resource } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
+import { Server } from 'mock-socket';
 import { App } from './main';
 
 jest.mock('node-windows');
@@ -27,6 +28,36 @@ describe('Agent', () => {
   });
 
   test('Send and receive', async () => {
+    const mockServer = new Server('ws://localhost:8103/ws/agent');
+
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'connect') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'connected',
+              })
+            )
+          );
+        }
+
+        if (command.type === 'transmit') {
+          const hl7Message = Hl7Message.parse(command.message);
+          const ackMessage = hl7Message.buildAck();
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'transmit',
+                message: ackMessage.toString(),
+              })
+            )
+          );
+        }
+      });
+    });
+
     const app = new App(medplum, bot);
     app.start();
 
@@ -46,8 +77,12 @@ describe('Agent', () => {
       )
     );
     expect(response).toBeDefined();
+    expect(response.header.getComponent(9, 1)).toBe('ACK');
+    expect(response.segments).toHaveLength(2);
+    expect(response.segments[1].name).toBe('MSA');
 
     client.close();
     app.stop();
+    mockServer.stop();
   });
 });

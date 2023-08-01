@@ -46,9 +46,8 @@ export class Connection {
 
     this.webSocket = new WebSocket('ws://localhost:8103/ws/agent');
     this.webSocket.binaryType = 'nodebuffer';
-    this.webSocket.on('error', console.error);
-    this.webSocket.on('open', () => {
-      console.log('webSocket open');
+    this.webSocket.addEventListener('error', console.error);
+    this.webSocket.addEventListener('open', () => {
       this.webSocket.send(
         JSON.stringify({
           type: 'connect',
@@ -59,8 +58,9 @@ export class Connection {
       );
     });
 
-    this.webSocket.on('message', (data) => {
-      const command = JSON.parse((data as Buffer).toString('utf8'));
+    this.webSocket.addEventListener('message', (e) => {
+      const data = e.data as Buffer;
+      const command = JSON.parse(data.toString('utf8'));
       switch (command.type) {
         case 'connected':
           this.live = true;
@@ -87,11 +87,16 @@ export class Connection {
   }
 
   private trySendToWebSocket(): void {
-    if (this.live && this.webSocket.readyState === WebSocket.OPEN) {
+    if (this.live) {
       while (this.webSocketQueue.length > 0) {
         const msg = this.webSocketQueue.shift();
         if (msg) {
-          this.webSocket.send(msg.toString());
+          this.webSocket.send(
+            JSON.stringify({
+              type: 'transmit',
+              message: msg.toString(),
+            })
+          );
         }
       }
     }
