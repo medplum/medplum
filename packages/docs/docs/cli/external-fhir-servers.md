@@ -53,6 +53,7 @@ medplum profile set <profileName> \
 | client-credentials |
 | authorization-code |
 | jwt-bearer         |
+| external-auth      |
 
 The profile will now be stored in a file directory in `~.medplum/<profileName>.json`
 
@@ -82,6 +83,23 @@ medplum profile set example \
     --scope "openid profile"
     --audience "http://localhost:8103/oauth2/token"
     --subject "john_doe"
+```
+
+### Example: External Auth
+
+```bash
+medplum profile set example \
+    --auth-type "external-auth" \
+    --base-url "https://api.example.com" \
+    --fhir-url-path "fhir/R4" \
+    --token-url "oauth2/token" \
+    --client-id "MY_CLIENT_ID" \
+    --client-secret "MY_CLIENT_SECRET"
+    --scope "openid profile"
+    --audience "http://localhost:8103/oauth2/token"
+    --subject "john_doe"
+    --subject_token "MY_SUBJECT_TOKEN"
+    --user-info-url "http://localhost:8103/userInfo"
 ```
 
 ### Example: Client Credentials

@@ -10,6 +10,7 @@ export function createMedplumCommand(name: string): Command {
     .option('--fhir-url-path <fhirUrlPath>', 'FHIR server url path')
     .option('--scope <scope>', 'JWT scope')
     .option('--subject-token <subjectToken>', 'Subject token for external auth')
+    .option('--user-info-url <userInfoUrl>', 'User info URL for external auth')
     .option('--callback-url <callbackUrl>', 'Callback URL for authorization code flow')
     .option('--subject <subject>', 'Subject for JWT authentication')
     .option('--audience <audience>', 'Audience for JWT authentication')

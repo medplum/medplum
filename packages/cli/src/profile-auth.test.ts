@@ -47,9 +47,10 @@ describe('Profiles Auth', () => {
       clientId: 'validClientId',
       clientSecret: 'validClientSecret',
       scope: 'validScope',
-      audience: 'validAudience',
+      audience: 'https://api.example.com',
       authorizeUrl: 'https://valid.gov/authorize',
-      subject: 'validSubject',
+      userInfoUrl: 'https://valid.gov/userinfo',
+      subject: 'john_doe',
       subjectToken: 'xyz',
     };
 
@@ -64,6 +65,7 @@ describe('Profiles Auth', () => {
           identityProvider: {
             authorizeUrl: externalObj.authorizeUrl,
             tokenUrl: externalObj.tokenUrl,
+            userInfoUrl: externalObj.userInfoUrl,
             clientId: externalObj.clientId,
             clientSecret: externalObj.clientSecret,
           },
@@ -110,7 +112,6 @@ describe('Profiles Auth', () => {
       '--subject-token',
       externalObj.subjectToken,
     ]);
-
 
     expect(profile.getObject('activeLogin')).toEqual({
       accessToken: accessTokenFromClientId,

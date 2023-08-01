@@ -144,6 +144,7 @@ async function createClient(medplum: MedplumClient, profile: Profile): Promise<C
     tokenUrl: profile.tokenUrl,
     clientId: profile.clientId,
     clientSecret: profile.clientSecret,
+    userInfoUrl: profile.userInfoUrl,
   };
   const clientApplication = await medplum.createResource<ClientApplication>({
     resourceType: 'ClientApplication',
