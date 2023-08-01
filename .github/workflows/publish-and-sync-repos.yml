@@ -2,11 +2,10 @@ name: Publish and Sync Repos
 # Based on: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
 on:
   push:
-    branches: [main]
-
+    tags:
+      - "v*"
 jobs:
   build:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     name: Build
     runs-on: ubuntu-latest
     steps:
@@ -40,9 +39,8 @@ jobs:
         run: ./scripts/publish.sh
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          
+
   check_changes_and_update_repos:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     name: Code Changes
     runs-on: ubuntu-latest
     permissions:
