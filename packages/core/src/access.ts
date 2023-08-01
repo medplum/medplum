@@ -3,19 +3,6 @@ import { parseCriteriaAsSearchRequest } from './search/search';
 import { matchesSearchRequest } from './search/match';
 
 /**
- * Public resource types are in the "public" project.
- * They are available to all users.
- */
-export const publicResourceTypes = [
-  'CapabilityStatement',
-  'CompartmentDefinition',
-  'ImplementationGuide',
-  'OperationDefinition',
-  'SearchParameter',
-  'StructureDefinition',
-];
-
-/**
  * Protected resource types are in the "medplum" project.
  * Reading and writing is limited to the system account.
  */
@@ -54,9 +41,6 @@ export function canReadResourceType(accessPolicy: AccessPolicy, resourceType: Re
  */
 export function canWriteResourceType(accessPolicy: AccessPolicy, resourceType: ResourceType): boolean {
   if (protectedResourceTypes.includes(resourceType)) {
-    return false;
-  }
-  if (publicResourceTypes.includes(resourceType)) {
     return false;
   }
   if (accessPolicy.resource) {

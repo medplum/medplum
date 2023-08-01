@@ -60,6 +60,7 @@
     "pg-cursor": "2.10.1",
     "rfc6902": "5.0.1",
     "ua-parser-js": "1.0.35",
+    "uuid": "^9.0.0",
     "validator": "13.9.0",
     "ws": "8.13.0"
   },
@@ -85,6 +86,7 @@
     "@types/set-cookie-parser": "2.4.3",
     "@types/supertest": "2.0.12",
     "@types/ua-parser-js": "0.7.36",
+    "@types/uuid": "^9.0.2",
     "@types/validator": "13.7.17",
     "@types/ws": "8.5.5",
     "aws-sdk-client-mock": "3.0.0",

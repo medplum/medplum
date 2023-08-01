@@ -1,4 +1,4 @@
-import { accepted, getResourceTypes, protectedResourceTypes, publicResourceTypes } from '@medplum/core';
+import { accepted, getResourceTypes, protectedResourceTypes } from '@medplum/core';
 import { Project, ResourceType } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
@@ -118,7 +118,7 @@ function canBeExported(resourceType: string): boolean {
     return false;
   }
 
-  if (publicResourceTypes.includes(resourceType) || protectedResourceTypes.includes(resourceType)) {
+  if (protectedResourceTypes.includes(resourceType)) {
     return false;
   }
   return true;

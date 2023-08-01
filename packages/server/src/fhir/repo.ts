@@ -20,7 +20,6 @@ import {
   OperationOutcomeError,
   parseCriteriaAsSearchRequest,
   protectedResourceTypes,
-  publicResourceTypes,
   resolveId,
   SearchParameterDetails,
   SearchParameterType,
@@ -80,6 +79,7 @@ import { rewriteAttachments, RewriteMode } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, Operator, SelectQuery } from './sql';
 import { getSearchParameters } from './structure';
+import { r4ProjectId } from '../seed';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -976,17 +976,12 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @param resourceType The resource type for compartments.
    */
   addSecurityFilters(builder: SelectQuery, resourceType: string): void {
-    if (publicResourceTypes.includes(resourceType)) {
-      // No compartment restrictions for public resources.
-      return;
-    }
-
     if (this.isSuperAdmin()) {
       // No compartment restrictions for admins.
       return;
     }
 
-    this.addProjectFilter(builder);
+    this.addProjectFilters(builder);
     this.addAccessPolicyFilters(builder, resourceType);
   }
 
@@ -994,9 +989,9 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Adds the "project" filter to the select query.
    * @param builder The select query builder.
    */
-  private addProjectFilter(builder: SelectQuery): void {
+  private addProjectFilters(builder: SelectQuery): void {
     if (this.context.project) {
-      builder.where('compartments', Operator.ARRAY_CONTAINS, [this.context.project], 'UUID[]');
+      builder.where('compartments', Operator.ARRAY_CONTAINS, [this.context.project, r4ProjectId], 'UUID[]');
     }
   }
 
@@ -1400,10 +1395,6 @@ export class Repository extends BaseRepository implements FhirRepository {
       return resolveId(resource.project);
     }
 
-    if (publicResourceTypes.includes(resource.resourceType)) {
-      return undefined;
-    }
-
     if (protectedResourceTypes.includes(resource.resourceType)) {
       return undefined;
     }
@@ -1518,9 +1509,6 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (protectedResourceTypes.includes(resourceType)) {
       return false;
     }
-    if (publicResourceTypes.includes(resourceType)) {
-      return true;
-    }
     if (!this.context.accessPolicy) {
       return true;
     }
@@ -1539,9 +1527,6 @@ export class Repository extends BaseRepository implements FhirRepository {
       return true;
     }
     if (protectedResourceTypes.includes(resourceType)) {
-      return false;
-    }
-    if (publicResourceTypes.includes(resourceType)) {
       return false;
     }
     if (!this.context.accessPolicy) {
@@ -1564,7 +1549,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (protectedResourceTypes.includes(resourceType)) {
       return false;
     }
-    if (publicResourceTypes.includes(resourceType)) {
+    if (resource.meta?.project !== this.context.project) {
       return false;
     }
     return this.matchesAccessPolicy(resource, false);
@@ -1693,14 +1678,6 @@ export class Repository extends BaseRepository implements FhirRepository {
       // Don't log system events.
       return;
     }
-    if (resource && publicResourceTypes.includes(resource.resourceType)) {
-      // Don't log public events.
-      return;
-    }
-    if (search && publicResourceTypes.includes(search.resourceType)) {
-      // Don't log public events.
-      return;
-    }
     let outcomeDesc: string | undefined = undefined;
     if (description) {
       outcomeDesc = normalizeErrorString(description);
@@ -1819,4 +1796,5 @@ export const systemRepo = new Repository({
   author: {
     reference: 'system',
   },
+  // System repo does not have an associated Project; it can write to any
 });

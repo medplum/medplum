@@ -1,17 +1,20 @@
 import { Operator } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, CodeSystem, ValueSet } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, CodeSystem, Project, ValueSet } from '@medplum/fhirtypes';
 import { systemRepo } from '../fhir/repo';
 
 /**
  * Imports all built-in ValueSets and CodeSystems into the database.
+ *
+ * @param project The project in which to create the ValueSet and CodeSystem resources
  */
-export async function createValueSets(): Promise<void> {
+export async function createValueSets(project: Project): Promise<void> {
   const files = ['valuesets.json', 'v3-codesystems.json', 'valuesets-medplum.json'];
   for (const file of files) {
     const bundle = readJson('fhir/r4/' + file) as Bundle<CodeSystem | ValueSet>;
     for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
       const resource = entry.resource as CodeSystem | ValueSet;
+      resource.meta = { ...resource.meta, project: project.id };
       await deleteExisting(resource);
       await systemRepo.createResource(resource);
     }

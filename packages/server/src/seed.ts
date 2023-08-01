@@ -6,6 +6,9 @@ import { logger } from './logger';
 import { createSearchParameters } from './seeds/searchparameters';
 import { createStructureDefinitions } from './seeds/structuredefinitions';
 import { createValueSets } from './seeds/valuesets';
+import { v5, NIL as nullUuid } from 'uuid';
+
+export const r4ProjectId = v5('R4', nullUuid);
 
 export async function seedDatabase(): Promise<void> {
   if (await isSeeded()) {
@@ -13,14 +16,9 @@ export async function seedDatabase(): Promise<void> {
     return;
   }
 
-  const firstName = 'Medplum';
-  const lastName = 'Admin';
-  const projectName = 'Super Admin';
-  const email = 'admin@example.com';
-  const password = 'medplum_admin';
-
-  const passwordHash = await bcryptHashPassword(password);
-  const user = await systemRepo.createResource<User>({
+  const [firstName, lastName, email] = ['Medplum', 'Admin', 'admin@example.com'];
+  const passwordHash = await bcryptHashPassword('medplum_admin');
+  const superAdmin = await systemRepo.createResource<User>({
     resourceType: 'User',
     firstName,
     lastName,
@@ -28,17 +26,24 @@ export async function seedDatabase(): Promise<void> {
     passwordHash,
   });
 
-  const project = await systemRepo.createResource<Project>({
+  const superAdminProject = await systemRepo.createResource<Project>({
     resourceType: 'Project',
-    name: projectName,
-    owner: createReference(user),
+    name: 'Super Admin',
+    owner: createReference(superAdmin),
     superAdmin: true,
+  });
+
+  const r4Project = await systemRepo.updateResource<Project>({
+    resourceType: 'Project',
+    id: r4ProjectId,
+    name: 'FHIR R4',
+    owner: createReference(superAdmin),
   });
 
   const practitioner = await systemRepo.createResource<Practitioner>({
     resourceType: 'Practitioner',
     meta: {
-      project: project.id,
+      project: superAdminProject.id,
     },
     name: [
       {
@@ -57,15 +62,15 @@ export async function seedDatabase(): Promise<void> {
 
   await systemRepo.createResource<ProjectMembership>({
     resourceType: 'ProjectMembership',
-    project: createReference(project),
-    user: createReference(user),
+    project: createReference(superAdminProject),
+    user: createReference(superAdmin),
     profile: createReference(practitioner),
     admin: true,
   });
 
-  await createStructureDefinitions();
-  await createValueSets();
-  await createSearchParameters();
+  await createStructureDefinitions(r4Project);
+  await createValueSets(r4Project);
+  await createSearchParameters(r4Project);
 }
 
 /**
