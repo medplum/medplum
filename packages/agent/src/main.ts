@@ -29,6 +29,9 @@ export class App {
 
   stop(): void {
     this.log.info('Medplum service stopping...');
+    for (const connection of this.connections) {
+      connection.close();
+    }
     this.server.stop();
     this.log.info('Medplum service stopped successfully');
   }
