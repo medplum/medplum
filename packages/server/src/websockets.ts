@@ -83,31 +83,43 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
  * @param socket The WebSocket connection.
  */
 async function handleAgentConnection(socket: ws.WebSocket): Promise<void> {
-  // Get the Bot
-  // TODO: Get the bot from the connection handshake
-  const bot = await systemRepo.readResource<Bot>('Bot', '288ec966-b298-4c06-8d04-d165dc77da8e');
-
-  // Get the Bot ProjectMembership
-  // TODO: Load the project membership for the Bot
-  const runAs = await systemRepo.readResource<ProjectMembership>(
-    'ProjectMembership',
-    '08077829-c6f9-46ed-be2c-0b4576d11097'
-  );
-
-  // Content type is always HL7v2
-  const contentType = ContentType.HL7_V2;
+  let bot: Bot | undefined = undefined;
+  let runAs: ProjectMembership | undefined = undefined;
 
   socket.on('message', async (data: ws.RawData) => {
-    const buffer = data as Buffer;
-    const input = buffer.toString('utf8');
+    const command = JSON.parse((data as Buffer).toString('utf8'));
+    switch (command.type) {
+      case 'connect':
+        await handleConnect(command);
+        break;
+
+      case 'transmit':
+        await handleTransmit(command);
+        break;
+    }
+  });
+
+  async function handleConnect(command: any): Promise<void> {
+    // TODO: Validate the access token
+    bot = await systemRepo.readResource<Bot>('Bot', command.botId);
+    runAs = await systemRepo.readResource<ProjectMembership>('ProjectMembership', command.projectMembershipId);
+    socket.send(JSON.stringify({ type: 'connected' }));
+  }
+
+  async function handleTransmit(command: any): Promise<void> {
+    if (!bot || !runAs) {
+      socket.send(JSON.stringify({ type: 'error', message: 'Not connected' }));
+      return;
+    }
+    const contentType = ContentType.HL7_V2;
     const result = await executeBot({
       bot,
       runAs,
       contentType,
-      input,
+      input: command.message,
     });
-    socket.send(result.returnValue as string, { binary: false });
-  });
+    socket.send(JSON.stringify({ type: 'transmit', message: result.returnValue }), { binary: false });
+  }
 }
 
 export function closeWebSockets(): void {

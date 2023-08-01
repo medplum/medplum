@@ -54,6 +54,7 @@ export async function createTestProject(options?: Partial<Project>): Promise<{
     user: createReference(client),
     profile: createReference(client),
     project: createReference(project),
+    admin: true,
   });
 
   return {

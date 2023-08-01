@@ -1,4 +1,4 @@
-import { Hl7Message, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { Hl7Message, MedplumClient } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { EventLogger } from 'node-windows';
@@ -55,24 +55,32 @@ export class Connection {
         JSON.stringify({
           type: 'connect',
           accessToken: this.app.medplum.getAccessToken(),
-          projectId: '', // project: string
-          botId: this.app.bot.id,
+
+          // TODO: load these from config settings
+          botId: '288ec966-b298-4c06-8d04-d165dc77da8e',
+          projectMembershipId: '08077829-c6f9-46ed-be2c-0b4576d11097',
         })
       );
     });
 
     this.webSocket.addEventListener('message', (e) => {
-      const data = e.data as Buffer;
-      const command = JSON.parse(data.toString('utf8'));
-      switch (command.type) {
-        case 'connected':
-          this.live = true;
-          this.trySendToWebSocket();
-          break;
-        case 'transmit':
-          this.hl7ConnectionQueue.push(Hl7Message.parse(command.message));
-          this.trySendToHl7Connection();
-          break;
+      try {
+        const data = e.data as Buffer;
+        const str = data.toString('utf8');
+        console.log('Received from WebSocket:', str.replaceAll('\r', '\n'));
+        const command = JSON.parse(str);
+        switch (command.type) {
+          case 'connected':
+            this.live = true;
+            this.trySendToWebSocket();
+            break;
+          case 'transmit':
+            this.hl7ConnectionQueue.push(Hl7Message.parse(command.message));
+            this.trySendToHl7Connection();
+            break;
+        }
+      } catch (err) {
+        console.log('WebSocket error', err);
       }
     });
   }
@@ -85,7 +93,6 @@ export class Connection {
       this.trySendToWebSocket();
     } catch (err) {
       console.log('HL7 error', err);
-      this.app.log.error(normalizeErrorString(err));
     }
   }
 
