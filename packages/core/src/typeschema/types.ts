@@ -12,6 +12,7 @@ export interface InternalTypeSchema {
   fields: Record<string, ElementValidator>;
   constraints: Constraint[];
   innerTypes: InternalTypeSchema[];
+  summaryProperties: string[];
 }
 
 export interface ElementValidator {
@@ -130,6 +131,7 @@ class StructureDefinitionParser {
       fields: {},
       constraints: this.parseFieldDefinition(root).constraints,
       innerTypes: [],
+      summaryProperties: [],
     };
     this.innerTypes = [];
   }
@@ -157,6 +159,11 @@ class StructureDefinitionParser {
         } else if (this.backboneContext?.parent && element.path?.startsWith(this.backboneContext.parent.path + '.')) {
           this.backboneContext.parent.type.fields[elementPath(element, this.backboneContext.parent.path)] = field;
         } else {
+          if (element.isSummary) {
+            this.resourceSchema.summaryProperties.push(
+              elementPath(element, this.resourceSchema.name).replace('[x]', '')
+            );
+          }
           this.resourceSchema.fields[elementPath(element, this.resourceSchema.name)] = field;
         }
 
@@ -189,6 +196,7 @@ class StructureDefinitionParser {
           fields: {},
           constraints: this.parseFieldDefinition(element).constraints,
           innerTypes: [],
+          summaryProperties: [],
         },
         path: element.path ?? '',
         parent: pathsCompatible(this.backboneContext?.path, element.path)

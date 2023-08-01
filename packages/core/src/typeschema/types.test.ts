@@ -140,6 +140,26 @@ describe('FHIR resource and data type representations', () => {
         'value[x]': expect.objectContaining({}),
       },
     });
+    expect(profile.summaryProperties.sort()).toEqual([
+      'basedOn',
+      'code',
+      'component',
+      'derivedFrom',
+      'effective',
+      'encounter',
+      'focus',
+      'hasMember',
+      'id',
+      'identifier',
+      'implicitRules',
+      'issued',
+      'meta',
+      'partOf',
+      'performer',
+      'status',
+      'subject',
+      'value',
+    ]);
   });
 
   test('Nested BackboneElement parsing', () => {
