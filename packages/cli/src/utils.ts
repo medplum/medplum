@@ -212,7 +212,8 @@ export function getCodeContentType(filename: string): string {
 
 export function createProfile(profileName: string, options: any): void {
   const storage = new FileSystemStorage(profileName);
-  storage.setObject('options', options);
+  const optionsObject = { profile: profileName, ...options };
+  storage.setObject('options', optionsObject);
   console.log(`${profileName} profile created`);
 }
 

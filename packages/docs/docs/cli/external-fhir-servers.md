@@ -52,6 +52,7 @@ medplum profile set <profileName> \
 | basic              |
 | client-credentials |
 | authorization-code |
+| jwt-bearer         |
 
 The profile will now be stored in a file directory in `~.medplum/<profileName>.json`
 
@@ -66,6 +67,21 @@ medplum profile set example \
     --fhir-url-path "fhir/R4" \
     --client-id "MY_CLIENT_ID" \
     --client-secret "MY_CLIENT_SECRET"
+```
+
+### Example: JWT Bearer
+
+```bash
+medplum profile set example \
+    --auth-type "jwt-bearer" \
+    --base-url "https://api.example.com" \
+    --fhir-url-path "fhir/R4" \
+    --token-url "oauth2/token" \
+    --client-id "MY_CLIENT_ID" \
+    --client-secret "MY_CLIENT_SECRET"
+    --scope "openid profile"
+    --audience "http://localhost:8103/oauth2/token"
+    --subject "john_doe"
 ```
 
 ### Example: Client Credentials
@@ -131,6 +147,36 @@ To see all of your profiles
 ```bash
 medplum profile list
 ```
+
+After your profiles are set, you can login with your credentials and use them on future commands. To login:
+
+`medplum login --profile <profile>`
+
+For more information take a look at our [CLI login](/docs/cli#auth)
+
+## Logging in with a new Profile
+
+You can run `medplum login --profile <profile>` and set the same flags that [profile](/docs/cli/external-fhir-servers#setting-a-profile) has to set a profile and automatically login
+
+### Example: Logging in with JWT Bearer
+
+```bash
+medplum login \
+    --profile "example" \
+    --auth-type "jwt-bearer" \
+    --base-url "https://api.example.com" \
+    --fhir-url-path "fhir/R4" \
+    --token-url "oauth2/token" \
+    --client-id "MY_CLIENT_ID" \
+    --client-secret "MY_CLIENT_SECRET"
+    --scope "openid profile"
+    --audience "http://localhost:8103/oauth2/token"
+    --subject "john_doe"
+```
+
+:::note
+When running `medplum login --profile <profile>`, all of the flags need to be set with the flags and valid data
+:::
 
 ## Example: Basic search
 

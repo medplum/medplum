@@ -47,9 +47,9 @@ describe('Profiles Auth', () => {
       clientId: 'validClientId',
       clientSecret: 'validClientSecret',
       scope: 'validScope',
-      audience: 'validAudience',
+      audience: 'https://api.example.com',
       authorizeUrl: 'https://valid.gov/authorize',
-      subject: 'validSubject',
+      subject: 'john_doe',
     };
 
     const accessTokenFromClientId = createFakeJwt({ client_id: 'test-client-id', login_id: '123' });
