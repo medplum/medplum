@@ -16,7 +16,6 @@ export class Hl7Connection extends Hl7Base {
           buffer += data.toString();
           if (buffer.endsWith(FS + CR)) {
             const message = Hl7Message.parse(buffer.substring(1, buffer.length - 2));
-            console.log('dispatch message event:', message.toString().replaceAll('\r', '\n'));
             this.dispatchEvent(new Hl7MessageEvent(this, message));
             buffer = '';
           }

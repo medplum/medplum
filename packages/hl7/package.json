@@ -19,7 +19,9 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "*",
+    "@medplum/core": "*"
+  },
+  "devDependencies": {
     "@medplum/fhirtypes": "*"
   },
   "main": "dist/cjs/index.cjs",
