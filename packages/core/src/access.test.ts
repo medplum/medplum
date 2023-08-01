@@ -60,7 +60,7 @@ describe('Access', () => {
   test('canWriteResourceType', () => {
     expect(canWriteResourceType(nullPolicy, 'Patient')).toBe(false);
 
-    expect(canWriteResourceType(wildcardPolicy, 'CapabilityStatement')).toBe(false);
+    expect(canWriteResourceType(wildcardPolicy, 'CapabilityStatement')).toBe(true);
     expect(canWriteResourceType(wildcardPolicy, 'Login')).toBe(false);
     expect(canWriteResourceType(wildcardPolicy, 'Patient')).toBe(true);
 

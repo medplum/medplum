@@ -35,7 +35,7 @@ superAdminRouter.post(
     requireSuperAdmin(res);
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, createValueSets);
+    await sendAsyncResponse(req, res, () => createValueSets(res.locals.project));
   })
 );
 
@@ -48,7 +48,7 @@ superAdminRouter.post(
     requireSuperAdmin(res);
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, createStructureDefinitions);
+    await sendAsyncResponse(req, res, () => createStructureDefinitions(res.locals.project));
   })
 );
 
@@ -61,7 +61,7 @@ superAdminRouter.post(
     requireSuperAdmin(res);
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, createSearchParameters);
+    await sendAsyncResponse(req, res, () => createSearchParameters(res.locals.project));
   })
 );
 
