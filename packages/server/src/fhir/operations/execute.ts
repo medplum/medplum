@@ -137,6 +137,14 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
     return { success: false, logResult: 'Bots not enabled' };
   }
 
+  const now = new Date();
+  const today = now.toISOString().substring(0, 10);
+  await getBinaryStorage().writeFile(
+    `bot/${bot.id}/${today}/${now.getTime()}.json`,
+    `application/json`,
+    JSON.stringify({ message: request.input })
+  );
+
   if (bot.runtimeVersion === 'awslambda') {
     return runInLambda(request);
   } else if (bot.runtimeVersion === 'vmcontext') {
