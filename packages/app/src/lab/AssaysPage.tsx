@@ -90,8 +90,8 @@ function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {
 
   return (
     <>
-      {ranges.map((range: ObservationDefinitionQualifiedInterval, index: number) => (
-        <table key={`range-${index}`}>
+      {ranges.map((range: ObservationDefinitionQualifiedInterval) => (
+        <table key={`range-${range.condition}`}>
           <tbody>
             <tr>
               <td>{range.condition}</td>

@@ -391,6 +391,11 @@ export interface PatchOperation {
 }
 
 /**
+ * Source for a FHIR Binary.
+ */
+export type BinarySource = string | File | Blob | Uint8Array;
+
+/**
  * Email address definition.
  * Compatible with nodemailer Mail.Address.
  */
@@ -1636,7 +1641,7 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the create operation.
    */
   async createAttachment(
-    data: string | File | Blob | Uint8Array,
+    data: BinarySource,
     filename: string | undefined,
     contentType: string,
     onProgress?: (e: ProgressEvent) => void
@@ -1674,7 +1679,7 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the create operation.
    */
   createBinary(
-    data: string | File | Blob | Uint8Array,
+    data: BinarySource,
     filename: string | undefined,
     contentType: string,
     onProgress?: (e: ProgressEvent) => void
@@ -1693,7 +1698,7 @@ export class MedplumClient extends EventTarget {
 
   uploadwithProgress(
     url: URL,
-    data: string | File | Blob | Uint8Array,
+    data: BinarySource,
     contentType: string,
     onProgress: (e: ProgressEvent) => void
   ): Promise<any> {

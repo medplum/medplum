@@ -594,8 +594,8 @@ function FilterDescription(props: FilterDescriptionProps): JSX.Element {
 
   return (
     <>
-      {filters.map((filter: Filter, index: number) => (
-        <div key={`filter-${index}-${filters.length}`}>
+      {filters.map((filter: Filter) => (
+        <div key={`filter-${filter.code}-${filter.operator}-${filter.value}`}>
           {getOpString(filter.operator)}
           &nbsp;
           <SearchFilterValueDisplay resourceType={props.resourceType} filter={filter} />
