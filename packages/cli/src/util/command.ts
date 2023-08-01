@@ -13,7 +13,7 @@ export function createMedplumCommand(name: string): Command {
     .option('--callback-url <callbackUrl>', 'Callback URL for authorization code flow')
     .option('--subject <subject>', 'Subject for JWT authentication')
     .option('--audience <audience>', 'Audience for JWT authentication')
-    .option('-p, --profile <profile>', 'Profile name')
+    .option('-p, --profile <name>', 'Profile name')
     .addOption(
       new Option('--auth-type <authType>', 'Type of authentication').choices([
         'basic',

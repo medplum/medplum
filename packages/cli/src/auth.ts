@@ -41,7 +41,7 @@ async function startLogin(medplum: MedplumClient, profile: Profile): Promise<voi
   }
   if (profile.authType === 'jwt-bearer') {
     if (!profile.clientId || !profile.clientSecret) {
-      throw new Error('Missing values, make sure to add --client-id, --assertion, --scope for JWT login');
+      throw new Error('Missing values, make sure to add --client-id, and --client-secret for JWT Bearer login');
     }
     console.log('Starting JWT login...');
     const clientApplication = await createClient(medplum, profile);
@@ -143,7 +143,7 @@ async function createClient(medplum: MedplumClient, profile: Profile): Promise<C
   };
   const clientApplication = await medplum.createResource<ClientApplication>({
     resourceType: 'ClientApplication',
-    name: profile.profile,
+    name: profile.name,
     identityProvider,
   });
   return clientApplication;
@@ -154,7 +154,6 @@ async function jwtBearerLogin(
   profile: Profile,
   clientApplication: ClientApplication
 ): Promise<void> {
-  console.log('Starting JWT login...');
   const header = {
     typ: 'JWT',
     alg: 'HS256',

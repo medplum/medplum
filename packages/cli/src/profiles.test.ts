@@ -127,7 +127,7 @@ describe('Profiles', () => {
   test('Profiles', async () => {
     const profileName = 'testProfile';
     const obj = {
-      profile: profileName,
+      name: profileName,
       authType: 'basic',
       baseUrl: 'https://valid.gov',
       fhirUrlPath: 'api/v2',
@@ -160,7 +160,7 @@ describe('Profiles', () => {
 
     // Replace the previous values
     const obj2 = {
-      profile: profileName,
+      name: profileName,
       authType: 'jwt-bearer',
       baseUrl: 'https://valid2.gov',
       fhirUrlPath: 'api/v2',
@@ -203,13 +203,13 @@ describe('Profiles', () => {
       obj.tokenUrl,
     ]);
     const storage2 = new FileSystemStorage(profileName2);
-    expect(storage2.getObject('options')).toEqual({ ...obj, profile: profileName2 });
+    expect(storage2.getObject('options')).toEqual({ ...obj, name: profileName2 });
 
     // List the 2 profiles
     await main(['node', 'index.js', 'profile', 'list']);
     expect(console.log).toBeCalledWith([
-      { profileName, profile: { ...obj2, profile: profileName } },
-      { profileName: profileName2, profile: { ...obj, profile: profileName2 } },
+      { profileName, profile: { ...obj2, name: profileName } },
+      { profileName: profileName2, profile: { ...obj, name: profileName2 } },
     ]);
 
     // Delete the first profile
@@ -217,7 +217,7 @@ describe('Profiles', () => {
 
     // ProfileName should be undefined, but profileName2 should still exist
     await main(['node', 'index.js', 'profile', 'list']);
-    expect(console.log).toBeCalledWith([{ profileName: profileName2, profile: { ...obj, profile: profileName2 } }]);
+    expect(console.log).toBeCalledWith([{ profileName: profileName2, profile: { ...obj, name: profileName2 } }]);
   });
 
   test('Basic Auth profile bulk export', async () => {

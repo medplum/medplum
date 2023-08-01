@@ -23,7 +23,7 @@ interface MedplumBotConfig {
 }
 
 export interface Profile {
-  readonly profile?: string;
+  readonly name?: string;
   readonly authType?: string;
   readonly baseUrl?: string;
   readonly clientId?: string;
@@ -212,7 +212,7 @@ export function getCodeContentType(filename: string): string {
 
 export function createProfile(profileName: string, options: any): void {
   const storage = new FileSystemStorage(profileName);
-  const optionsObject = { profile: profileName, ...options };
+  const optionsObject = { name: profileName, ...options };
   storage.setObject('options', optionsObject);
   console.log(`${profileName} profile created`);
 }
