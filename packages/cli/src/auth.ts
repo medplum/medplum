@@ -191,7 +191,7 @@ async function externalAuthLogin(
   clientApplication: ClientApplication
 ): Promise<void> {
   if (!profile.subjectToken) {
-    throw new Error('Access token is required for token exchange');
+    throw new Error('Subject token is required for token exchange');
   }
   await medplum.exchangeExternalAccessToken(profile.subjectToken, clientApplication.id as string);
 }

@@ -26,6 +26,7 @@ const originalWindow = globalThis.window;
 describe('Profiles Auth', () => {
   beforeEach(async () => {
     console.log = jest.fn();
+    console.error = jest.fn();
   });
 
   beforeAll(async () => {
@@ -37,7 +38,70 @@ describe('Profiles Auth', () => {
     rmSync(testHomeDir, { recursive: true, force: true });
   });
 
-  test('External Auth', async () => {
+  test('External Auth without subject token', async () => {
+    const profileName = 'externalProfileNoSubjectToken';
+    const externalObj = {
+      authType: 'external-auth',
+      baseUrl: 'https://valid.gov',
+      fhirUrlPath: 'api/v2',
+      tokenUrl: 'https://validtoken.gov',
+      clientId: 'validClientId',
+      clientSecret: 'validClientSecret',
+      scope: 'validScope',
+      audience: 'https://api.example.com',
+      authorizeUrl: 'https://valid.gov/authorize',
+      userInfoUrl: 'https://valid.gov/userinfo',
+      subject: 'john_doe',
+    };
+
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('R4/ClientApplication')) {
+        return {
+          resourceType: 'ClientApplication',
+          id: '123',
+          identityProvider: {
+            authorizeUrl: externalObj.authorizeUrl,
+            tokenUrl: externalObj.tokenUrl,
+            userInfoUrl: externalObj.userInfoUrl,
+            clientId: externalObj.clientId,
+            clientSecret: externalObj.clientSecret,
+          },
+        };
+      }
+      return {};
+    });
+
+    const profile = new FileSystemStorage(profileName);
+
+    const medplum = new MedplumClient({ fetch, storage: profile });
+    (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+
+    const command = [
+      'node',
+      'index.js',
+      'login',
+      '-p',
+      profileName,
+      '--auth-type',
+      externalObj.authType,
+      '--client-id',
+      externalObj.clientId,
+      '--scope',
+      externalObj.scope,
+      '--authorize-url',
+      externalObj.authorizeUrl,
+      '--subject',
+      externalObj.subject,
+      '--audience',
+      externalObj.audience,
+      '--client-secret',
+      externalObj.clientSecret,
+    ];
+    await main(command);
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Subject token is required for token exchange'));
+  });
+
+  test('External Auth Success', async () => {
     const profileName = 'externalProfile';
     const externalObj = {
       authType: 'external-auth',
