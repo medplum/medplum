@@ -1,11 +1,10 @@
-import { ContentType, getReferenceString, Hl7Message, Operator } from '@medplum/core';
+import { ContentType, Hl7Message } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import express from 'express';
 import { Server } from 'http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from './app';
 import { getConfig, loadTestConfig, MedplumServerConfig } from './config';
-import { systemRepo } from './fhir/repo';
 import { initTestAuth } from './test.setup';
 
 const app = express();
@@ -57,6 +56,8 @@ describe('WebSockets', () => {
     const bot = res1.body as Bot;
 
     // Deploy the bot
+    // This is a simple HL7 ack bot
+    // Note that the code is actually run inside a vmcontext
     const res5 = await request(server)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -64,27 +65,19 @@ describe('WebSockets', () => {
       .send({
         code: `
           exports.handler = async function (medplum, event) {
-            //return { msg: 'test' }
             return event.input.buildAck().toString();
           };
       `,
       });
     expect(res5.status).toBe(200);
 
-    // Find the bot project membership
-    const projectMembership = await systemRepo.searchOne({
-      resourceType: 'ProjectMembership',
-      filters: [{ code: 'profile', operator: Operator.EQUALS, value: getReferenceString(bot) }],
-    });
-
     await request(server)
       .ws('/ws/agent')
       .sendText(
         JSON.stringify({
           type: 'connect',
-          botId: bot.id,
-          projectMembershipId: projectMembership?.id,
           accessToken,
+          botId: bot.id,
         })
       )
       .expectText(JSON.stringify({ type: 'connected' }))

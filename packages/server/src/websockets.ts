@@ -1,13 +1,14 @@
-import { ContentType } from '@medplum/core';
+import { ContentType, normalizeErrorString } from '@medplum/core';
 import { Bot, ProjectMembership } from '@medplum/fhirtypes';
 import bytes from 'bytes';
 import { randomUUID } from 'crypto';
 import http from 'http';
 import ws from 'ws';
 import { getConfig } from './config';
+import { getRepoForLogin } from './fhir/accesspolicy';
 import { executeBot } from './fhir/operations/execute';
-import { systemRepo } from './fhir/repo';
 import { logger } from './logger';
+import { getLoginForAccessToken } from './oauth/utils';
 import { getRedis } from './redis';
 
 const handlerMap = new Map<string, (socket: ws.WebSocket) => Promise<void>>();
@@ -99,23 +100,39 @@ async function handleAgentConnection(socket: ws.WebSocket): Promise<void> {
     }
   });
 
+  /**
+   * Handles a connect command.
+   * This command is sent by the agent to connect to the server.
+   * The command includes the access token and bot ID.
+   * @param command The connect command.
+   */
   async function handleConnect(command: any): Promise<void> {
-    // TODO: Validate the access token
-    bot = await systemRepo.readResource<Bot>('Bot', command.botId);
-    runAs = await systemRepo.readResource<ProjectMembership>('ProjectMembership', command.projectMembershipId);
-    socket.send(JSON.stringify({ type: 'connected' }));
+    try {
+      const { accessToken, botId } = command;
+      const { login, project, membership } = await getLoginForAccessToken(accessToken);
+      const repo = await getRepoForLogin(login, membership, project.strictMode, true, project.checkReferencesOnWrite);
+      bot = await repo.readResource<Bot>('Bot', botId);
+      runAs = membership;
+      socket.send(JSON.stringify({ type: 'connected' }));
+    } catch (err) {
+      socket.send(JSON.stringify({ type: 'error', message: normalizeErrorString(err) }));
+    }
   }
 
+  /**
+   * Handles a transit command.
+   * This command is sent by the agent to transmit a message.
+   * @param command The transmit command.
+   */
   async function handleTransmit(command: any): Promise<void> {
     if (!bot || !runAs) {
       socket.send(JSON.stringify({ type: 'error', message: 'Not connected' }));
       return;
     }
-    const contentType = ContentType.HL7_V2;
     const result = await executeBot({
       bot,
       runAs,
-      contentType,
+      contentType: ContentType.HL7_V2,
       input: command.message,
     });
     socket.send(JSON.stringify({ type: 'transmit', message: result.returnValue }), { binary: false });

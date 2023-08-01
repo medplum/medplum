@@ -10,6 +10,7 @@ import {
   ProfileResource,
   resolveId,
   tooManyRequests,
+  unauthorized,
 } from '@medplum/core';
 import {
   AccessPolicy,
@@ -32,7 +33,14 @@ import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
-import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
+import {
+  generateAccessToken,
+  generateIdToken,
+  generateRefreshToken,
+  generateSecret,
+  MedplumAccessTokenClaims,
+  verifyJwt,
+} from './keys';
 
 export interface LoginRequest {
   readonly email?: string;
@@ -760,4 +768,33 @@ export async function verifyMultipleMatchingException(
     }
   }
   return { error: 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED' };
+}
+
+/**
+ * Verifies the access token and returns the corresponding login, membership, and project.
+ * @param accessToken The access token as provided by the client.
+ * @returns On success, returns the login, membership, and project. On failure, throws an error.
+ */
+export async function getLoginForAccessToken(accessToken: string): Promise<{
+  login: Login;
+  membership: ProjectMembership;
+  project: Project;
+}> {
+  const verifyResult = await verifyJwt(accessToken);
+  const claims = verifyResult.payload as MedplumAccessTokenClaims;
+
+  let login = undefined;
+  try {
+    login = await systemRepo.readResource<Login>('Login', claims.login_id);
+  } catch (err) {
+    throw new OperationOutcomeError(unauthorized);
+  }
+
+  if (!login?.membership || login.revoked) {
+    throw new OperationOutcomeError(unauthorized);
+  }
+
+  const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
+  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+  return { login, membership, project };
 }
