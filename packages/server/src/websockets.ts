@@ -88,15 +88,19 @@ async function handleAgentConnection(socket: ws.WebSocket): Promise<void> {
   let runAs: ProjectMembership | undefined = undefined;
 
   socket.on('message', async (data: ws.RawData) => {
-    const command = JSON.parse((data as Buffer).toString('utf8'));
-    switch (command.type) {
-      case 'connect':
-        await handleConnect(command);
-        break;
+    try {
+      const command = JSON.parse((data as Buffer).toString('utf8'));
+      switch (command.type) {
+        case 'connect':
+          await handleConnect(command);
+          break;
 
-      case 'transmit':
-        await handleTransmit(command);
-        break;
+        case 'transmit':
+          await handleTransmit(command);
+          break;
+      }
+    } catch (err) {
+      socket.send(JSON.stringify({ type: 'error', message: normalizeErrorString(err) }));
     }
   });
 
@@ -107,16 +111,12 @@ async function handleAgentConnection(socket: ws.WebSocket): Promise<void> {
    * @param command The connect command.
    */
   async function handleConnect(command: any): Promise<void> {
-    try {
-      const { accessToken, botId } = command;
-      const { login, project, membership } = await getLoginForAccessToken(accessToken);
-      const repo = await getRepoForLogin(login, membership, project.strictMode, true, project.checkReferencesOnWrite);
-      bot = await repo.readResource<Bot>('Bot', botId);
-      runAs = membership;
-      socket.send(JSON.stringify({ type: 'connected' }));
-    } catch (err) {
-      socket.send(JSON.stringify({ type: 'error', message: normalizeErrorString(err) }));
-    }
+    const { accessToken, botId } = command;
+    const { login, project, membership } = await getLoginForAccessToken(accessToken);
+    const repo = await getRepoForLogin(login, membership, project.strictMode, true, project.checkReferencesOnWrite);
+    bot = await repo.readResource<Bot>('Bot', botId);
+    runAs = membership;
+    socket.send(JSON.stringify({ type: 'connected' }));
   }
 
   /**

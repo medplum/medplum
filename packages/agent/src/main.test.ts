@@ -22,13 +22,14 @@ describe('Agent', () => {
   });
 
   test('Runs successfully', async () => {
-    const app = new App(medplum, bot);
+    const app = new App(medplum, { botId: bot.id as string });
     app.start();
+    app.stop();
     app.stop();
   });
 
   test('Send and receive', async () => {
-    const mockServer = new Server('ws://localhost:8103/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -58,7 +59,7 @@ describe('Agent', () => {
       });
     });
 
-    const app = new App(medplum, bot);
+    const app = new App(medplum, { botId: bot.id as string });
     app.start();
 
     const client = new Hl7Client({

@@ -1,19 +1,32 @@
-import { Hl7Message, MedplumClient } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
+import { Hl7Message, MedplumClient, MedplumClientOptions } from '@medplum/core';
 import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
+import { readFileSync } from 'fs';
 import { EventLogger } from 'node-windows';
 import WebSocket from 'ws';
+
+export interface AgentConfig {
+  botId: string;
+  useSystemEventLog?: boolean;
+}
 
 export class App {
   readonly log: EventLogger;
   readonly server: Hl7Server;
   readonly connections: Connection[] = [];
 
-  constructor(readonly medplum: MedplumClient, readonly bot: Bot) {
-    this.log = new EventLogger({
-      source: 'MedplumService',
-      eventLog: 'SYSTEM',
-    });
+  constructor(readonly medplum: MedplumClient, readonly config: AgentConfig) {
+    if (config.useSystemEventLog) {
+      this.log = new EventLogger({
+        source: 'MedplumService',
+        eventLog: 'SYSTEM',
+      });
+    } else {
+      this.log = {
+        info: console.log,
+        warn: console.warn,
+        error: console.error,
+      } as EventLogger;
+    }
 
     this.server = new Hl7Server((connection) => {
       this.log.info('HL7 connection established');
@@ -47,7 +60,12 @@ export class Connection {
     // Add listener immediately to handle incoming messages
     this.hl7Connection.addEventListener('message', (event) => this.handler(event));
 
-    this.webSocket = new WebSocket('ws://localhost:8103/ws/agent');
+    const webSocketUrl = new URL(this.app.medplum.getBaseUrl());
+    webSocketUrl.protocol = webSocketUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+    webSocketUrl.pathname = '/ws/agent';
+    console.log('Connecting to WebSocket:', webSocketUrl.href);
+
+    this.webSocket = new WebSocket(webSocketUrl);
     this.webSocket.binaryType = 'nodebuffer';
     this.webSocket.addEventListener('error', console.error);
     this.webSocket.addEventListener('open', () => {
@@ -55,10 +73,7 @@ export class Connection {
         JSON.stringify({
           type: 'connect',
           accessToken: this.app.medplum.getAccessToken(),
-
-          // TODO: load these from config settings
-          botId: '288ec966-b298-4c06-8d04-d165dc77da8e',
-          projectMembershipId: '08077829-c6f9-46ed-be2c-0b4576d11097',
+          botId: this.app.config.botId,
         })
       );
     });
@@ -128,5 +143,6 @@ export class Connection {
 }
 
 if (typeof require !== 'undefined' && require.main === module) {
-  new App(new MedplumClient(), { resourceType: 'Bot', id: '00000000-00000000-00000000-00000000' }).start();
+  const config = JSON.parse(readFileSync('medplum.config.json', 'utf8')) as MedplumClientOptions & AgentConfig;
+  new App(new MedplumClient(config), config).start();
 }
