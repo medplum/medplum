@@ -17,7 +17,7 @@ describe('WebSockets', () => {
   beforeAll(async () => {
     config = await loadTestConfig();
     server = await initApp(app, config);
-    accessToken = await initTestAuth();
+    accessToken = await initTestAuth({}, { admin: true });
 
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 511, resolve);
