@@ -1,4 +1,4 @@
-import { Hl7Message, MedplumClient, MedplumClientOptions } from '@medplum/core';
+import { Hl7Message, MedplumClient } from '@medplum/core';
 import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { readFileSync } from 'fs';
 import { EventLogger } from 'node-windows';
@@ -143,6 +143,6 @@ export class Connection {
 }
 
 if (typeof require !== 'undefined' && require.main === module) {
-  const config = JSON.parse(readFileSync('medplum.config.json', 'utf8')) as MedplumClientOptions & AgentConfig;
+  const config = JSON.parse(readFileSync('medplum.config.json', 'utf8'));
   new App(new MedplumClient(config), config).start();
 }

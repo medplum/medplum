@@ -49,9 +49,7 @@ export class Hl7Connection extends Hl7Base {
   }
 
   close(): void {
-    if (this.socket) {
-      this.socket.end();
-      this.socket.destroy();
-    }
+    this.socket.end();
+    this.socket.destroy();
   }
 }

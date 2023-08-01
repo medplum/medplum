@@ -28,6 +28,13 @@ describe('Agent', () => {
     app.stop();
   });
 
+  test('Use system event log', async () => {
+    const app = new App(medplum, { botId: bot.id as string, useSystemEventLog: true });
+    app.start();
+    app.stop();
+    app.stop();
+  });
+
   test('Send and receive', async () => {
     const mockServer = new Server('wss://example.com/ws/agent');
 

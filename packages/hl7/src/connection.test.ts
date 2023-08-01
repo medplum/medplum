@@ -12,6 +12,8 @@ describe('HL7 Connection', () => {
         return mockSocket;
       }),
       setEncoding: jest.fn(() => mockSocket),
+      end: jest.fn(),
+      destroy: jest.fn(),
     };
 
     const listener = jest.fn();
@@ -34,5 +36,9 @@ describe('HL7 Connection', () => {
     // this.socket.write(VT + reply.toString() + FS + CR);
     handlers.data(VT + FS + CR);
     expect(listener).toBeCalledTimes(1);
+
+    // Close multiple times to test idempotency
+    connection.close();
+    connection.close();
   });
 });
