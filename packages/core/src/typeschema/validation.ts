@@ -1,7 +1,12 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { evalFhirPathTyped, getTypedPropertyValue, toTypedValue } from '../fhirpath';
-import { OperationOutcomeError, validationError } from '../outcomes';
-import { createStructureIssue } from '../schema';
+import {
+  OperationOutcomeError,
+  createConstraintIssue,
+  createProcessingIssue,
+  createStructureIssue,
+  validationError,
+} from '../outcomes';
 import { isResource, PropertyType, TypedValue } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 import {
@@ -275,9 +280,7 @@ class ResourceValidator {
       } else {
         const expression = this.isExpressionTrue(constraint, value, path);
         if (!expression) {
-          this.issues.push(
-            createConstraintIssue(path, `Constraint ${constraint.key} failed with expression: ${constraint.expression}`)
-          );
+          this.issues.push(createConstraintIssue(path, constraint));
           return;
         }
       }
@@ -296,10 +299,7 @@ class ResourceValidator {
       return evalValues.length === 1 && evalValues[0].value === true;
     } catch (e: any) {
       this.issues.push(
-        createConstraintIssue(
-          path,
-          `Constraint ${constraint.key} with expression: ${constraint.expression} failed with error: ${e.message}`
-        )
+        createProcessingIssue(path, 'Error evaluating invariant expression', e, { fhirpath: constraint.expression })
       );
       return false;
     }
@@ -499,15 +499,4 @@ function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undef
     }
   }
   return undefined;
-}
-
-function createConstraintIssue(expression: string, message: string): OperationOutcomeIssue {
-  return {
-    severity: 'error',
-    code: 'invariant',
-    details: {
-      text: message,
-    },
-    expression: [expression],
-  };
 }
