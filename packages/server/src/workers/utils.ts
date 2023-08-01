@@ -73,7 +73,7 @@ export async function createAuditEvent(
     });
   }
 
-  const auditedEvent = subscription ? subscription : resource;
+  const auditedEvent = subscription ?? resource;
 
   await systemRepo.createResource<AuditEvent>({
     resourceType: 'AuditEvent',

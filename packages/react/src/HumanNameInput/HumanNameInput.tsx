@@ -22,7 +22,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
   }
 
   function setUse(use: 'temp' | 'old' | 'usual' | 'official' | 'nickname' | 'anonymous' | 'maiden' | undefined): void {
-    setValueWrapper({ ...valueRef.current, use: use ? use : undefined });
+    setValueWrapper({ ...valueRef.current, use: use || undefined });
   }
 
   function setPrefix(prefix: string): void {
@@ -42,7 +42,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
   function setFamily(family: string): void {
     setValueWrapper({
       ...valueRef.current,
-      family: family ? family : undefined,
+      family: family || undefined,
     });
   }
 
