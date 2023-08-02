@@ -536,7 +536,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         } catch (err) {
           logger.error('Profile validation error', {
             resource: `${resource.resourceType}/${resource.id}`,
-            err,
+            error: normalizeErrorString(err),
           });
         }
       }
