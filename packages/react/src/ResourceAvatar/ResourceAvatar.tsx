@@ -14,7 +14,7 @@ export function ResourceAvatar(props: ResourceAvatarProps): JSX.Element {
   const resource = useResource(props.value);
   const text = resource ? getDisplayString(resource) : props.alt ?? '';
   const imageUrl = (resource && getImageSrc(resource)) ?? props.src;
-  const radius = props.radius ?? 'xl';
+  const radius = props.radius ?? '4xl';
 
   const avatarProps = { ...props };
   delete avatarProps.value;
