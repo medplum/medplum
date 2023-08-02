@@ -15,6 +15,7 @@ import {
   Appointment,
   AuditEvent,
   Bundle,
+  Coding,
   Communication,
   Condition,
   DiagnosticReport,
@@ -27,6 +28,7 @@ import {
   Provenance,
   Questionnaire,
   QuestionnaireResponse,
+  Resource,
   SearchParameter,
   ServiceRequest,
   StructureDefinition,
@@ -87,6 +89,141 @@ describe('FHIR Search', () => {
     expect(result1.entry).toBeUndefined();
     expect(result1.link).toBeDefined();
     expect(result1.link?.length).toBe(1);
+  });
+
+  test('Search _summary', async () => {
+    const subsetTag: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
+    const patient: Patient = {
+      resourceType: 'Patient',
+      meta: {
+        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
+        tag: [{ system: 'http://example.com/', code: 'test' }],
+      },
+      text: {
+        status: 'generated',
+        div: '<div xmlns="http://www.w3.org/1999/xhtml"></div>',
+      },
+      identifier: [
+        {
+          use: 'usual',
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                code: 'MR',
+                display: 'Medical Record Number',
+              },
+            ],
+            text: 'Medical Record Number',
+          },
+          system: 'http://hospital.smarthealthit.org',
+          value: '1032702',
+        },
+      ],
+      active: true,
+      name: [
+        {
+          use: 'old',
+          family: 'Shaw',
+          given: ['Amy', 'V.'],
+          period: {
+            start: '2016-12-06',
+            end: '2020-07-22',
+          },
+        },
+        {
+          family: 'Baxter',
+          given: ['Amy', 'V.'],
+          suffix: ['PharmD'],
+          period: {
+            start: '2020-07-22',
+          },
+        },
+      ],
+      telecom: [
+        {
+          system: 'phone',
+          value: '555-555-5555',
+          use: 'home',
+        },
+        {
+          system: 'email',
+          value: 'amy.shaw@example.com',
+        },
+      ],
+      gender: 'female',
+      birthDate: '1987-02-20',
+      multipleBirthInteger: 2,
+      address: [
+        {
+          use: 'old',
+          line: ['49 Meadow St'],
+          city: 'Mounds',
+          state: 'OK',
+          postalCode: '74047',
+          country: 'US',
+          period: {
+            start: '2016-12-06',
+            end: '2020-07-22',
+          },
+        },
+        {
+          line: ['183 Mountain View St'],
+          city: 'Mounds',
+          state: 'OK',
+          postalCode: '74048',
+          country: 'US',
+          period: {
+            start: '2020-07-22',
+          },
+        },
+      ],
+    };
+    const resource = await systemRepo.createResource(patient);
+
+    // _summary=text
+    const textResults = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+      summary: 'text',
+    });
+    expect(textResults.entry).toHaveLength(1);
+    const textResult = textResults.entry?.[0]?.resource as Resource;
+    expect(textResult).toEqual<Partial<Patient>>({
+      resourceType: 'Patient',
+      id: resource.id,
+      meta: expect.objectContaining({
+        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
+        tag: [{ system: 'http://example.com/', code: 'test' }, subsetTag],
+      }),
+      text: {
+        status: 'generated',
+        div: '<div xmlns="http://www.w3.org/1999/xhtml"></div>',
+      },
+    });
+
+    // _summary=data
+    const dataResults = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+      summary: 'data',
+    });
+    expect(dataResults.entry).toHaveLength(1);
+    const dataResult = dataResults.entry?.[0]?.resource as Resource;
+    const { text: _1, ...dataExpected } = resource;
+    dataExpected.meta?.tag?.push(subsetTag);
+    expect(dataResult).toEqual<Partial<Patient>>({ ...dataExpected });
+
+    // _summary=true
+    const summaryResults = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+      summary: 'true',
+    });
+    expect(summaryResults.entry).toHaveLength(1);
+    const summaryResult = summaryResults.entry?.[0]?.resource as Resource;
+    const { multipleBirthInteger: _2, text: _3, ...summaryResource } = resource;
+    expect(summaryResult).toEqual<Partial<Patient>>(summaryResource);
   });
 
   test('Search next link', async () => {
