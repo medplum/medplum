@@ -12,7 +12,8 @@ export interface InternalTypeSchema {
   fields: Record<string, ElementValidator>;
   constraints: Constraint[];
   innerTypes: InternalTypeSchema[];
-  summaryProperties: string[];
+  summaryProperties?: Set<string>;
+  mandatoryProperties?: Set<string>;
 }
 
 export interface ElementValidator {
@@ -131,7 +132,8 @@ class StructureDefinitionParser {
       fields: {},
       constraints: this.parseFieldDefinition(root).constraints,
       innerTypes: [],
-      summaryProperties: [],
+      summaryProperties: new Set(),
+      mandatoryProperties: new Set(),
     };
     this.innerTypes = [];
   }
@@ -161,7 +163,10 @@ class StructureDefinitionParser {
         } else {
           const path = elementPath(element, this.resourceSchema.name);
           if (element.isSummary) {
-            this.resourceSchema.summaryProperties.push(path.replace('[x]', ''));
+            this.resourceSchema.summaryProperties?.add(path.replace('[x]', ''));
+          }
+          if (field.min > 0) {
+            this.resourceSchema.mandatoryProperties?.add(path.replace('[x]', ''));
           }
           this.resourceSchema.fields[path] = field;
         }
@@ -195,7 +200,6 @@ class StructureDefinitionParser {
           fields: {},
           constraints: this.parseFieldDefinition(element).constraints,
           innerTypes: [],
-          summaryProperties: [],
         },
         path: element.path ?? '',
         parent: pathsCompatible(this.backboneContext?.path, element.path)
@@ -334,7 +338,10 @@ class StructureDefinitionParser {
  * @param properties The properties to include in the subset
  * @returns A copy of the resource containing a subset of the original's properties
  */
-export function subsetResource<T extends Resource>(resource: T, properties: string[]): T {
+export function subsetResource<T extends Resource>(resource: T | undefined, properties: string[]): T | undefined {
+  if (!resource) {
+    return undefined;
+  }
   const subset = { ...resource };
   for (const property of Object.getOwnPropertyNames(resource)) {
     if (!properties.includes(property) && !mandatorySubsetProperties.includes(property)) {

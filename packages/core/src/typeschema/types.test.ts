@@ -141,7 +141,7 @@ describe('FHIR resource and data type representations', () => {
         'value[x]': expect.objectContaining({}),
       },
     });
-    expect(profile.summaryProperties.sort()).toEqual([
+    expect([...(profile.summaryProperties as Set<string>)].sort()).toEqual([
       'basedOn',
       'code',
       'component',
