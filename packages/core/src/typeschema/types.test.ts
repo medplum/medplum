@@ -1,8 +1,16 @@
 import { readFileSync } from 'fs';
-import { ElementValidator, InternalTypeSchema, SlicingRules, parseStructureDefinition, subsetResource } from './types';
+import {
+  ElementValidator,
+  InternalTypeSchema,
+  SlicingRules,
+  loadDataTypes,
+  parseStructureDefinition,
+  subsetResource,
+} from './types';
 import { resolve } from 'path';
 import { TypedValue } from '../types';
 import { Observation } from '@medplum/fhirtypes';
+import { readJson } from '@medplum/definitions';
 
 describe('FHIR resource and data type representations', () => {
   test('Base resource parsing', () => {
@@ -210,6 +218,7 @@ describe('FHIR resource and data type representations', () => {
   });
 
   test('subsetResource', () => {
+    loadDataTypes(readJson('fhir/R4/profiles-resources.json'));
     const observation: Observation = {
       resourceType: 'Observation',
       id: 'example',

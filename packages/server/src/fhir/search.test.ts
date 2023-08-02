@@ -258,14 +258,7 @@ describe('FHIR Search', () => {
         tag: [subsetTag],
       }),
       birthDate: resource.birthDate,
-      _birthDate: {
-        extension: [
-          {
-            url: 'http://hl7.org/fhir/StructureDefinition/patient-birthTime',
-            valueDateTime: '2000-01-01T00:00:00.001Z',
-          },
-        ],
-      },
+      _birthDate: (resource as any)._birthDate,
       deceasedBoolean: resource.deceasedBoolean,
     } as unknown as Patient);
   });

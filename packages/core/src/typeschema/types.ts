@@ -335,8 +335,8 @@ class StructureDefinitionParser {
  * to contain only the provided properties, and may contain others (e.g. `resourceType` and `id`)
  *
  * @param resource The resource to subset
- * @param properties The properties to include in the subset
- * @returns A copy of the resource containing a subset of the original's properties
+ * @param properties The minimum properties to include in the subset
+ * @returns The modified resource, containing the listed properties and possibly other mandatory ones
  */
 export function subsetResource<T extends Resource>(resource: T | undefined, properties: string[]): T | undefined {
   if (!resource) {
@@ -344,28 +344,27 @@ export function subsetResource<T extends Resource>(resource: T | undefined, prop
   }
   const extraProperties = [];
   for (const property of properties) {
-    const choiceTypeField = DATA_TYPES[resource.resourceType].fields[property + '[x]'];
     extraProperties.push('_' + property);
+    const choiceTypeField = DATA_TYPES[resource.resourceType].fields[property + '[x]'];
     if (choiceTypeField) {
       extraProperties.push(...choiceTypeField.type.map((t) => property + capitalize(t.code)));
     }
   }
-  const subset = { ...resource };
   for (const property of Object.getOwnPropertyNames(resource)) {
     if (
       !properties.includes(property) &&
       !extraProperties.includes(property) &&
       !mandatorySubsetProperties.includes(property)
     ) {
-      Object.defineProperty(subset, property, {
+      Object.defineProperty(resource, property, {
         enumerable: false,
         writable: false,
         value: undefined,
       });
     }
   }
-  subset.meta = { ...subset.meta, tag: subset.meta?.tag ? subset.meta.tag.concat(subsetTag) : [subsetTag] };
-  return subset;
+  resource.meta = { ...resource.meta, tag: resource.meta?.tag ? resource.meta.tag.concat(subsetTag) : [subsetTag] };
+  return resource;
 }
 const subsetTag: Coding = {
   system: 'http://hl7.org/fhir/v3/ObservationValue',

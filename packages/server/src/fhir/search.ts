@@ -138,30 +138,7 @@ async function getSearchEntries<T extends Resource>(
     if (!entry.resource) {
       continue;
     }
-    repo.removeHiddenFields(entry.resource);
-    if (searchRequest.fields) {
-      const schema = getDataType(entry.resource.resourceType);
-      entry.resource = subsetResource(
-        entry.resource,
-        schema.mandatoryProperties ? [...schema.mandatoryProperties, ...searchRequest.fields] : searchRequest.fields
-      );
-    } else if (searchRequest.summary) {
-      if (searchRequest.summary === 'data') {
-        entry.resource = subsetResource(
-          entry.resource,
-          Object.keys(entry.resource).filter((k) => k !== 'text')
-        );
-      } else if (searchRequest.summary === 'text') {
-        const schema = getDataType(entry.resource?.resourceType);
-        entry.resource = subsetResource(
-          entry.resource,
-          schema.mandatoryProperties ? ['text', ...schema.mandatoryProperties] : ['text']
-        );
-      } else if (searchRequest.summary === 'true') {
-        const schema = getDataType(entry.resource?.resourceType);
-        entry.resource = subsetResource(entry.resource, schema.summaryProperties ? [...schema.summaryProperties] : []);
-      }
-    }
+    removeResourceFields(entry.resource, repo, searchRequest);
   }
 
   return {
@@ -169,6 +146,29 @@ async function getSearchEntries<T extends Resource>(
     rowCount,
     hasMore: rows.length > count,
   };
+}
+
+function removeResourceFields(resource: Resource, repo: Repository, searchRequest: SearchRequest): void {
+  repo.removeHiddenFields(resource);
+  if (searchRequest.fields) {
+    const schema = getDataType(resource.resourceType);
+    subsetResource(
+      resource,
+      schema.mandatoryProperties ? [...schema.mandatoryProperties, ...searchRequest.fields] : searchRequest.fields
+    );
+  } else if (searchRequest.summary) {
+    const schema = getDataType(resource.resourceType);
+    if (searchRequest.summary === 'data') {
+      subsetResource(
+        resource,
+        Object.keys(resource).filter((k) => k !== 'text')
+      );
+    } else if (searchRequest.summary === 'text') {
+      subsetResource(resource, schema.mandatoryProperties ? ['text', ...schema.mandatoryProperties] : ['text']);
+    } else if (searchRequest.summary === 'true') {
+      subsetResource(resource, schema.summaryProperties ? [...schema.summaryProperties] : []);
+    }
+  }
 }
 
 /**
