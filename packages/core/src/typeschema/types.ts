@@ -159,12 +159,11 @@ class StructureDefinitionParser {
         } else if (this.backboneContext?.parent && element.path?.startsWith(this.backboneContext.parent.path + '.')) {
           this.backboneContext.parent.type.fields[elementPath(element, this.backboneContext.parent.path)] = field;
         } else {
+          const path = elementPath(element, this.resourceSchema.name);
           if (element.isSummary) {
-            this.resourceSchema.summaryProperties.push(
-              elementPath(element, this.resourceSchema.name).replace('[x]', '')
-            );
+            this.resourceSchema.summaryProperties.push(path.replace('[x]', ''));
           }
-          this.resourceSchema.fields[elementPath(element, this.resourceSchema.name)] = field;
+          this.resourceSchema.fields[path] = field;
         }
 
         // Clean up contextual book-keeping
