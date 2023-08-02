@@ -342,15 +342,21 @@ export function subsetResource<T extends Resource>(resource: T | undefined, prop
   if (!resource) {
     return undefined;
   }
+  const extraProperties = [];
   for (const property of properties) {
     const choiceTypeField = DATA_TYPES[resource.resourceType].fields[property + '[x]'];
+    extraProperties.push('_' + property);
     if (choiceTypeField) {
-      properties.push(...choiceTypeField.type.map((t) => property + capitalize(t.code)));
+      extraProperties.push(...choiceTypeField.type.map((t) => property + capitalize(t.code)));
     }
   }
   const subset = { ...resource };
   for (const property of Object.getOwnPropertyNames(resource)) {
-    if (!properties.includes(property) && !mandatorySubsetProperties.includes(property)) {
+    if (
+      !properties.includes(property) &&
+      !extraProperties.includes(property) &&
+      !mandatorySubsetProperties.includes(property)
+    ) {
       Object.defineProperty(subset, property, {
         enumerable: false,
         writable: false,

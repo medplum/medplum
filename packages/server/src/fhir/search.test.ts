@@ -231,9 +231,17 @@ describe('FHIR Search', () => {
     const patient: Patient = {
       resourceType: 'Patient',
       birthDate: '2000-01-01',
+      _birthDate: {
+        extension: [
+          {
+            url: 'http://hl7.org/fhir/StructureDefinition/patient-birthTime',
+            valueDateTime: '2000-01-01T00:00:00.001Z',
+          },
+        ],
+      },
       multipleBirthInteger: 2,
       deceasedBoolean: false,
-    };
+    } as unknown as Patient;
     const resource = await systemRepo.createResource(patient);
 
     const results = await systemRepo.search({
@@ -250,8 +258,16 @@ describe('FHIR Search', () => {
         tag: [subsetTag],
       }),
       birthDate: resource.birthDate,
+      _birthDate: {
+        extension: [
+          {
+            url: 'http://hl7.org/fhir/StructureDefinition/patient-birthTime',
+            valueDateTime: '2000-01-01T00:00:00.001Z',
+          },
+        ],
+      },
       deceasedBoolean: resource.deceasedBoolean,
-    });
+    } as unknown as Patient);
   });
 
   test('Search next link', async () => {
