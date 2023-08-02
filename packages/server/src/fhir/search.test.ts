@@ -226,6 +226,34 @@ describe('FHIR Search', () => {
     expect(summaryResult).toEqual<Partial<Patient>>(summaryResource);
   });
 
+  test('Search _elements', async () => {
+    const subsetTag: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
+    const patient: Patient = {
+      resourceType: 'Patient',
+      birthDate: '2000-01-01',
+      multipleBirthInteger: 2,
+      deceasedBoolean: false,
+    };
+    const resource = await systemRepo.createResource(patient);
+
+    const results = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+      fields: ['birthDate', 'deceased'],
+    });
+    expect(results.entry).toHaveLength(1);
+    const result = results.entry?.[0]?.resource as Resource;
+    expect(result).toEqual<Partial<Patient>>({
+      resourceType: 'Patient',
+      id: resource.id,
+      meta: expect.objectContaining({
+        tag: [subsetTag],
+      }),
+      birthDate: resource.birthDate,
+      deceasedBoolean: resource.deceasedBoolean,
+    });
+  });
+
   test('Search next link', async () => {
     const family = randomUUID();
 
