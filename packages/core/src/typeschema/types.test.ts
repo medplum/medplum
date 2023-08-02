@@ -218,7 +218,7 @@ describe('FHIR resource and data type representations', () => {
   });
 
   test('subsetResource', () => {
-    loadDataTypes(readJson('fhir/R4/profiles-resources.json'));
+    loadDataTypes(readJson('fhir/r4/profiles-resources.json'));
     const observation: Observation = {
       resourceType: 'Observation',
       id: 'example',
