@@ -1,19 +1,27 @@
-name: Publish and Sync Repos
+name: Publish
 # Based on: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
 on:
   push:
     tags:
       - "v*"
 jobs:
-  build:
-    name: Build
+  build_and_check:
+    name: Build and Check
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
+          
       - name: Cache node modules
         uses: actions/cache@v3
         env:
@@ -25,8 +33,10 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
+
       - name: Install dependencies
         run: npm ci
+
       - name: Build
         run: npm run build
         env:
@@ -35,31 +45,17 @@ jobs:
           MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
+
       - name: Publish
         run: ./scripts/publish.sh
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  check_changes_and_update_repos:
-    name: Code Changes
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Set script permissions
-        run: |
-          chmod +x ./scripts/check-changes.sh
-          chmod +x ./scripts/update-example-changes.sh
       - name: Check for changes in specified path
         id: check_changes
         run: |
           echo "changed_paths=$(./scripts/check-changes.sh ${{ github.event.before }} ${{ github.event.after }})" >> $GITHUB_ENV
+
       - name: Update listening repos, create PR, and clean up
         if: env.changed_paths != ''
         run: |
