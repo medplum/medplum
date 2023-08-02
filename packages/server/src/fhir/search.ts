@@ -135,22 +135,29 @@ async function getSearchEntries<T extends Resource>(
   }
 
   for (const entry of entries) {
-    repo.removeHiddenFields(entry.resource as Resource);
+    if (!entry.resource) {
+      continue;
+    }
+    repo.removeHiddenFields(entry.resource);
     if (searchRequest.fields) {
-      entry.resource = subsetResource(entry.resource, searchRequest.fields);
+      const schema = getDataType(entry.resource.resourceType);
+      entry.resource = subsetResource(
+        entry.resource,
+        schema.mandatoryProperties ? [...schema.mandatoryProperties, ...searchRequest.fields] : searchRequest.fields
+      );
     } else if (searchRequest.summary) {
-      if (searchRequest.summary === 'data' && entry.resource) {
+      if (searchRequest.summary === 'data') {
         entry.resource = subsetResource(
           entry.resource,
           Object.keys(entry.resource).filter((k) => k !== 'text')
         );
-      } else if (searchRequest.summary === 'text' && entry.resource) {
+      } else if (searchRequest.summary === 'text') {
         const schema = getDataType(entry.resource?.resourceType);
         entry.resource = subsetResource(
           entry.resource,
           schema.mandatoryProperties ? ['text', ...schema.mandatoryProperties] : ['text']
         );
-      } else if (searchRequest.summary === 'true' && entry.resource) {
+      } else if (searchRequest.summary === 'true') {
         const schema = getDataType(entry.resource?.resourceType);
         entry.resource = subsetResource(entry.resource, schema.summaryProperties ? [...schema.summaryProperties] : []);
       }
