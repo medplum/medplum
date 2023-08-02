@@ -1,4 +1,4 @@
-import { Bundle, ElementDefinition, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, ElementDefinition, ResourceType, StructureDefinition, Resource, Coding } from '@medplum/fhirtypes';
 import { getTypedPropertyValue } from '../fhirpath';
 import { OperationOutcomeError, serverError } from '../outcomes';
 import { TypedValue } from '../types';
@@ -325,6 +325,34 @@ class StructureDefinitionParser {
     };
   }
 }
+
+/**
+ * Construct the subset of a resource containing a minimum set of fields.  The returned resource is not guaranteed
+ * to contain only the provided properties, and may contain others (e.g. `resourceType` and `id`)
+ *
+ * @param resource The resource to subset
+ * @param properties The properties to include in the subset
+ * @returns A copy of the resource containing a subset of the original's properties
+ */
+export function subsetResource<T extends Resource>(resource: T, properties: string[]): T {
+  const subset = { ...resource };
+  for (const property of Object.getOwnPropertyNames(resource)) {
+    if (!properties.includes(property) && !mandatorySubsetProperties.includes(property)) {
+      Object.defineProperty(subset, property, {
+        enumerable: false,
+        writable: false,
+        value: undefined,
+      });
+    }
+  }
+  subset.meta = { ...subset.meta, tag: subset.meta?.tag ? subset.meta.tag.concat(subsetTag) : [subsetTag] };
+  return subset;
+}
+const subsetTag: Coding = {
+  system: 'http://hl7.org/fhir/v3/ObservationValue',
+  code: 'SUBSETTED',
+};
+const mandatorySubsetProperties = ['resourceType', 'id', 'meta'];
 
 function parseCardinality(c: string): number {
   return c === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(c, 10);

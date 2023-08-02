@@ -1,7 +1,8 @@
 import { readFileSync } from 'fs';
-import { ElementValidator, InternalTypeSchema, SlicingRules, parseStructureDefinition } from './types';
+import { ElementValidator, InternalTypeSchema, SlicingRules, parseStructureDefinition, subsetResource } from './types';
 import { resolve } from 'path';
 import { TypedValue } from '../types';
+import { Observation } from '@medplum/fhirtypes';
 
 describe('FHIR resource and data type representations', () => {
   test('Base resource parsing', () => {
@@ -205,6 +206,103 @@ describe('FHIR resource and data type representations', () => {
     });
     expect(rest?.fields['operation']).toMatchObject<Partial<ElementValidator>>({
       type: [{ code: 'CapabilityStatementRestResourceOperation', targetProfile: [] }],
+    });
+  });
+
+  test('subsetResource', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      id: 'example',
+      meta: {
+        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure'],
+        tag: [{ system: 'http://example.com/foo', code: 'bar' }],
+      },
+      status: 'final',
+      category: [
+        {
+          coding: [
+            {
+              code: 'vital-signs',
+              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+            },
+          ],
+        },
+      ],
+      code: {
+        coding: [
+          {
+            code: '85354-9',
+            system: 'http://loinc.org',
+          },
+        ],
+      },
+      subject: {
+        reference: 'Patient/example',
+      },
+      effectiveDateTime: '2023-05-31T17:03:45-07:00',
+      component: [
+        {
+          dataAbsentReason: {
+            coding: [
+              {
+                code: '8480-6',
+                system: 'http://loinc.org',
+              },
+            ],
+          },
+          code: {
+            coding: [
+              {
+                code: '8480-6',
+                system: 'http://loinc.org',
+              },
+            ],
+          },
+        },
+        {
+          dataAbsentReason: {
+            coding: [
+              {
+                code: '8480-6',
+                system: 'http://loinc.org',
+              },
+            ],
+          },
+          code: {
+            coding: [
+              {
+                code: '8462-4',
+                system: 'http://loinc.org',
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    expect(subsetResource(observation, ['subject', 'category'])).toEqual<Partial<Observation>>({
+      resourceType: 'Observation',
+      id: 'example',
+      meta: {
+        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure'],
+        tag: [
+          { system: 'http://example.com/foo', code: 'bar' },
+          { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' },
+        ],
+      },
+      category: [
+        {
+          coding: [
+            {
+              code: 'vital-signs',
+              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+            },
+          ],
+        },
+      ],
+      subject: {
+        reference: 'Patient/example',
+      },
     });
   });
 });
