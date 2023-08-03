@@ -7,6 +7,7 @@ import { createMedplumCommand } from './util/command';
 import { Profile, saveProfile, loadProfile, profileExists } from './utils';
 import { FileSystemStorage } from './storage';
 import { createHmac } from 'crypto';
+import { jwtAssertionLogin } from './utils';
 
 const clientId = 'medplum-cli';
 const redirectUri = 'http://localhost:9615';
@@ -35,7 +36,7 @@ whoami.action(async (options) => {
   printMe(medplum);
 });
 
-async function startLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
+async function startLogin(medplum: MedplumClient, profile?: Profile): Promise<void> {
   if (!profile?.authType) {
     await medplumAuthorizationCodeLogin(medplum);
     return;
@@ -49,6 +50,15 @@ async function startLogin(medplum: MedplumClient, profile: Profile): Promise<voi
     const storage = new FileSystemStorage(profile.name as string);
     storage.setObject('activeLogin', { accessToken });
     console.log('Login successful');
+  } else if (profile.authType === 'jwt-assertion') {
+    const accessToken = await jwtAssertionLogin(medplum, profile);
+    const storage = new FileSystemStorage(profile.name ?? '');
+    storage.setObject('activeLogin', {
+      accessToken,
+    });
+    console.log(`Access token created`);
+  } else {
+    throw new Error('Unsupported auth type');
   }
 }
 
