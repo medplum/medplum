@@ -37,7 +37,7 @@ jobs:
       - name: 'Unzip code coverage'
         run: unzip medplum-code-coverage.zip -d coverage
       - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@v1.8
+        uses: sonarsource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
