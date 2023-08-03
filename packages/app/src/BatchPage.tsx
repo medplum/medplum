@@ -30,17 +30,23 @@ export const DEFAULT_VALUE = `{
 export function BatchPage(): JSX.Element {
   const theme = useMantineTheme();
   const medplum = useMedplum();
-  const [output, setOutput] = useState<Bundle>();
+  const [output, setOutput] = useState<Record<string, Bundle>>({});
+
+  console.log(output);
 
   const submitBatch = useCallback(
-    async (str: string) => {
+    async (str: string, fileName: string) => {
       try {
-        setOutput(undefined);
+        setOutput({});
         let bundle = JSON.parse(str) as Bundle;
         if (bundle.type !== 'batch' && bundle.type !== 'transaction') {
           bundle = convertToTransactionBundle(bundle);
         }
-        setOutput(await medplum.executeBatch(bundle));
+        const result = await medplum.executeBatch(bundle);
+        setOutput((prev) => ({
+          ...prev,
+          [fileName]: result,
+        }));
         showNotification({ color: 'green', message: 'Success' });
       } catch (err) {
         showNotification({ color: 'red', message: normalizeErrorString(err) });
@@ -51,16 +57,19 @@ export function BatchPage(): JSX.Element {
 
   const handleFiles = useCallback(
     async (files: FileWithPath[]) => {
-      const reader = new FileReader();
-      reader.onload = (e) => submitBatch(e.target?.result as string);
-      reader.readAsText(files[0]);
+      for (const file of files) {
+        console.log(file.name);
+        const reader = new FileReader();
+        reader.onload = (e) => submitBatch(e.target?.result as string, file.name as string);
+        reader.readAsText(file);
+      }
     },
     [submitBatch]
   );
 
   const handleJson = useCallback(
     async (formData: Record<string, string>) => {
-      await submitBatch(formData.input);
+      await submitBatch(formData.input, 'JSON Data');
     },
     [submitBatch]
   );
@@ -72,7 +81,7 @@ export function BatchPage(): JSX.Element {
         Use this page to create, read, or update multiple resources. For more details, see&nbsp;
         <a href="https://www.hl7.org/fhir/http.html#transaction">FHIR Batch and Transaction</a>.
       </p>
-      {!output && (
+      {Object.keys(output).length === 0 && (
         <>
           <h3>Input</h3>
           <Tabs defaultValue="upload">
@@ -123,12 +132,25 @@ export function BatchPage(): JSX.Element {
           </Tabs>
         </>
       )}
-      {output && (
+      {Object.keys(output).length > 0 && (
         <>
           <h3>Output</h3>
-          <pre style={{ border: '1px solid #888' }}>{JSON.stringify(output, undefined, 2)}</pre>
+          <Tabs defaultValue={Object.keys(output)[0]}>
+            <Tabs.List>
+              {Object.keys(output).map((name) => (
+                <Tabs.Tab key={name} value={name}>
+                  {name}
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
+            {Object.keys(output).map((name) => (
+              <Tabs.Panel value={name}>
+                <pre style={{ border: '1px solid #888' }}>{JSON.stringify(output[name], undefined, 2)}</pre>
+              </Tabs.Panel>
+            ))}
+          </Tabs>
           <Group position="right" mt="xl" noWrap>
-            <Button onClick={() => setOutput(undefined)}>Start over</Button>
+            <Button onClick={() => setOutput({})}>Start over</Button>
           </Group>
         </>
       )}
