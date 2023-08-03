@@ -844,11 +844,8 @@ describe('SearchControl', () => {
     await setup(props);
     await waitFor(() => screen.getByText('Homer Simpson'));
     expect(onLoad).toBeCalled();
-
-    // Reset the onLoad mock
     onLoad.mockReset();
 
-    // Find the refresh button
     const refreshButton = screen.getByTitle('Refresh');
     expect(refreshButton).toBeInTheDocument();
 
