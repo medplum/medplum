@@ -1,11 +1,10 @@
 import { InvokeCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
+import { ContentType } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-
-import { ContentType } from '@medplum/core';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config';
