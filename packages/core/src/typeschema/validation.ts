@@ -338,24 +338,28 @@ class ResourceValidator {
   }
 
   private validatePrimitiveType(typedValue: TypedValue, path: string): void {
-    const { type, value } = typedValue;
-
-    // First, make sure the value is the correct JS type
-    const expectedType = fhirTypeToJsType[type];
-    if (typeof value !== expectedType) {
-      if (value !== null) {
-        this.issues.push(
-          createStructureIssue(path, `Invalid JSON type: expected ${expectedType}, but got ${typeof value}`)
-        );
+    const [primitiveValue, extensionElement] = unpackPrimitiveElement(typedValue);
+    if (primitiveValue) {
+      const { type, value } = primitiveValue;
+      // First, make sure the value is the correct JS type
+      const expectedType = fhirTypeToJsType[type];
+      if (typeof value !== expectedType) {
+        if (value !== null) {
+          this.issues.push(
+            createStructureIssue(path, `Invalid JSON type: expected ${expectedType}, but got ${typeof value}`)
+          );
+        }
+        return;
       }
-      return;
+      // Then, perform additional checks for specialty types
+      if (expectedType === 'string') {
+        this.validateString(value as string, type as PropertyType, path);
+      } else if (expectedType === 'number') {
+        this.validateNumber(value as number, type as PropertyType, path);
+      }
     }
-
-    // Then, perform additional checks for specialty types
-    if (expectedType === 'string') {
-      this.validateString(value as string, type as PropertyType, path);
-    } else if (expectedType === 'number') {
-      this.validateNumber(value as number, type as PropertyType, path);
+    if (extensionElement) {
+      this.validateObject(extensionElement, getDataType('Element'), path);
     }
   }
 
@@ -479,6 +483,14 @@ function matchDiscriminant(
         return true;
       }
       break;
+    case 'type':
+      if (!value) {
+        return false;
+      } else if (Array.isArray(value)) {
+        return value.every((v) => element.type.every((t) => t.code === v.type));
+      } else {
+        return element.type.every((t) => t.code === value.type);
+      }
     // Other discriminator types are not yet supported, see http://hl7.org/fhir/R4/profiling.html#discriminator
   }
   // Default to no match
@@ -499,4 +511,22 @@ function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undef
     }
   }
   return undefined;
+}
+
+function unpackPrimitiveElement(v: TypedValue): [TypedValue | undefined, TypedValue | undefined] {
+  if (typeof v.value !== 'object' || !v.value) {
+    return [v, undefined];
+  }
+  debugger; //eslint-disable-line no-debugger
+  const primitiveValue = v.value.valueOf();
+  if (primitiveValue === v.value) {
+    return [undefined, { type: 'Element', value: v.value }];
+  }
+  const primitiveKeys = new Set(Object.keys(primitiveValue));
+  const extensionEntries = Object.entries(v.value).filter(([k, _]) => !primitiveKeys.has(k));
+  const extensionElement = extensionEntries.length > 0 ? Object.fromEntries(extensionEntries) : undefined;
+  return [
+    { type: v.type, value: primitiveValue },
+    { type: 'Element', value: extensionElement },
+  ];
 }

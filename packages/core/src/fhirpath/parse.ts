@@ -260,5 +260,8 @@ export function evalFhirPathTyped(
 ): TypedValue[] {
   const variableInput = variables ?? {};
   const ast = parseFhirPath(expression);
-  return ast.eval({ variables: variableInput }, input);
+  return ast.eval({ variables: variableInput }, input).map((v) => ({
+    type: v.type,
+    value: v.value?.valueOf(),
+  }));
 }

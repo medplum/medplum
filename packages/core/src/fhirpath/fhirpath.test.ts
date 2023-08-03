@@ -563,8 +563,10 @@ describe('FHIRPath Test Suite', () => {
   });
 
   describe('Miscellaneous accessor tests', () => {
-    test('Extract birthDate', () => {
-      expect(evalFhirPath('birthDate', patient)).toEqual(['1974-12-25']);
+    test.only('Extract birthDate', () => {
+      const result = evalFhirPath('birthDate', patient);
+      console.log(result);
+      expect(result).toEqual(['1974-12-25']);
     });
 
     test('patient telecom types', () => {

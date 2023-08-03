@@ -273,7 +273,7 @@ export class FhirSchemaValidator<T extends Resource> {
 
     // First, make sure the value is the correct JS type
     const expectedType = fhirTypeToJsType[typedValue.type];
-    if (typeof value !== expectedType) {
+    if (typeof value !== expectedType && typeof value?.valueOf() !== expectedType) {
       this.createIssue(elementDefinition, 'Invalid type for ' + type);
       return;
     }

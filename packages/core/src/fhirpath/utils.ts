@@ -113,6 +113,16 @@ function getTypedPropertyValueWithSchema(
       }
     }
   }
+  const primitiveExtension = input.value['_' + path];
+  if (primitiveExtension) {
+    if (Array.isArray(resultValue)) {
+      resultValue = resultValue.map((v, i) =>
+        primitiveExtension[i] ? Object.assign(v ?? {}, primitiveExtension[i]) : v
+      );
+    } else {
+      resultValue = Object.assign(resultValue ?? {}, primitiveExtension);
+    }
+  }
 
   if (isEmpty(resultValue)) {
     return undefined;

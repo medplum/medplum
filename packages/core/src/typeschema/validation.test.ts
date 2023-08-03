@@ -46,12 +46,8 @@ describe('FHIR resource validation', () => {
   });
 
   test('Invalid resource', () => {
-    expect(() => {
-      validate(undefined as unknown as Patient);
-    }).toThrow();
-    expect(() => {
-      validate({} as unknown as Patient);
-    }).toThrow();
+    expect(() => validate(undefined as unknown as Patient)).toThrow();
+    expect(() => validate({} as unknown as Patient)).toThrow();
   });
 
   test('Valid base resource', () => {
@@ -60,9 +56,7 @@ describe('FHIR resource validation', () => {
       gender: 'unknown',
       birthDate: '1949-08-14',
     };
-    expect(() => {
-      validate(patient);
-    }).not.toThrow();
+    expect(() => validate(patient)).not.toThrow();
   });
 
   test('Invalid cardinality', () => {
@@ -78,12 +72,8 @@ describe('FHIR resource validation', () => {
         value: 'I12345',
       },
     } as unknown as Patient;
-    expect(() => {
-      validate(invalidMultiple);
-    }).toThrow();
-    expect(() => {
-      validate(invalidSingle);
-    }).toThrow();
+    expect(() => validate(invalidMultiple)).toThrow();
+    expect(() => validate(invalidSingle)).toThrow();
   });
 
   test('Invalid value type', () => {
@@ -91,9 +81,7 @@ describe('FHIR resource validation', () => {
       resourceType: 'Patient',
       birthDate: Date.parse('1949-08-14'),
     } as unknown as Patient;
-    expect(() => {
-      validate(invalidType);
-    }).toThrow();
+    expect(() => validate(invalidType)).toThrow();
   });
 
   test('Invalid string format', () => {
@@ -101,9 +89,7 @@ describe('FHIR resource validation', () => {
       resourceType: 'Patient',
       birthDate: 'Aug 14, 1949',
     };
-    expect(() => {
-      validate(invalidFormat);
-    }).toThrow();
+    expect(() => validate(invalidFormat)).toThrow();
   });
 
   test('Invalid numeric value', () => {
@@ -111,9 +97,7 @@ describe('FHIR resource validation', () => {
       resourceType: 'Patient',
       multipleBirthInteger: 4.2,
     };
-    expect(() => {
-      validate(patientExtension);
-    }).toThrow();
+    expect(() => validate(patientExtension)).toThrow();
   });
 
   test('Invalid extraneous property', () => {
@@ -121,9 +105,7 @@ describe('FHIR resource validation', () => {
       resourceType: 'Patient',
       foo: 'bar',
     } as unknown as Patient;
-    expect(() => {
-      validate(invalidFormat);
-    }).toThrow();
+    expect(() => validate(invalidFormat)).toThrow();
   });
 
   test('Valid property name special cases', () => {
@@ -142,12 +124,8 @@ describe('FHIR resource validation', () => {
       resourceType: 'Patient',
       deceasedBoolean: false,
     };
-    expect(() => {
-      validate(primitiveExtension);
-    }).not.toThrow();
-    expect(() => {
-      validate(choiceType);
-    }).not.toThrow();
+    expect(() => validate(primitiveExtension)).not.toThrow();
+    expect(() => validate(choiceType)).not.toThrow();
   });
 
   test('Valid resource with extension', () => {
@@ -231,9 +209,7 @@ describe('FHIR resource validation', () => {
       ],
     };
 
-    expect(() => {
-      validate(observation, observationProfile);
-    }).not.toThrow();
+    expect(() => validate(observation, observationProfile)).not.toThrow();
   });
 
   test('Invalid cardinality', () => {
@@ -277,9 +253,9 @@ describe('FHIR resource validation', () => {
       ],
     };
 
-    expect(() => {
-      validate(observation, observationProfile);
-    }).toThrow('Invalid number of values: expected 2..*, but found 1 (Observation.component)');
+    expect(() => validate(observation, observationProfile)).toThrow(
+      'Invalid number of values: expected 2..*, but found 1 (Observation.component)'
+    );
   });
 
   test('Invalid resource under pattern fields profile', () => {
@@ -332,9 +308,7 @@ describe('FHIR resource validation', () => {
       ],
     };
 
-    expect(() => {
-      validate(observation, observationProfile);
-    }).toThrow();
+    expect(() => validate(observation, observationProfile)).toThrow();
   });
 
   test('Invalid slice contents', () => {
@@ -399,7 +373,6 @@ describe('FHIR resource validation', () => {
       const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
       validate(structureDefinition);
     }).not.toThrow();
-
     expect(() => {
       const structureDefinition = readJson('fhir/r4/profiles-medplum.json') as Bundle;
       validate(structureDefinition);
@@ -429,9 +402,9 @@ describe('FHIR resource validation', () => {
         },
       ],
     };
-    expect(() => {
-      validate(patient, patientProfile);
-    }).toThrow(new Error('Missing required property (Patient.telecom.system)'));
+    expect(() => validate(patient, patientProfile)).toThrow(
+      new Error('Missing required property (Patient.telecom.system)')
+    );
   });
 
   test('Valid resource with nulls in primitive extension', () => {
@@ -536,9 +509,7 @@ describe('FHIR resource validation', () => {
       },
     };
 
-    expect(() => {
-      validate(vs);
-    }).not.toThrow();
+    expect(() => validate(vs)).not.toThrow();
   });
 
   test('Timing invariant', () => {
@@ -610,9 +581,32 @@ describe('FHIR resource validation', () => {
         },
       ],
     };
-    expect(() => {
-      validate(prescription);
-    }).not.toThrow();
+    expect(() => validate(prescription)).not.toThrow();
+  });
+
+  test('Primitive extension for required property', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      _status: {
+        extension: [
+          {
+            url: 'http://example.com/data-absent',
+            valueBoolean: true,
+          },
+        ],
+      },
+      code: {
+        coding: [
+          {
+            system: 'http://example.com/',
+            code: '1',
+          },
+        ],
+      },
+      valueBoolean: true,
+    } as unknown as Observation;
+
+    expect(() => validate(observation)).not.toThrow();
   });
 });
 
