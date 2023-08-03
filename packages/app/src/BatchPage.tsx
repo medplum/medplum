@@ -32,8 +32,6 @@ export function BatchPage(): JSX.Element {
   const medplum = useMedplum();
   const [output, setOutput] = useState<Record<string, Bundle>>({});
 
-  console.log(output);
-
   const submitBatch = useCallback(
     async (str: string, fileName: string) => {
       try {
@@ -58,7 +56,6 @@ export function BatchPage(): JSX.Element {
   const handleFiles = useCallback(
     async (files: FileWithPath[]) => {
       for (const file of files) {
-        console.log(file.name);
         const reader = new FileReader();
         reader.onload = (e) => submitBatch(e.target?.result as string, file.name as string);
         reader.readAsText(file);
