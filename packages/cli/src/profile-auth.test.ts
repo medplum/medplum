@@ -60,7 +60,6 @@ describe('Profiles Auth', () => {
         return {
           access_token: accessTokenFromClientId,
           refresh_token: refreshTokenFromClientId,
-          profile: { reference: 'ClientApplication/123' },
         };
       }
       if (url.includes('/auth/me')) {
@@ -98,7 +97,6 @@ describe('Profiles Auth', () => {
     expect(profile.getObject('activeLogin')).toEqual({
       accessToken: accessTokenFromClientId,
       refreshToken: refreshTokenFromClientId,
-      profile: { reference: 'ClientApplication/123' },
     });
   });
 });

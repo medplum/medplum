@@ -6,7 +6,6 @@ import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
 import { Profile, createProfile, getProfileOptions } from './utils';
 import { FileSystemStorage } from './storage';
-import { ClientApplication } from '@medplum/fhirtypes';
 import { createHmac } from 'crypto';
 
 const clientId = 'medplum-cli';
@@ -44,8 +43,7 @@ async function startLogin(medplum: MedplumClient, profile: Profile): Promise<voi
       throw new Error('Missing values, make sure to add --client-id, and --client-secret for JWT Bearer login');
     }
     console.log('Starting JWT login...');
-    const clientApplication = await createClient(medplum, profile);
-    await jwtBearerLogin(medplum, profile, clientApplication);
+    await jwtBearerLogin(medplum, profile);
   }
 }
 
@@ -134,26 +132,7 @@ function isThereExistingProfileName(profileName?: string): boolean {
   return true;
 }
 
-async function createClient(medplum: MedplumClient, profile: Profile): Promise<ClientApplication> {
-  const identityProvider = {
-    authorizeUrl: profile.authorizeUrl,
-    tokenUrl: profile.tokenUrl,
-    clientId: profile.clientId,
-    clientSecret: profile.clientSecret,
-  };
-  const clientApplication = await medplum.createResource<ClientApplication>({
-    resourceType: 'ClientApplication',
-    name: profile.name,
-    identityProvider,
-  });
-  return clientApplication;
-}
-
-async function jwtBearerLogin(
-  medplum: MedplumClient,
-  profile: Profile,
-  clientApplication: ClientApplication
-): Promise<void> {
+async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
   const header = {
     typ: 'JWT',
     alg: 'HS256',
@@ -177,5 +156,5 @@ async function jwtBearerLogin(
     .digest('base64url');
   const signedToken = `${token}.${signature}`;
 
-  await medplum.startJwtBearerLogin(clientApplication.id as string, signedToken, profile.scope as string);
+  await medplum.startJwtBearerLogin(profile.clientId as string, signedToken, profile.scope as string);
 }
