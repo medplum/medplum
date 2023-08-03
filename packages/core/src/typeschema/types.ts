@@ -197,6 +197,10 @@ class StructureDefinitionParser {
       };
     }
     if (element.slicing && !this.slicingContext) {
+      if (hasDefaultExtensionSlice(element) && !this.peek()?.sliceName) {
+        // Extensions are always sliced by URL; don't start slicing context if no slices follow
+        return;
+      }
       field.slicing = {
         discriminator: (element.slicing?.discriminator ?? []).map((d) => {
           if (d.type !== 'value' && d.type !== 'pattern') {
@@ -279,7 +283,7 @@ class StructureDefinitionParser {
 
   private parseSliceStart(element: ElementDefinition): void {
     if (!this.slicingContext) {
-      throw new Error('Invalid slice start before discriminator');
+      throw new Error('Invalid slice start before discriminator: ' + element.sliceName);
     }
     if (this.slicingContext.current) {
       this.slicingContext.field.slices.push(this.slicingContext.current);
@@ -365,4 +369,14 @@ function firstValue(obj: TypedValue | TypedValue[] | undefined): TypedValue | un
   } else {
     return undefined;
   }
+}
+
+function hasDefaultExtensionSlice(element: ElementDefinition): boolean {
+  const discriminators = element.slicing?.discriminator;
+  return Boolean(
+    element.type?.some((t) => t.code === 'Extension') &&
+      discriminators?.length === 1 &&
+      discriminators[0].type === 'value' &&
+      discriminators[0].path === 'url'
+  );
 }

@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { ElementValidator, InternalTypeSchema, SlicingRules, parseStructureDefinition } from './types';
 import { resolve } from 'path';
 import { TypedValue } from '../types';
+import { StructureDefinition } from '@medplum/fhirtypes';
 
 describe('FHIR resource and data type representations', () => {
   test('Base resource parsing', () => {
@@ -186,5 +187,10 @@ describe('FHIR resource and data type representations', () => {
     expect(rest?.fields['operation']).toMatchObject<Partial<ElementValidator>>({
       type: [{ code: 'CapabilityStatementRestResourceOperation', targetProfile: [] }],
     });
+  });
+
+  test('Base spec profiles', () => {
+    const bodyWeightProfile = readFileSync(resolve(__dirname, '__test__/body-weight-profile.json'), 'utf8');
+    expect(parseStructureDefinition(JSON.parse(bodyWeightProfile) as StructureDefinition)).toBeDefined();
   });
 });
