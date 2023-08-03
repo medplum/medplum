@@ -2424,7 +2424,7 @@ export class MedplumClient extends EventTarget {
    * @param resource The resource to cache.
    */
   private cacheResource(resource: Resource | undefined): void {
-    if (resource?.id) {
+    if (resource?.id && !resource.meta?.tag?.some((t) => t.code === 'SUBSETTED')) {
       this.setCacheEntry(
         this.fhirUrl(resource.resourceType, resource.id).toString(),
         new ReadablePromise(Promise.resolve(resource))
