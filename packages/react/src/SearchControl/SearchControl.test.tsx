@@ -822,4 +822,41 @@ describe('SearchControl', () => {
 
     expect(screen.getByText('missing true')).toBeInTheDocument();
   });
+
+  test('Refresh results', async () => {
+    const onLoad = jest.fn();
+
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Simpson',
+          },
+        ],
+        fields: ['id', '_lastUpdated', 'name'],
+      },
+      onLoad,
+    };
+
+    await setup(props);
+    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(onLoad).toBeCalled();
+
+    // Reset the onLoad mock
+    onLoad.mockReset();
+
+    // Find the refresh button
+    const refreshButton = screen.getByTitle('Refresh');
+    expect(refreshButton).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(refreshButton);
+    });
+
+    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(onLoad).toBeCalled();
+  });
 });

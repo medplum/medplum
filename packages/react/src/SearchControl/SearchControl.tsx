@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Button,
   Center,
   createStyles,
@@ -25,10 +26,11 @@ import {
   IconColumns,
   IconFilePlus,
   IconFilter,
+  IconRefresh,
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
@@ -165,25 +167,38 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
   const totalType = search.total ?? 'accurate';
 
-  useEffect(() => {
-    setOutcome(undefined);
+  const loadResults = useCallback(
+    (options?: RequestInit) => {
+      setOutcome(undefined);
 
-    medplum
-      .search(
-        search.resourceType as ResourceType,
-        formatSearchQuery({ ...search, total: totalType, fields: undefined })
-      )
-      .then((response) => {
-        setState({ ...stateRef.current, searchResponse: response });
-        if (onLoad) {
-          onLoad(new SearchLoadEvent(response));
-        }
-      })
-      .catch((reason) => {
-        setState({ ...stateRef.current, searchResponse: undefined });
-        setOutcome(reason);
-      });
-  }, [medplum, search, totalType, onLoad]);
+      medplum
+        .search(
+          search.resourceType as ResourceType,
+          formatSearchQuery({ ...search, total: totalType, fields: undefined }),
+          options
+        )
+        .then((response) => {
+          setState({ ...stateRef.current, searchResponse: response });
+          if (onLoad) {
+            onLoad(new SearchLoadEvent(response));
+          }
+        })
+        .catch((reason) => {
+          setState({ ...stateRef.current, searchResponse: undefined });
+          setOutcome(reason);
+        });
+    },
+    [medplum, search, totalType, onLoad]
+  );
+
+  const refreshResults = useCallback(() => {
+    setState({ ...stateRef.current, searchResponse: undefined });
+    loadResults({ cache: 'reload' });
+  }, [loadResults]);
+
+  useEffect(() => {
+    loadResults();
+  }, [loadResults]);
 
   function handleSingleCheckboxClick(e: React.ChangeEvent, id: string): void {
     e.stopPropagation();
@@ -369,12 +384,17 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               </Button>
             )}
           </Group>
-          {lastResult && (
-            <Text size="xs" color="dimmed">
-              {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
-              {`${totalType === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
-            </Text>
-          )}
+          <Group spacing={2}>
+            {lastResult && (
+              <Text size="xs" color="dimmed">
+                {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
+                {`${totalType === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
+              </Text>
+            )}
+            <ActionIcon title="Refresh" onClick={refreshResults}>
+              <IconRefresh size="1.125rem" />
+            </ActionIcon>
+          </Group>
         </Group>
       )}
       <Table className={classes.table}>
