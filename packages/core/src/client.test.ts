@@ -2236,6 +2236,71 @@ describe('Client', () => {
     });
   });
 
+  describe('Downloading resources', () => {
+    const baseUrl = 'https://api.medplum.com/';
+    const fhirUrlPath = 'fhir/R4/';
+
+    describe('normalizeFetchUrl', () => {
+      let client: MedplumClient;
+
+      beforeAll(() => {
+        client = new MedplumClient({ baseUrl, fhirUrlPath });
+      });
+
+      test('URL object', () => {
+        expect(client.normalizeFetchUrl(new URL(baseUrl))).toEqual(baseUrl);
+      });
+
+      test('URL string', () => {
+        expect(client.normalizeFetchUrl(baseUrl)).toEqual(baseUrl);
+      });
+
+      test('Binary URLs', () => {
+        expect(client.normalizeFetchUrl('Binary/fake-id')).toEqual(`${baseUrl}${fhirUrlPath}Binary/fake-id`);
+      });
+    });
+
+    describe('Downloading resources', () => {
+      let fetch: FetchLike;
+      let client: MedplumClient;
+
+      beforeAll(() => {
+        fetch = mockFetch(200, (url: string) => ({
+          text: async () => url,
+        }));
+        client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
+      });
+
+      test('Downloading resources via URL', async () => {
+        const blob = await client.download(baseUrl);
+        expect(fetch).toBeCalledWith(
+          baseUrl,
+          expect.objectContaining({
+            headers: {
+              Accept: ContentType.FHIR_JSON,
+              'X-Medplum': 'extended',
+            },
+          })
+        );
+        expect(await blob.text()).toEqual(baseUrl);
+      });
+
+      test('Downloading resources via `Binary/{id}` URL', async () => {
+        const blob = await client.download('Binary/fake-id');
+        expect(fetch).toBeCalledWith(
+          `${baseUrl}${fhirUrlPath}Binary/fake-id`,
+          expect.objectContaining({
+            headers: {
+              Accept: ContentType.FHIR_JSON,
+              'X-Medplum': 'extended',
+            },
+          })
+        );
+        expect(await blob.text()).toEqual(`${baseUrl}${fhirUrlPath}Binary/fake-id`);
+      });
+    });
+  });
+
   describe('Media', () => {
     test('Upload Media', async () => {
       const fetch = mockFetch(200, {});
