@@ -81,11 +81,6 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   let user = undefined;
   let existingUser = true;
   let passwordResetUrl = undefined;
-  // let profile = undefined;
-
-  // if (request.membership?.profile) {
-  //   profile = await systemRepo.readResource(request.membership.profile);
-  // }
 
   if (email) {
     if (request.resourceType === 'Patient') {
