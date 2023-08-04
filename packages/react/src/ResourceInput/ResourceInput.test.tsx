@@ -107,4 +107,20 @@ describe('ResourceInput', () => {
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(onChange).toHaveBeenCalled();
   });
+
+  test('Handle invalid reference default value', async () => {
+    await act(async () => {
+      setup({
+        resourceType: 'Patient',
+        name: 'foo',
+        defaultValue: {
+          reference: '',
+        },
+        placeholder: 'Test',
+      });
+    });
+
+    await waitFor(() => screen.getByPlaceholderText('Test'));
+    expect(screen.getByPlaceholderText('Test')).toBeInTheDocument();
+  });
 });

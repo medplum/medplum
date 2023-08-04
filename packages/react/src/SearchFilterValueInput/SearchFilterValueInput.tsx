@@ -23,7 +23,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
       return (
         <ReferenceInput
           name={name}
-          defaultValue={{ reference: props.defaultValue }}
+          defaultValue={props.defaultValue ? { reference: props.defaultValue } : undefined}
           targetTypes={props.searchParam.target}
           autoFocus={props.autoFocus}
           onChange={(newReference: Reference | undefined) => {
