@@ -1,7 +1,7 @@
 import { Group, Text } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
-import { Patient, Reference, Resource } from '@medplum/fhirtypes';
-import React, { forwardRef, useCallback } from 'react';
+import { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
+import React, { forwardRef, useCallback, useState } from 'react';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
@@ -90,7 +90,8 @@ function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
 export function ResourceInput<T extends Resource = Resource>(props: ResourceInputProps<T>): JSX.Element | null {
   const medplum = useMedplum();
   const resourceType = props.resourceType;
-  const defaultValue = useResource(props.defaultValue);
+  const [outcome, setOutcome] = useState<OperationOutcome>();
+  const defaultValue = useResource(props.defaultValue, setOutcome);
   const onChange = props.onChange;
 
   const loadValues = useCallback(
@@ -116,7 +117,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
     [onChange]
   );
 
-  if (props.defaultValue && !defaultValue) {
+  if (props.defaultValue && !outcome && !defaultValue) {
     // If a default value was specified, but the default resource is not loaded yet,
     // then return null to avoid rendering the input until the default resource is loaded.
     // The Mantine <MultiSelect> component does not reliably handle changes to defaultValue.

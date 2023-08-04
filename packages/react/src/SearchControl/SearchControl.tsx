@@ -272,11 +272,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
     killEvent(e);
 
-    if (e.button !== 1 && props.onClick) {
+    const isAux = e.button === 1 || e.ctrlKey || e.metaKey;
+
+    if (!isAux && props.onClick) {
       props.onClick(new SearchClickEvent(resource, e));
     }
 
-    if (e.button === 1 && props.onAuxClick) {
+    if (isAux && props.onAuxClick) {
       props.onAuxClick(new SearchClickEvent(resource, e));
     }
   }

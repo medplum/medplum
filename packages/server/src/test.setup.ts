@@ -17,7 +17,10 @@ import { systemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 
-export async function createTestProject(options?: Partial<Project>): Promise<{
+export async function createTestProject(
+  projectOptions?: Partial<Project>,
+  membershipOptions?: Partial<ProjectMembership>
+): Promise<{
   project: Project;
   client: ClientApplication;
   membership: ProjectMembership;
@@ -36,7 +39,7 @@ export async function createTestProject(options?: Partial<Project>): Promise<{
         valueString: 'bar',
       },
     ],
-    ...options,
+    ...projectOptions,
   });
 
   const client = await systemRepo.createResource<ClientApplication>({
@@ -54,6 +57,7 @@ export async function createTestProject(options?: Partial<Project>): Promise<{
     user: createReference(client),
     profile: createReference(client),
     project: createReference(project),
+    ...membershipOptions,
   });
 
   return {
@@ -63,12 +67,18 @@ export async function createTestProject(options?: Partial<Project>): Promise<{
   };
 }
 
-export async function createTestClient(options?: Partial<Project>): Promise<ClientApplication> {
-  return (await createTestProject(options)).client;
+export async function createTestClient(
+  projectOptions?: Partial<Project>,
+  membershipOptions?: Partial<ProjectMembership>
+): Promise<ClientApplication> {
+  return (await createTestProject(projectOptions, membershipOptions)).client;
 }
 
-export async function initTestAuth(options?: Partial<Project>): Promise<string> {
-  const { client, membership } = await createTestProject(options);
+export async function initTestAuth(
+  projectOptions?: Partial<Project>,
+  membershipOptions?: Partial<ProjectMembership>
+): Promise<string> {
+  const { client, membership } = await createTestProject(projectOptions, membershipOptions);
   const scope = 'openid';
 
   const login = await systemRepo.createResource<Login>({
@@ -78,7 +88,7 @@ export async function initTestAuth(options?: Partial<Project>): Promise<string> 
     client: createReference(client),
     membership: createReference(membership),
     authTime: new Date().toISOString(),
-    superAdmin: options?.superAdmin,
+    superAdmin: projectOptions?.superAdmin,
     scope,
   });
 

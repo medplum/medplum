@@ -23,6 +23,8 @@ import {
   SortRule,
   toTypedValue,
   validateResourceType,
+  subsetResource,
+  getDataType,
 } from '@medplum/core';
 import {
   Bundle,
@@ -133,7 +135,10 @@ async function getSearchEntries<T extends Resource>(
   }
 
   for (const entry of entries) {
-    repo.removeHiddenFields(entry.resource as Resource);
+    if (!entry.resource) {
+      continue;
+    }
+    removeResourceFields(entry.resource, repo, searchRequest);
   }
 
   return {
@@ -141,6 +146,29 @@ async function getSearchEntries<T extends Resource>(
     rowCount,
     hasMore: rows.length > count,
   };
+}
+
+function removeResourceFields(resource: Resource, repo: Repository, searchRequest: SearchRequest): void {
+  repo.removeHiddenFields(resource);
+  if (searchRequest.fields) {
+    const schema = getDataType(resource.resourceType);
+    subsetResource(
+      resource,
+      schema.mandatoryProperties ? [...schema.mandatoryProperties, ...searchRequest.fields] : searchRequest.fields
+    );
+  } else if (searchRequest.summary) {
+    const schema = getDataType(resource.resourceType);
+    if (searchRequest.summary === 'data') {
+      subsetResource(
+        resource,
+        Object.keys(resource).filter((k) => k !== 'text')
+      );
+    } else if (searchRequest.summary === 'text') {
+      subsetResource(resource, schema.mandatoryProperties ? ['text', ...schema.mandatoryProperties] : ['text']);
+    } else if (searchRequest.summary === 'true') {
+      subsetResource(resource, schema.summaryProperties ? [...schema.summaryProperties] : []);
+    }
+  }
 }
 
 /**
