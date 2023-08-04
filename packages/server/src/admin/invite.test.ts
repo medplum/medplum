@@ -1,15 +1,15 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { ContentType, getReferenceString } from '@medplum/core';
-import { BundleEntry, ProjectMembership } from '@medplum/fhirtypes';
+import { ContentType, createReference, getReferenceString } from '@medplum/core';
+import { BundleEntry, Practitioner, ProjectMembership } from '@medplum/fhirtypes';
+import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
-import request from 'supertest';
-import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
 import { Readable } from 'stream';
-import 'aws-sdk-client-mock-jest';
+import request from 'supertest';
 
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
@@ -161,6 +161,49 @@ describe('Admin Invite', () => {
         firstName: 'Bob',
         lastName: 'Jones',
         email: bobEmail,
+      });
+
+    expect(res3.status).toBe(200);
+    expect(res3.body.profile.reference).toEqual(getReferenceString(res2.body));
+  });
+
+  test('Specified practitioner to project', async () => {
+    // First, Alice creates a project
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Second, Alice creates a Practitioner resource
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res2 = await request(app)
+      .post('/fhir/R4/Practitioner')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Bob'], family: 'Jones' }],
+      });
+    expect(res2.status).toBe(201);
+    expect(res2.body.id).toBeDefined();
+
+    // Third, Alice invites Bob to the project
+    // Alice specifies the practitioner in the membership.
+    // This should work, even though the practitioner does not have an email.
+    const res3 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        membership: {
+          profile: createReference(res2.body as Practitioner),
+        },
       });
 
     expect(res3.status).toBe(200);
