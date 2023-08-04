@@ -2266,7 +2266,7 @@ describe('Client', () => {
 
       beforeAll(() => {
         fetch = mockFetch(200, (url: string) => ({
-          text: async () => url,
+          text: () => Promise.resolve(url),
         }));
         client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
       });
