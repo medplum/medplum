@@ -17,7 +17,7 @@ tags:
 
 # LOINC Codes
 
-LOINC (Logical Observation Identifiers Names and Codes) was established with the intention of defining a universal standard for identifying clinical data in electronic reports. The overall scope of LOINC is anything you can **test**, **measure**, or **observe** about a patient.
+[LOINC](https://loinc.org) (Logical Observation Identifiers Names and Codes) was established with the intention of defining a universal standard for identifying clinical data in electronic reports. The overall scope of LOINC is anything you can **test**, **measure**, or **observe** about a patient.
 
 This guide aims to provide a basic understanding of LOINC codes and how they are applied in practice.
 
@@ -366,8 +366,8 @@ What's fantastic about the LOINC system is its intuitiveness. For instance, when
 
 ## See Also
 
-- <sup id="ref1">1</sup> https://loinc.org/get-started/scope-of-loinc/
-- <sup id="ref2">2</sup> https://loinc.org/get-started/loinc-term-basics/
+- [<sup id="ref1">[1]</sup> Scope of Loinc](https://loinc.org/get-started/scope-of-loinc)
+- [<sup id="ref2">[2]</sup> LOINC Term Basics](https://loinc.org/get-started/loinc-term-basics)
 - [LOINC Browser](https://loinc.org/search)
 - [LOINC Top 2000 Lab Observations](https://loinc.org/usage/obs/)
 - [Social Determinants of Health (SDOH) LOINC Groups](https://loinc.org/search/?t=4&s=SDH)
