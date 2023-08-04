@@ -479,6 +479,14 @@ function matchDiscriminant(
         return true;
       }
       break;
+    case 'type':
+      if (!value) {
+        return false;
+      } else if (Array.isArray(value)) {
+        return value.every((v) => element.type.every((t) => t.code === v.type));
+      } else {
+        return element.type.every((t) => t.code === value.type);
+      }
     // Other discriminator types are not yet supported, see http://hl7.org/fhir/R4/profiling.html#discriminator
   }
   // Default to no match

@@ -203,7 +203,7 @@ class StructureDefinitionParser {
       }
       field.slicing = {
         discriminator: (element.slicing?.discriminator ?? []).map((d) => {
-          if (d.type !== 'value' && d.type !== 'pattern') {
+          if (d.type !== 'value' && d.type !== 'pattern' && d.type !== 'type') {
             throw new Error(`Unsupported slicing discriminator type: ${d.type}`);
           }
           return {
