@@ -97,11 +97,18 @@ describe('Search parser', () => {
     });
   });
 
-  test('Parse summary', () => {
-    expect(parseSearchRequest('Patient', { _summary: 'true' })).toMatchObject<SearchRequest>({
-      resourceType: 'Patient',
-      total: 'accurate',
-      count: 0,
+  test.each<[string, Partial<SearchRequest>]>([
+    ['count', { total: 'accurate', count: 0 }],
+    ['true', { summary: 'true' }],
+    ['data', { summary: 'data' }],
+    ['text', { summary: 'text' }],
+    ['false', {}],
+    ['notarealvalue', {}],
+  ])('Parse _summary=%s', (value, expected) => {
+    const resourceType = 'Patient';
+    expect(parseSearchRequest(resourceType, { _summary: value })).toMatchObject<SearchRequest>({
+      resourceType,
+      ...expected,
     });
   });
 
