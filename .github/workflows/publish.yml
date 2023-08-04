@@ -3,10 +3,10 @@ name: Publish
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
 jobs:
   build_and_check:
-    name: Build and Check
+    name: Publish
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -51,12 +51,12 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Check for changes in specified path
+      - name: Check for changes
         id: check_changes
         run: |
           echo "changed_paths=$(./scripts/check-changes.sh ${{ github.event.before }} ${{ github.event.after }})" >> $GITHUB_ENV
 
-      - name: Update listening repos, create PR, and clean up
+      - name: Sync example repos
         if: env.changed_paths != ''
         run: |
           ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}" "${{ env.changed_paths }}"
