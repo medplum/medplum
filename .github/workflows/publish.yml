@@ -6,7 +6,7 @@ on:
       - 'v*'
 jobs:
   build_and_check:
-    name: Publish
+    name: publish
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
-          
+
       - name: Cache node modules
         uses: actions/cache@v3
         env:
