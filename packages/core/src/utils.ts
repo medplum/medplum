@@ -14,6 +14,7 @@ import {
   Reference,
   RelatedPerson,
   Resource,
+  ResourceType,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
 
@@ -57,6 +58,24 @@ export function getReferenceString(resource: Resource): string {
  */
 export function resolveId(reference: Reference | undefined): string | undefined {
   return reference?.reference?.split('/')[1];
+}
+
+/**
+ * Parses a reference and returns a tuple of [ResourceType, ID].
+ * @param reference A reference to a FHIR resource.
+ * @returns A tuple containing the `ResourceType` and the ID of the resource or `undefined` when `undefined` or an invalid reference is passed.
+ */
+export function parseReference(reference: Reference): [ResourceType, string] | undefined;
+export function parseReference(reference: undefined): undefined;
+export function parseReference(reference: Reference | undefined): [ResourceType, string] | undefined {
+  if (reference === undefined || reference?.reference === undefined) {
+    return undefined;
+  }
+  const [type, id] = reference.reference.split('/');
+  if (type === '' || id === '' || id === undefined) {
+    return undefined;
+  }
+  return [type as ResourceType, id];
 }
 
 /**

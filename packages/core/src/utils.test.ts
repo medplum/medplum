@@ -24,6 +24,7 @@ import {
   isLowerCase,
   isProfileResource,
   isUUID,
+  parseReference,
   preciseEquals,
   preciseGreaterThan,
   preciseGreaterThanOrEquals,
@@ -76,6 +77,16 @@ describe('Core Utils', () => {
     expect(resolveId({ id: '123' })).toBeUndefined();
     expect(resolveId({ reference: 'Patient' })).toBeUndefined();
     expect(resolveId({ reference: 'Patient/123' })).toBe('123');
+  });
+
+  test('parseReference', () => {
+    expect(parseReference(undefined)).toBeUndefined();
+    expect(parseReference({})).toBeUndefined();
+    expect(parseReference({ id: '123' })).toBeUndefined();
+    expect(parseReference({ reference: 'Patient' })).toBeUndefined();
+    expect(parseReference({ reference: '/' })).toBeUndefined();
+    expect(parseReference({ reference: 'Patient/' })).toBeUndefined();
+    expect(parseReference({ reference: 'Patient/123' })).toEqual(['Patient', '123']);
   });
 
   test('isProfileResource', () => {
