@@ -450,6 +450,7 @@ describe('SearchControl', () => {
 
     await waitFor(() => screen.getAllByTestId('search-control-row'));
 
+    // Test response to middle mouse button
     await act(async () => {
       const rows = screen.getAllByTestId('search-control-row');
       fireEvent.click(rows[0], { button: 1 });
@@ -457,6 +458,24 @@ describe('SearchControl', () => {
 
     expect(props.onClick).not.toBeCalled();
     expect(props.onAuxClick).toBeCalled();
+
+    // Test response to CMD key (MacOS)
+    await act(async () => {
+      const rows = screen.getAllByTestId('search-control-row');
+      fireEvent.click(rows[0], { metaKey: true });
+    });
+
+    expect(props.onClick).not.toBeCalled();
+    expect(props.onAuxClick).toBeCalledTimes(2);
+
+    // Test response to Ctrl key (Windows)
+    await act(async () => {
+      const rows = screen.getAllByTestId('search-control-row');
+      fireEvent.click(rows[0], { ctrlKey: true });
+    });
+
+    expect(props.onClick).not.toBeCalled();
+    expect(props.onAuxClick).toBeCalledTimes(3);
   });
 
   test('Field editor onOk', async () => {
