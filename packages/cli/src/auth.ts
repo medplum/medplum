@@ -23,8 +23,8 @@ login.action(async (options) => {
     console.log('Basic authentication does not require login');
     return;
   }
-  const medplum = await createMedplumClient(options);
   const profile = getProfileOptions(options.profile);
+  const medplum = await createMedplumClient(options, profile);
   await startLogin(medplum, profile);
 });
 
@@ -139,15 +139,15 @@ async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise
   };
 
   const currentTimestamp = Math.floor(Date.now() / 1000);
-
+  // const audience = profile.baseUrl ?? '' + profile.audience ?? '';
   const data = {
-    aud: profile.audience,
-    iss: profile.authorizeUrl,
-    sub: profile.subject,
+    aud: 'https://sandbox.healthgorilla.com/oauth/token',
+    iss: 'https://www.medplum.com',
+    sub: 'medplum.api',
+    nbf: currentTimestamp,
     iat: currentTimestamp,
     exp: currentTimestamp + 604800, // expiry time is 7 days from time of creation
   };
-
   const encodedHeader = encodeBase64(JSON.stringify(header));
   const encodedData = encodeBase64(JSON.stringify(data));
   const token = `${encodedHeader}.${encodedData}`;
@@ -156,5 +156,16 @@ async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise
     .digest('base64url');
   const signedToken = `${token}.${signature}`;
 
-  await medplum.startJwtBearerLogin(profile.clientId as string, signedToken, profile.scope as string);
+  const formBody = new URLSearchParams();
+  formBody.set('grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer');
+  formBody.set('client_id', profile.clientId as string);
+  formBody.set('assertion', signedToken);
+  formBody.set('scope', '');
+  console.log(formBody.toString());
+
+  const res = await medplum.post('/oauth/token' as string, formBody.toString(), 'application/x-www-form-urlencoded', {
+    credentials: 'include',
+    method: 'POST',
+  });
+  console.log(res);
 }

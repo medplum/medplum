@@ -1,7 +1,8 @@
 import { MedplumClient, MedplumClientOptions } from '@medplum/core';
 import { FileSystemStorage } from '../storage';
+import { Profile } from '../utils';
 
-export async function createMedplumClient(options: MedplumClientOptions): Promise<MedplumClient> {
+export async function createMedplumClient(options: MedplumClientOptions, profileObject?: Profile): Promise<MedplumClient> {
   const profile = options.profile ?? 'default';
   const storage = new FileSystemStorage(profile);
   checkForProfile(storage, profile);
@@ -25,7 +26,7 @@ export async function createMedplumClient(options: MedplumClientOptions): Promis
     medplumClient.setAccessToken(accessToken);
   }
 
-  if (clientId && clientSecret) {
+  if (clientId && clientSecret && profileObject?.authType === 'basic') {
     medplumClient.setBasicAuth(clientId, clientSecret);
     await medplumClient.startClientLogin(clientId, clientSecret);
   }
