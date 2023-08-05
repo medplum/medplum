@@ -1,4 +1,4 @@
 # Reference: https://github.com/sweepai/sweep/blob/main/.github/sweep.yaml. If you use this be sure to frequently sync your default branch(main, master) to dev.
 branch: 'main'
 gha_enabled: True
-description: "In the packages directory, a file will usually have tests located in the same folder. Please make sure we update the tests in this case. For example if you modify packages/fhir-router/src/urlrouter.ts, you should check packages/fhir-router/src/urlrouter.tests.ts in case we need to test the new code."
+description: "In the packages directory, a file will usually have tests located in the same folder. Please make sure we update the tests in this case. For example if you modify packages/fhir-router/src/urlrouter.ts, you should check packages/fhir-router/src/urlrouter.tests.ts in case we need to test the new code. We care about test coverage, so if you add a separate execution path, add a new test rather than replacing the logic."
