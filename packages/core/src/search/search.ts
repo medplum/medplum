@@ -15,6 +15,7 @@ export interface SearchRequest<T extends Resource = Resource> {
   total?: 'none' | 'estimate' | 'accurate';
   include?: IncludeTarget[];
   revInclude?: IncludeTarget[];
+  summary?: 'true' | 'text' | 'data';
 }
 
 export interface Filter {
@@ -216,8 +217,12 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
       break;
 
     case '_summary':
-      searchRequest.total = 'accurate';
-      searchRequest.count = 0;
+      if (value === 'count') {
+        searchRequest.total = 'accurate';
+        searchRequest.count = 0;
+      } else if (value === 'true' || value === 'data' || value === 'text') {
+        searchRequest.summary = value;
+      }
       break;
 
     case '_include': {
@@ -247,6 +252,7 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
     }
 
     case '_fields':
+    case '_elements':
       searchRequest.fields = value.split(',');
       break;
 
