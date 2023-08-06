@@ -25,6 +25,8 @@ import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { RatioDisplay } from '../RatioDisplay/RatioDisplay';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceArrayDisplay } from '../ResourceArrayDisplay/ResourceArrayDisplay';
+import { ActionIcon, Box, CopyButton, Tooltip } from '@mantine/core';
+import { IconCheck, IconCopy } from '@tabler/icons-react';
 
 export interface ResourcePropertyDisplayProps {
   property?: ElementDefinition;
@@ -43,6 +45,24 @@ export interface ResourcePropertyDisplayProps {
  */
 export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JSX.Element {
   const { property, propertyType, value } = props;
+
+  const isIdProperty = property?.path?.endsWith('.id');
+  if (isIdProperty) {
+    return (
+      <Box component="div" sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+        {value}
+        <CopyButton value={value} timeout={2000}>
+          {({ copied, copy }) => (
+            <Tooltip label={copied ? 'Copied' : 'Copy'} withArrow position="right">
+              <ActionIcon color={copied ? 'teal' : 'gray'} onClick={copy}>
+                {copied ? <IconCheck size="1rem" /> : <IconCopy size="1rem" />}
+              </ActionIcon>
+            </Tooltip>
+          )}
+        </CopyButton>
+      </Box>
+    );
+  }
 
   if (property?.max === '*' && !props.arrayElement) {
     if (propertyType === PropertyType.Attachment) {
