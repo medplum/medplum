@@ -75,8 +75,7 @@ export class SymbolAtom implements Atom {
       return typedValue;
     }
 
-    const result = getTypedPropertyValue(typedValue, this.name);
-    return result;
+    return getTypedPropertyValue(typedValue, this.name);
   }
 
   toString(): string {
