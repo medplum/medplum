@@ -46,6 +46,7 @@ async function startLogin(medplum: MedplumClient, profile: Profile): Promise<voi
     const accessToken = await jwtBearerLogin(medplum, profile);
     const storage = new FileSystemStorage(profile.name as string);
     storage.setObject('activeLogin', { accessToken });
+    console.log('Login successful');
   }
 }
 
@@ -161,8 +162,7 @@ async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise
   formBody.set('grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer');
   formBody.set('client_id', profile.clientId as string);
   formBody.set('assertion', signedToken);
-  formBody.set('scope', '');
-  console.log(formBody.toString());
+  formBody.set('scope', profile.scope ?? '');
 
   const res = await medplum.post(profile.tokenUrl as string, formBody.toString(), 'application/x-www-form-urlencoded', {
     credentials: 'include',

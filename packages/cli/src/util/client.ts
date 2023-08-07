@@ -26,7 +26,7 @@ export async function createMedplumClient(options: MedplumClientOptions, profile
     medplumClient.setAccessToken(accessToken);
   }
 
-  if (clientId && clientSecret && profileObject?.authType === 'basic') {
+  if (clientId && clientSecret && !(profileObject?.authType === 'jwt-bearer')) {
     medplumClient.setBasicAuth(clientId, clientSecret);
     await medplumClient.startClientLogin(clientId, clientSecret);
   }

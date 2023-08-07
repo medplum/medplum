@@ -25,7 +25,7 @@ const originalWindow = globalThis.window;
 
 describe('Profiles Auth', () => {
   beforeEach(async () => {
-    console.log = jest.fn();
+    // console.log = jest.fn();
   });
 
   beforeAll(async () => {
@@ -43,27 +43,23 @@ describe('Profiles Auth', () => {
       authType: 'jwt-bearer',
       baseUrl: 'https://valid.gov',
       fhirUrlPath: 'api/v2',
-      tokenUrl: 'https://validtoken.gov',
+      tokenUrl: '/oauth2/token',
       clientId: 'validClientId',
       clientSecret: 'validClientSecret',
       scope: 'validScope',
-      audience: 'https://api.example.com',
+      audience: '/oauth2/token',
       authorizeUrl: 'https://valid.gov/authorize',
       subject: 'john_doe',
+      issuer: 'https://valid.gov',
     };
 
     const accessTokenFromClientId = createFakeJwt({ client_id: 'test-client-id', login_id: '123' });
-    const refreshTokenFromClientId = createFakeJwt({ client_id: 'test-client-id' });
 
     const fetch = mockFetch(200, (url) => {
       if (url.includes('oauth2/token')) {
-        return {
+        return JSON.stringify({
           access_token: accessTokenFromClientId,
-          refresh_token: refreshTokenFromClientId,
-        };
-      }
-      if (url.includes('/auth/me')) {
-        return { profile: { resourceType: 'ClientApplication' } };
+        });
       }
       return {};
     });
@@ -92,11 +88,14 @@ describe('Profiles Auth', () => {
       jwtObj.audience,
       '--client-secret',
       jwtObj.clientSecret,
+      '--issuer',
+      jwtObj.issuer,
+      '--token-url',
+      jwtObj.tokenUrl,
     ]);
 
     expect(profile.getObject('activeLogin')).toEqual({
       accessToken: accessTokenFromClientId,
-      refreshToken: refreshTokenFromClientId,
     });
   });
 });
