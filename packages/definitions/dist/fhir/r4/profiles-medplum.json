@@ -3997,11 +3997,11 @@
             "short" : "The channel on which to report matches to the criteria",
             "definition" : "Details where to send notifications when resources are received that meet the criteria.",
             "min" : 1,
-            "max" : "1",
+            "max" : "*",
             "base" : {
               "path" : "Agent.channel",
               "min" : 1,
-              "max" : "1"
+              "max" : "*"
             },
             "type" : [{
               "code" : "BackboneElement"
@@ -4132,11 +4132,11 @@
             "path" : "Agent.channel.protocolVersion",
             "short" : "Protocol version used in the channel",
             "definition" : "The version identifier for the channel. The interpretation of the version varies by channel type. For example, specify the version of the HL7 message standard.",
-            "min" : 1,
+            "min" : 0,
             "max" : "1",
             "base" : {
               "path" : "Agent.channel.protocolVersion",
-              "min" : 1,
+              "min" : 0,
               "max" : "1"
             },
             "type" : [{

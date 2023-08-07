@@ -63,7 +63,7 @@ export interface Agent {
    * Details where to send notifications when resources are received that
    * meet the criteria.
    */
-  channel?: AgentChannel;
+  channel?: AgentChannel[];
 }
 
 /**

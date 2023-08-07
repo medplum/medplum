@@ -62469,7 +62469,10 @@
         },
         "channel": {
           "description": "Details where to send notifications when resources are received that meet the criteria.",
-          "$ref": "#/definitions/Agent_Channel"
+          "items": {
+            "$ref": "#/definitions/Agent_Channel"
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false,

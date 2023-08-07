@@ -11,6 +11,7 @@ export async function run(client: PoolClient): Promise<void> {
     "content" TEXT NOT NULL,
     "lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL,
     "deleted" BOOLEAN NOT NULL DEFAULT FALSE,
+    "projectId" UUID NOT NULL,
     "compartments" UUID[] NOT NULL,
     "_profile" TEXT[],
     "_security" TEXT[],
@@ -20,6 +21,14 @@ export async function run(client: PoolClient): Promise<void> {
     "status" TEXT
   )`);
 
+  await client.query('CREATE INDEX ON "Agent" ("lastUpdated")');
+  await client.query('CREATE INDEX ON "Agent" ("projectId")');
+  await client.query('CREATE INDEX ON "Agent" USING GIN("compartments")');
+  await client.query('CREATE INDEX ON "Agent" USING GIN("_profile")');
+  await client.query('CREATE INDEX ON "Agent" USING GIN("_security")');
+  await client.query('CREATE INDEX ON "Agent" ("_source")');
+  await client.query('CREATE INDEX ON "Agent" USING GIN("_tag")');
+
   await client.query(`CREATE TABLE IF NOT EXISTS "Agent_History" (
     "versionId" UUID NOT NULL PRIMARY KEY,
     "id" UUID NOT NULL,
@@ -27,12 +36,6 @@ export async function run(client: PoolClient): Promise<void> {
     "lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL
   )`);
 
-  await client.query('CREATE INDEX ON "Agent" ("lastUpdated")');
-  await client.query('CREATE INDEX ON "Agent" USING GIN("compartments")');
-  await client.query('CREATE INDEX ON "Agent" USING GIN("_profile")');
-  await client.query('CREATE INDEX ON "Agent" USING GIN("_security")');
-  await client.query('CREATE INDEX ON "Agent" ("_source")');
-  await client.query('CREATE INDEX ON "Agent" USING GIN("_tag")');
   await client.query('CREATE INDEX ON "Agent_History" ("id")');
   await client.query('CREATE INDEX ON "Agent_History" ("lastUpdated")');
 
