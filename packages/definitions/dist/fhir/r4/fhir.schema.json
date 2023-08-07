@@ -62467,6 +62467,13 @@
           "description": "Optional device resource representing the device running the agent.",
           "$ref": "#/definitions/Reference"
         },
+        "setting": {
+          "description": "The settings for the agent.",
+          "items": {
+            "$ref": "#/definitions/Agent_Setting"
+          },
+          "type": "array"
+        },
         "channel": {
           "description": "Details where to send notifications when resources are received that meet the criteria.",
           "items": {
@@ -62524,8 +62531,36 @@
         "name",
         "target",
         "port",
-        "protocol",
-        "protocolVersion"
+        "protocol"
+      ]
+    },
+    "Agent_Setting": {
+      "description": "The settings for the agent.",
+      "properties": {
+        "name": {
+          "description": "The setting name.",
+          "$ref": "#/definitions/string"
+        },
+        "valueString": {
+          "description": "The setting value.",
+          "$ref": "#/definitions/string"
+        },
+        "valueBoolean": {
+          "description": "The setting value.",
+          "$ref": "#/definitions/boolean"
+        },
+        "valueDecimal": {
+          "description": "The setting value.",
+          "$ref": "#/definitions/decimal"
+        },
+        "valueInteger": {
+          "description": "The setting value.",
+          "$ref": "#/definitions/integer"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name"
       ]
     }
   }

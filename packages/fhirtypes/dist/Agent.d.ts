@@ -60,6 +60,11 @@ export interface Agent {
   device?: Reference<Device>;
 
   /**
+   * The settings for the agent.
+   */
+  setting?: AgentSetting[];
+
+  /**
    * Details where to send notifications when resources are received that
    * meet the criteria.
    */
@@ -113,4 +118,35 @@ export interface AgentChannel {
    * the HL7 message standard.
    */
   protocolVersion?: string;
+}
+
+/**
+ * The settings for the agent.
+ */
+export interface AgentSetting {
+
+  /**
+   * The setting name.
+   */
+  name?: string;
+
+  /**
+   * The setting value.
+   */
+  valueString?: string;
+
+  /**
+   * The setting value.
+   */
+  valueBoolean?: boolean;
+
+  /**
+   * The setting value.
+   */
+  valueDecimal?: number;
+
+  /**
+   * The setting value.
+   */
+  valueInteger?: number;
 }

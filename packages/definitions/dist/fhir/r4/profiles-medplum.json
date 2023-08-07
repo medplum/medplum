@@ -3992,6 +3992,60 @@
             }
           },
           {
+            "id" : "Agent.setting",
+            "path" : "Agent.setting",
+            "definition" : "The settings for the agent.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "base" : {
+              "path" : "Agent.setting",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "Agent.setting.name",
+            "path" : "Agent.setting.name",
+            "definition" : "The setting name.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Agent.setting.name",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Agent.setting.value[x]",
+            "path" : "Agent.setting.value[x]",
+            "definition" : "The setting value.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            },
+            {
+              "code" : "boolean"
+            },
+            {
+              "code" : "decimal"
+            },
+            {
+              "code" : "integer"
+            }],
+            "base" : {
+              "path" : "Agent.setting.value[x]",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "Agent.channel",
             "path" : "Agent.channel",
             "short" : "The channel on which to report matches to the criteria",

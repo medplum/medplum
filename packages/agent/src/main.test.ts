@@ -1,5 +1,5 @@
 import { allOk, Hl7Message } from '@medplum/core';
-import { Bot, Resource } from '@medplum/fhirtypes';
+import { Agent, Bot, Resource } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { Server } from 'mock-socket';
@@ -22,14 +22,33 @@ describe('Agent', () => {
   });
 
   test('Runs successfully', async () => {
-    const app = new App(medplum, { botId: bot.id as string });
+    const agent: Agent = {
+      resourceType: 'Agent',
+      channel: [
+        {
+          target: { reference: 'Bot/' + bot.id },
+        },
+      ],
+    };
+
+    const app = new App(medplum, agent);
     app.start();
     app.stop();
     app.stop();
   });
 
   test('Use system event log', async () => {
-    const app = new App(medplum, { botId: bot.id as string, useSystemEventLog: true });
+    const agent: Agent = {
+      resourceType: 'Agent',
+      setting: [{ name: 'useSystemEventLog', valueBoolean: true }],
+      channel: [
+        {
+          target: { reference: 'Bot/' + bot.id },
+        },
+      ],
+    };
+
+    const app = new App(medplum, agent);
     app.start();
     app.stop();
     app.stop();
@@ -66,7 +85,18 @@ describe('Agent', () => {
       });
     });
 
-    const app = new App(medplum, { botId: bot.id as string });
+    const agent: Agent = {
+      resourceType: 'Agent',
+      channel: [
+        {
+          port: 56000,
+          protocol: 'hl7-mllp',
+          target: { reference: 'Bot/' + bot.id },
+        },
+      ],
+    };
+
+    const app = new App(medplum, agent);
     app.start();
 
     const client = new Hl7Client({
