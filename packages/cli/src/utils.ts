@@ -244,28 +244,31 @@ export async function jwtAssertionLogin(externalClient: MedplumClient, profile: 
   const privateKeyPath = path.join(homeDir, profile.privateKeyPath as string);
   const privateKeyStr = fs.readFileSync(privateKeyPath);
   const privateKey = createPrivateKey(privateKeyStr);
-  const audience = profile.baseUrl ?? '' + profile.tokenUrl ?? '';
   const jwt = await new SignJWT({})
     .setProtectedHeader({ alg: 'RS384', typ: 'JWT' })
     .setIssuer(profile.clientId as string)
     .setSubject(profile.clientId as string)
-    .setAudience(audience)
+    .setAudience(`${profile.baseUrl}${profile.audience}`)
     .setJti(randomBytes(16).toString('hex'))
     .setExpirationTime('2h')
     .sign(privateKey);
 
+  const formBody = new URLSearchParams();
+  formBody.append('grant_type', 'client_credentials');
+  formBody.append('client_assertion_type', 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer');
+  formBody.append('client_assertion', jwt);
+
   const res = await externalClient.post(
     profile.tokenUrl as string,
-    {
-      grant_type: 'client_credentials',
-      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
-      client_assertion: jwt,
-    },
-    'application/x-www-form-urlencoded'
+    formBody.toString(),
+    'application/x-www-form-urlencoded',
+    { credentials: 'include' }
   );
 
   if (res.status !== 200) {
+    console.log(res);
     throw new Error(`Failed to login: ${res.status} ${res.statusText}`);
   }
+  console.log(res);
   return res.access_token;
 }

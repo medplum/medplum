@@ -2471,7 +2471,6 @@ export class MedplumClient extends EventTarget {
 
     options.method = method;
     this.addFetchOptionsDefaults(options);
-
     const response = await this.fetchWithRetry(url, options);
 
     return this.parseResponse(response, method, url, options);
