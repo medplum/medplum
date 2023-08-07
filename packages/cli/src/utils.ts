@@ -36,6 +36,7 @@ export interface Profile {
   readonly callbackUrl?: string;
   readonly subject?: string;
   readonly audience?: string;
+  readonly issuer?: string;
 }
 
 export function prettyPrint(input: unknown): void {

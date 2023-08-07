@@ -43,7 +43,9 @@ async function startLogin(medplum: MedplumClient, profile: Profile): Promise<voi
       throw new Error('Missing values, make sure to add --client-id, and --client-secret for JWT Bearer login');
     }
     console.log('Starting JWT login...');
-    await jwtBearerLogin(medplum, profile);
+    const accessToken = await jwtBearerLogin(medplum, profile);
+    const storage = new FileSystemStorage(profile.name as string);
+    storage.setObject('activeLogin', { accessToken });
   }
 }
 
@@ -132,18 +134,17 @@ function isThereExistingProfileName(profileName?: string): boolean {
   return true;
 }
 
-async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
+async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise<string> {
   const header = {
     typ: 'JWT',
     alg: 'HS256',
   };
 
   const currentTimestamp = Math.floor(Date.now() / 1000);
-  // const audience = profile.baseUrl ?? '' + profile.audience ?? '';
   const data = {
-    aud: 'https://sandbox.healthgorilla.com/oauth/token',
-    iss: 'https://www.medplum.com',
-    sub: 'medplum.api',
+    aud: `${profile.baseUrl}${profile.audience}`,
+    iss: profile.issuer,
+    sub: profile.subject,
     nbf: currentTimestamp,
     iat: currentTimestamp,
     exp: currentTimestamp + 604800, // expiry time is 7 days from time of creation
@@ -163,9 +164,11 @@ async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise
   formBody.set('scope', '');
   console.log(formBody.toString());
 
-  const res = await medplum.post('/oauth/token' as string, formBody.toString(), 'application/x-www-form-urlencoded', {
+  const res = await medplum.post(profile.tokenUrl as string, formBody.toString(), 'application/x-www-form-urlencoded', {
     credentials: 'include',
     method: 'POST',
   });
-  console.log(res);
+
+  const obj = await JSON.parse(res);
+  return obj.access_token;
 }

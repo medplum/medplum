@@ -13,6 +13,7 @@ export function createMedplumCommand(name: string): Command {
     .option('--callback-url <callbackUrl>', 'Callback URL for authorization code flow')
     .option('--subject <subject>', 'Subject for JWT authentication')
     .option('--audience <audience>', 'Audience for JWT authentication')
+    .option('--issuer, <issuer>', 'Issuer for JWT authentication')
     .option('-p, --profile <name>', 'Profile name')
     .addOption(
       new Option('--auth-type <authType>', 'Type of authentication').choices([
@@ -23,5 +24,3 @@ export function createMedplumCommand(name: string): Command {
       ])
     );
 }
-
-// s-node ~/Developer/medplum/packages/cli/src/index.ts login -p the-bearer --auth-type jwt-bearer --client-id "J3UPb7DbWWWyuag4DTtvJyCcY6R5WH5k3gnPAQ5A" --client-secret "r5hgbnf6SW0Tz7cqSLsaUQle+op8P4Fv4POzAyh3V4M=" --base-url "https://www.healthgorilla.com/" --audience "oauth/token"
