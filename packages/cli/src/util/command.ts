@@ -21,6 +21,7 @@ export function createMedplumCommand(name: string): Command {
         'client-credentials',
         'authorization-code',
         'jwt-bearer',
+        'token-exchange',
       ])
     );
 }
