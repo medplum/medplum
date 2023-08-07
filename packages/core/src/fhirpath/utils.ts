@@ -248,8 +248,8 @@ export function fhirPathArrayEquals(x: TypedValue[], y: TypedValue[]): TypedValu
  * @returns True if equal.
  */
 export function fhirPathEquals(x: TypedValue, y: TypedValue): TypedValue[] {
-  const xValue = x.value;
-  const yValue = y.value;
+  const xValue = x.value?.valueOf();
+  const yValue = y.value?.valueOf();
   if (typeof xValue === 'number' && typeof yValue === 'number') {
     return booleanToTypedValue(Math.abs(xValue - yValue) < 1e-8);
   }
@@ -287,8 +287,8 @@ export function fhirPathArrayEquivalent(x: TypedValue[], y: TypedValue[]): Typed
  * @returns True if equivalent.
  */
 export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
-  const xValue = x.value;
-  const yValue = y.value;
+  const xValue = x.value?.valueOf();
+  const yValue = y.value?.valueOf();
   if (typeof xValue === 'number' && typeof yValue === 'number') {
     // Use more generous threshold than equality
     // Decimal: values must be equal, comparison is done on values rounded to the precision of the least precise operand.
@@ -316,8 +316,8 @@ export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
  * @returns The sort order of the values.
  */
 function fhirPathEquivalentCompare(x: TypedValue, y: TypedValue): number {
-  const xValue = x.value;
-  const yValue = y.value;
+  const xValue = x.value?.valueOf();
+  const yValue = y.value?.valueOf();
   if (typeof xValue === 'number' && typeof yValue === 'number') {
     return xValue - yValue;
   }

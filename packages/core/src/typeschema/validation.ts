@@ -264,7 +264,7 @@ class ResourceValidator {
       }
       if (
         !(key in properties) &&
-        !(key.slice(1) in properties && this.isPrimitiveExtension(parent, key, path)) &&
+        !(key.startsWith('_') && key.slice(1) in properties) &&
         !isChoiceOfType(parent, key, properties)
       ) {
         this.issues.push(createStructureIssue(`${path}.${key}`, `Invalid additional property "${key}"`));
@@ -303,38 +303,6 @@ class ResourceValidator {
       );
       return false;
     }
-  }
-
-  /**
-   * Checks the element for a primitive extension.
-   *
-   * FHIR elements with primitive data types are represented in two parts:
-   *   1) A JSON property with the name of the element, which has a JSON type of number, boolean, or string
-   *   2) a JSON property with _ prepended to the name of the element, which, if present, contains the value's id and/or extensions
-   *
-   * See: https://hl7.org/fhir/json.html#primitive
-   * @param parent The parent value
-   * @param key The property key to check
-   * @param path The path to the property
-   * @returns Whether the element is a primitive extension
-   */
-  private isPrimitiveExtension(parent: TypedValue, key: string, path: string): boolean {
-    // Primitive element starts with underscore
-    if (!key.startsWith('_')) {
-      return false;
-    }
-
-    // Then validate the element
-    //@TODO(mattwiller 2023-06-05): Move this to occur along with the rest of validation
-    const extensionProperty = parent.value[key];
-    if (Array.isArray(extensionProperty)) {
-      for (const ext of extensionProperty) {
-        this.validateObject({ type: 'Element', value: ext }, getDataType('Element'), path);
-      }
-    } else {
-      this.validateObject({ type: 'Element', value: extensionProperty }, getDataType('Element'), path);
-    }
-    return true;
   }
 
   private validatePrimitiveType(typedValue: TypedValue, path: string): void {
@@ -517,7 +485,6 @@ function unpackPrimitiveElement(v: TypedValue): [TypedValue | undefined, TypedVa
   if (typeof v.value !== 'object' || !v.value) {
     return [v, undefined];
   }
-  debugger; //eslint-disable-line no-debugger
   const primitiveValue = v.value.valueOf();
   if (primitiveValue === v.value) {
     return [undefined, { type: 'Element', value: v.value }];
