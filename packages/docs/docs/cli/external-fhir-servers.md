@@ -76,12 +76,13 @@ medplum profile set example \
     --auth-type "jwt-bearer" \
     --base-url "https://api.example.com" \
     --fhir-url-path "fhir/R4" \
-    --token-url "oauth2/token" \
+    --token-url "/oauth2/token" \
     --client-id "MY_CLIENT_ID" \
     --client-secret "MY_CLIENT_SECRET"
     --scope "openid profile"
-    --audience "http://localhost:8103/oauth2/token"
+    --audience "/oauth2/token"
     --subject "john_doe"
+    --issuer "api.example.com"
 ```
 
 ### Example: Client Credentials
@@ -166,12 +167,13 @@ medplum login \
     --auth-type "jwt-bearer" \
     --base-url "https://api.example.com" \
     --fhir-url-path "fhir/R4" \
-    --token-url "oauth2/token" \
+    --token-url "/oauth2/token" \
     --client-id "MY_CLIENT_ID" \
     --client-secret "MY_CLIENT_SECRET"
     --scope "openid profile"
-    --audience "http://localhost:8103/oauth2/token"
+    --audience "/oauth2/token"
     --subject "john_doe"
+    --issuer "api.example.com"
 ```
 
 :::note
