@@ -25,9 +25,8 @@ const originalWindow = globalThis.window;
 
 describe('Profiles Auth', () => {
   beforeEach(async () => {
-    // console.log = jest.fn();
+    console.log = jest.fn();
   });
-
   beforeAll(async () => {
     Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
     (os.homedir as unknown as jest.Mock).mockReturnValue(testHomeDir);

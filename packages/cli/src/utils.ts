@@ -211,14 +211,25 @@ export function getCodeContentType(filename: string): string {
   return ContentType.TEXT;
 }
 
-export function createProfile(profileName: string, options: any): void {
+export function saveProfile(profileName: string, options: Profile): void {
   const storage = new FileSystemStorage(profileName);
   const optionsObject = { name: profileName, ...options };
   storage.setObject('options', optionsObject);
   console.log(`${profileName} profile created`);
 }
 
-export function getProfileOptions(profileName: string): any {
+export function loadProfile(profileName: string): Profile {
   const storage = new FileSystemStorage(profileName);
-  return storage.getObject('options');
+  return storage.getObject('options') as Profile;
+}
+
+export function profileExists(storage: FileSystemStorage, profile: string): boolean {
+  if (profile === 'default') {
+    return true;
+  }
+  const optionsObject = storage.getObject('options');
+  if (!optionsObject) {
+    return false;
+  }
+  return true;
 }

@@ -4,7 +4,7 @@ import { FileSystemStorage } from './storage';
 import { resolve } from 'path';
 import { readdirSync } from 'fs';
 import { homedir } from 'os';
-import { createProfile, getProfileOptions } from './utils';
+import { saveProfile, loadProfile } from './utils';
 
 const setProfile = createMedplumCommand('set');
 const removeProfile = createMedplumCommand('remove');
@@ -21,7 +21,7 @@ setProfile
   .argument('<profileName>', 'Name of the profile')
   .description('Create a new profile or replace it with the given name and its associated properties')
   .action(async (profileName, options) => {
-    createProfile(profileName, options);
+    saveProfile(profileName, options);
   });
 
 removeProfile
@@ -52,6 +52,6 @@ describeProfile
   .argument('<profileName>', 'Name of the profile')
   .description('Describes a profile')
   .action(async (profileName) => {
-    const profile = getProfileOptions(profileName);
+    const profile = loadProfile(profileName);
     console.log(profile);
   });

@@ -4,7 +4,7 @@ import { createServer } from 'http';
 import { platform } from 'os';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
-import { Profile, createProfile, getProfileOptions } from './utils';
+import { Profile, saveProfile, loadProfile, profileExists } from './utils';
 import { FileSystemStorage } from './storage';
 import { createHmac } from 'crypto';
 
@@ -15,16 +15,18 @@ export const login = createMedplumCommand('login');
 export const whoami = createMedplumCommand('whoami');
 
 login.action(async (options) => {
-  if (!isThereExistingProfileName(options.profile)) {
+  const profileName = options.profile ?? 'default';
+  const storage = new FileSystemStorage(profileName);
+  if (!profileExists(storage, profileName)) {
     console.log(`Creating new profile...`);
-    createProfile(options.profile, options);
+    saveProfile(profileName, options);
   }
   if (options.authType === 'basic') {
     console.log('Basic authentication does not require login');
     return;
   }
-  const profile = getProfileOptions(options.profile);
-  const medplum = await createMedplumClient(options, profile);
+  const profile = loadProfile(profileName);
+  const medplum = await createMedplumClient(options);
   await startLogin(medplum, profile);
 });
 
@@ -121,18 +123,6 @@ async function medplumAuthorizationCodeLogin(medplum: MedplumClient): Promise<vo
   loginUrl.searchParams.set('response_type', 'code');
   loginUrl.searchParams.set('prompt', 'login');
   await openBrowser(loginUrl.toString());
-}
-
-function isThereExistingProfileName(profileName?: string): boolean {
-  if (profileName) {
-    const storage = new FileSystemStorage(profileName);
-    const optionsObject = storage.getObject('options');
-    if (!optionsObject) {
-      return false;
-    }
-  }
-  // If there isn't a profileName, we'll return true for the 'default' profile
-  return true;
 }
 
 async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise<string> {
