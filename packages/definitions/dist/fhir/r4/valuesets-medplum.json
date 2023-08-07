@@ -368,6 +368,94 @@
           ]
         }
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/agent-status",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "agent-status",
+        "url": "https://medplum.com/fhir/CodeSystem/agent-status",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/agent-status",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "active",
+            "display": "Active",
+            "definition": "Active"
+          },
+          {
+            "code": "off",
+            "display": "Off",
+            "definition": "Off"
+          },
+          {
+            "code": "error",
+            "display": "Error",
+            "definition": "Error"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/agent-status",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "agent-status",
+        "url": "https://medplum.com/fhir/ValueSet/agent-status",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/agent-status"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/agent-channel-protocol",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "agent-channel-protocol",
+        "url": "https://medplum.com/fhir/CodeSystem/agent-channel-protocol",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/agent-channel-protocol",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "astm",
+            "display": "ASTM",
+            "definition": "ASTM"
+          },
+          {
+            "code": "dicom",
+            "display": "DICOM",
+            "definition": "DICOM"
+          },
+          {
+            "code": "hl7-mllp",
+            "display": "HL7 MLLP",
+            "definition": "HL7 MLLP"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/agent-channel-protocol",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "agent-channel-protocol",
+        "url": "https://medplum.com/fhir/ValueSet/agent-channel-protocol",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/agent-channel-protocol"
+            }
+          ]
+        }
+      }
     }
   ]
 }
