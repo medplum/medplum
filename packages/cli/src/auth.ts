@@ -156,7 +156,6 @@ async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise
 
   const res = await medplum.post(profile.tokenUrl as string, formBody.toString(), 'application/x-www-form-urlencoded', {
     credentials: 'include',
-    method: 'POST',
   });
 
   const obj = await JSON.parse(res);
