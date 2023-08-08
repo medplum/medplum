@@ -4062,140 +4062,38 @@
             }]
           },
           {
-            "id" : "Agent.channel.name",
-            "path" : "Agent.channel.name",
-            "short" : "The human readable friendly name of the channel.",
-            "definition" : "The human readable friendly name of the channel.",
+            "id" : "Agent.channel.endpoint",
+            "path" : "Agent.channel.endpoint",
+            "definition" : "The channel endpoint definition including protocol and network binding details.",
             "min" : 1,
-            "max" : "1",
-            "base" : {
-              "path" : "Agent.channel.name",
-              "min" : 1,
-              "max" : "1"
-            },
-            "type" : [{
-              "code" : "string"
-            }]
-          },
-          {
-            "id" : "Agent.channel.status",
-            "path" : "Agent.status",
-            "short" : "active | off | error",
-            "definition" : "The status of the channel.",
-            "min" : 1,
-            "max" : "1",
-            "base" : {
-              "path" : "Agent.channel.status",
-              "min" : 1,
-              "max" : "1"
-            },
-            "type" : [{
-              "code" : "code"
-            }],
-            "binding" : {
-              "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/agent-status|4.0.1"
-            }
-          },
-          {
-            "id" : "Agent.channel.device",
-            "path" : "Agent.channel.device",
-            "definition" : "Optional device resource representing the device connected to the channel.",
-            "min" : 0,
             "max" : "1",
             "type" : [{
               "code" : "Reference",
-              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Device"]
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Endpoint"]
             }],
             "base" : {
-              "path" : "Agent.channel.device",
-              "min" : 0,
+              "path" : "Agent.channel.endpoint",
+              "min" : 1,
               "max" : "1"
             }
           },
           {
-            "id" : "Agent.channel.target",
-            "path" : "Agent.channel.target",
+            "id" : "Agent.channel.target[x]",
+            "path" : "Agent.channel.target[x]",
             "definition" : "The target resource where channel messages will be delivered.",
             "min" : 1,
             "max" : "1",
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Bot"]
+            }, {
+              "code" : "url"
             }],
             "base" : {
-              "path" : "Agent.channel.target",
+              "path" : "Agent.channel.target[x]",
               "min" : 1,
               "max" : "1"
             }
-          },
-          {
-            "id" : "Agent.channel.bindHost",
-            "path" : "Agent.channel.bindHost",
-            "short" : "The host that the agent uses in the socket bind call when starting the network.",
-            "definition" : "The host that the agent uses in the socket bind call when starting the network. 0.0.0.0 is reserved for all interfaces. Default value is 0.0.0.0.",
-            "min" : 0,
-            "max" : "1",
-            "base" : {
-              "path" : "Agent.channel.bindHost",
-              "min" : 0,
-              "max" : "1"
-            },
-            "type" : [{
-              "code" : "string"
-            }]
-          },
-          {
-            "id" : "Agent.channel.port",
-            "path" : "Agent.channel.port",
-            "short" : "The port number that the agent uses in the socket bind call when starting the network.",
-            "definition" : "The port number that the agent uses in the socket bind call when starting the network.",
-            "min" : 1,
-            "max" : "1",
-            "base" : {
-              "path" : "Agent.channel.port",
-              "min" : 1,
-              "max" : "1"
-            },
-            "type" : [{
-              "code" : "integer"
-            }]
-          },
-          {
-            "id" : "Agent.channel.protocol",
-            "path" : "Agent.channel.protocol",
-            "short" : "hl7 | astm | dicom",
-            "definition" : "The messaging transport protocol(s) identifiers, supported by this endpoint.",
-            "min" : 1,
-            "max" : "1",
-            "base" : {
-              "path" : "Agent.channel.protocol",
-              "min" : 1,
-              "max" : "1"
-            },
-            "type" : [{
-              "code" : "code"
-            }],
-            "binding" : {
-              "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/agent-channel-protocol|4.0.1"
-            }
-          },
-          {
-            "id" : "Agent.channel.protocolVersion",
-            "path" : "Agent.channel.protocolVersion",
-            "short" : "Protocol version used in the channel",
-            "definition" : "The version identifier for the channel. The interpretation of the version varies by channel type. For example, specify the version of the HL7 message standard.",
-            "min" : 0,
-            "max" : "1",
-            "base" : {
-              "path" : "Agent.channel.protocolVersion",
-              "min" : 0,
-              "max" : "1"
-            },
-            "type" : [{
-              "code" : "string"
-            }]
           }
         ]
       }

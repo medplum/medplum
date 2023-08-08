@@ -1,5 +1,5 @@
 import { Hl7Message, MedplumClient, resolveId } from '@medplum/core';
-import { Agent, AgentChannel, Bot, Reference } from '@medplum/fhirtypes';
+import { AgentChannel, Bot, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { readFileSync } from 'fs';
 import { EventLogger } from 'node-windows';
@@ -9,26 +9,29 @@ export class App {
   readonly log: EventLogger;
   readonly channels: AgentHl7Channel[];
 
-  constructor(readonly medplum: MedplumClient, readonly agent: Agent) {
-    if (agent.setting?.find((s) => s.name === 'useSystemEventLog' && s.valueBoolean === true)) {
-      this.log = new EventLogger({
-        source: 'MedplumService',
-        eventLog: 'SYSTEM',
-      });
-    } else {
-      this.log = {
-        info: console.log,
-        warn: console.warn,
-        error: console.error,
-      } as EventLogger;
-    }
+  constructor(readonly medplum: MedplumClient, readonly agentId: string) {
+    this.log = {
+      info: console.log,
+      warn: console.warn,
+      error: console.error,
+    } as EventLogger;
 
-    this.channels = (agent.channel as AgentChannel[]).map((channel) => new AgentHl7Channel(this, channel));
+    this.channels = [];
   }
 
-  start(): void {
+  async start(): Promise<void> {
     this.log.info('Medplum service starting...');
-    this.channels.forEach((channel) => channel.start());
+
+    const agent = await this.medplum.readResource('Agent', this.agentId);
+
+    for (const definition of agent.channel as AgentChannel[]) {
+      const endpoint = await this.medplum.readReference(definition.endpoint as Reference<Endpoint>);
+      const channel = new AgentHl7Channel(this, definition, endpoint);
+      channel.start();
+      this.channels.push(channel);
+    }
+
+    // this.channels.forEach((channel) => channel.start());
     this.log.info('Medplum service started successfully');
   }
 
@@ -43,7 +46,7 @@ export class AgentHl7Channel {
   readonly server: Hl7Server;
   readonly connections: AgentHl7ChannelConnection[] = [];
 
-  constructor(readonly app: App, readonly definition: AgentChannel) {
+  constructor(readonly app: App, readonly definition: AgentChannel, readonly endpoint: Endpoint) {
     this.server = new Hl7Server((connection) => {
       this.app.log.info('HL7 connection established');
       this.connections.push(new AgentHl7ChannelConnection(this, connection));
@@ -51,8 +54,9 @@ export class AgentHl7Channel {
   }
 
   start(): void {
-    this.app.log.info('Channel starting on port ' + this.definition.port + '...');
-    this.server.start(this.definition.port as number);
+    const address = new URL(this.endpoint.address as string);
+    this.app.log.info(`Channel starting on ${address}`);
+    this.server.start(parseInt(address.port, 10));
     this.app.log.info('Channel started successfully');
   }
 
@@ -92,7 +96,7 @@ export class AgentHl7ChannelConnection {
         JSON.stringify({
           type: 'connect',
           accessToken: medplum.getAccessToken(),
-          botId: resolveId(channel.definition.target as Reference<Bot>),
+          botId: resolveId(channel.definition.targetReference as Reference<Bot>),
         })
       );
     });
@@ -166,7 +170,6 @@ if (typeof require !== 'undefined' && require.main === module) {
   const medplum = new MedplumClient(config);
   medplum
     .startClientLogin(config.clientId, config.clientSecret)
-    .then(() => medplum.readResource('Agent', config.agentId))
-    .then((agent) => new App(medplum, agent).start())
+    .then(() => new App(medplum, config.agentId).start())
     .catch(console.error);
 }

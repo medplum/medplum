@@ -62456,7 +62456,7 @@
           "$ref": "#/definitions/string"
         },
         "status": {
-          "description": "The status of the channel.",
+          "description": "The status of the agent.",
           "enum": [
             "active",
             "off",
@@ -62493,45 +62493,22 @@
     "Agent_Channel": {
       "description": "Details where to send notifications when resources are received that meet the criteria.",
       "properties": {
-        "name": {
-          "description": "The human readable friendly name of the channel.",
-          "$ref": "#/definitions/string"
-        },
-        "device": {
-          "description": "Optional device resource representing the device connected to the channel.",
+        "endpoint": {
+          "description": "The channel endpoint definition including protocol and network binding details.",
           "$ref": "#/definitions/Reference"
         },
-        "target": {
+        "targetReference": {
           "description": "The target resource where channel messages will be delivered.",
           "$ref": "#/definitions/Reference"
         },
-        "bindHost": {
-          "description": "The host that the agent uses in the socket bind call when starting the network. 0.0.0.0 is reserved for all interfaces. Default value is 0.0.0.0.",
-          "$ref": "#/definitions/string"
-        },
-        "port": {
-          "description": "The port number that the agent uses in the socket bind call when starting the network.",
-          "$ref": "#/definitions/integer"
-        },
-        "protocol": {
-          "description": "The messaging transport protocol(s) identifiers, supported by this endpoint.",
-          "enum": [
-            "astm",
-            "dicom",
-            "hl7-mllp"
-          ]
-        },
-        "protocolVersion": {
-          "description": "The version identifier for the channel. The interpretation of the version varies by channel type. For example, specify the version of the HL7 message standard.",
-          "$ref": "#/definitions/string"
+        "targetUrl": {
+          "description": "The target resource where channel messages will be delivered.",
+          "$ref": "#/definitions/url"
         }
       },
       "additionalProperties": false,
       "required": [
-        "name",
-        "target",
-        "port",
-        "protocol"
+        "endpoint"
       ]
     },
     "Agent_Setting": {

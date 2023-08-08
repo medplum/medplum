@@ -1,5 +1,5 @@
-import { allOk, Hl7Message } from '@medplum/core';
-import { Agent, Bot, Resource } from '@medplum/fhirtypes';
+import { allOk, createReference, Hl7Message } from '@medplum/core';
+import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { Server } from 'mock-socket';
@@ -9,6 +9,7 @@ jest.mock('node-windows');
 
 const medplum = new MockClient();
 let bot: Bot;
+let endpoint: Endpoint;
 
 describe('Agent', () => {
   beforeAll(async () => {
@@ -19,37 +20,26 @@ describe('Agent', () => {
     });
 
     bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+
+    endpoint = await medplum.createResource<Endpoint>({
+      resourceType: 'Endpoint',
+      address: 'mllp://0.0.0.0:56000',
+    });
   });
 
   test('Runs successfully', async () => {
-    const agent: Agent = {
+    const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
       channel: [
         {
-          target: { reference: 'Bot/' + bot.id },
+          endpoint: createReference(endpoint),
+          targetReference: createReference(bot),
         },
       ],
-    };
+    });
 
-    const app = new App(medplum, agent);
-    app.start();
-    app.stop();
-    app.stop();
-  });
-
-  test('Use system event log', async () => {
-    const agent: Agent = {
-      resourceType: 'Agent',
-      setting: [{ name: 'useSystemEventLog', valueBoolean: true }],
-      channel: [
-        {
-          target: { reference: 'Bot/' + bot.id },
-        },
-      ],
-    };
-
-    const app = new App(medplum, agent);
-    app.start();
+    const app = new App(medplum, agent.id as string);
+    await app.start();
     app.stop();
     app.stop();
   });
@@ -85,19 +75,18 @@ describe('Agent', () => {
       });
     });
 
-    const agent: Agent = {
+    const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
       channel: [
         {
-          port: 56000,
-          protocol: 'hl7-mllp',
-          target: { reference: 'Bot/' + bot.id },
+          endpoint: createReference(endpoint),
+          targetReference: createReference(bot),
         },
       ],
-    };
+    });
 
-    const app = new App(medplum, agent);
-    app.start();
+    const app = new App(medplum, agent.id as string);
+    await app.start();
 
     const client = new Hl7Client({
       host: 'localhost',

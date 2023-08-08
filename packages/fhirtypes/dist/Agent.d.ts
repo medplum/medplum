@@ -5,6 +5,7 @@
 
 import { Bot } from './Bot';
 import { Device } from './Device';
+import { Endpoint } from './Endpoint';
 import { Meta } from './Meta';
 import { Reference } from './Reference';
 
@@ -50,7 +51,7 @@ export interface Agent {
   name?: string;
 
   /**
-   * The status of the channel.
+   * The status of the agent.
    */
   status?: 'active' | 'off' | 'error';
 
@@ -78,46 +79,20 @@ export interface Agent {
 export interface AgentChannel {
 
   /**
-   * The human readable friendly name of the channel.
+   * The channel endpoint definition including protocol and network binding
+   * details.
    */
-  name?: string;
-
-  /**
-   * Optional device resource representing the device connected to the
-   * channel.
-   */
-  device?: Reference<Device>;
+  endpoint?: Reference<Endpoint>;
 
   /**
    * The target resource where channel messages will be delivered.
    */
-  target?: Reference<Bot>;
+  targetReference?: Reference<Bot>;
 
   /**
-   * The host that the agent uses in the socket bind call when starting the
-   * network. 0.0.0.0 is reserved for all interfaces. Default value is
-   * 0.0.0.0.
+   * The target resource where channel messages will be delivered.
    */
-  bindHost?: string;
-
-  /**
-   * The port number that the agent uses in the socket bind call when
-   * starting the network.
-   */
-  port?: number;
-
-  /**
-   * The messaging transport protocol(s) identifiers, supported by this
-   * endpoint.
-   */
-  protocol?: 'astm' | 'dicom' | 'hl7-mllp';
-
-  /**
-   * The version identifier for the channel. The interpretation of the
-   * version varies by channel type. For example, specify the version of
-   * the HL7 message standard.
-   */
-  protocolVersion?: string;
+  targetUrl?: string;
 }
 
 /**
