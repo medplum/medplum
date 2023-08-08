@@ -6,7 +6,7 @@ export async function createMedplumClient(options: MedplumClientOptions): Promis
   const profileName = options.profile ?? 'default';
 
   const storage = new FileSystemStorage(profileName);
-  const profile =  storage.getObject('options') as Profile;
+  const profile = storage.getObject('options') as Profile;
   if (profileName !== 'default' && !profile) {
     throw new Error(`Profile "${profileName}" does not exist`);
   }
