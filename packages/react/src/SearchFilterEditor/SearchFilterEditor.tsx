@@ -177,7 +177,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
           onChange={(e) => setFilterCode(e.currentTarget.value)}
           data={[
             '',
-            ...Object.keys(props.searchParams).map((param) => ({ value: param, label: buildFieldNameString(param) }))
+            ...Object.keys(props.searchParams).map((param) => ({ value: param, label: buildFieldNameString(param) })),
           ]}
         />
       </td>
