@@ -624,8 +624,8 @@ console.log(response);
   PatientList {
     resourceType
     id
-    name(fhirpath: "use = 'anonymous' or (given.exists() and family.exists())") {
-      use given family
+    name(fhirpath: "family.exists().not()") {
+      use given family text
     }
   }
 }
@@ -637,7 +637,7 @@ await medplum.graphql(`{
   PatientList {
     resourceType
     id
-    name(fhirpath: "use = 'anonymous' or (given.exists() and family.exists())") {
+    name(fhirpath: "family.exists().not()") {
       use given family text
     }
   }
@@ -650,25 +650,19 @@ response = {
     PatientList: [
       {
         resourceType: 'Patient',
-        id: 'patient-id-2',
+        id: 'patient-id-1',
         name: [
+          {
+            use: 'usual',
+            given: ['Johnny'],
+            family: null,
+            text: null,
+          },
           {
             use: 'anonymous',
             given: null,
             family: null,
-            text: '9b19c81d2b286f2d',
-          },
-          {
-            use: 'official',
-            given: ['Alex'],
-            family: 'Sanderson',
-            text: 'Alex Q. Sanderson',
-          },
-          {
-            use: 'old',
-            given: ['Alex'],
-            family: 'Quinn',
-            text: 'Alex Quinn',
+            text: 'd87a7e2f264680fe',
           },
         ],
       },

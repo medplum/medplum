@@ -227,7 +227,7 @@ Another common use is to filter an `extension` array by `url`:
   </MedplumCodeBlock>
 </details>
 
-If more powerful filtering capabilities are required, a FHIRPath expression can be evaluated to select which list items are included in the response. The expression should evaluate to `true` for an item to be included:
+If more powerful filtering capabilities are required, a FHIRPath expression can be evaluated to select which list items are included in the response. The expression should evaluate to `true` for an item to be included. This example selects all patient names without a family name:
 
 <Tabs groupId="language">
   <TabItem value="graphql" label="GraphQL">
