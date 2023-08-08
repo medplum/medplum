@@ -85,6 +85,20 @@ medplum profile set example \
     --issuer "api.example.com"
 ```
 
+### Example: JWT Assertion
+
+```bash
+medplum profile set example \
+    --auth-type "jwt-assertion" \
+    --base-url "https://api.example.com" \
+    --fhir-url-path "fhir/R4" \
+    --token-url "/oauth2/token" \
+    --client-id "MY_CLIENT_ID" \
+    --audience "/oauth2/token" \
+    --subject "john_doe" \
+    --private-key-path "/path/to/privatekey.pem"
+```
+
 ### Example: Client Credentials
 
 ```bash

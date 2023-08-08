@@ -1,4 +1,4 @@
-import { ContentType, MedplumClient } from '@medplum/core';
+import { ContentType, MedplumClient, encodeBase64 } from '@medplum/core';
 import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
 import { existsSync, readFileSync, writeFile } from 'fs';
 import { basename, extname, resolve } from 'path';
@@ -10,6 +10,7 @@ import * as path from 'path';
 import fs from 'fs';
 import { createPrivateKey, randomBytes } from 'crypto';
 import { homedir } from 'os';
+import { createHmac } from 'crypto';
 
 interface MedplumConfig {
   readonly baseUrl?: string;
@@ -238,6 +239,43 @@ export function profileExists(storage: FileSystemStorage, profile: string): bool
     return false;
   }
   return true;
+}
+
+export async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise<string> {
+  const header = {
+    typ: 'JWT',
+    alg: 'HS256',
+  };
+
+  const currentTimestamp = Math.floor(Date.now() / 1000);
+  const data = {
+    aud: `${profile.baseUrl}${profile.audience}`,
+    iss: profile.issuer,
+    sub: profile.subject,
+    nbf: currentTimestamp,
+    iat: currentTimestamp,
+    exp: currentTimestamp + 604800, // expiry time is 7 days from time of creation
+  };
+  const encodedHeader = encodeBase64(JSON.stringify(header));
+  const encodedData = encodeBase64(JSON.stringify(data));
+  const token = `${encodedHeader}.${encodedData}`;
+  const signature = createHmac('sha256', profile.clientSecret as string)
+    .update(token)
+    .digest('base64url');
+  const signedToken = `${token}.${signature}`;
+
+  const formBody = new URLSearchParams();
+  formBody.set('grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer');
+  formBody.set('client_id', profile.clientId as string);
+  formBody.set('assertion', signedToken);
+  formBody.set('scope', profile.scope ?? '');
+
+  const res = await medplum.post(profile.tokenUrl as string, formBody.toString(), 'application/x-www-form-urlencoded', {
+    credentials: 'include',
+  });
+
+  const obj = await JSON.parse(res);
+  return obj.access_token;
 }
 
 export async function jwtAssertionLogin(externalClient: MedplumClient, profile: Profile): Promise<string> {
