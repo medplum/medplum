@@ -116,15 +116,16 @@ describe('Profiles Auth', () => {
       scope: 'validScope',
       authorizeUrl: 'https://valid.gov/authorize',
       privateKeyPath: '/test_util/testPrivateKey.pem',
+      audience: '/oauth2/token',
     };
 
     const accessTokenFromClientId = createFakeJwt({ client_id: 'test-client-id', login_id: '123' });
 
     const fetch = mockFetch(200, (url) => {
       if (url.includes('oauth2/token')) {
-        return JSON.stringify({
+        return {
           access_token: accessTokenFromClientId,
-        });
+        };
       }
       return {};
     });
@@ -159,6 +160,8 @@ describe('Profiles Auth', () => {
       jwtObj.tokenUrl,
       '--base-url',
       jwtObj.baseUrl,
+      '--audience',
+      jwtObj.audience,
     ]);
 
     expect(profile.getObject('activeLogin')).toEqual({

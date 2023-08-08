@@ -1,12 +1,11 @@
 import { ContentType, MedplumClient, encodeBase64 } from '@medplum/core';
 import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
 import { existsSync, readFileSync, writeFile } from 'fs';
-import { basename, extname, resolve } from 'path';
+import { basename, extname, resolve, join } from 'path';
 import internal from 'stream';
 import tar from 'tar';
 import { FileSystemStorage } from './storage';
 import { SignJWT } from 'jose';
-import * as path from 'path';
 import fs from 'fs';
 import { createPrivateKey, randomBytes } from 'crypto';
 import { homedir } from 'os';
@@ -280,7 +279,7 @@ export async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): 
 
 export async function jwtAssertionLogin(externalClient: MedplumClient, profile: Profile): Promise<string> {
   const homeDir = homedir();
-  const privateKeyPath = path.join(homeDir, profile.privateKeyPath as string);
+  const privateKeyPath = join(homeDir, profile.privateKeyPath as string);
   const privateKeyStr = fs.readFileSync(privateKeyPath);
   const privateKey = createPrivateKey(privateKeyStr);
   const jwt = await new SignJWT({})

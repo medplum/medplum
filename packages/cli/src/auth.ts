@@ -4,9 +4,8 @@ import { createServer } from 'http';
 import { platform } from 'os';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
-import { Profile, saveProfile, loadProfile, profileExists, jwtBearerLogin } from './utils';
+import { Profile, saveProfile, loadProfile, profileExists, jwtBearerLogin, jwtAssertionLogin } from './utils';
 import { FileSystemStorage } from './storage';
-import { jwtAssertionLogin } from './utils';
 
 const clientId = 'medplum-cli';
 const redirectUri = 'http://localhost:9615';
@@ -40,7 +39,7 @@ async function startLogin(medplum: MedplumClient, profile?: Profile): Promise<vo
     await medplumAuthorizationCodeLogin(medplum);
     return;
   }
-  if (profile.authType === 'jwt-bearer') {
+  if (profile?.authType === 'jwt-bearer') {
     if (!profile.clientId || !profile.clientSecret) {
       throw new Error('Missing values, make sure to add --client-id, and --client-secret for JWT Bearer login');
     }
@@ -54,8 +53,6 @@ async function startLogin(medplum: MedplumClient, profile?: Profile): Promise<vo
     storage.setObject('activeLogin', {
       accessToken,
     });
-  } else {
-    throw new Error('Unsupported auth type');
   }
   console.log('Login successful');
 }
