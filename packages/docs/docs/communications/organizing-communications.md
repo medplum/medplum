@@ -18,7 +18,6 @@ This guide covers different ways that you can organize the `Communication` resou
 ### Building and Organizing Threads
 
 The `Communication` resource cann be used to model threading, allowing you to connect multiple related messages that are part of the same discussion. Threading can best be modeled using the `Communication.topic`, `Communication.partOf`, and `Communication.inResponseTo` elements.
-These fields allow you to reference other communications, establishing a relationship, or thread, between new and existing communications.
 
 The `Communication.topic` element represents a description of the main focus or content of the message. It allows you to link the communication to a specific topic or subject matter. It is easy to think of the topic as if it is the subject line of an email for a given communication. In that sense, it is useful to use that level of specificity when defining a topic. For example, a topic could be an appointment for a given patient on a given date. By assigning this topic to all `Communication` resources that are related to that appointment, you can create a thread of messages about the appointment. An example of this is below:
 
@@ -68,7 +67,7 @@ The `Communication.topic` element represents a description of the main focus or 
 
 The `Communication.partOf` element represents a larger resource of which the communication is a component. It can reference any resource type, allowing us to refer to other `Communication` resources to create a thread. The `partOf` element is best used to create a thread in which each message is linked to a single parent message.
 
-When using the `partOf` field to create a thread, the parent `Communication` resource needs to be distinguished from the children. This is done simply by omitting a message in the `payload` field and a resource referenced in the `partOf` field. Conversely, all children will have both of these fields.
+When using the `partOf` field to create a thread, the parent `Communication` resource needs to be distinguished from the children. This is done simply by omitting a message in the `payload` field and a resource referenced in the `partOf` field, while all children will have both of these fields.
 
 Once we have the parent resource, each message in the thread will create a new `Communication` resource, setting `partOf` to reference the parent resource. As more messages are sent, each one will continue to point to the parent, creating a thread with a common reference point.
 
