@@ -251,7 +251,8 @@ export async function jwtAssertionLogin(externalClient: MedplumClient, profile: 
     .setSubject(profile.clientId as string)
     .setAudience(`${profile.baseUrl}${profile.audience}`)
     .setJti(randomBytes(16).toString('hex'))
-    .setExpirationTime('2h')
+    .setIssuedAt()
+    .setExpirationTime('5m')
     .sign(privateKey);
 
   const formBody = new URLSearchParams();
@@ -266,10 +267,8 @@ export async function jwtAssertionLogin(externalClient: MedplumClient, profile: 
     { credentials: 'include' }
   );
 
-  if (res.status !== 200) {
-    console.log(res);
-    throw new Error(`Failed to login: ${res.status} ${res.statusText}`);
+  if (!res.access_token) {
+    throw new Error(`Failed to login: ${res}`);
   }
-  console.log(res);
   return res.access_token;
 }
