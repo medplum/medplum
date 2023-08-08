@@ -118,7 +118,8 @@ function mockFetch(url: string, options: any): Promise<any> {
   } else if (options.method === 'POST' && url.endsWith('/oauth2/token')) {
     status = 200;
     result = {
-      access_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id' })) + '.signature',
+      access_token:
+        'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id', login_id: '123' })) + '.signature',
       refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id' })) + '.signature',
       expires_in: 1,
       token_type: 'Bearer',
@@ -550,6 +551,22 @@ describe('SignInForm', () => {
     });
 
     expect(props.onRegister).toBeCalled();
+  });
+
+  test('Disable Email', async () => {
+    const onSuccess = jest.fn();
+
+    await act(async () => {
+      await setup({
+        onSuccess,
+        disableEmailAuth: true,
+        googleClientId: '123',
+      });
+    });
+
+    expect(screen.queryByText('Email', { exact: false })).toBeNull();
+    expect(screen.queryByText('Next')).toBeNull();
+    expect(screen.queryByText('or')).toBeNull();
   });
 
   test('Disable Google auth', async () => {

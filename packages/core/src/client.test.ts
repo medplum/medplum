@@ -12,9 +12,17 @@ import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
 import { encodeBase64 } from './base64';
-import { FetchLike, InviteBody, MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
+import {
+  FetchLike,
+  InviteRequest,
+  MedplumClient,
+  NewPatientRequest,
+  NewProjectRequest,
+  NewUserRequest,
+} from './client';
+import { ContentType } from './contenttype';
 import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
-import { createReference, ProfileResource, stringify } from './utils';
+import { createReference, ProfileResource } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -55,7 +63,7 @@ const schemaResponse = {
 function mockFetch(
   status: number,
   body: OperationOutcome | Record<string, unknown> | ((url: string, options?: any) => any),
-  contentType = 'application/fhir+json'
+  contentType = ContentType.FHIR_JSON
 ): FetchLike & jest.Mock {
   const bodyFn = typeof body === 'function' ? body : () => body;
   return jest.fn((url: string, options?: any) => {
@@ -140,7 +148,7 @@ describe('Client', () => {
     window.localStorage.setItem(
       'activeLogin',
       JSON.stringify({
-        accessToken: '123',
+        accessToken: createFakeJwt({ client_id: '123', login_id: '123' }),
         refreshToken: '456',
         project: {
           reference: 'Project/123',
@@ -154,8 +162,8 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('/oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
-          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          access_token: createFakeJwt({ client_id: '123', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: '123' }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -197,7 +205,7 @@ describe('Client', () => {
     window.localStorage.setItem(
       'activeLogin',
       JSON.stringify({
-        accessToken: '123',
+        accessToken: createFakeJwt({ client_id: '123', login_id: '123' }),
         refreshToken: '456',
         project: {
           reference: 'Project/123',
@@ -211,8 +219,8 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('/oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
-          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          access_token: createFakeJwt({ client_id: '123', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: '123' }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -278,8 +286,8 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('/oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
-          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          access_token: createFakeJwt({ client_id: '123', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: '123' }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -352,8 +360,8 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('/oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(stringify({ client_id: clientId })) + '.signature',
-          refresh_token: 'header.' + window.btoa(stringify({ client_id: clientId })) + '.signature',
+          access_token: createFakeJwt({ client_id: clientId, login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: clientId }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -378,8 +386,8 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('/oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(stringify({ client_id: clientId2 })) + '.signature',
-          refresh_token: 'header.' + window.btoa(stringify({ client_id: clientId2 })) + '.signature',
+          access_token: createFakeJwt({ client_id: clientId2, login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: clientId2 }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -434,8 +442,8 @@ describe('Client', () => {
       }
       if (url.includes('/oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
-          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          access_token: createFakeJwt({ client_id: '123', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: '123' }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -480,8 +488,8 @@ describe('Client', () => {
       }
       if (url.includes('/oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
-          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          access_token: createFakeJwt({ client_id: '123', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: '123' }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -530,8 +538,8 @@ describe('Client', () => {
       if (url.includes('oauth2/token')) {
         tokenExpired = false;
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'test-client-id' })) + '.signature',
-          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'test-client-id' })) + '.signature',
+          access_token: createFakeJwt({ client_id: 'test-client-id', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: 'test-client-id' }),
           profile: { reference: 'ClientApplication/123' },
         };
       }
@@ -554,6 +562,28 @@ describe('Client', () => {
     expect(fetch).toHaveBeenCalledTimes(4);
   });
 
+  test('JWT bearer token flow', async () => {
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token: createFakeJwt({ client_id: 'test-client-id', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: 'test-client-id' }),
+          profile: { reference: 'ClientApplication/123' },
+        };
+      }
+      if (url.includes('/auth/me')) {
+        return { profile: { resourceType: 'ClientApplication' } };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch });
+    const result1 = await client.startJwtBearerLogin('test-client-id', 'test-client-secret', 'openid profile');
+    expect(result1).toBeDefined();
+    expect(result1).toMatchObject({ resourceType: 'ClientApplication' });
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   test('Basic auth in browser', async () => {
     Object.defineProperty(globalThis, 'Buffer', { get: () => undefined });
     Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
@@ -573,7 +603,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
           Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
           'X-Medplum': 'extended',
         },
@@ -600,7 +630,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
           Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
           'X-Medplum': 'extended',
         },
@@ -612,7 +642,7 @@ describe('Client', () => {
     const patientId = randomUUID();
     const clientId = 'test-client-id';
     const clientSecret = 'test-client-secret';
-    const accessToken = 'header.' + Buffer.from(JSON.stringify({ cid: clientId })).toString('base64') + '.signature';
+    const accessToken = createFakeJwt({ cid: clientId });
     const fetch = mockFetch(200, (url) => {
       if (url.includes(`Patient/${patientId}`)) {
         return { resourceType: 'Patient', id: patientId };
@@ -638,7 +668,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
           Authorization: `Bearer ${accessToken}`,
           'X-Medplum': 'extended',
         },
@@ -650,7 +680,7 @@ describe('Client', () => {
         method: 'POST',
         headers: {
           Authorization: 'Basic ' + encodeBase64(clientId + ':' + clientSecret),
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': ContentType.FORM_URL_ENCODED,
         },
       })
     );
@@ -660,7 +690,7 @@ describe('Client', () => {
     const patientId = randomUUID();
     const clientId = 'test-client-id';
     const clientSecret = 'test-client-secret';
-    const accessToken = 'header.' + Buffer.from(JSON.stringify({ cid: clientId })).toString('base64') + '.signature';
+    const accessToken = createFakeJwt({ cid: clientId });
     const fetch = mockFetch(200, (url) => {
       if (url.includes(`Patient/${patientId}`)) {
         return { resourceType: 'Patient', id: patientId };
@@ -686,7 +716,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
           Authorization: `Bearer ${accessToken}`,
           'X-Medplum': 'extended',
         },
@@ -698,7 +728,7 @@ describe('Client', () => {
         method: 'POST',
         headers: {
           Authorization: 'Basic ' + encodeBase64(clientId + ':' + clientSecret),
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': ContentType.FORM_URL_ENCODED,
         },
       })
     );
@@ -735,8 +765,7 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('oauth2/token')) {
         return {
-          access_token:
-            'header.' + Buffer.from(JSON.stringify({ cid: 'different-client-id' })).toString('base64') + '.signature',
+          access_token: createFakeJwt({ cid: 'different-client-id' }),
         };
       }
       return {};
@@ -773,8 +802,7 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('oauth2/token')) {
         return {
-          access_token:
-            'header.' + Buffer.from(JSON.stringify({ exp: oneMinuteAgo })).toString('base64') + '.signature',
+          access_token: createFakeJwt({ exp: oneMinuteAgo }),
         };
       }
       return {};
@@ -793,7 +821,7 @@ describe('Client', () => {
   test('Invite user', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const body: InviteBody = {
+    const body: InviteRequest = {
       resourceType: 'Patient',
       firstName: 'Sally',
       lastName: 'Foo',
@@ -829,8 +857,8 @@ describe('Client', () => {
       if (url.includes('oauth2/token')) {
         tokenExpired = false;
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
-          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          access_token: createFakeJwt({ client_id: '123', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: '123' }),
           profile: { reference: 'Patient/123' },
         };
       }
@@ -1019,8 +1047,8 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
-          'Content-Type': 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.FHIR_JSON,
           'X-Medplum': 'extended',
         },
       })
@@ -1082,8 +1110,8 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'PUT',
         headers: {
-          Accept: 'application/fhir+json',
-          'Content-Type': 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.FHIR_JSON,
           'X-Medplum': 'extended',
         },
       })
@@ -1127,18 +1155,36 @@ describe('Client', () => {
     }
   });
 
-  test('Create binary', async () => {
+  test('Create attachment', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const result = await client.createBinary('Hello world', undefined, 'text/plain');
+    const result = await client.createAttachment('Hello world', undefined, ContentType.TEXT);
     expect(result).toBeDefined();
     expect(fetch).toBeCalledWith(
       'https://api.medplum.com/fhir/R4/Binary',
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
-          'Content-Type': 'text/plain',
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.TEXT,
+          'X-Medplum': 'extended',
+        },
+      })
+    );
+  });
+
+  test('Create binary', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.createBinary('Hello world', undefined, ContentType.TEXT);
+    expect(result).toBeDefined();
+    expect(fetch).toBeCalledWith(
+      'https://api.medplum.com/fhir/R4/Binary',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.TEXT,
           'X-Medplum': 'extended',
         },
       })
@@ -1148,15 +1194,15 @@ describe('Client', () => {
   test('Create binary with filename', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const result = await client.createBinary('Hello world', 'hello.txt', 'text/plain');
+    const result = await client.createBinary('Hello world', 'hello.txt', ContentType.TEXT);
     expect(result).toBeDefined();
     expect(fetch).toBeCalledWith(
       'https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt',
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
-          'Content-Type': 'text/plain',
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.TEXT,
           'X-Medplum': 'extended',
         },
       })
@@ -1182,7 +1228,7 @@ describe('Client', () => {
 
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const promise = client.createBinary('Hello world', undefined, 'text/plain', onProgress);
+    const promise = client.createBinary('Hello world', undefined, ContentType.TEXT, onProgress);
     expect(xhrMock.open).toBeCalled();
     expect(xhrMock.setRequestHeader).toBeCalled();
 
@@ -1229,7 +1275,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
           'Content-Type': 'application/pdf',
           'X-Medplum': 'extended',
         },
@@ -1253,7 +1299,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
+          Accept: ContentType.FHIR_JSON,
           'Content-Type': 'application/pdf',
           'X-Medplum': 'extended',
         },
@@ -1476,6 +1522,8 @@ describe('Client', () => {
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBe(1);
     expect(result[0].resourceType).toBe('Patient');
+    expect(result.bundle).toBeDefined();
+    expect(result.bundle.resourceType).toBe('Bundle');
   });
 
   test('Search resources with record of params', async () => {
@@ -1683,8 +1731,8 @@ describe('Client', () => {
         expect.objectContaining({
           method: 'POST',
           headers: {
-            Accept: 'application/fhir+json',
-            'Content-Type': 'application/fhir+json',
+            Accept: ContentType.FHIR_JSON,
+            'Content-Type': ContentType.FHIR_JSON,
             'X-Medplum': 'extended',
           },
           body: expect.stringContaining('Bundle'),
@@ -1707,7 +1755,7 @@ describe('Client', () => {
         expect.objectContaining({
           method: 'POST',
           headers: {
-            'Content-Type': 'application/fhir+json',
+            'Content-Type': ContentType.FHIR_JSON,
             'X-Medplum': 'extended',
             ...options.headers,
           },
@@ -1731,8 +1779,8 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
-          'Content-Type': 'application/json',
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.JSON,
           'X-Medplum': 'extended',
         },
         body: expect.stringContaining('alice@example.com'),
@@ -1777,7 +1825,7 @@ describe('Client', () => {
   test('setAccessToken', async () => {
     const fetch = jest.fn(async () => ({
       status: 200,
-      headers: { get: () => 'application/fhir+json' },
+      headers: { get: () => ContentType.FHIR_JSON },
       json: async () => ({ resourceType: 'Patient' }),
     }));
 
@@ -1810,8 +1858,8 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: 'application/fhir+json',
-          'Content-Type': 'application/json',
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.JSON,
           'X-Medplum': 'extended',
         },
         body: expect.stringContaining('Patient'),
@@ -1859,7 +1907,7 @@ describe('Client', () => {
       headers: {
         get(name: string): string | undefined {
           return {
-            'content-type': 'application/fhir+json',
+            'content-type': ContentType.FHIR_JSON,
           }[name];
         },
       },
@@ -1942,7 +1990,7 @@ describe('Client', () => {
       }
       return {
         status: 200,
-        headers: { get: () => 'application/fhir+json' },
+        headers: { get: () => ContentType.FHIR_JSON },
         json: async () => ({ resourceType: 'Patient' }),
       };
     });
@@ -1969,11 +2017,23 @@ describe('Client', () => {
     }
   });
 
+  test('Handle HL7 response', async () => {
+    const fetch = jest.fn(async () => ({
+      status: 200,
+      headers: { get: () => ContentType.HL7_V2 },
+      text: async () => 'MSH|^~\\&|1|\r\n',
+    }));
+    const client = new MedplumClient({ fetch });
+    const response = await client.post('/$process-message', 'MSH|^~\\&|1|\r\n', ContentType.HL7_V2);
+    expect(response).toBeDefined();
+    expect(response).toEqual('MSH|^~\\&|1|\r\n');
+  });
+
   test('Log non-JSON response', async () => {
     // Handle the ugly case where server returns JSON header but non-JSON body
     const fetch = jest.fn(async () => ({
       status: 200,
-      headers: { get: () => 'application/json' },
+      headers: { get: () => ContentType.JSON },
       json: () => Promise.reject(new Error('Not JSON')),
     }));
     console.error = jest.fn();
@@ -1996,7 +2056,7 @@ describe('Client', () => {
         if (url.includes('/$export?_since=200')) {
           return {
             status: 200,
-            headers: { get: () => 'application/fhir+json' },
+            headers: { get: () => ContentType.FHIR_JSON },
             json: jest.fn(async () => {
               return {
                 resourceType: 'OperationOutcome',
@@ -2036,7 +2096,7 @@ describe('Client', () => {
             headers: {
               get(name: string): string | undefined {
                 return {
-                  'content-type': 'application/fhir+json',
+                  'content-type': ContentType.FHIR_JSON,
                   'content-location': 'bulkdata/id/status',
                 }[name];
               },
@@ -2058,7 +2118,7 @@ describe('Client', () => {
 
         return {
           status: 200,
-          headers: { get: () => 'application/fhir+json' },
+          headers: { get: () => ContentType.FHIR_JSON },
           json: jest.fn(async () => ({
             transactionTime: '2023-05-18T22:55:31.280Z',
             request: 'https://api.medplum.com/fhir/R4/$export?_type=Observation',
@@ -2082,7 +2142,7 @@ describe('Client', () => {
         expect.stringContaining('/$export'),
         expect.objectContaining({
           headers: {
-            Accept: 'application/fhir+json',
+            Accept: ContentType.FHIR_JSON,
             Prefer: 'respond-async',
             'X-Medplum': 'extended',
           },
@@ -2144,7 +2204,7 @@ describe('Client', () => {
             };
           }),
           headers: {
-            get: (key: string) => (key === 'content-type' ? 'application/fhir+json' : null),
+            get: (key: string) => (key === 'content-type' ? ContentType.FHIR_JSON : null),
           },
         };
       });
@@ -2176,6 +2236,71 @@ describe('Client', () => {
     });
   });
 
+  describe('Downloading resources', () => {
+    const baseUrl = 'https://api.medplum.com/';
+    const fhirUrlPath = 'fhir/R4/';
+
+    describe('normalizeFetchUrl', () => {
+      let client: MedplumClient;
+
+      beforeAll(() => {
+        client = new MedplumClient({ baseUrl, fhirUrlPath });
+      });
+
+      test('URL object', () => {
+        expect(client.normalizeFetchUrl(new URL(baseUrl))).toEqual(baseUrl);
+      });
+
+      test('URL string', () => {
+        expect(client.normalizeFetchUrl(baseUrl)).toEqual(baseUrl);
+      });
+
+      test('Binary URLs', () => {
+        expect(client.normalizeFetchUrl('Binary/fake-id')).toEqual(`${baseUrl}${fhirUrlPath}Binary/fake-id`);
+      });
+    });
+
+    describe('Downloading resources', () => {
+      let fetch: FetchLike;
+      let client: MedplumClient;
+
+      beforeAll(() => {
+        fetch = mockFetch(200, (url: string) => ({
+          text: () => Promise.resolve(url),
+        }));
+        client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
+      });
+
+      test('Downloading resources via URL', async () => {
+        const blob = await client.download(baseUrl);
+        expect(fetch).toBeCalledWith(
+          baseUrl,
+          expect.objectContaining({
+            headers: {
+              Accept: ContentType.FHIR_JSON,
+              'X-Medplum': 'extended',
+            },
+          })
+        );
+        expect(await blob.text()).toEqual(baseUrl);
+      });
+
+      test('Downloading resources via `Binary/{id}` URL', async () => {
+        const blob = await client.download('Binary/fake-id');
+        expect(fetch).toBeCalledWith(
+          `${baseUrl}${fhirUrlPath}Binary/fake-id`,
+          expect.objectContaining({
+            headers: {
+              Accept: ContentType.FHIR_JSON,
+              'X-Medplum': 'extended',
+            },
+          })
+        );
+        expect(await blob.text()).toEqual(`${baseUrl}${fhirUrlPath}Binary/fake-id`);
+      });
+    });
+  });
+
   describe('Media', () => {
     test('Upload Media', async () => {
       const fetch = mockFetch(200, {});
@@ -2203,7 +2328,7 @@ describe('Client', () => {
               return 'https://example.com/content-location/1';
             }
             if (key.toLowerCase() === 'content-type') {
-              return 'application/fhir+json';
+              return ContentType.FHIR_JSON;
             }
             return null;
           },
@@ -2221,7 +2346,7 @@ describe('Client', () => {
               return 'https://example.com/content-location/1';
             }
             if (key.toLowerCase() === 'content-type') {
-              return 'application/fhir+json';
+              return ContentType.FHIR_JSON;
             }
             return null;
           },
@@ -2239,7 +2364,7 @@ describe('Client', () => {
               return 'https://example.com/location/1';
             }
             if (key.toLowerCase() === 'content-type') {
-              return 'application/fhir+json';
+              return ContentType.FHIR_JSON;
             }
             return null;
           },
@@ -2251,7 +2376,7 @@ describe('Client', () => {
       fetch.mockImplementationOnce(async () => ({
         ok: true,
         status: 201,
-        headers: { get: () => 'application/fhir+json' },
+        headers: { get: () => ContentType.FHIR_JSON },
         json: async () => ({ resourceType: 'Patient' }),
       }));
 
@@ -2277,6 +2402,10 @@ function createPdf(
     pdfDoc.on('error', reject);
     pdfDoc.end();
   });
+}
+
+function createFakeJwt(claims: Record<string, string | number>): string {
+  return 'header.' + window.btoa(JSON.stringify(claims)) + '.signature';
 }
 
 function fail(message: string): never {

@@ -1,5 +1,6 @@
 import {
   badRequest,
+  ContentType,
   createReference,
   Filter,
   getDateProperty,
@@ -8,6 +9,8 @@ import {
   Operator,
   ProfileResource,
   resolveId,
+  tooManyRequests,
+  unauthorized,
 } from '@medplum/core';
 import {
   AccessPolicy,
@@ -30,7 +33,14 @@ import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
-import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
+import {
+  generateAccessToken,
+  generateIdToken,
+  generateRefreshToken,
+  generateSecret,
+  MedplumAccessTokenClaims,
+  verifyJwt,
+} from './keys';
 
 export interface LoginRequest {
   readonly email?: string;
@@ -44,7 +54,7 @@ export interface LoginRequest {
   readonly clientId?: string;
   readonly launchId?: string;
   readonly codeChallenge?: string;
-  readonly codeChallengeMethod?: string;
+  readonly codeChallengeMethod?: 'plain' | 'S256';
   readonly googleCredentials?: GoogleCredentialClaims;
   readonly remoteAddress?: string;
   readonly userAgent?: string;
@@ -694,36 +704,41 @@ export async function getExternalUserInfo(
     response = await fetch(idp.userInfoUrl as string, {
       method: 'GET',
       headers: {
-        Accept: 'application/json',
+        Accept: ContentType.JSON,
         Authorization: `Bearer ${externalAccessToken}`,
       },
     });
-  } catch (err) {
-    logger.warn('Failed to verify code', err);
+  } catch (err: any) {
+    logger.warn('Error while verifying external auth code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
+  if (response.status === 429) {
+    logger.warn('Auth rate limit exceeded', { url: idp.userInfoUrl, clientId: idp.clientId });
+    throw new OperationOutcomeError(tooManyRequests);
+  }
+
   if (response.status !== 200) {
-    logger.warn('Failed to verify code', response.status);
+    logger.warn('Failed to verify external authorization code', { status: response.status });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
   // Make sure content type is json
-  if (!response.headers.get('content-type')?.includes('application/json')) {
+  if (!response.headers.get('content-type')?.includes(ContentType.JSON)) {
     let text = '';
     try {
       text = await response.text();
-    } catch (err) {
+    } catch (err: any) {
       logger.debug('Failed to get response text', err);
     }
-    logger.warn('Failed to verify code, non-JSON response', text);
+    logger.warn('Failed to verify external authorization code, non-JSON response', { text });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
   try {
     return await response.json();
-  } catch (err) {
-    logger.warn('Failed to verify code', err);
+  } catch (err: any) {
+    logger.warn('Failed to verify external authorization code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 }
@@ -753,4 +768,33 @@ export async function verifyMultipleMatchingException(
     }
   }
   return { error: 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED' };
+}
+
+/**
+ * Verifies the access token and returns the corresponding login, membership, and project.
+ * @param accessToken The access token as provided by the client.
+ * @returns On success, returns the login, membership, and project. On failure, throws an error.
+ */
+export async function getLoginForAccessToken(accessToken: string): Promise<{
+  login: Login;
+  membership: ProjectMembership;
+  project: Project;
+}> {
+  const verifyResult = await verifyJwt(accessToken);
+  const claims = verifyResult.payload as MedplumAccessTokenClaims;
+
+  let login = undefined;
+  try {
+    login = await systemRepo.readResource<Login>('Login', claims.login_id);
+  } catch (err) {
+    throw new OperationOutcomeError(unauthorized);
+  }
+
+  if (!login?.membership || login.revoked) {
+    throw new OperationOutcomeError(unauthorized);
+  }
+
+  const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
+  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+  return { login, membership, project };
 }

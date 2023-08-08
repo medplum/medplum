@@ -1278,7 +1278,7 @@
       "name": "patient",
       "type": "reference",
       "description": " Who the care plan is for\r",
-      "expression": "CarePlan.subject"
+      "expression": "CarePlan.subject.where(resolve() is Patient)"
     },
     {
       "name": "activity-code",

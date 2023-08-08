@@ -1,15 +1,16 @@
-import { badRequest, createReference, OperationOutcomeError, Operator, ProfileResource } from '@medplum/core';
 import {
-  AccessPolicy,
-  Practitioner,
-  Project,
-  ProjectMembership,
-  ProjectMembershipAccess,
-  Reference,
-  User,
-} from '@medplum/fhirtypes';
+  badRequest,
+  createReference,
+  InviteRequest,
+  normalizeErrorString,
+  OperationOutcomeError,
+  Operator,
+  ProfileResource,
+} from '@medplum/core';
+import { Practitioner, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
+import Mail from 'nodemailer/lib/mailer';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProfile, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
@@ -40,7 +41,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const inviteRequest = { ...req.body } as InviteRequest;
+  const inviteRequest = { ...req.body } as ServerInviteRequest;
   const { projectId } = req.params;
   if (res.locals.project.superAdmin) {
     inviteRequest.project = await systemRepo.readResource('Project', projectId as string);
@@ -51,30 +52,26 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
   try {
     const { membership } = await inviteUser(inviteRequest);
     res.status(200).json(membership);
-  } catch (err: any) {
-    logger.info(err);
+  } catch (err) {
+    logger.info('Error inviting user to project', {
+      project: projectId,
+      error: normalizeErrorString(err),
+    });
     res.status(200).json({ error: err });
   }
 }
 
-export interface InviteRequest {
+export interface ServerInviteRequest extends InviteRequest {
   project: Project;
-  resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson';
-  firstName: string;
-  lastName: string;
-  email?: string;
-  externalId?: string;
-  accessPolicy?: Reference<AccessPolicy>;
-  access?: ProjectMembershipAccess[];
-  sendEmail?: boolean;
-  password?: string;
-  invitedBy?: Reference<User>;
-  admin?: boolean;
 }
 
-export async function inviteUser(
-  request: InviteRequest
-): Promise<{ user: User; profile: ProfileResource; membership: ProjectMembership }> {
+export interface ServerInviteResponse {
+  user: User;
+  profile: ProfileResource;
+  membership: ProjectMembership;
+}
+
+export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
   if (request.email) {
     request.email = request.email.toLowerCase();
   }
@@ -84,7 +81,6 @@ export async function inviteUser(
   let user = undefined;
   let existingUser = true;
   let passwordResetUrl = undefined;
-  let profile = undefined;
 
   if (email) {
     if (request.resourceType === 'Patient') {
@@ -92,7 +88,6 @@ export async function inviteUser(
     } else {
       user = await getUserByEmailWithoutProject(email);
     }
-    profile = await searchForExistingProfile(project, request.resourceType, email);
   }
 
   if (!user) {
@@ -101,6 +96,7 @@ export async function inviteUser(
     passwordResetUrl = await resetPassword(user);
   }
 
+  let profile = await searchForExistingProfile(request);
   if (!profile) {
     profile = (await createProfile(
       project,
@@ -111,12 +107,21 @@ export async function inviteUser(
     )) as Practitioner;
   }
 
-  const membership = await createProjectMembership(user, project, profile, {
-    externalId: request.externalId,
-    accessPolicy: request.accessPolicy,
-    access: request.access,
-    admin: request.admin,
-  });
+  const membershipTemplate = request.membership ?? {};
+  if (request.externalId !== undefined) {
+    membershipTemplate.externalId = request.externalId;
+  }
+  if (request.accessPolicy !== undefined) {
+    membershipTemplate.accessPolicy = request.accessPolicy;
+  }
+  if (request.access !== undefined) {
+    membershipTemplate.access = request.access;
+  }
+  if (request.admin !== undefined) {
+    membershipTemplate.admin = request.admin;
+  }
+
+  const membership = await createProjectMembership(user, project, profile, membershipTemplate);
 
   if (email && request.sendEmail !== false) {
     try {
@@ -129,11 +134,11 @@ export async function inviteUser(
   return { user, profile, membership };
 }
 
-async function createUser(request: InviteRequest): Promise<User> {
+async function createUser(request: ServerInviteRequest): Promise<User> {
   const { firstName, lastName, externalId } = request;
   const email = request.email?.toLowerCase();
-  const password = request.password || generateSecret(16);
-  logger.info('Create user ' + email);
+  const password = request.password ?? generateSecret(16);
+  logger.info('User creation request received', { email });
   const passwordHash = await bcryptHashPassword(password);
 
   let project: Reference<Project> | undefined = undefined;
@@ -154,72 +159,80 @@ async function createUser(request: InviteRequest): Promise<User> {
     project,
   });
 
-  logger.info('Created: ' + result.id);
+  logger.info('User created', { id: result.id, email });
   return result;
 }
 
-async function searchForExistingProfile(
-  project: Project,
-  resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson',
-  email: string
-): Promise<ProfileResource | undefined> {
-  const bundle = await systemRepo.search<ProfileResource>({
-    resourceType,
-    filters: [
-      {
-        code: '_project',
-        operator: Operator.EQUALS,
-        value: project.id as string,
-      },
-      {
-        code: 'email',
-        operator: Operator.EQUALS,
-        value: email,
-      },
-    ],
-  });
-  return bundle.entry?.[0]?.resource;
+async function searchForExistingProfile(request: ServerInviteRequest): Promise<ProfileResource | undefined> {
+  const { project, resourceType, membership, email } = request;
+
+  if (membership?.profile) {
+    const result = await systemRepo.readReference(membership.profile);
+    if (result.meta?.project !== project.id) {
+      throw new OperationOutcomeError(badRequest('Profile does not belong to project'));
+    }
+    if (result.resourceType !== resourceType) {
+      throw new OperationOutcomeError(badRequest('Profile resourceType does not match request'));
+    }
+    return result as ProfileResource;
+  }
+
+  if (email) {
+    return systemRepo.searchOne<ProfileResource>({
+      resourceType,
+      filters: [
+        {
+          code: '_project',
+          operator: Operator.EQUALS,
+          value: project.id as string,
+        },
+        {
+          code: 'email',
+          operator: Operator.EQUALS,
+          value: email,
+        },
+      ],
+    });
+  }
+
+  return undefined;
 }
 
 async function sendInviteEmail(
-  request: InviteRequest,
+  request: ServerInviteRequest,
   user: User,
   existing: boolean,
   resetPasswordUrl: string | undefined
 ): Promise<void> {
+  const options: Mail.Options = { to: user.email };
   if (existing) {
     // Existing user
-    await sendEmail({
-      to: user.email,
-      subject: `Medplum: Welcome to ${request.project.name}`,
-      text: [
-        `You were invited to ${request.project.name}`,
-        '',
-        `The next time you sign-in, you will see ${request.project.name} as an option.`,
-        '',
-        `You can sign in here: ${getConfig().appBaseUrl}signin`,
-        '',
-        'Thank you,',
-        'Medplum',
-        '',
-      ].join('\n'),
-    });
+    options.subject = `Medplum: Welcome to ${request.project.name}`;
+    options.text = [
+      `You were invited to ${request.project.name}`,
+      '',
+      `The next time you sign-in, you will see ${request.project.name} as an option.`,
+      '',
+      `You can sign in here: ${getConfig().appBaseUrl}signin`,
+      '',
+      'Thank you,',
+      'Medplum',
+      '',
+    ].join('\n');
   } else {
     // New user
-    await sendEmail({
-      to: user.email,
-      subject: 'Welcome to Medplum',
-      text: [
-        `You were invited to ${request.project.name}`,
-        '',
-        'Please click on the following link to create your account:',
-        '',
-        resetPasswordUrl,
-        '',
-        'Thank you,',
-        'Medplum',
-        '',
-      ].join('\n'),
-    });
+    options.subject = 'Welcome to Medplum';
+    options.text = [
+      `You were invited to ${request.project.name}`,
+      '',
+      'Please click on the following link to create your account:',
+      '',
+      resetPasswordUrl,
+      '',
+      'Thank you,',
+      'Medplum',
+      '',
+    ].join('\n');
   }
+  await sendEmail(systemRepo, options);
 }

@@ -2,12 +2,12 @@
  * Based on: https://developer.mozilla.org/en-US/docs/Web/API/EventTarget
  */
 
-interface Event {
+export interface Event {
   readonly type: string;
   readonly defaultPrevented?: boolean;
 }
 
-type EventListener = (e: Event) => void;
+export type EventListener = (e: Event) => void;
 
 export class EventTarget {
   private readonly listeners: Record<string, EventListener[]>;
@@ -23,7 +23,7 @@ export class EventTarget {
     this.listeners[type].push(callback);
   }
 
-  removeEventListeneer(type: string, callback: EventListener): void {
+  removeEventListener(type: string, callback: EventListener): void {
     const array = this.listeners[type];
     if (!array) {
       return;

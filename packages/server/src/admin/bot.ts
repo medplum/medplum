@@ -1,9 +1,11 @@
-import { createReference } from '@medplum/core';
-import { AccessPolicy, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { ContentType, createReference, getReferenceString } from '@medplum/core';
+import { AccessPolicy, Binary, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
+import { Readable } from 'stream';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { Repository, systemRepo } from '../fhir/repo';
+import { getBinaryStorage } from '../fhir/storage';
 
 export const createBotValidators = [body('name').notEmpty().withMessage('Bot name is required')];
 
@@ -34,9 +36,18 @@ export interface CreateBotRequest {
   readonly name: string;
   readonly description?: string;
   readonly accessPolicy?: Reference<AccessPolicy>;
+  readonly runtimeVersion?: 'awslambda' | 'vmcontext';
 }
 
 export async function createBot(repo: Repository, request: CreateBotRequest): Promise<Bot> {
+  const filename = 'index.ts';
+  const contentType = ContentType.TYPESCRIPT;
+  const binary = await repo.createResource<Binary>({
+    resourceType: 'Binary',
+    contentType,
+  });
+  await getBinaryStorage().writeBinary(binary, filename, contentType, Readable.from(defaultBotCode));
+
   const bot = await repo.createResource<Bot>({
     meta: {
       project: request.project.id,
@@ -44,8 +55,12 @@ export async function createBot(repo: Repository, request: CreateBotRequest): Pr
     resourceType: 'Bot',
     name: request.name,
     description: request.description,
-    runtimeVersion: 'awslambda',
-    code: defaultBotCode,
+    runtimeVersion: request.runtimeVersion ?? 'awslambda',
+    sourceCode: {
+      contentType,
+      title: filename,
+      url: getReferenceString(binary),
+    },
   });
 
   await systemRepo.createResource<ProjectMembership>({

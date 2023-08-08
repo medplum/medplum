@@ -45,7 +45,7 @@ To augment the `issuer`, the Davinci PDEX implementation guide [defines an exten
 
 A provider's specialty certifications can also be represented Unlike licensure, medical specialties are determined by professional boards of physicians, not governments. Here are the key points to consider:
 
-- **Specialty Code**: The PDEX implementation guide requires selecting a provider's specialty code from the [NUCC provider taxonomy](http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet-IndividualAndGroupSpecialtiesVS.htmlUse).
+- **Specialty Code**: The PDEX implementation guide requires selecting a provider's specialty code from the [NUCC provider taxonomy](https://taxonomy.nucc.org/) (system: `http://nucc.org/provider-taxonomy`).
 - **Issuer: **The issuer for specialist certifications are typically professional certification boards (e.g. American Board of Internal Medicine or American College of Obstetricians and Gynecologists )
 
 <details>

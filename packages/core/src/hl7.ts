@@ -23,17 +23,19 @@ export class Hl7Context {
   ) {}
 
   /**
+   * Returns the MSH-1 field value based on the configured separators.
+   * @returns The HL7 MSH-1 field value.
+   */
+  getMsh1(): string {
+    return this.fieldSeparator;
+  }
+
+  /**
    * Returns the MSH-2 field value based on the configured separators.
    * @returns The HL7 MSH-2 field value.
    */
   getMsh2(): string {
-    return (
-      this.fieldSeparator +
-      this.componentSeparator +
-      this.repetitionSeparator +
-      this.escapeCharacter +
-      this.subcomponentSeparator
-    );
+    return this.componentSeparator + this.repetitionSeparator + this.escapeCharacter + this.subcomponentSeparator;
   }
 }
 
@@ -56,11 +58,44 @@ export class Hl7Message {
   }
 
   /**
+   * Returns the HL7 message header.
+   * @returns The HL7 message header.
+   */
+  get header(): Hl7Segment {
+    return this.segments[0];
+  }
+
+  /**
    * Returns an HL7 segment by index or by name.
    * @param index The HL7 segment index or name.
    * @returns The HL7 segment if found; otherwise, undefined.
+   * @deprecated Use getSegment() instead. This method will be removed in a future release.
    */
   get(index: number | string): Hl7Segment | undefined {
+    return this.getSegment(index);
+  }
+
+  /**
+   * Returns all HL7 segments of a given name.
+   * @param name The HL7 segment name.
+   * @returns An array of HL7 segments with the specified name.
+   * @deprecated Use getAllSegments() instead. This method will be removed in a future release.
+   */
+  getAll(name: string): Hl7Segment[] {
+    return this.getAllSegments(name);
+  }
+
+  /**
+   * Returns an HL7 segment by index or by name.
+   *
+   * When using a numeric index, the first segment (usually the MSH header segment) is at index 0.
+   *
+   * When using a string index, this method returns the first segment with the specified name.
+   *
+   * @param index The HL7 segment index or name.
+   * @returns The HL7 segment if found; otherwise, undefined.
+   */
+  getSegment(index: number | string): Hl7Segment | undefined {
     if (typeof index === 'number') {
       return this.segments[index];
     }
@@ -72,7 +107,7 @@ export class Hl7Message {
    * @param name The HL7 segment name.
    * @returns An array of HL7 segments with the specified name.
    */
-  getAll(name: string): Hl7Segment[] {
+  getAllSegments(name: string): Hl7Segment[] {
     return this.segments.filter((s) => s.name === name);
   }
 
@@ -90,13 +125,13 @@ export class Hl7Message {
    */
   buildAck(): Hl7Message {
     const now = new Date();
-    const msh = this.get('MSH');
-    const sendingApp = msh?.get(2)?.toString() || '';
-    const sendingFacility = msh?.get(3)?.toString() || '';
-    const receivingApp = msh?.get(4)?.toString() || '';
-    const receivingFacility = msh?.get(5)?.toString() || '';
-    const controlId = msh?.get(9)?.toString() || '';
-    const versionId = msh?.get(12)?.toString() || '2.5.1';
+    const msh = this.getSegment('MSH');
+    const sendingApp = msh?.getField(3)?.toString() ?? '';
+    const sendingFacility = msh?.getField(4)?.toString() ?? '';
+    const receivingApp = msh?.getField(5)?.toString() ?? '';
+    const receivingFacility = msh?.getField(6)?.toString() ?? '';
+    const controlId = msh?.getField(10)?.toString() ?? '';
+    const versionId = msh?.getField(12)?.toString() ?? '2.5.1';
 
     return new Hl7Message([
       new Hl7Segment(
@@ -107,9 +142,9 @@ export class Hl7Message {
           receivingFacility,
           sendingApp,
           sendingFacility,
-          now.toISOString(),
+          formatHl7DateTime(now),
           '',
-          'ACK',
+          this.buildAckMessageType(msh),
           now.getTime().toString(),
           'P',
           versionId,
@@ -118,6 +153,25 @@ export class Hl7Message {
       ),
       new Hl7Segment(['MSA', 'AA', controlId, 'OK'], this.context),
     ]);
+  }
+
+  private buildAckMessageType(msh: Hl7Segment | undefined): string {
+    // MSH 7 is the message type
+    // https://hl7-definition.caristix.com/v2/HL7v2.4/DataTypes/MSG
+    // In HL7 v2.1, the message type is a single field
+    // In HL7 v2.2 through v2.3, message type has two components.
+    // In HL7 v2.3.1 and later, message type has three components.
+    // Rather than using version to determine behavior, we instead mirror the original message.
+    const messageType = msh?.getField(9);
+    const triggerEvent = messageType?.getComponent(2);
+    const messageStructure = messageType?.getComponent(3);
+    let result = 'ACK';
+    if (triggerEvent && messageStructure) {
+      result = `ACK^${triggerEvent}^ACK`;
+    } else if (triggerEvent) {
+      result = `ACK^${triggerEvent}`;
+    }
+    return result;
   }
 
   /**
@@ -158,13 +212,13 @@ export class Hl7Segment {
 
   /**
    * Creates a new HL7 segment.
-   * @param fields The HL7 fields.
+   * @param fields The HL7 fields. The first field is the segment name.
    * @param context Optional HL7 parsing context.
    */
   constructor(fields: Hl7Field[] | string[], context = new Hl7Context()) {
     this.context = context;
     if (isStringArray(fields)) {
-      this.fields = fields.map((f) => Hl7Field.parse(f));
+      this.fields = fields.map((f) => Hl7Field.parse(f, context));
     } else {
       this.fields = fields;
     }
@@ -175,9 +229,64 @@ export class Hl7Segment {
    * Returns an HL7 field by index.
    * @param index The HL7 field index.
    * @returns The HL7 field.
+   * @deprecated Use getSegment() instead. This method includes the segment name in the index, which leads to confusing behavior. This method will be removed in a future release.
    */
   get(index: number): Hl7Field {
     return this.fields[index];
+  }
+
+  /**
+   * Returns an HL7 field by index.
+   *
+   * Note that the index is 1-based, not 0-based.
+   *
+   * For example, to get the first field, use `getField(1)`.
+   *
+   * This aligns with HL7 field names such as PID.1, PID.2, etc.
+   *
+   * Field zero is the segment name.
+   *
+   * @param index The HL7 field index.
+   * @returns The HL7 field.
+   */
+  getField(index: number): Hl7Field {
+    if (this.name === 'MSH') {
+      // MSH segments require special handling due to field separator
+      if (index === 1) {
+        // MSH.1 is the field separator
+        return new Hl7Field([[this.context.getMsh1()]], this.context);
+      }
+      if (index === 2) {
+        // MSH.2 is the encoding characters
+        return new Hl7Field([[this.context.getMsh2()]], this.context);
+      }
+      if (index > 2) {
+        // MSH.3 through MSH.n are offset by 1
+        return this.fields[index - 1];
+      }
+    }
+    return this.fields[index];
+  }
+
+  /**
+   * Returns an HL7 component by field index and component index.
+   *
+   * This is a shortcut for `getField(field).getComponent(component)`.
+   *
+   * Note that both indexex are 1-based, not 0-based.
+   *
+   * For example, to get the first component, use `getComponent(1, 1)`.
+   *
+   * This aligns with HL7 component names such as MSH.9.2.
+   *
+   * @param fieldIndex The HL7 field index.
+   * @param component The component index.
+   * @param subcomponent Optional subcomponent index.
+   * @param repetition Optional repetition index.
+   * @returns The string value of the specified component.
+   */
+  getComponent(fieldIndex: number, component: number, subcomponent?: number, repetition = 0): string {
+    return this.getField(fieldIndex)?.getComponent(component, subcomponent, repetition) ?? '';
   }
 
   /**
@@ -226,12 +335,31 @@ export class Hl7Field {
    * @param subcomponent Optional subcomponent index.
    * @param repetition Optional repetition index.
    * @returns The string value of the specified component.
+   * @deprecated Use getComponent() instead. This method will be removed in a future release.
    */
   get(component: number, subcomponent?: number, repetition = 0): string {
-    let value = this.components[repetition][component] || '';
+    return this.getComponent(component + 1, subcomponent, repetition);
+  }
+
+  /**
+   * Returns an HL7 component by index.
+   *
+   * Note that the index is 1-based, not 0-based.
+   *
+   * For example, to get the first component, use `getComponent(1)`.
+   *
+   * This aligns with HL7 component names such as MSH.9.2.
+   *
+   * @param component The component index.
+   * @param subcomponent Optional subcomponent index.
+   * @param repetition Optional repetition index.
+   * @returns The string value of the specified component.
+   */
+  getComponent(component: number, subcomponent?: number, repetition = 0): string {
+    let value = this.components[repetition][component - 1] ?? '';
 
     if (subcomponent !== undefined) {
-      value = value.split(this.context.subcomponentSeparator)[subcomponent] || '';
+      value = value.split(this.context.subcomponentSeparator)[subcomponent] ?? '';
     }
 
     return value;
@@ -259,37 +387,115 @@ export class Hl7Field {
   }
 }
 
-interface Hl7DateParseOptions {
-  seconds?: boolean;
+export interface Hl7DateParseOptions {
+  /**
+   * Default timezone offset.
+   * Example: "-0500"
+   */
   tzOffset?: string;
 }
 
 /**
  * Returns a formatted string representing the date in ISO-8601 format.
- * @param hl7Date Date string.
- * @param options Optional configuration Object
+ *
+ * HL7-Definition V2
+ * Specifies a point in time using a 24-hour clock notation.
+ *
+ * Format: YYYY[MM[DD[HH[MM[SS[. S[S[S[S]]]]]]]]][+/-ZZZZ].
+ *
+ * @param hl7DateTime Date/time string.
+ * @param options Optional parsing options.
  * @returns The date in ISO-8601 format.
  */
-export function parseHl7Date(hl7Date: string | undefined, options?: Hl7DateParseOptions): string | undefined {
-  if (!hl7Date) {
+export function parseHl7DateTime(hl7DateTime: string | undefined, options?: Hl7DateParseOptions): string | undefined {
+  if (!hl7DateTime) {
     return undefined;
   }
 
-  options = { ...{ seconds: true, tzOffset: 'Z' }, ...options };
+  const year = parseIntOrDefault(hl7DateTime.slice(0, 4), 0);
+  const month = parseIntOrDefault(hl7DateTime.slice(4, 6), 1) - 1; // Months are 0-indexed in JavaScript Date
+  const day = parseIntOrDefault(hl7DateTime.slice(6, 8), 1); // Default to first day of month
+  const hour = parseIntOrDefault(hl7DateTime.slice(8, 10), 0);
+  const minute = parseIntOrDefault(hl7DateTime.slice(10, 12), 0);
+  const second = parseIntOrDefault(hl7DateTime.slice(12, 14), 0);
 
-  const year = Number.parseInt(hl7Date.substring(0, 4), 10);
-  const month = Number.parseInt(hl7Date.substring(4, 6), 10);
-  const date = Number.parseInt(hl7Date.substring(6, 8), 10);
-  const hours = Number.parseInt(hl7Date.substring(8, 10), 10);
-  const minutes = Number.parseInt(hl7Date.substring(10, 12), 10);
+  let millisecond = 0;
+  if (hl7DateTime.includes('.')) {
+    millisecond = parseIntOrDefault(hl7DateTime.slice(15, 19), 0);
+  }
 
-  const seconds = options.seconds ? Number.parseInt(hl7Date.substring(12, 14), 10) : 0;
+  let date = new Date(Date.UTC(year, month, day, hour, minute, second, millisecond));
 
-  return `${pad2(year)}-${pad2(month)}-${pad2(date)}T${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}.000${
-    options.tzOffset
-  }`;
+  const tzOffset = parseTimeZoneOffset(hl7DateTime, options?.tzOffset);
+  if (tzOffset !== 0) {
+    date = new Date(date.getTime() - tzOffset);
+  }
+
+  return date.toISOString();
 }
 
-function pad2(n: number): string {
-  return n.toString().padStart(2, '0');
+/**
+ * Parses an integer value from a string.
+ * @param str The string to parse.
+ * @param defaultValue The default value to return if the string is not a number.
+ * @returns The parsed integer value, or the default value if the string is not a number.
+ */
+function parseIntOrDefault(str: string, defaultValue: number): number {
+  const result = parseInt(str, 10);
+  return isNaN(result) ? defaultValue : result;
+}
+
+/**
+ * Returns the timezone offset in milliseconds.
+ * @param hl7DateTime The HL7 date/time string.
+ * @param defaultOffset Optional default timezone offset.
+ * @returns The timezone offset in milliseconds.
+ */
+function parseTimeZoneOffset(hl7DateTime: string, defaultOffset?: string): number {
+  let offsetStr = defaultOffset;
+
+  const plusIndex = hl7DateTime.indexOf('+');
+  if (plusIndex !== -1) {
+    offsetStr = hl7DateTime.slice(plusIndex);
+  }
+
+  const minusIndex = hl7DateTime.indexOf('-');
+  if (minusIndex !== -1) {
+    offsetStr = hl7DateTime.slice(minusIndex);
+  }
+
+  if (!offsetStr) {
+    return 0;
+  }
+
+  const sign = offsetStr.startsWith('-') ? -1 : 1;
+
+  // Remove plus, minus, and optional colon
+  offsetStr = offsetStr.slice(1).replace(':', '');
+
+  const hour = parseInt(offsetStr.slice(0, 2), 10);
+  const minute = parseInt(offsetStr.slice(2, 4), 10);
+  return sign * (hour * 60 * 60 * 1000 + minute * 60 * 1000);
+}
+
+/**
+ * Formats an ISO date/time string into an HL7 date/time string.
+ * @param isoDate The ISO date/time string.
+ * @returns The HL7 date/time string.
+ */
+export function formatHl7DateTime(isoDate: Date | string): string {
+  const date = isoDate instanceof Date ? isoDate : new Date(isoDate);
+  const isoString = date.toISOString();
+
+  // Replace "T" and all dashes (-) and colons (:) with empty strings
+  // Replace Z with "+0000"
+  // Replace the last 3 digits before 'Z' with the 4-digit milliseconds
+  let result = isoString.replace(/[-:T]/g, '').replace(/(\.\d+)?Z$/, '');
+
+  const milliseconds = date.getUTCMilliseconds();
+  if (milliseconds > 0) {
+    result += '.' + milliseconds.toString();
+  }
+
+  return result;
 }

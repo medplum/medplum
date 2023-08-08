@@ -1381,7 +1381,7 @@
       "name": "patient",
       "type": "reference",
       "description": " The patient or group present at the encounter\r",
-      "expression": "Encounter.subject"
+      "expression": "Encounter.subject.where(resolve() is Patient)"
     },
     {
       "name": "type",
@@ -1465,7 +1465,7 @@
       "name": "practitioner",
       "type": "reference",
       "description": "Persons involved in the encounter other than the patient",
-      "expression": "Encounter.participant.individual"
+      "expression": "Encounter.participant.individual.where(resolve() is Practitioner)"
     },
     {
       "name": "reason-code",

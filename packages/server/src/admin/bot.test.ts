@@ -39,7 +39,8 @@ describe('Bot admin', () => {
     expect(res2.status).toBe(201);
     expect(res2.body.resourceType).toBe('Bot');
     expect(res2.body.id).toBeDefined();
-    expect(res2.body.code).toBeDefined();
+    expect(res2.body.code).toBeUndefined();
+    expect(res2.body.sourceCode).toBeDefined();
 
     // Read the bot
     const res3 = await request(app)

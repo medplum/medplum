@@ -28,7 +28,7 @@ export async function expungeHandler(req: Request, res: Response): Promise<void>
     const exec = new AsyncJobExecutor(repo);
     await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
     exec.start(async () => {
-      logger.info(`expunge started for ${resourceType}/${id}`);
+      logger.info('Expunge started', { resourceType, id });
       await new Expunger(repo, id).expunge();
     });
     sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));

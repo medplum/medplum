@@ -1,4 +1,5 @@
 import { Attachment, CodeableConcept, ObservationDefinition, Patient, Resource } from '@medplum/fhirtypes';
+import { ContentType } from './contenttype';
 import {
   arrayBufferToBase64,
   arrayBufferToHex,
@@ -8,19 +9,22 @@ import {
   createReference,
   deepClone,
   deepEquals,
+  deepIncludes,
   findObservationInterval,
   findObservationReferenceRange,
+  findResourceByCode,
   getCodeBySystem,
   getDateProperty,
   getDisplayString,
-  getExtensionValue,
   getExtension,
+  getExtensionValue,
   getIdentifier,
   getImageSrc,
   getQuestionnaireAnswers,
   isLowerCase,
   isProfileResource,
   isUUID,
+  parseReference,
   preciseEquals,
   preciseGreaterThan,
   preciseGreaterThanOrEquals,
@@ -28,11 +32,9 @@ import {
   preciseLessThanOrEquals,
   preciseRound,
   resolveId,
+  ResourceWithCode,
   setCodeBySystem,
   stringify,
-  findResourceByCode,
-  ResourceWithCode,
-  deepIncludes,
 } from './utils';
 
 if (typeof btoa === 'undefined') {
@@ -75,6 +77,16 @@ describe('Core Utils', () => {
     expect(resolveId({ id: '123' })).toBeUndefined();
     expect(resolveId({ reference: 'Patient' })).toBeUndefined();
     expect(resolveId({ reference: 'Patient/123' })).toBe('123');
+  });
+
+  test('parseReference', () => {
+    expect(parseReference(undefined)).toBeUndefined();
+    expect(parseReference({})).toBeUndefined();
+    expect(parseReference({ id: '123' })).toBeUndefined();
+    expect(parseReference({ reference: 'Patient' })).toBeUndefined();
+    expect(parseReference({ reference: '/' })).toBeUndefined();
+    expect(parseReference({ reference: 'Patient/' })).toBeUndefined();
+    expect(parseReference({ reference: 'Patient/123' })).toEqual(['Patient', '123']);
   });
 
   test('isProfileResource', () => {
@@ -124,7 +136,7 @@ describe('Core Utils', () => {
         photo: [
           {
             url: 'http://abc/xyz.txt',
-            contentType: 'text/plain',
+            contentType: ContentType.TEXT,
           },
         ],
       })

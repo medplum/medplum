@@ -1,4 +1,5 @@
 import {
+  ContentType,
   createReference,
   getExtension,
   getExtensionValue,
@@ -390,7 +391,7 @@ async function sendRestHook(
  */
 function buildRestHookHeaders(subscription: Subscription, resource: Resource): HeadersInit {
   const headers: HeadersInit = {
-    'Content-Type': 'application/fhir+json',
+    'Content-Type': ContentType.FHIR_JSON,
   };
 
   if (subscription.channel?.header) {
@@ -447,7 +448,7 @@ async function execBot(subscription: Subscription, resource: Resource): Promise<
   let logResult: string;
 
   try {
-    const result = await executeBot({ bot, runAs, input: resource, contentType: 'application/fhir+json' });
+    const result = await executeBot({ bot, runAs, input: resource, contentType: ContentType.FHIR_JSON });
     outcome = result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure;
     logResult = result.logResult;
   } catch (error) {

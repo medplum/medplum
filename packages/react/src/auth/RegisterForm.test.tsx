@@ -70,7 +70,8 @@ function mockFetch(url: string, options: any): Promise<any> {
   } else if (options.method === 'POST' && url.endsWith('/oauth2/token')) {
     status = 200;
     result = {
-      access_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id' })) + '.signature',
+      access_token:
+        'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id', login_id: '123' })) + '.signature',
       refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id' })) + '.signature',
       expires_in: 1,
       token_type: 'Bearer',

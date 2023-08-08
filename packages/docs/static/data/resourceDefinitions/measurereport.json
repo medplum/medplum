@@ -1053,7 +1053,7 @@
       "name": "patient",
       "type": "reference",
       "description": "The identity of a patient to search for individual measure report results for",
-      "expression": "MeasureReport.subject"
+      "expression": "MeasureReport.subject.where(resolve() is Patient)"
     },
     {
       "name": "period",

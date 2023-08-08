@@ -2,6 +2,7 @@ import { isGone, normalizeOperationOutcome } from '@medplum/core';
 import { Binary, Meta, Resource } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
+import { Readable } from 'stream';
 import { getConfig, MedplumRedisConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
@@ -188,7 +189,10 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
     if (response.body === null) {
       throw new Error('Received null response body');
     }
-    await getBinaryStorage().writeBinary(binary, contentDisposition, contentType, response.body);
+
+    // From node-fetch docs:
+    // Note that while the Fetch Standard requires the property to always be a WHATWG ReadableStream, in node-fetch it is a Node.js Readable stream.
+    await getBinaryStorage().writeBinary(binary, contentDisposition, contentType, response.body as Readable);
 
     const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary.id}`)) as Resource;
     (updated.meta as Meta).author = { reference: 'system' };

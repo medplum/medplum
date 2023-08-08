@@ -1,0 +1,47 @@
+{
+  "type": "module",
+  "name": "medplum-demo-bots",
+  "version": "2.0.30",
+  "description": "Medplum Demo Bots",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "prettier": "prettier --write .",
+    "lint": "eslint src/"
+  },
+  "author": "Medplum <hello@medplum.com>",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@medplum/cli": "2.0.30",
+    "@medplum/core": "2.0.30",
+    "@medplum/eslint-config": "2.0.30",
+    "@medplum/fhirtypes": "2.0.30",
+    "@medplum/mock": "2.0.30",
+    "@types/node": "20.4.5",
+    "@types/node-fetch": "2.6.4",
+    "@types/ssh2-sftp-client": "9.0.0",
+    "@vitest/coverage-v8": "0.33.0",
+    "@vitest/ui": "0.33.0",
+    "form-data": "4.0.0",
+    "node-fetch": "2.6.12",
+    "pdfmake": "0.2.7",
+    "ssh2-sftp-client": "9.1.0",
+    "stripe": "12.14.0",
+    "typescript": "5.1.6",
+    "vitest": "0.33.0"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true
+  },
+  "dependencies": {
+    "esbuild": "0.18.17"
+  }
+}

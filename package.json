@@ -1,15 +1,14 @@
 {
   "name": "root",
-  "version": "2.0.25",
+  "version": "2.0.30",
   "engines": {
-    "npm": ">=8.0.0",
     "node": ">=18.0.0"
   },
   "scripts": {
     "clean": "turbo run clean",
     "build": "turbo run build",
     "test": "turbo run test",
-    "lint": "eslint packages/",
+    "lint": "eslint .",
     "prettier": "prettier --write .",
     "cyclonedx": "cyclonedx-npm --omit dev --omit optional --omit peer"
   },
@@ -18,55 +17,47 @@
     "examples/*"
   ],
   "devDependencies": {
-    "@babel/core": "7.22.5",
-    "@babel/preset-env": "7.22.5",
+    "@babel/core": "7.22.9",
+    "@babel/preset-env": "7.22.9",
     "@babel/preset-react": "7.22.5",
     "@babel/preset-typescript": "7.22.5",
-    "@cyclonedx/cyclonedx-npm": "1.12.1",
-    "@types/jest": "29.5.2",
-    "@types/node": "20.3.3",
-    "@typescript-eslint/eslint-plugin": "5.60.1",
-    "@typescript-eslint/parser": "5.60.1",
-    "babel-jest": "29.5.0",
+    "@cyclonedx/cyclonedx-npm": "1.13.0",
+    "@types/jest": "29.5.3",
+    "@types/node": "20.4.5",
+    "babel-jest": "29.6.1",
     "babel-preset-vite": "1.1.0",
     "cross-env": "7.0.3",
-    "esbuild": "0.18.11",
-    "eslint": "8.44.0",
-    "eslint-config-prettier": "8.8.0",
-    "eslint-plugin-jsdoc": "46.4.3",
-    "eslint-plugin-prettier": "4.2.1",
-    "eslint-plugin-react-hooks": "4.6.0",
+    "esbuild": "0.18.17",
     "identity-obj-proxy": "3.0.0",
-    "jest": "29.5.0",
-    "jest-environment-jsdom": "29.5.0",
-    "npm-check-updates": "16.10.13",
+    "jest": "29.6.1",
+    "jest-environment-jsdom": "29.6.1",
+    "npm-check-updates": "16.10.17",
     "nyc": "15.1.0",
-    "prettier": "2.8.8",
     "rimraf": "5.0.1",
     "source-map-explorer": "2.5.3",
     "ts-node": "10.9.1",
-    "tslib": "2.6.0",
-    "turbo": "1.10.7",
+    "tslib": "2.6.1",
+    "turbo": "1.10.12",
     "typescript": "5.1.6"
   },
   "overrides": {
-    "esbuild": "0.18.11",
+    "esbuild": "0.18.17",
     "got": "11.8.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "trim": "0.0.3"
   },
-  "prettier": {
-    "printWidth": 120,
-    "singleQuote": true
-  },
   "eslintConfig": {
     "root": true,
     "extends": [
-      "./packages/eslint-config"
+      "@medplum/eslint-config"
     ],
     "parserOptions": {
       "project": "./tsconfig.base.json"
     }
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true
   }
 }

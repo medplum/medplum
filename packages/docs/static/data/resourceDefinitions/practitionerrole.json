@@ -632,13 +632,13 @@
       "name": "email",
       "type": "token",
       "description": " A value in an email contact\r",
-      "expression": "PractitionerRole.telecom"
+      "expression": "PractitionerRole.telecom.where(system = 'email')"
     },
     {
       "name": "phone",
       "type": "token",
       "description": " A value in a phone contact\r",
-      "expression": "PractitionerRole.telecom"
+      "expression": "PractitionerRole.telecom.where(system = 'phone')"
     },
     {
       "name": "telecom",

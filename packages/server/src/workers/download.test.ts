@@ -1,3 +1,4 @@
+import { ContentType } from '@medplum/core';
 import { Media } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
@@ -48,7 +49,7 @@ describe('Download Worker', () => {
       resourceType: 'Media',
       status: 'completed',
       content: {
-        contentType: 'text/plain',
+        contentType: ContentType.TEXT,
         url,
       },
     });
@@ -65,7 +66,7 @@ describe('Download Worker', () => {
         get(name: string): string | undefined {
           return {
             'content-disposition': 'attachment; filename=download',
-            'content-type': 'text/plain',
+            'content-type': ContentType.TEXT,
           }[name];
         },
       },
@@ -86,7 +87,7 @@ describe('Download Worker', () => {
       resourceType: 'Media',
       status: 'completed',
       content: {
-        contentType: 'text/plain',
+        contentType: ContentType.TEXT,
         url: '',
       },
     });
@@ -104,7 +105,7 @@ describe('Download Worker', () => {
       resourceType: 'Media',
       status: 'completed',
       content: {
-        contentType: 'text/plain',
+        contentType: ContentType.TEXT,
         url,
       },
     });
@@ -129,7 +130,7 @@ describe('Download Worker', () => {
       resourceType: 'Media',
       status: 'completed',
       content: {
-        contentType: 'text/plain',
+        contentType: ContentType.TEXT,
         url,
       },
     });
@@ -154,7 +155,7 @@ describe('Download Worker', () => {
       resourceType: 'Media',
       status: 'completed',
       content: {
-        contentType: 'text/plain',
+        contentType: ContentType.TEXT,
         url: 'https://example.com/download',
       },
     });
@@ -180,7 +181,7 @@ describe('Download Worker', () => {
       resourceType: 'Media',
       status: 'completed',
       content: {
-        contentType: 'text/plain',
+        contentType: ContentType.TEXT,
         url: 'https://example.com/download',
       },
     });
@@ -192,7 +193,7 @@ describe('Download Worker', () => {
     await repo.updateResource({
       ...(media as Media),
       content: {
-        contentType: 'text/plain',
+        contentType: ContentType.TEXT,
         url: 'Binary/' + randomUUID(),
       },
     });

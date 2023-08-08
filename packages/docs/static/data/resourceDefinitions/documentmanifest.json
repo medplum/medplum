@@ -527,13 +527,13 @@
       "name": "identifier",
       "type": "token",
       "description": " Unique Identifier for the set of documents\r",
-      "expression": "DocumentManifest.masterIdentifier"
+      "expression": "DocumentManifest.masterIdentifier | DocumentManifest.identifier"
     },
     {
       "name": "patient",
       "type": "reference",
       "description": " The subject of the set of documents\r",
-      "expression": "DocumentManifest.subject"
+      "expression": "DocumentManifest.subject.where(resolve() is Patient)"
     },
     {
       "name": "type",

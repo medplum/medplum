@@ -1,6 +1,6 @@
 import { ElementDefinition, OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
 import { getTypedPropertyValue, toTypedValue } from './fhirpath';
-import { OperationOutcomeError, validationError } from './outcomes';
+import { OperationOutcomeError, createStructureIssue, validationError } from './outcomes';
 import { globalSchema, PropertyType, TypedValue } from './types';
 import { capitalize, getExtensionValue, isEmpty, isLowerCase } from './utils';
 
@@ -297,7 +297,7 @@ export class FhirSchemaValidator<T extends Resource> {
     if (valueDefinition?.type) {
       const regex = getExtensionValue(valueDefinition.type[0], 'http://hl7.org/fhir/StructureDefinition/regex');
       if (regex) {
-        if (!value.match(new RegExp(regex))) {
+        if (!new RegExp(regex).exec(value)) {
           this.createIssue(elementDefinition, 'Invalid ' + type + ' format');
         }
       }
@@ -462,15 +462,4 @@ function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: 
   for (const [key, value] of Object.entries(obj)) {
     checkForNull(value, `${path}${path ? '.' : ''}${key}`, issues);
   }
-}
-
-export function createStructureIssue(expression: string, details: string): OperationOutcomeIssue {
-  return {
-    severity: 'error',
-    code: 'structure',
-    details: {
-      text: details,
-    },
-    expression: [expression],
-  };
 }

@@ -12,7 +12,7 @@ Follow these instructions to get the complete Medplum stack running directly on 
 ## Prerequisites
 
 1. **[Git](https://git-scm.com/)**
-2. **[npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)**
+2. **[Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)** version 18+
 3. **[Docker](https://docs.docker.com/engine/install/)**
 4. [Clone the Medplum repo](./clone-the-repo)
 
@@ -141,7 +141,7 @@ To make sure the server is working, you can access the health check at <http://l
 If everything is working, you should see the following in your browser:
 
 ```json
-{ "ok": true, "postgres": true, "redis": true }
+{ "ok": true, "version": "<MEDPLUM_VERSION>", "postgres": true, "redis": true }
 ```
 
 ### Run the Medplum Web App

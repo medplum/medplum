@@ -2,7 +2,6 @@
 sidebar_position: 1
 ---
 
-
 import ExampleCode from '!!raw-loader!@site/../examples/src/graphql/basic-query.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
@@ -51,7 +50,7 @@ For example, to request a `Patient` by ID:
 
 This query retrieves the `resourceType`, `id`, `name`, and `address` of the specified `Patient`.
 
-## How to FHIR perform searches with GraphQL
+## How to perform FHIR searches with GraphQL
 
 To perform a FHIR search, append the word `"List"` to the FHIR resource type. For example, to search for Patient resources use `"PatientList"`. You will specify search parameters as query parameters, similarly to [basic REST search](/docs/search/basic-search).
 
@@ -93,6 +92,12 @@ To search for a list of `Patient` resources with a specific name and city:
 This query searches for Patient resources with the name `"Eve"` and a city of `"Philadelphia"`, and aliases the list of patients as `patients` in the response.
 
 See the "[Searching Resources](https://hl7.org/fhir/r4/graphql.html#searching)" section of the FHIR GraphQL specification for more information.
+
+:::caution Search Modifiers
+
+The [official FHIR GraphQL specification](https://hl7.org/fhir/R4/graphql.html) currently does not support [search modifiers](/docs/search/basic-search#search-modifiers) such as `:not`, `:missing`, and `:contains`. If you'd like to participate or learn more, join the discussion [here](https://chat.fhir.org/#narrow/stream/192326-graphql/topic/Search.20Modifiers.20in.20GraphQL/near/340283410).
+
+:::
 
 ## Resolving nested resources with the `resource` element
 
@@ -222,8 +227,35 @@ Another common use is to filter an `extension` array by `url`:
   </MedplumCodeBlock>
 </details>
 
-See the "[List Navigation](https://hl7.org/fhir/r4/graphql.html#list)" section of the FHIR GraphQL specification for more information.
+If more powerful filtering capabilities are required, a FHIRPath expression can be evaluated to select which list items are included in the response. The expression should evaluate to `true` for an item to be included. This example selects all patient names without a family part:
 
+<Tabs groupId="language">
+  <TabItem value="graphql" label="GraphQL">
+    <MedplumCodeBlock language="graphql" selectBlocks="FilterExtensionByFHIRPathGraphQL">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="FilterPatientNameByFHIRPathTS">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+<details>
+  <summary>Example Response</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="FilterPatientNameByFHIRPathResponse">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+:::tip Query Performance
+
+Evaluating FHIRPath expressions can be relatively expensive; consider whether results could easily be filtered by the client instead.
+
+:::
+
+See the "[List Navigation](https://hl7.org/fhir/r4/graphql.html#list)" section of the FHIR GraphQL specification for more information.
 
 ## Putting it all together
 

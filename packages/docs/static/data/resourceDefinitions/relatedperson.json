@@ -499,7 +499,7 @@
       "name": "email",
       "type": "token",
       "description": " A value in an email contact\r",
-      "expression": "RelatedPerson.telecom"
+      "expression": "RelatedPerson.telecom.where(system = 'email')"
     },
     {
       "name": "gender",
@@ -511,7 +511,7 @@
       "name": "phone",
       "type": "token",
       "description": " A value in a phone contact\r",
-      "expression": "RelatedPerson.telecom"
+      "expression": "RelatedPerson.telecom.where(system = 'phone')"
     },
     {
       "name": "phonetic",

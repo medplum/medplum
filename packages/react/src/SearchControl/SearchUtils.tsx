@@ -115,7 +115,7 @@ export function clearFilters(definition: SearchRequest): SearchRequest {
 export function clearFiltersOnField(definition: SearchRequest, code: string): SearchRequest {
   return setFilters(
     definition,
-    (definition.filters || []).filter((f) => f.code !== code)
+    (definition.filters ?? []).filter((f) => f.code !== code)
   );
 }
 
@@ -143,7 +143,7 @@ export function addFilter(
   if (definition.filters) {
     nextFilters.push(...definition.filters);
   }
-  nextFilters.push({ code: field, operator: op, value: value || '' });
+  nextFilters.push({ code: field, operator: op, value: value ?? '' });
 
   return setFilters(definition, nextFilters);
 }
@@ -526,7 +526,7 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
 
   // Priority 2: SearchParameter by exact match
   if (field.searchParams && field.searchParams.length === 1 && field.name === field.searchParams[0].code) {
-    return renderSearchParameterValue(resource, field.searchParams[0], field.elementDefinition);
+    return renderSearchParameterValue(resource, field.searchParams[0]);
   }
 
   // We don't know how to render this field definition
@@ -540,7 +540,7 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
  * @returns A React element or null.
  */
 function renderPropertyValue(resource: Resource, elementDefinition: ElementDefinition): JSX.Element | null {
-  const path = elementDefinition.path?.split('.')?.pop()?.replaceAll('[x]', '') || '';
+  const path = elementDefinition.path?.split('.')?.pop()?.replaceAll('[x]', '') ?? '';
   const [value, propertyType] = getValueAndType({ type: resource.resourceType, value: resource }, path);
   if (!value) {
     return null;
@@ -562,37 +562,25 @@ function renderPropertyValue(resource: Resource, elementDefinition: ElementDefin
  * Returns a fragment to be displayed in the search table for a search parameter.
  * @param resource The parent resource.
  * @param searchParam The search parameter.
- * @param elementDefinition Optional element definition.
  * @returns A React element or null.
  */
-function renderSearchParameterValue(
-  resource: Resource,
-  searchParam: SearchParameter,
-  elementDefinition: ElementDefinition | undefined
-): JSX.Element | null {
+function renderSearchParameterValue(resource: Resource, searchParam: SearchParameter): JSX.Element | null {
   const value = evalFhirPathTyped(searchParam.expression as string, [{ type: resource.resourceType, value: resource }]);
   if (!value || value.length === 0) {
     return null;
   }
 
-  if (elementDefinition) {
-    return (
-      <ResourcePropertyDisplay
-        propertyType={value[0].type as PropertyType}
-        value={value[0].value}
-        maxWidth={200}
-        ignoreMissingValues={true}
-        link={false}
-      />
-    );
-  }
-
   return (
     <>
       {value.map((v, index) => (
-        <span key={`${index}-${value.length}`}>
-          {typeof v === 'object' ? JSON.stringify(v) : (v as string | number)}
-        </span>
+        <ResourcePropertyDisplay
+          key={`${index}-${value.length}`}
+          propertyType={v.type as PropertyType}
+          value={v.value}
+          maxWidth={200}
+          ignoreMissingValues={true}
+          link={false}
+        />
       ))}
     </>
   );

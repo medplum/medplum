@@ -1,4 +1,5 @@
 import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
+import { Constraint } from './typeschema/types';
 
 const OK_ID = 'ok';
 const CREATED_ID = 'created';
@@ -286,6 +287,9 @@ export function normalizeErrorString(error: unknown): string {
   if (isOperationOutcome(error)) {
     return operationOutcomeToString(error);
   }
+  if (typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
+    return error.code;
+  }
   return JSON.stringify(error);
 }
 
@@ -310,4 +314,40 @@ export function operationOutcomeIssueToString(issue: OperationOutcomeIssue): str
     issueStr += ` (${issue.expression.join(', ')})`;
   }
   return issueStr;
+}
+
+type IssueType = 'structure' | 'invariant' | 'processing';
+
+function errorIssue(code: IssueType, message: string, path: string, data?: Record<string, any>): OperationOutcomeIssue {
+  const issue: OperationOutcomeIssue = {
+    severity: 'error',
+    code,
+    details: {
+      text: message,
+    },
+    expression: [path],
+  };
+  if (data) {
+    issue.diagnostics = JSON.stringify(data);
+  }
+  return issue;
+}
+
+export function createStructureIssue(expression: string, details: string): OperationOutcomeIssue {
+  return errorIssue('structure', details, expression);
+}
+
+export function createConstraintIssue(expression: string, constraint: Constraint): OperationOutcomeIssue {
+  return errorIssue('invariant', `Constraint ${constraint.key} not met: ${constraint.description}`, expression, {
+    fhirpath: constraint.expression,
+  });
+}
+
+export function createProcessingIssue(
+  expression: string,
+  message: string,
+  err: Error,
+  data?: Record<string, any>
+): OperationOutcomeIssue {
+  return errorIssue('processing', message, expression, { ...data, error: err });
 }

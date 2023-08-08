@@ -680,7 +680,7 @@
       "name": "patient",
       "type": "reference",
       "description": " The subject of the report if a patient\r",
-      "expression": "DiagnosticReport.subject"
+      "expression": "DiagnosticReport.subject.where(resolve() is Patient)"
     },
     {
       "name": "encounter",

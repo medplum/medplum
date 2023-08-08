@@ -15,6 +15,7 @@ import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcome
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 
 export interface AuthenticationFormProps extends BaseLoginRequest {
+  readonly disableEmailAuth?: boolean;
   readonly disableGoogleAuth?: boolean;
   readonly onForgotPassword?: () => void;
   readonly onRegister?: () => void;
@@ -33,6 +34,7 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
 }
 
 export interface EmailFormProps extends BaseLoginRequest {
+  readonly disableEmailAuth?: boolean;
   readonly disableGoogleAuth?: boolean;
   readonly onRegister?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
@@ -41,7 +43,7 @@ export interface EmailFormProps extends BaseLoginRequest {
 }
 
 export function EmailForm(props: EmailFormProps): JSX.Element {
-  const { setEmail, onRegister, handleAuthResponse, children, ...baseLoginRequest } = props;
+  const { setEmail, onRegister, handleAuthResponse, children, disableEmailAuth, ...baseLoginRequest } = props;
   const medplum = useMedplum();
   const googleClientId = !props.disableGoogleAuth && getGoogleClientId(props.googleClientId);
 
@@ -94,17 +96,19 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
           <Group position="center" p="xl" style={{ height: 70 }}>
             <GoogleButton googleClientId={googleClientId} handleGoogleCredential={handleGoogleCredential} />
           </Group>
-          <Divider label="or" labelPosition="center" my="lg" />
+          {!disableEmailAuth && <Divider label="or" labelPosition="center" my="lg" />}
         </>
       )}
-      <TextInput
-        name="email"
-        type="email"
-        label="Email"
-        placeholder="name@domain.com"
-        required={true}
-        autoFocus={true}
-      />
+      {!disableEmailAuth && (
+        <TextInput
+          name="email"
+          type="email"
+          label="Email"
+          placeholder="name@domain.com"
+          required={true}
+          autoFocus={true}
+        />
+      )}
       <Group position="apart" mt="xl" spacing={0} noWrap>
         <div>
           {onRegister && (
@@ -113,7 +117,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
             </Anchor>
           )}
         </div>
-        <Button type="submit">Next</Button>
+        {!disableEmailAuth && <Button type="submit">Next</Button>}
       </Group>
     </Form>
   );

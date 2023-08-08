@@ -1289,13 +1289,13 @@
       "name": "context",
       "type": "token",
       "description": "A use context assigned to the risk evidence synthesis",
-      "expression": "RiskEvidenceSynthesis.useContext.value"
+      "expression": "RiskEvidenceSynthesis.useContext.value as CodeableConcept"
     },
     {
       "name": "context-quantity",
       "type": "quantity",
       "description": "A quantity- or range-valued use context assigned to the risk evidence synthesis",
-      "expression": "RiskEvidenceSynthesis.useContext.value"
+      "expression": "RiskEvidenceSynthesis.useContext.value as Quantity | RiskEvidenceSynthesis.useContext.value as Range"
     },
     {
       "name": "context-type",

@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Button,
   Center,
   createStyles,
@@ -25,10 +26,11 @@ import {
   IconColumns,
   IconFilePlus,
   IconFilter,
+  IconRefresh,
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
@@ -163,27 +165,40 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const stateRef = useRef<SearchControlState>(state);
   stateRef.current = state;
 
-  const totalType = search.total ?? 'estimate';
+  const totalType = search.total ?? 'accurate';
+
+  const loadResults = useCallback(
+    (options?: RequestInit) => {
+      setOutcome(undefined);
+
+      medplum
+        .search(
+          search.resourceType as ResourceType,
+          formatSearchQuery({ ...search, total: totalType, fields: undefined }),
+          options
+        )
+        .then((response) => {
+          setState({ ...stateRef.current, searchResponse: response });
+          if (onLoad) {
+            onLoad(new SearchLoadEvent(response));
+          }
+        })
+        .catch((reason) => {
+          setState({ ...stateRef.current, searchResponse: undefined });
+          setOutcome(reason);
+        });
+    },
+    [medplum, search, totalType, onLoad]
+  );
+
+  const refreshResults = useCallback(() => {
+    setState({ ...stateRef.current, searchResponse: undefined });
+    loadResults({ cache: 'reload' });
+  }, [loadResults]);
 
   useEffect(() => {
-    setOutcome(undefined);
-
-    medplum
-      .search(
-        search.resourceType as ResourceType,
-        formatSearchQuery({ ...search, total: totalType, fields: undefined })
-      )
-      .then((response) => {
-        setState({ ...stateRef.current, searchResponse: response });
-        if (onLoad) {
-          onLoad(new SearchLoadEvent(response));
-        }
-      })
-      .catch((reason) => {
-        setState({ ...stateRef.current, searchResponse: undefined });
-        setOutcome(reason);
-      });
-  }, [medplum, search, totalType, onLoad]);
+    loadResults();
+  }, [loadResults]);
 
   function handleSingleCheckboxClick(e: React.ChangeEvent, id: string): void {
     e.stopPropagation();
@@ -257,17 +272,19 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
     killEvent(e);
 
-    if (e.button !== 1 && props.onClick) {
+    const isAux = e.button === 1 || e.ctrlKey || e.metaKey;
+
+    if (!isAux && props.onClick) {
       props.onClick(new SearchClickEvent(resource, e));
     }
 
-    if (e.button === 1 && props.onAuxClick) {
+    if (isAux && props.onAuxClick) {
       props.onAuxClick(new SearchClickEvent(resource, e));
     }
   }
 
   function isExportPassed(): boolean {
-    return !!(props.onExport || props.onExportCsv || props.onExportTransactionBundle);
+    return !!(props.onExport ?? props.onExportCsv ?? props.onExportTransactionBundle);
   }
 
   useEffect(() => {
@@ -369,12 +386,17 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               </Button>
             )}
           </Group>
-          {lastResult && (
-            <Text size="xs" color="dimmed">
-              {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
-              {`${totalType === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
-            </Text>
-          )}
+          <Group spacing={2}>
+            {lastResult && (
+              <Text size="xs" color="dimmed">
+                {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
+                {`${totalType === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
+              </Text>
+            )}
+            <ActionIcon title="Refresh" onClick={refreshResults}>
+              <IconRefresh size="1.125rem" />
+            </ActionIcon>
+          </Group>
         </Group>
       )}
       <Table className={classes.table}>
@@ -555,11 +577,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       <SearchFilterValueDialog
         key={state.filterDialogSearchParam?.code}
         visible={stateRef.current.filterDialogVisible}
-        title={'Input'}
+        title={state.filterDialogSearchParam?.code ? buildFieldNameString(state.filterDialogSearchParam.code) : ''}
         resourceType={resourceType}
         searchParam={state.filterDialogSearchParam}
         filter={state.filterDialogFilter}
-        defaultValue={''}
+        defaultValue=""
         onOk={(filter) => {
           emitSearchChange(addFilter(props.search, filter.code, filter.operator, filter.value));
           setState({
@@ -594,8 +616,8 @@ function FilterDescription(props: FilterDescriptionProps): JSX.Element {
 
   return (
     <>
-      {filters.map((filter: Filter, index: number) => (
-        <div key={`filter-${index}-${filters.length}`}>
+      {filters.map((filter: Filter) => (
+        <div key={`filter-${filter.code}-${filter.operator}-${filter.value}`}>
           {getOpString(filter.operator)}
           &nbsp;
           <SearchFilterValueDisplay resourceType={props.resourceType} filter={filter} />
@@ -606,11 +628,11 @@ function FilterDescription(props: FilterDescriptionProps): JSX.Element {
 }
 
 function getPage(search: SearchRequest): number {
-  return Math.floor((search.offset || 0) / (search.count || DEFAULT_SEARCH_COUNT)) + 1;
+  return Math.floor((search.offset ?? 0) / (search.count ?? DEFAULT_SEARCH_COUNT)) + 1;
 }
 
 function getTotalPages(search: SearchRequest, total: number): number {
-  const pageSize = search.count || DEFAULT_SEARCH_COUNT;
+  const pageSize = search.count ?? DEFAULT_SEARCH_COUNT;
   return Math.ceil(total / pageSize);
 }
 

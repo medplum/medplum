@@ -124,7 +124,7 @@ function writeSearchParameters(): void {
 }
 
 function keyReplacer(key: string, value: any): any {
-  if (key !== '' && !key.match(/\d+/) && !resourceTypes.includes(key) && !properties.includes(key)) {
+  if (key !== '' && !/\d+/.exec(key) && !resourceTypes.includes(key) && !properties.includes(key)) {
     return undefined;
   }
   return value;

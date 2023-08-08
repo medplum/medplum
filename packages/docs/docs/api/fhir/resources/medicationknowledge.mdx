@@ -1,9 +1,9 @@
 ---
 title: MedicationKnowledge
 sidebar_position: 77
-tags: [medications]
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/medicationknowledge.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
@@ -11,11 +11,14 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Information about a medication that is used to support knowledge.
 
+<Tabs queryString="section">
+<TabItem value="schema" label="Schema" default>
+
+
 ## Properties
 
-<ResourcePropertiesTable
-  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
-/>
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 ## Search Parameters
 
@@ -24,3 +27,13 @@ Information about a medication that is used to support knowledge.
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  <TabItem value="usage" label="Usage">
+    <div>     <a name="scope"></a>          <p>Note that this content is preliminary has not undergone proper review by the appropriate             Workgroups.</p>     <p>This resource supports use cases for creation of and querying for drug information             including attributes such as drug classifications, images of medications, drug costs             and/or coverages, etc. This resource can be used to return drug information as part of a             formulary or a catalogue.</p>   </div>
+    </TabItem>
+  
+  
+  
+
+</Tabs>

@@ -3,8 +3,7 @@ import { ClientApplication, Login, Project, ProjectMembership, Reference } from 
 import { NextFunction, Request, Response } from 'express';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { systemRepo } from '../fhir/repo';
-import { MedplumAccessTokenClaims, verifyJwt } from './keys';
-import { getClientApplicationMembership, timingSafeEqualStr } from './utils';
+import { getClientApplicationMembership, getLoginForAccessToken, timingSafeEqualStr } from './utils';
 
 export function authenticateToken(req: Request, res: Response, next: NextFunction): Promise<void> {
   return authenticateTokenImpl(req, res).then(next).catch(next);
@@ -27,22 +26,7 @@ export async function authenticateTokenImpl(req: Request, res: Response): Promis
 
 async function authenticateBearerToken(req: Request, res: Response, token: string): Promise<void> {
   try {
-    const verifyResult = await verifyJwt(token);
-    const claims = verifyResult.payload as MedplumAccessTokenClaims;
-
-    let login = undefined;
-    try {
-      login = await systemRepo.readResource<Login>('Login', claims.login_id);
-    } catch (err) {
-      throw new OperationOutcomeError(unauthorized);
-    }
-
-    if (!login?.membership || login.revoked) {
-      throw new OperationOutcomeError(unauthorized);
-    }
-
-    const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
-    const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+    const { login, project, membership } = await getLoginForAccessToken(token);
     await setupLocals(req, res, login, project, membership);
   } catch (err) {
     throw new OperationOutcomeError(unauthorized);

@@ -72,7 +72,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
               if (index === editingIndex) {
                 return (
                   <FilterRowInput
-                    key={`filter-${index}-${filters.length}-input`}
+                    key={`filter-${filter.code}-${filter.operator}-${filter.value}-input`}
                     resourceType={resourceType}
                     searchParams={searchParams}
                     defaultValue={filter}
@@ -89,7 +89,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
               } else {
                 return (
                   <FilterRowDisplay
-                    key={`filter-${index}-${filters.length}-display`}
+                    key={`filter-${filter.code}-${filter.operator}-${filter.value}-display`}
                     resourceType={resourceType}
                     searchParams={searchParams}
                     filter={filter}
@@ -175,7 +175,10 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
           data-testid="filter-field"
           defaultValue={valueRef.current.code}
           onChange={(e) => setFilterCode(e.currentTarget.value)}
-          data={Object.keys(props.searchParams).map((param) => ({ value: param, label: buildFieldNameString(param) }))}
+          data={[
+            '',
+            ...Object.keys(props.searchParams).map((param) => ({ value: param, label: buildFieldNameString(param) })),
+          ]}
         />
       </td>
       <td>

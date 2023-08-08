@@ -1,9 +1,10 @@
-import { MedplumClient } from '@medplum/core';
+import { ContentType, MedplumClient } from '@medplum/core';
 import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
 import { existsSync, readFileSync, writeFile } from 'fs';
-import { resolve } from 'path';
+import { basename, extname, resolve } from 'path';
 import internal from 'stream';
 import tar from 'tar';
+import { FileSystemStorage } from './storage';
 
 interface MedplumConfig {
   readonly baseUrl?: string;
@@ -21,34 +22,52 @@ interface MedplumBotConfig {
   readonly dist?: string;
 }
 
+export interface Profile {
+  readonly name?: string;
+  readonly authType?: string;
+  readonly baseUrl?: string;
+  readonly clientId?: string;
+  readonly clientSecret?: string;
+  readonly tokenUrl?: string;
+  readonly authorizeUrl?: string;
+  readonly fhirUrlPath?: string;
+  readonly scope?: string;
+  readonly accessToken?: string;
+  readonly callbackUrl?: string;
+  readonly subject?: string;
+  readonly audience?: string;
+  readonly issuer?: string;
+}
+
 export function prettyPrint(input: unknown): void {
   console.log(JSON.stringify(input, null, 2));
 }
 
 export async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: Bot): Promise<void> {
-  const code = readFileContents(botConfig.source);
+  const codePath = botConfig.source;
+  const code = readFileContents(codePath);
   if (!code) {
     return;
   }
 
   try {
-    console.log('Update bot code.....');
+    console.log('Saving source code...');
+    const sourceCode = await medplum.createAttachment(code, basename(codePath), getCodeContentType(codePath));
+
+    console.log('Updating bot.....');
     const updateResult = await medplum.updateResource({
       ...bot,
-      code,
+      sourceCode,
     });
-    if (!updateResult) {
-      console.log('Bot not modified');
-    } else {
-      console.log('Success! New bot version: ' + updateResult.meta?.versionId);
-    }
+    console.log('Success! New bot version: ' + updateResult.meta?.versionId);
   } catch (err) {
     console.log('Update error: ', err);
   }
 }
 
 export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: Bot): Promise<void> {
-  const code = readFileContents(botConfig.dist ?? botConfig.source);
+  const codePath = botConfig.dist ?? botConfig.source;
+  const code = readFileContents(codePath);
   if (!code) {
     return;
   }
@@ -179,4 +198,38 @@ export function getUnsupportedExtension(): Extension {
       },
     ],
   };
+}
+
+export function getCodeContentType(filename: string): string {
+  const ext = extname(filename).toLowerCase();
+  if (['.cjs', '.mjs', '.js'].includes(ext)) {
+    return ContentType.JAVASCRIPT;
+  }
+  if (['.cts', '.mts', '.ts'].includes(ext)) {
+    return ContentType.TYPESCRIPT;
+  }
+  return ContentType.TEXT;
+}
+
+export function saveProfile(profileName: string, options: Profile): void {
+  const storage = new FileSystemStorage(profileName);
+  const optionsObject = { name: profileName, ...options };
+  storage.setObject('options', optionsObject);
+  console.log(`${profileName} profile created`);
+}
+
+export function loadProfile(profileName: string): Profile {
+  const storage = new FileSystemStorage(profileName);
+  return storage.getObject('options') as Profile;
+}
+
+export function profileExists(storage: FileSystemStorage, profile: string): boolean {
+  if (profile === 'default') {
+    return true;
+  }
+  const optionsObject = storage.getObject('options');
+  if (!optionsObject) {
+    return false;
+  }
+  return true;
 }

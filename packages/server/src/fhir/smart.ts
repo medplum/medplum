@@ -3,7 +3,7 @@
  * https://build.fhir.org/ig/HL7/smart-app-launch/scopes-and-launch-context.html
  */
 
-import { OAuthGrantType, deepClone } from '@medplum/core';
+import { ContentType, deepClone, OAuthGrantType } from '@medplum/core';
 import { AccessPolicy, AccessPolicyResource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../config';
@@ -25,7 +25,7 @@ export function smartConfigurationHandler(_req: Request, res: Response): void {
   const config = getConfig();
   res
     .status(200)
-    .contentType('application/json')
+    .contentType(ContentType.JSON)
     .json({
       issuer: config.issuer,
       jwks_uri: config.jwksUrl,
@@ -80,7 +80,7 @@ export function smartConfigurationHandler(_req: Request, res: Response): void {
  * @param res The HTTP response.
  */
 export function smartStylingHandler(_req: Request, res: Response): void {
-  res.status(200).contentType('application/json').json({
+  res.status(200).contentType(ContentType.JSON).json({
     color_background: '#edeae3',
     color_error: '#9e2d2d',
     color_highlight: '#69b5ce',
@@ -106,7 +106,7 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
 
   if (scope) {
     for (const scopeTerm of scope.split(' ')) {
-      const match = scopeTerm.match(/(patient|user|system)\/(\w+|\*)\.(\w+)/);
+      const match = /(patient|user|system)\/(\w+|\*)\.(\w+)/.exec(scopeTerm);
       if (match) {
         result.push({
           permissionType: match[1] as 'patient' | 'user' | 'system',

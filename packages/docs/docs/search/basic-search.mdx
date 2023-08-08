@@ -76,6 +76,8 @@ Because iterating over the `Bundle.entry` array is such a common pattern, the Me
   {ExampleCode}
 </MedplumCodeBlock>
 
+The array returned by `searchResources` also includes a `bundle` property that contains the original `Bundle` resource. You can use this to access bundle metadata such as `Bundle.total` and `Bundle.link`.
+
 ## Searching Multiple Criteria
 
 You can perform and AND search by specifying multiple query parameters
@@ -247,7 +249,8 @@ FHIR provides a mechanism to search for resources that have a value greater or l
 | `eb`   | ends before              |
 
 <br />
-This example shows how to find all `RiskAssessments` with a `probability` greater than 0.8.
+
+This example shows how to find all [`RiskAssessments`](/docs/api/fhir/resources/riskassessment) with a `probability` greater than 0.8.
 
 <Tabs>
   <TabItem value="ts" label="TypeScript">
@@ -295,6 +298,61 @@ You can search an exclusive range using an OR search
   </TabItem>
   <TabItem value="curl" label="cURL">
     <MedplumCodeBlock language="bash" selectBlocks="searchExclusiveRangeCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+## Sorting the Results
+
+You can sort your search results by using the special search parameter `_sort`.
+
+The `_sort` parameter allows you specify a list of search parameters to sort by, in order.
+
+The example below searches for all [`RiskAssessments`](/docs/api/fhir/resources/riskassessment), sorted by their `probability`, then by `date`.
+
+<Tabs>
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchSort">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchSortCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+### Reversing the sort order
+
+To sort in _descending_ order, prepend the search parameter with a minus sign `-`. The following example returns [`RiskAssessments`](/docs/api/fhir/resources/riskassessment), in _descending_ order of `probability`:
+
+<Tabs>
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchSortDescending">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchSortDescendingCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+### Sorting by updated time
+
+FHIR also provides the special search parameter, `_lastUpdated`, to search by the last updated time for a resource. The following example searches for the most recently updated [`RiskAssessments`](/docs/api/fhir/resources/riskassessment) resources:
+
+<Tabs>
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchSortByLastUpdated">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchSortByLastUpdatedCurl">
       {ExampleCode}
     </MedplumCodeBlock>
   </TabItem>

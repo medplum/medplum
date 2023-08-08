@@ -831,7 +831,7 @@
       "name": "code",
       "type": "token",
       "description": " Return administrations of this medication code\r",
-      "expression": "MedicationAdministration.medication"
+      "expression": "MedicationAdministration.medication as CodeableConcept"
     },
     {
       "name": "identifier",
@@ -843,7 +843,7 @@
       "name": "patient",
       "type": "reference",
       "description": " The identity of a patient to list administrations  for\r",
-      "expression": "MedicationAdministration.subject"
+      "expression": "MedicationAdministration.subject.where(resolve() is Patient)"
     },
     {
       "name": "context",
@@ -867,7 +867,7 @@
       "name": "medication",
       "type": "reference",
       "description": " Return administrations of this medication resource\r",
-      "expression": "MedicationAdministration.medication"
+      "expression": "MedicationAdministration.medication as Reference"
     },
     {
       "name": "performer",

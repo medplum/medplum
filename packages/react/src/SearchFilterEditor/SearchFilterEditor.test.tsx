@@ -51,6 +51,10 @@ describe('SearchFilterEditor', () => {
       />
     );
 
+    const fieldInput = screen.getByTestId('filter-field');
+    expect(fieldInput).toBeInTheDocument();
+    expect(fieldInput).toHaveValue('');
+
     await act(async () => {
       fireEvent.change(screen.getByTestId('filter-field'), {
         target: { value: 'name' },
@@ -118,9 +122,7 @@ describe('SearchFilterEditor', () => {
       fireEvent.click(screen.getByText('Edit'));
     });
 
-    const input = screen
-      .getAllByRole('combobox')
-      .find((e) => e.getAttribute('name') === 'filter-value-id') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
     });

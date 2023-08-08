@@ -20,6 +20,7 @@ export const Checkboxes = (): JSX.Element => {
       checkboxesEnabled={true}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
+      onAuxClick={(e) => console.log('auxClick', e)}
       onChange={(e) => {
         console.log('onChange', e);
         setSearch(e.definition);
@@ -39,6 +40,7 @@ export const NoCheckboxes = (): JSX.Element => {
       search={search}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
+      onAuxClick={(e) => console.log('auxClick', e)}
       onChange={(e) => {
         console.log('onChange', e);
         setSearch(e.definition);
@@ -58,6 +60,7 @@ export const AllButtons = (): JSX.Element => {
       search={search}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
+      onAuxClick={(e) => console.log('auxClick', e)}
       onNew={() => console.log('onNew')}
       onExportCsv={() => console.log('onExportCSV')}
       onDelete={() => console.log('onDelete')}
@@ -81,6 +84,7 @@ export const ExtraFields = (): JSX.Element => {
       search={search}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
+      onAuxClick={(e) => console.log('auxClick', e)}
       onChange={(e) => {
         console.log('onChange', e);
         setSearch(e.definition);
@@ -101,6 +105,7 @@ export const ServiceRequests = (): JSX.Element => {
       checkboxesEnabled={true}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
+      onAuxClick={(e) => console.log('auxClick', e)}
       onChange={(e) => {
         console.log('onChange', e);
         setSearch(e.definition);
@@ -121,6 +126,7 @@ export const Observations = (): JSX.Element => {
       checkboxesEnabled={true}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
+      onAuxClick={(e) => console.log('auxClick', e)}
       onChange={(e) => {
         console.log('onChange', e);
         setSearch(e.definition);
@@ -142,6 +148,7 @@ export const HideToolbar = (): JSX.Element => {
       hideToolbar={true}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
+      onAuxClick={(e) => console.log('auxClick', e)}
       onChange={(e) => {
         console.log('onChange', e);
         setSearch(e.definition);
@@ -163,6 +170,7 @@ export const HideFilters = (): JSX.Element => {
       hideFilters={true}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
+      onAuxClick={(e) => console.log('auxClick', e)}
       onChange={(e) => {
         console.log('onChange', e);
         setSearch(e.definition);
@@ -185,6 +193,7 @@ export const HideToolbarAndFilters = (): JSX.Element => {
       hideFilters={true}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
+      onAuxClick={(e) => console.log('auxClick', e)}
       onChange={(e) => {
         console.log('onChange', e);
         setSearch(e.definition);
@@ -205,6 +214,7 @@ export const NoResults = (): JSX.Element => {
       search={search}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
+      onAuxClick={(e) => console.log('auxClick', e)}
       onChange={(e) => {
         console.log('onChange', e);
         setSearch(e.definition);

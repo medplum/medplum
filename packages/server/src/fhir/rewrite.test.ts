@@ -1,4 +1,4 @@
-import { deepClone } from '@medplum/core';
+import { ContentType, deepClone } from '@medplum/core';
 import { Binary, Bundle, Practitioner } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { URL } from 'url';
@@ -17,7 +17,7 @@ describe('URL rewrite', () => {
 
     const resource = await systemRepo.createResource({
       resourceType: 'Binary',
-      contentType: 'text/plain',
+      contentType: ContentType.TEXT,
     });
     binary = resource;
   });
@@ -39,7 +39,7 @@ describe('URL rewrite', () => {
   test('Binary', async () => {
     const input = {
       resourceType: 'Binary',
-      contentType: 'text/plain',
+      contentType: ContentType.TEXT,
       id: '123',
       extension: [
         {

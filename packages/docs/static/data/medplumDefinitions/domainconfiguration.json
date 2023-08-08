@@ -1,0 +1,132 @@
+{
+  "name": "DomainConfiguration",
+  "location": "medplum",
+  "description": "Domain specific configuration for the Medplum application.",
+  "properties": [
+    {
+      "name": "DomainConfiguration",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "DomainConfiguration",
+      "min": 0,
+      "max": "*",
+      "short": "Domain specific configuration for the Medplum application.",
+      "definition": "Domain specific configuration for the Medplum application.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DomainConfiguration.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DomainConfiguration.meta",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "DomainConfiguration.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "DomainConfiguration.language",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The base language in which the resource is written.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "domain",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "DomainConfiguration.domain",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "Globally unique domain name for this configuration.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "identityProvider",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "IdentityProvider",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "DomainConfiguration.identityProvider",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional external Identity Provider (IdP) for the domain name.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "publisher",
+      "type": "token",
+      "description": "The publisher of the observation definition.",
+      "expression": "DomainConfiguration.domain"
+    }
+  ]
+}

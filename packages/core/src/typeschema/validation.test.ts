@@ -1,3 +1,4 @@
+import { readJson } from '@medplum/definitions';
 import {
   Account,
   Appointment,
@@ -7,6 +8,7 @@ import {
   HumanName,
   ImplementationGuide,
   Media,
+  MedicationRequest,
   Observation,
   Patient,
   Questionnaire,
@@ -18,17 +20,19 @@ import {
 } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { validate } from './validation';
-import { indexStructureDefinitionBundle } from '../types';
-import { readJson } from '@medplum/definitions';
-import { loadDataTypes } from './types';
+import { ContentType } from '../contenttype';
 import { OperationOutcomeError } from '../outcomes';
+import { indexStructureDefinitionBundle } from '../types';
+import { createReference } from '../utils';
+import { loadDataTypes } from './types';
+import { validate } from './validation';
 
 describe('FHIR resource validation', () => {
   let observationProfile: StructureDefinition;
   let patientProfile: StructureDefinition;
 
   beforeAll(() => {
+    console.log = jest.fn();
     const typesData = readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>;
     const resourcesData = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
     const medplumResourcesData = readJson('fhir/r4/profiles-medplum.json') as Bundle<StructureDefinition>;
@@ -193,6 +197,14 @@ describe('FHIR resource validation', () => {
       effectiveDateTime: '2023-05-31T17:03:45-07:00',
       component: [
         {
+          dataAbsentReason: {
+            coding: [
+              {
+                code: '8480-6',
+                system: 'http://loinc.org',
+              },
+            ],
+          },
           code: {
             coding: [
               {
@@ -203,6 +215,14 @@ describe('FHIR resource validation', () => {
           },
         },
         {
+          dataAbsentReason: {
+            coding: [
+              {
+                code: '8480-6',
+                system: 'http://loinc.org',
+              },
+            ],
+          },
           code: {
             coding: [
               {
@@ -379,8 +399,13 @@ describe('FHIR resource validation', () => {
   });
 
   test('StructureDefinition', () => {
-    const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
     expect(() => {
+      const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
+      validate(structureDefinition);
+    }).not.toThrow();
+
+    expect(() => {
+      const structureDefinition = readJson('fhir/r4/profiles-medplum.json') as Bundle;
       validate(structureDefinition);
     }).not.toThrow();
   });
@@ -474,6 +499,124 @@ describe('FHIR resource validation', () => {
       },
     };
     expect(() => validate(valueSet)).not.toThrow();
+  });
+
+  test('ValueSet compose invariant', () => {
+    const vs: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://terminology.hl7.org/ValueSet/v3-ProvenanceEventCurrentState',
+      identifier: [
+        {
+          system: 'urn:ietf:rfc:3986',
+          value: 'urn:oid:2.16.840.1.113883.1.11.20547',
+        },
+      ],
+      version: '2014-08-07',
+      name: 'v3.ProvenanceEventCurrentState',
+      title: 'V3 Value SetProvenanceEventCurrentState',
+      status: 'active',
+      experimental: false,
+      publisher: 'HL7 v3',
+      contact: [
+        {
+          telecom: [
+            {
+              system: 'url',
+              value: 'http://www.hl7.org',
+            },
+          ],
+        },
+      ],
+      immutable: false,
+      compose: {
+        include: [
+          {
+            valueSet: ['http://terminology.hl7.org/ValueSet/v3-ProvenanceEventCurrentState-AS'],
+          },
+          {
+            valueSet: ['http://terminology.hl7.org/ValueSet/v3-ProvenanceEventCurrentState-DC'],
+          },
+        ],
+      },
+    };
+
+    expect(() => {
+      validate(vs);
+    }).not.toThrow();
+  });
+
+  test('Timing invariant', () => {
+    const prescription: MedicationRequest = {
+      resourceType: 'MedicationRequest',
+      status: 'stopped',
+      intent: 'order',
+      medicationCodeableConcept: {
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '105078',
+            display: 'Penicillin G 375 MG/ML Injectable Solution',
+          },
+        ],
+        text: 'Penicillin G 375 MG/ML Injectable Solution',
+      },
+      subject: {
+        reference: 'Patient/1c9f7759-dcc2-4aed-9beb-d7f8a2bfb4f6',
+      },
+      encounter: {
+        reference: 'Encounter/82bec000-a6e4-4352-bea4-b7f0af7c246b',
+      },
+      authoredOn: '1947-11-01T00:11:45-05:00',
+      requester: {
+        reference: 'Practitioner/4b823444-df09-40a9-8de8-cf1e6f044b9a',
+        display: 'Dr. Willena258 Oberbrunner298',
+      },
+      dosageInstruction: [
+        {
+          sequence: 1,
+          text: 'Take at regular intervals. Complete the prescribed course unless otherwise directed.\n',
+          additionalInstruction: [
+            {
+              coding: [
+                {
+                  system: 'http://snomed.info/sct',
+                  code: '418577003',
+                  display: 'Take at regular intervals. Complete the prescribed course unless otherwise directed.',
+                },
+              ],
+              text: 'Take at regular intervals. Complete the prescribed course unless otherwise directed.',
+            },
+          ],
+          timing: {
+            repeat: {
+              frequency: 4,
+              period: 1,
+              periodUnit: 'd',
+            },
+          },
+          asNeededBoolean: false,
+          doseAndRate: [
+            {
+              type: {
+                coding: [
+                  {
+                    system: 'http://terminology.hl7.org/CodeSystem/dose-rate-type',
+                    code: 'ordered',
+                    display: 'Ordered',
+                  },
+                ],
+              },
+              doseQuantity: {
+                value: 1,
+              },
+            },
+          ],
+        },
+      ],
+    };
+    expect(() => {
+      validate(prescription);
+    }).not.toThrow();
   });
 });
 
@@ -629,10 +772,12 @@ describe('Legacy tests for parity checking', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.length).toEqual(1);
+      expect(outcome.issue?.length).toEqual(2);
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid null value');
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Questionnaire.item[0].item[0].item[0].item[0].item');
+      expect(outcome.issue?.[1]?.severity).toEqual('error');
+      expect(outcome.issue?.[1]?.code).toEqual('invariant');
     }
   });
 
@@ -657,7 +802,7 @@ describe('Legacy tests for parity checking', () => {
   });
 
   test('base64Binary', () => {
-    const binary: Binary = { resourceType: 'Binary', contentType: 'text/plain' };
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
 
     binary.data = 123 as unknown as string;
     expect(() => validate(binary)).toThrowError('Invalid JSON type: expected string, but got number (Binary.data)');
@@ -811,7 +956,13 @@ describe('Legacy tests for parity checking', () => {
   });
 
   test('positiveInt', () => {
-    const appt: Appointment = { resourceType: 'Appointment', status: 'booked', participant: [{ status: 'accepted' }] };
+    const patient: Patient = { resourceType: 'Patient' };
+    const patientReference = createReference(patient);
+    const appt: Appointment = {
+      resourceType: 'Appointment',
+      status: 'booked',
+      participant: [{ status: 'accepted', actor: patientReference }],
+    };
 
     appt.minutesDuration = 'x' as unknown as number;
     expect(() => validate(appt)).toThrowError(
@@ -838,7 +989,13 @@ describe('Legacy tests for parity checking', () => {
   });
 
   test('unsignedInt', () => {
-    const appt: Appointment = { resourceType: 'Appointment', status: 'booked', participant: [{ status: 'accepted' }] };
+    const patient: Patient = { resourceType: 'Patient' };
+    const patientReference = createReference(patient);
+    const appt: Appointment = {
+      resourceType: 'Appointment',
+      status: 'booked',
+      participant: [{ status: 'accepted', actor: patientReference }],
+    };
 
     appt.priority = 'x' as unknown as number;
     expect(() => validate(appt)).toThrowError(

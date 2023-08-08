@@ -3,6 +3,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config';
 import { getClient } from './database';
+import { logger } from './logger';
 
 describe('App', () => {
   test('Get HTTP config', async () => {
@@ -66,14 +67,18 @@ describe('App', () => {
     console.log = jest.fn();
     const app = express();
     app.get('/throw', () => {
-      throw new Error('Error');
+      throw new Error('Catastrophe!');
     });
     const config = await loadTestConfig();
     await initApp(app, config);
     const res = await request(app).get('/throw');
     expect(res.status).toBe(500);
     expect(res.body).toMatchObject({ msg: 'Internal Server Error' });
-    expect(console.log).toHaveBeenCalled();
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /^\{"level":"ERROR","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"Unhandled error","error":"Error: Catastrophe!"\}$/
+      )
+    );
     await shutdownApp();
   });
 
@@ -84,10 +89,11 @@ describe('App', () => {
 
     // Mock database disconnect
     // Error should be logged, but should not crash the server
-    console.log = jest.fn();
+    // console.log = jest.fn();
+    const loggerError = jest.spyOn(logger, 'error').mockReturnValueOnce();
     const error = new Error('Mock database disconnect');
     getClient().emit('error', error);
-    expect(console.log).toHaveBeenCalledWith('ERROR', expect.anything(), 'Database connection error', error);
+    expect(loggerError).toHaveBeenCalledWith('Database connection error', error);
 
     await shutdownApp();
   });

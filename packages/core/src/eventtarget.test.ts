@@ -29,7 +29,7 @@ describe('EventTarget', () => {
     const myCallback = jest.fn();
     const target = new EventTarget();
     target.addEventListener('test', myCallback);
-    target.removeEventListeneer('test', myCallback);
+    target.removeEventListener('test', myCallback);
     target.dispatchEvent({ type: 'test' });
     expect(myCallback).not.toBeCalled();
   });
@@ -37,9 +37,9 @@ describe('EventTarget', () => {
   test('Remove event listener not found', () => {
     const myCallback = jest.fn();
     const target = new EventTarget();
-    target.removeEventListeneer('test', jest.fn());
+    target.removeEventListener('test', jest.fn());
     target.addEventListener('test', myCallback);
-    target.removeEventListeneer('test', jest.fn());
+    target.removeEventListener('test', jest.fn());
     expect(() => target.dispatchEvent({ type: 'test' })).not.toThrow();
     expect(myCallback).toBeCalled();
   });

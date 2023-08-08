@@ -18,3 +18,18 @@ export function getRandomString(): string {
 export async function encryptSHA256(str: string): Promise<ArrayBuffer> {
   return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
 }
+
+/**
+ * Cross platform random UUID generator
+ * Note that this is not intended for production use, but rather for testing
+ * This should be replaced when crypto.randomUUID is fully supported
+ * See: https://stackoverflow.com/revisions/2117523/28
+ * @returns A random UUID.
+ */
+export function generateId(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}

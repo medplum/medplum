@@ -118,41 +118,41 @@ function crawlSearchParameterDetails(
   }
 
   const propertyName = currAtom.toString();
-  let hasArrayIndex = false;
-  let nextIndex = index + 1;
-
-  if (nextIndex < atoms.length && atoms[nextIndex] instanceof IndexerAtom) {
-    hasArrayIndex = true;
-    nextIndex++;
-  }
-
   const elementDefinition = getElementDefinition(baseType, propertyName);
   if (!elementDefinition) {
     throw new Error(`Element definition not found for ${baseType} ${propertyName}`);
+  }
+
+  let hasArrayIndex = false;
+  let nextIndex = index + 1;
+  if (nextIndex < atoms.length && atoms[nextIndex] instanceof IndexerAtom) {
+    hasArrayIndex = true;
+    nextIndex++;
   }
 
   if (elementDefinition.max !== '0' && elementDefinition.max !== '1' && !hasArrayIndex) {
     details.array = true;
   }
 
-  if (index < atoms.length - 1) {
-    // This is in the middle of the expression, so we need to keep crawling.
-    // "code" is only missing when using "contentReference"
-    // "contentReference" is handled above in "getElementDefinition"
-    for (const elementDefinitionType of elementDefinition.type as ElementDefinitionType[]) {
-      let propertyType = elementDefinitionType.code as string;
-      if (isBackboneElement(propertyType)) {
-        propertyType = buildTypeName(elementDefinition.path?.split('.') as string[]);
-      }
-      crawlSearchParameterDetails(details, atoms, propertyType, nextIndex);
-    }
-  } else {
+  if (nextIndex >= atoms.length) {
     // This is the final atom in the expression
     // So we can collect the ElementDefinition and property types
     details.elementDefinitions.push(elementDefinition);
     for (const elementDefinitionType of elementDefinition.type as ElementDefinitionType[]) {
       details.propertyTypes.add(elementDefinitionType.code as string);
     }
+    return;
+  }
+
+  // This is in the middle of the expression, so we need to keep crawling.
+  // "code" is only missing when using "contentReference"
+  // "contentReference" is handled above in "getElementDefinition"
+  for (const elementDefinitionType of elementDefinition.type as ElementDefinitionType[]) {
+    let propertyType = elementDefinitionType.code as string;
+    if (isBackboneElement(propertyType)) {
+      propertyType = buildTypeName(elementDefinition.path?.split('.') as string[]);
+    }
+    crawlSearchParameterDetails(details, atoms, propertyType, nextIndex);
   }
 }
 

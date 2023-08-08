@@ -2,7 +2,8 @@
 title: ExampleScenario
 sidebar_position: 51
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/examplescenario.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
@@ -10,7 +11,12 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 Example of workflow instance.
 
+<Tabs queryString="section">
+<TabItem value="schema" label="Schema" default>
+
+
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
@@ -22,4 +28,12 @@ Example of workflow instance.
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+</TabItem>
+  <TabItem value="usage" label="Usage">
+    <div> <a name="bnc"></a>  <p> Todo    </p> </div>
+    </TabItem>
+  
+  
+  
 
+</Tabs>

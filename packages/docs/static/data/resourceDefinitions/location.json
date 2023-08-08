@@ -730,7 +730,7 @@
       "name": "name",
       "type": "string",
       "description": "A portion of the location's name or alias",
-      "expression": "Location.name"
+      "expression": "Location.name | Location.alias"
     },
     {
       "name": "near",

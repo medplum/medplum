@@ -7,10 +7,10 @@ export class FileSystemStorage extends ClientStorage {
   private readonly dirName: string;
   private readonly fileName: string;
 
-  constructor() {
+  constructor(profile: string) {
     super();
     this.dirName = resolve(homedir(), '.medplum');
-    this.fileName = resolve(this.dirName, 'credentials');
+    this.fileName = resolve(this.dirName, profile + '.json');
   }
 
   clear(): void {
@@ -22,13 +22,22 @@ export class FileSystemStorage extends ClientStorage {
   }
 
   setString(key: string, value: string | undefined): void {
-    const data = this.readFile() || {};
+    const data = this.readFile() ?? {};
     if (value) {
       data[key] = value;
     } else {
       delete data[key];
     }
     this.writeFile(data);
+  }
+
+  getObject<T>(key: string): T | undefined {
+    const str = this.getString(key);
+    return str ? (JSON.parse(str) as T) : undefined;
+  }
+
+  setObject<T>(key: string, value: T): void {
+    this.setString(key, value ? JSON.stringify(value) : undefined);
   }
 
   private readFile(): Record<string, string> | undefined {

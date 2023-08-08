@@ -759,19 +759,19 @@
       "name": "composed-of",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "ResearchDefinition.relatedArtifact"
+      "expression": "ResearchDefinition.relatedArtifact.where(type = 'composed-of').resource"
     },
     {
       "name": "context",
       "type": "token",
       "description": "A use context assigned to the research definition",
-      "expression": "ResearchDefinition.useContext.value"
+      "expression": "ResearchDefinition.useContext.value as CodeableConcept"
     },
     {
       "name": "context-quantity",
       "type": "quantity",
       "description": "A quantity- or range-valued use context assigned to the research definition",
-      "expression": "ResearchDefinition.useContext.value"
+      "expression": "ResearchDefinition.useContext.value as Quantity | ResearchDefinition.useContext.value as Range"
     },
     {
       "name": "context-type",
@@ -789,13 +789,13 @@
       "name": "depends-on",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "ResearchDefinition.relatedArtifact"
+      "expression": "ResearchDefinition.relatedArtifact.where(type = 'depends-on').resource | ResearchDefinition.library"
     },
     {
       "name": "derived-from",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "ResearchDefinition.relatedArtifact"
+      "expression": "ResearchDefinition.relatedArtifact.where(type = 'derived-from').resource"
     },
     {
       "name": "description",
@@ -831,7 +831,7 @@
       "name": "predecessor",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "ResearchDefinition.relatedArtifact"
+      "expression": "ResearchDefinition.relatedArtifact.where(type = 'predecessor').resource"
     },
     {
       "name": "publisher",
@@ -849,7 +849,7 @@
       "name": "successor",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "ResearchDefinition.relatedArtifact"
+      "expression": "ResearchDefinition.relatedArtifact.where(type = 'successor').resource"
     },
     {
       "name": "title",

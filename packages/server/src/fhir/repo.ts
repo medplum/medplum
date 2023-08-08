@@ -5,7 +5,6 @@ import {
   canWriteResourceType,
   deepEquals,
   evalFhirPath,
-  validate,
   forbidden,
   formatSearchQuery,
   getSearchParameterDetails,
@@ -28,7 +27,9 @@ import {
   SearchRequest,
   stringify,
   tooManyRequests,
+  validate,
   validateResourceType,
+  Operator as FhirOperator,
 } from '@medplum/core';
 import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
 import {
@@ -42,6 +43,7 @@ import {
   Resource,
   ResourceType,
   SearchParameter,
+  StructureDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Pool, PoolClient } from 'pg';
@@ -450,7 +452,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
-    this.validate(resource);
+    await this.validate(resource);
 
     if (this.context.checkReferencesOnWrite) {
       await validateReferences(this, resource);
@@ -523,23 +525,96 @@ export class Repository extends BaseRepository implements FhirRepository {
     return result;
   }
 
-  private validate(resource: Resource): void {
+  private async validate(resource: Resource): Promise<void> {
     if (this.context.strictMode) {
       const start = process.hrtime.bigint();
+      const profileUrls = resource.meta?.profile;
       validate(resource);
-      const elapsedTime = Number(process.hrtime.bigint() - start);
+      if (profileUrls) {
+        try {
+          await this.validateProfiles(resource, profileUrls);
+        } catch (err) {
+          logger.error('Profile validation error', {
+            resource: `${resource.resourceType}/${resource.id}`,
+            error: normalizeErrorString(err),
+          });
+        }
+      }
 
+      const elapsedTime = Number(process.hrtime.bigint() - start);
       const MILLISECONDS = 1e6; // Conversion factor from ns to ms
-      if (elapsedTime > 5 * MILLISECONDS) {
-        logger.warn(
-          `High validator latency on ${resource.resourceType}/${resource.id}: time=${(
-            elapsedTime / MILLISECONDS
-          ).toPrecision(3)} ms`
-        );
+      if (elapsedTime > 10 * MILLISECONDS) {
+        logger.debug('High validator latency', {
+          resourceType: resource.resourceType,
+          id: resource.id,
+          time: elapsedTime / MILLISECONDS,
+        });
       }
     } else {
       validateResourceWithJsonSchema(resource);
     }
+  }
+
+  private async validateProfiles(resource: Resource, profileUrls: string[]): Promise<void> {
+    for (const url of profileUrls) {
+      const loadStart = process.hrtime.bigint();
+      const profile = await this.loadProfile(url);
+      const loadTime = Number(process.hrtime.bigint() - loadStart);
+      if (!profile) {
+        logger.warn('Unknown profile referenced', {
+          resource: `${resource.resourceType}/${resource.id}`,
+          url,
+        });
+        continue;
+      }
+      const validateStart = process.hrtime.bigint();
+      validate(resource, profile);
+      const validateTime = Number(process.hrtime.bigint() - validateStart);
+      logger.debug('Profile loaded', {
+        url,
+        loadTime,
+        validateTime,
+      });
+    }
+  }
+
+  private async loadProfile(url: string): Promise<StructureDefinition | undefined> {
+    const redis = getRedis();
+    const cacheKey = `Project/${this.context.project}/StructureDefinition/${url}`;
+    // Try retrieving from cache
+    const cachedProfile = await redis.get(cacheKey);
+    if (cachedProfile) {
+      return (JSON.parse(cachedProfile) as CacheEntry<StructureDefinition>).resource;
+    }
+
+    // Fall back to loading from the DB; descending version sort approximates version resolution for some cases
+    const profile = await this.searchOne<StructureDefinition>({
+      resourceType: 'StructureDefinition',
+      filters: [
+        {
+          code: 'url',
+          operator: FhirOperator.EQUALS,
+          value: url,
+        },
+      ],
+      sortRules: [
+        {
+          code: 'version',
+          descending: true,
+        },
+      ],
+    });
+
+    if (profile) {
+      // Store loaded profile in cache
+      await redis.set(
+        cacheKey,
+        JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
+        'EX',
+        24 * 60 * 60 // 24 hours in seconds
+      );
+    }
+    return profile;
   }
 
   /**
@@ -662,7 +737,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         (resource.meta as Meta).compartment = this.getCompartments(resource);
         await this.updateResourceImpl(JSON.parse(row.content) as Resource, false);
       } catch (err) {
-        logger.error('Failed to rebuild compartments for resource', normalizeErrorString(err));
+        logger.error('Failed to rebuild compartments for resource', { error: normalizeErrorString(err) });
       }
     });
   }
@@ -686,7 +761,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       try {
         await this.reindexResourceImpl(JSON.parse(row.content) as Resource);
       } catch (err) {
-        logger.error('Failed to reindex resource', normalizeErrorString(err));
+        logger.error('Failed to reindex resource', { error: normalizeErrorString(err) });
       }
     });
   }
@@ -1400,7 +1475,7 @@ export class Repository extends BaseRepository implements FhirRepository {
             // If the patient has an account, then use it as the resource account.
             return patient.meta.account;
           }
-        } catch (err) {
+        } catch (err: any) {
           logger.debug('Error setting patient compartment', err);
         }
       }
@@ -1574,6 +1649,8 @@ export class Repository extends BaseRepository implements FhirRepository {
    */
   private removeField<T extends Resource>(input: T, path: string): T {
     const patch: Operation[] = [{ op: 'remove', path: `/${path.replaceAll('.', '/')}` }];
+    // applyPatch returns errors if the value is missing
+    // but we don't care if the value is missing in this case
     applyPatch(input, patch);
     return input;
   }

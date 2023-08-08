@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@medplum/app",
-  "version": "2.0.25",
+  "version": "2.0.30",
   "description": "Medplum App",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -10,6 +10,9 @@
     "type": "git",
     "url": "https://github.com/medplum/medplum.git",
     "directory": "packages/app"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "files": [
     "dist"
@@ -23,26 +26,26 @@
   },
   "devDependencies": {
     "@emotion/react": "11.11.1",
-    "@mantine/core": "6.0.15",
-    "@mantine/dropzone": "6.0.15",
-    "@mantine/hooks": "6.0.15",
-    "@mantine/notifications": "6.0.15",
+    "@mantine/core": "6.0.17",
+    "@mantine/dropzone": "6.0.17",
+    "@mantine/hooks": "6.0.17",
+    "@mantine/notifications": "6.0.17",
     "@medplum/core": "*",
     "@medplum/definitions": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
     "@medplum/react": "*",
-    "@tabler/icons-react": "2.23.0",
-    "@testing-library/jest-dom": "5.16.5",
+    "@tabler/icons-react": "2.29.0",
+    "@testing-library/jest-dom": "5.17.0",
     "@testing-library/react": "14.0.0",
     "@types/grecaptcha": "3.0.4",
-    "@types/react": "18.2.14",
-    "@types/react-dom": "18.2.6",
+    "@types/react": "18.2.17",
+    "@types/react-dom": "18.2.7",
     "@types/react-router-dom": "5.3.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "6.14.1",
-    "vite": "4.3.9"
+    "react-router-dom": "6.14.2",
+    "vite": "4.4.7"
   },
   "browserslist": [
     "last 1 Chrome versions"

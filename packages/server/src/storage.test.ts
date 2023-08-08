@@ -1,3 +1,4 @@
+import { ContentType } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express, { Request } from 'express';
@@ -22,14 +23,14 @@ describe('Storage Routes', () => {
 
     binary = await systemRepo.createResource<Binary>({
       resourceType: 'Binary',
-      contentType: 'text/plain',
+      contentType: ContentType.TEXT,
     });
 
     const req = new Readable();
     req.push('hello world');
     req.push(null);
     (req as any).headers = {};
-    await getBinaryStorage().writeBinary(binary, 'hello.txt', 'text/plain', req as Request);
+    await getBinaryStorage().writeBinary(binary, 'hello.txt', ContentType.TEXT, req as Request);
   });
 
   afterAll(async () => {
@@ -55,14 +56,14 @@ describe('Storage Routes', () => {
   test('File not found', async () => {
     const resource = await systemRepo.createResource<Binary>({
       resourceType: 'Binary',
-      contentType: 'text/plain',
+      contentType: ContentType.TEXT,
     });
 
     const req = new Readable();
     req.push('hello world');
     req.push(null);
     (req as any).headers = {};
-    await getBinaryStorage().writeBinary(resource, 'hello.txt', 'text/plain', req as Request);
+    await getBinaryStorage().writeBinary(resource, 'hello.txt', ContentType.TEXT, req as Request);
 
     // Delete the file on disk
     unlinkSync(resolve(binaryDir, `${resource.id}/${resource.meta?.versionId}`));

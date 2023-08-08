@@ -2,15 +2,21 @@
 title: ResearchStudy
 sidebar_position: 117
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/researchstudy.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
 # ResearchStudy
 
-A process where a researcher or organization plans and then executes a series of steps intended to increase the field of healthcare-related knowledge.  This includes studies of safety, efficacy, comparative effectiveness and other information about medications, devices, therapies and other interventional and investigative techniques.  A ResearchStudy involves the gathering of information about human or animal subjects.
+A process where a researcher or organization plans and then executes a series of steps intended to increase the field of healthcare-related knowledge.  This includes studies of safety, efficacy, comparative effectiveness and other information about medications, devices, therapies and other interventional and investigative techniques.  A <a href="/docs/api/fhir/resources/researchstudy">ResearchStudy</a> involves the gathering of information about human or animal subjects.
+
+<Tabs queryString="section">
+<TabItem value="schema" label="Schema" default>
+
 
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
@@ -22,4 +28,17 @@ A process where a researcher or organization plans and then executes a series of
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+</TabItem>
+  <TabItem value="usage" label="Usage">
+    <div> <a name="scope"></a>  <p>This resource is an <a href="https://www.hl7.org/fhir/workflow.html#definition">         <em>definition resource</em>       </a> from a FHIR workflow perspective - see <a href="https://www.hl7.org/fhir/workflow.html">Workflow</a>.</p>     <p>A research study is a scientific way to improve or develop new methods of health care. Studies are designed to answer specific questions on how to prevent, diagnose, or treat diseases and disorders. The <a href="/docs/api/fhir/resources/researchstudy">ResearchStudy</a> resource describes essential information about the study, including the purpose, objective, sponsor, investigator, therapy, condition being studied, schedule of activities, and other key items.</p>     <p>Uses for the <a href="/docs/api/fhir/resources/researchstudy">ResearchStudy</a> resource include:</p>     <ul>       <li>Registering a clinical trial in trial registry such as clinicaltrials.gov       </li>       <li>Communicating study protocol information between study stakeholders       </li>       <li>Supporting study set up of sites, forms    </li>       <li>Grouping <a href="/docs/api/fhir/resources/observation">Observation</a> resources by study       </li>       <li>Setting up a <a href="/docs/api/fhir/resources/schedule">Schedule</a> of Activities for the study and its subjects    </li>       </ul> </div>
+    </TabItem>
+  
+  
+  <TabItem value="referencedBy" label="Referenced By">
+    <ul><li><a href="https://www.hl7.org/fhir/metadatatypes.html#UsageContext">UsageContext</a></li>
+<li><a href="/docs/api/fhir/resources/adverseevent">AdverseEvent</a></li>
+<li><a href="/docs/api/fhir/resources/medicinalproduct">MedicinalProduct</a></li>
+<li><a href="/docs/api/fhir/resources/researchsubject">ResearchSubject</a></li></ul>
+    </TabItem>
 
+</Tabs>

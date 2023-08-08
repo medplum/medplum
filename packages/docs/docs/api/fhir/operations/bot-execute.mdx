@@ -2,6 +2,9 @@
 sidebar_position: 6
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/bot-execute.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
@@ -15,29 +18,82 @@ If you're not familiar with Medplum Bots, you may want to review [Bot Basics](/d
 
 Invoke a bot by ID when you know the Bot's ID in advance.
 
+### Finding your Bot Id
+
 You can find the `id` of your Bot by clicking on the **Details** tab of the Bot resource. In this example, it is ` 43ac3060-ff20-49e8-9682-bf91ab3a5191`
 
 <img src="/img/app/bots/find_bot_id.png" width="50%" height="50%" alt="Find your Bot ID" title="Find your Bot ID" />
+
+### Using POST
 
 ```
 POST [base]/Bot/[id]/$execute
 ```
 
-For example:
+#### Examples
+
+<Tabs>
+  <TabItem value="ts" label="TypeScript">
+
+The [MedplumClient](/docs/sdk/classes/MedplumClient) TypeScript class provides a `executeBot` convenience method
+
+  <MedplumCodeBlock language='ts' selectBlocks='execute-by-id'>
+    {ExampleCode}
+  </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Bot/MY_BOT_ID/$execute' \
+medplum login
+medplum post 'Bot/[id]/$execute' '{ "foo": "bar" }'
+```
+
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/Bot/[id]/$execute' \
   -X POST \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
+  -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
   -d '{"foo":"bar"}'
 ```
 
-The [MedplumClient](/docs/sdk/classes/MedplumClient) TypeScript class provides a `executeBot` convenience method:
+  </TabItem>
+</Tabs>
 
-<MedplumCodeBlock language="ts" selectBlocks="execute-by-id" showLineNumbers>
+### Using GET
+
+Query parameters will be passed to the bot as type `Record<string, string>` (see [Content Types](#content-types) below)
+
+```
+GET [base]/Bot/[id]/$execute?params
+```
+
+<Tabs>
+  <TabItem value="ts" label="TypeScript">
+<MedplumCodeBlock language="ts" selectBlocks="execute-by-id-get">
   {ExampleCode}
 </MedplumCodeBlock>
+
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+
+```bash
+medplum login
+medplum get 'Bot/[id]/$execute?foo=bar'
+```
+
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/Bot/[id]/$execute?foo=bar' \
+  -H "Authorization: Bearer $MY_ACCESS_TOKEN"
+```
+
+  </TabItem>
+</Tabs>
 
 ## Invoke a bot by identifier
 
@@ -45,25 +101,77 @@ Sometimes you may not know the Medplum Bot ID in advance. In that case, you can 
 
 This is also useful when the same conceptual bot exists in multiple Medplum projects. Each bot will have a different ID, but they can all have the same identifier.
 
+### Using POST
+
 ```
 POST [base]/Bot/$execute?identifier=[system]|[code]
 ```
 
-For example:
+#### Examples
+
+<Tabs>
+  <TabItem value="ts" label="TypeScript">
+
+The [MedplumClient](/docs/sdk/classes/MedplumClient) `executeBot` convenience method supports both `id: string` and `identifier: Identifier`:
+
+  <MedplumCodeBlock language='ts' selectBlocks='execute-by-identifier'>
+    {ExampleCode}
+  </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+
+```bash
+medplum login
+medplum post 'Bot/[id]/$execute?identifier=https://example.com/bots|1234' '{ "foo": "bar" }'
+```
+
+  </TabItem>
+  <TabItem value="curl" label="cURL">
 
 ```bash
 curl 'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.com/bots|1234' \
   -X POST \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
+  -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
   -d '{"foo":"bar"}'
 ```
 
-The [MedplumClient](/docs/sdk/classes/MedplumClient) `executeBot` convenience method supports both `id: string` and `identifier: Identifier`:
+  </TabItem>
+</Tabs>
 
-<MedplumCodeBlock language="ts" selectBlocks="execute-by-identifier" showLineNumbers>
+### Using GET
+
+Query parameters will be passed to the bot as type `Record<string, string>` (see [Content Types](#content-types) below)
+
+```
+GET [base]/Bot/$execute?identifier=[system]|[code]&params
+```
+
+<Tabs>
+  <TabItem value="ts" label="TypeScript">
+
+<MedplumCodeBlock language="ts" selectBlocks="execute-by-identifier-get">
   {ExampleCode}
 </MedplumCodeBlock>
+
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+
+```bash
+medplum login
+medplum get 'Bot/$execute?identifier=https://example.com/bots|1234'
+```
+
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.com/bots|1234'\
+  -H "Authorization: Bearer $MY_ACCESS_TOKEN"
+```
+
+  </TabItem>
+</Tabs>
 
 ## Content Types
 

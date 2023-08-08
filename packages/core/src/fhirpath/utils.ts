@@ -47,6 +47,16 @@ export function toJsBoolean(obj: TypedValue[]): boolean {
   return obj.length === 0 ? false : !!obj[0].value;
 }
 
+export function singleton(collection: TypedValue[], type?: string): TypedValue | undefined {
+  if (collection.length === 0) {
+    return undefined;
+  } else if (collection.length === 1 && (!type || collection[0].type === type)) {
+    return collection[0];
+  } else {
+    throw new Error(`Expected singleton of type ${type}, but found ${JSON.stringify(collection)}`);
+  }
+}
+
 /**
  * Returns the value of the property and the property type.
  * Some property definitions support multiple types.
@@ -326,11 +336,11 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     case 'Integer':
       return typeof value === 'number';
     case 'Date':
-      return typeof value === 'string' && !!value.match(/^\d{4}(-\d{2}(-\d{2})?)?/);
+      return typeof value === 'string' && !!/^\d{4}(-\d{2}(-\d{2})?)?/.exec(value);
     case 'DateTime':
-      return typeof value === 'string' && !!value.match(/^\d{4}(-\d{2}(-\d{2})?)?T/);
+      return typeof value === 'string' && !!/^\d{4}(-\d{2}(-\d{2})?)?T/.exec(value);
     case 'Time':
-      return typeof value === 'string' && !!value.match(/^T\d/);
+      return typeof value === 'string' && !!/^T\d/.exec(value);
     case 'Period':
       return isPeriod(value);
     case 'Quantity':

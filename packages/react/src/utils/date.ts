@@ -25,7 +25,7 @@ function getPriorityScore(resource: Resource, timelineResource: Resource | undef
 
     const priority = (resource as any).priority;
     if (typeof priority === 'string') {
-      return { stat: 4, asap: 3, urgent: 2 }[priority] || 0;
+      return { stat: 4, asap: 3, urgent: 2 }[priority] ?? 0;
     }
   }
   return 0;

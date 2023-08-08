@@ -1,5 +1,5 @@
 import { createStyles, Group, List, Stack, Text, Title } from '@mantine/core';
-import { capitalize, formatDateTime, formatObservationValue } from '@medplum/core';
+import { capitalize, formatCodeableConcept, formatDateTime, formatObservationValue, isReference } from '@medplum/core';
 import {
   Annotation,
   DiagnosticReport,
@@ -167,8 +167,8 @@ function SpecimenInfo(specimens: Specimen[] | undefined): JSX.Element {
       </Title>
 
       <List type="ordered">
-        {specimens?.map((specimen, index) => (
-          <List.Item ml={'sm'} key={`specimen-${specimen.id}-${index}`}>
+        {specimens?.map((specimen) => (
+          <List.Item ml={'sm'} key={`specimen-${specimen.id}`}>
             <Group spacing={20}>
               <Group spacing={5}>
                 <Text fw={500}>Collected:</Text> {formatDateTime(specimen.collection?.collectedDateTime)}
@@ -205,9 +205,9 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
         </tr>
       </thead>
       <tbody>
-        {props.value?.map((observation, index) => (
+        {props.value?.map((observation) => (
           <ObservationRow
-            key={`obs-${observation.id}-${index}`}
+            key={`obs-${isReference(observation) ? observation.reference : observation.id}`}
             hideObservationNotes={props.hideObservationNotes}
             value={observation}
           />
@@ -255,8 +255,8 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
         <td>
           {observation.category && observation.category.length > 0 && (
             <ul>
-              {observation.category.map((concept, index) => (
-                <li key={`category-${index}`}>
+              {observation.category.map((concept) => (
+                <li key={`category-${formatCodeableConcept(concept)}`}>
                   <CodeableConceptDisplay value={concept} />
                 </li>
               ))}

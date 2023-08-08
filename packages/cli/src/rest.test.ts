@@ -1,17 +1,34 @@
 import { createReference, MedplumClient } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { randomUUID } from 'crypto';
+import { randomUUID, webcrypto } from 'crypto';
 import { main } from '.';
 import { createMedplumClient } from './util/client';
+import { mkdtempSync, rmSync } from 'fs';
+import { sep } from 'path';
+import os from 'os';
+import { FileSystemStorage } from './storage';
 
+jest.mock('os');
+jest.mock('fast-glob', () => ({
+  sync: jest.fn(() => []),
+}));
 jest.mock('./util/client');
 
 let medplum: MedplumClient;
 const processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+const testHomeDir = mkdtempSync(__dirname + sep + 'storage-');
 
 describe('CLI rest', () => {
   const env = process.env;
+
+  beforeAll(async () => {
+    (os.homedir as unknown as jest.Mock).mockReturnValue(testHomeDir);
+  });
+
+  afterAll(async () => {
+    rmSync(testHomeDir, { recursive: true, force: true });
+  });
 
   beforeEach(() => {
     jest.resetModules();
@@ -58,6 +75,7 @@ describe('CLI rest', () => {
   });
 
   test('Get command with as-transaction flag', async () => {
+    Object.defineProperty(globalThis, 'crypto', { value: webcrypto });
     await medplum.createResource<Patient>({ resourceType: 'Patient' });
     await main(['node', 'index.js', 'get', '--as-transaction', `Patient?_count=2`]);
     expect(console.log).toBeCalledWith(expect.stringMatching('urn:uuid'));
@@ -83,6 +101,26 @@ describe('CLI rest', () => {
 
   test('Post command', async () => {
     await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType": "Patient" }']);
+    expect(console.log).toBeCalledWith(expect.stringMatching('Patient'));
+  });
+
+  test('Basic Auth profile request', async () => {
+    const profileName = 'testProfile';
+    const obj = {
+      authType: 'basic',
+      baseUrl: 'https://valid.gov',
+      fhirUrlPath: 'api/v2',
+      tokenUrl: 'https://validtoken.gov',
+      clientId: 'validClientId',
+      clientSecret: 'validClientSecret',
+    };
+    const storage = new FileSystemStorage(profileName);
+    storage.setObject('options', obj);
+
+    await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType": "Patient" }', '-p', profileName]);
+    expect(console.log).toBeCalledWith(expect.stringMatching('Patient'));
+
+    await main(['node', 'index.js', 'get', 'Patient', '-p', profileName]);
     expect(console.log).toBeCalledWith(expect.stringMatching('Patient'));
   });
 

@@ -1,12 +1,12 @@
-import { createReference } from '@medplum/core';
+import { ContentType, createReference } from '@medplum/core';
 import { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { isValidCron } from 'cron-validator';
 import { MedplumRedisConfig } from '../config';
 import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
-import { isValidCron } from 'cron-validator';
 import { createAuditEvent, findProjectMembership } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
@@ -215,7 +215,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
   let outcome: AuditEventOutcome;
   let logResult: string;
   try {
-    const result = await executeBot({ bot, runAs, input: bot, contentType: 'application/fhir+json' });
+    const result = await executeBot({ bot, runAs, input: bot, contentType: ContentType.FHIR_JSON });
     outcome = result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure;
     logResult = result.logResult;
   } catch (error) {

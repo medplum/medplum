@@ -1,5 +1,6 @@
 import {
   allOk,
+  ContentType,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
@@ -280,20 +281,20 @@ describe('MockClient', () => {
 
   test('Create binary success', async () => {
     const client = new MockClient();
-    const result = await client.createBinary('test', 'test.txt', 'text/plain');
+    const result = await client.createBinary('test', 'test.txt', ContentType.TEXT);
     expect(result).toMatchObject({
       resourceType: 'Binary',
-      contentType: 'text/plain',
+      contentType: ContentType.TEXT,
     });
   });
 
   test('Create binary with progress listener', async () => {
     const client = new MockClient();
     const onProgress = jest.fn();
-    const result = await client.createBinary('test', 'test.txt', 'text/plain', onProgress);
+    const result = await client.createBinary('test', 'test.txt', ContentType.TEXT, onProgress);
     expect(result).toMatchObject({
       resourceType: 'Binary',
-      contentType: 'text/plain',
+      contentType: ContentType.TEXT,
     });
     expect(onProgress).toHaveBeenCalled();
   });

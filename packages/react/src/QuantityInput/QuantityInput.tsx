@@ -5,6 +5,7 @@ import React, { useState, WheelEvent } from 'react';
 export interface QuantityInputProps {
   name: string;
   defaultValue?: Quantity;
+  autoFocus?: boolean;
   onChange?: (value: Quantity) => void;
   disableWheel?: boolean;
 }
@@ -36,10 +37,12 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
       <TextInput
         id={props.name}
         name={props.name}
+        data-autofocus={props.autoFocus}
         data-testid={props.name + '-value'}
         type="number"
         placeholder="Value"
         defaultValue={value?.value}
+        autoFocus={props.autoFocus}
         step="any"
         onWheel={(e: WheelEvent<HTMLInputElement>) => {
           if (props.disableWheel) {

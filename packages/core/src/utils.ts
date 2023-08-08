@@ -3,7 +3,6 @@ import {
   CodeableConcept,
   Device,
   Extension,
-  Identifier,
   ObservationDefinition,
   ObservationDefinitionQualifiedInterval,
   Patient,
@@ -15,6 +14,7 @@ import {
   Reference,
   RelatedPerson,
   Resource,
+  ResourceType,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
 
@@ -58,6 +58,24 @@ export function getReferenceString(resource: Resource): string {
  */
 export function resolveId(reference: Reference | undefined): string | undefined {
   return reference?.reference?.split('/')[1];
+}
+
+/**
+ * Parses a reference and returns a tuple of [ResourceType, ID].
+ * @param reference A reference to a FHIR resource.
+ * @returns A tuple containing the `ResourceType` and the ID of the resource or `undefined` when `undefined` or an invalid reference is passed.
+ */
+export function parseReference(reference: Reference): [ResourceType, string] | undefined;
+export function parseReference(reference: undefined): undefined;
+export function parseReference(reference: Reference | undefined): [ResourceType, string] | undefined {
+  if (reference === undefined || reference?.reference === undefined) {
+    return undefined;
+  }
+  const [type, id] = reference.reference.split('/');
+  if (type === '' || id === '' || id === undefined) {
+    return undefined;
+  }
+  return [type as ResourceType, id];
 }
 
 /**
@@ -282,7 +300,7 @@ function buildQuestionnaireAnswerItems(
  * @returns The identifier value if found; otherwise undefined.
  */
 export function getIdentifier(resource: Resource, system: string): string | undefined {
-  const identifiers = (resource as any).identifier as Identifier[] | Identifier | undefined;
+  const identifiers = (resource as any).identifier;
   if (!identifiers) {
     return undefined;
   }
@@ -328,7 +346,7 @@ export function getExtension(resource: any, ...urls: string[]): Extension | unde
     curr = (curr?.extension as Extension[] | undefined)?.find((e) => e.url === urls[i]);
   }
 
-  return curr as Extension | undefined;
+  return curr;
 }
 
 /**
@@ -362,7 +380,7 @@ function stringifyReplacer(k: string, v: any): any {
  * @returns True if the key is an array key.
  */
 function isArrayKey(k: string): boolean {
-  return !!k.match(/\d+$/);
+  return !!/\d+$/.exec(k);
 }
 
 /**
@@ -505,7 +523,7 @@ export function deepClone<T>(input: T): T {
  * @returns True if the input string matches the UUID format.
  */
 export function isUUID(input: string): boolean {
-  return !!input.match(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/i);
+  return !!/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/i.exec(input);
 }
 
 /**

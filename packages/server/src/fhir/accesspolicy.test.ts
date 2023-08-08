@@ -1133,6 +1133,63 @@ describe('AccessPolicy', () => {
     expect(historyBundle.entry?.[0]?.resource?.subject?.display).toBeUndefined();
   });
 
+  test('Hidden fields on possible missing values', async () => {
+    // Create an Observation with a valueQuantity
+    const obs1 = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      valueQuantity: {
+        value: 123,
+        unit: 'mmHg',
+      },
+    });
+
+    // Create an Observation with a valueString
+    const obs2 = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      valueString: 'test',
+    });
+
+    // AccessPolicy that hides ServiceRequest subject.display
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Observation',
+          hiddenFields: ['valueQuantity.value'],
+        },
+      ],
+    };
+
+    const repo2 = new Repository({ author: { reference: 'Practitioner/123' }, accessPolicy });
+
+    const readResource1 = await repo2.readResource<Observation>('Observation', obs1.id as string);
+    expect(readResource1).toMatchObject({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      valueQuantity: {
+        unit: 'mmHg',
+      },
+    });
+    expect(readResource1.valueQuantity).toBeDefined();
+    expect(readResource1.valueQuantity?.unit).toBeDefined();
+    expect(readResource1.valueQuantity?.value).toBeUndefined();
+
+    const readResource2 = await repo2.readResource<Observation>('Observation', obs2.id as string);
+    expect(readResource2).toMatchObject({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      valueString: 'test',
+    });
+    expect(readResource2.valueString).toBeDefined();
+    expect(readResource2.valueQuantity).toBeUndefined();
+  });
+
   test('Hide nonexistent field', async () => {
     const serviceRequest = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',

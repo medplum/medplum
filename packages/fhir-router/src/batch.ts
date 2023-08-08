@@ -203,7 +203,7 @@ class BatchProcessor {
   }
 
   private rewriteIdsInString(input: string, removeResourceType = false): string {
-    const matches = input.match(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/);
+    const matches = /urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/.exec(input);
     if (matches) {
       const fullUrl = matches[0];
       const resource = this.ids[fullUrl];

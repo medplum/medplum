@@ -22,7 +22,7 @@ aws s3 cp dist/ "s3://${APP_BUCKET}/" \
 
 aws s3 cp dist/ "s3://${APP_BUCKET}/" \
   --recursive \
-  --content-type "application/javascript" \
+  --content-type "text/javascript" \
   --cache-control "public, max-age=31536000" \
   --exclude "*" \
   --include "*.js"

@@ -2,7 +2,8 @@
 title: UserConfiguration
 sidebar_position: 9
 ---
-
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/medplumDefinitions/userconfiguration.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
@@ -10,7 +11,12 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 User specific configuration for the Medplum application.
 
+<Tabs queryString="section">
+<TabItem value="schema" label="Schema" default>
+
+
 ## Properties
+
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
@@ -22,4 +28,10 @@ User specific configuration for the Medplum application.
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+</TabItem>
+  
+  
+  
+  
 
+</Tabs>

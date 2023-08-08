@@ -13,6 +13,7 @@ import { NewProjectForm } from './NewProjectForm';
 export interface SignInFormProps extends BaseLoginRequest {
   readonly login?: string;
   readonly chooseScopes?: boolean;
+  readonly disableEmailAuth?: boolean;
   readonly disableGoogleAuth?: boolean;
   readonly onSuccess?: () => void;
   readonly onForgotPassword?: () => void;
@@ -119,6 +120,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
               onRegister={onRegister}
               handleAuthResponse={handleAuthResponse}
               disableGoogleAuth={props.disableGoogleAuth}
+              disableEmailAuth={props.disableEmailAuth}
               {...baseLoginRequest}
             >
               {props.children}

@@ -576,7 +576,7 @@
       "name": "patient",
       "type": "reference",
       "description": " Who care team is for\r",
-      "expression": "CareTeam.subject"
+      "expression": "CareTeam.subject.where(resolve() is Patient)"
     },
     {
       "name": "category",

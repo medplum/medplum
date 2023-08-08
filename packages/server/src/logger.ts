@@ -20,32 +20,42 @@ export enum LogLevel {
 export const logger = {
   level: process.env.NODE_ENV === 'test' ? LogLevel.ERROR : LogLevel.INFO,
 
-  error(...args: any[]): void {
+  error(msg: string, data?: Record<string, any>): void {
     if (logger.level >= LogLevel.ERROR) {
-      logger.log('ERROR', ...args);
+      logger.log('ERROR', msg, data);
     }
   },
 
-  warn(...args: any[]): void {
+  warn(msg: string, data?: Record<string, any>): void {
     if (logger.level >= LogLevel.WARN) {
-      logger.log('WARN', ...args);
+      logger.log('WARN', msg, data);
     }
   },
 
-  info(...args: any[]): void {
+  info(msg: string, data?: Record<string, any>): void {
     if (logger.level >= LogLevel.INFO) {
-      logger.log('INFO', ...args);
+      logger.log('INFO', msg, data);
     }
   },
 
-  debug(...args: any[]): void {
+  debug(msg: string, data?: Record<string, any>): void {
     if (logger.level >= LogLevel.DEBUG) {
-      logger.log('DEBUG', ...args);
+      logger.log('DEBUG', msg, data);
     }
   },
 
-  log(level: string, ...args: any[]): void {
-    console.log(level, new Date().toISOString(), ...args);
+  log(level: string, msg: string, data?: Record<string, any>): void {
+    if (data instanceof Error) {
+      data = { error: data.toString() };
+    }
+    console.log(
+      JSON.stringify({
+        level,
+        timestamp: new Date().toISOString(),
+        msg,
+        ...data,
+      })
+    );
   },
 
   logAuditEvent(auditEvent: AuditEvent): void {
@@ -71,4 +81,13 @@ function getCloudWatchLogger(config: MedplumServerConfig): CloudWatchLogger {
     );
   }
   return cloudWatchLogger;
+}
+
+export function parseLogLevel(level: string): LogLevel {
+  const value = LogLevel[level.toUpperCase() as keyof typeof LogLevel];
+  if (value === undefined) {
+    throw new Error(`Invalid log level: ${level}`);
+  }
+
+  return value;
 }

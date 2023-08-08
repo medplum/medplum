@@ -719,7 +719,7 @@
       "name": "patient",
       "type": "reference",
       "description": "The patient that is the subject of the questionnaire response",
-      "expression": "QuestionnaireResponse.subject"
+      "expression": "QuestionnaireResponse.subject.where(resolve() is Patient)"
     },
     {
       "name": "questionnaire",

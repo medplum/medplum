@@ -300,7 +300,7 @@
       "name": "patient",
       "type": "reference",
       "description": "Identifies the focus of this resource",
-      "expression": "Basic.subject"
+      "expression": "Basic.subject.where(resolve() is Patient)"
     },
     {
       "name": "subject",

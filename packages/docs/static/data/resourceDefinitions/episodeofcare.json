@@ -625,7 +625,7 @@
       "name": "care-manager",
       "type": "reference",
       "description": "Care manager/care coordinator for the patient",
-      "expression": "EpisodeOfCare.careManager"
+      "expression": "EpisodeOfCare.careManager.where(resolve() is Practitioner)"
     },
     {
       "name": "condition",

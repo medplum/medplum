@@ -89,6 +89,23 @@
       "base": "Resource"
     },
     {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Bot.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "An identifier for this bot",
+      "definition": "An identifier for this bot.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "name",
       "depth": 1,
       "types": [
@@ -154,6 +171,26 @@
       "inherited": false
     },
     {
+      "name": "cron[x]",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Bot.cron[x]",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "A schedule for the bot to be executed.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "code",
       "depth": 1,
       "types": [
@@ -167,6 +204,23 @@
       "short": "",
       "definition": "Bot logic script.",
       "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "category",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Bot.category",
+      "min": 0,
+      "max": "*",
+      "short": "Classification of service",
+      "definition": "A code that classifies the service for searching, sorting and display purposes (e.g. \"Surgical Procedure\").",
+      "comment": "There may be multiple axis of categorization depending on the context or use case for retrieving or displaying the resource.  The level of granularity is defined by the category concepts in the value set.",
       "inherited": false
     },
     {
@@ -189,9 +243,21 @@
   "searchParameters": [
     {
       "name": "name",
+      "type": "token",
+      "description": "The identifier of the bot",
+      "expression": "Bot.identifier"
+    },
+    {
+      "name": "name",
       "type": "string",
       "description": "The name of the bot",
       "expression": "Bot.name"
+    },
+    {
+      "name": "category",
+      "type": "token",
+      "description": "The category of the bot for the classification for service",
+      "expression": "Bot.category"
     }
   ]
 }

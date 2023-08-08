@@ -1,0 +1,37 @@
+{
+  "name": "@medplum/agent",
+  "version": "2.0.30",
+  "description": "Medplum Agent",
+  "author": "Medplum <hello@medplum.com>",
+  "license": "Apache-2.0",
+  "homepage": "https://www.medplum.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/medplum/medplum.git",
+    "directory": "packages/agent"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsc && node esbuild.mjs",
+    "test": "jest",
+    "agent": "ts-node src/main.ts",
+    "package": "pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output dist/medplum-agent-win-x64.exe"
+  },
+  "dependencies": {
+    "@medplum/core": "*",
+    "@medplum/hl7": "*",
+    "node-windows": "1.0.0-beta.8",
+    "ws": "8.13.0"
+  },
+  "devDependencies": {
+    "@medplum/fhirtypes": "*",
+    "@medplum/mock": "*",
+    "@types/node-windows": "0.1.2",
+    "@types/ws": "8.5.5",
+    "mock-socket": "9.2.1",
+    "pkg": "5.8.1"
+  }
+}

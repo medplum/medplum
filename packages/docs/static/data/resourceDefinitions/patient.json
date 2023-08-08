@@ -862,19 +862,19 @@
       "name": "death-date",
       "type": "date",
       "description": "The date of death has been provided and satisfies this search value",
-      "expression": "Patient.deceased"
+      "expression": "Patient.deceased as dateTime"
     },
     {
       "name": "deceased",
       "type": "token",
       "description": "This patient has been marked as deceased, or as a death date entered",
-      "expression": "Patient.deceased"
+      "expression": "Patient.deceased.exists() and Patient.deceased != false"
     },
     {
       "name": "email",
       "type": "token",
       "description": " A value in an email contact\r",
-      "expression": "Patient.telecom"
+      "expression": "Patient.telecom.where(system = 'email')"
     },
     {
       "name": "family",
@@ -934,7 +934,7 @@
       "name": "phone",
       "type": "token",
       "description": " A value in a phone contact\r",
-      "expression": "Patient.telecom"
+      "expression": "Patient.telecom.where(system = 'phone')"
     },
     {
       "name": "phonetic",

@@ -1,6 +1,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { allOk, badRequest } from '@medplum/core';
+import { Bot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -8,11 +9,9 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
 
-let medplum: MockClient;
-
 describe('BotEditor', () => {
-  async function setup(url: string): Promise<void> {
-    medplum = new MockClient();
+  async function setup(url: string, medplum = new MockClient()): Promise<void> {
+    jest.spyOn(medplum, 'download').mockImplementation(async () => ({ text: async () => 'test' } as unknown as Blob));
 
     // Mock bot operations
     medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);
@@ -49,14 +48,11 @@ describe('BotEditor', () => {
   test('Bot editor', async () => {
     await setup('/Bot/123/editor');
     await waitFor(() => screen.getByText('Editor'));
+    await waitFor(() => screen.getByTestId('code-frame'));
     expect(screen.getByText('Editor')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.load(screen.getByTestId<HTMLIFrameElement>('code-frame'));
-    });
-
-    await act(async () => {
-      fireEvent.load(screen.getByTestId<HTMLIFrameElement>('input-frame'));
     });
   });
 
@@ -144,15 +140,6 @@ describe('BotEditor', () => {
     await setup('/Bot/123/editor');
     await waitFor(() => screen.getByText('Execute'));
 
-    // Mock the input frame
-    (screen.getByTestId<HTMLIFrameElement>('input-frame').contentWindow as Window).postMessage = (
-      _message: any,
-      _targetOrigin: any,
-      transfer?: Transferable[]
-    ) => {
-      (transfer?.[0] as MessagePort).postMessage({ result: '{"resourceType":"Patient"}' });
-    };
-
     // Mock the output frame
     (screen.getByTestId<HTMLIFrameElement>('output-frame').contentWindow as Window).postMessage = (
       _message: any,
@@ -173,15 +160,6 @@ describe('BotEditor', () => {
     await setup('/Bot/123/editor');
     await waitFor(() => screen.getByText('Execute'));
 
-    // Mock the input frame
-    (screen.getByTestId<HTMLIFrameElement>('input-frame').contentWindow as Window).postMessage = (
-      _message: any,
-      _targetOrigin: any,
-      transfer?: Transferable[]
-    ) => {
-      (transfer?.[0] as MessagePort).postMessage({ result: '{"resourceType":"Patient"}' });
-    };
-
     // Mock the output frame
     (screen.getByTestId<HTMLIFrameElement>('output-frame').contentWindow as Window).postMessage = (
       _message: any,
@@ -196,5 +174,65 @@ describe('BotEditor', () => {
     });
 
     expect(screen.getByText('Error')).toBeInTheDocument();
+  });
+
+  test('Legacy bot', async () => {
+    // Bots now use "sourceCode" and "executableCode" instead of "code"
+    // While "code" is deprecated, it is still supported for legacy bots
+
+    // Create a Bot with "code" instead of "sourceCode" and "executableCode"
+    const medplum = new MockClient();
+    const legacyBot = await medplum.createResource<Bot>({
+      resourceType: 'Bot',
+      code: 'console.log("foo");',
+    });
+
+    await setup(`/Bot/${legacyBot.id}/editor`, medplum);
+    await waitFor(() => screen.getByText('Save'));
+
+    // Mock the code frame
+    (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ result: 'console.log("foo");' });
+    };
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(screen.getByText('Saved')).toBeInTheDocument();
+
+    const check = await medplum.readResource('Bot', legacyBot.id as string);
+    expect(check.sourceCode).toBeDefined();
+    expect(check.sourceCode?.url).toBeDefined();
+  });
+
+  test('HL7 input', async () => {
+    await setup('/Bot/123/editor');
+    await waitFor(() => screen.getByText('Execute'));
+
+    // Mock the output frame
+    (screen.getByTestId<HTMLIFrameElement>('output-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ result: 'ok' });
+    };
+
+    // Change input type to HL7
+    const contentTypeInput = screen.getByDisplayValue('FHIR') as HTMLSelectElement;
+    await act(async () => {
+      fireEvent.change(contentTypeInput, { target: { value: 'x-application/hl7-v2+er7' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Execute'));
+    });
+
+    expect(screen.getByText('Success')).toBeInTheDocument();
   });
 });

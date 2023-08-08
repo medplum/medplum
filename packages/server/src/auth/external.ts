@@ -1,4 +1,4 @@
-import { badRequest, OAuthGrantType, OperationOutcomeError, parseJWTPayload } from '@medplum/core';
+import { badRequest, ContentType, OAuthGrantType, OperationOutcomeError, parseJWTPayload } from '@medplum/core';
 import { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
@@ -23,7 +23,7 @@ export interface ExternalAuthState {
   nonce?: string;
   launch?: string;
   codeChallenge?: string;
-  codeChallengeMethod?: string;
+  codeChallengeMethod?: 'plain' | 'S256';
   redirectUri?: string;
 }
 
@@ -78,8 +78,8 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     externalId,
     projectId: projectId,
     clientId: body.clientId,
-    scope: body.scope || 'openid offline',
-    nonce: body.nonce || randomUUID(),
+    scope: body.scope ?? 'openid offline',
+    nonce: body.nonce ?? randomUUID(),
     launchId: body.launch,
     codeChallenge: body.codeChallenge,
     codeChallengeMethod: body.codeChallengeMethod,
@@ -156,17 +156,17 @@ async function verifyCode(idp: IdentityProvider, code: string): Promise<Record<s
     const response = await fetch(idp.tokenUrl as string, {
       method: 'POST',
       headers: {
-        Accept: 'application/json',
+        Accept: ContentType.JSON,
         Authorization: `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': ContentType.FORM_URL_ENCODED,
       },
       body: params.toString(),
     });
 
     const tokens = await response.json();
     return parseJWTPayload(tokens.id_token);
-  } catch (err) {
-    logger.warn('Failed to verify code', err);
+  } catch (err: any) {
+    logger.warn('Failed to verify authorization code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 }

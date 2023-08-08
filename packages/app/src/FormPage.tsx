@@ -96,7 +96,7 @@ export function FormPage(): JSX.Element {
               Review your answers:
               <ul>
                 {result.map((response) => (
-                  <li>
+                  <li key={response.id}>
                     <MedplumLink to={response}>{getReferenceString(response)}</MedplumLink>
                   </li>
                 ))}

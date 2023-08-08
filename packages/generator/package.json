@@ -1,6 +1,6 @@
 {
   "name": "@medplum/generator",
-  "version": "2.0.25",
+  "version": "2.0.30",
   "description": "Medplum Code Generator",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -9,6 +9,9 @@
     "type": "git",
     "url": "https://github.com/medplum/medplum.git",
     "directory": "packages/generator"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "scripts": {
     "clean": "rimraf dist",
@@ -23,7 +26,11 @@
     "@medplum/definitions": "*",
     "@medplum/fhirtypes": "*",
     "@types/json-schema": "7.0.12",
-    "fhirpath": "3.5.0",
-    "fast-xml-parser": "4.2.5"
+    "@types/unzipper": "^0.10.6",
+    "fast-xml-parser": "4.2.6",
+    "fhirpath": "3.6.0",
+    "mkdirp": "^3.0.1",
+    "node-stream-zip": "^1.15.0",
+    "unzipper": "^0.10.14"
   }
 }

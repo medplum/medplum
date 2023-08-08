@@ -1,7 +1,7 @@
 {
   "name": "SmartAppLaunch",
   "location": "medplum",
-  "description": "User specific configuration for the Medplum application.",
+  "description": "This resource contains context details for a SMART App Launch.",
   "properties": [
     {
       "name": "SmartAppLaunch",
@@ -14,8 +14,8 @@
       "path": "SmartAppLaunch",
       "min": 0,
       "max": "*",
-      "short": "User specific configuration for the Medplum application.",
-      "definition": "User specific configuration for the Medplum application.",
+      "short": "This resource contains context details for a SMART App Launch.",
+      "definition": "This resource contains context details for a SMART App Launch.",
       "comment": "",
       "inherited": false
     },

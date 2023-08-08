@@ -634,7 +634,7 @@
       "name": "patient",
       "type": "reference",
       "description": " Who this goal is intended for\r",
-      "expression": "Goal.subject"
+      "expression": "Goal.subject.where(resolve() is Patient)"
     },
     {
       "name": "achievement-status",
@@ -658,7 +658,7 @@
       "name": "start-date",
       "type": "date",
       "description": "When goal pursuit begins",
-      "expression": "Goal.start"
+      "expression": "Goal.start as date"
     },
     {
       "name": "subject",
@@ -670,7 +670,7 @@
       "name": "target-date",
       "type": "date",
       "description": "Reach goal on or before",
-      "expression": "Goal.target.due"
+      "expression": "Goal.target.due as date"
     }
   ]
 }

@@ -3,6 +3,7 @@
 
 import {
   AccessPolicy,
+  Attachment,
   Binary,
   BulkDataExport,
   Bundle,
@@ -18,6 +19,7 @@ import {
   Patient,
   Project,
   ProjectMembership,
+  ProjectMembershipAccess,
   ProjectSecret,
   Reference,
   Resource,
@@ -32,10 +34,11 @@ import {
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
+import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
-import { parseJWTPayload } from './jwt';
+import { isMedplumAccessToken, parseJWTPayload } from './jwt';
 import {
   badRequest,
   isOk,
@@ -54,9 +57,7 @@ export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
 const DEFAULT_CACHE_TIME = 60000; // 60 seconds
-const JSON_CONTENT_TYPE = 'application/json';
-const FHIR_CONTENT_TYPE = 'application/fhir+json';
-const PATCH_CONTENT_TYPE = 'application/json-patch+json';
+const BINARY_URL_PREFIX = 'Binary/';
 
 const system: Device = { resourceType: 'Device', id: 'system', deviceName: [{ name: 'System' }] };
 
@@ -173,6 +174,15 @@ export interface MedplumClientOptions {
   fetch?: FetchLike;
 
   /**
+   * The profile name.
+   *
+   * This is for handling multiple profiles to access different FHIR Servers
+   *
+   * If undefined, the default profile is "default".
+   */
+  profile?: string;
+
+  /**
    * Storage implementation.
    *
    * Default is window.localStorage (if available), this is the common implementation for use in the browser, or an in-memory storage implementation.  If using Medplum on a server it may be useful to provide a custom storage implementation, for example using redis, a database or a file based storage.  Medplum CLI is an an example of `FileSystemStorage`, for reference.
@@ -207,7 +217,7 @@ export interface MedplumClientOptions {
    *   fonts?: TFontDictionary
    * ): Promise<Buffer> {
    *   return new Promise((resolve, reject) => {
-   *     const printer = new PdfPrinter(fonts || {});
+   *     const printer = new PdfPrinter(fonts ?? {});
    *     const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
    *     const chunks: Uint8Array[] = [];
    *     pdfDoc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
@@ -246,6 +256,13 @@ export interface FetchLike {
  */
 export type QueryTypes = URLSearchParams | string[][] | Record<string, any> | string | undefined;
 
+/**
+ * ResourceArray is an array of resources with a bundle property.
+ * The bundle property is a FHIR Bundle containing the search results.
+ * This is useful for retrieving bundle metadata such as total, offset, and next link.
+ */
+export type ResourceArray<T extends Resource = Resource> = T[] & { bundle: Bundle<T> };
+
 export interface CreatePdfFunction {
   (
     docDefinition: TDocumentDefinitions,
@@ -283,6 +300,7 @@ export interface NewUserRequest {
   readonly recaptchaSiteKey?: string;
   readonly remember?: boolean;
   readonly projectId?: string;
+  readonly clientId?: string;
 }
 
 export interface NewProjectRequest {
@@ -346,13 +364,20 @@ export interface BotEvent<T = Resource | Hl7Message | string | Record<string, an
   readonly secrets: Record<string, ProjectSecret>;
 }
 
-export interface InviteBody {
+export interface InviteRequest {
   resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson';
   firstName: string;
   lastName: string;
   email?: string;
+  externalId?: string;
+  password?: string;
   sendEmail?: boolean;
+  membership?: Partial<ProjectMembership>;
+  /** @deprecated Use membership.accessPolicy instead. */
   accessPolicy?: Reference<AccessPolicy>;
+  /** @deprecated Use membership.access instead. */
+  access?: ProjectMembershipAccess[];
+  /** @deprecated Use membership.admin instead. */
   admin?: boolean;
 }
 
@@ -367,6 +392,11 @@ export interface PatchOperation {
 }
 
 /**
+ * Source for a FHIR Binary.
+ */
+export type BinarySource = string | File | Blob | Uint8Array;
+
+/**
  * Email address definition.
  * Compatible with nodemailer Mail.Address.
  */
@@ -374,6 +404,11 @@ export interface MailAddress {
   readonly name: string;
   readonly address: string;
 }
+
+/**
+ * Email destination definition.
+ */
+export type MailDestination = string | MailAddress | string[] | MailAddress[];
 
 /**
  * Email attachment definition.
@@ -400,11 +435,11 @@ export interface MailOptions {
   /** An e-mail address that will appear on the Sender: field */
   readonly sender?: string | MailAddress;
   /** Comma separated list or an array of recipients e-mail addresses that will appear on the To: field */
-  readonly to?: string | MailAddress | string[] | MailAddress[];
+  readonly to?: MailDestination;
   /** Comma separated list or an array of recipients e-mail addresses that will appear on the Cc: field */
-  readonly cc?: string | MailAddress | string[] | MailAddress[];
+  readonly cc?: MailDestination;
   /** Comma separated list or an array of recipients e-mail addresses that will appear on the Bcc: field */
-  readonly bcc?: string | MailAddress | string[] | MailAddress[];
+  readonly bcc?: MailDestination;
   /** An e-mail address that will appear on the Reply-To: field */
   readonly replyTo?: string | MailAddress;
   /** The subject of the e-mail */
@@ -439,13 +474,15 @@ interface AutoBatchEntry<T = any> {
 
 /**
  * OAuth 2.0 Grant Type Identifiers
- * Standard identifiers defined here: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-07#name-grant-types
- * Token exchange extension defined here: https://datatracker.ietf.org/doc/html/rfc8693
+ * Standard identifiers: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-07#name-grant-types
+ * JWT bearer extension: https://datatracker.ietf.org/doc/html/rfc7523
+ * Token exchange extension: https://datatracker.ietf.org/doc/html/rfc8693
  */
 export enum OAuthGrantType {
   ClientCredentials = 'client_credentials',
   AuthorizationCode = 'authorization_code',
   RefreshToken = 'refresh_token',
+  JwtBearer = 'urn:ietf:params:oauth:grant-type:jwt-bearer',
   TokenExchange = 'urn:ietf:params:oauth:grant-type:token-exchange',
 }
 
@@ -539,6 +576,7 @@ export class MedplumClient extends EventTarget {
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
+  private medplumServer?: boolean;
   private clientId?: string;
   private clientSecret?: string;
   private autoBatchTimerId?: any;
@@ -559,14 +597,14 @@ export class MedplumClient extends EventTarget {
     }
 
     this.fetch = options?.fetch ?? getDefaultFetch();
-    this.storage = options?.storage || new ClientStorage();
+    this.storage = options?.storage ?? new ClientStorage();
     this.createPdfImpl = options?.createPdf;
-    this.baseUrl = ensureTrailingSlash(options?.baseUrl) || DEFAULT_BASE_URL;
-    this.fhirBaseUrl = this.baseUrl + (ensureTrailingSlash(options?.fhirUrlPath) || 'fhir/R4/');
-    this.clientId = options?.clientId || '';
-    this.authorizeUrl = options?.authorizeUrl || this.baseUrl + 'oauth2/authorize';
-    this.tokenUrl = options?.tokenUrl || this.baseUrl + 'oauth2/token';
-    this.logoutUrl = options?.logoutUrl || this.baseUrl + 'oauth2/logout';
+    this.baseUrl = ensureTrailingSlash(options?.baseUrl) ?? DEFAULT_BASE_URL;
+    this.fhirBaseUrl = this.baseUrl + (ensureTrailingSlash(options?.fhirUrlPath) ?? 'fhir/R4/');
+    this.clientId = options?.clientId ?? '';
+    this.authorizeUrl = options?.authorizeUrl ?? this.baseUrl + 'oauth2/authorize';
+    this.tokenUrl = options?.tokenUrl ?? this.baseUrl + 'oauth2/token';
+    this.logoutUrl = options?.logoutUrl ?? this.baseUrl + 'oauth2/logout';
     this.onUnauthenticated = options?.onUnauthenticated;
 
     this.cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
@@ -577,7 +615,7 @@ export class MedplumClient extends EventTarget {
     }
 
     if (options?.autoBatchTime) {
-      this.autoBatchTime = options.autoBatchTime ?? 0;
+      this.autoBatchTime = options.autoBatchTime;
       this.autoBatchQueue = [];
     } else {
       this.autoBatchTime = 0;
@@ -586,8 +624,7 @@ export class MedplumClient extends EventTarget {
 
     const activeLogin = this.getActiveLogin();
     if (activeLogin) {
-      this.accessToken = activeLogin.accessToken;
-      this.refreshToken = activeLogin.refreshToken;
+      this.setAccessToken(activeLogin.accessToken, activeLogin.refreshToken);
       this.refreshProfile().catch(console.log);
     }
 
@@ -631,14 +668,12 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   clearActiveLogin(): void {
-    if (this.basicAuth) {
-      return;
-    }
     this.storage.setString('activeLogin', undefined);
     this.requestCache?.clear();
     this.accessToken = undefined;
     this.refreshToken = undefined;
     this.sessionDetails = undefined;
+    this.medplumServer = undefined;
     this.dispatchEvent({ type: 'change' });
   }
 
@@ -783,7 +818,7 @@ export class MedplumClient extends EventTarget {
   patch(url: URL | string, operations: PatchOperation[], options: RequestInit = {}): Promise<any> {
     url = url.toString();
     this.setRequestBody(options, operations);
-    this.setRequestContentType(options, PATCH_CONTENT_TYPE);
+    this.setRequestContentType(options, ContentType.JSON_PATCH);
     this.invalidateUrl(url);
     return this.request('PATCH', url, options);
   }
@@ -823,6 +858,7 @@ export class MedplumClient extends EventTarget {
       'auth/newuser',
       {
         ...newUserRequest,
+        clientId: newUserRequest.clientId ?? this.clientId,
         codeChallengeMethod,
         codeChallenge,
       },
@@ -988,7 +1024,7 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   async exchangeExternalAccessToken(token: string, clientId?: string): Promise<ProfileResource> {
-    clientId = clientId || this.clientId;
+    clientId = clientId ?? this.clientId;
     if (!clientId) {
       throw new Error('MedplumClient is missing clientId');
     }
@@ -1191,18 +1227,14 @@ export class MedplumClient extends EventTarget {
     resourceType: K,
     query?: QueryTypes,
     options?: RequestInit
-  ): ReadablePromise<ExtractResource<K>[]> {
+  ): ReadablePromise<ResourceArray<ExtractResource<K>>> {
     const url = this.fhirSearchUrl(resourceType, query);
     const cacheKey = url.toString() + '-searchResources';
     const cached = this.getCacheEntry(cacheKey, options);
     if (cached) {
       return cached.value;
     }
-    const promise = new ReadablePromise(
-      this.search<K>(resourceType, query, options).then(
-        (b) => b.entry?.map((e) => e.resource as ExtractResource<K>) ?? []
-      )
-    );
+    const promise = new ReadablePromise(this.search<K>(resourceType, query, options).then(bundleToResourceArray));
     this.setCacheEntry(cacheKey, promise);
     return promise;
   }
@@ -1231,7 +1263,7 @@ export class MedplumClient extends EventTarget {
     resourceType: K,
     query?: QueryTypes,
     options?: RequestInit
-  ): AsyncGenerator<ExtractResource<K>[]> {
+  ): AsyncGenerator<ResourceArray<ExtractResource<K>>> {
     let url: URL | undefined = this.fhirSearchUrl(resourceType, query);
 
     while (url) {
@@ -1242,7 +1274,7 @@ export class MedplumClient extends EventTarget {
         break;
       }
 
-      yield bundle.entry?.map((e) => e.resource as ExtractResource<K>) ?? [];
+      yield bundleToResourceArray(bundle);
       url = nextLink?.url ? new URL(nextLink.url) : undefined;
     }
   }
@@ -1586,6 +1618,44 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Creates a FHIR `Attachment` with the provided data content.
+   *
+   * This is a convenience method for creating a `Binary` resource and then creating an `Attachment` element.
+   *
+   * The `data` parameter can be a string or a `File` object.
+   *
+   * A `File` object often comes from a `<input type="file">` element.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const result = await medplum.createAttachment(myFile, 'test.jpg', 'image/jpeg');
+   * console.log(result);
+   * ```
+   *
+   * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
+   * @category Create
+   * @param data The binary data to upload.
+   * @param filename Optional filename for the binary.
+   * @param contentType Content type for the binary.
+   * @param onProgress Optional callback for progress events.
+   * @returns The result of the create operation.
+   */
+  async createAttachment(
+    data: BinarySource,
+    filename: string | undefined,
+    contentType: string,
+    onProgress?: (e: ProgressEvent) => void
+  ): Promise<Attachment> {
+    const binary = await this.createBinary(data, filename, contentType, onProgress);
+    return {
+      contentType,
+      url: binary.url,
+      title: filename,
+    };
+  }
+
+  /**
    * Creates a FHIR `Binary` resource with the provided data content.
    *
    * The return value is the newly created resource, including the ID and meta.
@@ -1610,7 +1680,7 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the create operation.
    */
   createBinary(
-    data: string | File | Blob | Uint8Array,
+    data: BinarySource,
     filename: string | undefined,
     contentType: string,
     onProgress?: (e: ProgressEvent) => void
@@ -1629,7 +1699,7 @@ export class MedplumClient extends EventTarget {
 
   uploadwithProgress(
     url: URL,
-    data: string | File | Blob | Uint8Array,
+    data: BinarySource,
     contentType: string,
     onProgress: (e: ProgressEvent) => void
   ): Promise<any> {
@@ -1979,7 +2049,7 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the operation outcome.
    */
   sendEmail(email: MailOptions, options?: RequestInit): Promise<OperationOutcome> {
-    return this.post('email/v1/send', email, 'application/json', options);
+    return this.post('email/v1/send', email, ContentType.JSON, options);
   }
 
   /**
@@ -2030,7 +2100,7 @@ export class MedplumClient extends EventTarget {
    * @returns The GraphQL result.
    */
   graphql(query: string, operationName?: string | null, variables?: any, options?: RequestInit): Promise<any> {
-    return this.post(this.fhirUrl('$graphql'), { query, operationName, variables }, JSON_CONTENT_TYPE, options);
+    return this.post(this.fhirUrl('$graphql'), { query, operationName, variables }, ContentType.JSON, options);
   }
 
   /**
@@ -2068,11 +2138,7 @@ export class MedplumClient extends EventTarget {
    */
   async setActiveLogin(login: LoginState): Promise<void> {
     this.clearActiveLogin();
-    this.accessToken = login.accessToken;
-    if (this.basicAuth) {
-      return;
-    }
-    this.refreshToken = login.refreshToken;
+    this.setAccessToken(login.accessToken, login.refreshToken);
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
     this.refreshPromise = undefined;
@@ -2091,12 +2157,14 @@ export class MedplumClient extends EventTarget {
   /**
    * Sets the current access token.
    * @param accessToken The new access token.
+   * @param refreshToken Optional refresh token.
    * @category Authentication
    */
-  setAccessToken(accessToken: string): void {
+  setAccessToken(accessToken: string, refreshToken?: string): void {
     this.accessToken = accessToken;
-    this.refreshToken = undefined;
+    this.refreshToken = refreshToken;
     this.sessionDetails = undefined;
+    this.medplumServer = isMedplumAccessToken(accessToken);
   }
 
   /**
@@ -2115,10 +2183,10 @@ export class MedplumClient extends EventTarget {
   }
 
   private async refreshProfile(): Promise<ProfileResource | undefined> {
+    if (!this.medplumServer) {
+      return Promise.resolve(undefined);
+    }
     this.profilePromise = new Promise((resolve, reject) => {
-      if (this.basicAuth) {
-        return;
-      }
       this.get('auth/me')
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
@@ -2219,9 +2287,23 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * Downloads the URL as a blob.
+   * Translates/normalizes a URL so that it can be directly used with `MedplumClient.fetch`.
+   * Especially useful for translating `Binary/{id}` URLs to FHIR paths.
+   * @param url A valid URL within the `MedplumClient` context.
+   * @returns URL as a string that can be used with `MedplumClient.fetch`
+   */
+  normalizeFetchUrl(url: URL | string): string {
+    let urlString = url.toString();
+    if (urlString.startsWith(BINARY_URL_PREFIX)) {
+      urlString = this.fhirUrl(urlString).toString();
+    }
+    return urlString;
+  }
+
+  /**
+   * Downloads the URL as a blob. Can accept binary URLs in the form of `Binary/{id}` as well.
    * @category Read
-   * @param url The URL to request.
+   * @param url The URL to request. Can be a standard URL or one in the form of `Binary/{id}`.
    * @param options Optional fetch request init options.
    * @returns Promise to the response body as a blob.
    */
@@ -2230,7 +2312,7 @@ export class MedplumClient extends EventTarget {
       await this.refreshPromise;
     }
     this.addFetchOptionsDefaults(options);
-    const response = await this.fetch(url.toString(), options);
+    const response = await this.fetch(this.normalizeFetchUrl(url), options);
     return response.blob();
   }
 
@@ -2257,7 +2339,7 @@ export class MedplumClient extends EventTarget {
         resourceType: 'Media',
         content: {
           contentType: contentType,
-          url: 'Binary/' + binary.id,
+          url: BINARY_URL_PREFIX + binary.id,
           title: filename,
         },
       },
@@ -2357,7 +2439,7 @@ export class MedplumClient extends EventTarget {
    * @param resource The resource to cache.
    */
   private cacheResource(resource: Resource | undefined): void {
-    if (resource?.id) {
+    if (resource?.id && !resource.meta?.tag?.some((t) => t.code === 'SUBSETTED')) {
       this.setCacheEntry(
         this.fhirUrl(resource.resourceType, resource.id).toString(),
         new ReadablePromise(Promise.resolve(resource))
@@ -2426,6 +2508,8 @@ export class MedplumClient extends EventTarget {
         console.error('Error parsing response', response.status, err);
         throw err;
       }
+    } else {
+      obj = await response.text();
     }
 
     if (response.status >= 400) {
@@ -2547,11 +2631,11 @@ export class MedplumClient extends EventTarget {
       headers = {};
       options.headers = headers;
     }
-    headers['Accept'] = FHIR_CONTENT_TYPE;
+    headers['Accept'] = ContentType.FHIR_JSON;
     headers['X-Medplum'] = 'extended';
 
     if (options.body && !headers['Content-Type']) {
-      headers['Content-Type'] = FHIR_CONTENT_TYPE;
+      headers['Content-Type'] = ContentType.FHIR_JSON;
     }
 
     if (this.accessToken) {
@@ -2646,15 +2730,15 @@ export class MedplumClient extends EventTarget {
    * @see https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
   private async requestAuthorization(loginParams?: Partial<BaseLoginRequest>): Promise<void> {
-    const loginRequest = await this.ensureCodeChallenge(loginParams || {});
+    const loginRequest = await this.ensureCodeChallenge(loginParams ?? {});
     const url = new URL(this.authorizeUrl);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
-    url.searchParams.set('client_id', loginRequest.clientId || (this.clientId as string));
-    url.searchParams.set('redirect_uri', loginRequest.redirectUri || getWindowOrigin());
+    url.searchParams.set('client_id', loginRequest.clientId ?? (this.clientId as string));
+    url.searchParams.set('redirect_uri', loginRequest.redirectUri ?? getWindowOrigin());
     url.searchParams.set('code_challenge_method', loginRequest.codeChallengeMethod as string);
     url.searchParams.set('code_challenge', loginRequest.codeChallenge as string);
-    url.searchParams.set('scope', loginRequest.scope || 'openid profile');
+    url.searchParams.set('scope', loginRequest.scope ?? 'openid profile');
     window.location.assign(url.toString());
   }
 
@@ -2670,8 +2754,8 @@ export class MedplumClient extends EventTarget {
     const formBody = new URLSearchParams();
     formBody.set('grant_type', OAuthGrantType.AuthorizationCode);
     formBody.set('code', code);
-    formBody.set('client_id', loginParams?.clientId || (this.clientId as string));
-    formBody.set('redirect_uri', loginParams?.redirectUri || getWindowOrigin());
+    formBody.set('client_id', loginParams?.clientId ?? (this.clientId as string));
+    formBody.set('redirect_uri', loginParams?.redirectUri ?? getWindowOrigin());
 
     if (typeof sessionStorage !== 'undefined') {
       const codeVerifier = sessionStorage.getItem('codeVerifier');
@@ -2719,7 +2803,6 @@ export class MedplumClient extends EventTarget {
    * await medplum.searchResources('Patient')
    * ```
    *
-   *
    * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
    * @category Authentication
    * @param clientId The client ID.
@@ -2734,6 +2817,32 @@ export class MedplumClient extends EventTarget {
     formBody.set('grant_type', OAuthGrantType.ClientCredentials);
     formBody.set('client_id', clientId);
     formBody.set('client_secret', clientSecret);
+    return this.fetchTokens(formBody);
+  }
+
+  /**
+   * Starts a new OAuth2 JWT bearer flow.
+   *
+   * ```typescript
+   * await medplum.startJwtBearerLogin(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_JWT_BEARER_ASSERTION, 'openid profile');
+   * // Example Search
+   * await medplum.searchResources('Patient')
+   * ```
+   *
+   * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.1
+   * @param clientId The client ID.
+   * @param assertion The JWT assertion.
+   * @param scope The OAuth scope.
+   * @returns Promise that resolves to the client profile.
+   */
+  async startJwtBearerLogin(clientId: string, assertion: string, scope: string): Promise<ProfileResource> {
+    this.clientId = clientId;
+
+    const formBody = new URLSearchParams();
+    formBody.set('grant_type', OAuthGrantType.JwtBearer);
+    formBody.set('client_id', clientId);
+    formBody.set('assertion', assertion);
+    formBody.set('scope', scope);
     return this.fetchTokens(formBody);
   }
 
@@ -2758,10 +2867,10 @@ export class MedplumClient extends EventTarget {
   /**
    * Invite a user to a project.
    * @param projectId The project ID.
-   * @param body The InviteBody.
+   * @param body The InviteRequest.
    * @returns Promise that returns a project membership or an operation outcome.
    */
-  async invite(projectId: string, body: InviteBody): Promise<ProjectMembership | OperationOutcome> {
+  async invite(projectId: string, body: InviteRequest): Promise<ProjectMembership | OperationOutcome> {
     return this.post('admin/projects/' + projectId + '/invite', body);
   }
 
@@ -2774,8 +2883,8 @@ export class MedplumClient extends EventTarget {
   private async fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
     const options = {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formBody,
+      headers: { 'Content-Type': ContentType.FORM_URL_ENCODED },
+      body: formBody.toString(),
       credentials: 'include',
     };
     const headers = options.headers as Record<string, string>;
@@ -2937,4 +3046,15 @@ async function tryGetContentLocation(response: Response): Promise<string | undef
 
   // If all else fails, return undefined.
   return undefined;
+}
+
+/**
+ * Converts a FHIR resource bundle to a resource array.
+ * The bundle is attached to the array as a property named "bundle".
+ * @param bundle A FHIR resource bundle.
+ * @returns The resource array with the bundle attached.
+ */
+function bundleToResourceArray<T extends Resource>(bundle: Bundle<T>): ResourceArray<T> {
+  const array = bundle.entry?.map((e) => e.resource as T) ?? [];
+  return Object.assign(array, { bundle });
 }

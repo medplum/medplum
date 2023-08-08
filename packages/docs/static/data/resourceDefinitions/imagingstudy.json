@@ -1104,7 +1104,7 @@
       "name": "patient",
       "type": "reference",
       "description": " Who the study is about\r",
-      "expression": "ImagingStudy.subject"
+      "expression": "ImagingStudy.subject.where(resolve() is Patient)"
     },
     {
       "name": "basedon",
@@ -1134,7 +1134,7 @@
       "name": "endpoint",
       "type": "reference",
       "description": "The endpoint for the study or series",
-      "expression": "ImagingStudy.endpoint"
+      "expression": "ImagingStudy.endpoint | ImagingStudy.series.endpoint"
     },
     {
       "name": "instance",

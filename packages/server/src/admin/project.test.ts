@@ -9,6 +9,7 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { createReference } from '@medplum/core';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
@@ -77,7 +78,8 @@ describe('Project Admin routes', () => {
     // Get the new membership details
     const res4 = await request(app)
       .get('/admin/projects/' + project.id + '/members/' + member.id)
-      .set('Authorization', 'Bearer ' + accessToken);
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended');
     expect(res4.status).toBe(200);
     expect(res4.body.resourceType).toEqual('ProjectMembership');
     expect(res4.body.id).toBeDefined();
@@ -373,7 +375,7 @@ describe('Project Admin routes', () => {
 
   test('Save project secrets', async () => {
     // Register and create a project
-    const { project, accessToken } = await registerNew({
+    const { project, profile, accessToken } = await registerNew({
       firstName: 'John',
       lastName: 'Adams',
       projectName: 'Adams Project',
@@ -401,6 +403,14 @@ describe('Project Admin routes', () => {
     expect(res3.body.project.secret).toHaveLength(1);
     expect(res3.body.project.secret[0].name).toEqual('test_secret');
     expect(res3.body.project.secret[0].valueString).toEqual('test_value');
+
+    // Verify the author is set
+    const res4 = await request(app)
+      .get('/fhir/R4/Project/' + project.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended');
+    expect(res4.status).toBe(200);
+    expect(res4.body.meta.author).toMatchObject(createReference(profile));
   });
 
   test('Save project sites', async () => {

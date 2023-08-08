@@ -80,6 +80,8 @@ The following access policy grants read-only access to the "Patient" resource ty
 }
 ```
 
+Attempting to modify a read-only resource will result in an HTTP result of [`403: Forbidden`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403).
+
 ### Hidden fields
 
 The following access policy grants read-only access to the "Patient" resource type, but hides "name" and "address":
@@ -136,6 +138,10 @@ For more advanced access control configurations, You can use `%` variables to pa
     {
       "resourceType": "Patient",
       "criteria": "Patient?organization=%provider_organization"
+    },
+    {
+      "resourceType": "DiagnosticReport",
+      "criteria": "DiagnosticReport?performer=%provider_organization"
     }
   ]
 }
@@ -147,23 +153,31 @@ This policy acts like a template, that can be instantiated (potentially multiple
 {
   "resourceType": "ProjectMembership",
   "access": [
-    // Provide access to Patients in Organization/abc
+    // Provide access to Patients and Diagnostic Reports in Organization/abc
     {
-      "policy": { "reference": "AccessPolicy/123", "display": "Parameterized Access Policy" },
+      "policy": { "reference": "AccessPolicy/123" },
       "parameter": [
-        { "name": "provider_organization", "valueReference": { "reference": "Organization/abc" },
+        {
+          "name": "provider_organization",
+          "valueReference": { "reference": "Organization/abc" }
+        }
       ]
     },
-    // Provide access to Patients in Organization/def
+    // Provide access to Patients and Diagnostic Reports in Organization/def
     {
-      "policy": { "reference": "AccessPolicy/123", "display": "Parameterized Access Policy" },
+      "policy": { "reference": "AccessPolicy/123" },
       "parameter": [
-        { "name": "provider_organization", "valueReference": { "reference": "Organization/def" },
+        {
+          "name": "provider_organization",
+          "valueReference": { "reference": "Organization/def" }
+        }
       ]
     }
   ]
 }
 ```
+
+In this example, the user with the parameterized policy shown above will only have access to Patient and DiagnosticReport resources, filtered by the relevant organizations. See this [video demo](https://www.youtube.com/watch?v=IDhsWiIxK3o) for an illustration.
 
 See [this Github Discussion](https://github.com/medplum/medplum/discussions/1453) for more examples of access scenarios that can be created using these policies.
 

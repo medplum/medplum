@@ -1,6 +1,6 @@
 {
   "name": "@medplum/examples",
-  "version": "2.0.25",
+  "version": "2.0.30",
   "description": "Medplum Code Examples",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -10,23 +10,18 @@
     "url": "https://github.com/medplum/medplum.git",
     "directory": "packages/examples"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc"
   },
   "devDependencies": {
-    "@jest/globals": "29.5.0",
+    "@jest/globals": "29.6.1",
     "@medplum/core": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
-    "jest": "29.5.0"
-  },
-  "eslintConfig": {
-    "extends": [
-      "../eslint-config"
-    ],
-    "rules": {
-      "no-duplicate-imports": "off"
-    }
+    "jest": "29.6.1"
   }
 }

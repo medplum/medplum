@@ -1,4 +1,4 @@
-import { getReferenceString } from '@medplum/core';
+import { ContentType, getReferenceString } from '@medplum/core';
 import { Meta, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -23,7 +23,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
         name: [
@@ -84,7 +84,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send('not-json');
     expect(res.status).toBe(400);
   });
@@ -93,7 +93,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Bundle', type: 'batch', entry: [] });
     expect(res.status).toBe(200);
   });
@@ -102,7 +102,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'text/plain')
+      .set('Content-Type', ContentType.TEXT)
       .send('hello');
     expect(res.status).toBe(400);
   });
@@ -111,7 +111,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient', name: [{ given: ['Homer'] }] });
     expect(res.status).toBe(400);
   });
@@ -120,7 +120,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient' });
     expect(res.status).toBe(201);
     const patient = res.body;
@@ -134,7 +134,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .post(`/fhir/R4/Patientx`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patientx' });
     expect(res.status).toBe(400);
   });
@@ -143,7 +143,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patientx' });
     expect(res.status).toBe(400);
   });
@@ -152,7 +152,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'text/plain')
+      .set('Content-Type', ContentType.TEXT)
       .send('hello');
     expect(res.status).toBe(400);
   });
@@ -254,7 +254,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient' });
     expect(res.status).toBe(201);
     const patient = res.body;
@@ -269,7 +269,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient' });
     expect(res.status).toBe(201);
     const patient = res.body;
@@ -285,7 +285,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
         managingOrganization: {
@@ -320,7 +320,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .put(`/fhir/R4/Patient/${patientId}`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'text/plain')
+      .set('Content-Type', ContentType.TEXT)
       .send('hello');
     expect(res.status).toBe(400);
   });
@@ -345,7 +345,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient' });
     expect(res.status).toBe(201);
     const patient = res.body;
@@ -377,7 +377,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .patch(`/fhir/R4/Patient/${randomUUID()}`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json-patch+json')
+      .set('Content-Type', ContentType.JSON_PATCH)
       .send([
         {
           op: 'add',
@@ -392,7 +392,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .patch(`/fhir/R4/Patient/${patientId}`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'text/plain')
+      .set('Content-Type', ContentType.TEXT)
       .send('hello');
     expect(res.status).toBe(400);
   });
@@ -401,7 +401,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .patch(`/fhir/R4/Patient/${patientId}`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json-patch+json')
+      .set('Content-Type', ContentType.JSON_PATCH)
       .send([{ op: 'remove', path: '/resourceType' }]);
     expect(res.status).toBe(400);
   });
@@ -410,7 +410,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .patch(`/fhir/R4/Patient/${patientId}`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json-patch+json')
+      .set('Content-Type', ContentType.JSON_PATCH)
       .send([
         {
           op: 'add',
@@ -471,7 +471,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient/$validate`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'text/plain')
+      .set('Content-Type', ContentType.TEXT)
       .send('hello');
     expect(res.status).toBe(400);
   });

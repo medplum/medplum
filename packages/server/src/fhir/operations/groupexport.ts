@@ -36,8 +36,8 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
   const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
   groupExportResources(exporter, project, group, repo)
-    .then(() => logger.info(`Group export for ${project.id} is completed`))
-    .catch((err) => logger.error(`Group export for  ${project.id} failed: ${err}`));
+    .then(() => logger.info('Group export completed', { id: project.id }))
+    .catch((err) => logger.error('Group export failed', { id: project.id, error: err }));
 
   sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
 }
@@ -65,7 +65,7 @@ export async function groupExportResources(
           await exporter.writeResource(resource);
         }
       } catch (err) {
-        logger.warn('Unable to read patient: ' + member.entity.reference);
+        logger.warn('Unable to read patient for group export', { reference: member.entity.reference });
       }
     }
 

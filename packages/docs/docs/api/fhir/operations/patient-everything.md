@@ -16,9 +16,10 @@ FHIR has the option to query everything associated to an individual patient. Thi
 
 ### Output
 
-The output of the request is a [FHIR bundle](/docs/api/fhir/resources/bundle) with all resources belonging to the patient for whom the request is made.
+The output of the request is a [FHIR bundle](/docs/api/fhir/resources/bundle) with all resources belonging to the patient for whom the request is made.  The FHIR Bundle created from this operation is the supported machine readable Electronic Health Information Export (EHI) format for Medplum.
 
 ## Related Documentation
 
 - Refer to [readPatientEverything](/docs/sdk/classes/MedplumClient#readpatienteverything) in the TypeScript SDK
 - [Bundle definition](/docs/sdk/classes/MedplumClient#returns-40) in TypeScript SDK
+- FHIR Bundles created are required as part of [ONC Certification](/docs/compliance/onc)

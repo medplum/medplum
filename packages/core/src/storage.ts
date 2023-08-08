@@ -19,7 +19,7 @@ export class ClientStorage {
   }
 
   getString(key: string): string | undefined {
-    return this.storage.getItem(key) || undefined;
+    return this.storage.getItem(key) ?? undefined;
   }
 
   setString(key: string, value: string | undefined): void {

@@ -1744,13 +1744,13 @@
       "name": "context",
       "type": "token",
       "description": " A use context assigned to the structure map\r",
-      "expression": "StructureMap.useContext.value"
+      "expression": "StructureMap.useContext.value as CodeableConcept"
     },
     {
       "name": "context-quantity",
       "type": "quantity",
       "description": " A quantity- or range-valued use context assigned to the structure map\r",
-      "expression": "StructureMap.useContext.value"
+      "expression": "StructureMap.useContext.value as Quantity | StructureMap.useContext.value as Range"
     },
     {
       "name": "context-type",

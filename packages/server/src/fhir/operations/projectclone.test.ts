@@ -1,4 +1,4 @@
-import { getReferenceString, isUUID, Operator } from '@medplum/core';
+import { ContentType, getReferenceString, isUUID, Operator } from '@medplum/core';
 import {
   BundleEntry,
   ClientApplication,
@@ -45,7 +45,7 @@ describe('Project clone', () => {
     const res = await request(app)
       .post(`/fhir/R4/Project/${randomUUID()}/$clone`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({});
     expect(res.status).toBe(403);
   });
@@ -76,7 +76,7 @@ describe('Project clone', () => {
     const res = await request(app)
       .post(`/fhir/R4/Project/${project.id}/$clone`)
       .set('Authorization', 'Bearer ' + superAdminAccessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
     expect(res.status).toBe(201);
@@ -118,7 +118,7 @@ describe('Project clone', () => {
     const res = await request(app)
       .post(`/fhir/R4/Project/${project.id}/$clone`)
       .set('Authorization', 'Bearer ' + superAdminAccessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ name: newProjectName });
     expect(res.status).toBe(201);
@@ -182,7 +182,7 @@ describe('Project clone', () => {
     const res = await request(app)
       .post(`/fhir/R4/Project/${project.id}/$clone`)
       .set('Authorization', 'Bearer ' + superAdminAccessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ name: newProjectName });
     expect(res.status).toBe(201);
@@ -212,7 +212,7 @@ describe('Project clone', () => {
     const res = await request(app)
       .post(`/fhir/R4/Project/${project.id}/$clone`)
       .set('Authorization', 'Bearer ' + superAdminAccessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ resourceTypes });
     expect(res.status).toBe(201);
@@ -248,7 +248,7 @@ describe('Project clone', () => {
     const res = await request(app)
       .post(`/fhir/R4/Project/${project.id}/$clone`)
       .set('Authorization', 'Bearer ' + superAdminAccessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ includeIds });
     expect(res.status).toBe(201);
@@ -284,7 +284,7 @@ describe('Project clone', () => {
     const res = await request(app)
       .post(`/fhir/R4/Project/${project.id}/$clone`)
       .set('Authorization', 'Bearer ' + superAdminAccessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ excludeIds });
     expect(res.status).toBe(201);

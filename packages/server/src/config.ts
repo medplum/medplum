@@ -14,7 +14,8 @@ export interface MedplumServerConfig {
   tokenUrl: string;
   userInfoUrl: string;
   appBaseUrl: string;
-  binaryStorage: string;
+  logLevel?: string;
+  binaryStorage?: string;
   storageBaseUrl: string;
   signingKey: string;
   signingKeyId: string;
@@ -22,6 +23,7 @@ export interface MedplumServerConfig {
   supportEmail: string;
   database: MedplumDatabaseConfig;
   redis: MedplumRedisConfig;
+  smtp?: MedplumSmtpConfig;
   googleClientId?: string;
   googleClientSecret?: string;
   recaptchaSiteKey?: string;
@@ -40,6 +42,7 @@ export interface MedplumServerConfig {
   bcryptHashSalt: number;
   introspectionEnabled?: boolean;
   keepAliveTimeout?: number;
+  vmContextBotsEnabled?: boolean;
 }
 
 /**
@@ -58,6 +61,13 @@ export interface MedplumRedisConfig {
   host?: string;
   port?: number;
   password?: string;
+}
+
+export interface MedplumSmtpConfig {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
 }
 
 let cachedConfig: MedplumServerConfig | undefined = undefined;
@@ -106,16 +116,11 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
  */
 export async function loadTestConfig(): Promise<MedplumServerConfig> {
   const config = await loadConfig('file:medplum.config.json');
-  return {
-    ...config,
-    allowedOrigins: undefined,
-    database: {
-      ...config.database,
-      host: process.env['POSTGRES_HOST'] ?? 'localhost',
-      port: process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT'], 10) : 5432,
-      dbname: 'medplum_test',
-    },
-  };
+  config.allowedOrigins = undefined;
+  config.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
+  config.database.port = process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT'], 10) : 5432;
+  config.database.dbname = 'medplum_test';
+  return config;
 }
 
 /**

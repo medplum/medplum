@@ -87,15 +87,18 @@ fi
 
 if [[ "$DEPLOY_APP" = true ]]; then
   echo "Deploy app"
+  npm run build -- --force --filter=@medplum/app
   source ./scripts/deploy-app.sh
 fi
 
 if [[ "$DEPLOY_GRAPHIQL" = true ]]; then
   echo "Deploy GraphiQL"
+  npm run build -- --force --filter=@medplum/graphiql
   source ./scripts/deploy-graphiql.sh
 fi
 
 if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
+  npm run build -- --force --filter=@medplum/server
   source ./scripts/deploy-server.sh
 fi

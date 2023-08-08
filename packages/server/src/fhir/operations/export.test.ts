@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { ContentType, createReference } from '@medplum/core';
 import { BulkDataExportOutput, Observation, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -31,7 +31,7 @@ describe('Export', () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
@@ -47,7 +47,7 @@ describe('Export', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/Observation`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Observation',
         status: 'final',
@@ -60,7 +60,7 @@ describe('Export', () => {
     const initRes = await request(app)
       .post('/fhir/R4/$export')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
     expect(initRes.status).toBe(202);
@@ -104,7 +104,7 @@ describe('Export', () => {
     const initRes = await request(app)
       .get('/fhir/R4/$export')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
     expect(initRes.status).toBe(202);
@@ -119,7 +119,7 @@ describe('Export', () => {
     const initRes = await request(app)
       .get('/fhir/R4/Patient/$export')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
     expect(initRes.status).toBe(202);

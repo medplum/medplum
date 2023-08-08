@@ -1,6 +1,6 @@
 {
   "name": "@medplum/fhirtypes",
-  "version": "2.0.25",
+  "version": "2.0.30",
   "description": "Medplum FHIR Type Definitions",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -9,6 +9,9 @@
     "type": "git",
     "url": "https://github.com/medplum/medplum.git",
     "directory": "packages/fhirtypes"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "scripts": {
     "clean": "",

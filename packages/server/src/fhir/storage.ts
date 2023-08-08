@@ -2,16 +2,32 @@ import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { Binary } from '@medplum/fhirtypes';
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
-import { resolve } from 'path';
-import { Readable, pipeline } from 'stream';
+import { resolve, sep } from 'path';
+import { pipeline, Readable } from 'stream';
 import { getConfig } from '../config';
+
+/**
+ * Binary input type.
+ *
+ * This represents a possible input to the writeBinary function.
+ *
+ * Node.js pipeline types:
+ * type PipelineSource<T> = Iterable<T> | AsyncIterable<T> | NodeJS.ReadableStream | PipelineSourceFunction<T>;
+ *
+ * S3 input types:
+ * export type NodeJsRuntimeStreamingBlobPayloadInputTypes = string | Uint8Array | Buffer | Readable;
+ *
+ * node-fetch body types:
+ * Note that while the Fetch Standard requires the property to always be a WHATWG ReadableStream, in node-fetch it is a Node.js Readable stream.
+ */
+export type BinarySource = Readable | string;
 
 let binaryStorage: BinaryStorage | undefined = undefined;
 
-export function initBinaryStorage(type: string): void {
-  if (type.startsWith('s3:')) {
+export function initBinaryStorage(type?: string): void {
+  if (type?.startsWith('s3:')) {
     binaryStorage = new S3Storage(type.replace('s3:', ''));
-  } else if (type.startsWith('file:')) {
+  } else if (type?.startsWith('file:')) {
     binaryStorage = new FileSystemStorage(type.replace('file:', ''));
   } else {
     binaryStorage = undefined;
@@ -33,8 +49,10 @@ interface BinaryStorage {
     binary: Binary,
     filename: string | undefined,
     contentType: string | undefined,
-    stream: Readable | NodeJS.ReadableStream
+    stream: BinarySource
   ): Promise<void>;
+
+  writeFile(key: string, contentType: string | undefined, stream: BinarySource): Promise<void>;
 
   readBinary(binary: Binary): Promise<Readable>;
 }
@@ -53,18 +71,23 @@ class FileSystemStorage implements BinaryStorage {
     }
   }
 
-  async writeBinary(
+  writeBinary(
     binary: Binary,
     filename: string | undefined,
     contentType: string | undefined,
-    input: Readable | NodeJS.ReadableStream
+    stream: BinarySource
   ): Promise<void> {
     checkFileMetadata(filename, contentType);
-    const dir = this.getDir(binary);
+    return this.writeFile(this.getKey(binary), contentType, stream);
+  }
+
+  async writeFile(key: string, _contentType: string | undefined, input: BinarySource): Promise<void> {
+    const fullPath = resolve(this.baseDir, key);
+    const dir = fullPath.substring(0, fullPath.lastIndexOf(sep));
     if (!existsSync(dir)) {
-      mkdirSync(dir);
+      mkdirSync(dir, { recursive: true });
     }
-    const writeStream = createWriteStream(this.getPath(binary), { flags: 'w' });
+    const writeStream = createWriteStream(fullPath, { flags: 'w' });
     return new Promise((resolve, reject) => {
       pipeline(input, writeStream, (err) => {
         if (err) {
@@ -84,12 +107,12 @@ class FileSystemStorage implements BinaryStorage {
     return createReadStream(filePath);
   }
 
-  private getDir(binary: Binary): string {
-    return resolve(this.baseDir, binary.id as string);
+  private getKey(binary: Binary): string {
+    return binary.id + sep + binary.meta?.versionId;
   }
 
   private getPath(binary: Binary): string {
-    return resolve(this.getDir(binary), binary.meta?.versionId as string);
+    return resolve(this.baseDir, this.getKey(binary));
   }
 }
 
@@ -108,6 +131,24 @@ class S3Storage implements BinaryStorage {
 
   /**
    * Writes a binary blob to S3.
+   * @param binary The binary resource destination.
+   * @param filename Optional binary filename.
+   * @param contentType Optional binary content type.
+   * @param stream The Node.js stream of readable content.
+   * @returns Promise that resolves when the write is complete.
+   */
+  writeBinary(
+    binary: Binary,
+    filename: string | undefined,
+    contentType: string | undefined,
+    stream: BinarySource
+  ): Promise<void> {
+    checkFileMetadata(filename, contentType);
+    return this.writeFile(this.getKey(binary), contentType, stream);
+  }
+
+  /**
+   * Writes a file to S3.
    *
    * Early implementations used the simple "PutObjectCommand" to write the blob to S3.
    * However, PutObjectCommand does not support streaming.
@@ -128,25 +169,18 @@ class S3Storage implements BinaryStorage {
    *
    * Learn more:
    * https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Expiration.html
-   * @param binary The binary resource destination.
-   * @param filename Optional binary filename.
+   * @param key The S3 key.
    * @param contentType Optional binary content type.
    * @param stream The Node.js stream of readable content.
    */
-  async writeBinary(
-    binary: Binary,
-    filename: string | undefined,
-    contentType: string | undefined,
-    stream: Readable | NodeJS.ReadableStream
-  ): Promise<void> {
-    checkFileMetadata(filename, contentType);
+  async writeFile(key: string, contentType: string | undefined, stream: BinarySource): Promise<void> {
     const upload = new Upload({
       params: {
         Bucket: this.bucket,
-        Key: this.getKey(binary),
+        Key: key,
         CacheControl: 'max-age=3600, s-maxage=86400',
-        ContentType: contentType || 'application/octet-stream',
-        Body: stream as Readable | ReadableStream,
+        ContentType: contentType ?? 'application/octet-stream',
+        Body: stream,
       },
       client: this.client,
       queueSize: 3,
@@ -198,7 +232,6 @@ const BLOCKED_FILE_EXTENSIONS = [
   '.isp',
   '.iso',
   '.jar',
-  '.js',
   '.jse',
   '.lib',
   '.lnk',
@@ -241,7 +274,6 @@ const BLOCKED_CONTENT_TYPES = [
   'application/vnd.microsoft.portable-executable',
   'application/vnd.rar',
   'application/zip',
-  'text/javascript',
 ];
 
 /**

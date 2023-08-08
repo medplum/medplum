@@ -15,6 +15,7 @@ export interface SearchRequest<T extends Resource = Resource> {
   total?: 'none' | 'estimate' | 'accurate';
   include?: IncludeTarget[];
   revInclude?: IncludeTarget[];
+  summary?: 'true' | 'text' | 'data';
 }
 
 export interface Filter {
@@ -135,7 +136,7 @@ export function parseSearchRequest<T extends Resource = Resource>(
         queryArray.push([key, v]);
       }
     } else {
-      queryArray.push([key, value || '']);
+      queryArray.push([key, value ?? '']);
     }
   }
   return parseSearchImpl(resourceType, queryArray);
@@ -216,8 +217,12 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
       break;
 
     case '_summary':
-      searchRequest.total = 'accurate';
-      searchRequest.count = 0;
+      if (value === 'count') {
+        searchRequest.total = 'accurate';
+        searchRequest.count = 0;
+      } else if (value === 'true' || value === 'data' || value === 'text') {
+        searchRequest.summary = value;
+      }
       break;
 
     case '_include': {
@@ -247,6 +252,7 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
     }
 
     case '_fields':
+    case '_elements':
       searchRequest.fields = value.split(',');
       break;
 
@@ -376,7 +382,7 @@ function parsePrefix(input: string): { operator: Operator; value: string } {
 }
 
 function parseModifier(modifier: string): Operator {
-  return MODIFIER_OPERATORS[modifier] || Operator.EQUALS;
+  return MODIFIER_OPERATORS[modifier] ?? Operator.EQUALS;
 }
 
 function parseIncludeTarget(input: string): IncludeTarget {
@@ -450,6 +456,14 @@ export function formatSearchQuery(definition: SearchRequest): string {
     params.push('_total=' + definition.total);
   }
 
+  if (definition.include) {
+    definition.include.forEach((target) => params.push(formatIncludeTarget('_include', target)));
+  }
+
+  if (definition.revInclude) {
+    definition.revInclude.forEach((target) => params.push(formatIncludeTarget('_revinclude', target)));
+  }
+
   if (params.length === 0) {
     return '';
   }
@@ -466,4 +480,10 @@ function formatFilter(filter: Filter): string {
 
 function formatSortRules(sortRules: SortRule[]): string {
   return '_sort=' + sortRules.map((sr) => (sr.descending ? '-' + sr.code : sr.code)).join(',');
+}
+
+function formatIncludeTarget(kind: '_include' | '_revinclude', target: IncludeTarget): string {
+  return (
+    kind + '=' + target.resourceType + ':' + target.searchParam + (target.targetType ? ':' + target.targetType : '')
+  );
 }

@@ -1,21 +1,41 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { Hl7Message, Operator, badRequest, createReference, getIdentifier, resolveId, allOk } from '@medplum/core';
-import { AuditEvent, Bot, Login, Organization, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import {
+  allOk,
+  badRequest,
+  ContentType,
+  createReference,
+  getIdentifier,
+  Hl7Message,
+  MedplumClient,
+  Operator,
+  resolveId,
+} from '@medplum/core';
+import {
+  AuditEvent,
+  Binary,
+  Bot,
+  Login,
+  Organization,
+  Project,
+  ProjectMembership,
+  Reference,
+} from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import fetch from 'node-fetch';
+import { Readable } from 'node:stream';
+import vm from 'node:vm';
 import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
+import { logger } from '../../logger';
 import { generateAccessToken } from '../../oauth/keys';
 import { AuditEventOutcome } from '../../util/auditevent';
+import { MockConsole } from '../../util/console';
 import { sendOutcome } from '../outcomes';
 import { Repository, systemRepo } from '../repo';
+import { getBinaryStorage } from '../storage';
 
-export const EXECUTE_CONTENT_TYPES = [
-  'application/json',
-  'application/fhir+json',
-  'text/plain',
-  'x-application/hl7-v2+er7',
-];
+export const EXECUTE_CONTENT_TYPES = [ContentType.JSON, ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
 
 export interface BotExecutionRequest {
   readonly bot: Bot;
@@ -117,12 +137,18 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
     return { success: false, logResult: 'Bots not enabled' };
   }
 
-  if (!bot.code) {
-    return { success: false, logResult: 'Ignore bots with no code' };
-  }
+  const now = new Date();
+  const today = now.toISOString().substring(0, 10);
+  await getBinaryStorage().writeFile(
+    `bot/${bot.id}/${today}/${now.getTime()}.json`,
+    `application/json`,
+    JSON.stringify({ message: request.input })
+  );
 
   if (bot.runtimeVersion === 'awslambda') {
     return runInLambda(request);
+  } else if (bot.runtimeVersion === 'vmcontext') {
+    return runInVmContext(request);
   } else {
     return { success: false, logResult: 'Unsupported bot runtime' };
   }
@@ -146,29 +172,8 @@ export async function isBotEnabled(bot: Bot): Promise<boolean> {
 async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionResult> {
   const { bot, runAs, input, contentType } = request;
   const config = getConfig();
-
-  // Create the Login resource
-  const login = await systemRepo.createResource<Login>({
-    resourceType: 'Login',
-    authMethod: 'execute',
-    user: runAs.user,
-    membership: createReference(runAs),
-    authTime: new Date().toISOString(),
-    scope: 'openid',
-  });
-
-  // Create the access token
-  const accessToken = await generateAccessToken({
-    login_id: login.id as string,
-    sub: resolveId(runAs.user?.reference as Reference) as string,
-    username: resolveId(runAs.user?.reference as Reference) as string,
-    profile: runAs.profile?.reference as string,
-    scope: 'openid',
-  });
-
-  // Get the project secrets
-  const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
-  const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
+  const accessToken = await getBotAccessToken(runAs);
+  const secrets = await getBotSecrets(bot);
 
   const client = new LambdaClient({ region: config.awsRegion });
   const name = getLambdaFunctionName(bot);
@@ -254,7 +259,137 @@ function parseLambdaLog(logResult: string): string {
     }
     result.push(line);
   }
-  return result.join('\n');
+  return result.join('\n').trim();
+}
+
+/**
+ * Executes a Bot in an AWS Lambda.
+ * @param request The bot request.
+ * @returns The bot execution result.
+ */
+async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutionResult> {
+  const { bot, runAs, input, contentType } = request;
+
+  const config = getConfig();
+  if (!config.vmContextBotsEnabled) {
+    return { success: false, logResult: 'VM Context bots not enabled on this server' };
+  }
+
+  const codeUrl = bot.executableCode?.url;
+  if (!codeUrl) {
+    return { success: false, logResult: 'No executable code' };
+  }
+  if (!codeUrl.startsWith('Binary/')) {
+    return { success: false, logResult: 'Executable code is not a Binary' };
+  }
+
+  const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
+  const stream = await getBinaryStorage().readBinary(binary);
+  const code = await readStreamToString(stream);
+
+  const accessToken = await getBotAccessToken(runAs);
+  const secrets = await getBotSecrets(bot);
+  const botConsole = new MockConsole();
+
+  const sandbox = {
+    Hl7Message,
+    MedplumClient,
+    fetch,
+    console: botConsole,
+    event: {
+      baseUrl: config.baseUrl,
+      accessToken,
+      input: input instanceof Hl7Message ? input.toString() : input,
+      contentType,
+      secrets,
+    },
+  };
+
+  const options: vm.RunningScriptOptions = {
+    timeout: 10000,
+  };
+
+  // Wrap code in an async block for top-level await support
+  const wrappedCode = `
+  const exports = {};
+
+  // Start user code
+  ${code}
+  // End user code
+
+  (async () => {
+    const { baseUrl, accessToken, input, contentType, secrets } = event;
+    const medplum = new MedplumClient({
+      baseUrl,
+      fetch,
+    });
+    medplum.setAccessToken(accessToken);
+    try {
+      return await exports.handler(medplum, {
+        input:
+          contentType === "x-application/hl7-v2+er7"
+            ? Hl7Message.parse(input)
+            : input,
+        contentType,
+        secrets,
+      });
+    } catch (err) {
+      if (err instanceof Error) {
+        console.log("Unhandled error: " + err.message + "\\n" + err.stack);
+      } else if (typeof err === "object") {
+        console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
+      } else {
+        console.log("Unhandled error: " + err);
+      }
+      throw err;
+    }
+  })();
+  `;
+
+  // Return the result of the code execution
+  try {
+    const returnValue = (await vm.runInNewContext(wrappedCode, sandbox, options)) as any;
+    return {
+      success: true,
+      logResult: botConsole.toString(),
+      returnValue,
+    };
+  } catch (err) {
+    botConsole.log('Error', (err as Error).message);
+    return {
+      success: false,
+      logResult: botConsole.toString(),
+    };
+  }
+}
+
+async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
+  // Create the Login resource
+  const login = await systemRepo.createResource<Login>({
+    resourceType: 'Login',
+    authMethod: 'execute',
+    user: runAs.user,
+    membership: createReference(runAs),
+    authTime: new Date().toISOString(),
+    scope: 'openid',
+  });
+
+  // Create the access token
+  const accessToken = await generateAccessToken({
+    login_id: login.id as string,
+    sub: resolveId(runAs.user?.reference as Reference) as string,
+    username: resolveId(runAs.user?.reference as Reference) as string,
+    profile: runAs.profile?.reference as string,
+    scope: 'openid',
+  });
+
+  return accessToken;
+}
+
+async function getBotSecrets(bot: Bot): Promise<Record<string, string>> {
+  const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
+  const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
+  return secrets;
 }
 
 function getResponseContentType(req: Request): string {
@@ -264,11 +399,11 @@ function getResponseContentType(req: Request): string {
   }
 
   // Default to FHIR
-  return 'application/fhir+json';
+  return ContentType.FHIR_JSON;
 }
 
 function isJsonContentType(contentType: string): boolean {
-  return contentType === 'application/json' || contentType === 'application/fhir+json';
+  return contentType === ContentType.JSON || contentType === ContentType.FHIR_JSON;
 }
 
 /**
@@ -278,12 +413,21 @@ function isJsonContentType(contentType: string): boolean {
  * @param outcomeDesc The outcome description text.
  */
 async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDesc: string): Promise<void> {
+  const trigger = bot.auditEventTrigger ?? 'always';
+  if (
+    trigger === 'never' ||
+    (trigger === 'on-error' && outcome === AuditEventOutcome.Success) ||
+    (trigger === 'on-output' && outcomeDesc.length === 0)
+  ) {
+    return;
+  }
+
   const maxDescLength = 10 * 1024;
   if (outcomeDesc.length > maxDescLength) {
     outcomeDesc = outcomeDesc.substring(outcomeDesc.length - maxDescLength);
   }
 
-  await systemRepo.createResource<AuditEvent>({
+  const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
       project: bot.meta?.project,
@@ -312,5 +456,21 @@ async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDes
     ],
     outcome,
     outcomeDesc,
-  });
+  };
+
+  const destination = bot.auditEventDestination ?? ['resource'];
+  if (destination.includes('resource')) {
+    await systemRepo.createResource<AuditEvent>(auditEvent);
+  }
+  if (destination.includes('log')) {
+    logger.logAuditEvent(auditEvent);
+  }
+}
+
+async function readStreamToString(stream: Readable): Promise<string> {
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }

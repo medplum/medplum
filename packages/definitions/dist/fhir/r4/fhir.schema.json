@@ -61141,7 +61141,13 @@
         "features": {
           "description": "A list of optional features that are enabled for the project.",
           "items": {
-            "$ref": "#/definitions/code"
+            "enum": [
+              "bots",
+              "cron",
+              "email",
+              "google-auth-required",
+              "graphql-introspection"
+            ]
           },
           "type": "array"
         },
@@ -61487,7 +61493,14 @@
         },
         "authMethod": {
           "description": "The authentication method used to obtain the code (password or google).",
-          "$ref": "#/definitions/string"
+          "enum": [
+            "client",
+            "exchange",
+            "execute",
+            "external",
+            "google",
+            "password"
+          ]
         },
         "authTime": {
           "description": "Time when the End-User authentication occurred.",
@@ -61507,7 +61520,10 @@
         },
         "codeChallengeMethod": {
           "description": "OPTIONAL, defaults to \"plain\" if not present in the request.  Code verifier transformation method is \"S256\" or \"plain\".",
-          "$ref": "#/definitions/string"
+          "enum": [
+            "plain",
+            "S256"
+          ]
         },
         "refreshSecret": {
           "description": "Optional secure random string that can be used in an OAuth refresh token.",
@@ -61744,7 +61760,10 @@
         },
         "runtimeVersion": {
           "description": "The identifier of the bot runtime environment (i.e., vmcontext, awslambda, etc).",
-          "$ref": "#/definitions/string"
+          "enum": [
+            "awslambda",
+            "vmcontext"
+          ]
         },
         "photo": {
           "description": "Image of the bot.",
@@ -61758,10 +61777,6 @@
           "description": "A schedule for the bot to be executed.",
           "$ref": "#/definitions/string"
         },
-        "code": {
-          "description": "Bot logic script.",
-          "$ref": "#/definitions/string"
-        },
         "category": {
           "description": "A code that classifies the service for searching, sorting and display purposes (e.g. \"Surgical Procedure\").",
           "items": {
@@ -61772,6 +61787,37 @@
         "runAsUser": {
           "description": "Optional flag to indicate that the bot should be run as the user.",
           "$ref": "#/definitions/boolean"
+        },
+        "auditEventTrigger": {
+          "description": "Criteria for creating an AuditEvent as a result of the bot invocation. Possible values are \u0027always\u0027, \u0027never\u0027, \u0027on-error\u0027, or \u0027on-output\u0027. Default value is \u0027always\u0027.",
+          "enum": [
+            "always",
+            "never",
+            "on-error",
+            "on-output"
+          ]
+        },
+        "auditEventDestination": {
+          "description": "The destination system in which the AuditEvent is to be sent. Possible values are \u0027log\u0027 or \u0027resource\u0027. Default value is \u0027resource\u0027.",
+          "items": {
+            "enum": [
+              "log",
+              "resource"
+            ]
+          },
+          "type": "array"
+        },
+        "sourceCode": {
+          "description": "Bot logic in original source code form written by developers.",
+          "$ref": "#/definitions/Attachment"
+        },
+        "executableCode": {
+          "description": "Bot logic in executable form as a result of compiling and bundling source code.",
+          "$ref": "#/definitions/Attachment"
+        },
+        "code": {
+          "description": "DEPRECATED Bot logic script. Use Bot.sourceCode or Bot.executableCode instead.",
+          "$ref": "#/definitions/string"
         }
       },
       "additionalProperties": false,
@@ -62115,7 +62161,12 @@
         },
         "status": {
           "description": "The status of the request.",
-          "$ref": "#/definitions/code"
+          "enum": [
+            "accepted",
+            "active",
+            "completed",
+            "error"
+          ]
         },
         "requestTime": {
           "description": "Indicates the server\u0027s time when the query is requested.",
@@ -62305,7 +62356,10 @@
         },
         "action": {
           "description": "Access rule can perform one of the following actions: \"allow\" | \"block\".",
-          "$ref": "#/definitions/string"
+          "enum": [
+            "allow",
+            "block"
+          ]
         }
       },
       "additionalProperties": false,
@@ -62339,7 +62393,12 @@
         },
         "status": {
           "description": "The status of the request.",
-          "$ref": "#/definitions/code"
+          "enum": [
+            "accepted",
+            "active",
+            "completed",
+            "error"
+          ]
         },
         "requestTime": {
           "description": "Indicates the server\u0027s time when the query is requested.",

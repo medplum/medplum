@@ -13,15 +13,18 @@ const valueSets = new Map<string, CodeSystem | ValueSet>();
 
 export function getValueSetValues(url: string): string[] {
   if (valueSets.size === 0) {
-    loadValueSets();
+    const files = ['valuesets.json', 'v3-codesystems.json', 'valuesets-medplum.json'];
+    for (const file of files) {
+      loadValueSets('fhir/r4/' + file);
+    }
   }
   const result: string[] = [];
   buildValueSetValues(url, result);
   return result;
 }
 
-function loadValueSets(): void {
-  const valueSetBundle = readJson('fhir/r4/valuesets.json') as Bundle;
+function loadValueSets(fileName: string): void {
+  const valueSetBundle = readJson(fileName) as Bundle;
   for (const entry of valueSetBundle.entry as BundleEntry[]) {
     const resource = entry.resource as Resource;
     if (resource.resourceType === 'CodeSystem' || resource.resourceType === 'ValueSet') {

@@ -1,5 +1,6 @@
 import { CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { ContentType } from '@medplum/core';
 import fastGlob from 'fast-glob';
 import { createReadStream, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import fetch from 'node-fetch';
@@ -9,11 +10,16 @@ import { pipeline } from 'stream/promises';
 import { readConfig, safeTarExtractor } from '../utils';
 import { cloudFrontClient, getStackByTag, s3Client } from './utils';
 
+export interface UpdateAppOptions {
+  dryrun?: boolean;
+}
+
 /**
  * The AWS "update-app" command updates the Medplum app in a Medplum CloudFormation stack to the latest version.
  * @param tag The Medplum stack tag.
+ * @param options The update options.
  */
-export async function updateAppCommand(tag: string): Promise<void> {
+export async function updateAppCommand(tag: string, options: UpdateAppOptions): Promise<void> {
   const config = readConfig(tag);
   if (!config) {
     console.log('Config not found');
@@ -35,17 +41,17 @@ export async function updateAppCommand(tag: string): Promise<void> {
   // Replace variables in the app
   replaceVariables(tmpDir, {
     MEDPLUM_BASE_URL: config.baseUrl as string,
-    MEDPLUM_CLIENT_ID: config.clientId || '',
-    GOOGLE_CLIENT_ID: config.googleClientId || '',
-    RECAPTCHA_SITE_KEY: config.recaptchaSiteKey || '',
+    MEDPLUM_CLIENT_ID: config.clientId ?? '',
+    GOOGLE_CLIENT_ID: config.googleClientId ?? '',
+    RECAPTCHA_SITE_KEY: config.recaptchaSiteKey ?? '',
     MEDPLUM_REGISTER_ENABLED: config.registerEnabled ? 'true' : 'false',
   });
 
   // Upload the app to S3 with correct content-type and cache-control
-  await uploadAppToS3(tmpDir, appBucket.PhysicalResourceId as string);
+  await uploadAppToS3(tmpDir, appBucket.PhysicalResourceId as string, options);
 
   // Create a CloudFront invalidation to clear any cached resources
-  if (details.appDistribution?.PhysicalResourceId) {
+  if (details.appDistribution?.PhysicalResourceId && !options.dryrun) {
     await createInvalidation(details.appDistribution.PhysicalResourceId);
   }
 
@@ -120,8 +126,9 @@ function replaceVariablesInFile(fileName: string, replacements: Record<string, s
  * Ensures correct content-type and cache-control for each file.
  * @param tmpDir The temporary directory where the app is located.
  * @param bucketName The destination S3 bucket name.
+ * @param options The update options.
  */
-async function uploadAppToS3(tmpDir: string, bucketName: string): Promise<void> {
+async function uploadAppToS3(tmpDir: string, bucketName: string, options: UpdateAppOptions): Promise<void> {
   // Manually iterate and upload files
   // Automatic content-type detection is not reliable on Microsoft Windows
   // So we explicitly set content-type
@@ -129,23 +136,18 @@ async function uploadAppToS3(tmpDir: string, bucketName: string): Promise<void> 
     // Cached
     // These files generally have a hash, so they can be cached forever
     // It is important to upload them first to avoid broken references from index.html
-    ['css/**/*.css', 'text/css', true],
-    ['css/**/*.css.map', 'application/json', true],
-    ['img/**/*.png', 'image/png', true],
-    ['img/**/*.svg', 'image/svg+xml', true],
-    ['js/**/*.js', 'application/javascript', true],
-    ['js/**/*.js.map', 'application/json', true],
-    ['js/**/*.txt', 'text/plain', true],
-    ['favicon.ico', 'image/vnd.microsoft.icon', true],
-    ['robots.txt', 'text/plain', true],
-    ['workbox-*.js', 'application/javascript', true],
-    ['workbox-*.js.map', 'application/json', true],
+    ['assets/**/*.css', ContentType.CSS, true],
+    ['assets/**/*.css.map', ContentType.JSON, true],
+    ['assets/**/*.js', ContentType.JAVASCRIPT, true],
+    ['assets/**/*.js.map', ContentType.JSON, true],
+    ['assets/**/*.txt', ContentType.TEXT, true],
+    ['assets/**/*.ico', ContentType.FAVICON, true],
+    ['img/**/*.png', ContentType.PNG, true],
+    ['img/**/*.svg', ContentType.SVG, true],
+    ['robots.txt', ContentType.TEXT, true],
 
     // Not cached
-    ['manifest.webmanifest', 'application/manifest+json', false],
-    ['service-worker.js', 'application/javascript', false],
-    ['service-worker.js.map', 'application/json', false],
-    ['index.html', 'text/html', false],
+    ['index.html', ContentType.HTML, false],
   ];
   for (const uploadPattern of uploadPatterns) {
     await uploadFolderToS3({
@@ -154,6 +156,7 @@ async function uploadAppToS3(tmpDir: string, bucketName: string): Promise<void> 
       fileNamePattern: uploadPattern[0],
       contentType: uploadPattern[1],
       cached: uploadPattern[2],
+      dryrun: options.dryrun,
     });
   }
 }
@@ -166,6 +169,7 @@ async function uploadAppToS3(tmpDir: string, bucketName: string): Promise<void> 
  * @param options.fileNamePattern The glob file pattern to upload.
  * @param options.contentType The content type MIME type.
  * @param options.cached True to mark as public and cached forever.
+ * @param options.dryrun True to skip the upload.
  */
 async function uploadFolderToS3(options: {
   rootDir: string;
@@ -173,6 +177,7 @@ async function uploadFolderToS3(options: {
   fileNamePattern: string;
   contentType: string;
   cached: boolean;
+  dryrun?: boolean;
 }): Promise<void> {
   const items = fastGlob.sync(options.fileNamePattern, { cwd: options.rootDir });
   for (const item of items) {
@@ -188,6 +193,7 @@ async function uploadFolderToS3(options: {
  * @param options.bucketName The destination bucket name.
  * @param options.contentType The content type MIME type.
  * @param options.cached True to mark as public and cached forever.
+ * @param options.dryrun True to skip the upload.
  */
 async function uploadFileToS3(
   filePath: string,
@@ -196,6 +202,7 @@ async function uploadFileToS3(
     bucketName: string;
     contentType: string;
     cached: boolean;
+    dryrun?: boolean;
   }
 ): Promise<void> {
   const fileStream = createReadStream(filePath);
@@ -213,7 +220,9 @@ async function uploadFileToS3(
   };
 
   console.log(`Uploading ${s3Key} to ${options.bucketName}...`);
-  await s3Client.send(new PutObjectCommand(putObjectParams));
+  if (!options.dryrun) {
+    await s3Client.send(new PutObjectCommand(putObjectParams));
+  }
 }
 
 /**

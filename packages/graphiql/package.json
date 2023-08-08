@@ -1,6 +1,6 @@
 {
   "name": "@medplum/graphiql",
-  "version": "2.0.25",
+  "version": "2.0.30",
   "description": "Medplum GraphiQL",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -10,27 +10,30 @@
     "url": "https://github.com/medplum/medplum.git",
     "directory": "packages/graphiql"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "clean": "rimraf dist",
     "dev": "vite",
     "build": "npm run clean && tsc && vite build"
   },
   "devDependencies": {
-    "@graphiql/react": "0.18.0",
-    "@graphiql/toolkit": "0.8.4",
-    "@mantine/core": "6.0.15",
-    "@mantine/hooks": "6.0.15",
+    "@graphiql/react": "0.19.2",
+    "@graphiql/toolkit": "0.9.1",
+    "@mantine/core": "6.0.17",
+    "@mantine/hooks": "6.0.17",
     "@medplum/core": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/react": "*",
-    "@types/react": "18.2.14",
-    "@types/react-dom": "18.2.6",
-    "graphiql": "3.0.0",
+    "@types/react": "18.2.17",
+    "@types/react-dom": "18.2.7",
+    "graphiql": "3.0.4",
     "graphql": "16.7.1",
     "graphql-ws": "5.14.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "vite": "4.3.9"
+    "vite": "4.4.7"
   },
   "browserslist": [
     "last 1 Chrome versions"

@@ -1,6 +1,7 @@
+import { ContentType } from '@medplum/core';
 import { Writable } from 'stream';
 import tar from 'tar';
-import { safeTarExtractor } from './utils';
+import { getCodeContentType, safeTarExtractor } from './utils';
 
 jest.mock('tar', () => ({
   x: jest.fn(),
@@ -51,5 +52,18 @@ describe('CLI utils', () => {
     } catch (err) {
       expect((err as Error).message).toEqual('Tar extractor reached max size');
     }
+  });
+
+  test('getCodeContentType', () => {
+    expect(getCodeContentType('foo.cjs')).toEqual(ContentType.JAVASCRIPT);
+    expect(getCodeContentType('foo.js')).toEqual(ContentType.JAVASCRIPT);
+    expect(getCodeContentType('foo.mjs')).toEqual(ContentType.JAVASCRIPT);
+
+    expect(getCodeContentType('foo.cts')).toEqual(ContentType.TYPESCRIPT);
+    expect(getCodeContentType('foo.mts')).toEqual(ContentType.TYPESCRIPT);
+    expect(getCodeContentType('foo.ts')).toEqual(ContentType.TYPESCRIPT);
+
+    expect(getCodeContentType('foo.txt')).toEqual(ContentType.TEXT);
+    expect(getCodeContentType('foo')).toEqual(ContentType.TEXT);
   });
 });

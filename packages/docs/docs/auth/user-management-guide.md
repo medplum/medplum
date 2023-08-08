@@ -38,7 +38,7 @@ Users in Medplum can be members of multiple projects, so cannot be edited direct
 
 ### Creating Memberships
 
-Only administrators can invite users, and can do so on the [Invite](https://app.medplum.com/admin/invite) page. You can specify a role and [AccessPolity](/docs/auth/access-control) at time of invite. The invite flow will do the following:
+Only administrators can invite users, and can do so on the [Invite](https://app.medplum.com/admin/invite) page. You can specify a role and [AccessPolicy](/docs/auth/access-control) at time of invite. The invite flow will do the following:
 
 1. Create a `User` if one does not already exist
 2. Create a FHIR resource (Patient, Practitioner or RelatedPerson)
@@ -55,7 +55,7 @@ Do not delete Patient, Practitioner or RelatedPerson resources that belong to Pr
 
 Tor remove users from the existing project navigate to your [Project settings](https://app.medplum.com/admin/project) and to the Users and Patient tabs respectively. Click on a specific users or patients and click **Remove User**.
 
-We highly recommend leaving the associated FHIR resource (Patient, Practitioner, etc.) in place for audibility, record keeping and in case the membership needs to be reonstructed for some reason.
+We highly recommend leaving the associated FHIR resource (Patient, Practitioner, etc.) in place for audibility, record keeping and in case the membership needs to be reconstructed for some reason.
 
 ## Invite via API
 
@@ -68,7 +68,6 @@ Prepare JSON payload:
   "resourceType": "Patient",
   "firstName": "Homer",
   "lastName": "Simpson",
-  "resourceType": "Patient",
   "email": "homer@example.com",
   "sendEmail": false
 }
@@ -82,6 +81,57 @@ curl 'https://api.medplum.com/admin/projects/${projectId}/invite' \
   -H 'Content-Type: application/json' \
   --data-raw '{"resourceType":"Patient","firstName":"Homer","lastName":"Simpson","email":"homer@example.com", "sendEmail":"false"}'
 ```
+
+The `/invite` endpoint creates a [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership). The `ProjectMembership` resource includes additional properties to customize the user experience. The `/invite` endpoint accepts a partial `ProjectMembership` in the `membership` property where you can provide membership details.
+
+For example, use `admin: true` to make the new user a project administrator:
+
+```json
+{
+  "resourceType": "Practitioner",
+  "firstName": "Homer",
+  "lastName": "Simpson",
+  "email": "homer@example.com",
+  "membership": {
+    "admin": true
+  }
+}
+```
+
+Or use the `access` property to specify a user's `AccessPolicy` with optional parameters.
+
+```json
+{
+  "resourceType": "Patient",
+  "firstName": "Homer",
+  "lastName": "Simpson",
+  "email": "homer@example.com",
+  "membership": {
+    "access": [
+      {
+        "policy": { "reference": "AccessPolicy/123" },
+        "parameter": [
+          {
+            "name": "provider_organization",
+            "valueReference": { "reference": "Organization/abc" }
+          }
+        ]
+      },
+      {
+        "policy": { "reference": "AccessPolicy/123" },
+        "parameter": [
+          {
+            "name": "provider_organization",
+            "valueReference": { "reference": "Organization/def" }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+See [Access Control](/docs/auth/access-control) for more details.
 
 :::caution
 

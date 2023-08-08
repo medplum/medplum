@@ -1,6 +1,6 @@
 {
   "name": "@medplum/core",
-  "version": "2.0.25",
+  "version": "2.0.30",
   "description": "Medplum TS/JS Library",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -9,6 +9,9 @@
     "type": "git",
     "url": "https://github.com/medplum/medplum.git",
     "directory": "packages/core"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "scripts": {
     "clean": "rimraf dist",

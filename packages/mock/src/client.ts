@@ -1,6 +1,7 @@
 import {
   allOk,
   badRequest,
+  ContentType,
   getStatus,
   indexStructureDefinition,
   LoginState,
@@ -78,7 +79,7 @@ export class MockClient extends MedplumClient {
     const client = new MockFetchClient(router, repo, clientOptions?.debug);
 
     super({
-      baseUrl: clientOptions?.baseUrl || 'https://example.com/',
+      baseUrl: clientOptions?.baseUrl ?? 'https://example.com/',
       clientId: clientOptions?.clientId,
       storage: clientOptions?.storage,
       createPdf: (
@@ -191,7 +192,7 @@ class MockFetchClient {
       this.initialized = true;
     }
 
-    const method = options.method || 'GET';
+    const method = options.method ?? 'GET';
     const path = url.replace('https://example.com/', '');
 
     if (this.debug) {
@@ -212,10 +213,11 @@ class MockFetchClient {
       ok: true,
       status: response?.resourceType === 'OperationOutcome' ? getStatus(response) : 200,
       headers: {
-        get: () => 'application/fhir+json',
+        get: () => ContentType.FHIR_JSON,
       } as unknown as Headers,
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),
+      text: () => Promise.resolve(response),
     });
   }
 
@@ -248,14 +250,14 @@ class MockFetchClient {
   }
 
   private async mockAdminHandler(_method: string, path: string): Promise<any> {
-    const projectMatch = path.match(/^admin\/projects\/([\w-]+)$/);
+    const projectMatch = /^admin\/projects\/([\w-]+)$/.exec(path);
     if (projectMatch) {
       return {
         project: await this.repo.readResource('Project', projectMatch[1]),
       };
     }
 
-    const membershipMatch = path.match(/^admin\/projects\/([\w-]+)\/members\/([\w-]+)$/);
+    const membershipMatch = /^admin\/projects\/([\w-]+)\/members\/([\w-]+)$/.exec(path);
     if (membershipMatch) {
       return this.repo.readResource('ProjectMembership', membershipMatch[2]);
     }
@@ -442,7 +444,8 @@ class MockFetchClient {
 
   private mockOAuthHandler(_method: string, path: string, options: any): any {
     if (path.startsWith('oauth2/token')) {
-      const clientId = (options.body as URLSearchParams).get('client_id') || 'my-client-id';
+      const formBody = new URLSearchParams(options.body);
+      const clientId = formBody.get('client_id') ?? 'my-client-id';
       return {
         access_token: 'header.' + base64Encode(JSON.stringify({ client_id: clientId })) + '.signature',
       };
@@ -527,7 +530,11 @@ class MockFetchClient {
 
     let body = undefined;
     if (options.body) {
-      body = JSON.parse(options.body);
+      try {
+        body = JSON.parse(options.body);
+      } catch (err) {
+        body = options.body;
+      }
     }
 
     const request: FhirRequest = {

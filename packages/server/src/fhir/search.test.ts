@@ -15,6 +15,7 @@ import {
   Appointment,
   AuditEvent,
   Bundle,
+  Coding,
   Communication,
   Condition,
   DiagnosticReport,
@@ -27,6 +28,7 @@ import {
   Provenance,
   Questionnaire,
   QuestionnaireResponse,
+  Resource,
   SearchParameter,
   ServiceRequest,
   StructureDefinition,
@@ -87,6 +89,178 @@ describe('FHIR Search', () => {
     expect(result1.entry).toBeUndefined();
     expect(result1.link).toBeDefined();
     expect(result1.link?.length).toBe(1);
+  });
+
+  test('Search _summary', async () => {
+    const subsetTag: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
+    const patient: Patient = {
+      resourceType: 'Patient',
+      meta: {
+        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
+        tag: [{ system: 'http://example.com/', code: 'test' }],
+      },
+      text: {
+        status: 'generated',
+        div: '<div xmlns="http://www.w3.org/1999/xhtml"></div>',
+      },
+      identifier: [
+        {
+          use: 'usual',
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                code: 'MR',
+                display: 'Medical Record Number',
+              },
+            ],
+            text: 'Medical Record Number',
+          },
+          system: 'http://hospital.smarthealthit.org',
+          value: '1032702',
+        },
+      ],
+      active: true,
+      name: [
+        {
+          use: 'old',
+          family: 'Shaw',
+          given: ['Amy', 'V.'],
+          period: {
+            start: '2016-12-06',
+            end: '2020-07-22',
+          },
+        },
+        {
+          family: 'Baxter',
+          given: ['Amy', 'V.'],
+          suffix: ['PharmD'],
+          period: {
+            start: '2020-07-22',
+          },
+        },
+      ],
+      telecom: [
+        {
+          system: 'phone',
+          value: '555-555-5555',
+          use: 'home',
+        },
+        {
+          system: 'email',
+          value: 'amy.shaw@example.com',
+        },
+      ],
+      gender: 'female',
+      birthDate: '1987-02-20',
+      multipleBirthInteger: 2,
+      address: [
+        {
+          use: 'old',
+          line: ['49 Meadow St'],
+          city: 'Mounds',
+          state: 'OK',
+          postalCode: '74047',
+          country: 'US',
+          period: {
+            start: '2016-12-06',
+            end: '2020-07-22',
+          },
+        },
+        {
+          line: ['183 Mountain View St'],
+          city: 'Mounds',
+          state: 'OK',
+          postalCode: '74048',
+          country: 'US',
+          period: {
+            start: '2020-07-22',
+          },
+        },
+      ],
+    };
+    const resource = await systemRepo.createResource(patient);
+
+    // _summary=text
+    const textResults = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+      summary: 'text',
+    });
+    expect(textResults.entry).toHaveLength(1);
+    const textResult = textResults.entry?.[0]?.resource as Resource;
+    expect(textResult).toEqual<Partial<Patient>>({
+      resourceType: 'Patient',
+      id: resource.id,
+      meta: expect.objectContaining({
+        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
+        tag: [{ system: 'http://example.com/', code: 'test' }, subsetTag],
+      }),
+      text: {
+        status: 'generated',
+        div: '<div xmlns="http://www.w3.org/1999/xhtml"></div>',
+      },
+    });
+
+    // _summary=data
+    const dataResults = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+      summary: 'data',
+    });
+    expect(dataResults.entry).toHaveLength(1);
+    const dataResult = dataResults.entry?.[0]?.resource as Resource;
+    const { text: _1, ...dataExpected } = resource;
+    dataExpected.meta?.tag?.push(subsetTag);
+    expect(dataResult).toEqual<Partial<Patient>>({ ...dataExpected });
+
+    // _summary=true
+    const summaryResults = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+      summary: 'true',
+    });
+    expect(summaryResults.entry).toHaveLength(1);
+    const summaryResult = summaryResults.entry?.[0]?.resource as Resource;
+    const { multipleBirthInteger: _2, text: _3, ...summaryResource } = resource;
+    expect(summaryResult).toEqual<Partial<Patient>>(summaryResource);
+  });
+
+  test('Search _elements', async () => {
+    const subsetTag: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
+    const patient: Patient = {
+      resourceType: 'Patient',
+      birthDate: '2000-01-01',
+      _birthDate: {
+        extension: [
+          {
+            url: 'http://hl7.org/fhir/StructureDefinition/patient-birthTime',
+            valueDateTime: '2000-01-01T00:00:00.001Z',
+          },
+        ],
+      },
+      multipleBirthInteger: 2,
+      deceasedBoolean: false,
+    } as unknown as Patient;
+    const resource = await systemRepo.createResource(patient);
+
+    const results = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+      fields: ['birthDate', 'deceased'],
+    });
+    expect(results.entry).toHaveLength(1);
+    const result = results.entry?.[0]?.resource as Resource;
+    expect(result).toEqual<Partial<Patient>>({
+      resourceType: 'Patient',
+      id: resource.id,
+      meta: expect.objectContaining({
+        tag: [subsetTag],
+      }),
+      birthDate: resource.birthDate,
+      _birthDate: (resource as any)._birthDate,
+      deceasedBoolean: resource.deceasedBoolean,
+    } as unknown as Patient);
   });
 
   test('Search next link', async () => {
@@ -556,9 +730,10 @@ describe('FHIR Search', () => {
         },
       ],
     });
-    expect(bundle1.entry?.length).toEqual(2);
-    expect((bundle1.entry?.[0]?.resource as StructureDefinition).name).toEqual('Questionnaire');
-    expect((bundle1.entry?.[1]?.resource as StructureDefinition).name).toEqual('QuestionnaireResponse');
+    expect(bundle1.entry?.length).toEqual(3);
+    expect((bundle1.entry?.[0]?.resource as StructureDefinition).name).toEqual('CQF-Questionnaire');
+    expect((bundle1.entry?.[1]?.resource as StructureDefinition).name).toEqual('Questionnaire');
+    expect((bundle1.entry?.[2]?.resource as StructureDefinition).name).toEqual('QuestionnaireResponse');
 
     const bundle2 = await systemRepo.search({
       resourceType: 'StructureDefinition',
@@ -1301,12 +1476,13 @@ describe('FHIR Search', () => {
     const nowMinus1Second = new Date(now.getTime() - 1000);
     const nowMinus2Seconds = new Date(now.getTime() - 2000);
     const nowMinus3Seconds = new Date(now.getTime() - 3000);
-
+    const patient: Patient = { resourceType: 'Patient' };
+    const patientReference = createReference(patient);
     const appt1 = await systemRepo.createResource<Appointment>({
       resourceType: 'Appointment',
       status: 'booked',
       serviceType: [{ coding: [{ code }] }],
-      participant: [{ status: 'accepted' }],
+      participant: [{ status: 'accepted', actor: patientReference }],
       start: nowMinus1Second.toISOString(),
     });
     expect(appt1).toBeDefined();
@@ -1315,7 +1491,7 @@ describe('FHIR Search', () => {
       resourceType: 'Appointment',
       status: 'booked',
       serviceType: [{ coding: [{ code }] }],
-      participant: [{ status: 'accepted' }],
+      participant: [{ status: 'accepted', actor: patientReference }],
       start: nowMinus2Seconds.toISOString(),
     });
     expect(appt2).toBeDefined();
@@ -2680,5 +2856,28 @@ describe('FHIR Search', () => {
       ],
     });
     expect(result.entry?.length).toBe(1);
+  });
+
+  test('Sort by ID', async () => {
+    const org = await systemRepo.createResource<Organization>({ resourceType: 'Organization' });
+    const managingOrganization = createReference(org);
+    await systemRepo.createResource<Patient>({ resourceType: 'Patient', managingOrganization });
+    await systemRepo.createResource<Patient>({ resourceType: 'Patient', managingOrganization });
+
+    const result1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: 'organization', operator: Operator.EQUALS, value: getReferenceString(org) }],
+      sortRules: [{ code: '_id', descending: false }],
+    });
+    expect(result1.entry).toHaveLength(2);
+    expect(result1.entry?.[0]?.resource?.id?.localeCompare(result1.entry?.[1]?.resource?.id as string)).toBe(-1);
+
+    const result2 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: 'organization', operator: Operator.EQUALS, value: getReferenceString(org) }],
+      sortRules: [{ code: '_id', descending: true }],
+    });
+    expect(result2.entry).toHaveLength(2);
+    expect(result2.entry?.[0]?.resource?.id?.localeCompare(result2.entry?.[1]?.resource?.id as string)).toBe(1);
   });
 });

@@ -10,6 +10,7 @@ import {
   Quantity,
   Range,
   Timing,
+  TimingRepeat,
 } from '@medplum/fhirtypes';
 import { capitalize } from './utils';
 
@@ -57,7 +58,7 @@ export function formatAddress(address: Address, options?: AddressFormatOptions):
     builder.push('[' + address.use + ']');
   }
 
-  return builder.join(options?.lineSeparator || ', ').trim();
+  return builder.join(options?.lineSeparator ?? ', ').trim();
 }
 
 /**
@@ -111,7 +112,7 @@ export function formatGivenName(name: HumanName): string {
  * @returns The formatted family name string.
  */
 export function formatFamilyName(name: HumanName): string {
-  return name.family || '';
+  return name.family ?? '';
 }
 
 /**
@@ -253,42 +254,53 @@ export function formatTiming(timing: Timing | undefined): string {
   }
 
   const builder: string[] = [];
-
-  if (timing.repeat?.periodUnit) {
-    const frequency = timing.repeat.frequency || 1;
-    const period = timing.repeat.period || 1;
-    const periodUnit = timing.repeat.periodUnit;
-
-    if (frequency === 1 && period === 1) {
-      builder.push(unitAdverbForm[periodUnit]);
-    } else {
-      if (frequency === 1) {
-        builder.push('once');
-      } else {
-        builder.push(frequency + ' times');
-      }
-
-      if (period === 1) {
-        builder.push('per ' + singularUnits[periodUnit]);
-      } else {
-        builder.push('per ' + period + ' ' + pluralUnits[periodUnit]);
-      }
-    }
-
-    if (timing.repeat.dayOfWeek) {
-      builder.push('on ' + timing.repeat.dayOfWeek.map(capitalize).join(', '));
-    }
-
-    if (timing.repeat.timeOfDay) {
-      builder.push('at ' + timing.repeat.timeOfDay.map((t) => formatTime(t)).join(', '));
-    }
-  }
+  formatTimingRepeat(builder, timing.repeat);
 
   if (timing.event) {
     builder.push(timing.event.map((d) => formatDateTime(d)).join(', '));
   }
 
   return capitalize(builder.join(' ').trim());
+}
+
+/**
+ * Formats a FHIR Timing repeat element as a human readable string.
+ * @param builder The output string builder.
+ * @param repeat The timing repeat element.
+ */
+function formatTimingRepeat(builder: string[], repeat: TimingRepeat | undefined): void {
+  if (!repeat?.periodUnit) {
+    // Period unit is the only required field
+    return;
+  }
+
+  const frequency = repeat.frequency ?? 1;
+  const period = repeat.period ?? 1;
+  const periodUnit = repeat.periodUnit;
+
+  if (frequency === 1 && period === 1) {
+    builder.push(unitAdverbForm[periodUnit]);
+  } else {
+    if (frequency === 1) {
+      builder.push('once');
+    } else {
+      builder.push(frequency + ' times');
+    }
+
+    if (period === 1) {
+      builder.push('per ' + singularUnits[periodUnit]);
+    } else {
+      builder.push('per ' + period + ' ' + pluralUnits[periodUnit]);
+    }
+  }
+
+  if (repeat.dayOfWeek) {
+    builder.push('on ' + repeat.dayOfWeek.map(capitalize).join(', '));
+  }
+
+  if (repeat.timeOfDay) {
+    builder.push('at ' + repeat.timeOfDay.map((t) => formatTime(t)).join(', '));
+  }
 }
 
 /**
@@ -377,7 +389,7 @@ export function formatMoney(money: Money | undefined): string {
 
   return money.value.toLocaleString(undefined, {
     style: 'currency',
-    currency: money.currency || 'USD',
+    currency: money.currency ?? 'USD',
     currencyDisplay: 'narrowSymbol',
   });
 }
@@ -406,7 +418,7 @@ export function formatCodeableConcept(codeableConcept: CodeableConcept | undefin
  * @returns The coding as a string.
  */
 export function formatCoding(coding: Coding | undefined): string {
-  return coding?.display || coding?.code || '';
+  return coding?.display ?? coding?.code ?? '';
 }
 
 /**

@@ -1,7 +1,23 @@
 import { MedplumClientOptions } from '@medplum/core';
 import { createMedplumClient } from './client';
+import os from 'os';
+import { mkdtempSync, rmSync } from 'fs';
+import { sep } from 'path';
+import { FileSystemStorage } from '../storage';
 
-jest.mock('node-fetch');
+jest.mock('os');
+jest.mock('fast-glob', () => ({
+  sync: jest.fn(() => []),
+}));
+jest.mock('fs', () => ({
+  ...jest.requireActual('fs'),
+  writeFile: jest.fn((path, data, callback) => {
+    callback();
+  }),
+}));
+const testHomeDir = mkdtempSync(__dirname + sep + 'storage-');
+
+const originalWindow = globalThis.window;
 
 describe('createMedplumClient', () => {
   const env = process.env;
@@ -13,6 +29,15 @@ describe('createMedplumClient', () => {
 
   afterEach(() => {
     process.env = env;
+  });
+
+  beforeAll(async () => {
+    Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
+    (os.homedir as unknown as jest.Mock).mockReturnValue(testHomeDir);
+  });
+
+  afterAll(async () => {
+    rmSync(testHomeDir, { recursive: true, force: true });
   });
 
   test('no options and no env set', async () => {
@@ -51,8 +76,11 @@ describe('createMedplumClient', () => {
   });
 
   test('setBasicAuth and startClientLogin', async () => {
+    const testProfile = 'testProfile';
     const accessToken =
       'header.' + Buffer.from(JSON.stringify({ cid: 'testclientid' })).toString('base64') + '.signature';
+    const storage = new FileSystemStorage(testProfile);
+    storage.setObject('options', { name: testProfile, authType: 'client_credentials' });
 
     const fetch = jest.fn(async () => {
       return {
@@ -65,7 +93,7 @@ describe('createMedplumClient', () => {
     });
     process.env.MEDPLUM_CLIENT_ID = 'testclientid';
     process.env.MEDPLUM_CLIENT_SECRET = 'secret123';
-    const medplumClient = await createMedplumClient({ fetch });
+    const medplumClient = await createMedplumClient({ fetch, profile: testProfile });
 
     expect(medplumClient.getAccessToken()).toBeDefined();
   });

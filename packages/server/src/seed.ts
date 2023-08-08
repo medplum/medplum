@@ -63,9 +63,9 @@ export async function seedDatabase(): Promise<void> {
     admin: true,
   });
 
+  await createStructureDefinitions();
   await createValueSets();
   await createSearchParameters();
-  await createStructureDefinitions();
 }
 
 /**

@@ -1,3 +1,4 @@
+import { ContentType } from '@medplum/core';
 import { Observation, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -31,7 +32,7 @@ describe('Expunge', () => {
     const res = await request(app)
       .post(`/fhir/R4/Project/${randomUUID()}/$expunge`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .send({});
     expect(res.status).toBe(403);
   });
@@ -51,7 +52,7 @@ describe('Expunge', () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$expunge`)
       .set('Authorization', 'Bearer ' + superAdminAccessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
     expect(res.status).toBe(200);
@@ -87,7 +88,7 @@ describe('Expunge', () => {
     const res = await request(app)
       .post(`/fhir/R4/Project/${project.id}/$expunge?everything=true`)
       .set('Authorization', 'Bearer ' + superAdminAccessToken)
-      .set('Content-Type', 'application/fhir+json')
+      .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
     expect(res.status).toBe(202);

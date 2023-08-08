@@ -1,0 +1,37 @@
+---
+title: AsyncJob
+sidebar_position: 14
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import definition from '@site/static/data/medplumDefinitions/asyncjob.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# AsyncJob
+
+Contains details of long running asynchronous/background jobs.
+
+<Tabs queryString="section">
+<TabItem value="schema" label="Schema" default>
+
+
+## Properties
+
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+</TabItem>
+  
+  
+  
+  
+
+</Tabs>

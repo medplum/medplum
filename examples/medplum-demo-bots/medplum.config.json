@@ -1,0 +1,52 @@
+{
+  "bots": [
+    {
+      "name": "hello-patient",
+      "id": "",
+      "source": "src/hello-patient.ts",
+      "dist": "dist/hello-patient.js"
+    },
+    {
+      "name": "patient-intake",
+      "id": "",
+      "source": "src/patient-intake.ts",
+      "dist": "dist/patient-intake.js"
+    },
+    {
+      "name": "create-pdf",
+      "id": "",
+      "source": "src/create-pdf.ts",
+      "dist": "dist/create-pdf.js"
+    },
+    {
+      "name": "sample-account-setup",
+      "id": "",
+      "source": "src/sample-account-setup.ts",
+      "dist": "dist/sample-account-setup.js"
+    },
+    {
+      "name": "sample-account-staging",
+      "id": "",
+      "source": "src/sample-account-setup.ts",
+      "dist": "dist/sample-account-setup.js"
+    },
+    {
+      "name": "hl7-bot",
+      "id": "",
+      "source": "src/hl7-bot.ts",
+      "dist": "dist/hl7-bot.js"
+    },
+    {
+      "name": "finalize-report",
+      "id": "",
+      "source": "src/finalize-report.ts",
+      "dist": "dist/finalize-report.js"
+    },
+    {
+      "name": "stripe-create-invoice",
+      "id": "",
+      "source": "src/stripe-bots/stripe-create-invoice.ts",
+      "dist": "dist/stripe-bots/stripe-create-invoice.js"
+    }
+  ]
+}

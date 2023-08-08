@@ -1183,7 +1183,7 @@
       "name": "patient",
       "type": "reference",
       "description": "The identity of a patient to search for request groups",
-      "expression": "RequestGroup.subject"
+      "expression": "RequestGroup.subject.where(resolve() is Patient)"
     },
     {
       "name": "priority",

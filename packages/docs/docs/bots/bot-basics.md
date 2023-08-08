@@ -126,6 +126,8 @@ To deploy your bot, click the "Deploy" button.
 
 ![Deploy Button](/img/app/bots/deploy_button.png)
 
+This works well for initial prototyping, but as you get closer to a production implementation [deploying from the command line](/docs/bots/bots-in-production#deploying-your-bot) potentially as part of a CI/CD can be preferred.
+
 **Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
 You can apply an [AccessPolicy](../auth/access-control) to the Bot if you want to further reduce the data it can read and write.
 

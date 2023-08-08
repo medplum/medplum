@@ -364,7 +364,7 @@ describe('New user', () => {
       firstName: 'P2',
       lastName: 'P2',
       projectName: 'P2',
-      email: randomUUID(),
+      email: `test${randomUUID()}@example.com`,
       password: randomUUID(),
     });
     expect(reg2).toBeDefined();
@@ -374,36 +374,120 @@ describe('New user', () => {
       firstName: 'P3',
       lastName: 'P3',
       projectName: 'P3',
-      email: randomUUID(),
+      email: `test${randomUUID()}@example.com`,
       password: randomUUID(),
     });
     expect(reg3).toBeDefined();
 
     // Try to register as a patient in Project P2
-    const res1 = await request(app).post('/auth/newuser').type('json').send({
-      projectId: reg2.project.id,
-      firstName: 'Isolated1',
-      lastName: 'Isolated1',
-      email,
-      password,
-      recaptchaToken: 'xyz',
-    });
+    const res1 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        projectId: reg2.project.id,
+        firstName: 'Isolated1',
+        lastName: 'Isolated1',
+        email: `test${randomUUID()}@example.com`,
+        password,
+        recaptchaToken: 'xyz',
+      });
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
     expect(res1.body.code).toBeUndefined();
 
-    // Try to register as a patient in Project P2
-    const res2 = await request(app).post('/auth/newuser').type('json').send({
-      projectId: reg3.project.id,
-      firstName: 'Isolated2',
-      lastName: 'Isolated2',
-      email,
-      password,
-      recaptchaToken: 'xyz',
-    });
+    // Try to register as a patient in Project P3
+    const res2 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        projectId: reg3.project.id,
+        firstName: 'Isolated2',
+        lastName: 'Isolated2',
+        email: `test${randomUUID()}@example.com`,
+        password,
+        recaptchaToken: 'xyz',
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.login).toBeDefined();
     expect(res2.body.code).toBeUndefined();
+
+    // Try to register with a valid projectId and clientId
+    const res3 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        projectId: reg2.project.id,
+        clientId: reg2.client.id,
+        firstName: 'Isolated3',
+        lastName: 'Isolated3',
+        email: `test${randomUUID()}@example.com`,
+        password,
+        recaptchaToken: 'xyz',
+      });
+    expect(res3.status).toBe(200);
+    expect(res3.body.login).toBeDefined();
+    expect(res3.body.code).toBeUndefined();
+
+    // Try to register with an invalid projectId and clientId pair
+    const res4 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        projectId: reg2.project.id,
+        clientId: reg3.client.id,
+        firstName: 'Isolated4',
+        lastName: 'Isolated4',
+        email: `test${randomUUID()}@example.com`,
+        password,
+        recaptchaToken: 'xyz',
+      });
+    expect(res4.status).toBe(400);
+    expect(res4.body.login).toBeUndefined();
+    expect(res4.body.code).toBeUndefined();
+    expect(res4.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          code: 'invalid',
+          details: {
+            text: 'Client and project do not match',
+          },
+        },
+      ],
+    });
+
+    // Try to register with only a clientId
+    const res5 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        clientId: reg2.client.id,
+        firstName: 'Isolated5',
+        lastName: 'Isolated5',
+        email: `test${randomUUID()}@example.com`,
+        password,
+        recaptchaToken: 'xyz',
+      });
+    expect(res5.status).toBe(200);
+    expect(res5.body.login).toBeDefined();
+    expect(res5.body.code).toBeUndefined();
+
+    // Try to register with an invalid clientId
+    const res6 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        clientId: randomUUID(),
+        firstName: 'Isolated6',
+        lastName: 'Isolated6',
+        email: `test${randomUUID()}@example.com`,
+        password,
+        recaptchaToken: 'xyz',
+      });
+    expect(res6.status).toBe(404);
+    expect(res6.body.login).toBeUndefined();
+    expect(res6.body.code).toBeUndefined();
   });
 
   test('Success when config has empty recaptchaSecretKey and missing recaptcha token', async () => {

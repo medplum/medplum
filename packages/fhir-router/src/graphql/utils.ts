@@ -139,6 +139,11 @@ export function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumen
       type: GraphQLString,
       description: 'Select resources based on the last time they were changed.',
     },
+    _filter: {
+      type: GraphQLString,
+      description:
+        ' The _filter parameter provides a syntax for expressing a set of query expressions on the underlying resources.',
+    },
   };
   const searchParams = getSearchParameters(resourceType);
   if (searchParams) {

@@ -70,7 +70,7 @@ export async function createProject(
 ): Promise<{ project: Project; profile: ProfileResource; membership: ProjectMembership; client: ClientApplication }> {
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
-  logger.info('Create project ' + projectName);
+  logger.info('Project creation request received', { name: projectName });
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: projectName,
@@ -78,7 +78,10 @@ export async function createProject(
     strictMode: true,
   });
 
-  logger.info('Created project: ' + project.id);
+  logger.info('Project created', {
+    id: project.id,
+    name: projectName,
+  });
   const client = await createClient(systemRepo, {
     project,
     name: project.name + ' Default Client',

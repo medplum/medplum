@@ -1,17 +1,18 @@
 import {
+  OperationOutcomeError,
+  SearchRequest,
+  SortRule,
   badRequest,
   deepClone,
   evalFhirPath,
+  generateId,
   globalSchema,
   matchesSearchRequest,
   normalizeOperationOutcome,
   notFound,
-  OperationOutcomeError,
-  SearchRequest,
-  SortRule,
 } from '@medplum/core';
 import { Bundle, BundleEntry, Reference, Resource } from '@medplum/fhirtypes';
-import { applyPatch, Operation } from 'rfc6902';
+import { Operation, applyPatch } from 'rfc6902';
 
 /**
  * The FhirRepository interface defines the methods that are required to implement a FHIR repository.
@@ -185,7 +186,7 @@ export abstract class BaseRepository {
    */
   async searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T[]> {
     const bundle = await this.search(searchRequest);
-    return bundle.entry?.map((e) => e.resource as T) || [];
+    return bundle.entry?.map((e) => e.resource as T) ?? [];
   }
 }
 
@@ -295,7 +296,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     return {
       resourceType: 'Bundle',
       type: 'history',
-      entry: ((this.history.get(resourceType)?.get(id) || []) as T[])
+      entry: ((this.history.get(resourceType)?.get(id) ?? []) as T[])
         .reverse()
         .map((version) => ({ resource: deepClone(version) })),
     };
@@ -315,7 +316,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
     const { resourceType } = searchRequest;
-    const resources = this.resources.get(resourceType) || new Map();
+    const resources = this.resources.get(resourceType) ?? new Map();
     const result = [];
     for (const resource of resources.values()) {
       if (matchesSearchRequest(resource, searchRequest)) {
@@ -360,17 +361,3 @@ const sortComparator = <T extends Resource>(a: T, b: T, sortRule: SortRule): num
   const bStr = JSON.stringify(evalFhirPath(expression, b));
   return aStr.localeCompare(bStr) * (sortRule.descending ? -1 : 1);
 };
-
-/**
- * Cross platform random UUID generator
- * Note that this is not intended for production use, but rather for testing
- * This should be replaced when crypto.randomUUID is fully supported
- * See: https://stackoverflow.com/revisions/2117523/28
- * @returns A random UUID.
- */
-const generateId = (): string =>
-  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });

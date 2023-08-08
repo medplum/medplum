@@ -235,6 +235,70 @@
       "definition": "Optional list of read-only fields.  Read-only fields are readable but not writeable.",
       "comment": "",
       "inherited": false
+    },
+    {
+      "name": "ipAccessRule",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "AccessPolicy.ipAccessRule",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Use IP Access Rules to allowlist, block, and challenge traffic based on the visitor IP address.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "name",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "AccessPolicy.ipAccessRule.name",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Friendly name that will make it easy for you to identify the IP Access Rule in the future.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "value",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "AccessPolicy.ipAccessRule.value",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "An IP Access rule will apply a certain action to incoming traffic based on the visitor IP address or IP range.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "action",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "AccessPolicy.ipAccessRule.action",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "Access rule can perform one of the following actions: \"allow\" | \"block\".",
+      "comment": "",
+      "inherited": false
     }
   ],
   "searchParameters": [
