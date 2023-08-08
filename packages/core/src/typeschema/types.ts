@@ -49,6 +49,7 @@ export interface SlicingRules {
 
 export interface SliceDefinition {
   name: string;
+  type?: ElementType[];
   fields: Record<string, ElementValidator>;
   min: number;
   max: number;
@@ -301,6 +302,7 @@ class StructureDefinitionParser {
     }
     this.slicingContext.current = {
       name: element.sliceName ?? '',
+      type: element.type?.map((t) => ({ code: t.code ?? '', targetProfile: t.targetProfile ?? [] })),
       fields: {},
       min: element.min ?? 0,
       max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string, 10),

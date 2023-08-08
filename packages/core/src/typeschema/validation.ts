@@ -411,6 +411,9 @@ function isChoiceOfType(
 }
 
 function getNestedProperty(value: TypedValue, key: string): (TypedValue | TypedValue[] | undefined)[] {
+  if (key === '$this') {
+    return [value];
+  }
   const [firstProp, ...nestedProps] = key.split('.');
   let propertyValues = [getTypedPropertyValue(value, firstProp)];
   for (const prop of nestedProps) {
@@ -469,23 +472,26 @@ function matchDiscriminant(
   discriminator: SliceDiscriminator,
   slice: SliceDefinition
 ): boolean {
-  const element = slice.fields[discriminator.path];
+  if (Array.isArray(value)) {
+    // Only single values can match
+    return false;
+  }
+  const sliceElement = slice.fields[discriminator.path];
+  const sliceType = slice.type;
   switch (discriminator.type) {
     case 'value':
     case 'pattern':
-      if (!element || !value) {
+      if (!value || !sliceElement) {
         return false;
-      } else if (matchesSpecifiedValue(value, element)) {
+      } else if (matchesSpecifiedValue(value, sliceElement)) {
         return true;
       }
       break;
     case 'type':
-      if (!value) {
+      if (!value || !sliceType?.length) {
         return false;
-      } else if (Array.isArray(value)) {
-        return value.every((v) => element.type.every((t) => t.code === v.type));
       } else {
-        return element.type.every((t) => t.code === value.type);
+        return sliceType.some((t) => t.code === value.type);
       }
     // Other discriminator types are not yet supported, see http://hl7.org/fhir/R4/profiling.html#discriminator
   }
