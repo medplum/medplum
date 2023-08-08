@@ -238,6 +238,7 @@ export function profileExists(storage: FileSystemStorage, profile: string): bool
     return false;
   }
   return true;
+}
 
 export async function jwtAssertionLogin(externalClient: MedplumClient, profile: Profile): Promise<string> {
   const homeDir = homedir();
