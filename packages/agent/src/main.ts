@@ -31,7 +31,6 @@ export class App {
       this.channels.push(channel);
     }
 
-    // this.channels.forEach((channel) => channel.start());
     this.log.info('Medplum service started successfully');
   }
 
