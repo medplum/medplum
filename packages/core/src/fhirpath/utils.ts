@@ -116,11 +116,9 @@ function getTypedPropertyValueWithSchema(
   const primitiveExtension = input.value['_' + path];
   if (primitiveExtension) {
     if (Array.isArray(resultValue)) {
-      resultValue = resultValue.map((v, i) =>
-        primitiveExtension[i] ? Object.assign(v ?? {}, primitiveExtension[i]) : v
-      );
+      resultValue = resultValue.map((v, i) => (primitiveExtension[i] ? safeAssign(v ?? {}, primitiveExtension[i]) : v));
     } else {
-      resultValue = Object.assign(resultValue ?? {}, primitiveExtension);
+      resultValue = safeAssign(resultValue ?? {}, primitiveExtension);
     }
   }
 
@@ -416,4 +414,10 @@ function deepEquals<T1 extends object, T2 extends object>(object1: T1, object2: 
 
 function isObject(obj: unknown): obj is object {
   return obj !== null && typeof obj === 'object';
+}
+
+function safeAssign(target: any, source: any): any {
+  delete source.__proto__; //eslint-disable-line no-proto
+  delete source.constructor;
+  return Object.assign(target, source);
 }

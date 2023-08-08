@@ -608,6 +608,22 @@ describe('FHIR resource validation', () => {
 
     expect(() => validate(observation)).not.toThrow();
   });
+
+  test('Protects against prototype pollution', () => {
+    const patient = JSON.parse(`{
+      "resourceType": "Patient",
+      "birthDate": "1988-11-18",
+      "_birthDate": {
+        "id": "foo",
+        "__proto__": { "valueOf": "bad", "trim": "news" },
+        "constructor": {
+          "prototype": { "valueOf": "bad", "trim": "news" }
+        }
+      }
+    }`) as Patient;
+    expect(() => validate(patient)).not.toThrow();
+    expect('hi'.trim()).toEqual('hi');
+  });
 });
 
 describe('Legacy tests for parity checking', () => {
@@ -639,15 +655,9 @@ describe('Legacy tests for parity checking', () => {
 
   test('Additional properties', () => {
     expect(() => validate({ resourceType: 'Patient', name: [{ given: ['Homer'] }], meta: {} })).not.toThrow();
-
-    try {
-      validate({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Resource);
-      fail('Expected error');
-    } catch (err) {
-      const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Patient.fakeProperty');
-    }
+    expect(() => validate({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Resource)).toThrow(
+      new Error('Invalid additional property "fakeProperty" (Patient.fakeProperty)')
+    );
   });
 
   test('Required properties', () => {
