@@ -161,15 +161,31 @@ Additionally, many `token` elements are namespaced by a `system` string. This is
 
 You can restrict your `token` search to a specific system by using the syntax `<parameter>=<system>|<value>`
 
-:::note Example
+:::tip Example
 
 The following search would find all patients with _any_ identifier that equals `"12345"`
 
-`medplum.search('Patient', 'identifier=12345')`
+```ts
+medplum.searchResources('Patient', 'identifier=12345');
+```
 
 If we only wanted to search for patients whose social security number was `"12345"`, we could use the system string `"http://hl7.org/fhir/sid/us-ssn"` as follows:
 
-`medplum.search('Patient', 'identifier=http://hl7.org/fhir/sid/us-ssn|12345')`
+```ts
+medplum.searchResources('Patient', 'identifier=http://hl7.org/fhir/sid/us-ssn|12345');
+```
+
+:::
+
+We can also check for the _presence_ of a particular identifier by dropping the `<value>` and using the syntax `<parameter>=<system>|`.
+
+:::tip Example
+
+To find all `Patients` that _have_ a social security number:
+
+```ts
+medplum.searchResources('Patient', 'identifier=http://hl7.org/fhir/sid/us-ssn|');
+```
 
 :::
 
