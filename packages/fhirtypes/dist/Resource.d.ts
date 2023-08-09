@@ -7,6 +7,7 @@ import { AccessPolicy } from './AccessPolicy';
 import { Account } from './Account';
 import { ActivityDefinition } from './ActivityDefinition';
 import { AdverseEvent } from './AdverseEvent';
+import { Agent } from './Agent';
 import { AllergyIntolerance } from './AllergyIntolerance';
 import { Appointment } from './Appointment';
 import { AppointmentResponse } from './AppointmentResponse';
@@ -168,6 +169,7 @@ export type Resource = AccessPolicy
   | Account
   | ActivityDefinition
   | AdverseEvent
+  | Agent
   | AllergyIntolerance
   | Appointment
   | AppointmentResponse

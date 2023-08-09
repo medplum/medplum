@@ -1,66 +1,88 @@
-import { Hl7Message, MedplumClient } from '@medplum/core';
+import { Hl7Message, MedplumClient, resolveId } from '@medplum/core';
+import { AgentChannel, Bot, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { readFileSync } from 'fs';
 import { EventLogger } from 'node-windows';
 import WebSocket from 'ws';
 
-export interface AgentConfig {
-  botId: string;
-  useSystemEventLog?: boolean;
-}
-
 export class App {
   readonly log: EventLogger;
-  readonly server: Hl7Server;
-  readonly connections: Connection[] = [];
+  readonly channels: AgentHl7Channel[];
 
-  constructor(readonly medplum: MedplumClient, readonly config: AgentConfig) {
-    if (config.useSystemEventLog) {
-      this.log = new EventLogger({
-        source: 'MedplumService',
-        eventLog: 'SYSTEM',
-      });
-    } else {
-      this.log = {
-        info: console.log,
-        warn: console.warn,
-        error: console.error,
-      } as EventLogger;
-    }
+  constructor(readonly medplum: MedplumClient, readonly agentId: string) {
+    this.log = {
+      info: console.log,
+      warn: console.warn,
+      error: console.error,
+    } as EventLogger;
 
-    this.server = new Hl7Server((connection) => {
-      this.log.info('HL7 connection established');
-      this.connections.push(new Connection(this, connection));
-    });
+    this.channels = [];
   }
 
-  start(): void {
+  async start(): Promise<void> {
     this.log.info('Medplum service starting...');
-    this.server.start(56000);
+
+    const agent = await this.medplum.readResource('Agent', this.agentId);
+
+    for (const definition of agent.channel as AgentChannel[]) {
+      const endpoint = await this.medplum.readReference(definition.endpoint as Reference<Endpoint>);
+      const channel = new AgentHl7Channel(this, definition, endpoint);
+      channel.start();
+      this.channels.push(channel);
+    }
+
     this.log.info('Medplum service started successfully');
   }
 
   stop(): void {
     this.log.info('Medplum service stopping...');
-    for (const connection of this.connections) {
-      connection.close();
-    }
-    this.server.stop();
+    this.channels.forEach((channel) => channel.stop());
     this.log.info('Medplum service stopped successfully');
   }
 }
 
-export class Connection {
+export class AgentHl7Channel {
+  readonly server: Hl7Server;
+  readonly connections: AgentHl7ChannelConnection[] = [];
+
+  constructor(readonly app: App, readonly definition: AgentChannel, readonly endpoint: Endpoint) {
+    this.server = new Hl7Server((connection) => {
+      this.app.log.info('HL7 connection established');
+      this.connections.push(new AgentHl7ChannelConnection(this, connection));
+    });
+  }
+
+  start(): void {
+    const address = new URL(this.endpoint.address as string);
+    this.app.log.info(`Channel starting on ${address}`);
+    this.server.start(parseInt(address.port, 10));
+    this.app.log.info('Channel started successfully');
+  }
+
+  stop(): void {
+    this.app.log.info('Channel stopping...');
+    for (const connection of this.connections) {
+      connection.close();
+    }
+    this.server.stop();
+    this.app.log.info('Channel stopped successfully');
+  }
+}
+
+export class AgentHl7ChannelConnection {
   readonly webSocket: WebSocket;
   readonly webSocketQueue: Hl7Message[] = [];
   readonly hl7ConnectionQueue: Hl7Message[] = [];
   live = false;
 
-  constructor(readonly app: App, readonly hl7Connection: Hl7Connection) {
+  constructor(readonly channel: AgentHl7Channel, readonly hl7Connection: Hl7Connection) {
+    const app = channel.app;
+    const medplum = app.medplum;
+
     // Add listener immediately to handle incoming messages
     this.hl7Connection.addEventListener('message', (event) => this.handler(event));
 
-    const webSocketUrl = new URL(this.app.medplum.getBaseUrl());
+    const webSocketUrl = new URL(medplum.getBaseUrl());
     webSocketUrl.protocol = webSocketUrl.protocol === 'https:' ? 'wss:' : 'ws:';
     webSocketUrl.pathname = '/ws/agent';
     console.log('Connecting to WebSocket:', webSocketUrl.href);
@@ -72,8 +94,8 @@ export class Connection {
       this.webSocket.send(
         JSON.stringify({
           type: 'connect',
-          accessToken: this.app.medplum.getAccessToken(),
-          botId: this.app.config.botId,
+          accessToken: medplum.getAccessToken(),
+          botId: resolveId(channel.definition.targetReference as Reference<Bot>),
         })
       );
     });
@@ -144,5 +166,9 @@ export class Connection {
 
 if (typeof require !== 'undefined' && require.main === module) {
   const config = JSON.parse(readFileSync('medplum.config.json', 'utf8'));
-  new App(new MedplumClient(config), config).start();
+  const medplum = new MedplumClient(config);
+  medplum
+    .startClientLogin(config.clientId, config.clientSecret)
+    .then(() => new App(medplum, config.agentId).start())
+    .catch(console.error);
 }
