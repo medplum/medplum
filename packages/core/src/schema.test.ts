@@ -463,7 +463,9 @@ describe('FHIR schema', () => {
   });
 
   test('Primitive element', () => {
-    expect(() => validateResource({ resourceType: 'Patient', birthDate: '1990-01-01', _birthDate: {} })).not.toThrow();
+    expect(() =>
+      validateResource({ resourceType: 'Patient', birthDate: '1990-01-01', _birthDate: { id: 'foo' } })
+    ).not.toThrow();
     expect(() =>
       validateResource({ resourceType: 'Patient', birthDate: '1990-01-01', _birthDate: '1990-01-01' })
     ).toThrow();
@@ -473,7 +475,14 @@ describe('FHIR schema', () => {
       validateResource({
         resourceType: 'Questionnaire',
         status: 'active',
-        item: [{ linkId: 'test', type: 'string', text: 'test', _text: { extension: [] } }],
+        item: [
+          {
+            linkId: 'test',
+            type: 'string',
+            text: 'test',
+            _text: { extension: [{ url: 'http://example.com/', valueString: 'a' }] },
+          },
+        ],
       })
     ).not.toThrow();
   });
