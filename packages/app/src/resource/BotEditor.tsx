@@ -1,6 +1,6 @@
 import { Button, createStyles, Grid, Group, JsonInput, NativeSelect, Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { isUUID, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { ContentType, isUUID, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
@@ -46,7 +46,7 @@ export function BotEditor(): JSX.Element | null {
   const [defaultCode, setDefaultCode] = useState<string | undefined>(undefined);
   const [fhirInput, setFhirInput] = useState(DEFAULT_FHIR_INPUT);
   const [hl7Input, setHl7Input] = useState(DEFAULT_HL7_INPUT);
-  const [contentType, setContentType] = useState('application/fhir+json');
+  const [contentType, setContentType] = useState(ContentType.FHIR_JSON);
   const { classes } = useStyles();
   const codeFrameRef = useRef<HTMLIFrameElement>(null);
   const outputFrameRef = useRef<HTMLIFrameElement>(null);
@@ -71,7 +71,7 @@ export function BotEditor(): JSX.Element | null {
   }, [codeFrameRef]);
 
   const getSampleInput = useCallback(async () => {
-    if (contentType === 'application/fhir+json') {
+    if (contentType === ContentType.FHIR_JSON) {
       return JSON.parse(fhirInput);
     } else {
       return hl7Input;
@@ -184,12 +184,12 @@ export function BotEditor(): JSX.Element | null {
         <Paper m={2} pb="xs" pr="xs" pt="xs" shadow="md">
           <NativeSelect
             data={[
-              { label: 'FHIR', value: 'application/fhir+json' },
-              { label: 'HL7', value: 'x-application/hl7-v2+er7' },
+              { label: 'FHIR', value: ContentType.FHIR_JSON },
+              { label: 'HL7', value: ContentType.HL7_V2 },
             ]}
             onChange={(e) => setContentType(e.currentTarget.value)}
           />
-          {contentType === 'application/fhir+json' ? (
+          {contentType === ContentType.FHIR_JSON ? (
             <JsonInput value={fhirInput} onChange={(newValue) => setFhirInput(newValue)} minRows={15} />
           ) : (
             <textarea
