@@ -32,7 +32,7 @@ describe('Execute', () => {
     mockLambdaClient.on(InvokeCommand).callsFake(({ Payload }) => {
       const decoder = new TextDecoder();
       const event = JSON.parse(decoder.decode(Payload));
-      const output = typeof event.input === 'string' ? event.input : JSON.stringify(event.input);
+      const output = JSON.stringify(event.input);
       const encoder = new TextEncoder();
 
       return {
