@@ -531,14 +531,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       const profileUrls = resource.meta?.profile;
       validate(resource);
       if (profileUrls) {
-        try {
-          await this.validateProfiles(resource, profileUrls);
-        } catch (err) {
-          logger.error('Profile validation error', {
-            resource: `${resource.resourceType}/${resource.id}`,
-            error: normalizeErrorString(err),
-          });
-        }
+        await this.validateProfiles(resource, profileUrls);
       }
 
       const elapsedTime = Number(process.hrtime.bigint() - start);
