@@ -10,7 +10,6 @@ This guide covers different ways that you can organize the `Communication` resou
   1. How to build and organize threads
   2. How to "tag" threads and messages
   3. How to use different Codesystems to classify messages
-- Searching for messages and threads using the the search helper method from the [Medplum Client SDK](/docs/sdk/classes/MedplumClient)
 - Querying for and sorting communications and threads
 
 ## Communication Organization Patterns
@@ -29,9 +28,10 @@ The `Communication.topic` element represents a description of the main focus or 
   id: 'example-communication',
   payload: [
     {
+      id: 'example-communication-payload',
       contentString: 'Your appointment for a physical on April 10th, 2023 is confirmed.'
     }
-  ]
+  ],
   topic: {
     text: 'In-person physical with Homer Simpson on April 10th, 2023.',
     coding: [
@@ -49,6 +49,7 @@ The `Communication.topic` element represents a description of the main focus or 
   id: 'example-communication-2',
   payload: [
     {
+      id: 'example-communication-2-payload',
       contentString: 'This is a reminder that you have an appointment tommorrow, April 10th.'
     }
   ]
@@ -65,13 +66,13 @@ The `Communication.topic` element represents a description of the main focus or 
 }
 ```
 
-The `Communication.partOf` element represents a larger resource of which the communication is a component. It can reference any resource type, allowing us to refer to other `Communication` resources to create a thread. The `partOf` element is best used to create a thread in which each message is linked to a single parent message.
+The `Communication.partOf` element represents a larger resource of which the `Communication` is a component. It can reference any resource type, allowing us to refer to other `Communication` resources to create a thread. The `partOf` element is used to create a thread in which each message is linked to a single parent message.
 
 When using the `partOf` field to create a thread, the parent `Communication` resource needs to be distinguished from the children. This is done simply by omitting a message in the `payload` field and a resource referenced in the `partOf` field, while all children will have both of these fields.
 
 Once we have the parent resource, each message in the thread will create a new `Communication` resource, setting `partOf` to reference the parent resource. As more messages are sent, each one will continue to point to the parent, creating a thread with a common reference point.
 
-It is also important to consider when it is appropriate to use the `Encounter` resource as a top-level grouping mechanism instead of the `Communication` resource. An "encounter" refers to any diagnostic or treatment interaction between a patient and provider, and, in a digital health context, can include SMS chains, in-app threads, and email. The `partOf` field can reference any resource type, so when an "enconter" occurs, threads should be created with the `Encounter` resource as the parent. See the [Representing Asynchronous Encounters](/docs/communications/async-encounters/async-encounters) docs.
+It is also important to consider when it is appropriate to use the [`Encounter`](/docs/api/fhir/resources/encounter) resource as a top-level grouping mechanism instead of the `Communication` resource. An "encounter" refers to any diagnostic or treatment interaction between a patient and provider, and, in a digital health context, can include SMS chains, in-app threads, and email. The `partOf` field can reference any resource type, so when an "enconter" occurs, threads should be created with the `Encounter` resource as the parent. For more details, see the [Representing Asynchronous Encounters](/docs/communications/async-encounters/async-encounters) docs.
 
 In the example below, each message in the thread references the parent `Communication` resource rather than referencing each other.
 
@@ -82,7 +83,7 @@ In the example below, each message in the thread references the parent `Communic
 {
   resourceType: 'Communication',
   id: 'example-parent-communication',
-  // There is no `partOf` field on this communication
+  // There is no `partOf` of `payload` field on this communication
 }
 
 // The initial communication
@@ -91,6 +92,7 @@ In the example below, each message in the thread references the parent `Communic
   id: 'example-message-1',
   payload: [
     {
+      id: 'example-message-1-payload',
       contentString: 'Thank you for coming to your appointment! Let us know when you would like to schedule your follow-up.'
     }
   ],
@@ -111,6 +113,7 @@ In the example below, each message in the thread references the parent `Communic
   id: 'example-message-2',
   payload: [
     {
+      id: 'example-message-2-payload',
       contentString: 'Can I schedule it for two weeks from today?'
     }
   ],
@@ -142,6 +145,7 @@ In the example below, note that each subsequent communication references the one
   // ...
   payload: [
     {
+      id: 'initial-communication-payload',
       contentString: 'Your medication is ready! Please let us know when you would like to pick it up.'
     }
   ]
@@ -155,6 +159,7 @@ In the example below, note that each subsequent communication references the one
   // ...
   payload: [
     {
+      id: 'response-1-payload',
       contentString: 'I will be in to pick it up tomorrow'
     }
   ],
@@ -177,6 +182,7 @@ In the example below, note that each subsequent communication references the one
   // ...
   payload: [
     {
+      id: 'response-2-payload',
       contentString: 'We look forward to seeing you tomorrow! Your medication will be ready to go.'
     }
   ],
@@ -253,7 +259,9 @@ Alternatively, you can have threads that have just one `category` that combines 
 
 When classifying the `Communication.category` field, it is best to use SNOMED codes. Specifically, for for practitioner roles and clinical specialty, SNOMED provides the [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) valueset.
 
-When classifying the `topic` element, it is common to use an internal custom coding so you can provide the proper level of specificity. However, it is still possible to use SNOMED and LOINC if you would like to.
+When classifying the `topic` element, it is common to use an internal custom coding so you can provide the proper level of specificity. However, it is still possible to use SNOMED and LOINC if you prefer.
+
+**Example: **
 
 ```ts
 // A communication with both SNOMED and custom coding
@@ -265,7 +273,7 @@ When classifying the `topic` element, it is common to use an internal custom cod
 		{
 			coding: [
 				{
-					code: "158965000"
+					code: "158965000",
 					system: "http://snomed.info/sct",
           display: "Medical Practitioner"
 				}
@@ -286,263 +294,51 @@ When classifying the `topic` element, it is common to use an internal custom cod
 }
 ```
 
-## Retrieving Threaded Communications
+## Searching for and Sorting `Communication` Resources
 
-Threads can be retrieved with the [Medplum Client SDK](/docs/sdk/classes/MedplumClient) `searchResources` method using special search parameters. If you are using `partOf` to create an ancestor-descendant relationship, you can search for the parent communication as well as any communications that reference it.
+`Communication` resources are easily searchable using the [Medplum Client SDK](/docs/sdk/classes/MedplumClient) `searchResources` method. Throughout this section, we will use an example of threading using `partOf` to reference a single parent `Communication` resource.
+
+To search for all threads in the system, we need to find each parent resource, in this case `Communication` resources. One of the factors that differentiates a "thread-level", or parent, resource from a "message-level", or child, resource is that thread-level resources do not have a value in the `partOf` field.
 
 **Example: **
 
 ```ts
 await medplum.searchResources('Communication', {
-  id: 'example-ancestor-id',
+  'part-of:missing': true,
   _revinclude: 'Communication:part-of',
 });
-```
-
-```
-curl https://api.medplum.com/fhir/R4/Communication?id=example-ancestor-id&_revinclude=Communication:part-of
-```
-
-The `category` element is a search parameter on the `Communication` resource, so you can easily search for communications with specific categories. The parameter type is a token, so you will need to search for a specific coded category that your practice has defined. It is possible to search for multiple categories, as shown in the example below. This searches for all communications with the category codes representing 'Doctor' and 'Endocrinology'.
-
-**Example: **
-
-```ts
-await medplum.searchResources('Communication', [
-    ['category', '394583002'],
-    ['category', '158965000']
-  ]
-});
-// OR
-await medplum.searchResources('Communication', 'category=394583002&category=158965000');
-```
-
-```
-curl https://api.medplum.com/fhir/R4/Communication?category=394583002&category=158965000
-```
-
-In this example we are searching for a communication with a given `id`. By including the `_revinclude` parameter, we also search for any communications whose `partOf` element references the communication with the given id. For more details on searching using linked resources, see the [Search](/docs/search/includes) documentation.
-
-If you are using `inResponseTo` to model a parent-child relationship, you can search for the parent communication and then iterate along the thread to get all of the communications.
-
-**Example: **
-
-```ts
-await medplum.searchResources('Communication', {
-  id: 'example-parent-id',
-  _revinclude:iterate: 'Communication:inResponseTo'
-});
-```
-
-In this example we are searching for a communication by `id`. After, we include the `_revinclude:iterate: 'Communication:inResponseTo` parameter, to retrieve all communications that reference the communication we are searching for. By including the `:iterate` modifier to recursively apply the reverse inclusion until no more resources are found. This first finds any direct responses to the initial communication. Then it iterates to find any communications that reference the direct response, and so on until it finds no more communications. For more details on using the `:iterate` modifier, see the [Search](/docs/search/includes) documentation.
-
-## Sorting Communications by Time
-
-Sorting communications by time or organizing messages chronologically is a common requirement when retrieving threaded communications. The communication resource includes two timestamp fields, `sent` and `received`, which represent the time that a message was sent or received. You can search for sorted results by including the special search parameter `_sort`, which allows you to specify a list of search parameters to sort by.
-
-Taking our example from earlier, we could search for a thread that uses `partOf` and sort the results with the below search.
-
-**Example: **
-
-```ts
-await medplum.searchResources('Communication', {
-  id: 'example-id',
-  _revinclude: 'Communication:part-of',
-  _sort: 'sent',
-});
-```
-
-This will return the communications sorted in ascending order. You can also sort by descending order and provide more than one argument to sort by in a comma separated list. The below example sorts the thread by descending time `sent` and then by `sender`.
-
-**Example: **
-
-```ts
-await medplum.searchResources('Communication', {
-  id: 'example-id',
-  _revinclude: 'Communication:part-of',
-  _sort: '-sent,sender',
-});
-```
-
-## Querying for Communications with GraphQL
-
-Effectively grouping and filtering your communications makes it easier to search and query for specific data.
-
-For example, if you want to get all of the communications between the provider and a specific patient, you could use the following query. In this, we query for a patient by their id, returning their name. We then alias our queries their communications as `communicationsSent` and `communicationsReceived`. In these lines, we use the `_reference` keyword to query for any communication that references our patient in the `sender` and `recipient` fields respectively. From these communications, we get the payload of the communication and its content, as well as the sender, receiver, and the time it was sent and received. Preview this query in [GraphiQL](graphiql.medplum.com)
-
-```
-{
-	# Search for a specific patient by id
-  Patient(id: "36bfa7b5-2b62-4ea8-8a30-c17f4e4831c0") {
-    resourceType
-    id
-		name {
-			family
-			given
-		}
-		# Search for communications that reference the patient as a sender
-    communicationsSent: CommunicationList(_reference: sender) {
-      payload {
-        contentString
-      }
-      # Resolve the practitioners referenced by Communication.recipient
-      recipient {
-        resource {
-          ... on Practitioner {
-            name {
-              family
-              given
-            }
-          }
-        }
-      }
-    }
-    # Search for communications that reference the patient as a recipient
-    communicationsReceived: CommunicationList(_reference: recipient) {
-      payload {
-        contentString
-      }
-      # Resolve the practitioners referenced by Communication.sender
-      sender {
-        resource {
-          ... on Practitioner {
-            name {
-              family
-              given
-            }
-          }
-        }
-      }
-    }
-  }
-}
-```
-
-```ts
-await medplum.graphql(`
-{
-  query GetPatientCommunications{
-  Patient(id: "36bfa7b5-2b62-4ea8-8a30-c17f4e4831c0") {
-  	resourceType
-    id
-		name {
-			family
-			given
-		}
-    communicationsSent: CommunicationList(_reference: sender) {
-      payload {
-        contentString
-      }
-      recipient {
-        resource {
-          ... on Practitioner {
-            name {
-              family
-              given
-            }
-          }
-        }
-      }
-    }
-    communicationsReceived: CommunicationList(_reference: recipient) {
-      payload {
-        contentString
-      }
-      sender {
-        resource {
-          ... on Practitioner {
-            name {
-              family
-              given
-            }
-          }
-        }
-      }
-    }
-  }
-}`);
 ```
 
 ```curl
-curl -X POST 'https://api.medplum.com/fhir/R4/$graphql' \
--H "Content-Type: applicatoin/json" \
--H "Authorization: Bearer $your_access_token" \
--d '{"query": "query GetPatientCommunications { Patient(id: \"36bfa7b5-2b62-4ea8-8a30-c17f4e4831c0\") { resourceType id name { family given } communicationsSent: CommunicationList(_reference: sender) { payload { contentString } recipient { resource { ... on Practitioner { name { family given } } } } } communicationsReceived: CommunicationList(_reference: recipient) { payload { contentString } sender { resource { ... on Practitioner { name { family given } } } } } } }"}'
+curl https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&_revinclude=Communication:part-of
 ```
 
-Here is an example of how you could search for all communications within your provider that are not linked to an encounter. Using CommunicationList we are able to return a list of all communications that fit our argument of `encounter: null`. In this case we return the text of the communication, the sender, and the receiver. Preview this query in [GraphiQL](graphiql.medplum.com).
+In this example, we use the `:missing` search modifier to search for any `Communication` resources that do not reference another resource in their `partOf` field. However, this would only provide us with the parent `Communication` and none of the actual messages that are part of the thread. In order to get those messages, we use the `_revinclude` search paramter. This parameter adds any `Communication` resources whose `partOf` field references one of the original search results. If you only need the parent resource, you can omit the `_revinclude` field.
 
-```
-{
-	CommunicationList(encounter: null) {
-		payload {
-			contentString
-		}
-		sender {
-			resource {
-				... on Practitioner {
-          name {
-            family
-            given
-          }
-        }
-			}
-		}
-		recipient {
-			resource {
-				... on Patient {
-          name {
-            family
-            given
-          }
-        }
-			}
-		}
-	}
-}
-```
+:::note Note
 
-```ts
-await medplum.graphql(`
-{
-	CommunicationList(encounter: null) {
-		payload {
-			contentString
-		}
-		sender {
-			resource {
-				... on Practitioner {
-          name {
-            family
-            given
-          }
-        }
-			}
-		}
-		recipient {
-			resource {
-				... on Patient {
-          name {
-            family
-            given
-          }
-        }
-			}
-		}
-	}
-}
-`);
-```
-
-```curl
-curl -X POST 'https://api.medplum.com/fhir/R4/$graphql' \
--H "Content-Type: application/json" \
--H "Authorization: Bearer: $your_access_token" \
--d '{"query":"{ CommunicationList(encounter: null) { payload { contentString } sender { resource { ... on Practitioner { name { family given } } } } recipient { resource { ... on Patient { name { family given } } } } } }"}'
-```
-
-:::tip Note
-
-In these examples, we are only resolving the senders and recipients for one resource type, either Patient or Practitioner. To resolve all potential senders and receivers you will need to include all resource types that can send or receive. For more details on FHIR GraphQL queries see the [GraphQL](/docs/graphql/basic-queries) docs.
+FHIR search parameters do not use camel case, so we use `'part-of'` rather than the camel case `partOf` that is the name of the actual field on a `Communication` resource. Since `part-of` includes a `-`, it must be included as the key on the search object as a string. To see a list of all search parameters on `Communication` resources, see the [`Communication` reference docs](https://www.medplum.com/docs/api/fhir/resources/communication#search-parameters).
 
 :::
+
+Once you have found the thread you want, you may want to retrieve the messages from only that specific thread, in order. In the above example, though we retrieved the messages with each thread, there is no guarantee that they will be in the correct order. You can also filter down results so that you only get the messages specific to the thread you want.
+
+**Example: **
+
+```ts
+/*
+curl https://api.medplum.com/fhir/R4/Communication?part-of=Communication/123&_sort=sent
+*/
+const communication = { resourceType: 'Communication', id: '123'}
+await medplum.searchResources('Communication', {
+  `part-of`: 'Communication/123',
+  _sort: 'sent'
+});
+// OR
+await medplum.searchResources('Communication', {
+  'part-of': getReferenceString(communication),
+  _sort: 'sent'
+})
+```
+
+In the above example, we search for `Communication` resources that reference our thread in the `partOf` field. This can be done by passing in the reference string or, if you have the `Communication` resource for the thread you want, by using the `getReferenceString` utility method to help construct your query. In addition, we use the `_sort` parameter to sort the results based on the `sent` element. This element represents the time that a `Communication` was sent. You could also use the `received` element, which represents the time that a `Communication` was received. For more details on using the search functionality, see the [Search docs](/docs/search/index).
