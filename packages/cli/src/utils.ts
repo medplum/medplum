@@ -301,7 +301,7 @@ export async function jwtAssertionLogin(externalClient: MedplumClient, profile: 
     'application/x-www-form-urlencoded',
     { credentials: 'include' }
   );
-  
+
   if (!res.access_token) {
     throw new Error(`Failed to login: ${res}`);
   }
