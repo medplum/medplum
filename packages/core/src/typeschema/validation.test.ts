@@ -624,6 +624,43 @@ describe('FHIR resource validation', () => {
     expect(() => validate(patient)).not.toThrow();
     expect('hi'.trim()).toEqual('hi');
   });
+
+  test('Slice on value type', () => {
+    const bodyWeightProfile = JSON.parse(readFileSync(resolve(__dirname, '__test__/body-weight-profile.json'), 'utf8'));
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: {
+        coding: [
+          {
+            system: 'http://loinc.org',
+            code: '29463-7',
+          },
+        ],
+      },
+      category: [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+              code: 'vital-signs',
+            },
+          ],
+        },
+      ],
+      subject: {
+        reference: 'Patient/example',
+      },
+      effectiveDateTime: '2023-08-04T12:34:56Z',
+      valueQuantity: {
+        system: 'http://unitsofmeasure.org',
+        code: '[lb_av]',
+        unit: 'pounds',
+        value: 130,
+      },
+    };
+    expect(() => validate(observation, bodyWeightProfile as StructureDefinition)).not.toThrow();
+  });
 });
 
 describe('Legacy tests for parity checking', () => {

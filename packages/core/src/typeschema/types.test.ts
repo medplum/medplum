@@ -9,7 +9,7 @@ import {
 } from './types';
 import { resolve } from 'path';
 import { TypedValue } from '../types';
-import { Observation } from '@medplum/fhirtypes';
+import { Observation, StructureDefinition } from '@medplum/fhirtypes';
 import { readJson } from '@medplum/definitions';
 
 describe('FHIR resource and data type representations', () => {
@@ -215,6 +215,11 @@ describe('FHIR resource and data type representations', () => {
     expect(rest?.fields['operation']).toMatchObject<Partial<ElementValidator>>({
       type: [{ code: 'CapabilityStatementRestResourceOperation', targetProfile: [] }],
     });
+  });
+
+  test('Base spec profiles', () => {
+    const bodyWeightProfile = readFileSync(resolve(__dirname, '__test__/body-weight-profile.json'), 'utf8');
+    expect(parseStructureDefinition(JSON.parse(bodyWeightProfile) as StructureDefinition)).toBeDefined();
   });
 
   test('subsetResource', () => {
