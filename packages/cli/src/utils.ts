@@ -6,10 +6,8 @@ import internal from 'stream';
 import tar from 'tar';
 import { FileSystemStorage } from './storage';
 import { SignJWT } from 'jose';
-import fs from 'fs';
-import { createPrivateKey, randomBytes } from 'crypto';
+import { createPrivateKey, randomBytes, createHmac } from 'crypto';
 import { homedir } from 'os';
-import { createHmac } from 'crypto';
 
 interface MedplumConfig {
   readonly baseUrl?: string;
@@ -280,7 +278,7 @@ export async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): 
 export async function jwtAssertionLogin(externalClient: MedplumClient, profile: Profile): Promise<string> {
   const homeDir = homedir();
   const privateKeyPath = join(homeDir, profile.privateKeyPath as string);
-  const privateKeyStr = fs.readFileSync(privateKeyPath);
+  const privateKeyStr = readFileSync(privateKeyPath);
   const privateKey = createPrivateKey(privateKeyStr);
   const jwt = await new SignJWT({})
     .setProtectedHeader({ alg: 'RS384', typ: 'JWT' })
@@ -303,7 +301,7 @@ export async function jwtAssertionLogin(externalClient: MedplumClient, profile: 
     'application/x-www-form-urlencoded',
     { credentials: 'include' }
   );
-
+  
   if (!res.access_token) {
     throw new Error(`Failed to login: ${res}`);
   }
