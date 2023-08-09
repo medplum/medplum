@@ -3849,5 +3849,254 @@
         ]
       }
     }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/StructureDefinition/Agent",
+    "resource" : {
+      "resourceType" : "StructureDefinition",
+      "id" : "Agent",
+      "name" : "Agent",
+      "url" : "https://medplum.com/fhir/StructureDefinition/Agent",
+      "status" : "active",
+      "kind" : "resource",
+      "abstract" : false,
+      "type" : "Agent",
+      "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
+      "description" : "Contains details of long running asynchronous/background jobs.",
+      "snapshot" : {
+        "element" : [
+          {
+            "id" : "Agent",
+            "path" : "Agent",
+            "short" : "Contains details of long running asynchronous/background jobs.",
+            "definition" : "Contains details of long running asynchronous/background jobs.",
+            "min" : 0,
+            "max" : "*",
+            "base": {
+              "path" : "Agent",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "Agent.id",
+            "path" : "Agent.id",
+            "short" : "Logical id of this artifact",
+            "definition" : "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.id",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Agent.meta",
+            "path" : "Agent.meta",
+            "definition" : "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.meta",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Meta"
+            }]
+          },
+          {
+            "id" : "Agent.implicitRules",
+            "path" : "Agent.implicitRules",
+            "definition" : "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.implicitRules",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "uri"
+            }]
+          },
+          {
+            "id" : "Agent.language",
+            "path" : "Agent.language",
+            "definition" : "The base language in which the resource is written.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.language",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }]
+          },
+          {
+            "id" : "Agent.name",
+            "path" : "Agent.name",
+            "short" : "The human readable friendly name of the agent.",
+            "definition" : "The human readable friendly name of the agent.",
+            "min" : 1,
+            "max" : "1",
+            "base" : {
+              "path" : "Agent.name",
+              "min" : 1,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Agent.status",
+            "path" : "Agent.status",
+            "short" : "active | off | error",
+            "definition" : "The status of the agent.",
+            "min" : 1,
+            "max" : "1",
+            "base" : {
+              "path" : "Agent.status",
+              "min" : 1,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/agent-status|4.0.1"
+            }
+          },
+          {
+            "id" : "Agent.device",
+            "path" : "Agent.device",
+            "definition" : "Optional device resource representing the device running the agent.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Device"]
+            }],
+            "base" : {
+              "path" : "Agent.device",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Agent.setting",
+            "path" : "Agent.setting",
+            "definition" : "The settings for the agent.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "base" : {
+              "path" : "Agent.setting",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "Agent.setting.name",
+            "path" : "Agent.setting.name",
+            "definition" : "The setting name.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Agent.setting.name",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Agent.setting.value[x]",
+            "path" : "Agent.setting.value[x]",
+            "definition" : "The setting value.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            },
+            {
+              "code" : "boolean"
+            },
+            {
+              "code" : "decimal"
+            },
+            {
+              "code" : "integer"
+            }],
+            "base" : {
+              "path" : "Agent.setting.value[x]",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Agent.channel",
+            "path" : "Agent.channel",
+            "short" : "The channel on which to report matches to the criteria",
+            "definition" : "Details where to send notifications when resources are received that meet the criteria.",
+            "min" : 1,
+            "max" : "*",
+            "base" : {
+              "path" : "Agent.channel",
+              "min" : 1,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "BackboneElement"
+            }]
+          },
+          {
+            "id" : "Agent.channel.endpoint",
+            "path" : "Agent.channel.endpoint",
+            "definition" : "The channel endpoint definition including protocol and network binding details.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Endpoint"]
+            }],
+            "base" : {
+              "path" : "Agent.channel.endpoint",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Agent.channel.target[x]",
+            "path" : "Agent.channel.target[x]",
+            "definition" : "The target resource where channel messages will be delivered.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Bot"]
+            }, {
+              "code" : "url"
+            }],
+            "base" : {
+              "path" : "Agent.channel.target[x]",
+              "min" : 1,
+              "max" : "1"
+            }
+          }
+        ]
+      }
+    }
   }]
 }

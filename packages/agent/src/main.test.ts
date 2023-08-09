@@ -1,5 +1,5 @@
-import { allOk, Hl7Message } from '@medplum/core';
-import { Bot, Resource } from '@medplum/fhirtypes';
+import { allOk, createReference, Hl7Message } from '@medplum/core';
+import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { Server } from 'mock-socket';
@@ -9,6 +9,7 @@ jest.mock('node-windows');
 
 const medplum = new MockClient();
 let bot: Bot;
+let endpoint: Endpoint;
 
 describe('Agent', () => {
   beforeAll(async () => {
@@ -19,18 +20,26 @@ describe('Agent', () => {
     });
 
     bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+
+    endpoint = await medplum.createResource<Endpoint>({
+      resourceType: 'Endpoint',
+      address: 'mllp://0.0.0.0:56000',
+    });
   });
 
   test('Runs successfully', async () => {
-    const app = new App(medplum, { botId: bot.id as string });
-    app.start();
-    app.stop();
-    app.stop();
-  });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      channel: [
+        {
+          endpoint: createReference(endpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+    });
 
-  test('Use system event log', async () => {
-    const app = new App(medplum, { botId: bot.id as string, useSystemEventLog: true });
-    app.start();
+    const app = new App(medplum, agent.id as string);
+    await app.start();
     app.stop();
     app.stop();
   });
@@ -66,8 +75,18 @@ describe('Agent', () => {
       });
     });
 
-    const app = new App(medplum, { botId: bot.id as string });
-    app.start();
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      channel: [
+        {
+          endpoint: createReference(endpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+    });
+
+    const app = new App(medplum, agent.id as string);
+    await app.start();
 
     const client = new Hl7Client({
       host: 'localhost',

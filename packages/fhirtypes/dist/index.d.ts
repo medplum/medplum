@@ -9,6 +9,7 @@ export * from './ActivityDefinition';
 export * from './Address';
 export * from './AdverseEvent';
 export * from './Age';
+export * from './Agent';
 export * from './AllergyIntolerance';
 export * from './Annotation';
 export * from './Appointment';

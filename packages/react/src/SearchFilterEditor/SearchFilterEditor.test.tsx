@@ -51,6 +51,10 @@ describe('SearchFilterEditor', () => {
       />
     );
 
+    const fieldInput = screen.getByTestId('filter-field');
+    expect(fieldInput).toBeInTheDocument();
+    expect(fieldInput).toHaveValue('');
+
     await act(async () => {
       fireEvent.change(screen.getByTestId('filter-field'), {
         target: { value: 'name' },

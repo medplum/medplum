@@ -264,7 +264,7 @@ class ResourceValidator {
       }
       if (
         !(key in properties) &&
-        !(key.slice(1) in properties && this.isPrimitiveExtension(parent, key, path)) &&
+        !(key.startsWith('_') && key.slice(1) in properties) &&
         !isChoiceOfType(parent, key, properties)
       ) {
         this.issues.push(createStructureIssue(`${path}.${key}`, `Invalid additional property "${key}"`));
@@ -305,57 +305,29 @@ class ResourceValidator {
     }
   }
 
-  /**
-   * Checks the element for a primitive extension.
-   *
-   * FHIR elements with primitive data types are represented in two parts:
-   *   1) A JSON property with the name of the element, which has a JSON type of number, boolean, or string
-   *   2) a JSON property with _ prepended to the name of the element, which, if present, contains the value's id and/or extensions
-   *
-   * See: https://hl7.org/fhir/json.html#primitive
-   * @param parent The parent value
-   * @param key The property key to check
-   * @param path The path to the property
-   * @returns Whether the element is a primitive extension
-   */
-  private isPrimitiveExtension(parent: TypedValue, key: string, path: string): boolean {
-    // Primitive element starts with underscore
-    if (!key.startsWith('_')) {
-      return false;
-    }
-
-    // Then validate the element
-    //@TODO(mattwiller 2023-06-05): Move this to occur along with the rest of validation
-    const extensionProperty = parent.value[key];
-    if (Array.isArray(extensionProperty)) {
-      for (const ext of extensionProperty) {
-        this.validateObject({ type: 'Element', value: ext }, getDataType('Element'), path);
-      }
-    } else {
-      this.validateObject({ type: 'Element', value: extensionProperty }, getDataType('Element'), path);
-    }
-    return true;
-  }
-
   private validatePrimitiveType(typedValue: TypedValue, path: string): void {
-    const { type, value } = typedValue;
-
-    // First, make sure the value is the correct JS type
-    const expectedType = fhirTypeToJsType[type];
-    if (typeof value !== expectedType) {
-      if (value !== null) {
-        this.issues.push(
-          createStructureIssue(path, `Invalid JSON type: expected ${expectedType}, but got ${typeof value}`)
-        );
+    const [primitiveValue, extensionElement] = unpackPrimitiveElement(typedValue);
+    if (primitiveValue) {
+      const { type, value } = primitiveValue;
+      // First, make sure the value is the correct JS type
+      const expectedType = fhirTypeToJsType[type];
+      if (typeof value !== expectedType) {
+        if (value !== null) {
+          this.issues.push(
+            createStructureIssue(path, `Invalid JSON type: expected ${expectedType}, but got ${typeof value}`)
+          );
+        }
+        return;
       }
-      return;
+      // Then, perform additional checks for specialty types
+      if (expectedType === 'string') {
+        this.validateString(value as string, type as PropertyType, path);
+      } else if (expectedType === 'number') {
+        this.validateNumber(value as number, type as PropertyType, path);
+      }
     }
-
-    // Then, perform additional checks for specialty types
-    if (expectedType === 'string') {
-      this.validateString(value as string, type as PropertyType, path);
-    } else if (expectedType === 'number') {
-      this.validateNumber(value as number, type as PropertyType, path);
+    if (extensionElement) {
+      this.validateObject(extensionElement, getDataType('Element'), path);
     }
   }
 
@@ -513,4 +485,21 @@ function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undef
     }
   }
   return undefined;
+}
+
+function unpackPrimitiveElement(v: TypedValue): [TypedValue | undefined, TypedValue | undefined] {
+  if (typeof v.value !== 'object' || !v.value) {
+    return [v, undefined];
+  }
+  const primitiveValue = v.value.valueOf();
+  if (primitiveValue === v.value) {
+    return [undefined, { type: 'Element', value: v.value }];
+  }
+  const primitiveKeys = new Set(Object.keys(primitiveValue));
+  const extensionEntries = Object.entries(v.value).filter(([k, _]) => !primitiveKeys.has(k));
+  const extensionElement = extensionEntries.length > 0 ? Object.fromEntries(extensionEntries) : undefined;
+  return [
+    { type: v.type, value: primitiveValue },
+    { type: 'Element', value: extensionElement },
+  ];
 }

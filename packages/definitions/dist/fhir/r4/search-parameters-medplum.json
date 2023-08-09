@@ -27,7 +27,7 @@
         "id": "Project-owner",
         "url": "https://medplum.com/fhir/SearchParameter/Project-owner",
         "version": "4.0.1",
-        "name": "name",
+        "name": "owner",
         "status": "draft",
         "publisher": "Medplum",
         "description": "The user who owns the project",
@@ -45,7 +45,7 @@
         "id": "Project-google-client-id",
         "url": "https://medplum.com/fhir/SearchParameter/Project-google-client-id",
         "version": "4.0.1",
-        "name": "name",
+        "name": "google-client-id",
         "status": "draft",
         "publisher": "Medplum",
         "description": "The Google Client ID of the project",
@@ -62,7 +62,7 @@
         "id": "Project-recaptcha-site-key",
         "url": "https://medplum.com/fhir/SearchParameter/Project-recaptcha-site-key",
         "version": "4.0.1",
-        "name": "name",
+        "name": "recaptcha-site-key",
         "status": "draft",
         "publisher": "Medplum",
         "description": "The reCAPTCHA site key of the project",
@@ -271,7 +271,7 @@
         "id": "Login-user",
         "url": "https://medplum.com/fhir/SearchParameter/Login-user",
         "version": "4.0.1",
-        "name": "code",
+        "name": "user",
         "status": "draft",
         "publisher": "Medplum",
         "description": "The user of the login",
@@ -323,7 +323,7 @@
         "id": "Bot-identifier",
         "url": "https://medplum.com/fhir/SearchParameter/Bot-identifier",
         "version": "4.0.1",
-        "name": "name",
+        "name": "identifier",
         "status": "draft",
         "publisher": "Medplum",
         "description": "The identifier of the bot",
@@ -408,7 +408,7 @@
         "id": "BulkDataExport-status",
         "url": "https://medplum.com/fhir/SearchParameter/BulkDataExport-status",
         "version": "4.0.1",
-        "name": "name",
+        "name": "status",
         "status": "draft",
         "publisher": "Medplum",
         "description": "The name of the access policy",
@@ -419,7 +419,7 @@
       }
     },
     {
-      "fullUrl": "http://hl7.org/fhir/SearchParameter/ObservationDefinition-code",
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ObservationDefinition-code",
       "resource": {
         "resourceType": "SearchParameter",
         "id": "OperationDefinition-code",
@@ -436,7 +436,7 @@
       }
     },
     {
-      "fullUrl": "http://hl7.org/fhir/SearchParameter/ObservationDefinition-publisher",
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ObservationDefinition-publisher",
       "resource": {
         "resourceType": "SearchParameter",
         "id": "OperationDefinition-publisher",
@@ -454,13 +454,13 @@
       }
     },
     {
-      "fullUrl": "http://hl7.org/fhir/SearchParameter/DomainConfiguration-domain",
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DomainConfiguration-domain",
       "resource": {
         "resourceType": "SearchParameter",
         "id": "DomainConfiguration-domain",
         "url": "https://medplum.com/fhir/SearchParameter/DomainConfiguration-domain",
         "version": "4.0.1",
-        "name": "publisher",
+        "name": "domain",
         "status": "draft",
         "publisher": "Medplum",
         "description": "The publisher of the observation definition.",
@@ -471,13 +471,13 @@
       }
     },
     {
-      "fullUrl": "http://hl7.org/fhir/SearchParameter/PasswordChangeRequest-user",
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/PasswordChangeRequest-user",
       "resource": {
         "resourceType": "SearchParameter",
         "id": "PasswordChangeRequest-user",
         "url": "https://medplum.com/fhir/SearchParameter/PasswordChangeRequest-user",
         "version": "4.0.1",
-        "name": "publisher",
+        "name": "user",
         "status": "draft",
         "publisher": "Medplum",
         "description": "The user for the password change request.",
@@ -489,11 +489,11 @@
       }
     },
     {
-      "fullUrl": "http://hl7.org/fhir/SearchParameter/Task-due-date",
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Task-due-date",
       "resource": {
         "resourceType": "SearchParameter",
         "id": "Task-due-date",
-        "url": "http://hl7.org/fhir/SearchParameter/Task-due-date",
+        "url": "https://medplum.com/fhir/SearchParameter/Task-due-date",
         "version": "4.0.1",
         "name": "due-date",
         "status": "draft",
@@ -504,6 +504,40 @@
         "type": "date",
         "expression": "Task.restriction.period",
         "comparator": ["eq", "ne", "gt", "ge", "lt", "le", "sa", "eb", "ap"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Agent-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Agent-name",
+        "url": "https://medplum.com/fhir/SearchParameter/Agent-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search for Agent by name",
+        "code": "name",
+        "base": ["Agent"],
+        "type": "string",
+        "expression": "Agent.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Agent-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Agent-status",
+        "url": "https://medplum.com/fhir/SearchParameter/Agent-status",
+        "version": "4.0.1",
+        "name": "status",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search for Agent by status",
+        "code": "status",
+        "base": ["Agent"],
+        "type": "token",
+        "expression": "Agent.status"
       }
     }
   ]
