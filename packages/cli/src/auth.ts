@@ -2,10 +2,10 @@ import { ContentType, MedplumClient, getDisplayString, normalizeErrorString } fr
 import { exec } from 'child_process';
 import { createServer } from 'http';
 import { platform } from 'os';
+import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
-import { Profile, saveProfile, loadProfile, profileExists, jwtBearerLogin, jwtAssertionLogin } from './utils';
-import { FileSystemStorage } from './storage';
+import { Profile, jwtAssertionLogin, jwtBearerLogin, loadProfile, profileExists, saveProfile } from './utils';
 
 const clientId = 'medplum-cli';
 const redirectUri = 'http://localhost:9615';
@@ -34,12 +34,12 @@ whoami.action(async (options) => {
   printMe(medplum);
 });
 
-async function startLogin(medplum: MedplumClient, profile?: Profile): Promise<void> {
-  if (!profile?.authType) {
+async function startLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
+  if (!profile.authType) {
     await medplumAuthorizationCodeLogin(medplum);
     return;
   }
-  if (profile?.authType === 'jwt-bearer') {
+  if (profile.authType === 'jwt-bearer') {
     if (!profile.clientId || !profile.clientSecret) {
       throw new Error('Missing values, make sure to add --client-id, and --client-secret for JWT Bearer login');
     }
