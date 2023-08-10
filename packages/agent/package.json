@@ -18,7 +18,8 @@
     "build": "npm run clean && tsc && node esbuild.mjs",
     "test": "jest",
     "agent": "ts-node src/main.ts",
-    "package": "pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output dist/medplum-agent-win-x64.exe"
+    "package": "pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output dist/medplum-agent-win-x64.exe --options no-warnings",
+    "installer": "makensis installer.nsi"
   },
   "dependencies": {
     "@medplum/core": "*",
