@@ -2,6 +2,7 @@ import {
   badRequest,
   createReference,
   InviteRequest,
+  normalizeErrorString,
   OperationOutcomeError,
   Operator,
   ProfileResource,
@@ -51,10 +52,10 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
   try {
     const { membership } = await inviteUser(inviteRequest);
     res.status(200).json(membership);
-  } catch (err: any) {
+  } catch (err) {
     logger.info('Error inviting user to project', {
       project: projectId,
-      error: err,
+      error: normalizeErrorString(err),
     });
     res.status(200).json({ error: err });
   }
@@ -80,7 +81,6 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   let user = undefined;
   let existingUser = true;
   let passwordResetUrl = undefined;
-  let profile = undefined;
 
   if (email) {
     if (request.resourceType === 'Patient') {
@@ -88,7 +88,6 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
     } else {
       user = await getUserByEmailWithoutProject(email);
     }
-    profile = await searchForExistingProfile(project, request.resourceType, email);
   }
 
   if (!user) {
@@ -97,6 +96,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
     passwordResetUrl = await resetPassword(user);
   }
 
+  let profile = await searchForExistingProfile(request);
   if (!profile) {
     profile = (await createProfile(
       project,
@@ -163,27 +163,39 @@ async function createUser(request: ServerInviteRequest): Promise<User> {
   return result;
 }
 
-async function searchForExistingProfile(
-  project: Project,
-  resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson',
-  email: string
-): Promise<ProfileResource | undefined> {
-  const bundle = await systemRepo.search<ProfileResource>({
-    resourceType,
-    filters: [
-      {
-        code: '_project',
-        operator: Operator.EQUALS,
-        value: project.id as string,
-      },
-      {
-        code: 'email',
-        operator: Operator.EQUALS,
-        value: email,
-      },
-    ],
-  });
-  return bundle.entry?.[0]?.resource;
+async function searchForExistingProfile(request: ServerInviteRequest): Promise<ProfileResource | undefined> {
+  const { project, resourceType, membership, email } = request;
+
+  if (membership?.profile) {
+    const result = await systemRepo.readReference(membership.profile);
+    if (result.meta?.project !== project.id) {
+      throw new OperationOutcomeError(badRequest('Profile does not belong to project'));
+    }
+    if (result.resourceType !== resourceType) {
+      throw new OperationOutcomeError(badRequest('Profile resourceType does not match request'));
+    }
+    return result as ProfileResource;
+  }
+
+  if (email) {
+    return systemRepo.searchOne<ProfileResource>({
+      resourceType,
+      filters: [
+        {
+          code: '_project',
+          operator: Operator.EQUALS,
+          value: project.id as string,
+        },
+        {
+          code: 'email',
+          operator: Operator.EQUALS,
+          value: email,
+        },
+      ],
+    });
+  }
+
+  return undefined;
 }
 
 async function sendInviteEmail(

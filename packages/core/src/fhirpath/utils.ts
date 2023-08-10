@@ -113,6 +113,14 @@ function getTypedPropertyValueWithSchema(
       }
     }
   }
+  const primitiveExtension = input.value['_' + path];
+  if (primitiveExtension) {
+    if (Array.isArray(resultValue)) {
+      resultValue = resultValue.map((v, i) => (primitiveExtension[i] ? safeAssign(v ?? {}, primitiveExtension[i]) : v));
+    } else {
+      resultValue = safeAssign(resultValue ?? {}, primitiveExtension);
+    }
+  }
 
   if (isEmpty(resultValue)) {
     return undefined;
@@ -238,8 +246,8 @@ export function fhirPathArrayEquals(x: TypedValue[], y: TypedValue[]): TypedValu
  * @returns True if equal.
  */
 export function fhirPathEquals(x: TypedValue, y: TypedValue): TypedValue[] {
-  const xValue = x.value;
-  const yValue = y.value;
+  const xValue = x.value?.valueOf();
+  const yValue = y.value?.valueOf();
   if (typeof xValue === 'number' && typeof yValue === 'number') {
     return booleanToTypedValue(Math.abs(xValue - yValue) < 1e-8);
   }
@@ -277,8 +285,8 @@ export function fhirPathArrayEquivalent(x: TypedValue[], y: TypedValue[]): Typed
  * @returns True if equivalent.
  */
 export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
-  const xValue = x.value;
-  const yValue = y.value;
+  const xValue = x.value?.valueOf();
+  const yValue = y.value?.valueOf();
   if (typeof xValue === 'number' && typeof yValue === 'number') {
     // Use more generous threshold than equality
     // Decimal: values must be equal, comparison is done on values rounded to the precision of the least precise operand.
@@ -306,8 +314,8 @@ export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
  * @returns The sort order of the values.
  */
 function fhirPathEquivalentCompare(x: TypedValue, y: TypedValue): number {
-  const xValue = x.value;
-  const yValue = y.value;
+  const xValue = x.value?.valueOf();
+  const yValue = y.value?.valueOf();
   if (typeof xValue === 'number' && typeof yValue === 'number') {
     return xValue - yValue;
   }
@@ -406,4 +414,10 @@ function deepEquals<T1 extends object, T2 extends object>(object1: T1, object2: 
 
 function isObject(obj: unknown): obj is object {
   return obj !== null && typeof obj === 'object';
+}
+
+function safeAssign(target: any, source: any): any {
+  delete source.__proto__; //eslint-disable-line no-proto
+  delete source.constructor;
+  return Object.assign(target, source);
 }

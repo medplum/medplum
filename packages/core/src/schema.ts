@@ -1,6 +1,6 @@
 import { ElementDefinition, OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
 import { getTypedPropertyValue, toTypedValue } from './fhirpath';
-import { OperationOutcomeError, validationError } from './outcomes';
+import { OperationOutcomeError, createStructureIssue, validationError } from './outcomes';
 import { globalSchema, PropertyType, TypedValue } from './types';
 import { capitalize, getExtensionValue, isEmpty, isLowerCase } from './utils';
 
@@ -273,7 +273,7 @@ export class FhirSchemaValidator<T extends Resource> {
 
     // First, make sure the value is the correct JS type
     const expectedType = fhirTypeToJsType[typedValue.type];
-    if (typeof value !== expectedType) {
+    if (typeof value !== expectedType && typeof value?.valueOf() !== expectedType) {
       this.createIssue(elementDefinition, 'Invalid type for ' + type);
       return;
     }
@@ -462,15 +462,4 @@ function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: 
   for (const [key, value] of Object.entries(obj)) {
     checkForNull(value, `${path}${path ? '.' : ''}${key}`, issues);
   }
-}
-
-export function createStructureIssue(expression: string, details: string): OperationOutcomeIssue {
-  return {
-    severity: 'error',
-    code: 'structure',
-    details: {
-      text: details,
-    },
-    expression: [expression],
-  };
 }

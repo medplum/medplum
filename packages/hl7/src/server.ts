@@ -1,35 +1,15 @@
-import { Hl7Message } from '@medplum/core';
 import net from 'net';
-import { Hl7Base } from './base';
-import { CR, FS } from './constants';
-import { Hl7ErrorEvent, Hl7MessageEvent } from './events';
+import { Hl7Connection } from './connection';
 
-export class Hl7Server extends Hl7Base {
+export class Hl7Server {
   server?: net.Server;
+
+  constructor(public readonly handler: (connection: Hl7Connection) => void) {}
 
   start(port: number, encoding?: BufferEncoding): void {
     const server = net.createServer((socket) => {
-      let buffer = '';
-
-      socket
-        .on('data', (data) => {
-          try {
-            buffer += data.toString();
-            if (buffer.endsWith(FS + CR)) {
-              const message = Hl7Message.parse(buffer.substring(1, buffer.length - 2));
-              this.dispatchEvent(new Hl7MessageEvent(socket, message));
-              buffer = '';
-            }
-          } catch (err) {
-            this.dispatchEvent(new Hl7ErrorEvent(err as Error));
-          }
-        })
-        .setEncoding(encoding ?? 'utf-8');
-
-      socket.on('error', (err) => {
-        buffer = '';
-        this.dispatchEvent(new Hl7ErrorEvent(err));
-      });
+      const connection = new Hl7Connection(socket, encoding);
+      this.handler(connection);
     });
 
     server.listen(port);

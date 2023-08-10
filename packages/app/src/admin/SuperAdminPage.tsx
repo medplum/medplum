@@ -33,11 +33,11 @@ export function SuperAdminPage(): JSX.Element {
   }
 
   function reindexResourceType(formData: Record<string, string>): void {
-    startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/valuesets', formData);
+    startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', formData);
   }
 
   function rebuildCompartments(formData: Record<string, string>): void {
-    startAsyncJob(medplum, 'Rebuilding Compartments', 'admin/super/valuesets', formData);
+    startAsyncJob(medplum, 'Rebuilding Compartments', 'admin/super/compartments', formData);
   }
 
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {

@@ -36,6 +36,7 @@ export interface CreateBotRequest {
   readonly name: string;
   readonly description?: string;
   readonly accessPolicy?: Reference<AccessPolicy>;
+  readonly runtimeVersion?: 'awslambda' | 'vmcontext';
 }
 
 export async function createBot(repo: Repository, request: CreateBotRequest): Promise<Bot> {
@@ -54,7 +55,7 @@ export async function createBot(repo: Repository, request: CreateBotRequest): Pr
     resourceType: 'Bot',
     name: request.name,
     description: request.description,
-    runtimeVersion: 'awslambda',
+    runtimeVersion: request.runtimeVersion ?? 'awslambda',
     sourceCode: {
       contentType,
       title: filename,

@@ -615,6 +615,65 @@ response = {
 console.log(response);
 
 /*
+ * Filter Patient.name by FHIRPath expression
+ */
+
+/*
+// start-block FilterExtensionByFHIRPathGraphQL
+{
+  PatientList {
+    resourceType
+    id
+    name(fhirpath: "family.exists().not()") {
+      use given family text
+    }
+  }
+}
+// end-block FilterExtensionByFHIRPathGraphQL
+*/
+
+// start-block FilterPatientNameByFHIRPathTS
+await medplum.graphql(`{
+  PatientList {
+    resourceType
+    id
+    name(fhirpath: "family.exists().not()") {
+      use given family text
+    }
+  }
+}`);
+// end-block FilterPatientNameByFHIRPathTS
+
+response = {
+  // start-block FilterPatientNameByFHIRPathResponse
+  data: {
+    PatientList: [
+      {
+        resourceType: 'Patient',
+        id: 'patient-id-1',
+        name: [
+          {
+            use: 'usual',
+            given: ['Johnny'],
+            family: null,
+            text: null,
+          },
+          {
+            use: 'anonymous',
+            given: null,
+            family: null,
+            text: 'd87a7e2f264680fe',
+          },
+        ],
+      },
+    ],
+  },
+  // end-block FilterPatientNameByFHIRPathResponse
+};
+
+console.log(response);
+
+/*
  * Connection API
  */
 

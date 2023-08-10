@@ -1,10 +1,15 @@
 import { MedplumClient, MedplumClientOptions } from '@medplum/core';
 import { FileSystemStorage } from '../storage';
+import { Profile } from '../utils';
 
 export async function createMedplumClient(options: MedplumClientOptions): Promise<MedplumClient> {
-  const profile = options.profile ?? 'default';
-  const storage = new FileSystemStorage(profile);
-  checkForProfile(storage, profile);
+  const profileName = options.profile ?? 'default';
+
+  const storage = new FileSystemStorage(profileName);
+  const profile = storage.getObject('options') as Profile;
+  if (profileName !== 'default' && !profile) {
+    throw new Error(`Profile "${profileName}" does not exist`);
+  }
 
   const { baseUrl, fhirUrlPath, accessToken, tokenUrl, authorizeUrl, clientId, clientSecret } = getClientValues(
     options,
@@ -25,9 +30,11 @@ export async function createMedplumClient(options: MedplumClientOptions): Promis
     medplumClient.setAccessToken(accessToken);
   }
 
-  if (clientId && clientSecret) {
-    medplumClient.setBasicAuth(clientId, clientSecret);
-    await medplumClient.startClientLogin(clientId, clientSecret);
+  if (profile?.authType === 'client_credentials') {
+    medplumClient.setBasicAuth(clientId as string, clientSecret as string);
+    await medplumClient.startClientLogin(clientId as string, clientSecret as string);
+  } else if (profile?.authType === 'basic') {
+    medplumClient.setBasicAuth(clientId as string, clientSecret as string);
   }
   return medplumClient;
 }
@@ -49,14 +56,4 @@ function getClientValues(options: MedplumClientOptions, storage: FileSystemStora
 
 export function onUnauthenticated(): void {
   console.log('Unauthenticated: run `npx medplum login` to sign in');
-}
-
-function checkForProfile(storage: FileSystemStorage, profile: string): void {
-  if (profile === 'default') {
-    return;
-  }
-  const optionsObject = storage.getObject('options');
-  if (!optionsObject) {
-    throw new Error(`Profile ${profile} does not exist`);
-  }
 }

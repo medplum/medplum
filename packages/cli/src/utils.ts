@@ -4,6 +4,7 @@ import { existsSync, readFileSync, writeFile } from 'fs';
 import { basename, extname, resolve } from 'path';
 import internal from 'stream';
 import tar from 'tar';
+import { FileSystemStorage } from './storage';
 
 interface MedplumConfig {
   readonly baseUrl?: string;
@@ -19,6 +20,23 @@ interface MedplumBotConfig {
   readonly id: string;
   readonly source: string;
   readonly dist?: string;
+}
+
+export interface Profile {
+  readonly name?: string;
+  readonly authType?: string;
+  readonly baseUrl?: string;
+  readonly clientId?: string;
+  readonly clientSecret?: string;
+  readonly tokenUrl?: string;
+  readonly authorizeUrl?: string;
+  readonly fhirUrlPath?: string;
+  readonly scope?: string;
+  readonly accessToken?: string;
+  readonly callbackUrl?: string;
+  readonly subject?: string;
+  readonly audience?: string;
+  readonly issuer?: string;
 }
 
 export function prettyPrint(input: unknown): void {
@@ -191,4 +209,27 @@ export function getCodeContentType(filename: string): string {
     return ContentType.TYPESCRIPT;
   }
   return ContentType.TEXT;
+}
+
+export function saveProfile(profileName: string, options: Profile): void {
+  const storage = new FileSystemStorage(profileName);
+  const optionsObject = { name: profileName, ...options };
+  storage.setObject('options', optionsObject);
+  console.log(`${profileName} profile created`);
+}
+
+export function loadProfile(profileName: string): Profile {
+  const storage = new FileSystemStorage(profileName);
+  return storage.getObject('options') as Profile;
+}
+
+export function profileExists(storage: FileSystemStorage, profile: string): boolean {
+  if (profile === 'default') {
+    return true;
+  }
+  const optionsObject = storage.getObject('options');
+  if (!optionsObject) {
+    return false;
+  }
+  return true;
 }

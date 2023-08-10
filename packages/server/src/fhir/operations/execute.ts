@@ -141,7 +141,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   const today = now.toISOString().substring(0, 10);
   await getBinaryStorage().writeFile(
     `bot/${bot.id}/${today}/${now.getTime()}.json`,
-    `application/json`,
+    ContentType.JSON,
     JSON.stringify({ message: request.input })
   );
 
@@ -198,7 +198,12 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
   try {
     const response = await client.send(command);
     const responseStr = response.Payload ? new TextDecoder().decode(response.Payload) : undefined;
-    const returnValue = responseStr && isJsonContentType(contentType) ? JSON.parse(responseStr) : responseStr;
+
+    // The response from AWS Lambda is always JSON, even if the function returns a string
+    // Therefore we always use JSON.parse to get the return value
+    // See: https://stackoverflow.com/a/49951946/2051724
+    const returnValue = responseStr ? JSON.parse(responseStr) : undefined;
+
     return {
       success: !response.FunctionError,
       logResult: parseLambdaLog(response.LogResult as string),
@@ -400,10 +405,6 @@ function getResponseContentType(req: Request): string {
 
   // Default to FHIR
   return ContentType.FHIR_JSON;
-}
-
-function isJsonContentType(contentType: string): boolean {
-  return contentType === ContentType.JSON || contentType === ContentType.FHIR_JSON;
 }
 
 /**

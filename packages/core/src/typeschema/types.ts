@@ -1,4 +1,4 @@
-import { Bundle, ElementDefinition, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, ElementDefinition, ResourceType, StructureDefinition, Resource, Coding } from '@medplum/fhirtypes';
 import { getTypedPropertyValue } from '../fhirpath';
 import { OperationOutcomeError, serverError } from '../outcomes';
 import { TypedValue } from '../types';
@@ -12,6 +12,8 @@ export interface InternalTypeSchema {
   fields: Record<string, ElementValidator>;
   constraints: Constraint[];
   innerTypes: InternalTypeSchema[];
+  summaryProperties?: Set<string>;
+  mandatoryProperties?: Set<string>;
 }
 
 export interface ElementValidator {
@@ -47,6 +49,7 @@ export interface SlicingRules {
 
 export interface SliceDefinition {
   name: string;
+  type?: ElementType[];
   fields: Record<string, ElementValidator>;
   min: number;
   max: number;
@@ -130,6 +133,8 @@ class StructureDefinitionParser {
       fields: {},
       constraints: this.parseFieldDefinition(root).constraints,
       innerTypes: [],
+      summaryProperties: new Set(),
+      mandatoryProperties: new Set(),
     };
     this.innerTypes = [];
   }
@@ -157,7 +162,14 @@ class StructureDefinitionParser {
         } else if (this.backboneContext?.parent && element.path?.startsWith(this.backboneContext.parent.path + '.')) {
           this.backboneContext.parent.type.fields[elementPath(element, this.backboneContext.parent.path)] = field;
         } else {
-          this.resourceSchema.fields[elementPath(element, this.resourceSchema.name)] = field;
+          const path = elementPath(element, this.resourceSchema.name);
+          if (element.isSummary) {
+            this.resourceSchema.summaryProperties?.add(path.replace('[x]', ''));
+          }
+          if (field.min > 0) {
+            this.resourceSchema.mandatoryProperties?.add(path.replace('[x]', ''));
+          }
+          this.resourceSchema.fields[path] = field;
         }
 
         // Clean up contextual book-keeping
@@ -197,9 +209,13 @@ class StructureDefinitionParser {
       };
     }
     if (element.slicing && !this.slicingContext) {
+      if (hasDefaultExtensionSlice(element) && !this.peek()?.sliceName) {
+        // Extensions are always sliced by URL; don't start slicing context if no slices follow
+        return;
+      }
       field.slicing = {
         discriminator: (element.slicing?.discriminator ?? []).map((d) => {
-          if (d.type !== 'value' && d.type !== 'pattern') {
+          if (d.type !== 'value' && d.type !== 'pattern' && d.type !== 'type') {
             throw new Error(`Unsupported slicing discriminator type: ${d.type}`);
           }
           return {
@@ -279,13 +295,14 @@ class StructureDefinitionParser {
 
   private parseSliceStart(element: ElementDefinition): void {
     if (!this.slicingContext) {
-      throw new Error('Invalid slice start before discriminator');
+      throw new Error('Invalid slice start before discriminator: ' + element.sliceName);
     }
     if (this.slicingContext.current) {
       this.slicingContext.field.slices.push(this.slicingContext.current);
     }
     this.slicingContext.current = {
       name: element.sliceName ?? '',
+      type: element.type?.map((t) => ({ code: t.code ?? '', targetProfile: t.targetProfile ?? [] })),
       fields: {},
       min: element.min ?? 0,
       max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string, 10),
@@ -318,6 +335,48 @@ class StructureDefinitionParser {
     };
   }
 }
+
+/**
+ * Construct the subset of a resource containing a minimum set of fields.  The returned resource is not guaranteed
+ * to contain only the provided properties, and may contain others (e.g. `resourceType` and `id`)
+ *
+ * @param resource The resource to subset
+ * @param properties The minimum properties to include in the subset
+ * @returns The modified resource, containing the listed properties and possibly other mandatory ones
+ */
+export function subsetResource<T extends Resource>(resource: T | undefined, properties: string[]): T | undefined {
+  if (!resource) {
+    return undefined;
+  }
+  const extraProperties = [];
+  for (const property of properties) {
+    extraProperties.push('_' + property);
+    const choiceTypeField = DATA_TYPES[resource.resourceType].fields[property + '[x]'];
+    if (choiceTypeField) {
+      extraProperties.push(...choiceTypeField.type.map((t) => property + capitalize(t.code)));
+    }
+  }
+  for (const property of Object.getOwnPropertyNames(resource)) {
+    if (
+      !properties.includes(property) &&
+      !extraProperties.includes(property) &&
+      !mandatorySubsetProperties.includes(property)
+    ) {
+      Object.defineProperty(resource, property, {
+        enumerable: false,
+        writable: false,
+        value: undefined,
+      });
+    }
+  }
+  resource.meta = { ...resource.meta, tag: resource.meta?.tag ? resource.meta.tag.concat(subsetTag) : [subsetTag] };
+  return resource;
+}
+const subsetTag: Coding = {
+  system: 'http://hl7.org/fhir/v3/ObservationValue',
+  code: 'SUBSETTED',
+};
+const mandatorySubsetProperties = ['resourceType', 'id', 'meta'];
 
 function parseCardinality(c: string): number {
   return c === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(c, 10);
@@ -365,4 +424,14 @@ function firstValue(obj: TypedValue | TypedValue[] | undefined): TypedValue | un
   } else {
     return undefined;
   }
+}
+
+function hasDefaultExtensionSlice(element: ElementDefinition): boolean {
+  const discriminators = element.slicing?.discriminator;
+  return Boolean(
+    element.type?.some((t) => t.code === 'Extension') &&
+      discriminators?.length === 1 &&
+      discriminators[0].type === 'value' &&
+      discriminators[0].path === 'url'
+  );
 }

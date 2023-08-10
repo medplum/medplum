@@ -57,6 +57,7 @@ export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
 const DEFAULT_CACHE_TIME = 60000; // 60 seconds
+const BINARY_URL_PREFIX = 'Binary/';
 
 const system: Device = { resourceType: 'Device', id: 'system', deviceName: [{ name: 'System' }] };
 
@@ -2286,9 +2287,23 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * Downloads the URL as a blob.
+   * Translates/normalizes a URL so that it can be directly used with `MedplumClient.fetch`.
+   * Especially useful for translating `Binary/{id}` URLs to FHIR paths.
+   * @param url A valid URL within the `MedplumClient` context.
+   * @returns URL as a string that can be used with `MedplumClient.fetch`
+   */
+  normalizeFetchUrl(url: URL | string): string {
+    let urlString = url.toString();
+    if (urlString.startsWith(BINARY_URL_PREFIX)) {
+      urlString = this.fhirUrl(urlString).toString();
+    }
+    return urlString;
+  }
+
+  /**
+   * Downloads the URL as a blob. Can accept binary URLs in the form of `Binary/{id}` as well.
    * @category Read
-   * @param url The URL to request.
+   * @param url The URL to request. Can be a standard URL or one in the form of `Binary/{id}`.
    * @param options Optional fetch request init options.
    * @returns Promise to the response body as a blob.
    */
@@ -2297,7 +2312,7 @@ export class MedplumClient extends EventTarget {
       await this.refreshPromise;
     }
     this.addFetchOptionsDefaults(options);
-    const response = await this.fetch(url.toString(), options);
+    const response = await this.fetch(this.normalizeFetchUrl(url), options);
     return response.blob();
   }
 
@@ -2324,7 +2339,7 @@ export class MedplumClient extends EventTarget {
         resourceType: 'Media',
         content: {
           contentType: contentType,
-          url: 'Binary/' + binary.id,
+          url: BINARY_URL_PREFIX + binary.id,
           title: filename,
         },
       },
@@ -2424,7 +2439,7 @@ export class MedplumClient extends EventTarget {
    * @param resource The resource to cache.
    */
   private cacheResource(resource: Resource | undefined): void {
-    if (resource?.id) {
+    if (resource?.id && !resource.meta?.tag?.some((t) => t.code === 'SUBSETTED')) {
       this.setCacheEntry(
         this.fhirUrl(resource.resourceType, resource.id).toString(),
         new ReadablePromise(Promise.resolve(resource))
