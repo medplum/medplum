@@ -7,6 +7,7 @@ import {
   getIdentifier,
   Hl7Message,
   MedplumClient,
+  normalizeErrorString,
   Operator,
   resolveId,
 } from '@medplum/core';
@@ -22,6 +23,7 @@ import {
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import fetch from 'node-fetch';
+import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import vm from 'node:vm';
 import { TextDecoder, TextEncoder } from 'util';
@@ -137,13 +139,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
     return { success: false, logResult: 'Bots not enabled' };
   }
 
-  const now = new Date();
-  const today = now.toISOString().substring(0, 10);
-  await getBinaryStorage().writeFile(
-    `bot/${bot.id}/${today}/${now.getTime()}.json`,
-    ContentType.JSON,
-    JSON.stringify({ message: request.input })
-  );
+  await writeBotInputToStorage(request);
 
   if (bot.runtimeVersion === 'awslambda') {
     return runInLambda(request);
@@ -162,6 +158,56 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
 export async function isBotEnabled(bot: Bot): Promise<boolean> {
   const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   return !!project.features?.includes('bots');
+}
+
+/**
+ * Writes the bot input to storage.
+ * This is used both by AWS Lambda bots and VM context bots.
+ *
+ * There are 3 main reasons we do this:
+ * 1. To ensure that the bot input is available for debugging.
+ * 2. In the future, to support replaying bot executions.
+ * 3. To support analytics on bot input.
+ *
+ * For the analytics use case, we align with Amazon guidelines for AWS Athena:
+ * 1. Creating tables in Athena: https://docs.aws.amazon.com/athena/latest/ug/creating-tables.html
+ * 2. Partitioning data in Athena: https://docs.aws.amazon.com/athena/latest/ug/partitions.html
+ *
+ * @param request The bot request.
+ */
+async function writeBotInputToStorage(request: BotExecutionRequest): Promise<void> {
+  const { bot, contentType, input } = request;
+  const now = new Date();
+  const today = now.toISOString().substring(0, 10).replaceAll('-', '/');
+  const key = `bot/${bot.meta?.project}/${today}/${now.getTime()}-${randomUUID()}.json`;
+  const row: Record<string, unknown> = { botId: bot.id, contentType, input };
+
+  if (contentType === ContentType.HL7_V2) {
+    let hl7Message: Hl7Message | undefined = undefined;
+
+    if (input instanceof Hl7Message) {
+      hl7Message = request.input;
+    } else if (typeof input === 'string') {
+      try {
+        hl7Message = Hl7Message.parse(request.input);
+      } catch (err) {
+        logger.debug(`Failed to parse HL7 message: ${normalizeErrorString(err)}`);
+      }
+    }
+
+    if (hl7Message) {
+      const msh = hl7Message.header;
+      row.input = hl7Message.toString();
+      row.hl7SendingApplication = msh.getComponent(3, 1);
+      row.hl7SendingFacility = msh.getComponent(4, 1);
+      row.hl7ReceivingApplication = msh.getComponent(5, 1);
+      row.hl7ReceivingFacility = msh.getComponent(6, 1);
+      row.hl7MessageType = msh.getComponent(9, 1);
+      row.hl7Version = msh.getComponent(12, 1);
+    }
+  }
+
+  await getBinaryStorage().writeFile(key, ContentType.JSON, JSON.stringify(row));
 }
 
 /**
