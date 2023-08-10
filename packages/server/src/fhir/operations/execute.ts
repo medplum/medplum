@@ -297,6 +297,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
   const botConsole = new MockConsole();
 
   const sandbox = {
+    ContentType,
     Hl7Message,
     MedplumClient,
     fetch,
@@ -323,21 +324,22 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
   // End user code
 
   (async () => {
-    const { baseUrl, accessToken, input, contentType, secrets } = event;
+    const { baseUrl, accessToken, contentType, secrets } = event;
     const medplum = new MedplumClient({
       baseUrl,
       fetch,
     });
     medplum.setAccessToken(accessToken);
     try {
-      return await exports.handler(medplum, {
-        input:
-          contentType === "x-application/hl7-v2+er7"
-            ? Hl7Message.parse(input)
-            : input,
-        contentType,
-        secrets,
-      });
+      let input = event.input;
+      if (contentType === ContentType.HL7_V2 && input) {
+        input = Hl7Message.parse(input);
+      }
+      let result = await exports.handler(medplum, { input, contentType, secrets });
+      if (contentType === ContentType.HL7_V2 && result) {
+        result = result.toString();
+      }
+      return result;
     } catch (err) {
       if (err instanceof Error) {
         console.log("Unhandled error: " + err.message + "\\n" + err.stack);
