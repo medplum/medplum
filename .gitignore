@@ -11,6 +11,7 @@ node_modules/
 
 # Output
 packages/agent/dist/
+packages/agent/medplum-agent-installer.exe
 packages/app/dist/
 packages/cdk/dist/
 packages/cli/dist/
