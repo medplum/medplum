@@ -86,6 +86,69 @@ export const Groups = (): JSX.Element => (
   </Document>
 );
 
+export const StepSequence = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'groups-example',
+        title: 'Groups Example',
+        item: [
+          {
+            linkId: 'group1',
+            text: 'Step Sequence 1',
+            type: 'group',
+            item: [
+              {
+                linkId: 'question1',
+                text: 'Question 1',
+                type: 'string',
+              },
+              {
+                linkId: 'question2',
+                text: 'Question 2',
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'https://medplum.com/fhir/StructureDefinition/step-sequence',
+                valueString: 'stepper',
+              },
+            ],
+          },
+          {
+            linkId: 'group2',
+            text: 'Step Sequence Example',
+            type: 'group',
+            item: [
+              {
+                linkId: 'question3',
+                text: 'Question 3',
+                type: 'string',
+              },
+              {
+                linkId: 'question4',
+                text: 'Question 4',
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'https://medplum.com/fhir/StructureDefinition/step-sequence',
+                valueString: 'stepper',
+              },
+            ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
 export const MultipleChoice = (): JSX.Element => (
   <Document>
     <QuestionnaireForm

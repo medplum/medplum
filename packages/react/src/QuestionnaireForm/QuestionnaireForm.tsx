@@ -14,6 +14,7 @@ import {
   capitalize,
   createReference,
   deepEquals,
+  getExtension,
   getQuestionnaireAnswers,
   getReferenceString,
   getTypedPropertyValue,
@@ -61,7 +62,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const questionnaire = useResource(props.questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer>>({});
-  const [active, setActive] = useState(1);
+  const hasSteppers = questionnaire && steppersExist(questionnaire.item ?? []);
 
   useEffect(() => {
     medplum
@@ -106,7 +107,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     >
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
       {questionnaire.item && (
-        <QuestionnaireFormItemArray items={questionnaire.item} answers={answers} onChange={setItems} />
+        <Stepper active={0}>
+          <QuestionnaireFormItemArray items={questionnaire.item} answers={answers} onChange={setItems} />
+        </Stepper>
       )}
       <Group position="right" mt="xl">
         <Button type="submit">{props.submitButtonText ?? 'OK'}</Button>
@@ -143,14 +146,28 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
           return <p key={item.linkId}>{item.text}</p>;
         }
         if (item.type === QuestionnaireItemType.group) {
-          return (
-            <QuestionnaireFormItem
-              key={item.linkId}
-              item={item}
-              answers={props.answers}
-              onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
-            />
-          );
+          const stepValue = getExtension(item, 'https://medplum.com/fhir/StructureDefinition/step-sequence');
+          if (stepValue && stepValue.valueString === 'stepper') {
+            return (
+              <Stepper.Step label={item.text} key={item.linkId}>
+                <QuestionnaireFormItem
+                  key={item.linkId}
+                  item={item}
+                  answers={props.answers}
+                  onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
+                />
+              </Stepper.Step>
+            );
+          } else {
+            return (
+              <QuestionnaireFormItem
+                key={item.linkId}
+                item={item}
+                answers={props.answers}
+                onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
+              />
+            );
+          }
         }
         if (item.type === QuestionnaireItemType.boolean) {
           const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
@@ -540,4 +557,12 @@ export function isQuestionEnabled(
   } else {
     return true;
   }
+}
+
+function steppersExist(items: QuestionnaireItem[]): number {
+  const steppers = items.filter((item) => {
+    const extension = getExtension(item, 'https://medplum.com/fhir/StructureDefinition/step-sequence');
+    return extension;
+  });
+  return steppers.length;
 }

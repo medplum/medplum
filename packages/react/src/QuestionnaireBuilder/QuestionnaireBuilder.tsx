@@ -1,5 +1,11 @@
 import { Anchor, Button, createStyles, NativeSelect, Stepper, Textarea, TextInput, Title } from '@mantine/core';
-import { getExtension, globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
+import {
+  getExtension,
+  getExtensionValue,
+  globalSchema,
+  IndexedStructureDefinition,
+  isResource as isResourceType,
+} from '@medplum/core';
 import {
   Extension,
   Questionnaire,
@@ -139,7 +145,6 @@ interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
 
 function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBuilderProps<T>): JSX.Element {
   const { classes, cx } = useStyles();
-  const [count, setCount] = useState(1);
   const resource = props.item as Questionnaire;
   const item = props.item as QuestionnaireItem;
   const isResource = isResourceType(props.item);
@@ -170,9 +175,6 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   }
 
   function addItem(addedItem: QuestionnaireItem): void {
-    if (isStepper(addedItem)) {
-      setCount((count) => count + 1);
-    }
     props.onChange({
       ...props.item,
       item: [...(props.item.item ?? []), addedItem],
@@ -180,9 +182,6 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   }
 
   function removeItem(removedItem: QuestionnaireItem): void {
-    if (isStepper(removedItem)) {
-      setCount((count) => count - 1);
-    }
     props.onChange({
       ...props.item,
       item: props.item.item?.filter((i) => i !== removedItem),
@@ -200,7 +199,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     [classes.editing]: editing,
     [classes.hovering]: hovering && !editing,
   });
-  console.log(count);
+
   return (
     <div data-testid={item.linkId} className={className} onClick={onClick} onMouseOver={onHover}>
       <div className={classes.questionBody}>
@@ -291,7 +290,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
         </div>
       )}
       <div className={classes.bottomActions}>
-        {isContainer && !isStepper(item) && (
+        {isContainer && (
           <>
             <Anchor
               href="#"
@@ -328,18 +327,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             href="#"
             onClick={(e: React.MouseEvent) => {
               e.preventDefault();
-              addItem({
-                id: generateId(),
-                linkId: generateLinkId('s'),
-                type: 'group',
-                text: `Step ${count + 1}`,
-                extension: [
-                  {
-                    url: 'https://medplum.com/fhir/StructureDefinition/step-sequence',
-                    valueInteger: count,
-                  } as Extension,
-                ],
-              } as QuestionnaireItem);
+              addItem(createStepper());
             }}
           >
             Add Step Sequence
@@ -500,10 +488,17 @@ function ensureQuestionnaireOptionKeys(
   }));
 }
 
-function isStepper(item: QuestionnaireItem): boolean {
-  const stepSequence = getExtension(item, 'https://medplum.com/fhir/StructureDefinition/step-sequence');
-  if (!stepSequence) {
-    return false;
-  }
-  return true;
+function createStepper(): QuestionnaireItem {
+  return {
+    id: generateId(),
+    linkId: generateLinkId('s'),
+    type: 'group',
+    text: `Stepper Sequence`,
+    extension: [
+      {
+        url: 'https://medplum.com/fhir/StructureDefinition/step-sequence',
+        valueString: 'stepper',
+      } as Extension,
+    ],
+  } as QuestionnaireItem;
 }
