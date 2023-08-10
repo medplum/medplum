@@ -2,8 +2,6 @@ import { ContentType, createReference, getReferenceString } from '@medplum/core'
 import { Binary, Encounter, Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { mkdtempSync, rmSync } from 'fs';
-import { sep } from 'path';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
@@ -12,7 +10,6 @@ import { addTestUser } from '../../test.setup';
 import { Repository } from '../repo';
 
 const app = express();
-const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
 let practitioner: Practitioner;
 let accessToken: string;
 let binary: Binary;
@@ -124,7 +121,6 @@ describe('GraphQL', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    rmSync(binaryDir, { recursive: true, force: true });
   });
 
   test.skip('IntrospectionQuery', async () => {

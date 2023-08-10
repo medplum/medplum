@@ -3,7 +3,9 @@ import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
 import { Express, json, NextFunction, Request, Response, Router, text, urlencoded } from 'express';
+import { rmSync } from 'fs';
 import http from 'http';
+import { tmpdir } from 'os';
 import { adminRouter } from './admin';
 import { asyncWrap } from './async';
 import { authRouter } from './auth';
@@ -185,5 +187,11 @@ export async function shutdownApp(): Promise<void> {
   if (server) {
     server.close();
     server = undefined;
+  }
+
+  // If binary storage is a temporary directory, delete it
+  const binaryStorage = getConfig().binaryStorage;
+  if (binaryStorage?.startsWith('file:' + tmpdir())) {
+    rmSync(binaryStorage.replace('file:', ''), { recursive: true, force: true });
   }
 }

@@ -13,8 +13,6 @@ import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { mkdtempSync, rmSync } from 'fs';
-import { sep } from 'path';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
@@ -22,7 +20,6 @@ import { loadTestConfig } from '../../config';
 import { initTestAuth } from '../../test.setup';
 
 const app = express();
-const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
 let accessToken: string;
 let mockLambdaClient: AwsClientStub<LambdaClient>;
 
@@ -35,7 +32,6 @@ describe('Deploy', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    rmSync(binaryDir, { recursive: true, force: true });
   });
 
   beforeEach(() => {

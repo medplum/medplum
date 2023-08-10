@@ -1,7 +1,5 @@
 import { ContentType } from '@medplum/core';
 import express from 'express';
-import { mkdtempSync, rmSync } from 'fs';
-import { sep } from 'path';
 import { Duplex, Readable } from 'stream';
 import request from 'supertest';
 import zlib from 'zlib';
@@ -10,7 +8,6 @@ import { loadTestConfig } from '../config';
 import { initTestAuth } from '../test.setup';
 
 const app = express();
-const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
 let accessToken: string;
 
 describe('Binary', () => {
@@ -22,7 +19,6 @@ describe('Binary', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    rmSync(binaryDir, { recursive: true, force: true });
   });
 
   test('Create and read binary', async () => {

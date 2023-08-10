@@ -2,9 +2,7 @@ import { ContentType } from '@medplum/core';
 import { Media } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
-import { mkdtempSync, rmSync } from 'fs';
 import fetch from 'node-fetch';
-import { sep } from 'path';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
@@ -13,7 +11,6 @@ import { closeDownloadWorker, execDownloadJob, getDownloadQueue } from './downlo
 
 jest.mock('node-fetch');
 
-const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
 let repo: Repository;
 
 describe('Download Worker', () => {
@@ -32,7 +29,6 @@ describe('Download Worker', () => {
   afterAll(async () => {
     await shutdownApp();
     await closeDownloadWorker(); // Double close to ensure quite ignore
-    rmSync(binaryDir, { recursive: true, force: true });
   });
 
   beforeEach(async () => {
