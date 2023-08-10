@@ -1,6 +1,6 @@
 ---
-slug: demystifying-fhir-system-strings
-title: Demystifying FHIR System Strings
+slug: demystifying-fhir-systems
+title: Demystifying FHIR Systems
 authors:
   name: Rahul Agarwal
   title: Medplum Core Team
@@ -11,11 +11,9 @@ authors:
 
 import CodeBlock from '@theme/CodeBlock'
 
-# Demystifying FHIR System Strings
+One of the main sources of confusion when starting an implementation is with FHIR system strings.
 
-One of the main sources of confusion when starting out with FHIR are `system` strings.
-
-This field is ubiquitous across FHIR elements, but many developers who are new to healthcare don't understand its purpose or how to set it properly.
+This field is ubiquitous across FHIR elements, but many developers who are new to healthcare don't understand its purpose or how to set it properly. They are used in even the most basic implementations, and even the [sample data](/docs/tutorials/importing-sample-data) we provide for prototyping has many `system` identifiers.
 
 So today, we're going to delve into `system` strings to understand what they're for and how to use them!
 
@@ -144,7 +142,7 @@ See our [search guide](docs/search/basic-search#token) for more information abou
 
 ## CodeableConcepts
 
-Healthcare thrives on codes. Labs, medications, billing - they all have alphanumeric code systems. These standardized codes help healthcare actors communicate, reduce ambiguity, and streamline interoperability.
+Healthcare thrives on codes. Labs, medications, billing - they all have alphanumeric code systems. These standardized codes help healthcare actors communicate, reduce ambiguity, and streamline interoperability. You may have heard of some of these codes, like CPT for "procedure codes" or ICD-10 "diagnosis codes".
 
 In an ideal world, there would be one universal code system for any application. But real-life healthcare is more complicated.
 
@@ -184,12 +182,55 @@ For `Identifiers`, the strategy is simple: **each system string should correspon
 
 ### CodeableConcepts
 
-When it comes to `CodeableConcepts`, it gets a bit more complex. **Whenever possible, you should use standardized code systems** to avoid reinventing the wheel and promote good data hygeine. Some commonly used systems:
+When it comes to `CodeableConcepts`, it gets a bit more complex. **Whenever possible, you should use standardized code systems** to avoid reinventing the wheel and promote good data hygeine. The FHIR community has defined standard `system` strings for these code systems.
 
-- [SNOMED](https://browser.ihtsdotools.org/) - procedures names, practitioner roles
-- [LOINC](/docs/careplans/loinc) - clinical observations types
-- [CPT](https://www.ama-assn.org/practice-management/cpt/cpt-overview-and-code-approval#:~:text=CPT%C2%AE%20code%3F-,What%20is%20a%20CPT%C2%AE%20code%3F,reporting%2C%20increase%20accuracy%20and%20efficiency.), [ICD](https://www.cms.gov/medicare/coordination-benefits-recovery-overview/icd-code-lists), or [HCPCS](https://www.cms.gov/medicare/coding/medhcpcsgeninfo) - billing
-- [RxNorm](/docs/medications/medication-codes#rxnorm), [NDC](/docs/medications/medication-codes#ndc), or [FDB](/docs/medications/medication-codes#first-databank-fdb) - medications
+ Some commonly used code systems:
+
+<table >
+<thead>
+<tr>
+			<th >Domain</th>
+			<th >Code System</th>
+			<th ><code>system</code> string</th>
+		</tr>
+</thead>
+	<tbody>
+    	<tr>
+    		<td >Procedure Names. Provider roles.</td>
+    		<td ><a href="https://browser.ihtsdotools.org/">SNOMED</a></td>
+    		<td ><code>http://snomed.info/sct</code></td>
+    	</tr>
+    	<tr>
+    		<td >Clinical Observations</td>
+    		<td ><a href="/docs/careplans/loinc">LOINC</a></td>
+    		<td ><code>http://loinc.org</code></td>
+    	</tr>
+    	<tr>
+    		<td rowspan="3">Billing</td>
+    		<td ><a href="https://www.ama-assn.org/practice-management/cpt/cpt-overview-and-code-approval#:~:text=CPT%C2%AE%20code%3F-,What%20is%20a%20CPT%C2%AE%20code%3F,reporting%2C%20increase%20accuracy%20and%20efficiency">CPT</a></td>
+    		<td ><code>http://www.ama-assn.org/go/cpt</code></td>
+    	</tr>
+    	<tr>
+    		<td ><a href="https://www.cms.gov/medicare/coordination-benefits-recovery-overview/icd-code-lists">ICD-10</a></td>
+    		<td ><code>http://hl7.org/fhir/sid/icd-10</code></td>
+    	</tr>
+    	<tr>
+    		<td ><a href="https://www.cms.gov/medicare/coding/medhcpcsgeninfo">HCPCS</a></td>
+    		<td ><code>http://terminology.hl7.org/CodeSystem/HCPCS</code></td>
+    	</tr>
+    	<tr>
+    		<td rowspan="2">Medications</td>
+    		<td ><a href="/docs/medications/medication-codes#rxnorm">RxNorm</a></td>
+    		<td ><code>http://www.nlm.nih.gov/research/umls/rxnorm</code></td>
+    	</tr>
+    	<tr>
+    		<td ><a href="/docs/medications/medication-codes#ndc">NDC</a></td>
+    		<td ><code>http://hl7.org/fhir/sid/ndc</code></td>
+    	</tr>
+    </tbody>
+
+
+</table>
 
 For local codes, **the system string should reflect the degree of consensus **you want to enforce across your organization.
 
