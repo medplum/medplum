@@ -117,7 +117,7 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
  */
 export async function loadTestConfig(): Promise<MedplumServerConfig> {
   const config = await loadConfig('file:medplum.config.json');
-  config.binaryStorage = 'file:' + mkdtempSync(join(tmpdir(), 'medplum-binary-storage'));
+  config.binaryStorage = 'file:' + mkdtempSync(join(tmpdir(), 'medplum-temp-storage'));
   config.allowedOrigins = undefined;
   config.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
   config.database.port = process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT'], 10) : 5432;

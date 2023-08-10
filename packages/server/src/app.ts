@@ -6,6 +6,7 @@ import { Express, json, NextFunction, Request, Response, Router, text, urlencode
 import { rmSync } from 'fs';
 import http from 'http';
 import { tmpdir } from 'os';
+import { join } from 'path';
 import { adminRouter } from './admin';
 import { asyncWrap } from './async';
 import { authRouter } from './auth';
@@ -191,7 +192,7 @@ export async function shutdownApp(): Promise<void> {
 
   // If binary storage is a temporary directory, delete it
   const binaryStorage = getConfig().binaryStorage;
-  if (binaryStorage?.startsWith('file:' + tmpdir())) {
+  if (binaryStorage?.startsWith('file:' + join(tmpdir(), 'medplum-temp-storage'))) {
     rmSync(binaryStorage.replace('file:', ''), { recursive: true, force: true });
   }
 }
