@@ -169,10 +169,7 @@ if (typeof require !== 'undefined' && require.main === module) {
     process.exit(1);
   }
 
-  const baseUrl = process.argv[2];
-  const clientId = process.argv[3];
-  const clientSecret = process.argv[4];
-  const agentId = process.argv[5];
+  const [_node, _script, baseUrl, clientId, clientSecret, agentId] = process.argv;
   const medplum = new MedplumClient({ baseUrl, clientId });
   medplum
     .startClientLogin(clientId, clientSecret)

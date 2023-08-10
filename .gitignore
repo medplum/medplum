@@ -11,7 +11,6 @@ node_modules/
 
 # Output
 packages/agent/dist/
-packages/agent/medplum-agent-installer.exe
 packages/app/dist/
 packages/cdk/dist/
 packages/cli/dist/
@@ -51,3 +50,6 @@ medplum-server.tar.gz
 
 # Rollup
 .rollup.cache/
+
+# All executables
+*.exe
