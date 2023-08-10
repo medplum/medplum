@@ -1,6 +1,12 @@
-import { Anchor, Button, createStyles, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
-import { globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
-import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Reference } from '@medplum/fhirtypes';
+import { Anchor, Button, createStyles, NativeSelect, Stepper, Textarea, TextInput, Title } from '@mantine/core';
+import { getExtension, globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
+import {
+  Extension,
+  Questionnaire,
+  QuestionnaireItem,
+  QuestionnaireItemAnswerOption,
+  Reference,
+} from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
@@ -66,6 +72,7 @@ const useStyles = createStyles((theme) => ({
 
 export interface QuestionnaireBuilderProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
+  // stepper?: boolean;
   onSubmit: (result: Questionnaire) => void;
 }
 
@@ -132,6 +139,7 @@ interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
 
 function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBuilderProps<T>): JSX.Element {
   const { classes, cx } = useStyles();
+  const [count, setCount] = useState(1);
   const resource = props.item as Questionnaire;
   const item = props.item as QuestionnaireItem;
   const isResource = isResourceType(props.item);
@@ -162,6 +170,9 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   }
 
   function addItem(addedItem: QuestionnaireItem): void {
+    if (isStepper(addedItem)) {
+      setCount((count) => count + 1);
+    }
     props.onChange({
       ...props.item,
       item: [...(props.item.item ?? []), addedItem],
@@ -169,6 +180,9 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   }
 
   function removeItem(removedItem: QuestionnaireItem): void {
+    if (isStepper(removedItem)) {
+      setCount((count) => count - 1);
+    }
     props.onChange({
       ...props.item,
       item: props.item.item?.filter((i) => i !== removedItem),
@@ -186,7 +200,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     [classes.editing]: editing,
     [classes.hovering]: hovering && !editing,
   });
-
+  console.log(count);
   return (
     <div data-testid={item.linkId} className={className} onClick={onClick} onMouseOver={onHover}>
       <div className={classes.questionBody}>
@@ -277,7 +291,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
         </div>
       )}
       <div className={classes.bottomActions}>
-        {isContainer && (
+        {isContainer && !isStepper(item) && (
           <>
             <Anchor
               href="#"
@@ -308,6 +322,28 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
               Add group
             </Anchor>
           </>
+        )}
+        {isResource && (
+          <Anchor
+            href="#"
+            onClick={(e: React.MouseEvent) => {
+              e.preventDefault();
+              addItem({
+                id: generateId(),
+                linkId: generateLinkId('s'),
+                type: 'group',
+                text: `Step ${count + 1}`,
+                extension: [
+                  {
+                    url: 'https://medplum.com/fhir/StructureDefinition/step-sequence',
+                    valueInteger: count,
+                  } as Extension,
+                ],
+              } as QuestionnaireItem);
+            }}
+          >
+            Add Step Sequence
+          </Anchor>
         )}
         {editing && !isResource && (
           <Anchor
@@ -462,4 +498,12 @@ function ensureQuestionnaireOptionKeys(
     ...option,
     id: option.id || generateId(),
   }));
+}
+
+function isStepper(item: QuestionnaireItem): boolean {
+  const stepSequence = getExtension(item, 'https://medplum.com/fhir/StructureDefinition/step-sequence');
+  if (!stepSequence) {
+    return false;
+  }
+  return true;
 }

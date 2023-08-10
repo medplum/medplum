@@ -1,4 +1,15 @@
-import { Button, Checkbox, Group, NativeSelect, Radio, Stack, Textarea, TextInput, Title } from '@mantine/core';
+import {
+  Button,
+  Checkbox,
+  Group,
+  NativeSelect,
+  Radio,
+  Stack,
+  Stepper,
+  Textarea,
+  TextInput,
+  Title,
+} from '@mantine/core';
 import {
   capitalize,
   createReference,
@@ -50,6 +61,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const questionnaire = useResource(props.questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer>>({});
+  const [active, setActive] = useState(1);
 
   useEffect(() => {
     medplum
