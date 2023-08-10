@@ -27,7 +27,7 @@
     "@medplum/fhirtypes": "*",
     "@types/json-schema": "7.0.12",
     "@types/unzipper": "^0.10.6",
-    "fast-xml-parser": "4.2.6",
+    "fast-xml-parser": "4.2.7",
     "fhirpath": "3.6.0",
     "mkdirp": "^3.0.1",
     "node-stream-zip": "^1.15.0",

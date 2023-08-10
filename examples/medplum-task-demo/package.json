@@ -10,23 +10,23 @@
   },
   "devDependencies": {
     "@emotion/react": "11.11.1",
-    "@mantine/core": "6.0.17",
-    "@mantine/hooks": "6.0.17",
-    "@mantine/notifications": "6.0.17",
+    "@mantine/core": "6.0.19",
+    "@mantine/hooks": "6.0.19",
+    "@mantine/notifications": "6.0.19",
     "@medplum/core": "2.0.30",
     "@medplum/eslint-config": "2.0.30",
     "@medplum/fhirtypes": "2.0.30",
     "@medplum/react": "2.0.30",
-    "@tabler/icons-react": "2.29.0",
-    "@types/node": "20.4.5",
-    "@types/react": "18.2.17",
+    "@tabler/icons-react": "2.30.0",
+    "@types/node": "20.4.9",
+    "@types/react": "18.2.20",
     "@types/react-dom": "18.2.7",
-    "@vitejs/plugin-react": "4.0.3",
+    "@vitejs/plugin-react": "4.0.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "6.14.2",
+    "react-router-dom": "6.15.0",
     "typescript": "5.1.6",
-    "vite": "4.4.7"
+    "vite": "4.4.9"
   },
   "eslintConfig": {
     "extends": [
