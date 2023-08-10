@@ -1,4 +1,5 @@
 ---
+sidebar_position: 1000
 tags: [bots, subscriptions, auth, security]
 ---
 
