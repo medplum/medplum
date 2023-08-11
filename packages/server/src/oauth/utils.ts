@@ -334,12 +334,9 @@ export async function getMembershipsForLogin(login: Login): Promise<ProjectMembe
  * @param client The client application.
  * @returns The project membership for the client application if found; otherwise undefined.
  */
-export async function getClientApplicationMembership(
-  client: ClientApplication
-): Promise<ProjectMembership | undefined> {
-  const bundle = await systemRepo.search<ProjectMembership>({
+export function getClientApplicationMembership(client: ClientApplication): Promise<ProjectMembership | undefined> {
+  return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
-    count: 1,
     filters: [
       {
         code: 'user',
@@ -348,8 +345,6 @@ export async function getClientApplicationMembership(
       },
     ],
   });
-
-  return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as ProjectMembership) : undefined;
 }
 
 /**

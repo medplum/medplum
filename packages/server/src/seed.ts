@@ -72,10 +72,6 @@ export async function seedDatabase(): Promise<void> {
  * Returns true if the database is already seeded.
  * @returns True if already seeded.
  */
-async function isSeeded(): Promise<boolean> {
-  const bundle = await systemRepo.search({
-    resourceType: 'User',
-    count: 1,
-  });
-  return !!bundle.entry && bundle.entry.length > 0;
+function isSeeded(): Promise<User | undefined> {
+  return systemRepo.searchOne({ resourceType: 'User' });
 }
