@@ -1,3 +1,4 @@
+import { createReference, evalFhirPathTyped, getExtension, Operator, toTypedValue } from '@medplum/core';
 import {
   AuditEvent,
   Bot,
@@ -8,17 +9,12 @@ import {
   Subscription,
 } from '@medplum/fhirtypes';
 import { systemRepo } from '../fhir/repo';
-import { createReference, evalFhirPathTyped, getExtension, Operator, toTypedValue } from '@medplum/core';
-import { AuditEventOutcome } from '../util/auditevent';
 import { logger } from '../logger';
+import { AuditEventOutcome } from '../util/auditevent';
 
-export async function findProjectMembership(
-  project: string,
-  profile: Reference
-): Promise<ProjectMembership | undefined> {
-  const bundle = await systemRepo.search<ProjectMembership>({
+export function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
+  return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
-    count: 1,
     filters: [
       {
         code: 'project',
@@ -32,7 +28,6 @@ export async function findProjectMembership(
       },
     ],
   });
-  return bundle.entry?.[0]?.resource;
 }
 
 /**

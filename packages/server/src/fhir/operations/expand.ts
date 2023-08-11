@@ -101,13 +101,11 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   } as ValueSet);
 });
 
-async function getValueSetByUrl(url: string): Promise<ValueSet | undefined> {
-  const result = await systemRepo.search<ValueSet>({
+function getValueSetByUrl(url: string): Promise<ValueSet | undefined> {
+  return systemRepo.searchOne<ValueSet>({
     resourceType: 'ValueSet',
-    count: 1,
     filters: [{ code: 'url', operator: SearchOperator.EQUALS, value: url }],
   });
-  return result.entry?.[0]?.resource;
 }
 
 function buildValueSetSystems(valueSet: ValueSet): Expression[] {
