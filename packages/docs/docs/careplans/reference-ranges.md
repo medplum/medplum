@@ -1,3 +1,21 @@
+---
+sidebar_position: 2
+keywords:
+  - loinc
+  - diagnostics
+  - lab
+  - lab codes
+  - diagnostic codes
+  - LIS/LIMS
+tags:
+  - lab
+  - diagnostics
+  - loinc
+  - care plans
+  - LIS
+  - LIMS
+---
+
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import ExampleCode from '!!raw-loader!@site/..//examples/src/careplans/reference-ranges.ts';
 
