@@ -80,7 +80,6 @@ Function InputPage
     ${NSD_CreateText} 35% 45u 65% 12u $agentId
     Pop $R7
 
-    #nsDialogs::Select $R3
     ${NSD_SetFocus} $R3
     nsDialogs::Show
 FunctionEnd
