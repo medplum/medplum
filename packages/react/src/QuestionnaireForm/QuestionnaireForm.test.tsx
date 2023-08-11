@@ -674,6 +674,74 @@ describe('QuestionnaireForm', () => {
     expect((dropDown as HTMLSelectElement).value).toBe('a2');
   });
 
+  test('Step Sequence', async () => {
+    const visibleQuestion = 'Visible Question';
+    const hiddenQuestion = 'Hidden Question';
+    await setup({
+      questionnaire: {
+        id: 'groups-example',
+        resourceType: 'Questionnaire',
+        title: 'Groups Example',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.group,
+            text: 'Visible Sequence',
+            item: [
+              {
+                linkId: 'question1',
+                text: visibleQuestion,
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'https://medplum.com/fhir/StructureDefinition/step-sequence',
+                valueString: 'stepper',
+              },
+            ],
+          },
+          {
+            linkId: 'q2',
+            type: QuestionnaireItemType.group,
+            text: 'Hidden Sequence',
+            item: [
+              {
+                linkId: 'question2',
+                text: hiddenQuestion,
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'https://medplum.com/fhir/StructureDefinition/step-sequence',
+                valueString: 'stepper',
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+    // The form should render
+    expect(screen.getByText(visibleQuestion)).toBeInTheDocument();
+
+    // The hidden text should be hidden
+    expect(screen.queryByText(hiddenQuestion)).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    expect(screen.queryByText(visibleQuestion)).not.toBeInTheDocument();
+
+    // The hidden text should now be visible
+    expect(screen.getByText(hiddenQuestion)).toBeInTheDocument();
+
+    expect(screen.getByText('Back')).toBeInTheDocument();
+
+  });
+
   test('Conditional question', async () => {
     await setup({
       questionnaire: {

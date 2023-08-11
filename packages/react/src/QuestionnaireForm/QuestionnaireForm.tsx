@@ -113,7 +113,13 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         <QuestionnaireGroupItem items={questionnaire.item} answers={answers} onChange={setItems} count={count} />
       )}
       <Group position="right" mt="xl">
-        <ButtonGroup count={count} numberOfSteps={numberOfSteps} nextStep={nextStep} prevStep={prevStep} />
+        <ButtonGroup
+          count={count}
+          numberOfSteps={numberOfSteps}
+          nextStep={nextStep}
+          prevStep={prevStep}
+          submitButtonText={props.submitButtonText}
+        />
       </Group>
     </Form>
   );
@@ -138,7 +144,7 @@ function QuestionnaireGroupItem(props: QuestionnaireGroupItemProps): JSX.Element
     props.onChange(newResponseItems);
   }
   return (
-    <Stepper active={props.count}>
+    <Stepper active={props.count} allowNextStepsSelect={false}>
       {props.items.map((item, index) => {
         const stepValue = getExtension(item, 'https://medplum.com/fhir/StructureDefinition/step-sequence');
         if (stepValue && stepValue.valueString === 'stepper') {
@@ -154,7 +160,14 @@ function QuestionnaireGroupItem(props: QuestionnaireGroupItemProps): JSX.Element
           );
         }
         if (index === 0) {
-          return <QuestionnaireFormItemArray items={props.items} answers={props.answers} onChange={props.onChange} />;
+          return (
+            <QuestionnaireFormItemArray
+              key={index}
+              items={props.items}
+              answers={props.answers}
+              onChange={props.onChange}
+            />
+          );
         } else {
           return null;
         }
@@ -530,7 +543,9 @@ function ButtonGroup(props: ButtonGroupProps): JSX.Element {
     return (
       <>
         <Button onClick={props.prevStep}>Back</Button>
-        <Button onClick={props.nextStep} type="submit">{props.submitButtonText ?? 'OK'}</Button>
+        <Button onClick={props.nextStep} type="submit">
+          {props.submitButtonText ?? 'OK'}
+        </Button>
       </>
     );
   } else if (props.count === 0) {
