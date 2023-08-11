@@ -143,6 +143,12 @@ function QuestionnaireGroupItem(props: QuestionnaireGroupItemProps): JSX.Element
     setResponseItems(newResponseItems);
     props.onChange(newResponseItems);
   }
+  const firstItem = props.items[0];
+  const firstItemValue = getExtension(firstItem, 'https://medplum.com/fhir/StructureDefinition/step-sequence');
+  // For the stepper sequence all of the outside groups should have extension
+  if (!firstItemValue) {
+    return <QuestionnaireFormItemArray items={props.items} answers={props.answers} onChange={props.onChange} />;
+  }
   return (
     <Stepper active={props.count} allowNextStepsSelect={false}>
       {props.items.map((item, index) => {
@@ -159,18 +165,7 @@ function QuestionnaireGroupItem(props: QuestionnaireGroupItemProps): JSX.Element
             </Stepper.Step>
           );
         }
-        if (index === 0) {
-          return (
-            <QuestionnaireFormItemArray
-              key={index}
-              items={props.items}
-              answers={props.answers}
-              onChange={props.onChange}
-            />
-          );
-        } else {
-          return null;
-        }
+        return null;
       })}
     </Stepper>
   );
