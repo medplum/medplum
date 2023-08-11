@@ -6,6 +6,7 @@
 !define APP_NAME                 "Medplum Agent"
 !define SERVICE_NAME             "MedplumAgent"
 !define INSTALLER_FILE_NAME      "medplum-agent-installer.exe"
+!define DEFAULT_BASE_URL         "https://api.medplum.com/"
 
 Name                             "${APP_NAME}"
 OutFile                          "${INSTALLER_FILE_NAME}"
@@ -58,6 +59,7 @@ Function InputPage
     nsDialogs::Create 1018
     Pop $0
 
+    StrCpy $baseUrl "${DEFAULT_BASE_URL}"
     ${NSD_CreateLabel} 0 0 30% 12u "Base URL:"
     Pop $R0
     ${NSD_CreateText} 35% 0 65% 12u $baseUrl
@@ -78,6 +80,8 @@ Function InputPage
     ${NSD_CreateText} 35% 45u 65% 12u $agentId
     Pop $R7
 
+    #nsDialogs::Select $R3
+    ${NSD_SetFocus} $R3
     nsDialogs::Show
 FunctionEnd
 
