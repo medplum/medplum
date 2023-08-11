@@ -35,7 +35,7 @@ whoami.action(async (options) => {
 });
 
 async function startLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
-  if (!profile.authType) {
+  if (!profile?.authType) {
     await medplumAuthorizationCodeLogin(medplum);
     return;
   }
