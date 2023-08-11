@@ -8,7 +8,7 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { QuestionnaireItemType } from '../utils/questionnaire';
-import { isQuestionEnabled, QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
+import { QuestionnaireForm, QuestionnaireFormProps, isQuestionEnabled } from './QuestionnaireForm';
 
 const medplum = new MockClient();
 
@@ -739,7 +739,6 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByText(hiddenQuestion)).toBeInTheDocument();
 
     expect(screen.getByText('Back')).toBeInTheDocument();
-
   });
 
   test('Conditional question', async () => {
