@@ -9,6 +9,7 @@ import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config';
 import { initTestAuth } from '../../test.setup';
+import { getBinaryStorage } from '../storage';
 import { getLambdaFunctionName } from './execute';
 
 const app = express();
@@ -112,6 +113,9 @@ describe('Execute', () => {
   });
 
   test('Submit HL7', async () => {
+    const binaryStorage = getBinaryStorage();
+    const writeFileSpy = jest.spyOn(binaryStorage, 'writeFile');
+
     const text =
       'MSH|^~\\&|Main_HIS|XYZ_HOSPITAL|iFW|ABC_Lab|20160915003015||ACK|9B38584D|P|2.6.1|\r' +
       'MSA|AA|9B38584D|Everything was okay dokay!|';
@@ -123,6 +127,17 @@ describe('Execute', () => {
       .send(text);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('x-application/hl7-v2+er7; charset=utf-8');
+    expect(writeFileSpy).toBeCalledTimes(1);
+
+    const args = writeFileSpy.mock.calls[0];
+    expect(args.length).toBe(3);
+    expect(args[0]).toMatch(/^bot\//);
+    expect(args[1]).toBe(ContentType.JSON);
+
+    const row = JSON.parse(args[2] as string);
+    expect(row.botId).toEqual(bot.id);
+    expect(row.hl7MessageType).toEqual('ACK');
+    expect(row.hl7Version).toEqual('2.6.1');
   });
 
   test('Execute without code', async () => {
