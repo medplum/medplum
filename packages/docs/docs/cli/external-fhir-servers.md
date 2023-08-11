@@ -85,6 +85,25 @@ medplum profile set example \
     --issuer "api.example.com"
 ```
 
+### Example: JWT Assertion
+
+```bash
+medplum profile set example \
+    --auth-type "jwt-assertion" \
+    --base-url "https://api.example.com" \
+    --fhir-url-path "fhir/R4" \
+    --token-url "/oauth2/token" \
+    --client-id "MY_CLIENT_ID" \
+    --audience "/oauth2/token" \
+    --subject "john_doe" \
+    --private-key-path "/path/to/privatekey.pem"
+```
+
+:::note
+If you are authenticating with Epic and it returns {"error":"invalid_client","error_description":null}, here is a [Doc to Troubleshoot](https://fhir.epic.com/Resources/jwt_auth_troubleshoot_eof).
+:::
+
+
 ### Example: Client Credentials
 
 ```bash
