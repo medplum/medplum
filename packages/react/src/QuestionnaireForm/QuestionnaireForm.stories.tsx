@@ -119,7 +119,7 @@ export const StepSequence = (): JSX.Element => (
           },
           {
             linkId: 'group2',
-            text: 'Step Sequence Example',
+            text: 'Step Sequence 2',
             type: 'group',
             item: [
               {

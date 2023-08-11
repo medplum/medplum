@@ -1,11 +1,5 @@
-import { Anchor, Button, createStyles, NativeSelect, Stepper, Textarea, TextInput, Title } from '@mantine/core';
-import {
-  getExtension,
-  getExtensionValue,
-  globalSchema,
-  IndexedStructureDefinition,
-  isResource as isResourceType,
-} from '@medplum/core';
+import { Anchor, Button, createStyles, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
+import { globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
 import {
   Extension,
   Questionnaire,

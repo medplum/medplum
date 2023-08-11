@@ -62,7 +62,10 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const questionnaire = useResource(props.questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer>>({});
-  const hasSteppers = questionnaire && steppersExist(questionnaire.item ?? []);
+  const [count, setCount] = useState(0);
+  const numberOfSteps = getNumberOfSteps(questionnaire?.item ?? []);
+  const nextStep = () => setCount((current) => current + 1);
+  const prevStep = () => setCount((current) => current - 1);
 
   useEffect(() => {
     medplum
@@ -107,14 +110,56 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     >
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
       {questionnaire.item && (
-        <Stepper active={0}>
-          <QuestionnaireFormItemArray items={questionnaire.item} answers={answers} onChange={setItems} />
-        </Stepper>
+        <QuestionnaireGroupItem items={questionnaire.item} answers={answers} onChange={setItems} count={count} />
       )}
       <Group position="right" mt="xl">
-        <Button type="submit">{props.submitButtonText ?? 'OK'}</Button>
+        <ButtonGroup count={count} numberOfSteps={numberOfSteps} nextStep={nextStep} prevStep={prevStep} />
       </Group>
     </Form>
+  );
+}
+
+interface QuestionnaireGroupItemProps {
+  items: QuestionnaireItem[];
+  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  count: number;
+  onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
+}
+
+function QuestionnaireGroupItem(props: QuestionnaireGroupItemProps): JSX.Element {
+  const [responseItems, setResponseItems] = useState<QuestionnaireResponseItem[]>(
+    buildInitialResponseItems(props.items)
+  );
+
+  function setResponseItem(index: number, newResponseItem: QuestionnaireResponseItem): void {
+    const newResponseItems = responseItems.slice();
+    newResponseItems[index] = newResponseItem;
+    setResponseItems(newResponseItems);
+    props.onChange(newResponseItems);
+  }
+  return (
+    <Stepper active={props.count}>
+      {props.items.map((item, index) => {
+        const stepValue = getExtension(item, 'https://medplum.com/fhir/StructureDefinition/step-sequence');
+        if (stepValue && stepValue.valueString === 'stepper') {
+          return (
+            <Stepper.Step label={item.text} key={item.linkId}>
+              <QuestionnaireFormItem
+                key={item.linkId}
+                item={item}
+                answers={props.answers}
+                onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
+              />
+            </Stepper.Step>
+          );
+        }
+        if (index === 0) {
+          return <QuestionnaireFormItemArray items={props.items} answers={props.answers} onChange={props.onChange} />;
+        } else {
+          return null;
+        }
+      })}
+    </Stepper>
   );
 }
 
@@ -146,28 +191,14 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
           return <p key={item.linkId}>{item.text}</p>;
         }
         if (item.type === QuestionnaireItemType.group) {
-          const stepValue = getExtension(item, 'https://medplum.com/fhir/StructureDefinition/step-sequence');
-          if (stepValue && stepValue.valueString === 'stepper') {
-            return (
-              <Stepper.Step label={item.text} key={item.linkId}>
-                <QuestionnaireFormItem
-                  key={item.linkId}
-                  item={item}
-                  answers={props.answers}
-                  onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
-                />
-              </Stepper.Step>
-            );
-          } else {
-            return (
-              <QuestionnaireFormItem
-                key={item.linkId}
-                item={item}
-                answers={props.answers}
-                onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
-              />
-            );
-          }
+          return (
+            <QuestionnaireFormItem
+              key={item.linkId}
+              item={item}
+              answers={props.answers}
+              onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
+            />
+          );
         }
         if (item.type === QuestionnaireItemType.boolean) {
           const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
@@ -484,6 +515,40 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
   );
 }
 
+interface ButtonGroupProps {
+  count: number;
+  numberOfSteps: number;
+  submitButtonText?: string;
+  nextStep: () => void;
+  prevStep: () => void;
+}
+
+function ButtonGroup(props: ButtonGroupProps): JSX.Element {
+  if (props.count === 0 && props.numberOfSteps < 0) {
+    return <Button type="submit">{props.submitButtonText ?? 'OK'}</Button>;
+  } else if (props.count >= props.numberOfSteps - 1) {
+    return (
+      <>
+        <Button onClick={props.prevStep}>Back</Button>
+        <Button type="submit">{props.submitButtonText ?? 'OK'}</Button>
+      </>
+    );
+  } else if (props.count === 0) {
+    return (
+      <>
+        <Button onClick={props.nextStep}>Next</Button>
+      </>
+    );
+  } else {
+    return (
+      <>
+        <Button onClick={props.prevStep}>Back</Button>
+        <Button onClick={props.nextStep}>Next</Button>
+      </>
+    );
+  }
+}
+
 function buildInitialResponse(questionnaire: Questionnaire): QuestionnaireResponse {
   const response: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
@@ -559,7 +624,7 @@ export function isQuestionEnabled(
   }
 }
 
-function steppersExist(items: QuestionnaireItem[]): number {
+function getNumberOfSteps(items: QuestionnaireItem[]): number {
   const steppers = items.filter((item) => {
     const extension = getExtension(item, 'https://medplum.com/fhir/StructureDefinition/step-sequence');
     return extension;
