@@ -10,6 +10,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { generateSecret } from '../oauth/keys';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { registerNew } from './register';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
@@ -39,14 +40,14 @@ describe('Set Password', () => {
   test('Success', async () => {
     const email = `george${randomUUID()}@example.com`;
 
-    const res = await request(app).post('/auth/newuser').type('json').send({
+    const res = await registerNew({
+      projectName: 'Set Password Project',
       firstName: 'George',
       lastName: 'Washington',
       email,
       password: 'password!@#',
-      recaptchaToken: 'xyz',
     });
-    expect(res.status).toBe(200);
+    expect(res).toBeDefined();
 
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({
       email,
