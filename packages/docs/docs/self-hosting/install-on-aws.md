@@ -249,7 +249,7 @@ After you successfully build the Medplum project from source, you can use the `d
 ./scripts/deploy-bot-layer.sh
 ```
 
-See the [Creating and sharing Lambda layers](https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html) guide to learn more.
+See the [Medplum Bot Layer](/docs/bots/bot-lambda-layer) guide to learn more.
 
 ## Ongoing
 
