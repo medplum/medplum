@@ -530,7 +530,7 @@ function ButtonGroup(props: ButtonGroupProps): JSX.Element {
     return (
       <>
         <Button onClick={props.prevStep}>Back</Button>
-        <Button type="submit">{props.submitButtonText ?? 'OK'}</Button>
+        <Button onClick={props.nextStep} type="submit">{props.submitButtonText ?? 'OK'}</Button>
       </>
     );
   } else if (props.count === 0) {

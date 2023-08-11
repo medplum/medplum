@@ -109,6 +109,19 @@ export const StepSequence = (): JSX.Element => (
                 text: 'Question 2',
                 type: 'string',
               },
+              {
+                linkId: 'q1',
+                text: 'Question 1',
+                type: 'choice',
+                answerOption: [
+                  {
+                    valueString: 'Yes',
+                  },
+                  {
+                    valueString: 'No',
+                  },
+                ],
+              },
             ],
             extension: [
               {
