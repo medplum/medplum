@@ -57,6 +57,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     password: password,
     remoteAddress: request.remoteAddress,
     userAgent: request.userAgent,
+    allowNoMembership: true,
   });
 
   const { membership, client } = await createProject(login, projectName, firstName, lastName);

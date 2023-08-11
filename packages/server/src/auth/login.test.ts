@@ -464,4 +464,20 @@ describe('Login', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.code).toBeDefined();
   });
+
+  test('No membership', async () => {
+    const otherTestProject = await createTestProject();
+
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      scope: 'openid',
+      projectId: otherTestProject.project.id,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.login).toBeUndefined();
+    expect(res.body.code).toBeUndefined();
+    expect(res.body.memberships).toBeUndefined();
+    expect(res.body.issue[0].details.text).toBe('User not found');
+  });
 });

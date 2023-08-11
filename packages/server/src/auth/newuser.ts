@@ -120,6 +120,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
       remember: req.body.remember,
       remoteAddress: req.ip,
       userAgent: req.get('User-Agent'),
+      allowNoMembership: true,
     });
     res.status(200).json({ login: login.id });
   } catch (err) {

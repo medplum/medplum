@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { tryLogin } from '../oauth/utils';
-import { sendLoginResult, getProjectIdByClientId } from './utils';
+import { getProjectIdByClientId, sendLoginResult } from './utils';
 
 export const loginValidators = [
   body('email').isEmail().withMessage('Valid email address is required'),
@@ -45,6 +45,7 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     remember: req.body.remember,
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
+    allowNoMembership: req.body.projectId === 'new',
   });
   await sendLoginResult(res, login);
 }

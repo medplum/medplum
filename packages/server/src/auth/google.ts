@@ -127,6 +127,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     codeChallengeMethod: req.body.codeChallengeMethod,
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
+    allowNoMembership: req.body.createUser,
   });
   await sendLoginResult(res, login);
 }
