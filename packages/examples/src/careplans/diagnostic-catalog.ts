@@ -309,6 +309,7 @@ const fingerprickSpecimen: SpecimenDefinition =
     typeTested: [
       // First output is a red-capped tube
       {
+        preference: 'preferred',
         container: {
           type: {
             coding: [
@@ -371,6 +372,7 @@ const fingerprickSpecimen: SpecimenDefinition =
       },
       // Second output is a green-capped tube
       {
+        preference: 'preferred',
         container: {
           type: {
             coding: [
@@ -404,6 +406,7 @@ const sodiumService: PlanDefinition =
     resourceType: 'PlanDefinition',
     id: 'example-lab-service-sodium-serum',
     url: 'http://example.org/PlanDefinition/lab-service-sodium-serum',
+    status: 'active',
     identifier: [
       {
         use: 'official',
@@ -464,6 +467,7 @@ const electrolytesPanelService: PlanDefinition =
   {
     resourceType: 'PlanDefinition',
     id: 'example-lab-service-electrolytes-panel-blood',
+    status: 'active',
     // Canonical URL
     url: 'http://example.org/PlanDefinition/lab-service-electrolytes-panel-blood',
     // Business Identifier
@@ -532,6 +536,7 @@ const mensHealthService: PlanDefinition =
   {
     resourceType: 'PlanDefinition',
     id: 'example-lab-service-mens-health',
+    status: 'active',
     // Canonical URL
     url: 'http://example.org/PlanDefinition/lab-service-mens-health',
     // Business Identifier
@@ -610,6 +615,7 @@ console.log(mensHealthService);
 // start-block womensHealthService
 const womensHealthService: PlanDefinition = {
   resourceType: 'PlanDefinition',
+  status: 'active',
   id: 'example-lab-service-womens-health',
   // Canonical URL
   url: 'http://example.org/PlanDefinition/lab-service-womens-health',
@@ -690,6 +696,7 @@ const sodiumProcedure: ActivityDefinition =
   // start-block sodiumProcedure
   {
     resourceType: 'ActivityDefinition',
+    status: 'active',
     id: 'lab-procedure-sodium-serum',
     name: 'sodium-serum-measurement-procedure',
     title: 'Procedure - sodium measurement on in vitro blood serum',
@@ -725,6 +732,7 @@ const electrolytesPanelProcedure: ActivityDefinition =
   {
     resourceType: 'ActivityDefinition',
     id: 'lab-procedure-electrolytes-panel-blood',
+    status: 'active',
     name: 'electrolytes-panel-blood-measurement-procedure',
     title: 'Procedure - Electrolytes panel measurement in blood',
     // Canonical URL
@@ -770,6 +778,7 @@ const testosteroneFreeWeaklyBoundProcedure: ActivityDefinition =
   // start-block testosteroneProcedure
   {
     resourceType: 'ActivityDefinition',
+    status: 'active',
     id: 'lab-procedure-testosterone-free-weakly-bound-serum',
     name: 'testosterone-free-weakly-bound-measurement-procedure',
     title: 'Procedure - Testosterone free & weakly bound measurement in in vitro serum',
@@ -804,6 +813,7 @@ const estradiolE2Procedure: ActivityDefinition =
   // start-block estradiolProcedure
   {
     resourceType: 'ActivityDefinition',
+    status: 'active',
     id: 'lab-procedure-estradiol-e2-serum',
     name: 'estradiol-e2-measurement-procedure',
     title: 'Procedure - Estradiol (E2) measurement in in vitro serum',

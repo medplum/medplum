@@ -21,7 +21,7 @@ import ExampleCode from '!!raw-loader!@site/..//examples/src/careplans/reference
 
 # Observation Reference Ranges
 
-In on our previous guide about [creating diagnostic services catalog](./laboratory-services), we described the importance of the [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) resource for storing metadata about the [`Observations`](/docs/api/fhir/resources/observation) produced by the test. This metadata is not just for ensuring data correctness, but also a key component in assisting providers with data interpretation.
+In on our previous guide about [creating diagnostic services catalog](./diagnostic-catalog), we described the importance of the [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) resource for storing metadata about the [`Observations`](/docs/api/fhir/resources/observation) produced by the test. This metadata is not just for ensuring data correctness, but also a key component in assisting providers with data interpretation.
 
 A core part of interpreting results of this metadata is the definition of **reference ranges**, sets of [`Observation`](/docs/api/fhir/resources/observation) values that share a diagnostic interpretation.
 
@@ -172,4 +172,4 @@ Sure, I can convert those into a table for you:
 ## See Also
 
 - [Loinc Guide](./loinc)
-- Diagnostic Catalog
+- [Diagnostic Catalog](./diagnostic-catalog)
