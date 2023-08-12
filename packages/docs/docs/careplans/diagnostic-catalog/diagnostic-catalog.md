@@ -42,15 +42,19 @@ This guide will cover the basic framework to defining a building catalog in FHIR
 
 Our recommendations are informed by the follow the [Order Catalog Implementation Guide](http://hl7.org/fhir/uv/order-catalog/2020Sep/) implementation guide, which has been informed by contributors from Labcorp and Quest Diagnostics.
 
+:::tip Sample Data
+You can download the examples in this guide [here](./formulary-examples.json), and upload them to your project using the [Medplum Batch Upload Tool](/docs/tutorials/importing-sample-data#batch-upload-tool)
+:::
+
 ## Define your clinical observations
 
 The first step in building your catalog is to define the clinical results you measure for the patient.
 
-The `Observation` is the primary _operational_ resource used to record a clinical measurements for a specific patient. `ObservationDefinition` is the corresponding _administrative_ counterpart, and is used to define how an `Observation` should be measured, interpreted, a reported.
+The [`Observation`](/docs/api/fhir/resources/observation) is the primary _operational_ resource used to record a clinical measurements for a specific patient. [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) is the corresponding _administrative_ counterpart, and is used to define how an [`Observation`](/docs/api/fhir/resources/observation) should be measured, interpreted, a reported.
 
-`Observations` and `ObservationDefinitions ` are linked by sharing a common `code` element, which should include a [LOINC code](./loinc) in most cases.
+[`Observations`](/docs/api/fhir/resources/observation) and [`ObservationDefinitions`](/docs/api/fhir/resources/observationdefinitions) are linked by sharing a common `code` element, which should include a [LOINC code](./loinc) in most cases.
 
-The table below highlights the most important fields for creating good `ObservationDefinitions`:
+The table below highlights the most important fields for creating good [`ObservationDefinitions`](/docs/api/fhir/resources/observationdefinitions):
 
 | Element                                | Description                                                                                                                                                                    | Code System                               | Example                                                                       |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- | ----------------------------------------------------------------------------- |
@@ -63,7 +67,6 @@ The table below highlights the most important fields for creating good `Observat
 Key amongst these is the `qualifiedInterval` element, which is used to define _how results should be interpreted._ See our [guide on reference ranges](./reference-ranges) for more information.
 
 <details><summary>Example: Blood Sodium Level </summary>
-
   <MedplumCodeBlock language="ts" selectBlocks="observationDefinitionSodium">
     {ExampleCode}
   </MedplumCodeBlock>
@@ -73,11 +76,11 @@ Key amongst these is the `qualifiedInterval` element, which is used to define _h
 
 In the context of laboratory use cases, it's essential to recognize that observations are based on samples extracted from patients, known as "specimens". A well constructed diagnostic catalog links the specimen requirements for each test to the test definition, to provide lab operators a complete picture of the collection and diagnostic process.
 
-The `Specimen` resource is the _operational_ resource that stores information about the material extracted from a patient. As with `Observations`, `Specimen` has a corresponding _administrative_ resource, called `SpecimenDefinition`.
+The [`Specimen`](/docs/api/fhir/resources/specimen) resource is the _operational_ resource that stores information about the material extracted from a patient. As with [`Observations`](/docs/api/fhir/resources/observation), [`Specimen`](/docs/api/fhir/resources/specimen) has a corresponding _administrative_ resource, called [`SpecimenDefinition`](/docs/api/fhir/resources/specimendefinition)
 
-`SpecimenDefinition` describes the type of specimen material to be collected, as well as details about the collection process, storage, handling, and preparation for testing.
+[`SpecimenDefinition`](/docs/api/fhir/resources/specimendefinition) describes the type of specimen material to be collected, as well as details about the collection process, storage, handling, and preparation for testing.
 
-The `SpecimenDefinition` allows you to specify a lot of details about your specimen, but the most relevant are:
+The [`SpecimenDefinition`](/docs/api/fhir/resources/specimendefinition) allows you to specify a lot of details about your specimen, but the most relevant are:
 
 | Field                  | Description                                         | Code System                                                                                                                                                       | Example                                                                                                                                                      |
 | ---------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -103,31 +106,31 @@ The following examples defines a fingerprick blood sample that is distributed in
 
 The next step is to roll up your individual tests into **orderable services** that your patients can order. These can be thought of as your diagnostic "product offerings."
 
-These products are represented as `PlanDefinition` resources. The `PlanDefinition` is primarily a grouping resource that stores metadata about the service and references the `ActivityDefinitions` you will create in the next section.
+These products are represented as [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) resources. The [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) is primarily a grouping resource that stores metadata about the service and references the [`ActivityDefinitions`](/docs/api/fhir/resources/activitydefinition) you will create in the next section.
 
 Important fields:
 
-| Field                        | Description                                                                                                        | Code System                                                                                                    | Example                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `name`                       | The computer-friendly name of the service.                                                                         |                                                                                                                | mens-health-panel                                                                |
-| `title`                      | The human-friendly name of the service.                                                                            |                                                                                                                | Men's Health Panel                                                               |
-| `identifier`                 | Business identifier for the service (i.e. product or SKU code)                                                     |                                                                                                                | dx-panel-12345                                                                   |
-| `type`                       | Whether the service is a single test or a panel                                                                    | [Laboratory service types](http://hl7.org/fhir/uv/order-catalog/2020Sep/ValueSet-laboratory-service-type.html) | panel                                                                            |
-| `useContext`                 | How this `PlanDefinition` should be interpreted. For diagnostic procedures, this is a fixed value: Lab Order Entry |                                                                                                                | [Lab Order Entry](https://terminology.hl7.org/1.0.0//CodeSystem-v3-ActCode.html) |
-| `action.code`                | The code for lab procedure corresponding                                                                           | [LOINC](./loinc)                                                                                               | Administer medication                                                            |
-| `action.definitionCanonical` | The "canonical url" of the the `ActivityDefinition` representing the procedure (see [below](#activitydefinitions)) |                                                                                                                | http://example.org/ActivityDefinition/electrolyte-panel                          |
+| Field                        | Description                                                                                                                                                       | Code System                                                                                                    | Example                                                                          |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `name`                       | The computer-friendly name of the service.                                                                                                                        |                                                                                                                | mens-health-panel                                                                |
+| `title`                      | The human-friendly name of the service.                                                                                                                           |                                                                                                                | Men's Health Panel                                                               |
+| `identifier`                 | Business identifier for the service (i.e. product or SKU code)                                                                                                    |                                                                                                                | dx-panel-12345                                                                   |
+| `type`                       | Whether the service is a single test or a panel                                                                                                                   | [Laboratory service types](http://hl7.org/fhir/uv/order-catalog/2020Sep/ValueSet-laboratory-service-type.html) | panel                                                                            |
+| `useContext`                 | How this [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) should be interpreted. For diagnostic procedures, this is a fixed value: Lab Order Entry     |                                                                                                                | [Lab Order Entry](https://terminology.hl7.org/1.0.0//CodeSystem-v3-ActCode.html) |
+| `action.code`                | The code for lab procedure corresponding                                                                                                                          | [LOINC](./loinc)                                                                                               | Administer medication                                                            |
+| `action.definitionCanonical` | The "canonical url" of the the [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) representing the procedure (see [below](#activitydefinitions)) |                                                                                                                | http://example.org/ActivityDefinition/electrolyte-panel                          |
 
 In the next section, we'll learn more about the `PlanDefinition.action` element, which defines the lab procedures used to _fulfill_ the diagnostic service order.
 
 ## Define your lab procedures
 
-The last step is to carve up your services into lab procedures to aid the lab in fulfilling your orders. These procedures will be defined using the `ActivityDefinition` resource.
+The last step is to carve up your services into lab procedures to aid the lab in fulfilling your orders. These procedures will be defined using the [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) resource.
 
-While `PlanDefintions` are patient facing resources, `ActivityDefinitions` are primarily used by lab operators to aid them in fulfilling the order. To link the two, each entry in `PlanDefinition.action` references an individual lab procedure, with `PlanDefinition.action.definitionCanonical` referencing an `ActivityDefintion` resource for details.
+While `PlanDefintions` are patient facing resources, [`ActivityDefinitions`](/docs/api/fhir/resources/activitydefinition) are primarily used by lab operators to aid them in fulfilling the order. To link the two, each entry in `PlanDefinition.action` references an individual lab procedure, with `PlanDefinition.action.definitionCanonical` referencing an [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) resource for details.
 
 :::caution Note: Canonical References
 
-`PlanDefinitions` and `ActivityDefinitions` are linked via what is known as a _canonical_ reference, not a standard reference as with most other resources. `PlanDefinition.action.definitionCanonical` is a URL string, that must match the `url` field of the `ActivityDefinition` it references.
+[`PlanDefinitions`](/docs/api/fhir/resources/plandefinition) and [`ActivityDefinitions`](/docs/api/fhir/resources/activitydefinition) are linked via what is known as a _canonical_ reference, not a standard reference as with most other resources. `PlanDefinition.action.definitionCanonical` is a URL string, that must match the `url` field of the [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) it references.
 
 :::
 
@@ -139,23 +142,23 @@ There is a bit of an art to determining divide the individual tests into procedu
 
 ### ActivityDefinitions
 
-The `ActivityDefinition` resource stores detailed information about each procedure, and is the resource that links `PlanDefinition.action`, to the `ObservationDefintions` and `SpecimenDefinitions` we defined earlier.
+The [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) resource stores detailed information about each procedure, and is the resource that links `PlanDefinition.action`, to the [`ObservationDefinitions`](/docs/api/fhir/resources/observationdefinition) and [`SpecimenDefinitions`](/docs/api/fhir/resources/specimendefinition) we defined earlier.
 
-The most important fields for `ActivityDefinition` are summarized below:
+The most important fields for [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) are summarized below:
 
 | Element                        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Code System      | Example                                                             |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------- |
 | `code`                         | The LOINC code corresponding to this procedure. Should match the code used in `PlanDefinition.action`                                                                                                                                                                                                                                                                                                                                                                                        | [LOINC](./loinc) | Glucose [Mass/volume] in Blood ([2339-0](https://loinc.org/2339-0)) |
 | `url`                          | <p>Known as the "canonical URL" for the resource. This should be a fully qualified, globally unique URL. </p><p>FHIR recommends for many administrative resources (aka "definitional resources") to have canonical URLs to provide a globally unique business identifier. Read more about canonical URLs [here](https://hl7.org/fhir/resource.html#canonical)</p><p>A recommended pattern for constructing this URL is:<br /> `http://[your-company-url]/ActivityDefinition/[test-name]`</p> |                  | http://example.org/ActivityDefinition/electrolyte-panel             |
-| `observationResultRequirement` | References to the `ObservationDefinition` resources for the test results produced by this procedure (see above).                                                                                                                                                                                                                                                                                                                                                                             | See above        |                                                                     |
-| `specimenRequirement`          | References to the `SpecimenDefinition` resources for the test results produced by this procedure (see above).                                                                                                                                                                                                                                                                                                                                                                                | See above        |                                                                     |
+| `observationResultRequirement` | References to the [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) resources for the test results produced by this procedure (see above).                                                                                                                                                                                                                                                                                                                           | See above        |                                                                     |
+| `specimenRequirement`          | References to the [`SpecimenDefinition`](/docs/api/fhir/resources/specimendefinition resources for the test results produced by this procedure (see above).                                                                                                                                                                                                                                                                                                                                  | See above        |                                                                     |
 | `name`                         | A computer-friendly name for the procedure                                                                                                                                                                                                                                                                                                                                                                                                                                                   |                  | glucose                                                             |
 | `title`                        | A human-friendly name for the procedure                                                                                                                                                                                                                                                                                                                                                                                                                                                      |                  | Glucose in Blood                                                    |
 | `kind`                         | The kind of resource that will represent the lab order. For diagnostics, this is always `ServiceRequest`.                                                                                                                                                                                                                                                                                                                                                                                    |                  | ServiceRequest                                                      |
 
 ### The Simple Case
 
-In most cases, each service will only require a single laboratory procedure. In these cases, you will only need a single `PlanDefinition.action` and `ActivityDefinition`, representing the main operational procedure performed to fulfill this laboratory service.
+In most cases, each service will only require a single laboratory procedure. In these cases, you will only need a single `PlanDefinition.action` and [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition), representing the main operational procedure performed to fulfill this laboratory service.
 
 <details><summary>Example: Electrolyte Panel </summary>
   In the example below, a patient can order an Electrolyte Panel, which is a single laboratory procedure
@@ -171,7 +174,7 @@ In most cases, each service will only require a single laboratory procedure. In 
 
 ### Reusing Procedures
 
-In some cases, a product offering might _embed_ multiple procedures that are reused across service offerings. In these cases, we can define multiple entries in `PlanDefinition.action`, each with their own `ActivityDefinition`.
+In some cases, a product offering might _embed_ multiple procedures that are reused across service offerings. In these cases, we can define multiple entries in `PlanDefinition.action`, each with their own [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition).
 
 This allows you to reuse the data definition of your procedures, while allowing you to compose them into different patient-facing product offerings.
 
@@ -201,7 +204,7 @@ This allows you to reuse the data definition of your procedures, while allowing 
 
 :::tip Sub actions
 
-Beyond flat lists of procedures, FHIR `PlanDefinitions` can be used to represent sub-procedures, mutually exclusive groups of procedures, reflex tests, and other complicated arrangements.
+Beyond flat lists of procedures, FHIR [`PlanDefinitions`](/docs/api/fhir/resources/plandefinition) can be used to represent sub-procedures, mutually exclusive groups of procedures, reflex tests, and other complicated arrangements.
 
 These advanced scenarios are out of scope for this guide, but you can check out the [this implementation guide](http://hl7.org/fhir/uv/order-catalog/2020Sep/exlabservices.html) for examples of how these might be implemented
 
@@ -209,7 +212,7 @@ These advanced scenarios are out of scope for this guide, but you can check out 
 
 ## Querying your catalog
 
-You can query all `PlanDefinitions` that represent a laboratory procedure using the and the associated `ActivityDefinitions` with this query:
+You can query all [`PlanDefinitions`](/docs/api/fhir/resources/plandefinition) that represent a laboratory procedure using the and the associated [`ActivityDefinitions`](/docs/api/fhir/resources/activitydefinition) with this query:
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
@@ -229,7 +232,7 @@ You can query all `PlanDefinitions` that represent a laboratory procedure using 
   </TabItem>
 </Tabs>
 
-Another common query is to get all the `ObservationDefintion` and `SpecimenDefinitions` in a single service. Unfortunately, there is currently no way to do this using a single query. However, this can be done in two parts:
+Another common query is to get all the [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) and [`SpecimenDefinitions`](/docs/api/fhir/resources/specimendefinition) in a single service. Unfortunately, there is currently no way to do this using a single query. However, this can be done in two parts:
 
 1. Query all ActivityDefinitions for a given PlanDefinition using [`_include`](/docs/search/includes#_include-and-_revinclude) directive
    <Tabs groupId="language">
@@ -250,7 +253,7 @@ Another common query is to get all the `ObservationDefintion` and `SpecimenDefin
    </TabItem>
    </Tabs>
 
-2. For each resulting `ActivityDefinition`, read each `ObservationDefinition` and `SpecimenDefinition` . This operation is well suited to [GraphQL](https://www.medplum.com/docs/graphql/basic-queries)
+2. For each resulting [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition), read each [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) and [`SpecimenDefinition`](/docs/api/fhir/resources/specimendefinition). This operation is well suited to [GraphQL](https://www.medplum.com/docs/graphql/basic-queries)
 
    <Tabs groupId="language">
      <TabItem value="graphql" label="GraphQL">

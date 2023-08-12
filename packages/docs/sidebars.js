@@ -66,7 +66,7 @@ const sidebars = {
         { type: 'doc', id: 'careplans/tasks/tasks' },
         { type: 'html', value: '<strong class="menu__link">Diagnostics</strong>' },
         { type: 'doc', id: 'careplans/loinc' },
-        { type: 'doc', id: 'careplans/diagnostic-catalog' },
+        { type: 'doc', id: 'careplans/diagnostic-catalog/diagnostic-catalog' },
         { type: 'doc', id: 'careplans/reference-ranges' },
       ],
     },
