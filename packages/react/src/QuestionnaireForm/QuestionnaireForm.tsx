@@ -64,8 +64,8 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer>>({});
   const [count, setCount] = useState(0);
   const numberOfSteps = getNumberOfSteps(questionnaire?.item ?? []);
-  const nextStep = () => setCount((current) => current + 1);
-  const prevStep = () => setCount((current) => current - 1);
+  const nextStep = (): void => setCount((current) => current + 1);
+  const prevStep = (): void => setCount((current) => current - 1);
 
   useEffect(() => {
     medplum
