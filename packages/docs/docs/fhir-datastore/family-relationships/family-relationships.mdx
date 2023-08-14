@@ -274,7 +274,7 @@ import Approach4Diagram from './approach-4.png';
 
 For some use cases, it is useful to keep track of the family unit as a whole, rather than as a web of connected [Patients](/docs/api/fhir/resources/patient), [RelatedPersons](/docs/api/fhir/resources/relatedperson), and [Persons](/docs/api/fhir/resources/person).
 
-The [Group](/docs/api/fhir/resources/group) resources allows you to specify a single resource that represents the of people as a single unit, and in some places can be used instead of the [Patient](/docs/api/fhir/resources/patient) resource. Some common examples are:
+The [Group](/docs/api/fhir/resources/group) resources allows you to specify a single resource that represents the group of people as a single unit, and in some places can be used instead of the [Patient](/docs/api/fhir/resources/patient) resource. Some common examples are:
 
 | Use Case                                                                                                             | [Group](/docs/api/fhir/resources/group) referenced by                            |
 | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -291,7 +291,7 @@ Some examples of abstract groups are:
 - A generalized population of patients for a clinical trial.
 - A herd of animals for veterinary use cases.
 
-Adding a [Group](/docs/api/fhir/resources/group) resource for your families an orthogonal choice to Approaches #1-3. You may choose to model the individual relationships via [RelatedPersons](/docs/api/fhir/resources/relatedperson) _and_ also consolidate the entire family into a group. If modeling family groups is important, Medplum recommends modeling all the individuals as Patients, and then referencing them in the `Group.member.entity` array.
+Adding a [Group](/docs/api/fhir/resources/group) resource for your families an orthogonal choice to Approaches #1-3. You may choose to model the individual relationships via [RelatedPersons](/docs/api/fhir/resources/relatedperson) _and_ also consolidate the entire family into a group. If modeling family groups is important, Medplum recommends modeling all the individuals as [`Patients`](docs/api/fhir/resources/patient), and then referencing them in the `Group.member.entity` array. If required, [`Patients`](docs/api/fhir/resources/patient) can also belong to more than one [`Group`](docs/api/fhir/resources/group)
 
 In the case of abstract groups, you can use the `Group.quantity` field to record the size of the group, which may be important for analytics or billing workflows.
 
