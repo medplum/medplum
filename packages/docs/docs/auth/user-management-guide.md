@@ -16,14 +16,6 @@ This guide walks through how to **create and manage users** via the Medplum App 
 
 Medplum has several resources that represent user identities. The following resources are fundamental to building a correctly functioning application. This table describes how identities are represented in the system, and provides links to the administrative settings in the [Medplum App](https://app.medplum.com).
 
-| Resource                                                      | Description                                                                                                                                                                                                                       | Medplum App                                                                                                              |
-| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| User                                                          | A resource that represents a user identity. Users exist above the Project level and can only be self-updated.                                                                                                                     | None                                                                                                                     |
-| Project                                                       | A [Project](/docs/tutorials/register#medplum-projects) is an isolated set of resources. With the exception of User, resources do not exist across Projects                                                                        | [Project Admin](https://app.medplum.com/admin/project)                                                                   |
-| [ProjectMembership](/docs/api/fhir/medplum/projectmembership) | A ProjectMembership represents granting a user access to the resources within a Project. Inviting a user to a project, and specifying their `profile` and `accessPolicy` you can determine what set of resources they can access. | [Invite (Admins only)](https://app.medplum.com/admin/invite), [Users (Admins only)](https://app.medplum.com/admin/users) |
-
-:::note Example
-
 ```mermaid
 
 graph TD
@@ -32,27 +24,41 @@ graph TD
 	PM1_1("<strong>ProjectMembership</strong><br/>admin: true")
 	PM1_2("<strong>ProjectMembership<strong>")
 	PM2_2("<strong>ProjectMembership</strong><br/>accessPolicy: ['AccessPolicy/123']")
-	subgraph Project1
-	  p1[[Patient]]
+
+  User1 -->PM1_1
+	User1 -->PM1_2
+	User2 -->PM2_2
+
+  subgraph Project1
+    PM1_1 --> p1
+	  p1[[Practitioner]]
 	  p2[[DiagnosticReport]]
 	  p3[[Observation]]
 	end
 	subgraph Project2
+    PM1_2 --> p4
 		p4[[Patient]]
 	  p5[[DiagnosticReport]]
 	  p6[[Observation]]
+    p7[[Practitioner]]
+    PM2_2 --> p7
 	end
-	User1 -->PM1_1
-	User1 -->PM1_2
-	User2 -->PM2_2
-	PM1_1 --> Project1
-	PM1_2 --> Project2
-	PM2_2 --> Project2
+
 ```
 
-:::
+### Users and Projects
 
-The resources below serve as modifier to the ProjectMembership resource (i.e. `ProjectMembership.profile`) that enable sophisticated access controls. The `ProjectMembership.accessPolicy` may rely on the `ProjectMembership.profile` resource.
+| Resource                                                      | Description                                                                                                                                                                                                                       | Medplum App                                                                                                              |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| User                                                          | A resource that represents a user identity. Users exist above the Project level and can only be self-updated.                                                                                                                     | None                                                                                                                     |
+| Project                                                       | A [Project](/docs/tutorials/register#medplum-projects) is an isolated set of resources. With the exception of User, resources do not exist across Projects                                                                        | [Project Admin](https://app.medplum.com/admin/project)                                                                   |
+| [ProjectMembership](/docs/api/fhir/medplum/projectmembership) | A ProjectMembership represents granting a user access to the resources within a Project. Inviting a user to a project, and specifying their `profile` and `accessPolicy` you can determine what set of resources they can access. | [Invite (Admins only)](https://app.medplum.com/admin/invite), [Users (Admins only)](https://app.medplum.com/admin/users) |
+
+### Profiles
+
+_Within_ each project, a project member is represented by a specific FHIR resource, known as their **profile**. The `ProjectMembership.profile` element links the ` ProjectMembership` to the profile resource.
+
+A user's profile can be one of the three resource types in the table below. Incorporating the resources in the table below into ProjectMembership enable sophisticated access controls, as [Access Policies](/docs/auth/access-control) can access the profile of the current user ([read more](/docs/auth/access-control#patient-access))
 
 | Resource      | Description                                                                                                                             | Medplum App                                            |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -79,25 +85,21 @@ If you are self-hosting, replace `app.medplum.com` with `app.your-base-url.com`
 
 :::
 
-
-
 ### API
 
-To create a new `Project` resource via the API, you will need to create a `ClientApplication` with super admin privileges. 
+To create a new `Project` resource via the API, you will need to create a `ClientApplication` with super admin privileges.
 
-:::warning 
+:::warning
 
-Super admin features can cause unrepairable damage. We highly recommend adding an [Access Policy](/docs/auth/access-control) to this `ClientApplication` to reduce it's privileges. 
+Super admin features can cause unrepairable damage. We highly recommend adding an [Access Policy](/docs/auth/access-control) to this `ClientApplication` to reduce it's privileges.
 
-::: 
+:::
 
-With is `ClientApplication`, you can create a `Project` resource and invite the a new user as a project admin. 
+With is `ClientApplication`, you can create a `Project` resource and invite the a new user as a project admin.
 
 <MedplumCodeBlock language="ts" selectBlocks="createProject">
   {ExampleCode}
 </MedplumCodeBlock>
-
-
 
 ## User Administration via Medplum App
 
@@ -148,10 +150,7 @@ You can search for all project members by performing a search for all `ProjectMe
   </TabItem>
 </Tabs>
 
-
-
-
-You can also use the `profile-type`  search parameter to narrow your search
+You can also use the `profile-type` search parameter to narrow your search
 
 #### Example: Search for all human members
 
@@ -173,9 +172,7 @@ You can also use the `profile-type`  search parameter to narrow your search
   </TabItem>
 </Tabs>
 
-
 #### Example: Search for all project `Patients`
-
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
@@ -194,7 +191,6 @@ You can also use the `profile-type`  search parameter to narrow your search
     </MedplumCodeBlock>
   </TabItem>
 </Tabs>
-
 
 #### Example: Search for all project `Practitioners`
 
@@ -215,8 +211,6 @@ You can also use the `profile-type`  search parameter to narrow your search
     </MedplumCodeBlock>
   </TabItem>
 </Tabs>
-
-
 
 Refer to our [search documentation](/docs/search/basic-search) for more details on FHIR search
 
