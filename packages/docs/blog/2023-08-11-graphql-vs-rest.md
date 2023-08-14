@@ -1,18 +1,21 @@
 # GraphQL vs REST APIs in Medplum
 
-One of the most frequent questions we get from our users is whether they should use Medplum's [REST API]() or [GraphQL](). Both follow the FHIR specification, and they offer different tradeoffs, depending on your use case. 
+One of the most frequent questions we get from our users is whether they should use Medplum's [REST API]() or [GraphQL](). Both have a FHIR specification, and they offer different tradeoffs for different use cases. 
 
-In this post, we'll provide a brief description of these tradeoffs and give some guidance on how you can choose which API is right for you. 
+In this post, we'll go over these tradeoffs and provide some guidance on how you can choose which API is right for you. 
 
 ## GraphQL
 
-GraphQL APIs have surged in popularity in recent years. For those already invested in the GraphQL ecosystem, the ability to integrate other frameworks, such as Apollo, is undeniably beneficial.
+GraphQL APIs have surged in popularity in recent years. <For those already invested in the GraphQL ecosystem, the ability to integrate other frameworks, such as [Apollo](), is undeniably beneficial>.
 
-In the context of FHIR, one of its standout features API is the ability to quickly retrieve [multiple linked resources](). While the REST API allows similar functionality using the [`_include`]()  and [`_revinclude`]() directives, GraphQL offers a very natural syntax for querying bundles of resources that reference each other. 
+In the context of FHIR, one of GraphQL's standout features is the ability to quickly retrieve [multiple linked resources](). While the REST API allows similar functionality using the [`_include`]()  and [`_revinclude`]() directives, GraphQL offers a more natural syntax for querying bundles of resources that reference each other. 
 
-<TODO example>
+```graphql
+```
 
-GraphQL, also offers very fine grained control for developers to select the exact fields returned in a query, which can significantly reduces unnecessary network traffic. Unlike the REST API, GraphQL lets you select specific fields, even in deeply nested elements, and provides additional filtering functionality through [FHIR Path list filters](). This is particularly advantageous in applications where bandwidth is at a premium, such as in mobile applications. 
+
+
+GraphQL, also offers very fine grained control for developers to select the exact fields returned in a query, which can significantly reduce your app's network traffic. Unlike the REST API, GraphQL lets you select specific fields, even in deeply nested elements, and provides additional filtering functionality through [FHIR Path list filters](). This is particularly advantageous in applications where bandwidth is at a premium, such as in mobile applications. 
 
 <TODO: Example>
 
