@@ -83,11 +83,19 @@ If you are self-hosting, replace `app.medplum.com` with `app.your-base-url.com`
 
 ### API
 
+To create a new `Project` resource via the API, you will need to create a `ClientApplication` with super admin privileges. 
 
+:::warning 
 
+Super admin features can cause unrepairable damage. We highly recommend adding an [Access Policy](/docs/auth/access-control) to this `ClientApplication` to reduce it's privileges. 
 
+::: 
 
+With is `ClientApplication`, you can create a `Project` resource and invite the a new user as a project admin. 
 
+<MedplumCodeBlock language="ts" selectBlocks="createProject">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 
 
