@@ -3,6 +3,11 @@ sidebar_position: 2
 tags: [auth]
 ---
 
+import ExampleCode from '!!raw-loader!@site/..//examples/src/auth/user-management-guide.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # User Management Guide
 
 This guide walks through how to **create and manage users** via the Medplum App and via API. Medplum supports multiple authentication options, but always maintains a representation of the user identities, and gives developers control over which authentication method to use for an identity, as well as what access controls are applied.
@@ -16,6 +21,36 @@ Medplum has several resources that represent user identities. The following reso
 | User                                                          | A resource that represents a user identity. Users exist above the Project level and can only be self-updated.                                                                                                                     | None                                                                                                                     |
 | Project                                                       | A [Project](/docs/tutorials/register#medplum-projects) is an isolated set of resources. With the exception of User, resources do not exist across Projects                                                                        | [Project Admin](https://app.medplum.com/admin/project)                                                                   |
 | [ProjectMembership](/docs/api/fhir/medplum/projectmembership) | A ProjectMembership represents granting a user access to the resources within a Project. Inviting a user to a project, and specifying their `profile` and `accessPolicy` you can determine what set of resources they can access. | [Invite (Admins only)](https://app.medplum.com/admin/invite), [Users (Admins only)](https://app.medplum.com/admin/users) |
+
+:::note Example
+
+```mermaid
+
+graph TD
+	User1["<strong>User</strong><br/>email: foo@example.com"]
+	User2["<strong>User</strong><br/>email: bar@example.com"]
+	PM1_1("<strong>ProjectMembership</strong><br/>admin: true")
+	PM1_2("<strong>ProjectMembership<strong>")
+	PM2_2("<strong>ProjectMembership</strong><br/>accessPolicy: ['AccessPolicy/123']")
+	subgraph Project1
+	  p1[[Patient]]
+	  p2[[DiagnosticReport]]
+	  p3[[Observation]]
+	end
+	subgraph Project2
+		p4[[Patient]]
+	  p5[[DiagnosticReport]]
+	  p6[[Observation]]
+	end
+	User1 -->PM1_1
+	User1 -->PM1_2
+	User2 -->PM2_2
+	PM1_1 --> Project1
+	PM1_2 --> Project2
+	PM2_2 --> Project2
+```
+
+:::
 
 The resources below serve as modifier to the ProjectMembership resource (i.e. `ProjectMembership.profile`) that enable sophisticated access controls. The `ProjectMembership.accessPolicy` may rely on the `ProjectMembership.profile` resource.
 
@@ -31,6 +66,30 @@ There are several `ProjectMembership.profile` resources that are related to prog
 | ----------------- | ------------------------------------------------------ | ------------------------------------------------------------ |
 | ClientApplication | API Keys that allow programmatic access to resources   | [Client Applications](https://app.medplum.com/admin/clients) |
 | Bot               | Event driven [custom functions](/docs/bots/bot-basics) | [Bots](https://app.medplum.com/Bot)                          |
+
+## Creating a new Project
+
+### UI
+
+The simplest way to create a project is to visit https://app.medplum.com/register and fill out the new project registration form.
+
+:::caution Note
+
+If you are self-hosting, replace `app.medplum.com` with `app.your-base-url.com`
+
+:::
+
+
+
+### API
+
+
+
+
+
+
+
+
 
 ## User Administration via Medplum App
 
@@ -56,6 +115,102 @@ Do not delete Patient, Practitioner or RelatedPerson resources that belong to Pr
 Tor remove users from the existing project navigate to your [Project settings](https://app.medplum.com/admin/project) and to the Users and Patient tabs respectively. Click on a specific users or patients and click **Remove User**.
 
 We highly recommend leaving the associated FHIR resource (Patient, Practitioner, etc.) in place for audibility, record keeping and in case the membership needs to be reconstructed for some reason.
+
+### Searching for Project Members
+
+You can search for all project members by performing a search for all `ProjectMembership` resources
+
+#### Example: Search for all project members
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchProjectMembershipTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="searchProjectMembershipCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchProjectMembershipCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+
+
+
+You can also use the `profile-type`  search parameter to narrow your search
+
+#### Example: Search for all human members
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchExcludingClientBotTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="searchExcludingClientBotCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchExcludingClientBotCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+
+#### Example: Search for all project `Patients`
+
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchProfileTypePatientTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="searchProfileTypePatientCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchProfileTypePatientCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+
+#### Example: Search for all project `Practitioners`
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchProfileTypePractitionerTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="searchProfileTypePractitionerCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchProfileTypePractitionerCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+
+
+Refer to our [search documentation](/docs/search/basic-search) for more details on FHIR search
 
 ## Invite via API
 
