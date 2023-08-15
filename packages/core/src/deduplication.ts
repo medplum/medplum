@@ -61,7 +61,25 @@ export async function createMasterResource(medplum: MedplumClient, src: Patient,
     throw new Error('There is already a master with the input id');
   }
 
-  // TODO: If one has a ‘replace-by’
+  // If one has a ‘replace-by’
+  if (srcReplacedByTypes.length === 1) {
+    const patient = await medplum.readReference(srcReplacedByTypes[0].other as Reference<Patient>);
+    const links = patient.link ?? [];
+    await medplum.updateResource<Patient>({
+      ...patient,
+      link: [...links, { other: createReference(src), type: 'replaces' }],
+    });
+    return;
+  }
+  if (targetReplacedByTypes.length === 1) {
+    const patient = await medplum.readReference(targetReplacedByTypes[0].other as Reference<Patient>);
+    const links = patient.link ?? [];
+    await medplum.updateResource<Patient>({
+      ...patient,
+      link: [...links, { other: createReference(target), type: 'replaces' }],
+    });
+    return;
+  }
   // If neither of them have a ‘replace-by’
   // Assuming 'target' is the master
   await medplum.createResource<Patient>({ ...target });

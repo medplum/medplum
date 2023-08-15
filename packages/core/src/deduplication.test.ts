@@ -248,4 +248,60 @@ describe('Deduplication', () => {
 
     expect(mockMedplumClient.createResource).toHaveBeenCalledWith(targetPatient);
   });
+
+  test('Source has a replaced-by link', async () => {
+    const mockMedplumClient = {
+      createResource: jest.fn(),
+      readReference: jest.fn(),
+      updateResource: jest.fn(),
+    };
+    const srcPatient: Patient = {
+      resourceType: 'Patient',
+      link: [{ type: 'replaced-by', other: { reference: 'Patient/masterSrc' } }],
+    };
+
+    const targetPatient: Patient = {
+      resourceType: 'Patient',
+    };
+
+    const mockMasterPatient = {
+      resourceType: 'Patient',
+      id: 'masterSrc',
+    };
+
+    // Mocking readReference to return the mock master patient for the source
+    mockMedplumClient.readReference = jest.fn().mockResolvedValue(mockMasterPatient);
+
+    await createMasterResource(mockMedplumClient as any, srcPatient, targetPatient);
+
+    expect(mockMedplumClient.updateResource).toHaveBeenCalled();
+  });
+
+  test('Target has a replaced-by link', async () => {
+    const mockMedplumClient = {
+      createResource: jest.fn(),
+      readReference: jest.fn(),
+      updateResource: jest.fn(),
+    };
+    const srcPatient: Patient = {
+      resourceType: 'Patient',
+    };
+
+    const targetPatient: Patient = {
+      resourceType: 'Patient',
+      link: [{ type: 'replaced-by', other: { reference: 'Patient/masterTarget' } }],
+    };
+
+    const mockMasterPatient = {
+      resourceType: 'Patient',
+      id: 'masterTarget',
+    };
+
+    // Mocking readReference to return the mock master patient for the target
+    mockMedplumClient.readReference = jest.fn().mockResolvedValue(mockMasterPatient);
+
+    await createMasterResource(mockMedplumClient as any, srcPatient, targetPatient);
+
+    expect(mockMedplumClient.updateResource).toHaveBeenCalled();
+  });
 });
