@@ -674,7 +674,7 @@ describe('QuestionnaireForm', () => {
     expect((dropDown as HTMLSelectElement).value).toBe('a2');
   });
 
-  test('Step Sequence', async () => {
+  test('Page Sequence', async () => {
     const visibleQuestion = 'Visible Question';
     const hiddenQuestion = 'Hidden Question';
     await setup({
@@ -696,8 +696,8 @@ describe('QuestionnaireForm', () => {
             ],
             extension: [
               {
-                url: 'https://medplum.com/fhir/StructureDefinition/step-sequence',
-                valueString: 'stepper',
+                url: 'https://medplum.com/fhir/StructureDefinition/page-sequence',
+                valueString: 'page',
               },
             ],
           },
@@ -714,8 +714,8 @@ describe('QuestionnaireForm', () => {
             ],
             extension: [
               {
-                url: 'https://medplum.com/fhir/StructureDefinition/step-sequence',
-                valueString: 'stepper',
+                url: 'https://medplum.com/fhir/StructureDefinition/page-sequence',
+                valueString: 'page',
               },
             ],
           },

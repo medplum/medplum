@@ -86,7 +86,7 @@ export const Groups = (): JSX.Element => (
   </Document>
 );
 
-export const StepSequence = (): JSX.Element => (
+export const PageSequence = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
       questionnaire={{
@@ -96,7 +96,7 @@ export const StepSequence = (): JSX.Element => (
         item: [
           {
             linkId: 'group1',
-            text: 'Step Sequence 1',
+            text: 'Page Sequence 1',
             type: 'group',
             item: [
               {
@@ -125,14 +125,14 @@ export const StepSequence = (): JSX.Element => (
             ],
             extension: [
               {
-                url: 'https://medplum.com/fhir/StructureDefinition/step-sequence',
-                valueString: 'stepper',
+                url: 'https://medplum.com/fhir/StructureDefinition/page-sequence',
+                valueString: 'page',
               },
             ],
           },
           {
             linkId: 'group2',
-            text: 'Step Sequence 2',
+            text: 'Page Sequence 2',
             type: 'group',
             item: [
               {
@@ -148,8 +148,8 @@ export const StepSequence = (): JSX.Element => (
             ],
             extension: [
               {
-                url: 'https://medplum.com/fhir/StructureDefinition/step-sequence',
-                valueString: 'stepper',
+                url: 'https://medplum.com/fhir/StructureDefinition/page-sequence',
+                valueString: 'page',
               },
             ],
           },

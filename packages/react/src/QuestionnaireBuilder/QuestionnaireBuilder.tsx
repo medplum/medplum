@@ -72,7 +72,6 @@ const useStyles = createStyles((theme) => ({
 
 export interface QuestionnaireBuilderProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
-  // stepper?: boolean;
   onSubmit: (result: Questionnaire) => void;
 }
 
@@ -225,7 +224,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           <>
             {resource.title && <Title>{resource.title}</Title>}
             {item.text && <div>{item.text}</div>}
-            {!isContainer && <QuestionnaireFormItem item={item} answers={{}} onChange={() => undefined} />}
+            {!isContainer && <QuestionnaireFormItem item={item} answers={{}} onChange={() => undefined} count={0} />}
           </>
         )}
       </div>
@@ -321,10 +320,10 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             href="#"
             onClick={(e: React.MouseEvent) => {
               e.preventDefault();
-              addItem(createStepper());
+              addItem(createPage());
             }}
           >
-            Add Step Sequence
+            Add Page
           </Anchor>
         )}
         {editing && !isResource && (
@@ -482,16 +481,16 @@ function ensureQuestionnaireOptionKeys(
   }));
 }
 
-function createStepper(): QuestionnaireItem {
+function createPage(): QuestionnaireItem {
   return {
     id: generateId(),
     linkId: generateLinkId('s'),
     type: 'group',
-    text: `Stepper Sequence`,
+    text: `New Page`,
     extension: [
       {
-        url: 'https://medplum.com/fhir/StructureDefinition/step-sequence',
-        valueString: 'stepper',
+        url: 'https://medplum.com/fhir/StructureDefinition/page-sequence',
+        valueString: 'page',
       } as Extension,
     ],
   } as QuestionnaireItem;

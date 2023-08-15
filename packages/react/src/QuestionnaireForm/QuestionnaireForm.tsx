@@ -63,7 +63,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer>>({});
   const [count, setCount] = useState(0);
-  const numberOfSteps = getNumberOfSteps(questionnaire?.item ?? []);
+  const numberOfPages = getNumberOfPages(questionnaire?.item ?? []);
   const nextStep = (): void => setCount((current) => current + 1);
   const prevStep = (): void => setCount((current) => current - 1);
 
@@ -110,12 +110,12 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     >
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
       {questionnaire.item && (
-        <QuestionnaireGroupItem items={questionnaire.item} answers={answers} onChange={setItems} count={count} />
+        <QuestionnaireFormItemArray items={questionnaire.item} answers={answers} onChange={setItems} count={count} />
       )}
       <Group position="right" mt="xl">
         <ButtonGroup
           count={count}
-          numberOfSteps={numberOfSteps}
+          numberOfPages={numberOfPages}
           nextStep={nextStep}
           prevStep={prevStep}
           submitButtonText={props.submitButtonText}
@@ -125,55 +125,10 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   );
 }
 
-interface QuestionnaireGroupItemProps {
-  items: QuestionnaireItem[];
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
-  count: number;
-  onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
-}
-
-function QuestionnaireGroupItem(props: QuestionnaireGroupItemProps): JSX.Element {
-  const [responseItems, setResponseItems] = useState<QuestionnaireResponseItem[]>(
-    buildInitialResponseItems(props.items)
-  );
-
-  function setResponseItem(index: number, newResponseItem: QuestionnaireResponseItem): void {
-    const newResponseItems = responseItems.slice();
-    newResponseItems[index] = newResponseItem;
-    setResponseItems(newResponseItems);
-    props.onChange(newResponseItems);
-  }
-  const firstItem = props.items[0];
-  const firstItemValue = getExtension(firstItem, 'https://medplum.com/fhir/StructureDefinition/step-sequence');
-  // For the stepper sequence all of the outside groups should have extension
-  if (!firstItemValue) {
-    return <QuestionnaireFormItemArray items={props.items} answers={props.answers} onChange={props.onChange} />;
-  }
-  return (
-    <Stepper active={props.count} allowNextStepsSelect={false}>
-      {props.items.map((item, index) => {
-        const stepValue = getExtension(item, 'https://medplum.com/fhir/StructureDefinition/step-sequence');
-        if (stepValue && stepValue.valueString === 'stepper') {
-          return (
-            <Stepper.Step label={item.text} key={item.linkId}>
-              <QuestionnaireFormItem
-                key={item.linkId}
-                item={item}
-                answers={props.answers}
-                onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
-              />
-            </Stepper.Step>
-          );
-        }
-        return null;
-      })}
-    </Stepper>
-  );
-}
-
 interface QuestionnaireFormItemArrayProps {
   items: QuestionnaireItem[];
   answers: Record<string, QuestionnaireResponseItemAnswer>;
+  count: number;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
 
@@ -187,6 +142,32 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
     newResponseItems[index] = newResponseItem;
     setResponseItems(newResponseItems);
     props.onChange(newResponseItems);
+  }
+  const firstItem = props.items[0];
+  const firstItemValue = getExtension(firstItem, 'https://medplum.com/fhir/StructureDefinition/page-sequence');
+
+  if (firstItemValue && firstItemValue.valueString === 'page') {
+    return (
+      <Stepper active={props.count} allowNextStepsSelect={false}>
+        {props.items.map((item, index) => {
+          const stepValue = getExtension(item, 'https://medplum.com/fhir/StructureDefinition/page-sequence');
+          if (stepValue && stepValue.valueString === 'page') {
+            return (
+              <Stepper.Step label={item.text} key={item.linkId}>
+                <QuestionnaireFormItem
+                  key={item.linkId}
+                  item={item}
+                  answers={props.answers}
+                  count={props.count}
+                  onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
+                />
+              </Stepper.Step>
+            );
+          }
+          return null;
+        })}
+      </Stepper>
+    );
   }
 
   return (
@@ -204,6 +185,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
               key={item.linkId}
               item={item}
               answers={props.answers}
+              count={props.count}
               onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
             />
           );
@@ -233,6 +215,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
               item={item}
               answers={props.answers}
               onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
+              count={props.count}
             />
           </FormSection>
         );
@@ -244,6 +227,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
+  count: number;
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
 
@@ -284,7 +268,12 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <div>
           <h3>{item.text}</h3>
           {item.item && (
-            <QuestionnaireFormItemArray items={item.item} answers={props.answers} onChange={onChangeItem} />
+            <QuestionnaireFormItemArray
+              items={item.item}
+              answers={props.answers}
+              count={props.count}
+              onChange={onChangeItem}
+            />
           )}
         </div>
       );
@@ -525,16 +514,17 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
 
 interface ButtonGroupProps {
   count: number;
-  numberOfSteps: number;
+  numberOfPages: number;
   submitButtonText?: string;
   nextStep: () => void;
   prevStep: () => void;
 }
 
 function ButtonGroup(props: ButtonGroupProps): JSX.Element {
-  if (props.count === 0 && props.numberOfSteps < 0) {
+  console.log(props);
+  if (props.count === 0 && props.numberOfPages <= 0) {
     return <Button type="submit">{props.submitButtonText ?? 'OK'}</Button>;
-  } else if (props.count >= props.numberOfSteps - 1) {
+  } else if (props.count >= props.numberOfPages - 1) {
     return (
       <>
         <Button onClick={props.prevStep}>Back</Button>
@@ -634,10 +624,10 @@ export function isQuestionEnabled(
   }
 }
 
-function getNumberOfSteps(items: QuestionnaireItem[]): number {
-  const steppers = items.filter((item) => {
-    const extension = getExtension(item, 'https://medplum.com/fhir/StructureDefinition/step-sequence');
+function getNumberOfPages(items: QuestionnaireItem[]): number {
+  const pages = items.filter((item) => {
+    const extension = getExtension(item, 'https://medplum.com/fhir/StructureDefinition/page-sequence');
     return extension;
   });
-  return steppers.length;
+  return pages.length;
 }
