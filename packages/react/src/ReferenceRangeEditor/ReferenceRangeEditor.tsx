@@ -345,7 +345,7 @@ function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX
       <NativeSelect
         data={['', 'reference', 'critical', 'absolute']}
         label="Category: "
-        defaultValue={intervalGroup.filters.category?.text}
+        defaultValue={intervalGroup.filters.category}
         onChange={(e) => {
           for (const interval of intervalGroup.intervals) {
             const newCategory: string | undefined = e.currentTarget.value;
@@ -440,6 +440,7 @@ function generateGroupKey(interval: ObservationDefinitionQualifiedInterval): str
     `gestationalAge=${formatRange(interval.gestationalAge)}`,
     `context=${interval.context?.text}`,
     `appliesTo=${interval.appliesTo?.map((c) => c.text).join('+')}`,
+    `category=${interval.category}`,
   ];
 
   return results.join(':');
