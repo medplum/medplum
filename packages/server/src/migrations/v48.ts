@@ -5,8 +5,15 @@
 
 import { PoolClient } from 'pg';
 import { r4ProjectId } from '../seed';
+import { systemRepo } from '../fhir/repo';
+import { Project } from '@medplum/fhirtypes';
 
 export async function run(client: PoolClient): Promise<void> {
+  await systemRepo.updateResource<Project>({
+    resourceType: 'Project',
+    id: r4ProjectId,
+    name: 'FHIR R4',
+  });
   await moveOrphanResourcesIntoProject('StructureDefinition', r4ProjectId, client);
   await moveOrphanResourcesIntoProject('SearchParameter', r4ProjectId, client);
   await moveOrphanResourcesIntoProject('ValueSet', r4ProjectId, client);

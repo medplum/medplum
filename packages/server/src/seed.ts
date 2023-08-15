@@ -37,7 +37,6 @@ export async function seedDatabase(): Promise<void> {
     resourceType: 'Project',
     id: r4ProjectId,
     name: 'FHIR R4',
-    owner: createReference(superAdmin),
   });
 
   const practitioner = await systemRepo.createResource<Practitioner>({
