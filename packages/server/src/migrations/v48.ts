@@ -7,16 +7,17 @@ import { PoolClient } from 'pg';
 import { r4ProjectId } from '../seed';
 
 export async function run(client: PoolClient): Promise<void> {
-  await client.query(
-    `UPDATE "StructureDefinition" SET "projectId" = $1::UUID, compartments = ARRAY[$1]::UUID[] WHERE "projectId" IS NULL`,
-    [r4ProjectId]
-  );
-  await client.query(
-    `UPDATE "SearchParameter" SET "projectId" = $1::UUID, compartments = ARRAY[$1]::UUID[] WHERE "projectId" IS NULL`,
-    [r4ProjectId]
-  );
-  await client.query(
-    `UPDATE "ValueSet" SET "projectId" = $1::UUID, compartments = ARRAY[$1]::UUID[] WHERE "projectId" IS NULL`,
-    [r4ProjectId]
-  );
+  await moveOrphanResourcesIntoProject('StructureDefinition', r4ProjectId, client);
+  await moveOrphanResourcesIntoProject('SearchParameter', r4ProjectId, client);
+  await moveOrphanResourcesIntoProject('ValueSet', r4ProjectId, client);
+}
+
+const updateQuery = `UPDATE "__TABLE__" SET
+    "projectId" = $1::UUID,
+    compartments = ARRAY[$1]::UUID[],
+    content = jsonb_set(content::jsonb, '{meta, project}'::text[], to_jsonb($1), true)
+  WHERE
+    "projectId" IS NULL OR "projectId" = $1`;
+async function moveOrphanResourcesIntoProject(table: string, projectId: string, client: PoolClient): Promise<void> {
+  await client.query(updateQuery.replaceAll('__TABLE__', table), [r4ProjectId]);
 }
