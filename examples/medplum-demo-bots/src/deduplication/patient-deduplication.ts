@@ -25,12 +25,19 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   );
 
   targetPatients.forEach(async (target) => {
-    const lists = await medplum.searchResources('List', { subject: createReference(target) });
+    const lists = await medplum.searchResources('List', { subject: createReference(srcPatient), code: 'doNotMatch' });
+
     // Filter lists to identify those marked with 'doNotMatch'.
-    lists.filter(
-      (list) =>
-        !!list.code && getCodeBySystem(list.code, 'http://example.org/patientDeduplication/listType') === 'doNotMatch'
-    );
+    lists.filter((list) => {
+      list.entry?.filter((entry) => {
+        if (entry.item === createReference(target)) {
+          return true;
+        }
+        return false;
+      });
+      return false;
+    });
+
     // If there are no lists marked with 'doNotMatch' for the potential duplicate patient, create a RiskAssessment and Task.
     if (lists.length === 0) {
       const riskAssessment = await medplum.createResource<RiskAssessment>({

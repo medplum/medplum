@@ -1,4 +1,11 @@
-import { BotEvent, createReference, deepClone, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import {
+  BotEvent,
+  createReference,
+  deepClone,
+  getCodeBySystem,
+  getQuestionnaireAnswers,
+  MedplumClient,
+} from '@medplum/core';
 import {
   Identifier,
   Patient,
@@ -82,6 +89,19 @@ export async function rewriteClinicalResources<T extends ResourceWithSubject>(
   });
 }
 
+async function addToDoNotMatchList(
+  medplum: MedplumClient,
+  patientList: Reference<Patient>,
+  patientAdded: Reference<Patient>
+): Promise<void> {
+  const lists = await medplum.searchResources('List', { subject: patientList, code: 'doNotMatch' }); 
+  lists.forEach(async (list) => {
+    const entries = list.entry;
+    entries?.push({ item: patientAdded });
+    await medplum.updateResource({ ...list, entry: entries });
+  });
+}
+
 /**
  * Handler function to process incoming BotEvent containing a QuestionnaireResponse for potential patient record merges.
  */
@@ -90,26 +110,25 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const responses = getQuestionnaireAnswers(event.input);
   // Get the reference to the RiskAssessment from the answers.
   const riskAssessmentReference = responses['assessment'] as QuestionnaireResponseItemAnswer;
-
-  // If merge is disabled based on the questionnaire's answer, terminate the handler early.
-  const mergeCheck = responses['disableMerge']?.valueBoolean;
-  if (!!mergeCheck) {
-    return true;
-  }
-
   // If there's no valid RiskAssessment reference in the response, throw an error.
   if (!riskAssessmentReference.valueReference) {
     throw new Error('Invalid input. Expected RiskAssessment reference');
   }
   const riskAssessment = (await medplum.readReference(riskAssessmentReference.valueReference)) as RiskAssessment;
-  const targetReference = riskAssessment.basis?.[0];
-  const srcReference = riskAssessment.subject;
-
+  const targetReference = riskAssessment.basis?.[0] as Reference<Patient>;
+  const srcReference = riskAssessment.subject as Reference<Patient>;
   if (!targetReference || !srcReference) {
-    const targetStringified = JSON.stringify(targetReference, null, 2);
-    const srcStringified = JSON.stringify(srcReference, null, 2);
-    throw new Error(`Undefined references target: ${targetStringified} src: ${srcStringified}`);
+    throw new Error(`Undefined references target: ${targetReference} src: ${srcReference}`);
   }
+
+  // If merge is disabled based on the questionnaire's answer, terminate the handler early.
+  const mergeCheck = responses['disableMerge']?.valueBoolean;
+  if (!!mergeCheck) {
+    await addToDoNotMatchList(medplum, srcReference, targetReference);
+    await addToDoNotMatchList(medplum, targetReference, srcReference);
+    return true;
+  }
+
   const patientTarget = await medplum.readReference(targetReference);
   const patientSource = await medplum.readReference(srcReference);
 
