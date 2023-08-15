@@ -6,6 +6,7 @@ export * from './client';
 export * from './config';
 export * from './contenttype';
 export * from './crypto';
+export * from './deduplication';
 export * from './eventtarget';
 export * from './fhirlexer';
 export * from './fhirmapper';

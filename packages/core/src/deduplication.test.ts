@@ -1,5 +1,10 @@
 import { OperationOutcome, Patient, PatientLink, ServiceRequest } from '@medplum/fhirtypes';
-import { linkPatientRecords, mergeContactInfo, rewriteClinicalResources } from './deduplication';
+import {
+  createMasterResource,
+  linkPatientRecords,
+  mergePatientRecords,
+  updateClinicalReferences,
+} from './deduplication';
 import { createReference } from './utils';
 import { FetchLike, MedplumClient } from './client';
 import { ContentType } from './contenttype';
@@ -25,6 +30,10 @@ function mockFetch(
 }
 
 describe('Deduplication', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
   test('should link two patient records correctly', () => {
     const srcPatient = {
       resourceType: 'Patient',
@@ -93,7 +102,7 @@ describe('Deduplication', () => {
     const fields = {
       address: [{ city: 'Springfield' }],
     };
-    const result = mergeContactInfo(srcPatient, targetPatient, fields);
+    const result = mergePatientRecords(srcPatient, targetPatient, fields);
 
     // Assertions
     expect(result.src).toEqual(srcPatient);
@@ -121,7 +130,7 @@ describe('Deduplication', () => {
       address: [{ city: 'Springfield' }],
     };
 
-    const result = mergeContactInfo(srcPatient, targetPatient, fields);
+    const result = mergePatientRecords(srcPatient, targetPatient, fields);
 
     expect(result.src).toEqual(srcPatient);
     expect(result.target.id).toBe('target');
@@ -139,15 +148,104 @@ describe('Deduplication', () => {
       resourceType: 'Patient',
       id: 'src',
     } as Patient;
-    const fetch = mockFetch(200, { resourceType: 'Bundle', entry: [clinicalResource] });
-    const client = new MedplumClient({ fetch });
-
     const targetPatient = {
       resourceType: 'Patient',
       id: 'target',
       name: [{ given: ['Lisa'], family: 'Simpson' }],
     } as Patient;
+    const fetch = mockFetch(200, (url: string) => {
+      if (url.includes('subject=')) {
+        return {
+          resourceType: 'Bundle',
+          entry: [{ resource: { ...clinicalResource } }],
+        };
+      } else if (url.includes('ServiceRequest/123')) {
+        return {
+          resourceType: 'ServiceRequest',
+          id: '123',
+          subject: { reference: 'Patient/target' },
+        };
+      }
+      return {};
+    });
+    const client = new MedplumClient({ fetch });
 
-    await rewriteClinicalResources(client, srcPatient, targetPatient, 'ServiceRequest');
+    await updateClinicalReferences(client, srcPatient, targetPatient, 'ServiceRequest');
+    const clinicalResourceUpdated = (await client.readResource('ServiceRequest', '123')) as ServiceRequest;
+    expect(clinicalResourceUpdated.subject).toEqual({ reference: 'Patient/target' });
+  });
+
+  test('Either resource has 2 links with type replaced-by', async () => {
+    const srcPatient: Patient = {
+      resourceType: 'Patient',
+      link: [
+        { type: 'replaced-by', other: { reference: 'Patient/123' } },
+        { type: 'replaced-by', other: { reference: 'Patient/234' } },
+      ],
+    };
+
+    const targetPatient: Patient = {
+      resourceType: 'Patient',
+    };
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+
+    await expect(createMasterResource(client, srcPatient, targetPatient)).rejects.toThrow(
+      'Either resource has 2 links with type replaced-by'
+    );
+  });
+
+  test('Both resources have 1 link with type replaced-by', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const srcPatient: Patient = {
+      resourceType: 'Patient',
+      link: [{ type: 'replaced-by', other: { reference: 'Patient/123' } }],
+    };
+
+    const targetPatient: Patient = {
+      resourceType: 'Patient',
+      link: [{ type: 'replaced-by', other: { reference: 'Patient/123' } }],
+    };
+
+    await expect(createMasterResource(client, srcPatient, targetPatient)).rejects.toThrow(
+      'Both resources have 1 link with type replaced-by'
+    );
+  });
+
+  test('One has replace-by and the other has replaces', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const srcPatient: Patient = {
+      resourceType: 'Patient',
+      link: [{ type: 'replaced-by', other: { reference: 'Patient/123' } }],
+    };
+
+    const targetPatient: Patient = {
+      resourceType: 'Patient',
+      link: [{ type: 'replaces', other: { reference: 'Patient/123' } }],
+    };
+
+    await expect(createMasterResource(client, srcPatient, targetPatient)).rejects.toThrow(
+      'There is already a master with the input id'
+    );
+  });
+
+  test('Happy path - Neither has replace-by', async () => {
+    const mockMedplumClient = {
+      createResource: jest.fn(),
+    };
+
+    const srcPatient: Patient = {
+      resourceType: 'Patient',
+    };
+
+    const targetPatient: Patient = {
+      resourceType: 'Patient',
+    };
+
+    await createMasterResource(mockMedplumClient as any, srcPatient, targetPatient);
+
+    expect(mockMedplumClient.createResource).toHaveBeenCalledWith(targetPatient);
   });
 });

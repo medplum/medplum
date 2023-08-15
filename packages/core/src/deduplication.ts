@@ -24,7 +24,7 @@ export function linkPatientRecords(src: Patient, target: Patient): MergedPatient
   return { src: { ...srcCopy, link: srcLinks, active: false }, target: { ...targetCopy, link: targetLinks } };
 }
 
-export function mergeContactInfo(src: Patient, target: Patient, fields: Partial<Patient>): MergedPatients {
+export function mergePatientRecords(src: Patient, target: Patient, fields?: Partial<Patient>): MergedPatients {
   const srcIdentifiers = src.identifier ?? [];
   const mergedIdentifiers = srcIdentifiers.map((identifier) => ({
     ...identifier,
@@ -36,16 +36,46 @@ export function mergeContactInfo(src: Patient, target: Patient, fields: Partial<
   return { src: src, target: targedMerged };
 }
 
-export async function rewriteClinicalResources<T extends ResourceWithSubject>(
+export async function updateClinicalReferences<T extends ResourceWithSubject>(
   medplum: MedplumClient,
   src: Patient,
   target: Patient,
   clinicalResource: T['resourceType']
 ): Promise<void> {
   const reports = await medplum.searchResources(clinicalResource, { subject: src });
-  console.log(reports);
   (reports as ResourceWithSubject[]).map(async (report) => {
     report.subject = createReference(target);
     await medplum.updateResource(report);
   });
+}
+
+export async function createMasterResource(medplum: MedplumClient, src: Patient, target: Patient): Promise<void> {
+  const srcReplacedByTypes = src.link?.filter((link) => link.type === 'replaced-by') ?? [];
+  const targetReplacedByTypes = target.link?.filter((link) => link.type === 'replaced-by') ?? [];
+
+  const srcReplacesTypes = src.link?.filter((link) => link.type === 'replaces') ?? [];
+  const targetReplacesTypes = target.link?.filter((link) => link.type === 'replaces') ?? [];
+
+  // If either one has 2 links with type ‘replaced-by’
+  if (srcReplacedByTypes.length > 1 || targetReplacedByTypes.length > 1) {
+    throw new Error('Either resource has 2 links with type replaced-by');
+  }
+
+  // If they both have 1 with type ‘replaced-by’
+  if (srcReplacedByTypes.length === 1 && targetReplacedByTypes.length === 1) {
+    throw new Error('Both resources have 1 link with type replaced-by');
+  }
+
+  // If one has ‘replace-by’ and 1 one ‘replaces’
+  if (
+    (srcReplacedByTypes.length === 1 && (srcReplacesTypes.length === 1 || targetReplacesTypes.length === 1)) ||
+    (targetReplacedByTypes.length === 1 && (targetReplacesTypes.length === 1 || srcReplacesTypes.length === 1))
+  ) {
+    throw new Error('There is already a master with the input id');
+  }
+
+  // TODO: If one has a ‘replace-by’
+  // If neither of them have a ‘replace-by’
+  // Assuming 'target' is the master
+  await medplum.createResource<Patient>({ ...target });
 }
