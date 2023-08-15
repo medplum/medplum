@@ -224,7 +224,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           <>
             {resource.title && <Title>{resource.title}</Title>}
             {item.text && <div>{item.text}</div>}
-            {!isContainer && <QuestionnaireFormItem item={item} answers={{}} onChange={() => undefined} count={0} />}
+            {!isContainer && <QuestionnaireFormItem item={item} answers={{}} onChange={() => undefined} />}
           </>
         )}
       </div>
@@ -489,7 +489,7 @@ function createPage(): QuestionnaireItem {
     text: `New Page`,
     extension: [
       {
-        url: 'https://medplum.com/fhir/StructureDefinition/page-sequence',
+        url: 'http://hl7.org/fhir/R4B/extension-questionnaire-itemcontrol.html',
         valueString: 'page',
       } as Extension,
     ],

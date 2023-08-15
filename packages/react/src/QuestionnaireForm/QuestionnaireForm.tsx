@@ -62,10 +62,10 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const questionnaire = useResource(props.questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer>>({});
-  const [count, setCount] = useState(0);
+  const [activePage, setActivePage] = useState(0);
   const numberOfPages = getNumberOfPages(questionnaire?.item ?? []);
-  const nextStep = (): void => setCount((current) => current + 1);
-  const prevStep = (): void => setCount((current) => current - 1);
+  const nextStep = (): void => setActivePage((current) => (current >= numberOfPages ? current : current + 1));
+  const prevStep = (): void => setActivePage((current) => (current <= 0 ? current : current - 1));
 
   useEffect(() => {
     medplum
@@ -109,12 +109,21 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }}
     >
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
-      {questionnaire.item && (
-        <QuestionnaireFormItemArray items={questionnaire.item} answers={answers} onChange={setItems} count={count} />
+      {questionnaire.item && numberOfPages > 0 ? (
+        <QuestionnaireFormGroupPages
+          items={questionnaire.item}
+          answers={answers}
+          onChange={setItems}
+          activePage={activePage}
+        />
+      ) : (
+        questionnaire.item && (
+          <QuestionnaireFormItemArray items={questionnaire.item} answers={answers} onChange={setItems} />
+        )
       )}
       <Group position="right" mt="xl">
         <ButtonGroup
-          count={count}
+          activePage={activePage}
           numberOfPages={numberOfPages}
           nextStep={nextStep}
           prevStep={prevStep}
@@ -125,10 +134,86 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   );
 }
 
+interface QuestionnaireFormGroupPagesProps {
+  items: QuestionnaireItem[];
+  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  activePage: number;
+  onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
+}
+
+function QuestionnaireFormGroupPages(props: QuestionnaireFormGroupPagesProps): JSX.Element {
+  const [responseItems, setResponseItems] = useState<QuestionnaireResponseItem[]>(
+    buildInitialResponseItems(props.items)
+  );
+
+  function setResponseItem(index: number, newResponseItem: QuestionnaireResponseItem): void {
+    const newResponseItems = responseItems.slice();
+    newResponseItems[index] = newResponseItem;
+    setResponseItems(newResponseItems);
+    props.onChange(newResponseItems);
+  }
+  return (
+    <Stepper active={props.activePage ?? 0} allowNextStepsSelect={false}>
+      {props.items.map((item, index) => {
+        if (item.type === QuestionnaireItemType.display) {
+          return (
+            <Stepper.Step label={item.text} key={item.linkId}>
+              <p key={item.linkId}>{item.text}</p>
+            </Stepper.Step>
+          );
+        }
+        if (item.type === QuestionnaireItemType.group) {
+          return (
+            <Stepper.Step label={item.text} key={item.linkId}>
+              <QuestionnaireFormItem
+                key={item.linkId}
+                item={item}
+                answers={props.answers}
+                onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
+              />
+            </Stepper.Step>
+          );
+        }
+        if (item.type === QuestionnaireItemType.boolean) {
+          const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
+          return (
+            <Stepper.Step label={item.text} key={item.linkId}>
+              <CheckboxFormSection key={item.linkId} title={item.text} htmlFor={item.linkId}>
+                <Checkbox
+                  id={item.linkId}
+                  name={item.linkId}
+                  defaultChecked={initial?.valueBoolean}
+                  onChange={(e) =>
+                    setResponseItem(index, {
+                      linkId: item.linkId,
+                      text: item.text,
+                      answer: [{ valueBoolean: e.currentTarget.checked }],
+                    })
+                  }
+                />
+              </CheckboxFormSection>
+            </Stepper.Step>
+          );
+        }
+        return (
+          <Stepper.Step label={item.text} key={item.linkId}>
+            <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text ?? ''}>
+              <QuestionnaireFormItem
+                item={item}
+                answers={props.answers}
+                onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
+              />
+            </FormSection>
+          </Stepper.Step>
+        );
+      })}
+    </Stepper>
+  );
+}
+
 interface QuestionnaireFormItemArrayProps {
   items: QuestionnaireItem[];
   answers: Record<string, QuestionnaireResponseItemAnswer>;
-  count: number;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
 
@@ -142,32 +227,6 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
     newResponseItems[index] = newResponseItem;
     setResponseItems(newResponseItems);
     props.onChange(newResponseItems);
-  }
-  const firstItem = props.items[0];
-  const firstItemValue = getExtension(firstItem, 'https://medplum.com/fhir/StructureDefinition/page-sequence');
-
-  if (firstItemValue && firstItemValue.valueString === 'page') {
-    return (
-      <Stepper active={props.count} allowNextStepsSelect={false}>
-        {props.items.map((item, index) => {
-          const stepValue = getExtension(item, 'https://medplum.com/fhir/StructureDefinition/page-sequence');
-          if (stepValue && stepValue.valueString === 'page') {
-            return (
-              <Stepper.Step label={item.text} key={item.linkId}>
-                <QuestionnaireFormItem
-                  key={item.linkId}
-                  item={item}
-                  answers={props.answers}
-                  count={props.count}
-                  onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
-                />
-              </Stepper.Step>
-            );
-          }
-          return null;
-        })}
-      </Stepper>
-    );
   }
 
   return (
@@ -185,7 +244,6 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
               key={item.linkId}
               item={item}
               answers={props.answers}
-              count={props.count}
               onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
             />
           );
@@ -215,7 +273,6 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
               item={item}
               answers={props.answers}
               onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
-              count={props.count}
             />
           </FormSection>
         );
@@ -227,7 +284,6 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
-  count: number;
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
 
@@ -268,12 +324,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <div>
           <h3>{item.text}</h3>
           {item.item && (
-            <QuestionnaireFormItemArray
-              items={item.item}
-              answers={props.answers}
-              count={props.count}
-              onChange={onChangeItem}
-            />
+            <QuestionnaireFormItemArray items={item.item} answers={props.answers} onChange={onChangeItem} />
           )}
         </div>
       );
@@ -513,7 +564,7 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
 }
 
 interface ButtonGroupProps {
-  count: number;
+  activePage: number;
   numberOfPages: number;
   submitButtonText?: string;
   nextStep: () => void;
@@ -521,10 +572,9 @@ interface ButtonGroupProps {
 }
 
 function ButtonGroup(props: ButtonGroupProps): JSX.Element {
-  console.log(props);
-  if (props.count === 0 && props.numberOfPages <= 0) {
+  if (props.activePage === 0 && props.numberOfPages <= 0) {
     return <Button type="submit">{props.submitButtonText ?? 'OK'}</Button>;
-  } else if (props.count >= props.numberOfPages - 1) {
+  } else if (props.activePage >= props.numberOfPages - 1) {
     return (
       <>
         <Button onClick={props.prevStep}>Back</Button>
@@ -533,7 +583,7 @@ function ButtonGroup(props: ButtonGroupProps): JSX.Element {
         </Button>
       </>
     );
-  } else if (props.count === 0) {
+  } else if (props.activePage === 0) {
     return (
       <>
         <Button onClick={props.nextStep}>Next</Button>
@@ -626,8 +676,8 @@ export function isQuestionEnabled(
 
 function getNumberOfPages(items: QuestionnaireItem[]): number {
   const pages = items.filter((item) => {
-    const extension = getExtension(item, 'https://medplum.com/fhir/StructureDefinition/page-sequence');
-    return extension;
+    const extension = getExtension(item, 'http://hl7.org/fhir/R4B/extension-questionnaire-itemcontrol.html');
+    return !!extension;
   });
-  return pages.length;
+  return pages.length > 0 ? items.length : 0;
 }

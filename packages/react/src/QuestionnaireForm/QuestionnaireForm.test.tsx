@@ -696,7 +696,7 @@ describe('QuestionnaireForm', () => {
             ],
             extension: [
               {
-                url: 'https://medplum.com/fhir/StructureDefinition/page-sequence',
+                url: 'http://hl7.org/fhir/R4B/extension-questionnaire-itemcontrol.html',
                 valueString: 'page',
               },
             ],
@@ -714,7 +714,7 @@ describe('QuestionnaireForm', () => {
             ],
             extension: [
               {
-                url: 'https://medplum.com/fhir/StructureDefinition/page-sequence',
+                url: 'http://hl7.org/fhir/R4B/extension-questionnaire-itemcontrol.html',
                 valueString: 'page',
               },
             ],
