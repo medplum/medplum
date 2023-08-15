@@ -49,6 +49,37 @@ export async function rewriteClinicalResources<T extends ResourceWithSubject>(
   });
 }
 
+export async function createMasterResource(medplum: MedplumClient, src: Patient, target: Patient): Promise<void> {
+  const srcReplacedByTypes = src.link?.filter((link) => link.type === 'replaced-by') ?? [];
+  const targetReplacedByTypes = target.link?.filter((link) => link.type === 'replaced-by') ?? [];
+
+  const srcReplacesTypes = src.link?.filter((link) => link.type === 'replaces') ?? [];
+  const targetReplacesTypes = target.link?.filter((link) => link.type === 'replaces') ?? [];
+
+  // If either one has 2 links with type ‘replaced-by’
+  if (srcReplacedByTypes.length > 1 || targetReplacedByTypes.length > 1) {
+    throw new Error('Either resource has 2 links with type replaced-by');
+  }
+
+  // If they both have 1 with type ‘replaced-by’
+  if (srcReplacedByTypes.length === 1 && targetReplacedByTypes.length === 1) {
+    throw new Error('Both resources have 1 link with type replaced-by');
+  }
+
+  // If one has ‘replace-by’ and 1 one ‘replaces’
+  if (
+    (srcReplacedByTypes.length === 1 && (srcReplacesTypes.length === 1 || targetReplacesTypes.length === 1)) ||
+    (targetReplacedByTypes.length === 1 && (targetReplacesTypes.length === 1 || srcReplacesTypes.length === 1))
+  ) {
+    throw new Error('There is already a master with the input id');
+  }
+
+  // TODO: If one has a ‘replace-by’
+  // If neither of them have a ‘replace-by’
+  // Assuming 'target' is the master
+  await medplum.createResource<Patient>({ ...target });
+}
+
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<any> {
   const responses = getQuestionnaireAnswers(event.input);
   const targetReference = responses['otherPatient'];
@@ -63,6 +94,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const mergedPatients = mergeContactInfo(patients.src, patients.target);
   const deleteSource = responses['deleteSource']?.valueBoolean;
   console.log(JSON.stringify(responses, null, 2));
+
+  const newMaster = responses['createMaster']?.valueBoolean;
+  if (newMaster === true) {
+    await createMasterResource(medplum, mergedPatients.src, mergedPatients.target);
+  }
+  await rewriteClinicalResources(medplum, mergedPatients.src, mergedPatients.target, 'ServiceRequest');
   if (deleteSource === true) {
     console.log('deleting source ', mergedPatients.src.id);
     const deleted = await medplum.deleteResource('Patient', mergedPatients.src.id as string);
@@ -71,6 +108,4 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     await medplum.updateResource<Patient>(mergedPatients.src);
   }
   await medplum.updateResource<Patient>(mergedPatients.target);
-  return `ok, merged ${mergedPatients.src} into ${mergedPatients.target}`;
-  //   await rewriteClinicalResources(medplum, mergedPatients.src, mergedPatients.target, 'ServiceRequest');
 }

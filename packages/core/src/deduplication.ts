@@ -36,19 +36,6 @@ export function mergePatientRecords(src: Patient, target: Patient, fields?: Part
   return { src: src, target: targedMerged };
 }
 
-export async function updateClinicalReferences<T extends ResourceWithSubject>(
-  medplum: MedplumClient,
-  src: Patient,
-  target: Patient,
-  clinicalResource: T['resourceType']
-): Promise<void> {
-  const reports = await medplum.searchResources(clinicalResource, { subject: src });
-  (reports as ResourceWithSubject[]).map(async (report) => {
-    report.subject = createReference(target);
-    await medplum.updateResource(report);
-  });
-}
-
 export async function createMasterResource(medplum: MedplumClient, src: Patient, target: Patient): Promise<void> {
   const srcReplacedByTypes = src.link?.filter((link) => link.type === 'replaced-by') ?? [];
   const targetReplacedByTypes = target.link?.filter((link) => link.type === 'replaced-by') ?? [];
@@ -78,4 +65,17 @@ export async function createMasterResource(medplum: MedplumClient, src: Patient,
   // If neither of them have a ‘replace-by’
   // Assuming 'target' is the master
   await medplum.createResource<Patient>({ ...target });
+}
+
+export async function updateClinicalReferences<T extends ResourceWithSubject>(
+  medplum: MedplumClient,
+  src: Patient,
+  target: Patient,
+  clinicalResource: T['resourceType']
+): Promise<void> {
+  const reports = await medplum.searchResources(clinicalResource, { subject: src });
+  (reports as ResourceWithSubject[]).map(async (report) => {
+    report.subject = createReference(target);
+    await medplum.updateResource(report);
+  });
 }

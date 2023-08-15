@@ -1,0 +1,59 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:27c2daf7-044f-47ab-b1d5-225941189e3b",
+      "request": {
+        "method": "POST",
+        "url": "Questionnaire"
+      },
+      "resource": {
+        "resourceType": "Questionnaire",
+        "name": "Merge With",
+        "status": "active",
+        "item": [
+          {
+            "id": "id-1",
+            "linkId": "otherPatient",
+            "type": "reference",
+            "text": "Patient to Merge"
+          },
+          {
+            "id": "id-5",
+            "linkId": "createMaster",
+            "type": "boolean",
+            "text": "Create a Master Resource for Patient?"
+          },
+          {
+            "id": "id-6",
+            "linkId": "replaceName",
+            "type": "boolean",
+            "text": "Replace Name with Previous Patient?"
+          },
+          {
+            "id": "id-7",
+            "linkId": "replaceAddress",
+            "type": "boolean",
+            "text": "Replace Address with Previous Patient?"
+          },
+          {
+            "id": "id-10",
+            "linkId": "replaceData",
+            "type": "boolean",
+            "text": "Replace Target Patient Data with Previous Patient Data?"
+          },
+          {
+            "id": "id-11",
+            "linkId": "deleteSource",
+            "type": "boolean",
+            "text": "Delete replaced Patient?\n"
+          }
+        ],
+        "subjectType": [
+          "Patient"
+        ]
+      }
+    }
+  ]
+}
