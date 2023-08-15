@@ -93,7 +93,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const patients = linkPatientRecords(patientSource as Patient, patientTarget as Patient);
   const mergedPatients = mergeContactInfo(patients.src, patients.target);
   const deleteSource = responses['deleteSource']?.valueBoolean;
-  console.log(JSON.stringify(responses, null, 2));
 
   const newMaster = responses['createMaster']?.valueBoolean;
   if (newMaster === true) {
@@ -101,9 +100,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   }
   await rewriteClinicalResources(medplum, mergedPatients.src, mergedPatients.target, 'ServiceRequest');
   if (deleteSource === true) {
-    console.log('deleting source ', mergedPatients.src.id);
-    const deleted = await medplum.deleteResource('Patient', mergedPatients.src.id as string);
-    console.log(JSON.stringify(deleted, null, 2));
+    await medplum.deleteResource('Patient', mergedPatients.src.id as string);
   } else {
     await medplum.updateResource<Patient>(mergedPatients.src);
   }
