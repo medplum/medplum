@@ -152,61 +152,19 @@ function QuestionnaireFormGroupPages(props: QuestionnaireFormGroupPagesProps): J
     setResponseItems(newResponseItems);
     props.onChange(newResponseItems);
   }
+
   return (
     <Stepper active={props.activePage ?? 0} allowNextStepsSelect={false}>
-      {props.items.map((item, index) => {
-        if (item.type === QuestionnaireItemType.display) {
-          return (
-            <Stepper.Step label={item.text} key={item.linkId}>
-              <p key={item.linkId}>{item.text}</p>
-            </Stepper.Step>
-          );
-        }
-        if (item.type === QuestionnaireItemType.group) {
-          return (
-            <Stepper.Step label={item.text} key={item.linkId}>
-              <QuestionnaireFormItem
-                key={item.linkId}
-                item={item}
-                answers={props.answers}
-                onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
-              />
-            </Stepper.Step>
-          );
-        }
-        if (item.type === QuestionnaireItemType.boolean) {
-          const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
-          return (
-            <Stepper.Step label={item.text} key={item.linkId}>
-              <CheckboxFormSection key={item.linkId} title={item.text} htmlFor={item.linkId}>
-                <Checkbox
-                  id={item.linkId}
-                  name={item.linkId}
-                  defaultChecked={initial?.valueBoolean}
-                  onChange={(e) =>
-                    setResponseItem(index, {
-                      linkId: item.linkId,
-                      text: item.text,
-                      answer: [{ valueBoolean: e.currentTarget.checked }],
-                    })
-                  }
-                />
-              </CheckboxFormSection>
-            </Stepper.Step>
-          );
-        }
-        return (
-          <Stepper.Step label={item.text} key={item.linkId}>
-            <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text ?? ''}>
-              <QuestionnaireFormItem
-                item={item}
-                answers={props.answers}
-                onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
-              />
-            </FormSection>
-          </Stepper.Step>
-        );
-      })}
+      {props.items.map((item, index) => (
+        <Stepper.Step label={item.text} key={item.linkId}>
+          <QuestionnaireArrayItems
+            item={item}
+            index={index}
+            answers={props.answers}
+            setResponseItem={setResponseItem}
+          />
+        </Stepper.Step>
+      ))}
     </Stepper>
   );
 }
@@ -235,50 +193,64 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
         if (!isQuestionEnabled(item, props.answers)) {
           return null;
         }
-        if (item.type === QuestionnaireItemType.display) {
-          return <p key={item.linkId}>{item.text}</p>;
-        }
-        if (item.type === QuestionnaireItemType.group) {
-          return (
-            <QuestionnaireFormItem
-              key={item.linkId}
-              item={item}
-              answers={props.answers}
-              onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
-            />
-          );
-        }
-        if (item.type === QuestionnaireItemType.boolean) {
-          const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
-          return (
-            <CheckboxFormSection key={item.linkId} title={item.text} htmlFor={item.linkId}>
-              <Checkbox
-                id={item.linkId}
-                name={item.linkId}
-                defaultChecked={initial?.valueBoolean}
-                onChange={(e) =>
-                  setResponseItem(index, {
-                    linkId: item.linkId,
-                    text: item.text,
-                    answer: [{ valueBoolean: e.currentTarget.checked }],
-                  })
-                }
-              />
-            </CheckboxFormSection>
-          );
-        }
+
         return (
-          <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text ?? ''}>
-            <QuestionnaireFormItem
-              item={item}
-              answers={props.answers}
-              onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
-            />
-          </FormSection>
+          <QuestionnaireArrayItems
+            item={item}
+            index={index}
+            answers={props.answers}
+            setResponseItem={setResponseItem}
+          />
         );
       })}
     </Stack>
   );
+}
+
+interface QuestionnaireArrayItemsProps {
+  item: QuestionnaireItem;
+  index: number;
+  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  setResponseItem: (index: number, newResponseItem: QuestionnaireResponseItem) => void;
+}
+
+function QuestionnaireArrayItems(props: QuestionnaireArrayItemsProps): JSX.Element | null {
+  if (props.item.type === QuestionnaireItemType.display) {
+    return <p key={props.item.linkId}>{props.item.text}</p>;
+  }
+
+  if (props.item.type === QuestionnaireItemType.group || props.item.type !== QuestionnaireItemType.boolean) {
+    return (
+      <FormSection key={props.item.linkId} htmlFor={props.item.linkId} title={props.item.text ?? ''}>
+        <QuestionnaireFormItem
+          item={props.item}
+          answers={props.answers}
+          onChange={(newResponseItem) => props.setResponseItem(props.index, newResponseItem)}
+        />
+      </FormSection>
+    );
+  }
+
+  if (props.item.type === QuestionnaireItemType.boolean) {
+    const initial = props.item.initial && props.item.initial.length > 0 ? props.item.initial[0] : undefined;
+    return (
+      <CheckboxFormSection key={props.item.linkId} title={props.item.text} htmlFor={props.item.linkId}>
+        <Checkbox
+          id={props.item.linkId}
+          name={props.item.linkId}
+          defaultChecked={initial?.valueBoolean}
+          onChange={(e) =>
+            props.setResponseItem(props.index, {
+              linkId: props.item.linkId,
+              text: props.item.text,
+              answer: [{ valueBoolean: e.currentTarget.checked }],
+            })
+          }
+        />
+      </CheckboxFormSection>
+    );
+  }
+  return null;
 }
 
 export interface QuestionnaireFormItemProps {
