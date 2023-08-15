@@ -4,7 +4,7 @@ import { bcryptHashPassword } from './auth/utils';
 import { systemRepo } from './fhir/repo';
 import { logger } from './logger';
 import { createSearchParameters } from './seeds/searchparameters';
-import { createStructureDefinitions } from './seeds/structuredefinitions';
+import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { createValueSets } from './seeds/valuesets';
 import { v5, NIL as nullUuid } from 'uuid';
 
@@ -68,7 +68,7 @@ export async function seedDatabase(): Promise<void> {
     admin: true,
   });
 
-  await createStructureDefinitions(r4Project);
+  await rebuildR4StructureDefinitions(r4Project);
   await createValueSets(r4Project);
   await createSearchParameters(r4Project);
 }

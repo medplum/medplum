@@ -19,7 +19,7 @@ import { Repository, systemRepo } from '../fhir/repo';
 import { authenticateToken } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { createSearchParameters } from '../seeds/searchparameters';
-import { createStructureDefinitions } from '../seeds/structuredefinitions';
+import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
 
@@ -48,7 +48,7 @@ superAdminRouter.post(
     requireSuperAdmin(res);
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => createStructureDefinitions(res.locals.project));
+    await sendAsyncResponse(req, res, () => rebuildR4StructureDefinitions(res.locals.project));
   })
 );
 

@@ -9,7 +9,7 @@ import { logger } from '../logger';
  *
  * @param project The project in which to create the StructureDefinition resources
  */
-export async function createStructureDefinitions(project: Project): Promise<void> {
+export async function rebuildR4StructureDefinitions(project: Project): Promise<void> {
   const client = getClient();
   await client.query(`DELETE FROM "StructureDefinition" WHERE "projectId" = $1`, [project.id]);
   await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-resources.json') as Bundle, project);
