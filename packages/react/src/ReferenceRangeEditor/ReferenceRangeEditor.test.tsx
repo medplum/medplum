@@ -222,6 +222,29 @@ describe('ReferenceRangeEditor', () => {
   });
 
   /**
+   * Modify category filter. Make sure submitted value reflects filter
+   */
+  test('Set Category Filter', async () => {
+    const onSubmit = jest.fn();
+    await setup({
+      definition: HDLDefinition,
+      onSubmit,
+    });
+
+    const input = screen.getByLabelText('Category:');
+
+    fireEvent.change(input, { target: { value: 'absolute' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
+    expect(checkSubmitted.qualifiedInterval).toMatchObject(
+      Array(3).fill({
+        category: 'absolute',
+      })
+    );
+  });
+
+  /**
    * Add an interval, and ensure that unit is pre-populated
    */
   test('Add Interval', async () => {

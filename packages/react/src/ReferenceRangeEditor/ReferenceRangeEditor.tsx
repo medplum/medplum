@@ -342,6 +342,24 @@ function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX
           }
         }}
       />
+      <NativeSelect
+        data={['', 'reference', 'critical', 'absolute']}
+        label="Category: "
+        defaultValue={intervalGroup.filters.category?.text}
+        onChange={(e) => {
+          for (const interval of intervalGroup.intervals) {
+            const newCategory: string | undefined = e.currentTarget.value;
+            if (newCategory === '') {
+              onChange(intervalGroup.id, { ...interval, category: undefined });
+            } else {
+              onChange(intervalGroup.id, {
+                ...interval,
+                category: newCategory as 'reference' | 'critical' | 'absolute',
+              });
+            }
+          }
+        }}
+      />
     </Stack>
   );
 }
