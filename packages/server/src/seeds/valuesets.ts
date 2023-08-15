@@ -14,9 +14,11 @@ export async function createValueSets(project: Project): Promise<void> {
     const bundle = readJson('fhir/r4/' + file) as Bundle<CodeSystem | ValueSet>;
     for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
       const resource = entry.resource as CodeSystem | ValueSet;
-      resource.meta = { ...resource.meta, project: project.id };
       await deleteExisting(resource);
-      await systemRepo.createResource(resource);
+      await systemRepo.createResource({
+        ...resource,
+        meta: { ...resource.meta, project: project.id },
+      });
     }
   }
 }

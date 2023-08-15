@@ -11,4 +11,12 @@ export async function run(client: PoolClient): Promise<void> {
     `UPDATE "StructureDefinition" SET "projectId" = $1::UUID, compartments = ARRAY[$1]::UUID[] WHERE "projectId" IS NULL`,
     [r4ProjectId]
   );
+  await client.query(
+    `UPDATE "SearchParameter" SET "projectId" = $1::UUID, compartments = ARRAY[$1]::UUID[] WHERE "projectId" IS NULL`,
+    [r4ProjectId]
+  );
+  await client.query(
+    `UPDATE "ValueSet" SET "projectId" = $1::UUID, compartments = ARRAY[$1]::UUID[] WHERE "projectId" IS NULL`,
+    [r4ProjectId]
+  );
 }

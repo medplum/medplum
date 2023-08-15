@@ -11,7 +11,7 @@ import { logger } from '../logger';
  */
 export async function createSearchParameters(project: Project): Promise<void> {
   const client = getClient();
-  await client.query('DELETE FROM "SearchParameter"');
+  await client.query('DELETE FROM "SearchParameter" WHERE "projectId" = $1', [project.id]);
 
   for (const entry of readJson('fhir/r4/search-parameters.json').entry as BundleEntry[]) {
     await createParameter(entry.resource as SearchParameter, project);
