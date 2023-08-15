@@ -1,47 +1,57 @@
-import { BotEvent, createReference, MedplumClient } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import { BotEvent, MedplumClient, createReference, getCodeBySystem } from '@medplum/core';
+import { Patient, RiskAssessment, Task } from '@medplum/fhirtypes';
 
+/**
+ * Handler function to process incoming BotEvent for potential patient duplicates.
+ */
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   //This bot should only be triggered by a Patient resource Subscription only
-  const patient = event.input as Patient;
-  if (patient.resourceType !== 'Patient') {
+  const srcPatient = event.input as Patient;
+  if (srcPatient.resourceType !== 'Patient') {
     throw new Error('Unexpected input. Expected Patient.');
   }
 
-  const identifier = patient.identifier?.[0].value?.toString();
+  // Search for potential duplicate patients by matching first name, last name, birthdate, and gender.
+  const targetPatients = await medplum.searchResources(
+    'Patient',
+    'firstName=' +
+      srcPatient.name?.[0].given +
+      '&lastName=' +
+      srcPatient.name?.[0].family +
+      '&birthdate=' +
+      srcPatient.birthDate +
+      '&gender=' +
+      srcPatient.gender
+  );
 
-  const existingPatient = await medplum.searchOne('Patient', 'identifier=' + identifier + '&_id:not=' + patient.id);
-
-  if (existingPatient) {
-    const firstName = patient.name?.[0].given?.[0].toString();
-    const lastName = patient.name?.[0].family?.toString();
-    const birthDate = patient.birthDate?.toString();
-
-    if (
-      firstName === existingPatient.name?.[0].given?.[0].toString() &&
-      lastName === existingPatient.name?.[0].family?.toString() &&
-      birthDate === existingPatient.birthDate?.toString()
-    ) {
-      existingPatient.link = [
-        {
-          type: 'replaces',
-          other: createReference(patient),
-        },
-      ];
-
-      // Save the linkage to the existing patient
-      await medplum.updateResource(existingPatient);
-
-      // Mark the new patient as inactive
-      patient.active = false;
-      await medplum.updateResource(patient);
-    } else {
-      // This case is only an identifier collision, so this should be handled manually
-      console.log('Warning: Potential duplicate identifiers found, alert operator.');
-      // Mark the new patient as active to ensure it is not deleted or merged accidentally
-      patient.active = true;
-      await medplum.updateResource(patient);
+  targetPatients.forEach(async (target) => {
+    const lists = await medplum.searchResources('List', { subject: createReference(target) });
+    // Filter lists to identify those marked with 'doNotMatch'.
+    lists.filter(
+      (list) =>
+        !!list.code && getCodeBySystem(list.code, 'http://example.org/patientDeduplication/listType') === 'doNotMatch'
+    );
+    // If there are no lists marked with 'doNotMatch' for the potential duplicate patient, create a RiskAssessment and Task.
+    if (lists.length === 0) {
+      const riskAssessment = await medplum.createResource<RiskAssessment>({
+        resourceType: 'RiskAssessment',
+        subject: createReference(srcPatient),
+        basis: [createReference(target)],
+        prediction: [
+          {
+            probabilityDecimal: 100,
+            qualitativeRisk: {
+              text: 'Certain',
+            },
+          },
+        ],
+      });
+      await medplum.createResource<Task>({
+        resourceType: 'Task',
+        focus: createReference(riskAssessment),
+      });
     }
-  }
+  });
+
   return true;
 }
