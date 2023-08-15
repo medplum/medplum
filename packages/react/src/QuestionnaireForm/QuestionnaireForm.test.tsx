@@ -829,7 +829,6 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByText(hiddenQuestion)).toBeInTheDocument();
 
     expect(screen.getByText('Back')).toBeInTheDocument();
-
   });
 
   test('Conditional question', async () => {

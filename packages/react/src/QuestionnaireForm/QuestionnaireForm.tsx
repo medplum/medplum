@@ -221,7 +221,7 @@ interface QuestionnaireArrayItemsProps {
   setResponseItem: (index: number, newResponseItem: QuestionnaireResponseItem) => void;
 }
 
-function QuestionnaireArrayItems(props: QuestionnaireArrayItemsProps): JSX.Element | null {
+function QuestionnaireArrayItems(props: QuestionnaireArrayItemsProps): JSX.Element {
   if (props.item.type === QuestionnaireItemType.display) {
     return <p key={props.item.linkId}>{props.item.text}</p>;
   }
@@ -233,17 +233,6 @@ function QuestionnaireArrayItems(props: QuestionnaireArrayItemsProps): JSX.Eleme
         answers={props.answers}
         onChange={(newResponseItem) => props.setResponseItem(props.index, newResponseItem)}
       />
-    );
-  }
-  if (props.item.type !== QuestionnaireItemType.boolean) {
-    return (
-      <FormSection key={props.item.linkId} htmlFor={props.item.linkId} title={props.item.text ?? ''}>
-        <QuestionnaireFormItem
-          item={props.item}
-          answers={props.answers}
-          onChange={(newResponseItem) => props.setResponseItem(props.index, newResponseItem)}
-        />
-      </FormSection>
     );
   }
 
@@ -266,7 +255,15 @@ function QuestionnaireArrayItems(props: QuestionnaireArrayItemsProps): JSX.Eleme
       </CheckboxFormSection>
     );
   }
-  return null;
+  return (
+    <FormSection key={props.item.linkId} htmlFor={props.item.linkId} title={props.item.text ?? ''}>
+      <QuestionnaireFormItem
+        item={props.item}
+        answers={props.answers}
+        onChange={(newResponseItem) => props.setResponseItem(props.index, newResponseItem)}
+      />
+    </FormSection>
+  );
 }
 
 export interface QuestionnaireFormItemProps {
