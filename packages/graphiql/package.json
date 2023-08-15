@@ -19,21 +19,21 @@
     "build": "npm run clean && tsc && vite build"
   },
   "devDependencies": {
-    "@graphiql/react": "0.19.2",
+    "@graphiql/react": "0.19.3",
     "@graphiql/toolkit": "0.9.1",
-    "@mantine/core": "6.0.17",
-    "@mantine/hooks": "6.0.17",
+    "@mantine/core": "6.0.19",
+    "@mantine/hooks": "6.0.19",
     "@medplum/core": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/react": "*",
-    "@types/react": "18.2.17",
+    "@types/react": "18.2.20",
     "@types/react-dom": "18.2.7",
-    "graphiql": "3.0.4",
+    "graphiql": "3.0.5",
     "graphql": "16.7.1",
     "graphql-ws": "5.14.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "vite": "4.4.7"
+    "vite": "4.4.9"
   },
   "browserslist": [
     "last 1 Chrome versions"

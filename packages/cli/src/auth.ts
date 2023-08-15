@@ -1,12 +1,11 @@
-import { ContentType, MedplumClient, encodeBase64, getDisplayString, normalizeErrorString } from '@medplum/core';
+import { ContentType, MedplumClient, getDisplayString, normalizeErrorString } from '@medplum/core';
 import { exec } from 'child_process';
 import { createServer } from 'http';
 import { platform } from 'os';
+import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
-import { Profile, saveProfile, loadProfile, profileExists } from './utils';
-import { FileSystemStorage } from './storage';
-import { createHmac } from 'crypto';
+import { Profile, jwtAssertionLogin, jwtBearerLogin, loadProfile, profileExists, saveProfile } from './utils';
 
 const clientId = 'medplum-cli';
 const redirectUri = 'http://localhost:9615';
@@ -48,8 +47,14 @@ async function startLogin(medplum: MedplumClient, profile: Profile): Promise<voi
     const accessToken = await jwtBearerLogin(medplum, profile);
     const storage = new FileSystemStorage(profile.name as string);
     storage.setObject('activeLogin', { accessToken });
-    console.log('Login successful');
+  } else if (profile.authType === 'jwt-assertion') {
+    const accessToken = await jwtAssertionLogin(medplum, profile);
+    const storage = new FileSystemStorage(profile.name as string);
+    storage.setObject('activeLogin', {
+      accessToken,
+    });
   }
+  console.log('Login successful');
 }
 
 async function startWebServer(medplum: MedplumClient): Promise<void> {
@@ -123,41 +128,4 @@ async function medplumAuthorizationCodeLogin(medplum: MedplumClient): Promise<vo
   loginUrl.searchParams.set('response_type', 'code');
   loginUrl.searchParams.set('prompt', 'login');
   await openBrowser(loginUrl.toString());
-}
-
-async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise<string> {
-  const header = {
-    typ: 'JWT',
-    alg: 'HS256',
-  };
-
-  const currentTimestamp = Math.floor(Date.now() / 1000);
-  const data = {
-    aud: `${profile.baseUrl}${profile.audience}`,
-    iss: profile.issuer,
-    sub: profile.subject,
-    nbf: currentTimestamp,
-    iat: currentTimestamp,
-    exp: currentTimestamp + 604800, // expiry time is 7 days from time of creation
-  };
-  const encodedHeader = encodeBase64(JSON.stringify(header));
-  const encodedData = encodeBase64(JSON.stringify(data));
-  const token = `${encodedHeader}.${encodedData}`;
-  const signature = createHmac('sha256', profile.clientSecret as string)
-    .update(token)
-    .digest('base64url');
-  const signedToken = `${token}.${signature}`;
-
-  const formBody = new URLSearchParams();
-  formBody.set('grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer');
-  formBody.set('client_id', profile.clientId as string);
-  formBody.set('assertion', signedToken);
-  formBody.set('scope', profile.scope ?? '');
-
-  const res = await medplum.post(profile.tokenUrl as string, formBody.toString(), 'application/x-www-form-urlencoded', {
-    credentials: 'include',
-  });
-
-  const obj = await JSON.parse(res);
-  return obj.access_token;
 }

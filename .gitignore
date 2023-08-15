@@ -50,3 +50,6 @@ medplum-server.tar.gz
 
 # Rollup
 .rollup.cache/
+
+# All executables
+*.exe

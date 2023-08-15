@@ -1,7 +1,6 @@
 import { Hl7Message, MedplumClient, resolveId } from '@medplum/core';
 import { AgentChannel, Bot, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
-import { readFileSync } from 'fs';
 import { EventLogger } from 'node-windows';
 import WebSocket from 'ws';
 
@@ -165,10 +164,15 @@ export class AgentHl7ChannelConnection {
 }
 
 if (typeof require !== 'undefined' && require.main === module) {
-  const config = JSON.parse(readFileSync('medplum.config.json', 'utf8'));
-  const medplum = new MedplumClient(config);
+  if (process.argv.length < 6) {
+    console.log('Usage: node medplum-agent.js <baseUrl> <clientId> <clientSecret> <agentId>');
+    process.exit(1);
+  }
+
+  const [_node, _script, baseUrl, clientId, clientSecret, agentId] = process.argv;
+  const medplum = new MedplumClient({ baseUrl, clientId });
   medplum
-    .startClientLogin(config.clientId, config.clientSecret)
-    .then(() => new App(medplum, config.agentId).start())
+    .startClientLogin(clientId, clientSecret)
+    .then(() => new App(medplum, agentId).start())
     .catch(console.error);
 }

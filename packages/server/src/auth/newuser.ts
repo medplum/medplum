@@ -120,6 +120,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
       remember: req.body.remember,
       remoteAddress: req.ip,
       userAgent: req.get('User-Agent'),
+      allowNoMembership: true,
     });
     res.status(200).json({ login: login.id });
   } catch (err) {
@@ -149,7 +150,7 @@ export async function createUser(request: NewUserRequest): Promise<User> {
   return result;
 }
 
-async function getProjectByRecaptchaSiteKey(
+function getProjectByRecaptchaSiteKey(
   recaptchaSiteKey: string,
   projectId: string | undefined
 ): Promise<Project | undefined> {
@@ -169,10 +170,5 @@ async function getProjectByRecaptchaSiteKey(
     });
   }
 
-  const bundle = await systemRepo.search<Project>({
-    resourceType: 'Project',
-    count: 1,
-    filters,
-  });
-  return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
+  return systemRepo.searchOne<Project>({ resourceType: 'Project', filters });
 }

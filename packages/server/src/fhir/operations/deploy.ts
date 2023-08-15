@@ -27,13 +27,13 @@ const LAMBDA_HANDLER = 'index.handler';
 
 const LAMBDA_MEMORY = 1024;
 
-const WRAPPER_CODE = `const { Hl7Message, MedplumClient } = require("@medplum/core");
+const WRAPPER_CODE = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
 const fetch = require("node-fetch");
 const PdfPrinter = require("pdfmake");
 const userCode = require("./user.js");
 
 exports.handler = async (event, context) => {
-  const { baseUrl, accessToken, input, contentType, secrets } = event;
+  const { baseUrl, accessToken, contentType, secrets } = event;
   const medplum = new MedplumClient({
     baseUrl,
     fetch,
@@ -41,14 +41,15 @@ exports.handler = async (event, context) => {
   });
   medplum.setAccessToken(accessToken);
   try {
-    return await userCode.handler(medplum, {
-      input:
-        contentType === "x-application/hl7-v2+er7"
-          ? Hl7Message.parse(input)
-          : input,
-      contentType,
-      secrets,
-    });
+    let input = event.input;
+    if (contentType === ContentType.HL7_V2 && input) {
+      input = Hl7Message.parse(input);
+    }
+    let result = await userCode.handler(medplum, { input, contentType, secrets });
+    if (contentType === ContentType.HL7_V2 && result) {
+      result = result.toString();
+    }
+    return result;
   } catch (err) {
     if (err instanceof Error) {
       console.log("Unhandled error: " + err.message + "\\n" + err.stack);

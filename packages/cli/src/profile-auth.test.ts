@@ -17,6 +17,12 @@ jest.mock('fs', () => ({
   writeFile: jest.fn((path, data, callback) => {
     callback();
   }),
+  readFileSync: jest.fn((filePath) => {
+    if (filePath.includes('/testPrivateKey.pem')) {
+      return testPrivateKey;
+    }
+    return jest.requireActual('fs').readFileSync(filePath);
+  }),
 }));
 
 const testHomeDir = mkdtempSync(__dirname + sep + 'storage-');
@@ -97,8 +103,72 @@ describe('Profiles Auth', () => {
       accessToken: accessTokenFromClientId,
     });
   });
-});
 
+  test('JWT Assertion', async () => {
+    const profileName = 'jwtAssertion';
+    const jwtObj = {
+      authType: 'jwt-assertion',
+      baseUrl: 'https://valid.gov',
+      fhirUrlPath: 'api/v2',
+      tokenUrl: 'oauth2/token',
+      clientId: 'validClientId',
+      clientSecret: 'validClientSecret',
+      scope: 'validScope',
+      authorizeUrl: 'https://valid.gov/authorize',
+      privateKeyPath: '/test_util/testPrivateKey.pem',
+      audience: '/oauth2/token',
+    };
+
+    const accessTokenFromClientId = createFakeJwt({ client_id: 'test-client-id', login_id: '123' });
+
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token: accessTokenFromClientId,
+        };
+      }
+      return {};
+    });
+
+    const profile = new FileSystemStorage(profileName);
+    const medplum = new MedplumClient({ fetch, storage: profile });
+    (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+
+    await main([
+      'node',
+      'index.js',
+      'login',
+      '-p',
+      profileName,
+      '--auth-type',
+      jwtObj.authType,
+      '--client-id',
+      jwtObj.clientId,
+      '--scope',
+      jwtObj.scope,
+      '--authorize-url',
+      jwtObj.authorizeUrl,
+      '--client-secret',
+      jwtObj.clientSecret,
+      '--token-url',
+      jwtObj.tokenUrl,
+      '--authorize-url',
+      jwtObj.authorizeUrl,
+      '--private-key-path',
+      jwtObj.privateKeyPath,
+      '--token-url',
+      jwtObj.tokenUrl,
+      '--base-url',
+      jwtObj.baseUrl,
+      '--audience',
+      jwtObj.audience,
+    ]);
+
+    expect(profile.getObject('activeLogin')).toEqual({
+      accessToken: accessTokenFromClientId,
+    });
+  });
+});
 function createFakeJwt(claims: Record<string, string | number>): string {
   const payload = JSON.stringify(claims);
   const encodedPayload = Buffer.from(payload).toString('base64');
@@ -124,3 +194,32 @@ function mockFetch(
     });
   });
 }
+
+const testPrivateKey = `-----BEGIN RSA PRIVATE KEY-----
+MIIEpgIBAAKCAQEA3e9c5RfJuzNoTMmHAeTn3tcMxK5nPt+AmDMaMkEr+XA4+du8
+puQ1eUrvttq9kMp5pF/pvXxi9LhXqsg1VeYBGTiiDox1201ei7LDyOiXdHCyF7Fz
+zi3jXWpl8tl1XSLnv2jak0l7gZAxltL6G3VHpHXg68ACLflfGiW4nSpqp0XX/bQY
+6PKQ2HYydAvrKDwCO9bceTBW4QmxLtaEZyHduLfm+sBLpK48KElptBaHXl3cGAZA
+ntPn0ue0vj1m34/1CBzuPIOw7Qw6WXxIFifkzDFfr7quAJatN2cbgOu1DDnbPEcH
+e4HTwUyKjrrJxePHa/E4NO+jKi+ttuldxNAI/QIDAQABAoIBAQCCIuJo33sGD03g
+gOduf+hK7fTpu46E+o+wL37z6u07NcfjEyta/UQx3HQV18wChAeyEB/CYZaxAws8
+9Gr59IW+YUv9lfVh48tFxUwymdh9ibuUUxSh2JyS4VnofgTo2RflUDmi1hrazU+W
+rh3ETg/1ar2533wnsytF7MqFNiMV87H2wc1Tk7ruPov9vobkPhq4OqFKzuPjzUTu
+UwSVyDMfV9Gud9X13JzpdgkcEEyKyINZyxSDik1UrCRF+hDpc9iP7UWcuPHeHBrU
+7LynQi31Jo9WrIFTd4yY9QjCa35EpakpfAqTlHzG3rAUP93Fh9c7G/ANa+hm01VI
+LsCtswbhAoGBAPDPrD4wNZoGEoVgvRj5xISFhiQ59WY1cYf8p0vn06T+NB1JndBK
+FzDVoiz+TE2k5V6PCGRRbrzAMsTIp1AMcFOy62QfgjAmkSaadAxBjCmyPaYBrGxZ
+zeWI7zUkPYUjv1+WvByg0ym3urd+m04RlGGHHl2Z2xR2j38Saqps4XAZAoGBAOvu
+5mENDdiqLuapz48/NtH1q/sMBWHwrKrOugDOri0qwdBufP2aq89f0txDJaps7Zgo
+3jc6wdUcivne/N2ZCSPy8TDw0Mag/UCm8J1G5X5kRcDhK+Thui8WMvr/K1rNLEG1
+naZGdCw0D6SjcgcEOBPE//jcTEh/GASEgWmrYKyFAoGBAOomRCjD35rARMoD4lqi
+of7phiE7ae3UEWxUsqcP568Krcm8hwK8yAfn8iUlrzPgHlbvZQ2GUNKfX74QDP+8
+2IvJ8TANox0GoySSEjzIj20Lrv33qpxARf/mQhG+B0OqGq7rdkWv6yMpTxiUtpYW
+adza8R+6NleTYLwCQE0uSZYhAoGBAI++kRxGMM51+XdNtIjpEcRgMrUUwN7IHNtA
+cnD1e4dHSqhr+LkmmFETZ8wNGRC5pxSSqbjqkpf9+Op+In/8smX1qV+RCRJLmaDf
+VS/ttvsHqrv2NKERqjbwBoWIG+kJolIyjed1e2hHG9TKRDnkJypcVzxPNCbjUEXI
+WXSBFrhlAoGBAOl3AC4VhQEYp5eUu8/n1moVfhBQlpr7+fSXm6LOp7uLzxVzxHH1
+btTekikziD1k3VcLVKhUWqzRLB1chSePSqik9hg5GhW7IKF/susg45p3ZJXR/M7j
+LRHEVpYBnSkJLEuR0xus3dEOAQK4Nkc/le++9gzG4eN8KdI6p3/zFPgr
+-----END RSA PRIVATE KEY-----
+`;

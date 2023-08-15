@@ -188,7 +188,8 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
         title,
         message: 'Done',
         icon: <IconCheck size="1rem" />,
-        autoClose: 2000,
+        autoClose: false,
+        withCloseButton: true,
       });
     })
     .catch((err) => {
@@ -198,7 +199,8 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
         title,
         message: normalizeErrorString(err),
         icon: <IconX size="1rem" />,
-        autoClose: 2000,
+        autoClose: false,
+        withCloseButton: true,
       });
     });
 }

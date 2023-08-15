@@ -4,11 +4,9 @@ import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
 import { Request } from 'express';
-import { mkdtempSync, rmSync } from 'fs';
 import { simpleParser } from 'mailparser';
 import nodemailer, { Transporter } from 'nodemailer';
 import Mail from 'nodemailer/lib/mailer';
-import { sep } from 'path';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
@@ -16,21 +14,17 @@ import { systemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { sendEmail } from './email';
 
-const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
-
 describe('Email', () => {
   let mockSESv2Client: AwsClientStub<SESv2Client>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
-    config.binaryStorage = 'file:' + binaryDir;
     config.storageBaseUrl = 'https://storage.example.com/';
     await initAppServices(config);
   });
 
   afterAll(async () => {
     await shutdownApp();
-    rmSync(binaryDir, { recursive: true, force: true });
   });
 
   beforeEach(() => {

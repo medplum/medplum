@@ -127,11 +127,12 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     codeChallengeMethod: req.body.codeChallengeMethod,
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
+    allowNoMembership: req.body.createUser,
   });
   await sendLoginResult(res, login);
 }
 
-async function getProjectByGoogleClientId(
+function getProjectByGoogleClientId(
   googleClientId: string,
   projectId: string | undefined
 ): Promise<Project | undefined> {
@@ -151,10 +152,5 @@ async function getProjectByGoogleClientId(
     });
   }
 
-  const bundle = await systemRepo.search<Project>({
-    resourceType: 'Project',
-    count: 1,
-    filters,
-  });
-  return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
+  return systemRepo.searchOne<Project>({ resourceType: 'Project', filters });
 }

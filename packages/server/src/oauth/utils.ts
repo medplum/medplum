@@ -58,6 +58,7 @@ export interface LoginRequest {
   readonly googleCredentials?: GoogleCredentialClaims;
   readonly remoteAddress?: string;
   readonly userAgent?: string;
+  readonly allowNoMembership?: boolean;
   /** @deprecated Use scope of "offline" or "offline_access" instead. */
   readonly remember?: boolean;
 }
@@ -172,6 +173,11 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
   // If they only have one membership, set it now
   // Otherwise the application will need to prompt the user
   const memberships = await getMembershipsForLogin(login);
+
+  if (memberships.length === 0 && !request.allowNoMembership) {
+    throw new OperationOutcomeError(badRequest('User not found'));
+  }
+
   if (memberships.length === 1) {
     return setLoginMembership(login, memberships[0].id as string);
   } else {
@@ -334,12 +340,9 @@ export async function getMembershipsForLogin(login: Login): Promise<ProjectMembe
  * @param client The client application.
  * @returns The project membership for the client application if found; otherwise undefined.
  */
-export async function getClientApplicationMembership(
-  client: ClientApplication
-): Promise<ProjectMembership | undefined> {
-  const bundle = await systemRepo.search<ProjectMembership>({
+export function getClientApplicationMembership(client: ClientApplication): Promise<ProjectMembership | undefined> {
+  return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
-    count: 1,
     filters: [
       {
         code: 'user',
@@ -348,8 +351,6 @@ export async function getClientApplicationMembership(
       },
     ],
   });
-
-  return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as ProjectMembership) : undefined;
 }
 
 /**
