@@ -155,16 +155,22 @@ function QuestionnaireFormGroupPages(props: QuestionnaireFormGroupPagesProps): J
 
   return (
     <Stepper active={props.activePage ?? 0} allowNextStepsSelect={false}>
-      {props.items.map((item, index) => (
-        <Stepper.Step label={item.text} key={item.linkId}>
-          <QuestionnaireArrayItems
-            item={item}
-            index={index}
-            answers={props.answers}
-            setResponseItem={setResponseItem}
-          />
-        </Stepper.Step>
-      ))}
+      {props.items.map((item, index) => {
+        if (!isQuestionEnabled(item, props.answers)) {
+          return null;
+        }
+
+        return (
+          <Stepper.Step label={item.text} key={item.linkId}>
+            <QuestionnaireArrayItems
+              item={item}
+              index={index}
+              answers={props.answers}
+              setResponseItem={setResponseItem}
+            />
+          </Stepper.Step>
+        );
+      })}
     </Stepper>
   );
 }
@@ -196,6 +202,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 
         return (
           <QuestionnaireArrayItems
+            key={item.linkId}
             item={item}
             index={index}
             answers={props.answers}
@@ -218,8 +225,17 @@ function QuestionnaireArrayItems(props: QuestionnaireArrayItemsProps): JSX.Eleme
   if (props.item.type === QuestionnaireItemType.display) {
     return <p key={props.item.linkId}>{props.item.text}</p>;
   }
-
-  if (props.item.type === QuestionnaireItemType.group || props.item.type !== QuestionnaireItemType.boolean) {
+  if (props.item.type === QuestionnaireItemType.group) {
+    return (
+      <QuestionnaireFormItem
+        key={props.item.linkId}
+        item={props.item}
+        answers={props.answers}
+        onChange={(newResponseItem) => props.setResponseItem(props.index, newResponseItem)}
+      />
+    );
+  }
+  if (props.item.type !== QuestionnaireItemType.boolean) {
     return (
       <FormSection key={props.item.linkId} htmlFor={props.item.linkId} title={props.item.text ?? ''}>
         <QuestionnaireFormItem
