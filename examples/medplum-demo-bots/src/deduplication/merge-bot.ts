@@ -54,7 +54,7 @@ export function linkPatientRecords(src: Patient, target: Patient): MergedPatient
  * @param fields - Optional additional fields to be merged.
  * @returns - Object containing the original source and the merged target patient records.
  */
-export function mergeContactInfo(src: Patient, target: Patient, fields?: Partial<Patient>): MergedPatients {
+export function mergePatientRecords(src: Patient, target: Patient, fields?: Partial<Patient>): MergedPatients {
   const srcIdentifiers = src.identifier ?? [];
   const mergedIdentifiers = srcIdentifiers.map((identifier) => ({
     ...identifier,
@@ -74,7 +74,7 @@ export function mergeContactInfo(src: Patient, target: Patient, fields?: Partial
  * @param target - The target patient record.
  * @param clinicalResource - The type of the clinical resource (e.g., 'ServiceRequest').
  */
-export async function rewriteClinicalResources<T extends ResourceWithSubject>(
+export async function updateClinicalReferences<T extends ResourceWithSubject>(
   medplum: MedplumClient,
   src: Patient,
   target: Patient,
@@ -94,7 +94,10 @@ async function addToDoNotMatchList(
   patientList: Reference<Patient>,
   patientAdded: Reference<Patient>
 ): Promise<void> {
-  const lists = await medplum.searchResources('List', { subject: patientList, code: 'doNotMatch' }); 
+  const lists = await medplum.searchResources('List', { subject: patientList, code: 'doNotMatch' });
+  if (lists.length === 0) {
+    console.warn('No doNotMatch list found for patient: ' + patientList);
+  }
   lists.forEach(async (list) => {
     const entries = list.entry;
     entries?.push({ item: patientAdded });
@@ -134,10 +137,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   const patients = linkPatientRecords(patientSource as Patient, patientTarget as Patient);
 
-  const mergedPatients = mergeContactInfo(patients.src, patients.target);
+  const mergedPatients = mergePatientRecords(patients.src, patients.target);
   const deleteSource = responses['deleteSource']?.valueBoolean;
 
-  await rewriteClinicalResources(medplum, mergedPatients.src, mergedPatients.target, 'ServiceRequest');
+  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'ServiceRequest');
   if (deleteSource === true) {
     await medplum.deleteResource('Patient', mergedPatients.src.id as string);
   } else {
