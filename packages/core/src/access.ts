@@ -15,6 +15,10 @@ export const publicResourceTypes = [
   'StructureDefinition',
 ];
 
+export const universalAccessPolicy: AccessPolicyResource = {
+  resourceType: '*',
+};
+
 /**
  * Protected resource types are in the "medplum" project.
  * Reading and writing is limited to the system account.
@@ -26,6 +30,38 @@ export const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Log
  * accessible to project administrators.
  */
 export const projectAdminResourceTypes = ['PasswordChangeRequest', 'Project', 'ProjectMembership'];
+
+/**
+ * Interactions with a resource that can be controlled via an access policy.
+ *
+ * Codes taken from http://hl7.org/fhir/codesystem-restful-interaction.html
+ */
+export enum AccessPolicyInteraction {
+  READ = 'read',
+  VREAD = 'vread',
+  UPDATE = 'update',
+  PATCH = 'patch',
+  DELETE = 'delete',
+  HISTORY = 'history',
+  HISTORY_INSTANCE = 'history-instance',
+  HISTORY_TYPE = 'history-type',
+  HISTORY_SYSTEM = 'history-system',
+  CREATE = 'create',
+  SEARCH = 'search',
+  SEARCH_TYPE = 'search-type',
+  SEARCH_SYSTEM = 'search-system',
+  SEARCH_COMPARTMENT = 'search-compartment',
+  CAPABILITIES = 'capabilities',
+  TRANSACTION = 'transaction',
+  BATCH = 'batch',
+  OPERATION = 'operation',
+}
+const resourceReadInteractions = [
+  AccessPolicyInteraction.READ,
+  AccessPolicyInteraction.VREAD,
+  AccessPolicyInteraction.HISTORY,
+  AccessPolicyInteraction.HISTORY_INSTANCE,
+];
 
 /**
  * Determines if the current user can read the specified resource type.
@@ -90,11 +126,18 @@ export function canWriteResource(accessPolicy: AccessPolicy, resource: Resource)
  * @param resource The resource.
  * @param readonlyMode True if the resource is being read.
  * @returns True if the resource matches the access policy.
+ * @deprecated Use satisfiedAccessPolicy() instead.
  */
 export function matchesAccessPolicy(accessPolicy: AccessPolicy, resource: Resource, readonlyMode: boolean): boolean {
   if (accessPolicy.resource) {
     for (const resourcePolicy of accessPolicy.resource) {
-      if (matchesAccessPolicyResourcePolicy(resource, resourcePolicy, readonlyMode)) {
+      if (
+        matchesAccessPolicyResourcePolicy(
+          resource,
+          readonlyMode ? AccessPolicyInteraction.READ : AccessPolicyInteraction.UPDATE,
+          resourcePolicy
+        )
+      ) {
         return true;
       }
     }
@@ -103,22 +146,47 @@ export function matchesAccessPolicy(accessPolicy: AccessPolicy, resource: Resour
 }
 
 /**
+ * Check that there is an access policy permitting the given resource interaction, returning the matching policy object.
+ * @param resource The resource being acted upon.
+ * @param interaction The interaction being performed on the resource.
+ * @param accessPolicy The relevant access policy for the current user.
+ * @returns The satisfied access policy, or undefined if the access policy does not permit the given interaction.
+ */
+export function satisfiedAccessPolicy(
+  resource: Resource,
+  interaction: AccessPolicyInteraction,
+  accessPolicy: AccessPolicy | undefined
+): AccessPolicyResource | undefined {
+  if (!accessPolicy) {
+    return universalAccessPolicy;
+  }
+  if (accessPolicy.resource) {
+    for (const resourcePolicy of accessPolicy.resource) {
+      if (matchesAccessPolicyResourcePolicy(resource, interaction, resourcePolicy)) {
+        return resourcePolicy;
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
  * Returns true if the resource satisfies the specified access policy resource policy.
  * @param resource The resource.
+ * @param interaction The interaction being performed on the resource.
  * @param resourcePolicy One per-resource policy section from the access policy.
- * @param readonlyMode True if the resource is being read.
  * @returns True if the resource matches the access policy.
  */
 function matchesAccessPolicyResourcePolicy(
   resource: Resource,
-  resourcePolicy: AccessPolicyResource,
-  readonlyMode: boolean
+  interaction: AccessPolicyInteraction,
+  resourcePolicy: AccessPolicyResource
 ): boolean {
   const resourceType = resource.resourceType;
   if (!matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType)) {
     return false;
   }
-  if (!readonlyMode && resourcePolicy.readonly) {
+  if (resourcePolicy.readonly && !resourceReadInteractions.includes(interaction)) {
     return false;
   }
   if (

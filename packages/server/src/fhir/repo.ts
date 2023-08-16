@@ -13,7 +13,6 @@ import {
   isGone,
   isNotFound,
   isOk,
-  matchesAccessPolicy,
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
@@ -30,6 +29,9 @@ import {
   validate,
   validateResourceType,
   Operator as FhirOperator,
+  satisfiedAccessPolicy,
+  AccessPolicyInteraction,
+  evalFhirPathTyped,
 } from '@medplum/core';
 import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
 import {
@@ -266,7 +268,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     ) {
       return false;
     }
-    if (!this.matchesAccessPolicy(cacheEntry.resource, true)) {
+    if (!satisfiedAccessPolicy(cacheEntry.resource, AccessPolicyInteraction.READ, this.context.accessPolicy)) {
       return false;
     }
     return true;
@@ -447,9 +449,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     const { resourceType, id } = resource;
     if (!id) {
       throw new OperationOutcomeError(badRequest('Missing id'));
-    }
-
-    if (!validator.isUUID(id)) {
+    } else if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
     await this.validate(resource);
@@ -463,15 +463,12 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
 
     const existing = await this.checkExistingResource<T>(resourceType, id, create);
-
     if (await this.isTooManyVersions(resourceType, id, create)) {
       throw new OperationOutcomeError(tooManyRequests);
     }
-
     if (existing) {
       (existing.meta as Meta).compartment = this.getCompartments(existing);
-
-      if (!this.canWriteResource(existing)) {
+      if (!this.canWriteToResource(existing)) {
         // Check before the update
         throw new OperationOutcomeError(forbidden);
       }
@@ -491,26 +488,21 @@ export class Repository extends BaseRepository implements FhirRepository {
       lastUpdated: this.getLastUpdated(existing, resource),
       author: this.getAuthor(resource),
     };
-
     const result: T = { ...updated, meta: resultMeta };
 
     const project = this.getProjectId(updated);
     if (project) {
       resultMeta.project = project;
     }
-
     const account = await this.getAccount(existing, updated, create);
     if (account) {
       resultMeta.account = account;
     }
-
     resultMeta.compartment = this.getCompartments(result);
 
     if (this.isNotModified(existing, result)) {
       return existing as T;
-    }
-
-    if (!this.canWriteResource(result)) {
+    } else if (!this.isResourceWriteable(result)) {
       // Check after the update
       throw new OperationOutcomeError(forbidden);
     }
@@ -518,7 +510,6 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.isCacheOnly(result)) {
       await this.writeToDatabase(result);
     }
-
     await setCacheEntry(result);
     await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
     this.removeHiddenFields(result);
@@ -1544,36 +1535,51 @@ export class Repository extends BaseRepository implements FhirRepository {
   }
 
   /**
-   * Determines if the current user can write the specified resource.
+   * Determines if the current user can write to the specified resource.
    * This is a more in-depth check after building the candidate result of a write operation.
    * @param resource The resource.
    * @returns True if the current user can write the specified resource type.
    */
-  private canWriteResource(resource: Resource): boolean {
+  private canWriteToResource(resource: Resource): boolean {
     if (this.isSuperAdmin()) {
       return true;
     }
     const resourceType = resource.resourceType;
     if (protectedResourceTypes.includes(resourceType)) {
       return false;
-    }
-    if (publicResourceTypes.includes(resourceType)) {
+    } else if (publicResourceTypes.includes(resourceType)) {
       return false;
     }
-    return this.matchesAccessPolicy(resource, false);
+    const matchingPolicy = satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
+    if (!matchingPolicy) {
+      return false;
+    } else if (matchingPolicy?.writeCriteria?.pre) {
+      const invariant = evalFhirPathTyped(matchingPolicy.writeCriteria.pre, [
+        { type: resource.resourceType, value: resource },
+      ]);
+      return invariant.length === 1 && invariant[0].value === true;
+    } else {
+      return true;
+    }
   }
 
   /**
-   * Returns true if the resource satisfies the current access policy.
+   * Check that a resource can be written in its current form.
    * @param resource The resource.
-   * @param readonlyMode True if the resource is being read.
-   * @returns True if the resource matches the access policy.
+   * @returns True if the current user can write the specified resource type.
    */
-  private matchesAccessPolicy(resource: Resource, readonlyMode: boolean): boolean {
-    if (!this.context.accessPolicy) {
+  private isResourceWriteable(resource: Resource): boolean {
+    const matchingPolicy = satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
+    if (!matchingPolicy) {
+      return false;
+    } else if (matchingPolicy?.writeCriteria?.post) {
+      const invariant = evalFhirPathTyped(matchingPolicy.writeCriteria.post, [
+        { type: resource.resourceType, value: resource },
+      ]);
+      return invariant.length === 1 && invariant[0].value === true;
+    } else {
       return true;
     }
-    return matchesAccessPolicy(this.context.accessPolicy, resource, readonlyMode);
   }
 
   /**
