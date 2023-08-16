@@ -32,16 +32,17 @@ Please be advised that Medplum has opted to leverage ONC's SVAP process for the 
 
 This is the list of certified criteria. Related to this criteria these scripts are for the [Medplum team only](https://drive.google.com/drive/folders/1dvb1FWq_qQ94aBe5SRlxF-3_q04M6gFJ?usp=share_link).
 
-| Criteria                                                                      | Description                                          |
-| ----------------------------------------------------------------------------- | ---------------------------------------------------- |
-| [d1](#authentication-access-control-authorization-d1)                         | Authentication, Access Control, Authorization        |
-| [d9](/docs/compliance/onc#trusted-connection-d9)                              | Trusted connection                                   |
-| [d10](#auditing-actions-on-health-information-d10)                            | Auditing actions on Health Information               |
-| [d12](#encrypt-authentication-credentials-d12)                                | Encrypt Authentication Credentials                   |
-| [d13](#multi-factor-authentication-d13)                                       | Multi-factor Authentication                          |
-| [g4](#quality-management-system-g4)                                           | Quality Management System                            |
-| [g5](#accessibility-centered-design-g5)                                       | Accessibility-Centered Design                        |
-| [g10](#standardized-api-for-patient-and-population-services-cures-update-g10) | Standardized API for Patient and Population Services |
+| Criteria                                            | Description                                          |
+| --------------------------------------------------- | ---------------------------------------------------- |
+| [b10](/docs/api/fhir/operations/patient-everything) | Electronic Health Information Export (Cures Update)  |
+| [d1](/docs/auth)                                    | Authentication, Access Control, Authorization        |
+| [d9](/security#application-security)                | Trusted connection                                   |
+| d10                                                 | Auditing actions on Health Information               |
+| d12                                                 | Encrypt Authentication Credentials                   |
+| d13                                                 | Multi-factor Authentication                          |
+| [g4](/docs/compliance/iso9001)                      | Quality Management System                            |
+| g5                                                  | Accessibility-Centered Design                        |
+| g10(/docs/api)                                      | Standardized API for Patient and Population Services |
 
 The following criteria are required for CHPL listing: [d12](#encrypt-authentication-credentials-d12), [d13](#multi-factor-authentication-d13), [g4](#quality-management-system-g4), [g5](#accessibility-centered-design-g5).
 
@@ -49,12 +50,12 @@ The following criteria are required for CHPL listing: [d12](#encrypt-authenticat
 
 | Resource Name            | Description                                          | Access                                                                                                                                                        |
 | ------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Compliance Certificate   | Medplum Compliance Certificate                       | [Request Access](https://drive.google.com/file/d/1CzoraC0umiuNeIlvXgn5HUdL0e38MFrc/view?usp=sharing)                                                          |
+| Compliance Certificate   | Medplum Compliance Certificate                       | [Request Access](https://drive.google.com/file/d/1iBSdSORi-H6DZuYIBYuUlGofc9ouvJEC/view?usp=drive_link)                                                       |
 | Checklist                | Checklist for certification                          | [Request Access](https://docs.google.com/spreadsheets/d/1c4-Rd6_tveid-qrkPDZmD1FaA-fRQSI-/edit?usp=sharing&ouid=115651930576812038339&rtpof=true&sd=true)     |
 | Decision Guide           | Decision framework for which certification to pursue | [Request Access](https://chpl.healthit.gov/#/search)                                                                                                          |
 | ONC 2015E Cures Base EHR | Requirements for a basic EHR per Cures Act           | [HealthIT.gov](https://www.healthit.gov/topic/certification-ehrs/2015-edition-test-method/2015-edition-cures-update-base-electronic-health-record-definition) |
 | CMS-specific CEHRT       | Certification for CMS reimbursement                  | [CMS.gov](https://www.cms.gov/Regulations-and-Guidance/Legislation/EHRIncentivePrograms/Certification)                                                        |
 | CMS Queries              | CMS reportable metrics                               | [Request Access](https://docs.google.com/spreadsheets/d/1OoEcFjiHXHfnZn0y3eQ5D7hjijpr0dop5ckEwnOnSmo/edit#gid=0)                                              |
-| EHR Definition           | Description of what defines an EHR                   | [ecfr.gov](https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-D/part-170/subpart-A/section-170.102)                                                  |
+| EHR Definition           | Description of what defines an EHR                   | [www.ecfr.gov](https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-D/part-170/subpart-A/section-170.102)                                              |
 
 ![ONC 2015 Edition Cures](/img/compliance/onc-2015-edition-cures.png)

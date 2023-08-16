@@ -6,7 +6,7 @@ authors:
   title: Medplum Core Team
   url: https://github.com/rahul1
   image_url: https://github.com/rahul1.png
-  tags: [fhir-datastore]
+tags: [fhir-datastore]
 ---
 
 import CodeBlock from '@theme/CodeBlock'
@@ -184,7 +184,7 @@ For `Identifiers`, the strategy is simple: **each system string should correspon
 
 When it comes to `CodeableConcepts`, it gets a bit more complex. **Whenever possible, you should use standardized code systems** to avoid reinventing the wheel and promote good data hygeine. The FHIR community has defined standard `system` strings for these code systems.
 
- Some commonly used code systems:
+Some commonly used code systems:
 
 <table >
 <thead>
@@ -228,7 +228,6 @@ When it comes to `CodeableConcepts`, it gets a bit more complex. **Whenever poss
     		<td ><code>http://hl7.org/fhir/sid/ndc</code></td>
     	</tr>
     </tbody>
-
 
 </table>
 
