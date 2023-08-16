@@ -152,30 +152,10 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
     props.onChange(newResponseItems);
   }
 
-  if (props.renderPages) {
-    return (
-      <Stepper active={props.activePage ?? 0} allowNextStepsSelect={false}>
-        {props.items.map((item, index) => {
-          return (
-            <Stepper.Step label={item.text} key={item.linkId}>
-              <QuestionnaireFormArrayContent
-                key={item.linkId}
-                item={item}
-                index={index}
-                answers={props.answers}
-                setResponseItem={setResponseItem}
-              />
-            </Stepper.Step>
-          );
-        })}
-      </Stepper>
-    );
-  }
-
-  return (
-    <Stack>
-      {props.items.map((item, index) => {
-        return (
+  const questionForm = props.items.map((item, index) => {
+    if (props.renderPages) {
+      return (
+        <Stepper.Step label={item.text} key={item.linkId}>
           <QuestionnaireFormArrayContent
             key={item.linkId}
             item={item}
@@ -183,10 +163,28 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
             answers={props.answers}
             setResponseItem={setResponseItem}
           />
-        );
-      })}
-    </Stack>
-  );
+        </Stepper.Step>
+      );
+    }
+    return (
+      <QuestionnaireFormArrayContent
+        key={item.linkId}
+        item={item}
+        index={index}
+        answers={props.answers}
+        setResponseItem={setResponseItem}
+      />
+    );
+  });
+
+  if (props.renderPages) {
+    return (
+      <Stepper active={props.activePage ?? 0} allowNextStepsSelect={false}>
+        {questionForm}
+      </Stepper>
+    );
+  }
+  return <Stack>{questionForm}</Stack>;
 }
 
 interface QuestionnaireFormArrayContentProps {
