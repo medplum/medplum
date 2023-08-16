@@ -109,17 +109,15 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }}
     >
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
-      {questionnaire.item && numberOfPages > 0 ? (
-        <QuestionnaireFormGroupPages
+
+      {questionnaire.item && (
+        <QuestionnaireFormItemArray
           items={questionnaire.item}
           answers={answers}
           onChange={setItems}
           activePage={activePage}
+          renderPages={numberOfPages > 0}
         />
-      ) : (
-        questionnaire.item && (
-          <QuestionnaireFormItemArray items={questionnaire.item} answers={answers} onChange={setItems} />
-        )
       )}
       <Group position="right" mt="xl">
         <ButtonGroup
@@ -134,50 +132,11 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   );
 }
 
-interface QuestionnaireFormGroupPagesProps {
-  items: QuestionnaireItem[];
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
-  activePage: number;
-  onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
-}
-
-function QuestionnaireFormGroupPages(props: QuestionnaireFormGroupPagesProps): JSX.Element {
-  const [responseItems, setResponseItems] = useState<QuestionnaireResponseItem[]>(
-    buildInitialResponseItems(props.items)
-  );
-
-  function setResponseItem(index: number, newResponseItem: QuestionnaireResponseItem): void {
-    const newResponseItems = responseItems.slice();
-    newResponseItems[index] = newResponseItem;
-    setResponseItems(newResponseItems);
-    props.onChange(newResponseItems);
-  }
-
-  return (
-    <Stepper active={props.activePage ?? 0} allowNextStepsSelect={false}>
-      {props.items.map((item, index) => {
-        if (!isQuestionEnabled(item, props.answers)) {
-          return null;
-        }
-
-        return (
-          <Stepper.Step label={item.text} key={item.linkId}>
-            <QuestionnaireArrayItems
-              item={item}
-              index={index}
-              answers={props.answers}
-              setResponseItem={setResponseItem}
-            />
-          </Stepper.Step>
-        );
-      })}
-    </Stepper>
-  );
-}
-
 interface QuestionnaireFormItemArrayProps {
   items: QuestionnaireItem[];
   answers: Record<string, QuestionnaireResponseItemAnswer>;
+  renderPages?: boolean;
+  activePage?: number;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
 
@@ -193,15 +152,31 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
     props.onChange(newResponseItems);
   }
 
+  if (props.renderPages) {
+    return (
+      <Stepper active={props.activePage ?? 0} allowNextStepsSelect={false}>
+        {props.items.map((item, index) => {
+          return (
+            <Stepper.Step label={item.text} key={item.linkId}>
+              <QuestionnaireFormArrayContent
+                key={item.linkId}
+                item={item}
+                index={index}
+                answers={props.answers}
+                setResponseItem={setResponseItem}
+              />
+            </Stepper.Step>
+          );
+        })}
+      </Stepper>
+    );
+  }
+
   return (
     <Stack>
       {props.items.map((item, index) => {
-        if (!isQuestionEnabled(item, props.answers)) {
-          return null;
-        }
-
         return (
-          <QuestionnaireArrayItems
+          <QuestionnaireFormArrayContent
             key={item.linkId}
             item={item}
             index={index}
@@ -214,14 +189,17 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
   );
 }
 
-interface QuestionnaireArrayItemsProps {
+interface QuestionnaireFormArrayContentProps {
   item: QuestionnaireItem;
   index: number;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
   setResponseItem: (index: number, newResponseItem: QuestionnaireResponseItem) => void;
 }
 
-function QuestionnaireArrayItems(props: QuestionnaireArrayItemsProps): JSX.Element {
+function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps): JSX.Element | null {
+  if (!isQuestionEnabled(props.item, props.answers)) {
+    return null;
+  }
   if (props.item.type === QuestionnaireItemType.display) {
     return <p key={props.item.linkId}>{props.item.text}</p>;
   }
@@ -235,7 +213,6 @@ function QuestionnaireArrayItems(props: QuestionnaireArrayItemsProps): JSX.Eleme
       />
     );
   }
-
   if (props.item.type === QuestionnaireItemType.boolean) {
     const initial = props.item.initial && props.item.initial.length > 0 ? props.item.initial[0] : undefined;
     return (
