@@ -1,4 +1,4 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle, createReference } from '@medplum/core';
+import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';

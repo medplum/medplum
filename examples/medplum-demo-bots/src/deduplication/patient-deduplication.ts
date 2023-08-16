@@ -3,8 +3,11 @@ import { Patient, RiskAssessment, Task } from '@medplum/fhirtypes';
 
 /**
  * Handler function to process incoming BotEvent for potential patient duplicates.
+ *
+ * @param medplum - The Medplum client instance.
+ * @param event - The BotEvent containing the Patient resource.
  */
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<void> {
   //This bot should only be triggered by a Patient resource Subscription only
   const srcPatient = event.input as Patient;
   if (srcPatient.resourceType !== 'Patient') {
@@ -64,5 +67,4 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       });
     }
   }
-  return true;
 }

@@ -1,11 +1,4 @@
-import {
-  BotEvent,
-  createReference,
-  deepClone,
-  getCodeBySystem,
-  getQuestionnaireAnswers,
-  MedplumClient,
-} from '@medplum/core';
+import { BotEvent, createReference, deepClone, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import {
   Identifier,
   Patient,
@@ -35,15 +28,15 @@ type ResourceWithSubject = Resource & Subject;
  * @returns - Object containing updated source and target patient records with their links.
  */
 export function linkPatientRecords(src: Patient, target: Patient): MergedPatients {
-    const targetCopy = deepClone(target);
-    const targetLinks = targetCopy.link ?? [];
-    targetLinks.push({ other: createReference(src), type: 'replaces' });
-  
-    const srcCopy = deepClone(src);
-    const srcLinks = srcCopy.link ?? [];
-    srcLinks.push({ other: createReference(target), type: 'replaced-by' });
-    return { src: { ...srcCopy, link: srcLinks, active: false }, target: { ...targetCopy, link: targetLinks } };
-  }
+  const targetCopy = deepClone(target);
+  const targetLinks = targetCopy.link ?? [];
+  targetLinks.push({ other: createReference(src), type: 'replaces' });
+
+  const srcCopy = deepClone(src);
+  const srcLinks = srcCopy.link ?? [];
+  srcLinks.push({ other: createReference(target), type: 'replaced-by' });
+  return { src: { ...srcCopy, link: srcLinks, active: false }, target: { ...targetCopy, link: targetLinks } };
+}
 
 /**
  * Merges contact information (identifiers) of two patient records, where the source patient record will be marked as an old record.
@@ -92,7 +85,7 @@ export async function updateClinicalReferences<T extends ResourceWithSubject>(
 /**
  * Adds a patient to the 'doNotMatch' list for a given patient list.
  *
- * @param medplum - The Medplum client instance used to interact with the Medplum backend.
+ * @param medplum - The Medplum client instance.
  * @param patientList - Reference to the patient list.
  * @param patientAdded - Reference to the patient being added to the 'doNotMatch' list.
  *
@@ -110,13 +103,17 @@ async function addToDoNotMatchList(
     await medplum.updateResource({ ...list, entry: entries });
     return;
   }
-  console.warn('No doNotMatch list found for patient: ' + patientList);
+  console.warn('No doNotMatch list found for patient: ' + JSON.stringify(patientList));
 }
 
 /**
  * Handler function to process incoming BotEvent containing a QuestionnaireResponse for potential patient record merges.
+ *
+ * @param medplum - The Medplum client instance.
+ * @param event - The BotEvent containing the QuestionnaireResponse.
+ *
  */
-export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<any> {
+export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<void> {
   // Extract answers from the QuestionnaireResponse.
   const responses = getQuestionnaireAnswers(event.input);
   // Get the reference to the RiskAssessment from the answers.
@@ -129,7 +126,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const targetReference = riskAssessment.basis?.[0] as Reference<Patient>;
   const srcReference = riskAssessment.subject as Reference<Patient>;
   if (!targetReference || !srcReference) {
-    throw new Error(`Undefined references target: ${targetReference} src: ${srcReference}`);
+    throw new Error(
+      `Undefined references target: ${JSON.stringify(targetReference, null, 2)} src: ${JSON.stringify(
+        srcReference,
+        null,
+        2
+      )}`
+    );
   }
 
   // If merge is disabled based on the questionnaire's answer, terminate the handler early.
@@ -137,10 +140,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // - The patient records are not duplicates.
   // - The patient records are duplicates, but the user does not want to merge them.
   const mergeCheck = responses['disableMerge']?.valueBoolean;
-  if (!!mergeCheck) {
+  if (mergeCheck) {
     await addToDoNotMatchList(medplum, srcReference, targetReference);
     await addToDoNotMatchList(medplum, targetReference, srcReference);
-    return true;
+    return;
   }
 
   const patientTarget = (await medplum.readReference(targetReference)) as Patient;
@@ -167,5 +170,4 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   // Update the target patient record with the merged data, and have it as the master record.
   await medplum.updateResource<Patient>(mergedPatients.target);
-  return true;
 }

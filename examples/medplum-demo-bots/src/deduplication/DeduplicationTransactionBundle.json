@@ -3,7 +3,7 @@
   "type": "transaction",
   "entry": [
     {
-      "fullUrl": "urn:uuid:27c2daf7-044f-47ab-b1d5-225941189e3b",
+      "fullUrl": "urn:uuid:29057dfb-6ae3-48cf-9f14-8335a0f29699",
       "request": {
         "method": "POST",
         "url": "Questionnaire"
@@ -14,16 +14,16 @@
         "status": "active",
         "item": [
           {
-            "id": "id-1",
-            "linkId": "otherPatient",
-            "type": "reference",
-            "text": "Patient to Merge"
+            "id": "id-12",
+            "linkId": "disableMerge",
+            "type": "boolean",
+            "text": "Do not Merge these records"
           },
           {
-            "id": "id-5",
-            "linkId": "createMaster",
-            "type": "boolean",
-            "text": "Create a Master Resource for Patient?"
+            "id": "id-1",
+            "linkId": "assessment",
+            "type": "reference",
+            "text": "Risk Assessment"
           },
           {
             "id": "id-6",
@@ -51,7 +51,7 @@
           }
         ],
         "subjectType": [
-          "Patient"
+          "RiskAssessment"
         ]
       }
     }
