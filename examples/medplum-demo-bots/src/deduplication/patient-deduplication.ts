@@ -1,4 +1,4 @@
-import { BotEvent, MedplumClient, createReference } from '@medplum/core';
+import { BotEvent, MedplumClient, createReference, getReferenceString, resolveId } from '@medplum/core';
 import { Patient, RiskAssessment, Task } from '@medplum/fhirtypes';
 
 /**
@@ -23,24 +23,27 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       srcPatient.gender
   );
 
-  targetPatients.forEach(async (target) => {
+  for (const target of targetPatients) {
     if (target.id === srcPatient.id) {
       return;
     }
-    const lists = await medplum.searchResources('List', { subject: createReference(srcPatient), code: 'doNotMatch' });
-
+    const lists = await medplum.searchResources('List', {
+      code: 'doNotMatch',
+      subject: getReferenceString(srcPatient),
+    });
     // Filter lists to identify those marked with 'doNotMatch'.
-    lists.filter((list) => {
-      list.entry?.filter((entry) => {
-        if (entry.item === createReference(target)) {
+    const filteredLists = lists.filter((list) => {
+      const hasTargetId = list.entry?.filter((entry) => {
+        if (resolveId(entry.item) === target.id) {
           return true;
         }
         return false;
       });
-      return false;
+      return !!hasTargetId;
     });
+
     // If there are no lists marked with 'doNotMatch' for the potential duplicate patient, create a RiskAssessment and Task.
-    if (lists.length === 0) {
+    if (filteredLists.length === 0) {
       const riskAssessment = await medplum.createResource<RiskAssessment>({
         resourceType: 'RiskAssessment',
         subject: createReference(srcPatient),
@@ -60,7 +63,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
         focus: createReference(riskAssessment),
       });
     }
-  });
-
+  }
   return true;
 }

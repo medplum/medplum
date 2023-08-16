@@ -35,19 +35,19 @@ type ResourceWithSubject = Resource & Subject;
  * @returns - Object containing updated source and target patient records with their links.
  */
 export function linkPatientRecords(src: Patient, target: Patient): MergedPatients {
-  const targetLinks = target.link ?? [];
-  targetLinks.push({ other: createReference(src), type: 'replaces' });
-  const targetCopy = deepClone(target);
-
-  const srcLinks = src.link ?? [];
-  srcLinks.push({ other: createReference(target), type: 'replaced-by' });
-  const srcCopy = deepClone(src);
-  return { src: { ...srcCopy, link: srcLinks, active: false }, target: { ...targetCopy, link: targetLinks } };
-}
+    const targetCopy = deepClone(target);
+    const targetLinks = targetCopy.link ?? [];
+    targetLinks.push({ other: createReference(src), type: 'replaces' });
+  
+    const srcCopy = deepClone(src);
+    const srcLinks = srcCopy.link ?? [];
+    srcLinks.push({ other: createReference(target), type: 'replaced-by' });
+    return { src: { ...srcCopy, link: srcLinks, active: false }, target: { ...targetCopy, link: targetLinks } };
+  }
 
 /**
- * Merges contact information (identifiers) of two patient records.
- * Identifiers from the source are marked as 'old' in the merged record.
+ * Merges contact information (identifiers) of two patient records, where the source patient record will be marked as an old record.
+ * The target patient record will be overwritten with the merged data and will be the master record.
  *
  * @param src - The source patient record.
  * @param target - The target patient record.
@@ -89,20 +89,28 @@ export async function updateClinicalReferences<T extends ResourceWithSubject>(
   });
 }
 
+/**
+ * Adds a patient to the 'doNotMatch' list for a given patient list.
+ *
+ * @param medplum - The Medplum client instance used to interact with the Medplum backend.
+ * @param patientList - Reference to the patient list.
+ * @param patientAdded - Reference to the patient being added to the 'doNotMatch' list.
+ *
+ * @returns - Returns a promise that resolves when the operation is completed.
+ */
 async function addToDoNotMatchList(
   medplum: MedplumClient,
   patientList: Reference<Patient>,
   patientAdded: Reference<Patient>
 ): Promise<void> {
-  const lists = await medplum.searchResources('List', { subject: patientList, code: 'doNotMatch' });
-  if (lists.length === 0) {
-    console.warn('No doNotMatch list found for patient: ' + patientList);
-  }
-  lists.forEach(async (list) => {
+  const list = await medplum.searchOne('List', { subject: patientList, code: 'doNotMatch' });
+  if (list) {
     const entries = list.entry;
     entries?.push({ item: patientAdded });
     await medplum.updateResource({ ...list, entry: entries });
-  });
+    return;
+  }
+  console.warn('No doNotMatch list found for patient: ' + patientList);
 }
 
 /**
@@ -112,7 +120,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // Extract answers from the QuestionnaireResponse.
   const responses = getQuestionnaireAnswers(event.input);
   // Get the reference to the RiskAssessment from the answers.
-  const riskAssessmentReference = responses['assessment'] as QuestionnaireResponseItemAnswer;
+  const riskAssessmentReference = event.input.subject as QuestionnaireResponseItemAnswer;
   // If there's no valid RiskAssessment reference in the response, throw an error.
   if (!riskAssessmentReference.valueReference) {
     throw new Error('Invalid input. Expected RiskAssessment reference');
@@ -125,6 +133,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   }
 
   // If merge is disabled based on the questionnaire's answer, terminate the handler early.
+  // Reasons for disabling merge include:
+  // - The patient records are not duplicates.
+  // - The patient records are duplicates, but the user does not want to merge them.
   const mergeCheck = responses['disableMerge']?.valueBoolean;
   if (!!mergeCheck) {
     await addToDoNotMatchList(medplum, srcReference, targetReference);
@@ -132,20 +143,29 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     return true;
   }
 
-  const patientTarget = await medplum.readReference(targetReference);
-  const patientSource = await medplum.readReference(srcReference);
+  const patientTarget = (await medplum.readReference(targetReference)) as Patient;
+  const patientSource = (await medplum.readReference(srcReference)) as Patient;
 
-  const patients = linkPatientRecords(patientSource as Patient, patientTarget as Patient);
+  const patients = linkPatientRecords(patientSource, patientTarget);
 
   const mergedPatients = mergePatientRecords(patients.src, patients.target);
-  const deleteSource = responses['deleteSource']?.valueBoolean;
 
   await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'ServiceRequest');
+  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'Observation');
+  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'DiagnosticReport');
+  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'MedicationRequest');
+
+  // We might delete the source patient record if we don't want to continue to have a duplicate of an existing patient
+  // despite the fact that it is an inactive record.
+  const deleteSource = responses['deleteSource']?.valueBoolean;
   if (deleteSource === true) {
     await medplum.deleteResource('Patient', mergedPatients.src.id as string);
   } else {
+    // If we don't delete the source patient record, we need to update it to be inactive.
     await medplum.updateResource<Patient>(mergedPatients.src);
   }
+
+  // Update the target patient record with the merged data, and have it as the master record.
   await medplum.updateResource<Patient>(mergedPatients.target);
   return true;
 }

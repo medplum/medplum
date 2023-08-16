@@ -1,4 +1,4 @@
-import { Patient, Reference, Resource } from '@medplum/fhirtypes';
+import { Identifier, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { MedplumClient } from './client';
 import { createReference, deepClone } from './utils';
 
@@ -14,13 +14,13 @@ interface Subject {
 type ResourceWithSubject = Resource & Subject;
 
 export function linkPatientRecords(src: Patient, target: Patient): MergedPatients {
-  const targetLinks = target.link ?? [];
-  targetLinks.push({ other: createReference(src), type: 'replaces' });
   const targetCopy = deepClone(target);
+  const targetLinks = targetCopy.link ?? [];
+  targetLinks.push({ other: createReference(src), type: 'replaces' });
 
-  const srcLinks = src.link ?? [];
-  srcLinks.push({ other: createReference(target), type: 'replaced-by' });
   const srcCopy = deepClone(src);
+  const srcLinks = srcCopy.link ?? [];
+  srcLinks.push({ other: createReference(target), type: 'replaced-by' });
   return { src: { ...srcCopy, link: srcLinks, active: false }, target: { ...targetCopy, link: targetLinks } };
 }
 
@@ -28,7 +28,7 @@ export function mergePatientRecords(src: Patient, target: Patient, fields?: Part
   const srcIdentifiers = src.identifier ?? [];
   const mergedIdentifiers = srcIdentifiers.map((identifier) => ({
     ...identifier,
-    use: 'old' as 'usual' | 'official' | 'temp' | 'secondary' | 'old',
+    use: 'old' as Identifier['use'],
   }));
   const targetCopy = deepClone(target);
   targetCopy.identifier = [...(targetCopy.identifier ?? []), ...mergedIdentifiers];

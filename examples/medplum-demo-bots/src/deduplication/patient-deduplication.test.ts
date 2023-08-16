@@ -1,6 +1,6 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle, createReference } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, List, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { handler } from './patient-deduplication';
 
@@ -13,8 +13,8 @@ describe('Link Patient', async () => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
     indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
   });
-  
-  test('Success', async () => {
+
+  test('Does not create RiskAssessment due to doNotMatch List', async () => {
     const medplum = new MockClient();
     // Create an original Patient with several identifiers
     const patient1: Patient = await medplum.createResource({
@@ -114,14 +114,14 @@ describe('Link Patient', async () => {
 
     await handler(medplum, { input: patient2, contentType, secrets: {} });
 
-    const riskAssessment = await medplum.searchResources('RiskAssessment', { subject: createReference(patient2) });
+    const riskAssessment = await medplum.searchResources('RiskAssessment');
     expect(riskAssessment.length).toBe(0);
   });
 
   test('Created RiskAssessment', async () => {
     const medplum = new MockClient();
     // Create an original Patient with several identifiers
-    const patient1 = await medplum.createResource({
+    await medplum.createResource({
       resourceType: 'Patient',
       identifier: [
         {
@@ -195,92 +195,8 @@ describe('Link Patient', async () => {
     const contentType = 'application/fhir+json';
 
     await handler(medplum, { input: patient2, contentType, secrets: {} });
-
-    const riskAssessment = await medplum.searchResources('RiskAssessment', { display: 'John Smith' });
-    // expect(riskAssessment?.basis?.[0].reference).toEqual(createReference(patient1));
-  });
-
-  // This test demonstrates flagging a patient if it is created with an identifier that matches an existing patient
-  test('Warning', async () => {
-    const medplum = new MockClient();
-    // Create an original Patient
-    const patient1: Patient = await medplum.createResource({
-      resourceType: 'Patient',
-      identifier: [
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                code: 'SS',
-                display: 'Social Security Number',
-              },
-            ],
-            text: 'Social Security Number',
-          },
-          system: 'http://hl7.org/fhir/sid/us-ssn',
-          value: '999-47-5984',
-        },
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                code: 'DL',
-                display: "Driver's License",
-              },
-            ],
-            text: "Driver's License",
-          },
-          system: 'urn:oid:2.16.840.1.113883.4.3.25',
-          value: 'S99985931',
-        },
-      ],
-      birthDate: '1948-07-01',
-      name: [
-        {
-          family: 'Smith',
-          given: ['John'],
-        },
-      ],
-      gender: 'male',
-    });
-
-    await medplum.createResource(patient1);
-
-    // Create another patient with the same identifier but different name
-    const patient2: Patient = await medplum.createResource({
-      resourceType: 'Patient',
-      identifier: [
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                code: 'SS',
-                display: 'Social Security Number',
-              },
-            ],
-            text: 'Social Security Number',
-          },
-          system: 'http://hl7.org/fhir/sid/us-ssn',
-          value: '999-47-5984',
-        },
-      ],
-      name: [
-        {
-          family: 'Smith',
-          given: ['Jane'],
-        },
-      ],
-      gender: 'male',
-    });
-
-    const contentType = 'application/fhir+json';
-    await handler(medplum, { input: patient2, contentType, secrets: {} });
-
-    const updatedPatient = await medplum.readResource('Patient', patient2.id as string);
-
-    expect(updatedPatient.active).toBe(true);
+    const riskAssessment = await medplum.searchResources('RiskAssessment');
+    expect(riskAssessment.length).toBe(1);
+    expect(riskAssessment[0].subject?.reference).toBe('Patient/' + patient2.id);
   });
 });
