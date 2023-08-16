@@ -55,8 +55,8 @@ export function mergePatientRecords(src: Patient, target: Patient, fields?: Part
   }));
   const targetCopy = deepClone(target);
   targetCopy.identifier = [...(targetCopy.identifier ?? []), ...mergedIdentifiers];
-  const targedMerged = { ...targetCopy, ...fields };
-  return { src: src, target: targedMerged };
+  const targetMerged = { ...targetCopy, ...fields };
+  return { src: src, target: targetMerged };
 }
 
 /**
@@ -106,6 +106,27 @@ async function addToDoNotMatchList(
   console.warn('No doNotMatch list found for patient: ' + JSON.stringify(patientList));
 }
 
+function fieldChanges(responses: Record<string, QuestionnaireResponseItemAnswer>, src: Patient): Partial<Patient> {
+  let fields = {} as Partial<Patient>;
+  const replaceName = responses['replaceName']?.valueBoolean;
+  const replaceAddress = responses['replaceAddress']?.valueBoolean;
+  const replaceAllData = responses['replaceData']?.valueBoolean;
+
+  if (replaceName) {
+    fields = { ...fields, name: src.name };
+  }
+
+  if (replaceAddress) {
+    fields = { ...fields, address: src.address };
+  }
+
+  if (replaceAllData) {
+    fields = { ...src };
+  }
+  console.log(JSON.stringify(fields, null, 2));
+  return fields;
+}
+
 /**
  * Handler function to process incoming BotEvent containing a QuestionnaireResponse for potential patient record merges.
  *
@@ -119,10 +140,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // Get the reference to the RiskAssessment from the answers.
   const riskAssessmentReference = event.input.subject as QuestionnaireResponseItemAnswer;
   // If there's no valid RiskAssessment reference in the response, throw an error.
-  if (!riskAssessmentReference.valueReference) {
+  if (!riskAssessmentReference) {
     throw new Error('Invalid input. Expected RiskAssessment reference');
   }
-  const riskAssessment = (await medplum.readReference(riskAssessmentReference.valueReference)) as RiskAssessment;
+  const riskAssessment = (await medplum.readReference(riskAssessmentReference)) as RiskAssessment;
   const targetReference = riskAssessment.basis?.[0] as Reference<Patient>;
   const srcReference = riskAssessment.subject as Reference<Patient>;
   if (!targetReference || !srcReference) {
@@ -151,7 +172,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   const patients = linkPatientRecords(patientSource, patientTarget);
 
-  const mergedPatients = mergePatientRecords(patients.src, patients.target);
+  const patientFieldUpdates = fieldChanges(responses, patientSource);
+  const mergedPatients = mergePatientRecords(patients.src, patients.target, patientFieldUpdates);
 
   await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'ServiceRequest');
   await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'Observation');
