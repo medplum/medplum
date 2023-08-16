@@ -20,7 +20,7 @@ const useStyles = createStyles((theme) => ({
 }));
 
 // Properties of qualified intervals used for grouping
-const intervalFilters = ['gender', 'age', 'gestationalAge', 'context', 'appliesTo'] as const;
+const intervalFilters = ['gender', 'age', 'gestationalAge', 'context', 'appliesTo', 'category'] as const;
 
 export interface ReferenceRangeEditorProps {
   definition: ObservationDefinition;
