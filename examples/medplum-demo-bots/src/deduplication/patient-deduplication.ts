@@ -1,4 +1,4 @@
-import { BotEvent, MedplumClient, createReference, getCodeBySystem } from '@medplum/core';
+import { BotEvent, MedplumClient, createReference } from '@medplum/core';
 import { Patient, RiskAssessment, Task } from '@medplum/fhirtypes';
 
 /**
@@ -10,7 +10,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   if (srcPatient.resourceType !== 'Patient') {
     throw new Error('Unexpected input. Expected Patient.');
   }
-  console.log(event.input);
   // Search for potential duplicate patients by matching first name, last name, birthdate, and gender.
   const targetPatients = await medplum.searchResources(
     'Patient',
@@ -23,8 +22,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       '&gender=' +
       srcPatient.gender
   );
-  console.log(targetPatients);
+
   targetPatients.forEach(async (target) => {
+    if (target.id === srcPatient.id) {
+      return;
+    }
     const lists = await medplum.searchResources('List', { subject: createReference(srcPatient), code: 'doNotMatch' });
 
     // Filter lists to identify those marked with 'doNotMatch'.
@@ -52,6 +54,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
           },
         ],
       });
+
       await medplum.createResource<Task>({
         resourceType: 'Task',
         focus: createReference(riskAssessment),
