@@ -26,14 +26,15 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       srcPatient.gender
   );
 
+  const lists = await medplum.searchResources('List', {
+    code: 'doNotMatch',
+    subject: getReferenceString(srcPatient),
+  });
+
   for (const target of targetPatients) {
     if (target.id === srcPatient.id) {
       return;
     }
-    const lists = await medplum.searchResources('List', {
-      code: 'doNotMatch',
-      subject: getReferenceString(srcPatient),
-    });
     // Filter lists to identify those marked with 'doNotMatch'.
     const filteredLists = lists.filter((list) => {
       const hasTargetId = list.entry?.filter((entry) => {
@@ -42,7 +43,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
         }
         return false;
       });
-      return !!hasTargetId;
+      return (hasTargetId ?? []).length > 0;
     });
 
     // If there are no lists marked with 'doNotMatch' for the potential duplicate patient, create a RiskAssessment and Task.
@@ -51,6 +52,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
         resourceType: 'RiskAssessment',
         subject: createReference(srcPatient),
         basis: [createReference(target)],
+        status: 'final',
         prediction: [
           {
             probabilityDecimal: 100,
@@ -64,6 +66,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       await medplum.createResource<Task>({
         resourceType: 'Task',
         focus: createReference(riskAssessment),
+        intent: 'proposal',
+        status: 'requested',
       });
     }
   }

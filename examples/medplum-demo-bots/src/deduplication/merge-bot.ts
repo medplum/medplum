@@ -137,12 +137,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // Extract answers from the QuestionnaireResponse.
   const responses = getQuestionnaireAnswers(event.input);
   // Get the reference to the RiskAssessment from the answers.
-  const riskAssessmentReference = responses['assessment'] as QuestionnaireResponseItemAnswer;
+  const riskAssessmentReference = event.input.subject as QuestionnaireResponseItemAnswer;
   // If there's no valid RiskAssessment reference in the response, throw an error.
-  if (!riskAssessmentReference.valueReference) {
+  if (!riskAssessmentReference) {
     throw new Error('Invalid input. Expected RiskAssessment reference');
   }
-  const riskAssessment = (await medplum.readReference(riskAssessmentReference.valueReference)) as RiskAssessment;
+  const riskAssessment = (await medplum.readReference(riskAssessmentReference)) as RiskAssessment;
   const targetReference = riskAssessment.basis?.[0] as Reference<Patient>;
   const srcReference = riskAssessment.subject as Reference<Patient>;
   if (!targetReference || !srcReference) {

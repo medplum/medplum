@@ -1,0 +1,78 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:1d0a7b74-6fad-441e-82ba-79389cc055bb",
+      "request": {
+        "method": "POST",
+        "url": "Questionnaire"
+      },
+      "resource": {
+        "resourceType": "Questionnaire",
+        "name": "Merge With",
+        "status": "active",
+        "item": [
+          {
+            "id": "id-15",
+            "linkId": "g3",
+            "type": "group",
+            "text": "Disable Merge ",
+            "item": [
+              {
+                "id": "id-16",
+                "linkId": "disableMerge",
+                "type": "boolean",
+                "text": "Do not Merge these records"
+              }
+            ]
+          },
+          {
+            "id": "id-17",
+            "linkId": "g5",
+            "type": "group",
+            "text": "Merging Patients",
+            "item": [
+              {
+                "id": "id-18",
+                "linkId": "replaceName",
+                "type": "boolean",
+                "text": "Replace Name with Source Patient?"
+              },
+              {
+                "id": "id-19",
+                "linkId": "replaceAddress",
+                "type": "boolean",
+                "text": "Replace Address with Source Patient?"
+              },
+              {
+                "id": "id-20",
+                "linkId": "replaceData",
+                "type": "boolean",
+                "text": "Replace Target Patient Data with Source Patient Data?"
+              }
+            ]
+          },
+          {
+            "id": "id-21",
+            "linkId": "g9",
+            "type": "group",
+            "text": "Deleting Source Patient",
+            "item": [
+              {
+                "id": "id-22",
+                "linkId": "deleteSource",
+                "type": "boolean",
+                "text": "Delete Replaced Patient?"
+              }
+            ]
+          }
+        ],
+        "subjectType": [
+          "RiskAssessment"
+        ],
+        "title": "Merge Bot Questionnaire"
+      }
+    }
+  ]
+}
