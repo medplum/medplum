@@ -13,6 +13,7 @@ tags:
   - care plans
   - LIS
   - LIMS
+sidebar_position: 6
 ---
 
 # LOINC Codes

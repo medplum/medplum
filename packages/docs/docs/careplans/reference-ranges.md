@@ -23,7 +23,7 @@ import ExampleCode from '!!raw-loader!@site/..//examples/src/careplans/reference
 
 In on our previous guide about [creating diagnostic services catalog](./diagnostic-catalog), we described the importance of the [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) resource for storing metadata about the [`Observations`](/docs/api/fhir/resources/observation) produced by the test. This metadata is not just for ensuring data correctness, but also a key component in assisting providers with data interpretation.
 
-A core part of interpreting results of this metadata is the definition of **reference ranges**, sets of [`Observation`](/docs/api/fhir/resources/observation) values that share a diagnostic interpretation.
+A core part of interpreting results of this metadata is the definition of **reference ranges**, sets of [`Observation`](/docs/api/fhir/resources/observation) values that share a **diagnostic interpretation**. While medical directors will always have the final say on any interpretation, incorporating reference ranges into your catalog can streamline their workflow.
 
 In this guide, we'll take a closer look at how administrators can use the [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) resource to define these ranges of interest. We'll cover the following key areas:
 
@@ -65,7 +65,7 @@ A range is defined by the following properties:
 
 In practice, multiple an [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) will define multiple reference ranges for a given patient population, to provide interpretations for each value of the [`Observation`](/docs/api/fhir/resources/observation).
 
-<details><summary>Example </summary>
+<details><summary>Example: Multiple Ranges</summary>
 The example below defines three reference ranges, to be interpreted as "Low", "Normal", and "High".
 
   <MedplumCodeBlock language="ts" selectBlocks="allRanges">
@@ -79,7 +79,7 @@ Patient demographics can influence the interpretation of some diagnostic test re
 
 To handle this, the [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) resource allows for defining reference ranges that can be either tailored to specific patient demographics or universally applied.
 
-The table below describes which patient attributes can be used to target reference ranges.
+The table below describes which patient attributes can be used to target reference ranges:
 
 | **Attribute**       | Element                            | **Type**        | Code System                                                                                              | Example |
 | ------------------- | ---------------------------------- | --------------- | -------------------------------------------------------------------------------------------------------- | ------- |
@@ -88,12 +88,13 @@ The table below describes which patient attributes can be used to target referen
 | Gestational Age     | `qualifiedInterval.gestationalAge` | Range           |                                                                                                          |         |
 | Racial/Ethnic Group | `qualifiedInterval.appliesTo`      | CodeableConcept | _(Example)_ [OMB Race Categories](https://build.fhir.org/ig/HL7/US-Core/ValueSet-omb-race-category.html) | Asian   |
 
-<details><summary>Example </summary>
+<details><summary>Example: Age and gender dependent reference ranges</summary>
 The example below demonstrates how to represent different normal ranges for a testosterone test, for both adults and children.
   <MedplumCodeBlock language="ts" selectBlocks="testosterone">
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
+
 
 :::note
 
@@ -119,11 +120,11 @@ The Medplum SDK provides helper functions,[ `findObservationInterval`](/docs/sdk
 
 Reference ranges can be categorized into three different types:
 
-|    Field    | Description                                                                                                                                                          |
-| :---------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `reference` | Defines the normal ranges for a given observation type.                                                                                                              |
-| `critical`  | Defines the "critical" values for the observation, also known as "panic" values. Observing values in these ranges often require special handling to notify patients. |
-| `absolute`  | The absolute allowable range for this value (i.e. the measurable range). Values outside of this range are not possible / sensible.                                   |
+|    Field    | Description                                                  |
+| :---------: | :----------------------------------------------------------- |
+| `reference` | Defines the **normal** ranges for a given observation type.  |
+| `critical`  | Defines the **critical** values for the observation, also known as "panic" values. Observing values in these ranges often require special handling to notify patients. |
+| `absolute`  | The absolute allowable range for this value (i.e. the measurable range). Values outside of this range are not possible / sensible. |
 
 The type of reference range is specified in the `qualifiedInterval.category` field.
 
@@ -158,9 +159,7 @@ For qualitative observations, defining interpretations in the [`ObservationDefin
 
 The `validCodedValueSet`, `normalCodedValueSet`, `abnormalCodedValueSet`, and `criticalCodedValueSet` fields mirror the functionality of `absolute`, `reference`, and `critical` reference ranges, are used to define the interpretation of a qualitative observation.
 
-Each one of these fields refers to a [`ValueSet`](/docs/api/fhir/resources/valueset) resource, which enumerates the codes assigned to each category of interpretation.
-
-Sure, I can convert those into a table for you:
+Each one of these fields refers to a [`ValueSet`](/docs/api/fhir/resources/valueset) resource, which enumerates the codes assigned to each category of interpretation:
 
 | Field Name              | Similar to  | Description                                                                                                                                   |
 | ----------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
