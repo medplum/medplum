@@ -375,9 +375,13 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         />
       );
     case QuestionnaireItemType.reference:
+      // const referenceSource = initial?.valueReference?.reference ?? '';
+      // const slashIndex = referenceSource.indexOf('/');
+      // const organization = referenceSource.substring(0, slashIndex);
       return (
         <ReferenceInput
           name={name}
+          // targetTypes={[organization]}
           defaultValue={initial?.valueReference}
           onChange={(newValue) => onChangeAnswer({ valueReference: newValue })}
         />
