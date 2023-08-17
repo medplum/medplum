@@ -375,7 +375,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         />
       );
     case QuestionnaireItemType.reference:
-      console.log(item)
       return (
         <ReferenceInput
           name={name}

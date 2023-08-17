@@ -432,18 +432,16 @@ interface ReferenceTypeProps {
 }
 
 function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
-
   const references = props.item.extension ?? [];
   const referenceProfiles =
     references.filter((e) => e.url === 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html') ?? [];
 
   return (
-    <div>
+    <>
       {referenceProfiles.map((reference: Extension) => {
         return (
-          <div>
+          <div key={reference.id}>
             <div
-              key={reference.id}
               style={{
                 display: 'flex',
                 flexDirection: 'row',
@@ -497,7 +495,7 @@ function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
       >
         Add Resource
       </Anchor>
-    </div>
+    </>
   );
 }
 

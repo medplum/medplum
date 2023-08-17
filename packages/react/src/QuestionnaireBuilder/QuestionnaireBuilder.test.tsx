@@ -438,6 +438,33 @@ describe('QuestionnaireBuilder', () => {
     });
   });
 
+  test('Add Reference Profiles', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        title: 'My References',
+        item: [
+          {
+            linkId: 'reference1',
+            text: 'Reference 1',
+            type: 'reference',
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Reference 1'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add Resource'));
+    });
+    expect(screen.queryByText('id-2')).toBeDefined();
+  });
+
   test('Change linkId', async () => {
     const onSubmit = jest.fn();
 
