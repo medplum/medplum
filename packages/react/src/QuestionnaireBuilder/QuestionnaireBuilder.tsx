@@ -432,7 +432,6 @@ interface ReferenceTypeProps {
 }
 
 function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
-  console.log(props.item);
 
   const references = props.item.extension ?? [];
   const referenceProfiles =
@@ -441,31 +440,32 @@ function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
   return (
     <div>
       {referenceProfiles.map((reference: Extension) => {
-        console.log(reference);
         return (
-          <div
-            key={reference.id}
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              width: '80%',
-            }}
-          >
-            <div>
-              <TextInput
-                key={reference.id}
-                name="value[x]"
-                value={reference.valueString}
-                onChange={(e: any) => {
-                  e.preventDefault();
-                  const newReferences = [...references];
-                  const index = newReferences.findIndex((o) => o.id === reference.id);
-                  newReferences[index] = { ...newReferences[index], valueString: e.target.value };
-                  props.onChange(newReferences);
-                }}
-              />
+          <div>
+            <div
+              key={reference.id}
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                width: '80%',
+              }}
+            >
+              <div>
+                <TextInput
+                  key={reference.id}
+                  name="value[x]"
+                  value={reference.valueString}
+                  onChange={(e: any) => {
+                    e.preventDefault();
+                    const newReferences = [...references];
+                    const index = newReferences.findIndex((o) => o.id === reference.id);
+                    newReferences[index] = { ...newReferences[index], valueString: e.target.value };
+                    props.onChange(newReferences);
+                  }}
+                />
+              </div>
             </div>
             <div>
               <Anchor

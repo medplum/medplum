@@ -375,6 +375,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         />
       );
     case QuestionnaireItemType.reference:
+      console.log(item)
       return (
         <ReferenceInput
           name={name}
@@ -645,10 +646,10 @@ function addTargetTypes(item: QuestionnaireItem): string[] {
   if (item.type !== QuestionnaireItemType.reference) {
     return [];
   }
-
   const extensions = item.extension?.filter(
-    (e) => e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-targetType'
+    (e) => e.url === 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html'
   );
+
   if (!extensions || extensions.length === 0) {
     return [];
   }

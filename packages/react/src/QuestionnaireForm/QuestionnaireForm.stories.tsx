@@ -614,6 +614,21 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
             ],
           },
           {
+            linkId: 'reference-target-types',
+            type: 'reference',
+            text: 'Reference (target types)',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html',
+                valueString: 'Patient'
+              },
+              {
+                url: 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html',
+                valueString: 'Practictioner'
+              },
+            ],
+          },
+          {
             linkId: 'quantity',
             type: 'quantity',
             text: 'Quantity',
