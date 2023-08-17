@@ -2,7 +2,7 @@ import { createReference, indexSearchParameterBundle, indexStructureDefinitionBu
 import { readJson } from '@medplum/definitions';
 import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { handler } from './patient-deduplication';
+import { handler } from './find-matching-patients';
 
 // npm t src/examples/patient-deduplication.test.ts
 // This test demostrates a automatically linking patients with three matching identifiers

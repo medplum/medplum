@@ -14,11 +14,11 @@ interface MergedPatients {
   readonly target: Patient;
 }
 
-interface Subject {
+type HasSubject = {
   subject?: Reference<Patient>;
-}
+};
 
-type ResourceWithSubject = Resource & Subject;
+type ResourceWithSubject = Resource & HasSubject;
 
 /**
  * Links two patient records indicating one replaces the other.
@@ -178,6 +178,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'Observation');
   await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'DiagnosticReport');
   await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'MedicationRequest');
+  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'Encounter');
 
   // We might delete the source patient record if we don't want to continue to have a duplicate of an existing patient
   // despite the fact that it is an inactive record.
