@@ -1,15 +1,4 @@
-import {
-  Button,
-  Checkbox,
-  Group,
-  NativeSelect,
-  Radio,
-  Stack,
-  Stepper,
-  Textarea,
-  TextInput,
-  Title,
-} from '@mantine/core';
+import { Anchor, Button, Checkbox, Group, NativeSelect, Radio, Stack, Textarea, TextInput, Title } from '@mantine/core';
 import {
   capitalize,
   createReference,
@@ -66,6 +55,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const numberOfPages = getNumberOfPages(questionnaire?.item ?? []);
   const nextStep = (): void => setActivePage((current) => (current >= numberOfPages ? current : current + 1));
   const prevStep = (): void => setActivePage((current) => (current <= 0 ? current : current - 1));
+  const [questionnaireItems, setQuestionnaireItems] = useState(questionnaire?.item ?? []);
 
   useEffect(() => {
     medplum
@@ -88,6 +78,21 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     setAnswers(getQuestionnaireAnswers(newResponse));
   }
 
+  const handleRepeatableItem = (item: QuestionnaireItem, index: number) => {
+    item.repeats = false;
+
+    const newItem: QuestionnaireItem = {
+      linkId: repeatableLinkId(item.linkId ?? '', index + 1),
+      type: item.type,
+      text: item.text,
+      item: item.item,
+      repeats: true,
+    };
+    console.log(index);
+    const updatedItems = [...questionnaireItems.slice(0, index + 2), newItem, ...questionnaireItems.slice(index + 2)];
+    setQuestionnaireItems(updatedItems);
+  };
+  console.log(questionnaireItems);
   if (!schema || !questionnaire) {
     return null;
   }
@@ -109,14 +114,12 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }}
     >
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
-
-      {questionnaire.item && (
+      {questionnaireItems && (
         <QuestionnaireFormItemArray
-          items={questionnaire.item}
+          items={questionnaireItems}
           answers={answers}
           onChange={setItems}
-          activePage={activePage}
-          renderPages={numberOfPages > 0}
+          handleRepeatableItem={handleRepeatableItem}
         />
       )}
       <Group position="right" mt="xl">
@@ -137,6 +140,7 @@ interface QuestionnaireFormItemArrayProps {
   answers: Record<string, QuestionnaireResponseItemAnswer>;
   renderPages?: boolean;
   activePage?: number;
+  handleRepeatableItem?: (item: QuestionnaireItem, index: number) => void;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
 
@@ -244,6 +248,7 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
+  handleRepeatableItem?: (item: QuestionnaireItem, index: number) => void;
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
 
@@ -681,4 +686,8 @@ function addTargetTypes(item: QuestionnaireItem): string[] {
   }
   const targets = extensions.map((e) => e.valueCodeableConcept?.coding?.[0]?.code) as string[];
   return targets;
+}
+
+function repeatableLinkId(linkId: string, index: number): string {
+  return `${linkId}-${index}`;
 }
