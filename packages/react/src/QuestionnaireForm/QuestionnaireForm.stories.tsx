@@ -103,6 +103,7 @@ export const PageSequence = (): JSX.Element => (
                 linkId: 'question1',
                 text: 'Question 1',
                 type: 'string',
+                repeats: true,
               },
               {
                 linkId: 'question2',
@@ -113,6 +114,7 @@ export const PageSequence = (): JSX.Element => (
                 linkId: 'q1',
                 text: 'Question 1',
                 type: 'choice',
+                repeats: true,
                 answerOption: [
                   {
                     valueString: 'Yes',
