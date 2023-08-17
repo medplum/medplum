@@ -1,4 +1,16 @@
-import { Anchor, Button, Checkbox, Group, NativeSelect, Radio, Stack, Textarea, TextInput, Title } from '@mantine/core';
+import {
+  Anchor,
+  Button,
+  Checkbox,
+  Group,
+  NativeSelect,
+  Radio,
+  Stack,
+  Stepper,
+  Textarea,
+  TextInput,
+  Title,
+} from '@mantine/core';
 import {
   capitalize,
   createReference,
@@ -78,21 +90,24 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     setAnswers(getQuestionnaireAnswers(newResponse));
   }
 
-  const handleRepeatableItem = (item: QuestionnaireItem, index: number) => {
-    item.repeats = false;
+  const handleRepeatableItem = (
+    currentItem: QuestionnaireItem,
+    index: number,
+    questionnaireItems: QuestionnaireItem[]
+  ) => {
+    currentItem.repeats = false;
 
     const newItem: QuestionnaireItem = {
-      linkId: repeatableLinkId(item.linkId ?? '', index + 1),
-      type: item.type,
-      text: item.text,
-      item: item.item,
+      linkId: repeatableLinkId(currentItem.linkId ?? '', index + 1),
+      type: currentItem.type,
+      text: currentItem.text,
+      item: currentItem.item,
       repeats: true,
     };
-    console.log(index);
-    const updatedItems = [...questionnaireItems.slice(0, index + 2), newItem, ...questionnaireItems.slice(index + 2)];
-    setQuestionnaireItems(updatedItems);
+
+    return addRepeatableItem(questionnaireItems, currentItem.linkId ?? '', newItem);
   };
-  console.log(questionnaireItems);
+
   if (!schema || !questionnaire) {
     return null;
   }
@@ -119,6 +134,8 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
           items={questionnaireItems}
           answers={answers}
           onChange={setItems}
+          renderPages={numberOfPages > 1}
+          activePage={activePage}
           handleRepeatableItem={handleRepeatableItem}
         />
       )}
@@ -140,7 +157,11 @@ interface QuestionnaireFormItemArrayProps {
   answers: Record<string, QuestionnaireResponseItemAnswer>;
   renderPages?: boolean;
   activePage?: number;
-  handleRepeatableItem?: (item: QuestionnaireItem, index: number) => void;
+  handleRepeatableItem?: (
+    currentItem: QuestionnaireItem,
+    index: number,
+    questionnaireItems: QuestionnaireItem[]
+  ) => QuestionnaireItem[];
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
 
@@ -166,6 +187,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
             index={index}
             answers={props.answers}
             setResponseItem={setResponseItem}
+            handleRepeatableItem={props.handleRepeatableItem}
           />
         </Stepper.Step>
       );
@@ -177,6 +199,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
         index={index}
         answers={props.answers}
         setResponseItem={setResponseItem}
+        handleRepeatableItem={props.handleRepeatableItem}
       />
     );
   });
@@ -195,6 +218,11 @@ interface QuestionnaireFormArrayContentProps {
   item: QuestionnaireItem;
   index: number;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
+  handleRepeatableItem?: (
+    currentItem: QuestionnaireItem,
+    index: number,
+    questionnaireItems: QuestionnaireItem[]
+  ) => QuestionnaireItem[];
   setResponseItem: (index: number, newResponseItem: QuestionnaireResponseItem) => void;
 }
 
@@ -207,11 +235,13 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
   }
   if (props.item.type === QuestionnaireItemType.group) {
     return (
-      <QuestionnaireFormItem
+      <QuestionnaireFormRepeatables
         key={props.item.linkId}
+        index={props.index}
         item={props.item}
         answers={props.answers}
         onChange={(newResponseItem) => props.setResponseItem(props.index, newResponseItem)}
+        handleRepeatableItem={props.handleRepeatableItem}
       />
     );
   }
@@ -236,19 +266,64 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
   }
   return (
     <FormSection key={props.item.linkId} htmlFor={props.item.linkId} title={props.item.text ?? ''}>
+      <QuestionnaireFormRepeatables
+        item={props.item}
+        index={props.index}
+        answers={props.answers}
+        onChange={(newResponseItem) => props.setResponseItem(props.index, newResponseItem)}
+        handleRepeatableItem={props.handleRepeatableItem}
+      />
+    </FormSection>
+  );
+}
+
+interface QuestionnaireFormRepeatablesProps {
+  item: QuestionnaireItem;
+  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  onChange: (newResponseItem: QuestionnaireResponseItem) => void;
+  handleRepeatableItem?: (
+    currentItem: QuestionnaireItem,
+    index: number,
+    questionnaireItems: QuestionnaireItem[]
+  ) => QuestionnaireItem[];
+  index: number;
+}
+
+function QuestionnaireFormRepeatables(props: QuestionnaireFormRepeatablesProps): JSX.Element {
+  console.log(props.item);
+  return (
+    <>
       <QuestionnaireFormItem
         item={props.item}
         answers={props.answers}
-        onChange={(newResponseItem) => props.setResponseItem(props.index, newResponseItem)}
+        onChange={props.onChange}
+        handleRepeatableItem={props.handleRepeatableItem}
       />
-    </FormSection>
+      {props.item.repeats && allowRepeatable(props.item, props.answers) && (
+        <Anchor
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            if (props.handleRepeatableItem) {
+              props.handleRepeatableItem(props.item, props.index);
+            }
+          }}
+        >
+          Add Additional Item
+        </Anchor>
+      )}
+    </>
   );
 }
 
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
-  handleRepeatableItem?: (item: QuestionnaireItem, index: number) => void;
+  handleRepeatableItem?: (
+    currentItem: QuestionnaireItem,
+    index: number,
+    questionnaireItems: QuestionnaireItem[]
+  ) => QuestionnaireItem[];
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
 
@@ -289,7 +364,12 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <div>
           <h3>{item.text}</h3>
           {item.item && (
-            <QuestionnaireFormItemArray items={item.item} answers={props.answers} onChange={onChangeItem} />
+            <QuestionnaireFormItemArray
+              items={item.item}
+              answers={props.answers}
+              onChange={onChangeItem}
+              handleRepeatableItem={props.handleRepeatableItem}
+            />
           )}
         </div>
       );
@@ -691,3 +771,34 @@ function addTargetTypes(item: QuestionnaireItem): string[] {
 function repeatableLinkId(linkId: string, index: number): string {
   return `${linkId}-${index}`;
 }
+
+function allowRepeatable(item: QuestionnaireItem, answers: Record<string, QuestionnaireResponseItemAnswer>): boolean {
+  const linkId = item.linkId;
+  if (!linkId) {
+    return false;
+  }
+  return !!answers[linkId];
+}
+
+const addRepeatableItem = (
+  items: QuestionnaireItem[],
+  linkIdToFind: string,
+  newItem: QuestionnaireItem
+): QuestionnaireItem[] => {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (item.linkId === linkIdToFind) {
+      const updatedItems = [...items.slice(0, i + 1), newItem, ...items.slice(i + 1)];
+      return updatedItems;
+    }
+
+    if (item && item.item) {
+      const nestedItems = addRepeatableItem(item.item, linkIdToFind, newItem);
+      if (nestedItems !== item.item) {
+        item.item = nestedItems;
+        return items;
+      }
+    }
+  }
+  return items;
+};
