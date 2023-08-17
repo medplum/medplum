@@ -1,12 +1,6 @@
 import { Anchor, Button, createStyles, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
-import { globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
-import {
-  Extension,
-  Questionnaire,
-  QuestionnaireItem,
-  QuestionnaireItemAnswerOption,
-  Reference,
-} from '@medplum/fhirtypes';
+import { getExtension, getExtensionValue, globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
+import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Reference } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
@@ -213,6 +207,9 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                 onChange={(e) => changeProperty('text', e.currentTarget.value)}
               />
             )}
+            {item.type === 'reference' && (
+             <ReferenceTypes item={item} onChange={(newOptions) => changeProperty('answerOption', newOptions)}/>
+            )}
             {isChoiceQuestion(item) && (
               <AnswerBuilder
                 options={item.answerOption}
@@ -376,6 +373,80 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
                 name="value[x]"
                 property={property}
                 defaultPropertyType={propertyType}
+                defaultValue={propertyValue}
+                onChange={(newValue: any, propName?: string) => {
+                  const newOptions = [...options];
+                  const index = newOptions.findIndex((o) => o.id === option.id);
+                  newOptions[index] = { id: option.id, [propName as string]: newValue };
+                  props.onChange(newOptions);
+                }}
+              />
+            </div>
+            <div>
+              <Anchor
+                href="#"
+                onClick={(e: React.SyntheticEvent) => {
+                  killEvent(e);
+                  props.onChange(options.filter((o) => o.id !== option.id));
+                }}
+              >
+                Remove
+              </Anchor>
+            </div>
+          </div>
+        );
+      })}
+      <Anchor
+        href="#"
+        onClick={(e: React.SyntheticEvent) => {
+          killEvent(e);
+          props.onChange([
+            ...options,
+            {
+              id: generateId(),
+            },
+          ]);
+        }}
+      >
+        Add choice
+      </Anchor>
+    </div>
+  );
+}
+
+interface ReferenceTypeProps {
+  item: QuestionnaireItem;
+  onChange: (newOptions: QuestionnaireItemAnswerOption[]) => void;
+}
+
+function ReferenceTypes(props: ReferenceTypeProps): JSX.Element {
+  const property = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+  const options = props.options ?? [];
+
+  const referenceProfile = props.item.extension?.filter(e => )  
+
+  return (
+    <div>
+      {options.map((option: QuestionnaireItemAnswerOption) => {
+        const [propertyValue, _] = getValueAndType(
+          { type: 'QuestionnaireItemAnswerOption', value: option },
+          'value'
+        );
+        return (
+          <div
+            key={option.id}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              width: '80%',
+            }}
+          >
+            <div>
+              <TextInput
+                key={option.id}
+                name="value[x]"
                 defaultValue={propertyValue}
                 onChange={(newValue: any, propName?: string) => {
                   const newOptions = [...options];
