@@ -15,7 +15,7 @@ export const publicResourceTypes = [
   'StructureDefinition',
 ];
 
-export const universalAccessPolicy: AccessPolicyResource = {
+const universalAccessPolicy: AccessPolicyResource = {
   resourceType: '*',
 };
 

@@ -1286,7 +1286,6 @@ describe('AccessPolicy', () => {
   });
 
   test('Pre- and post-write criteria', async () => {
-    // AccessPolicy that only allows one specific Questionnaire
     const accessPolicy: AccessPolicy = {
       resourceType: 'AccessPolicy',
       resource: [
