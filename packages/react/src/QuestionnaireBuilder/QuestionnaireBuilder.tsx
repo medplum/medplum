@@ -135,6 +135,7 @@ interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
   setHoverKey: (key: string | undefined) => void;
   onChange: (item: T) => void;
   onRemove?: () => void;
+  onRepeatable?: (item: QuestionnaireItem) => void;
 }
 
 function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBuilderProps<T>): JSX.Element {
@@ -187,6 +188,13 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
       ...itemRef.current,
       [property]: value,
     } as T);
+  }
+
+  function handleRepeatableValue(item: QuestionnaireItem): void {
+    props.onChange({
+      ...props.item,
+      item: props.item.item?.map((i) => (i === item ? { ...i, repeats: !i.repeats } : i)),
+    });
   }
 
   const className = cx(classes.section, {
@@ -242,6 +250,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             setHoverKey={props.setHoverKey}
             onChange={changeItem}
             onRemove={() => removeItem(i)}
+            onRepeatable={handleRepeatableValue}
           />
         </div>
       ))}
@@ -331,17 +340,30 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           </Anchor>
         )}
         {editing && !isResource && (
-          <Anchor
-            href="#"
-            onClick={(e: React.MouseEvent) => {
-              e.preventDefault();
-              if (props.onRemove) {
-                props.onRemove();
-              }
-            }}
-          >
-            Remove
-          </Anchor>
+          <>
+            <Anchor
+              href="#"
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                if (props.onRepeatable) {
+                  props.onRepeatable(item);
+                }
+              }}
+            >
+              {item.repeats ? 'Remove Repeatable' : 'Make Repeatable'}
+            </Anchor>
+            <Anchor
+              href="#"
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                if (props.onRemove) {
+                  props.onRemove();
+                }
+              }}
+            >
+              Remove
+            </Anchor>
+          </>
         )}
       </div>
     </div>
