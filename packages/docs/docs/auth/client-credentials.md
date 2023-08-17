@@ -20,7 +20,7 @@ For this example you will need the `ID` and `Secret`.
 
 ## Connecting to the service
 
-Execute a HTTP POST request to the OAuth2 Token endpoint:
+Execute an HTTP POST request to the OAuth2 Token endpoint:
 
 <BrowserOnlyTabs groupId="language">
   <TabItem value="curl" label="cURL">
@@ -38,14 +38,13 @@ curl -X POST https://api.medplum.com/oauth2/token \
 def get_auth_token(url, client_id, client_secret):
 
   # Encode the client ID and client secret
-  authorization = base64.b64encode(bytes(client_id + ":" + client_secret, "ISO-8859-1")).decode("ascii")
-
   headers = {
-      "Authorization": f"Basic {authorization}",
       "Content-Type": "application/x-www-form-urlencoded"
   }
   body = {
-      "grant_type": "client_credentials"
+      "grant_type": "client_credentials",
+      "client_id": client_id,
+      "client_secret": client_secret
   }
 
   response = requests.post(url, data=body, headers=headers)
