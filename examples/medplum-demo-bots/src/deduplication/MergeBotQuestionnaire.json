@@ -3,14 +3,69 @@
   "type": "transaction",
   "entry": [
     {
-      "fullUrl": "urn:uuid:1d0a7b74-6fad-441e-82ba-79389cc055bb",
+      "fullUrl": "urn:uuid:48367c93-0211-4d41-9e1d-5e1ded2560d2",
       "request": {
         "method": "POST",
         "url": "Questionnaire"
       },
       "resource": {
         "resourceType": "Questionnaire",
-        "name": "Merge With",
+        "title": "Medical History",
+        "name": "Medical History",
+        "identifier": [
+          {
+            "system": "example/careplan",
+            "value": "q1"
+          }
+        ],
+        "item": [
+          {
+            "linkId": "a1",
+            "text": "Please List all your medical ailments",
+            "type": "text"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:11600710-ac9f-468a-a258-a4a10bef4a21",
+      "request": {
+        "method": "POST",
+        "url": "Questionnaire"
+      },
+      "resource": {
+        "resourceType": "Questionnaire",
+        "title": "Submit Insurance",
+        "name": "Submit Insurance",
+        "identifier": [
+          {
+            "system": "example/careplan",
+            "value": "q2"
+          }
+        ],
+        "item": [
+          {
+            "linkId": "a1",
+            "text": "Insurance Company",
+            "type": "string"
+          },
+          {
+            "linkId": "a2",
+            "text": "Insurance Id",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:1712ef48-41f9-46be-939f-b1509d1a9f9e",
+      "request": {
+        "method": "POST",
+        "url": "Questionnaire"
+      },
+      "resource": {
+        "resourceType": "Questionnaire",
+        "name": "Merge Duplicate Patients",
         "status": "active",
         "item": [
           {
@@ -20,10 +75,16 @@
             "text": "Disable Merge ",
             "item": [
               {
+                "id": "id-23",
+                "linkId": "q1",
+                "type": "display",
+                "text": "Check this box is the Patient records ARE NOT a match. This will add each Patient to the other's \"Do Not Match\" list"
+              },
+              {
                 "id": "id-16",
                 "linkId": "disableMerge",
                 "type": "boolean",
-                "text": "Do not Merge these records"
+                "text": "*Do not Merge these records*"
               }
             ]
           },
@@ -37,19 +98,19 @@
                 "id": "id-18",
                 "linkId": "replaceName",
                 "type": "boolean",
-                "text": "Replace Name with Source Patient?"
+                "text": "Merge names?\nIf selected, this will add the source patient's name to the target's list of names"
               },
               {
                 "id": "id-19",
                 "linkId": "replaceAddress",
                 "type": "boolean",
-                "text": "Replace Address with Source Patient?"
+                "text": "Merge Addresses?\nIf selected, this will add the source patient's address to the target's list of addresses"
               },
               {
                 "id": "id-20",
                 "linkId": "replaceData",
                 "type": "boolean",
-                "text": "Replace Target Patient Data with Source Patient Data?"
+                "text": "Replace birthdate?\nIf selected, this will REPLACE the target patient's birthdate with the source patient's birthdate"
               }
             ]
           },
@@ -63,15 +124,13 @@
                 "id": "id-22",
                 "linkId": "deleteSource",
                 "type": "boolean",
-                "text": "Delete Replaced Patient?"
+                "text": "Would you like to delete the source patient after merging?"
               }
             ]
           }
         ],
-        "subjectType": [
-          "RiskAssessment"
-        ],
-        "title": "Merge Bot Questionnaire"
+        "subjectType": ["RiskAssessment"],
+        "title": "Merge Duplicate Patients"
       }
     }
   ]
