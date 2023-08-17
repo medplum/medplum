@@ -1,6 +1,18 @@
 import { Anchor, Button, createStyles, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
-import { getExtension, getExtensionValue, globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
-import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Reference } from '@medplum/fhirtypes';
+import {
+  getExtension,
+  getExtensionValue,
+  globalSchema,
+  IndexedStructureDefinition,
+  isResource as isResourceType,
+} from '@medplum/core';
+import {
+  Extension,
+  Questionnaire,
+  QuestionnaireItem,
+  QuestionnaireItemAnswerOption,
+  Reference,
+} from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
@@ -208,7 +220,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
               />
             )}
             {item.type === 'reference' && (
-             <ReferenceTypes item={item} onChange={(newOptions) => changeProperty('answerOption', newOptions)}/>
+              <ReferenceProfiles item={item} onChange={(newOptions) => changeProperty('extension', newOptions)} />
             )}
             {isChoiceQuestion(item) && (
               <AnswerBuilder
@@ -419,22 +431,20 @@ interface ReferenceTypeProps {
   onChange: (newOptions: QuestionnaireItemAnswerOption[]) => void;
 }
 
-function ReferenceTypes(props: ReferenceTypeProps): JSX.Element {
-  const property = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
-  const options = props.options ?? [];
+function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
+  console.log(props.item);
 
-  const referenceProfile = props.item.extension?.filter(e => )  
+  const references = props.item.extension ?? [];
+  const referenceProfiles =
+    references.filter((e) => e.url === 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html') ?? [];
 
   return (
     <div>
-      {options.map((option: QuestionnaireItemAnswerOption) => {
-        const [propertyValue, _] = getValueAndType(
-          { type: 'QuestionnaireItemAnswerOption', value: option },
-          'value'
-        );
+      {referenceProfiles.map((reference: Extension) => {
+        console.log(reference);
         return (
           <div
-            key={option.id}
+            key={reference.id}
             style={{
               display: 'flex',
               flexDirection: 'row',
@@ -445,14 +455,15 @@ function ReferenceTypes(props: ReferenceTypeProps): JSX.Element {
           >
             <div>
               <TextInput
-                key={option.id}
+                key={reference.id}
                 name="value[x]"
-                defaultValue={propertyValue}
-                onChange={(newValue: any, propName?: string) => {
-                  const newOptions = [...options];
-                  const index = newOptions.findIndex((o) => o.id === option.id);
-                  newOptions[index] = { id: option.id, [propName as string]: newValue };
-                  props.onChange(newOptions);
+                value={reference.valueString}
+                onChange={(e: any) => {
+                  e.preventDefault();
+                  const newReferences = [...references];
+                  const index = newReferences.findIndex((o) => o.id === reference.id);
+                  newReferences[index] = { ...newReferences[index], valueString: e.target.value };
+                  props.onChange(newReferences);
                 }}
               />
             </div>
@@ -461,7 +472,7 @@ function ReferenceTypes(props: ReferenceTypeProps): JSX.Element {
                 href="#"
                 onClick={(e: React.SyntheticEvent) => {
                   killEvent(e);
-                  props.onChange(options.filter((o) => o.id !== option.id));
+                  props.onChange(references.filter((r) => r.id !== reference.id));
                 }}
               >
                 Remove
@@ -475,14 +486,16 @@ function ReferenceTypes(props: ReferenceTypeProps): JSX.Element {
         onClick={(e: React.SyntheticEvent) => {
           killEvent(e);
           props.onChange([
-            ...options,
+            ...references,
             {
               id: generateId(),
+              url: 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html',
+              valueString: '',
             },
           ]);
         }}
       >
-        Add choice
+        Add Resource
       </Anchor>
     </div>
   );
