@@ -576,6 +576,25 @@ describe('QuestionnaireBuilder', () => {
     });
   });
 
+  test('Add Pages', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        title: 'My questionnaire',
+        item: [],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add Page'));
+    });
+
+    expect(screen.getByText('New Page')).toBeDefined();
+  });
+
   test('Remove multiple choice', async () => {
     const onSubmit = jest.fn();
 

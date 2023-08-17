@@ -1,6 +1,12 @@
 import { Anchor, Button, createStyles, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
 import { globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
-import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Reference } from '@medplum/fhirtypes';
+import {
+  Extension,
+  Questionnaire,
+  QuestionnaireItem,
+  QuestionnaireItemAnswerOption,
+  Reference,
+} from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
@@ -309,6 +315,17 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             </Anchor>
           </>
         )}
+        {isResource && (
+          <Anchor
+            href="#"
+            onClick={(e: React.MouseEvent) => {
+              e.preventDefault();
+              addItem(createPage());
+            }}
+          >
+            Add Page
+          </Anchor>
+        )}
         {editing && !isResource && (
           <Anchor
             href="#"
@@ -462,4 +479,19 @@ function ensureQuestionnaireOptionKeys(
     ...option,
     id: option.id || generateId(),
   }));
+}
+
+function createPage(): QuestionnaireItem {
+  return {
+    id: generateId(),
+    linkId: generateLinkId('s'),
+    type: 'group',
+    text: `New Page`,
+    extension: [
+      {
+        url: 'http://hl7.org/fhir/R4B/extension-questionnaire-itemcontrol.html',
+        valueString: 'page',
+      } as Extension,
+    ],
+  } as QuestionnaireItem;
 }

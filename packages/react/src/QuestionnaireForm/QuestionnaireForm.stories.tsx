@@ -86,6 +86,184 @@ export const Groups = (): JSX.Element => (
   </Document>
 );
 
+export const PageSequence = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'groups-example',
+        title: 'Groups Example',
+        item: [
+          {
+            linkId: 'group1',
+            text: 'Page Sequence 1',
+            type: 'group',
+            item: [
+              {
+                linkId: 'question1',
+                text: 'Question 1',
+                type: 'string',
+              },
+              {
+                linkId: 'question2',
+                text: 'Question 2',
+                type: 'string',
+              },
+              {
+                linkId: 'q1',
+                text: 'Question 1',
+                type: 'choice',
+                answerOption: [
+                  {
+                    valueString: 'Yes',
+                  },
+                  {
+                    valueString: 'No',
+                  },
+                ],
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/R4B/extension-questionnaire-itemcontrol.html',
+                valueString: 'page',
+              },
+            ],
+          },
+          {
+            linkId: 'group2',
+            text: 'Page Sequence 2',
+            type: 'group',
+            item: [
+              {
+                linkId: 'question3',
+                text: 'Question 3',
+                type: 'string',
+              },
+              {
+                linkId: 'question4',
+                text: 'Question 4',
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/R4B/extension-questionnaire-itemcontrol.html',
+                valueString: 'page',
+              },
+            ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
+export const PageAndNonPageSequence = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'groups-example',
+        title: 'Groups Example',
+        item: [
+          {
+            linkId: 'group1',
+            text: 'Page Sequence 1',
+            type: 'group',
+            item: [
+              {
+                linkId: 'question1',
+                text: 'Question 1',
+                type: 'string',
+              },
+              {
+                linkId: 'question2',
+                text: 'Question 2',
+                type: 'string',
+              },
+              {
+                linkId: 'q1',
+                text: 'Question 1',
+                type: 'choice',
+                answerOption: [
+                  {
+                    valueString: 'Yes',
+                  },
+                  {
+                    valueString: 'No',
+                  },
+                ],
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/R4B/extension-questionnaire-itemcontrol.html',
+                valueString: 'page',
+              },
+            ],
+          },
+          {
+            linkId: 'group2',
+            text: 'Page Sequence 2',
+            type: 'group',
+            item: [
+              {
+                linkId: 'question3',
+                text: 'Question 3',
+                type: 'string',
+              },
+              {
+                linkId: 'question4',
+                text: 'Question 4',
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/R4B/extension-questionnaire-itemcontrol.html',
+                valueString: 'page',
+              },
+            ],
+          },
+          {
+            linkId: 'q3',
+            text: 'Question 3',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Red',
+              },
+              {
+                valueString: 'Blue',
+              },
+              {
+                valueString: 'Yellow',
+              },
+            ],
+          },
+          {
+            linkId: 'boolean',
+            type: 'boolean',
+            text: 'Boolean',
+            initial: [
+              {
+                valueBoolean: true,
+              },
+            ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
 export const MultipleChoice = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
