@@ -621,6 +621,39 @@ describe('QuestionnaireForm', () => {
     expect(answers2['q1']).toMatchObject({ valueString: 'a2' });
   });
 
+  test('Reference Extensions', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.reference,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html',
+                valueString: 'Patient',
+              },
+              {
+                url: 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html',
+                valueString: 'Organization',
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByText('Patient')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Patient'));
+    });
+  });
+
   test('Drop down choice input default value', async () => {
     const onSubmit = jest.fn();
 

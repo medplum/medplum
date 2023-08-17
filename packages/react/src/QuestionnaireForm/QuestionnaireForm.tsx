@@ -641,6 +641,8 @@ function getNumberOfPages(items: QuestionnaireItem[]): number {
     return !!extension;
   });
   return pages.length > 0 ? items.length : 0;
+}
+
 function addTargetTypes(item: QuestionnaireItem): string[] {
   if (item.type !== QuestionnaireItemType.reference) {
     return [];
