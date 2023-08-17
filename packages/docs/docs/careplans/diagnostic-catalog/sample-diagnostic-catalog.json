@@ -1,0 +1,793 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "ObservationDefinition",
+        "id": "observation-blood-sodium",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2947-0",
+              "display": "Sodium [Moles/volume] in Blood"
+            }
+          ]
+        },
+        "preferredReportName": "Sodium Level",
+        "quantitativeDetails": {
+          "unit": {
+            "coding": [
+              {
+                "system": "http://unitsofmeasure.org",
+                "code": "mmol/L",
+                "display": "millimoles per liter"
+              }
+            ]
+          },
+          "decimalPrecision": 2
+        },
+        "qualifiedInterval": [
+          {
+            "condition": "Normal",
+            "range": {
+              "low": {
+                "value": 135,
+                "unit": "mmol/L"
+              },
+              "high": {
+                "value": 145,
+                "unit": "mmol/L"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ObservationDefinition",
+        "id": "observation-blood-potassium",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "6298-4",
+              "display": "Potassium [Moles/volume] in Blood"
+            }
+          ]
+        },
+        "preferredReportName": "Potassium Level",
+        "quantitativeDetails": {
+          "unit": {
+            "coding": [
+              {
+                "system": "http://unitsofmeasure.org",
+                "code": "mmol/L",
+                "display": "millimoles per liter"
+              }
+            ]
+          },
+          "decimalPrecision": 2
+        },
+        "qualifiedInterval": [
+          {
+            "condition": "Normal",
+            "range": {
+              "low": {
+                "value": 3.5,
+                "unit": "mmol/L"
+              },
+              "high": {
+                "value": 5.1,
+                "unit": "mmol/L"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ObservationDefinition",
+        "id": "observation-blood-chloride",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2069-3",
+              "display": "Chloride [Moles/volume] in Blood"
+            }
+          ]
+        },
+        "preferredReportName": "Chloride Level",
+        "quantitativeDetails": {
+          "unit": {
+            "coding": [
+              {
+                "system": "http://unitsofmeasure.org",
+                "code": "mmol/L",
+                "display": "millimoles per liter"
+              }
+            ]
+          },
+          "decimalPrecision": 2
+        },
+        "qualifiedInterval": [
+          {
+            "condition": "Normal",
+            "range": {
+              "low": {
+                "value": 96,
+                "unit": "mmol/L"
+              },
+              "high": {
+                "value": 106,
+                "unit": "mmol/L"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ObservationDefinition",
+        "id": "observation-blood-carbon-dioxide",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "20565-8",
+              "display": "Carbon dioxide, total [Moles/volume] in Blood"
+            }
+          ]
+        },
+        "preferredReportName": "Total CO2 Level",
+        "quantitativeDetails": {
+          "unit": {
+            "coding": [
+              {
+                "system": "http://unitsofmeasure.org",
+                "code": "mmol/L",
+                "display": "millimoles per liter"
+              }
+            ]
+          },
+          "decimalPrecision": 2
+        },
+        "qualifiedInterval": [
+          {
+            "condition": "Normal",
+            "range": {
+              "low": {
+                "value": 22,
+                "unit": "mmol/L"
+              },
+              "high": {
+                "value": 29,
+                "unit": "mmol/L"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ObservationDefinition",
+        "id": "observation-serum-testosterone-free-weakly-bound",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "41018-3",
+              "display": "Testosterone.free+weakly bound [Moles/volume] in Serum or Plasma"
+            }
+          ]
+        },
+        "preferredReportName": "Free Testosterone Level",
+        "quantitativeDetails": {
+          "unit": {
+            "coding": [
+              {
+                "system": "http://unitsofmeasure.org",
+                "code": "nmol/L",
+                "display": "nanomoles per liter"
+              }
+            ]
+          },
+          "decimalPrecision": 2
+        },
+        "qualifiedInterval": [
+          {
+            "condition": "Normal",
+            "range": {
+              "low": {
+                "value": 10,
+                "unit": "nmol/L"
+              },
+              "high": {
+                "value": 30,
+                "unit": "nmol/L"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ObservationDefinition",
+        "id": "observation-serum-estradiol-e2",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "14715-7",
+              "display": "Estradiol (E2) [Moles/volume] in Serum or Plasma"
+            }
+          ]
+        },
+        "preferredReportName": "Estradiol (E2) Level",
+        "quantitativeDetails": {
+          "unit": {
+            "coding": [
+              {
+                "system": "http://unitsofmeasure.org",
+                "code": "pmol/L",
+                "display": "picomoles per liter"
+              }
+            ]
+          },
+          "decimalPrecision": 2
+        },
+        "qualifiedInterval": [
+          {
+            "condition": "Normal",
+            "range": {
+              "low": {
+                "value": 40,
+                "unit": "pmol/L"
+              },
+              "high": {
+                "value": 200,
+                "unit": "pmol/L"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "SpecimenDefinition",
+        "id": "fingerprick-capillary-blood",
+        "typeCollected": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "122554006",
+              "display": "Capillary Blood Specimen"
+            }
+          ]
+        },
+        "collection": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "278450005",
+                "display": "Finger-prick sampling"
+              }
+            ]
+          }
+        ],
+        "typeTested": [
+          {
+            "preference": "preferred",
+            "container": {
+              "type": {
+                "coding": [
+                  {
+                    "system": "http://snomed.info/sct",
+                    "code": "467989009",
+                    "display": "Capillary blood collection tube, no-additive"
+                  }
+                ]
+              },
+              "cap": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/container-cap",
+                    "code": "red"
+                  }
+                ],
+                "text": "red cap"
+              }
+            },
+            "handling": [
+              {
+                "temperatureQualifier": {
+                  "text": "room temperature",
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/handling-condition",
+                      "code": "room",
+                      "display": "room temperature"
+                    }
+                  ]
+                },
+                "maxDuration": {
+                  "value": 7,
+                  "unit": "day",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "d"
+                }
+              },
+              {
+                "temperatureQualifier": {
+                  "text": "frozen",
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/handling-condition",
+                      "code": "frozen",
+                      "display": "frozen"
+                    }
+                  ]
+                },
+                "maxDuration": {
+                  "value": 28,
+                  "unit": "day",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "d"
+                }
+              }
+            ]
+          },
+          {
+            "preference": "preferred",
+            "container": {
+              "type": {
+                "coding": [
+                  {
+                    "system": "http://snomed.info/sct",
+                    "code": "467989009",
+                    "display": "Capillary blood collection tube, no-additive"
+                  }
+                ]
+              },
+              "cap": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/container-cap",
+                    "code": "green"
+                  }
+                ],
+                "text": "green cap"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "id": "example-lab-service-sodium-serum",
+        "url": "http://example.org/PlanDefinition/lab-service-sodium-serum",
+        "status": "active",
+        "identifier": [
+          {
+            "use": "official",
+            "value": "Na_serum_test"
+          }
+        ],
+        "name": "sodium-serum-measurement",
+        "title": "Sodium measurement on in vitro blood serum",
+        "description": "Sodium measurement on serum specimen",
+        "type": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/uv/order-catalog/CodeSystem/laboratory-service-definition-type",
+              "code": "test",
+              "display": "unitary measurement performed on an in vitro biologic specimen"
+            }
+          ]
+        },
+        "action": [
+          {
+            "code": [
+              {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "2947-0",
+                    "display": "Sodium [Moles/volume] in Blood"
+                  }
+                ]
+              }
+            ],
+            "definitionCanonical": "http://example.org/lab-procedure-sodium-serum"
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "task"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                  "code": "LABOE",
+                  "display": "laboratory test order entry task"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "id": "example-lab-service-electrolytes-panel-blood",
+        "status": "active",
+        "url": "http://example.org/PlanDefinition/lab-service-electrolytes-panel-blood",
+        "identifier": [
+          {
+            "use": "official",
+            "value": "electrolytes_panel_test"
+          }
+        ],
+        "name": "electrolytes-panel-blood-measurement",
+        "title": "Electrolytes panel measurement in blood",
+        "description": "Electrolytes panel measurement on blood specimen",
+        "type": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/uv/order-catalog/CodeSystem/laboratory-service-definition-type",
+              "code": "panel",
+              "display": "collection of tests and panels performed on one or more in vitro biologic specimens"
+            }
+          ]
+        },
+        "action": [
+          {
+            "code": [
+              {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "55231-5",
+                    "display": "Electrolytes panel - Blood"
+                  }
+                ]
+              }
+            ],
+            "definitionCanonical": "http://example.org/lab-procedure-electrolytes-panel-blood"
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "task"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                  "code": "LABOE",
+                  "display": "laboratory test order entry task"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "id": "example-lab-service-mens-health",
+        "status": "active",
+        "url": "http://example.org/PlanDefinition/lab-service-mens-health",
+        "identifier": [
+          {
+            "use": "official",
+            "value": "mens_health_panel_test"
+          }
+        ],
+        "name": "mens-health-panel",
+        "title": "Men's Health Panel",
+        "description": "Men's health-related laboratory tests",
+        "type": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/uv/order-catalog/CodeSystem/laboratory-service-definition-type",
+              "code": "panel",
+              "display": "collection of tests and panels performed on one or more in vitro biologic specimens"
+            }
+          ]
+        },
+        "action": [
+          {
+            "code": [
+              {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "41018-3",
+                    "display": "Testosterone.free+weakly bound [Moles/volume] in Serum or Plasma"
+                  }
+                ]
+              }
+            ],
+            "definitionCanonical": "http://example.org/lab-procedure-testosterone-serum"
+          },
+          {
+            "code": [
+              {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "55231-5",
+                    "display": "Electrolytes panel - Blood"
+                  }
+                ]
+              }
+            ],
+            "definitionCanonical": "http://example.org/lab-procedure-electrolytes-panel-blood"
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "task"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                  "code": "LABOE",
+                  "display": "laboratory test order entry task"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "status": "active",
+        "id": "example-lab-service-womens-health",
+        "url": "http://example.org/PlanDefinition/lab-service-womens-health",
+        "identifier": [
+          {
+            "use": "official",
+            "value": "womens_health_panel_test"
+          }
+        ],
+        "name": "womens-health-panel",
+        "title": "Women's Health Panel",
+        "description": "Women's health-related laboratory tests",
+        "type": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/uv/order-catalog/CodeSystem/laboratory-service-definition-type",
+              "code": "panel",
+              "display": "collection of tests and panels performed on one or more in vitro biologic specimens"
+            }
+          ]
+        },
+        "action": [
+          {
+            "code": [
+              {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "14715-7",
+                    "display": "Estradiol (E2) [Moles/volume] in Serum or Plasma"
+                  }
+                ]
+              }
+            ],
+            "definitionCanonical": "http://example.org/lab-procedure-estradiol-e2-serum"
+          },
+          {
+            "code": [
+              {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "55231-5",
+                    "display": "Electrolytes panel - Blood"
+                  }
+                ]
+              }
+            ],
+            "definitionCanonical": "http://example.org/lab-procedure-electrolytes-panel-blood"
+          }
+        ],
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "task"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                  "code": "LABOE",
+                  "display": "laboratory test order entry task"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "status": "active",
+        "id": "lab-procedure-sodium-serum",
+        "name": "sodium-serum-measurement-procedure",
+        "title": "Procedure - sodium measurement on in vitro blood serum",
+        "url": "http://example.org/lab-procedure-sodium-serum",
+        "identifier": [
+          {
+            "use": "official",
+            "value": "Na_serum_test"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2823-3",
+              "display": "Sodium [Moles/volume] in Serum or Plasma"
+            }
+          ]
+        },
+        "kind": "ServiceRequest",
+        "observationResultRequirement": [
+          {
+            "reference": "ObservationDefinition/observation-serum-sodium"
+          }
+        ],
+        "specimenRequirement": [
+          {
+            "reference": "SpecimenDefinition/fingerprick-capillary-blood"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "status": "active",
+        "id": "lab-procedure-estradiol-e2-serum",
+        "name": "estradiol-e2-measurement-procedure",
+        "title": "Procedure - Estradiol (E2) measurement in in vitro serum",
+        "url": "http://example.org/lab-procedure-estradiol-e2-serum",
+        "identifier": [
+          {
+            "use": "official",
+            "value": "Estradiol_E2_test"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "14715-7",
+              "display": "Estradiol (E2) [Moles/volume] in Serum or Plasma"
+            }
+          ]
+        },
+        "kind": "ServiceRequest",
+        "observationResultRequirement": [
+          {
+            "reference": "ObservationDefinition/observation-serum-estradiol-e2"
+          }
+        ],
+        "specimenRequirement": [
+          {
+            "reference": "SpecimenDefinition/fingerprick-capillary-blood"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "id": "lab-procedure-electrolytes-panel-blood",
+        "status": "active",
+        "name": "electrolytes-panel-blood-measurement-procedure",
+        "title": "Procedure - Electrolytes panel measurement in blood",
+        "url": "http://example.org/lab-procedure-electrolytes-panel-blood",
+        "identifier": [
+          {
+            "use": "official",
+            "value": "electrolytes_panel_test"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "55231-5",
+              "display": "Electrolytes panel - Blood"
+            }
+          ]
+        },
+        "kind": "ServiceRequest",
+        "observationResultRequirement": [
+          {
+            "reference": "ObservationDefinition/observation-blood-potassium"
+          },
+          {
+            "reference": "ObservationDefinition/observation-blood-chloride"
+          },
+          {
+            "reference": "ObservationDefinition/observation-blood-carbon-dioxide"
+          },
+          {
+            "reference": "ObservationDefinition/observation-blood-sodium"
+          }
+        ],
+        "specimenRequirement": [
+          {
+            "reference": "SpecimenDefinition/fingerprick-capillary-blood"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "status": "active",
+        "id": "lab-procedure-testosterone-free-weakly-bound-serum",
+        "name": "testosterone-free-weakly-bound-measurement-procedure",
+        "title": "Procedure - Testosterone free & weakly bound measurement in in vitro serum",
+        "url": "http://example.org/lab-procedure-testosterone-free-weakly-bound-serum",
+        "identifier": [
+          {
+            "use": "official",
+            "value": "Testosterone_free_weakly_bound_test"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "41018-3",
+              "display": "Testosterone.free+weakly bound [Moles/volume] in Serum or Plasma"
+            }
+          ]
+        },
+        "kind": "ServiceRequest",
+        "observationResultRequirement": [
+          {
+            "reference": "ObservationDefinition/observation-serum-testosterone-free-weakly-bound"
+          }
+        ],
+        "specimenRequirement": [
+          {
+            "reference": "SpecimenDefinition/fingerprick-capillary-blood"
+          }
+        ]
+      }
+    }
+  ]
+}
