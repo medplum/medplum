@@ -211,12 +211,22 @@ describe('ReferenceRangeEditor', () => {
     const genderDropdown = screen.getByLabelText('Gender:');
     fireEvent.change(genderDropdown, { target: { value: 'female' } });
     fireEvent.change(genderDropdown, { target: { value: '' } });
-    fireEvent.click(screen.getByText('Save'));
 
+    const endocrineDropdown = screen.getByLabelText('Endocrine:');
+    fireEvent.change(endocrineDropdown, { target: { value: 'luteal' } });
+    fireEvent.change(endocrineDropdown, { target: { value: '' } });
+
+    const categoryDropdown = screen.getByLabelText('Category:');
+    fireEvent.change(categoryDropdown, { target: { value: 'reference' } });
+    fireEvent.change(categoryDropdown, { target: { value: '' } });
+
+    fireEvent.click(screen.getByText('Save'));
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
     expect(checkSubmitted.qualifiedInterval).toMatchObject(
       Array(3).fill({
         gender: undefined,
+        context: undefined,
+        category: undefined,
       })
     );
   });
