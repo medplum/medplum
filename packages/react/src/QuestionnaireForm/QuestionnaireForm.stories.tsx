@@ -1079,11 +1079,13 @@ export const KitchenSink = (): JSX.Element => (
             linkId: 'decimal',
             type: 'decimal',
             text: 'Decimal',
+            repeats: true,
           },
           {
             linkId: 'integer',
             type: 'integer',
             text: 'Integer',
+            repeats: true,
           },
           {
             linkId: 'date',
@@ -1104,6 +1106,7 @@ export const KitchenSink = (): JSX.Element => (
             linkId: 'string',
             type: 'string',
             text: 'String',
+            repeats: true,
           },
           {
             linkId: 'text',
