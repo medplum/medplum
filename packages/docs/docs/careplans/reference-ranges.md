@@ -95,7 +95,6 @@ The example below demonstrates how to represent different normal ranges for a te
   </MedplumCodeBlock>
 </details>
 
-
 :::note
 
 For any range, if these demographic qualifiers are left unspecified, the system interprets it as a universal range applicable to all patients.
@@ -120,11 +119,11 @@ The Medplum SDK provides helper functions,[ `findObservationInterval`](/docs/sdk
 
 Reference ranges can be categorized into three different types:
 
-|    Field    | Description                                                  |
-| :---------: | :----------------------------------------------------------- |
-| `reference` | Defines the **normal** ranges for a given observation type.  |
+|    Field    | Description                                                                                                                                                            |
+| :---------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reference` | Defines the **normal** ranges for a given observation type.                                                                                                            |
 | `critical`  | Defines the **critical** values for the observation, also known as "panic" values. Observing values in these ranges often require special handling to notify patients. |
-| `absolute`  | The absolute allowable range for this value (i.e. the measurable range). Values outside of this range are not possible / sensible. |
+| `absolute`  | The absolute allowable range for this value (i.e. the measurable range). Values outside of this range are not possible / sensible.                                     |
 
 The type of reference range is specified in the `qualifiedInterval.category` field.
 
@@ -170,5 +169,5 @@ Each one of these fields refers to a [`ValueSet`](/docs/api/fhir/resources/value
 
 ## See Also
 
-- [Loinc Guide](./loinc)
+- [LOINC Guide](./loinc)
 - [Diagnostic Catalog](./diagnostic-catalog)

@@ -30,18 +30,14 @@ Having a well-defined, structured catalog enables:
 
 - Robust access controls
 - Higher quality analytics
-- Smoother [CLI/CAP certification](/docs/compliance/clia-cap)
+- Smoother [CLIA/CAP certification](/docs/compliance/clia-cap)
 - [Streamlined billing](/docs/compliance/clia-cap)
-
-
 
 At the end of this guide, you will understand how to represent your diagnostic catalog in FHIR at a detailed level an example of which is shown in this diagram.
 
-
-
 ```mermaid
 graph TD
-    A((Men' Health)) --> TestProc(Testosterone Test)
+    A((Men's Health)) --> TestProc(Testosterone Test)
 		A --> ElecProc(Electrolyte Panel)
 		Z((Women's Health)) -->  E2Proc(Estradiol E2 measurement)
 		Z --> ElecProc
@@ -50,13 +46,13 @@ graph TD
 		ElecProc --> F(Sodium Level)
 		ElecProc --> G(Potassium Level)
 		ElecProc --> H(Chloride Level)
-		ElecProc --> J(Total CO2 Level)	
+		ElecProc --> J(Total CO2 Level)
 
 		subgraph Services
       A
       Z
     end
-   
+
     subgraph Procedures
       TestProc
       ElecProc
@@ -74,16 +70,14 @@ graph TD
     end
 ```
 
- Follow the guide step by step to build up the components shown:
+Follow the guide step-by-step to build up the components shown:
 
 1. Define your clinical observations
 2. Define your specimens
 3. Define your orderable services
 4. Define your laboratory procedures
 
-Our recommendations are informed by the follow the [Order Catalog Implementation Guide](http://hl7.org/fhir/uv/order-catalog/2020Sep/) implementation guide, which developed with contributions from Labcorp,  Quest Diagnostics, and other industry leaders.
-
-
+Our recommendations are informed by the [Order Catalog Implementation Guide](http://hl7.org/fhir/uv/order-catalog/2020Sep/) implementation guide, which developed with contributions from Labcorp, Quest Diagnostics, and other industry leaders.
 
 :::tip Sample Data
 You can download the examples in this guide as a FHIR bundle [here](./sample-diagnostic-catalog.json), and upload them to your project using the [Medplum Batch Upload Tool](/docs/tutorials/importing-sample-data#batch-upload-tool)
@@ -99,13 +93,13 @@ The [`Observation`](/docs/api/fhir/resources/observation) is the primary _operat
 
 A great [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) contains the following:
 
-| Element                                | Description                                                  | Code System                               | Example                                                      |
-| -------------------------------------- | ------------------------------------------------------------ | ----------------------------------------- | ------------------------------------------------------------ |
-| `code`                                 | Code representing the observation type.                      | LOINC <br />(see [LOINC codes](./loinc))  | [2951-2](https://loinc.org/2951-2) - Sodium [Moles/volume] in Serum or Plasma |
-| `quantitativeDetails.unit`             | Units expressing the observation value.                      | [UCUM](https://hl7.org/fhir/R4/ucum.html) | mmol/L                                                       |
-| `quantitativeDetails.decimalPrecision` | Number of places of precision _to the right of the decimal point_ |                                           | 2 (e.g. `0.11`)                                              |
+| Element                                | Description                                                                                                                                                                    | Code System                               | Example                                                                                                                    |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `code`                                 | Code representing the observation type.                                                                                                                                        | LOINC <br />(see [LOINC codes](./loinc))  | [2951-2](https://loinc.org/2951-2) - Sodium [Moles/volume] in Serum or Plasma                                              |
+| `quantitativeDetails.unit`             | Units expressing the observation value.                                                                                                                                        | [UCUM](https://hl7.org/fhir/R4/ucum.html) | mmol/L                                                                                                                     |
+| `quantitativeDetails.decimalPrecision` | Number of places of precision _to the right of the decimal point_                                                                                                              |                                           | 2 (e.g. `0.11`)                                                                                                            |
 | `qualifiedInterval`                    | <p>Range of valid or reference values for the observation, to be used during interpretation. </p><p>See our [guide on reference ranges](./reference-ranges) for more info.</p> |                                           | <ul><li>Low: &lt;= 134.00 mmol/L</li><li>Normal: 135.00 mmol/L - 145.00 mmol/L</li><li>High: &gt;= 146.00 mmol/L</li></ul> |
-| `preferredReportName`                  | Patient-friendly name used for reporting the observation result. |                                           | Sodium Level                                                 |
+| `preferredReportName`                  | Patient-friendly name used for reporting the observation result.                                                                                                               |                                           | Sodium Level                                                                                                               |
 
 Key amongst these is the `qualifiedInterval` element, which is used to define _how results should be interpreted._ See our [guide on reference ranges](./reference-ranges) for more information.
 
@@ -152,26 +146,26 @@ The next step is to roll up your individual tests into **orderable services** th
 
 These products are represented as [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) resources. The [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) is primarily a grouping resource that stores metadata about the service and references the [`ActivityDefinitions`](/docs/api/fhir/resources/activitydefinition) you will create in the next section.
 
- [`PlanDefinition's`](/docs/api/fhir/resources/plandefinition)  important fields:
+[`PlanDefinition's`](/docs/api/fhir/resources/plandefinition) important fields:
 
-| Field                        | Description                                                  | Code System                                                  | Example                                                      |
-| ---------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| `name`                       | The computer-friendly name of the service.                   |                                                              | mens-health-panel                                            |
-| `title`                      | The human-friendly name of the service.                      |                                                              | Men's Health Panel                                           |
-| `identifier`                 | Business identifier for the service (i.e. product or SKU code) |                                                              | dx-panel-12345                                               |
-| `type`                       | Whether the service is a single test or a panel              | [Laboratory service types](http://hl7.org/fhir/uv/order-catalog/2020Sep/ValueSet-laboratory-service-type.html) | panel                                                        |
-| `useContext`                 | How this [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) should be interpreted. For diagnostic procedures, this is a fixed value: Lab Order Entry |                                                              | [Lab Order Entry](https://terminology.hl7.org/1.0.0//CodeSystem-v3-ActCode.html) |
-| `status`                     | Whether or not the[`PlanDefinition`](/docs/api/fhir/resources/plandefinition) is active |                                                              | active                                                       |
-| `action.code`                | The code for lab procedure corresponding                     | [LOINC](./loinc)                                             | [55231-5](https://loinc.org/55231-5) - Electrolytes panel - Blood |
-| `action.definitionCanonical` | The "canonical url" of the the [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) representing the procedure (see [below](#activitydefinitions)) |                                                              | http://example.org/ActivityDefinition/electrolyte-panel      |
+| Field                        | Description                                                                                                                                                       | Code System                                                                                                    | Example                                                                          |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `name`                       | The computer-friendly name of the service.                                                                                                                        |                                                                                                                | mens-health-panel                                                                |
+| `title`                      | The human-friendly name of the service.                                                                                                                           |                                                                                                                | Men's Health Panel                                                               |
+| `identifier`                 | Business identifier for the service (i.e. product or SKU code)                                                                                                    |                                                                                                                | dx-panel-12345                                                                   |
+| `type`                       | Whether the service is a single test or a panel                                                                                                                   | [Laboratory service types](http://hl7.org/fhir/uv/order-catalog/2020Sep/ValueSet-laboratory-service-type.html) | panel                                                                            |
+| `useContext`                 | How this [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) should be interpreted. For diagnostic procedures, this is a fixed value: Lab Order Entry     |                                                                                                                | [Lab Order Entry](https://terminology.hl7.org/1.0.0//CodeSystem-v3-ActCode.html) |
+| `status`                     | Whether or not the[`PlanDefinition`](/docs/api/fhir/resources/plandefinition) is active                                                                           |                                                                                                                | active                                                                           |
+| `action.code`                | The code for lab procedure corresponding                                                                                                                          | [LOINC](./loinc)                                                                                               | [55231-5](https://loinc.org/55231-5) - Electrolytes panel - Blood                |
+| `action.definitionCanonical` | The "canonical url" of the the [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) representing the procedure (see [below](#activitydefinitions)) |                                                                                                                | http://example.org/ActivityDefinition/electrolyte-panel                          |
 
 In the next section, we'll learn more about the `PlanDefinition.action` element, which represents the lab procedures used to _fulfill_ the diagnostic service order.
 
 ## Define your lab procedures
 
-Now that you have represented your service menu as  [`PlanDefinitions`](/docs/api/fhir/resources/plandefinition) , you will use [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) resource to define your corresponding procedures to fulfill each service.
+Now that you have represented your service menu as [`PlanDefinitions`](/docs/api/fhir/resources/plandefinition) , you will use [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) resource to define your corresponding procedures to fulfill each service.
 
-While  [`PlanDefinitions`](/docs/api/fhir/resources/plandefinition)  are patient facing resources, [`ActivityDefinitions`](/docs/api/fhir/resources/activitydefinition) are primarily used by lab operators to aid them in fulfilling the order. To link the two, each entry in `PlanDefinition.action` references an individual lab procedure, with `PlanDefinition.action.definitionCanonical` referencing an [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) resource for details.
+While [`PlanDefinitions`](/docs/api/fhir/resources/plandefinition) are patient facing resources, [`ActivityDefinitions`](/docs/api/fhir/resources/activitydefinition) are primarily used by lab operators to aid them in fulfilling the order. To link the two, each entry in `PlanDefinition.action` references an individual lab procedure, with `PlanDefinition.action.definitionCanonical` referencing an [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) resource for details.
 
 :::caution Note: Canonical References
 
@@ -191,16 +185,16 @@ The [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) resource
 
 The most important fields for [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) are summarized below:
 
-| Element                        | Description                                                  | Code System                                     | Example                                                      |
-| ------------------------------ | ------------------------------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------ |
-| `code`                         | The LOINC code corresponding to this procedure. Should match the code used in `PlanDefinition.action` | [LOINC](./loinc)                                | [55231-5](https://loinc.org/55231-5) - Electrolytes panel - Blood |
-| `url`                          | <p>Known as the "canonical URL" for the resource. This should be a fully qualified, globally unique URL. </p><p>FHIR recommends for many administrative resources (aka "definitional resources") to have canonical URLs to provide a globally unique business identifier. Read more about canonical URLs [here](https://hl7.org/fhir/resource.html#canonical)</p><p>A recommended pattern for constructing this URL is:<br /> `http://[your-company-url]/ActivityDefinition/[test-name]`</p> |                                                 | http://example.org/ActivityDefinition/electrolyte-panel      |
-| `observationResultRequirement` | References to the [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) resources for the test results produced by this procedure (see above). | [See above](#define-your-clinical-observations) |                                                              |
-| `specimenRequirement`          | References to the [`SpecimenDefinition`](/docs/api/fhir/resources/specimendefinition) resources for the test results produced by this procedure (see above). | [See above](#define-your-specimens)             |                                                              |
-| `name`                         | A computer-friendly name for the procedure                   |                                                 | electrolytes-panel-blood-measurement                         |
-| `title`                        | A human-friendly name for the procedure                      |                                                 | Electrolytes panel measurement in blood                      |
-| `kind`                         | The kind of resource that will represent the lab order. For diagnostics, this is always `ServiceRequest`. |                                                 | ServiceRequest                                               |
-| `status`                       | Whether or not the[`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) is active |                                                 | active                                                       |
+| Element                        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Code System                                     | Example                                                           |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------- |
+| `code`                         | The LOINC code corresponding to this procedure. Should match the code used in `PlanDefinition.action`                                                                                                                                                                                                                                                                                                                                                                                        | [LOINC](./loinc)                                | [55231-5](https://loinc.org/55231-5) - Electrolytes panel - Blood |
+| `url`                          | <p>Known as the "canonical URL" for the resource. This should be a fully qualified, globally unique URL. </p><p>FHIR recommends for many administrative resources (aka "definitional resources") to have canonical URLs to provide a globally unique business identifier. Read more about canonical URLs [here](https://hl7.org/fhir/resource.html#canonical)</p><p>A recommended pattern for constructing this URL is:<br /> `http://[your-company-url]/ActivityDefinition/[test-name]`</p> |                                                 | http://example.org/ActivityDefinition/electrolyte-panel           |
+| `observationResultRequirement` | References to the [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) resources for the test results produced by this procedure (see above).                                                                                                                                                                                                                                                                                                                           | [See above](#define-your-clinical-observations) |                                                                   |
+| `specimenRequirement`          | References to the [`SpecimenDefinition`](/docs/api/fhir/resources/specimendefinition) resources for the test results produced by this procedure (see above).                                                                                                                                                                                                                                                                                                                                 | [See above](#define-your-specimens)             |                                                                   |
+| `name`                         | A computer-friendly name for the procedure                                                                                                                                                                                                                                                                                                                                                                                                                                                   |                                                 | electrolytes-panel-blood-measurement                              |
+| `title`                        | A human-friendly name for the procedure                                                                                                                                                                                                                                                                                                                                                                                                                                                      |                                                 | Electrolytes panel measurement in blood                           |
+| `kind`                         | The kind of resource that will represent the lab order. For diagnostics, this is always `ServiceRequest`.                                                                                                                                                                                                                                                                                                                                                                                    |                                                 | ServiceRequest                                                    |
+| `status`                       | Whether or not the[`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) is active                                                                                                                                                                                                                                                                                                                                                                                              |                                                 | active                                                            |
 
 ### The Simple Case
 
@@ -337,7 +331,7 @@ Now we'll put all these concepts together to model a basic lab catalog. The diag
 ```mermaid
 graph TD
 
-    A((Men' Health)) -->|action.definitionCanonical| B(Testosterone Test)
+    A((Men's Health)) -->|action.definitionCanonical| B(Testosterone Test)
 		A -->|action.definitionCanonical| C(Electrolyte Panel)
 		Z((Women's Health)) --> |action.definitionCanonical| Y(Estradiol E2 measurement)
 		Z -->|action.definitionCanonical|C
