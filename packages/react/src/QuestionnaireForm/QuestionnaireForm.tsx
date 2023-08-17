@@ -68,6 +68,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const numberOfPages = getNumberOfPages(questionnaire?.item ?? []);
   const nextStep = (): void => setActivePage((current) => (current >= numberOfPages ? current : current + 1));
   const prevStep = (): void => setActivePage((current) => (current <= 0 ? current : current - 1));
+  const [questionnaireItems, setQuestionnaireItems] = useState(questionnaire?.item ?? []);
 
   useEffect(() => {
     medplum
@@ -90,6 +91,21 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     setAnswers(getQuestionnaireAnswers(newResponse));
   }
 
+  const handleRepeatableItem = (item: QuestionnaireItem, index: number) => {
+    item.repeats = false;
+
+    const newItem: QuestionnaireItem = {
+      linkId: repeatableLinkId(item.linkId ?? '', index + 1),
+      type: item.type,
+      text: item.text,
+      item: item.item,
+      repeats: true,
+    };
+    console.log(index);
+    const updatedItems = [...questionnaireItems.slice(0, index + 2), newItem, ...questionnaireItems.slice(index + 2)];
+    setQuestionnaireItems(updatedItems);
+  };
+  console.log(questionnaireItems);
   if (!schema || !questionnaire) {
     return null;
   }
@@ -111,10 +127,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }}
     >
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
-
-      {questionnaire.item && (
+      {questionnaireItems && (
         <QuestionnaireFormItemArray
-          items={questionnaire.item}
+          items={questionnaireItems}
           answers={answers}
           onChange={setItems}
           renderPages={numberOfPages > 1}
@@ -139,6 +154,7 @@ interface QuestionnaireFormItemArrayProps {
   answers: Record<string, QuestionnaireResponseItemAnswer>;
   renderPages?: boolean;
   activePage?: number;
+  handleRepeatableItem?: (item: QuestionnaireItem, index: number) => void;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
 
