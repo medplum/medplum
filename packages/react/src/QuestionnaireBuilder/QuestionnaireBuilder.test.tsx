@@ -462,7 +462,32 @@ describe('QuestionnaireBuilder', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Add Resource'));
     });
-    expect(screen.queryByText('id-2')).toBeDefined();
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue(''), {
+        target: { value: 'Patient' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add Resource'));
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue(''), {
+        target: { value: 'Organization' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue('Patient'), {
+        target: { value: 'Practicitioner' },
+      });
+    });
+    expect(screen.getByDisplayValue('Organization')).toBeDefined();
+    expect(screen.getByDisplayValue('Practicitioner')).toBeDefined();
+    const removeLinks = screen.getAllByText('Remove');
+    expect(removeLinks.length).toEqual(3);
+    await act(async () => {
+      fireEvent.click(removeLinks[0]);
+    });
   });
 
   test('Change linkId', async () => {
