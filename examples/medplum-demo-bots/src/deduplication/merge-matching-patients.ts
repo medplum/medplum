@@ -1,4 +1,11 @@
-import { BotEvent, createReference, deepClone, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import {
+  BotEvent,
+  createReference,
+  deepClone,
+  getQuestionnaireAnswers,
+  MedplumClient,
+  getReferenceString,
+} from '@medplum/core';
 import {
   Identifier,
   Patient,
@@ -8,6 +15,93 @@ import {
   Resource,
   RiskAssessment,
 } from '@medplum/fhirtypes';
+
+/**
+ * Handler function to process incoming BotEvent containing a QuestionnaireResponse for potential patient record merges.
+ *
+ * @param medplum - The Medplum client instance.
+ * @param event - The BotEvent containing the QuestionnaireResponse.
+ *
+ */
+export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<void> {
+  // Extract answers from the QuestionnaireResponse.
+  const responses = getQuestionnaireAnswers(event.input);
+  // Get the reference to the RiskAssessment from the answers.
+  const riskAssessmentReference = event.input.subject as QuestionnaireResponseItemAnswer;
+  // If there's no valid RiskAssessment reference in the response, throw an error.
+  if (!riskAssessmentReference) {
+    throw new Error('Invalid input. Expected RiskAssessment reference');
+  }
+  const riskAssessment = (await medplum.readReference(riskAssessmentReference)) as RiskAssessment;
+  const targetReference = riskAssessment.basis?.[0] as Reference<Patient>;
+  const srcReference = riskAssessment.subject as Reference<Patient>;
+  if (!targetReference || !srcReference) {
+    throw new Error(
+      `Undefined references target: ${JSON.stringify(targetReference, null, 2)} src: ${JSON.stringify(
+        srcReference,
+        null,
+        2
+      )}`
+    );
+  }
+
+  // If merge is disabled based on the questionnaire's answer, terminate the handler early.
+  // Reasons for disabling merge include:
+  // - The patient records are not duplicates.
+  // - The patient records are duplicates, but the user does not want to merge them.
+  const mergeDisabled = responses['disableMerge']?.valueBoolean;
+  if (mergeDisabled) {
+    await addToDoNotMatchList(medplum, srcReference, targetReference);
+    await addToDoNotMatchList(medplum, targetReference, srcReference);
+    return;
+  }
+
+  // Read the source and target Patient resource
+  const targetPatient = (await medplum.readReference(targetReference)) as Patient;
+  const sourcePatient = (await medplum.readReference(srcReference)) as Patient;
+
+  const patients = linkPatientRecords(sourcePatient, targetPatient);
+
+  // Copy some data from the source patuebt to the target, depending on the user input
+  let fieldUpdates = {} as Partial<Patient>;
+  const appendName = responses['appendName']?.valueBoolean;
+  const appendAddress = responses['appendAddress']?.valueBoolean;
+  const replaceDob = responses['replaceDOB']?.valueBoolean;
+
+  if (appendName) {
+    fieldUpdates = { ...fieldUpdates, name: [...(targetPatient.name ?? []), ...(sourcePatient.name ?? [])] };
+  }
+
+  if (appendAddress) {
+    fieldUpdates = { ...fieldUpdates, address: [...(targetPatient.address ?? []), ...(sourcePatient.address ?? [])] };
+  }
+
+  if (replaceDob) {
+    fieldUpdates.birthDate = sourcePatient.birthDate;
+  }
+
+  const mergedPatients = mergePatientRecords(patients.src, patients.target, fieldUpdates);
+
+  // Update clinical data to point to the target resource
+  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'ServiceRequest');
+  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'Observation');
+  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'DiagnosticReport');
+  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'MedicationRequest');
+  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'Encounter');
+
+  // We might delete the source patient record if we don't want to continue to have a duplicate of an existing patient
+  // despite the fact that it is an inactive record.
+  const deleteSource = responses['deleteSource']?.valueBoolean;
+  if (deleteSource === true) {
+    await medplum.deleteResource('Patient', mergedPatients.src.id as string);
+  } else {
+    // If we don't delete the source patient record, we need to update it to be inactive.
+    await medplum.updateResource<Patient>(mergedPatients.src);
+  }
+
+  // Update the target patient record with the merged data, and have it as the master record.
+  await medplum.updateResource<Patient>(mergedPatients.target);
+}
 
 interface MergedPatients {
   readonly src: Patient;
@@ -74,7 +168,7 @@ export async function updateClinicalReferences<T extends ResourceWithSubject>(
   clinicalResource: T['resourceType']
 ): Promise<void> {
   // Search for clinical resources related to the source patient.
-  const reports = await medplum.searchResources(clinicalResource, { subject: src });
+  const reports = await medplum.searchResources(clinicalResource, { subject: getReferenceString(src) });
   (reports as ResourceWithSubject[]).map(async (report) => {
     // Update each found resource's subject to the target patient.
     report.subject = createReference(target);
@@ -86,110 +180,25 @@ export async function updateClinicalReferences<T extends ResourceWithSubject>(
  * Adds a patient to the 'doNotMatch' list for a given patient list.
  *
  * @param medplum - The Medplum client instance.
- * @param patientList - Reference to the patient list.
+ * @param subject - Reference to the patient list.
  * @param patientAdded - Reference to the patient being added to the 'doNotMatch' list.
  *
  * @returns - Returns a promise that resolves when the operation is completed.
  */
 async function addToDoNotMatchList(
   medplum: MedplumClient,
-  patientList: Reference<Patient>,
+  subject: Reference<Patient>,
   patientAdded: Reference<Patient>
 ): Promise<void> {
-  const list = await medplum.searchOne('List', { subject: patientList, code: 'doNotMatch' });
+  const list = await medplum.searchOne('List', {
+    subject: subject.reference,
+    code: 'http://example.org/listType|doNotMatch',
+  });
   if (list) {
-    const entries = list.entry;
-    entries?.push({ item: patientAdded });
+    const entries = list.entry ?? [];
+    entries.push({ item: patientAdded });
     await medplum.updateResource({ ...list, entry: entries });
     return;
   }
-  console.warn('No doNotMatch list found for patient: ' + JSON.stringify(patientList));
-}
-
-function fieldChanges(responses: Record<string, QuestionnaireResponseItemAnswer>, src: Patient): Partial<Patient> {
-  let fields = {} as Partial<Patient>;
-  const replaceName = responses['replaceName']?.valueBoolean;
-  const replaceAddress = responses['replaceAddress']?.valueBoolean;
-  const replaceAllData = responses['replaceData']?.valueBoolean;
-
-  if (replaceName) {
-    fields = { ...fields, name: src.name };
-  }
-
-  if (replaceAddress) {
-    fields = { ...fields, address: src.address };
-  }
-
-  if (replaceAllData) {
-    fields = { ...src };
-  }
-  return fields;
-}
-
-/**
- * Handler function to process incoming BotEvent containing a QuestionnaireResponse for potential patient record merges.
- *
- * @param medplum - The Medplum client instance.
- * @param event - The BotEvent containing the QuestionnaireResponse.
- *
- */
-export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<void> {
-  // Extract answers from the QuestionnaireResponse.
-  const responses = getQuestionnaireAnswers(event.input);
-  // Get the reference to the RiskAssessment from the answers.
-  const riskAssessmentReference = event.input.subject as QuestionnaireResponseItemAnswer;
-  // If there's no valid RiskAssessment reference in the response, throw an error.
-  if (!riskAssessmentReference) {
-    throw new Error('Invalid input. Expected RiskAssessment reference');
-  }
-  const riskAssessment = (await medplum.readReference(riskAssessmentReference)) as RiskAssessment;
-  const targetReference = riskAssessment.basis?.[0] as Reference<Patient>;
-  const srcReference = riskAssessment.subject as Reference<Patient>;
-  if (!targetReference || !srcReference) {
-    throw new Error(
-      `Undefined references target: ${JSON.stringify(targetReference, null, 2)} src: ${JSON.stringify(
-        srcReference,
-        null,
-        2
-      )}`
-    );
-  }
-
-  // If merge is disabled based on the questionnaire's answer, terminate the handler early.
-  // Reasons for disabling merge include:
-  // - The patient records are not duplicates.
-  // - The patient records are duplicates, but the user does not want to merge them.
-  const mergeCheck = responses['disableMerge']?.valueBoolean;
-  if (mergeCheck) {
-    await addToDoNotMatchList(medplum, srcReference, targetReference);
-    await addToDoNotMatchList(medplum, targetReference, srcReference);
-    return;
-  }
-
-  const patientTarget = (await medplum.readReference(targetReference)) as Patient;
-  const patientSource = (await medplum.readReference(srcReference)) as Patient;
-
-  const patients = linkPatientRecords(patientSource, patientTarget);
-
-  const patientFieldUpdates = fieldChanges(responses, patientSource);
-  const mergedPatients = mergePatientRecords(patients.src, patients.target, patientFieldUpdates);
-
-  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'ServiceRequest');
-  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'Observation');
-  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'DiagnosticReport');
-  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'MedicationRequest');
-  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'Encounter');
-
-  // We might delete the source patient record if we don't want to continue to have a duplicate of an existing patient
-  // despite the fact that it is an inactive record.
-  const deleteSource = responses['deleteSource']?.valueBoolean;
-  if (deleteSource === true) {
-    await medplum.deleteResource('Patient', mergedPatients.src.id as string);
-  } else {
-    // If we don't delete the source patient record, we need to update it to be inactive.
-    await medplum.updateResource<Patient>(mergedPatients.src);
-  }
-
-  // Update the target patient record with the merged data, and have it as the master record.
-  await medplum.updateResource<Patient>(mergedPatients.target);
+  console.warn('No doNotMatch list found for patient: ' + subject.reference);
 }
