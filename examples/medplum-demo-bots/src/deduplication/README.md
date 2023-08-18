@@ -1,24 +1,26 @@
 # Patient Deduplication Demo
 
-This repo contains code for deploying bots on [Patient Deduplication](https://www.medplum.com/docs/fhir-datastore/patient-deduplication#architecture-overview).
+This folder contains a reference implementation for a simple, human-in-the-loop patient deduplication pipeline, based on the guidance in [Patient Deduplication Architectures](https://www.medplum.com/docs/fhir-datastore/patient-deduplication#architecture-overview).
 
-## Setup
+The implementation consists of two bots:
 
-For deduplication - we have two bots:
-
-- One for identifying a duplicated Patient and do a series of steps:
-  - Check for the first name, last name and the birth date
+- [`find-matching-patients`](./find-matching-patients.ts) - Identifies duplicated Patients and performs a series of steps:
+  - Check for the first name, last name, birth date, and zip code.
   - If it's a match, it will check a list to see if it's not on the doNotMatch list
-  - Creates a task that there is a duplicate patient
-- The other that merges the two Patients into one
+  - Creates a `RiskAssessment` representing the candidate match
+  - Creates a `Task` for a human to review the match
+- [`merge-matching-patients`](./merge-matching-patients.ts) -The other that merges the two Patients into one
   - [Link the Patient records](https://www.medplum.com/docs/fhir-datastore/patient-deduplication#linking-patient-records-in-fhir)
   - [Merge the Contact info](https://www.medplum.com/docs/fhir-datastore/patient-deduplication#merge-rules)
   - [Rewrite Clinical Resource](https://www.medplum.com/docs/fhir-datastore/patient-deduplication#rewriting-references-from-clinical-data)
-  - Check if the source resource should be deleted
+  - Delete the source record, if the user has requested it
 
-You will need to do the following:
+This implementation also consists of FHIR bundles with sample data, which can be uploaded using the [batch upload tool](https://www.medplum.com/docs/tutorials/importing-sample-data):
 
-## Installation
+- [patient-data.json](./patient-data.json) - Three sample `Patient` resources, two of whom are known duplicates, and one of which is a false positive
+- [merge-questionnaire.json](./merge-questionnaire.json) - An example `Questionnaire` resource that describes a form that a reviewer might use to evaluate a candidate match.
+
+## Setup
 
 To run and deploy your Bot do the following steps:
 
@@ -43,32 +45,51 @@ npm t
 [Create first Bot](https://www.medplum.com/docs/cli#bots) :
 
 ```bash
-npx medplum bot create patient-deduplication <project id> "src/deduplication/patient-deduplication.ts" "dist/deduplication/patient-deduplication.js"
+npx medplum bot create find-matching-patients <project id> "src/deduplication/find-matching-patients.ts" "dist/deduplication/find-matching-patients.js"
 ```
 
 [Deploy first Bot](https://www.medplum.com/docs/cli#bots) :
 
 ```bash
-npx medplum bot deploy patient-deduplication
+npx medplum bot deploy find-matching-patients
 ```
+
+```bash
+Update bot code.....
+Success! New bot version: <botID>
+Deploying bot...
+Deploy result: All OK
+```
+
+Set up a `Subscription` following the instructions [here](https://www.medplum.com/docs/bots/bot-basics#executing-automatically-using-a-subscription) to trigger the Bot when a `Patient` record is updated.
+
+- Critera: `Patient?active=true`
+- Endpoint: `Bot/:your-bot-id`
 
 [Create second Bot](https://www.medplum.com/docs/cli#bots) :
 
 ```bash
-npx medplum bot create merge-bot <project id> "src/deduplication/merge-bot.ts" "dist/deduplication/merge-bot.js"
+npx medplum bot create merge-matching-patients <project id> "src/deduplication/merge-matching-patients.ts" "dist/deduplication/merge-matching-patients.js"
 ```
 
 [Deploy second Bot](https://www.medplum.com/docs/cli#bots) :
 
 ```bash
-npx medplum bot deploy merge-bot
+npx medplum bot deploy merge-matching-patients
 ```
 
 You will see the following in your command prompt if all goes well:
 
 ```bash
 Update bot code.....
-Success! New bot version: 7fcbc375-4192-471c-b874-b3f0d4676226
+Success! New bot version: <botID>
 Deploying bot...
 Deploy result: All OK
 ```
+
+Use the [batch upload tool](https://www.medplum.com/docs/tutorials/importing-sample-data) to import the [merge questionnaire](./merge-questionnaire.json)
+
+Set up a `Subscription` following the instructions [here](https://www.medplum.com/docs/bots/bot-basics#executing-automatically-using-a-subscription) to trigger the bot when the questionnaire is submitted.
+
+- Critera: `QuestionnaireResponse?questionnaire=Questionnaire/:merge-questionnaire-id`
+- Endpoint: `Bot/your-bot-id`

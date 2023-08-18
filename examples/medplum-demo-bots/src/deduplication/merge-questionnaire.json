@@ -105,12 +105,6 @@
                 "linkId": "appendAddress",
                 "type": "boolean",
                 "text": "Merge Addresses?\nIf selected, this will add the source patient's address to the target's list of addresses"
-              },
-              {
-                "id": "id-20",
-                "linkId": "replaceDOB",
-                "type": "boolean",
-                "text": "Replace birthdate?\nIf selected, this will REPLACE the target patient's birthdate with the source patient's birthdate"
               }
             ]
           },

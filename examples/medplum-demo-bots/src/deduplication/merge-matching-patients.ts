@@ -66,7 +66,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   let fieldUpdates = {} as Partial<Patient>;
   const appendName = responses['appendName']?.valueBoolean;
   const appendAddress = responses['appendAddress']?.valueBoolean;
-  const replaceDob = responses['replaceDOB']?.valueBoolean;
 
   if (appendName) {
     fieldUpdates = { ...fieldUpdates, name: [...(targetPatient.name ?? []), ...(sourcePatient.name ?? [])] };
@@ -74,10 +73,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   if (appendAddress) {
     fieldUpdates = { ...fieldUpdates, address: [...(targetPatient.address ?? []), ...(sourcePatient.address ?? [])] };
-  }
-
-  if (replaceDob) {
-    fieldUpdates.birthDate = sourcePatient.birthDate;
   }
 
   const mergedPatients = mergePatientRecords(patients.src, patients.target, fieldUpdates);
