@@ -202,3 +202,52 @@ async function addToDoNotMatchList(
   }
   console.warn('No doNotMatch list found for patient: ' + subject.reference);
 }
+
+export async function createMasterResource(medplum: MedplumClient, src: Patient, target: Patient): Promise<void> {
+  const srcReplacedByTypes = src.link?.filter((link) => link.type === 'replaced-by') ?? [];
+  const targetReplacedByTypes = target.link?.filter((link) => link.type === 'replaced-by') ?? [];
+
+  const srcReplacesTypes = src.link?.filter((link) => link.type === 'replaces') ?? [];
+  const targetReplacesTypes = target.link?.filter((link) => link.type === 'replaces') ?? [];
+
+  // If either one has 2 links with type ‘replaced-by’
+  if (srcReplacedByTypes.length > 1 || targetReplacedByTypes.length > 1) {
+    throw new Error('Either resource has 2 links with type replaced-by');
+  }
+
+  // If they both have 1 with type ‘replaced-by’
+  if (srcReplacedByTypes.length === 1 && targetReplacedByTypes.length === 1) {
+    throw new Error('Both resources have 1 link with type replaced-by');
+  }
+
+  // If one has ‘replace-by’ and 1 one ‘replaces’
+  if (
+    (srcReplacedByTypes.length === 1 && (srcReplacesTypes.length === 1 || targetReplacesTypes.length === 1)) ||
+    (targetReplacedByTypes.length === 1 && (targetReplacesTypes.length === 1 || srcReplacesTypes.length === 1))
+  ) {
+    throw new Error('There is already a master with the input id');
+  }
+
+  // If one has a ‘replace-by’
+  if (srcReplacedByTypes.length === 1) {
+    const patient = await medplum.readReference(srcReplacedByTypes[0].other as Reference<Patient>);
+    const links = patient.link ?? [];
+    await medplum.updateResource<Patient>({
+      ...patient,
+      link: [...links, { other: createReference(src), type: 'replaces' }],
+    });
+    return;
+  }
+  if (targetReplacedByTypes.length === 1) {
+    const patient = await medplum.readReference(targetReplacedByTypes[0].other as Reference<Patient>);
+    const links = patient.link ?? [];
+    await medplum.updateResource<Patient>({
+      ...patient,
+      link: [...links, { other: createReference(target), type: 'replaces' }],
+    });
+    return;
+  }
+  // If neither of them have a ‘replace-by’
+  // Assuming 'target' is the master
+  await medplum.createResource<Patient>({ ...target });
+}
