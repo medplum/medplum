@@ -696,8 +696,15 @@ describe('QuestionnaireForm', () => {
             ],
             extension: [
               {
-                url: 'http://hl7.org/fhir/R4B/extension-questionnaire-itemcontrol.html',
-                valueString: 'page',
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
               },
             ],
           },
@@ -714,8 +721,15 @@ describe('QuestionnaireForm', () => {
             ],
             extension: [
               {
-                url: 'http://hl7.org/fhir/R4B/extension-questionnaire-itemcontrol.html',
-                valueString: 'page',
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
               },
             ],
           },
@@ -763,8 +777,15 @@ describe('QuestionnaireForm', () => {
             ],
             extension: [
               {
-                url: 'http://hl7.org/fhir/R4B/extension-questionnaire-itemcontrol.html',
-                valueString: 'page',
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
               },
             ],
           },
@@ -794,8 +815,15 @@ describe('QuestionnaireForm', () => {
             ],
             extension: [
               {
-                url: 'http://hl7.org/fhir/R4B/extension-questionnaire-itemcontrol.html',
-                valueString: 'page',
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
               },
             ],
           },
