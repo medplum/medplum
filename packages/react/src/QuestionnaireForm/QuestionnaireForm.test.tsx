@@ -124,6 +124,10 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
+      fireEvent.click(screen.getByLabelText('Question 5'));
+    });
+
+    await act(async () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
@@ -144,6 +148,7 @@ describe('QuestionnaireForm', () => {
     expect(answers['question2']).toMatchObject({ valueString: 'a2' });
     expect(answers['question3']).toMatchObject({ valueString: 'a3' });
     expect(answers['question4']).toMatchObject({ valueString: 'a4' });
+    expect(answers['question5']).toMatchObject({ valueBoolean: true });
   });
 
   test('Handles submit', async () => {

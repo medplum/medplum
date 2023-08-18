@@ -777,7 +777,7 @@ function addTargetTypes(item: QuestionnaireItem): string[] {
 
 function repeatableLinkId(linkId: string): string {
   const repeatablePattern = /-repeatable-(\d+)$/;
-  const match = linkId.match(repeatablePattern);
+  const match = repeatablePattern.exec(linkId);
 
   if (match) {
     const currentRepeatableIndex = parseInt(match[1], 10);
