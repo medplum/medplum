@@ -12,20 +12,20 @@
         "resourceType": "Patient",
         "name": [
           {
-            "prefix": [
-              "Mr."
-            ],
-            "given": [
-              "Alex"
-            ],
+            "prefix": ["Mr."],
+            "given": ["Alex"],
             "family": "Smith"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "8675305"
           }
         ],
         "address": [
           {
-            "line": [
-              "123 Main Street."
-            ],
+            "line": ["123 Main Street."],
             "city": "Pleasantville",
             "state": "CA",
             "postalCode": "94123"
@@ -134,9 +134,7 @@
         "active": true,
         "name": [
           {
-            "given": [
-              "Alex"
-            ],
+            "given": ["Alex"],
             "family": "Smith"
           }
         ],
@@ -148,9 +146,7 @@
         ],
         "address": [
           {
-            "line": [
-              "123 Main Street."
-            ],
+            "line": ["123 Main Street."],
             "city": "Pleasantville",
             "state": "CA",
             "postalCode": "94123"
@@ -273,18 +269,12 @@
         "resourceType": "Patient",
         "name": [
           {
-            "given": [
-              "Alex"
-            ],
+            "given": ["Alex"],
             "family": "Smith",
-            "prefix": [
-              "Ms."
-            ]
+            "prefix": ["Ms."]
           },
           {
-            "given": [
-              "Alexis"
-            ],
+            "given": ["Alexis"],
             "family": "Smith"
           }
         ],
@@ -292,9 +282,7 @@
         "birthDate": "1970-01-01",
         "address": [
           {
-            "line": [
-              "456 Main Street."
-            ],
+            "line": ["456 Main Street."],
             "city": "Pleasantville",
             "state": "CA",
             "postalCode": "94123"
