@@ -648,12 +648,11 @@ function addTargetTypes(item: QuestionnaireItem): string[] {
     return [];
   }
   const extensions = item.extension?.filter(
-    (e) => e.url === 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html'
+    (e) => e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource'
   );
-
   if (!extensions || extensions.length === 0) {
     return [];
   }
-  const targets = extensions.map((e) => e.valueString) as string[];
+  const targets = extensions.map((e) => e.valueCodeableConcept?.coding?.[0]?.code) as string[];
   return targets;
 }

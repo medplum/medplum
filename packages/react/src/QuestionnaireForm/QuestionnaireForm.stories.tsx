@@ -619,12 +619,28 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
             text: 'Reference (target types)',
             extension: [
               {
-                url: 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html',
-                valueString: 'Patient',
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/fhir-types',
+                      display: 'Patient',
+                      code: 'Patient',
+                    },
+                  ],
+                },
               },
               {
-                url: 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html',
-                valueString: 'Practictioner',
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/fhir-types',
+                      display: 'Practitioner',
+                      code: 'Practitioner',
+                    },
+                  ],
+                },
               },
             ],
           },

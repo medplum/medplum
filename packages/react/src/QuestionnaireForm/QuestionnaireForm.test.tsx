@@ -633,12 +633,28 @@ describe('QuestionnaireForm', () => {
             type: QuestionnaireItemType.reference,
             extension: [
               {
-                url: 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html',
-                valueString: 'Patient',
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/fhir-types',
+                      display: 'Patient',
+                      code: 'Patient',
+                    },
+                  ],
+                },
               },
               {
-                url: 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html',
-                valueString: 'Organization',
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/fhir-types',
+                      display: 'Organization',
+                      code: 'Organization',
+                    },
+                  ],
+                },
               },
             ],
           },

@@ -1,6 +1,7 @@
 import { Anchor, Button, createStyles, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
 import { globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
 import {
+  Coding,
   Extension,
   Questionnaire,
   QuestionnaireItem,
@@ -428,8 +429,7 @@ interface ReferenceTypeProps {
 function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
   const references = props.item.extension ?? [];
   const referenceProfiles =
-    references.filter((e) => e.url === 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html') ?? [];
-
+    references.filter((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource') ?? [];
   return (
     <>
       {referenceProfiles.map((reference: Extension) => {
@@ -448,12 +448,15 @@ function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
                 <TextInput
                   key={reference.id}
                   name="value[x]"
-                  value={reference.valueString}
+                  value={reference.valueCodeableConcept?.coding?.[0].code ?? ''}
                   onChange={(e: any) => {
                     e.preventDefault();
                     const newReferences = [...references];
                     const index = newReferences.findIndex((o) => o.id === reference.id);
-                    newReferences[index] = { ...newReferences[index], valueString: e.target.value };
+                    const coding = newReferences[index].valueCodeableConcept?.coding?.[0] ?? ([] as Coding);
+                    coding.display = e.target.value;
+                    coding.code = e.target.value;
+
                     props.onChange(newReferences);
                   }}
                 />
@@ -481,8 +484,16 @@ function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
             ...references,
             {
               id: generateId(),
-              url: 'http://hl7.org/fhir/R4/extension-questionnaire-referenceresource.html',
-              valueString: '',
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+              valueCodeableConcept: {
+                coding: [
+                  {
+                    system: 'http://hl7.org/fhir/fhir-types',
+                    display: '',
+                    code: '',
+                  },
+                ],
+              },
             },
           ]);
         }}
