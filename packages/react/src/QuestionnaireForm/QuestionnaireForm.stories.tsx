@@ -91,8 +91,8 @@ export const PageSequence = (): JSX.Element => (
     <QuestionnaireForm
       questionnaire={{
         resourceType: 'Questionnaire',
-        id: 'groups-example',
-        title: 'Groups Example',
+        id: 'pages-example',
+        title: 'Pages Example',
         item: [
           {
             linkId: 'group1',

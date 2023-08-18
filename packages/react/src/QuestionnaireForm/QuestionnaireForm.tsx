@@ -1,10 +1,12 @@
 import {
   Anchor,
+  Box,
   Button,
   Checkbox,
   Group,
   NativeSelect,
   Radio,
+  Space,
   Stack,
   Stepper,
   Textarea,
@@ -64,10 +66,11 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer>>({});
   const [activePage, setActivePage] = useState(0);
+  const [questionnaireItems, setQuestionnaireItems] = useState(questionnaire?.item ?? []);
+
   const numberOfPages = getNumberOfPages(questionnaire?.item ?? []);
   const nextStep = (): void => setActivePage((current) => (current >= numberOfPages ? current : current + 1));
   const prevStep = (): void => setActivePage((current) => (current <= 0 ? current : current - 1));
-  const [questionnaireItems, setQuestionnaireItems] = useState(questionnaire?.item ?? []);
 
   useEffect(() => {
     medplum
@@ -92,17 +95,13 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
   function handleRepeatableItem(currentItem: QuestionnaireItem, index: number): void {
     currentItem.repeats = false;
-    let newText = currentItem.text ?? '';
-    if (!newText.endsWith(' continued')) {
-        newText += ' continued';
-    }
-    const newItem: QuestionnaireItem = {
-      ...currentItem,
-      text: newText,
-      linkId: repeatableLinkId(currentItem.linkId ?? '', index + 1),
-      repeats: true,
-    };
+    const newItem: QuestionnaireItem = createRepeatableItem(currentItem, index);
     const updatedQuestionnaireItems = repeatableInsert([...questionnaireItems], currentItem, newItem);
+    setQuestionnaireItems(updatedQuestionnaireItems);
+  }
+
+  function handleRemoveItem(currentItem: QuestionnaireItem): void {
+    const updatedQuestionnaireItems = removeRecentItem([...questionnaireItems], currentItem);
     setQuestionnaireItems(updatedQuestionnaireItems);
   }
 
@@ -135,6 +134,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
           renderPages={numberOfPages > 1}
           activePage={activePage}
           handleRepeatableItem={handleRepeatableItem}
+          handleRemoveItem={handleRemoveItem}
         />
       )}
       <Group position="right" mt="xl">
@@ -155,7 +155,9 @@ interface QuestionnaireFormItemArrayProps {
   answers: Record<string, QuestionnaireResponseItemAnswer>;
   renderPages?: boolean;
   activePage?: number;
+  showRemove?: boolean;
   handleRepeatableItem?: (currentItem: QuestionnaireItem, index: number) => void;
+  handleRemoveItem?: (currentItem: QuestionnaireItem) => void;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
 
@@ -181,6 +183,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
             index={index}
             answers={props.answers}
             setResponseItem={setResponseItem}
+            handleRemoveItem={props.handleRemoveItem}
             handleRepeatableItem={props.handleRepeatableItem}
           />
         </Stepper.Step>
@@ -193,6 +196,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
         index={index}
         answers={props.answers}
         setResponseItem={setResponseItem}
+        handleRemoveItem={props.handleRemoveItem}
         handleRepeatableItem={props.handleRepeatableItem}
       />
     );
@@ -213,6 +217,7 @@ interface QuestionnaireFormArrayContentProps {
   index: number;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
   handleRepeatableItem?: (currentItem: QuestionnaireItem, index: number) => void;
+  handleRemoveItem?: (currentItem: QuestionnaireItem) => void;
   setResponseItem: (index: number, newResponseItem: QuestionnaireResponseItem) => void;
 }
 
@@ -232,6 +237,7 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
         answers={props.answers}
         onChange={(newResponseItem) => props.setResponseItem(props.index, newResponseItem)}
         handleRepeatableItem={props.handleRepeatableItem}
+        handleRemoveItem={props.handleRemoveItem}
       />
     );
   }
@@ -262,6 +268,7 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
         answers={props.answers}
         onChange={(newResponseItem) => props.setResponseItem(props.index, newResponseItem)}
         handleRepeatableItem={props.handleRepeatableItem}
+        handleRemoveItem={props.handleRemoveItem}
       />
     </FormSection>
   );
@@ -272,6 +279,7 @@ interface QuestionnaireFormRepeatablesProps {
   answers: Record<string, QuestionnaireResponseItemAnswer>;
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
   handleRepeatableItem?: (currentItem: QuestionnaireItem, index: number) => void;
+  handleRemoveItem?: (currentItem: QuestionnaireItem) => void;
   index: number;
 }
 
@@ -283,19 +291,36 @@ function QuestionnaireFormRepeatables(props: QuestionnaireFormRepeatablesProps):
         answers={props.answers}
         onChange={props.onChange}
         handleRepeatableItem={props.handleRepeatableItem}
+        handleRemoveItem={props.handleRemoveItem}
       />
-      {props.item.repeats && allowRepeatable(props.item, props.answers) && (
-        <Anchor
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            if (props.handleRepeatableItem) {
-              props.handleRepeatableItem(props.item, props.index);
-            }
-          }}
-        >
-          Add Additional Item
-        </Anchor>
+      {props.item.repeats && (
+        <Box display="flex">
+          <Anchor
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              if (props.handleRepeatableItem && allowRepeatable(props.item, props.answers)) {
+                props.handleRepeatableItem(props.item, props.index);
+              }
+            }}
+          >
+            Add Additional Item
+          </Anchor>
+          <Space w="md" />
+          {extensionForRemovingRepeatable(props.item) ? (
+            <Anchor
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                if (props.handleRemoveItem) {
+                  props.handleRemoveItem(props.item);
+                }
+              }}
+            >
+              Remove
+            </Anchor>
+          ) : null}
+        </Box>
       )}
     </>
   );
@@ -305,6 +330,7 @@ export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
   handleRepeatableItem?: (currentItem: QuestionnaireItem, index: number) => void;
+  handleRemoveItem?: (currentItem: QuestionnaireItem) => void;
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
 
@@ -350,6 +376,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
               answers={props.answers}
               onChange={onChangeItem}
               handleRepeatableItem={props.handleRepeatableItem}
+              handleRemoveItem={props.handleRemoveItem}
             />
           )}
         </div>
@@ -749,11 +776,22 @@ function addTargetTypes(item: QuestionnaireItem): string[] {
   return targets;
 }
 
-function repeatableLinkId(linkId: string, index: number): string {
-  return `${linkId}-${index}`;
+function repeatableLinkId(linkId: string): string {
+  const repeatablePattern = /-repeatable-(\d+)$/;
+  const match = linkId.match(repeatablePattern);
+
+  if (match) {
+    const currentRepeatableIndex = parseInt(match[1], 10);
+    return linkId.replace(repeatablePattern, `-repeatable-${currentRepeatableIndex + 1}`);
+  } else {
+    return `${linkId}-repeatable-1`;
+  }
 }
 
 function allowRepeatable(item: QuestionnaireItem, answers: Record<string, QuestionnaireResponseItemAnswer>): boolean {
+  if (item.type === QuestionnaireItemType.group) {
+    return true;
+  }
   const linkId = item.linkId;
   if (!linkId) {
     return false;
@@ -780,4 +818,52 @@ function repeatableInsert(
     }
   }
   return items;
+}
+
+function removeRecentItem(items: QuestionnaireItem[], currentItem: QuestionnaireItem): QuestionnaireItem[] {
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].linkId === currentItem.linkId) {
+      items.splice(i, 1);
+
+      if (i - 1 >= 0) {
+        items[i - 1].repeats = true;
+      }
+      return items;
+    }
+
+    if (items[i].item) {
+      const updatedNestedItems = removeRecentItem(items[i].item ?? [], currentItem);
+      if (updatedNestedItems !== items[i].item) {
+        items[i].item = updatedNestedItems;
+      }
+    }
+  }
+  return items;
+}
+
+function createRepeatableItem(item: QuestionnaireItem, index: number): QuestionnaireItem {
+  let newText = item.text ?? '';
+  if (!newText.endsWith(' continued')) {
+    newText += ' continued';
+  }
+  return {
+    ...item,
+    text: newText,
+    linkId: repeatableLinkId(item.linkId ?? '', index),
+    repeats: true,
+    extension: [
+      {
+        url: 'http://hl7.org/fhir/R4/questionnaire-definitions.html#Questionnaire.item.repeats',
+        valueString: 'removable',
+      },
+    ],
+  };
+}
+
+function extensionForRemovingRepeatable(item: QuestionnaireItem): boolean {
+  const extension = getExtension(
+    item,
+    'http://hl7.org/fhir/R4/questionnaire-definitions.html#Questionnaire.item.repeats'
+  );
+  return extension?.valueString === 'removable';
 }
