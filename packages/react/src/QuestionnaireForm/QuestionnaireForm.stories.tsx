@@ -642,6 +642,37 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
             ],
           },
           {
+            linkId: 'reference-target-types',
+            type: 'reference',
+            text: 'Reference (target types)',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/fhir-types',
+                      display: 'Patient',
+                      code: 'Patient',
+                    },
+                  ],
+                },
+              },
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/fhir-types',
+                      display: 'Practitioner',
+                      code: 'Practitioner',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          {
             linkId: 'quantity',
             type: 'quantity',
             text: 'Quantity',

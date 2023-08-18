@@ -378,6 +378,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <ReferenceInput
           name={name}
+          targetTypes={addTargetTypes(item)}
           defaultValue={initial?.valueReference}
           onChange={(newValue) => onChangeAnswer({ valueReference: newValue })}
         />
@@ -640,4 +641,18 @@ function getNumberOfPages(items: QuestionnaireItem[]): number {
     return extension?.valueCodeableConcept?.coding?.[0]?.code === 'page';
   });
   return pages.length > 0 ? items.length : 0;
+}
+
+function addTargetTypes(item: QuestionnaireItem): string[] {
+  if (item.type !== QuestionnaireItemType.reference) {
+    return [];
+  }
+  const extensions = item.extension?.filter(
+    (e) => e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource'
+  );
+  if (!extensions || extensions.length === 0) {
+    return [];
+  }
+  const targets = extensions.map((e) => e.valueCodeableConcept?.coding?.[0]?.code) as string[];
+  return targets;
 }
