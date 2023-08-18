@@ -93,9 +93,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     setAnswers(getQuestionnaireAnswers(newResponse));
   }
 
-  function handleRepeatableItem(currentItem: QuestionnaireItem, index: number): void {
+  function handleRepeatableItem(currentItem: QuestionnaireItem): void {
     currentItem.repeats = false;
-    const newItem: QuestionnaireItem = createRepeatableItem(currentItem, index);
+    const newItem: QuestionnaireItem = createRepeatableItem(currentItem);
     const updatedQuestionnaireItems = repeatableInsert([...questionnaireItems], currentItem, newItem);
     setQuestionnaireItems(updatedQuestionnaireItems);
   }
@@ -155,8 +155,7 @@ interface QuestionnaireFormItemArrayProps {
   answers: Record<string, QuestionnaireResponseItemAnswer>;
   renderPages?: boolean;
   activePage?: number;
-  showRemove?: boolean;
-  handleRepeatableItem?: (currentItem: QuestionnaireItem, index: number) => void;
+  handleRepeatableItem?: (currentItem: QuestionnaireItem) => void;
   handleRemoveItem?: (currentItem: QuestionnaireItem) => void;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
@@ -216,7 +215,7 @@ interface QuestionnaireFormArrayContentProps {
   item: QuestionnaireItem;
   index: number;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
-  handleRepeatableItem?: (currentItem: QuestionnaireItem, index: number) => void;
+  handleRepeatableItem?: (currentItem: QuestionnaireItem) => void;
   handleRemoveItem?: (currentItem: QuestionnaireItem) => void;
   setResponseItem: (index: number, newResponseItem: QuestionnaireResponseItem) => void;
 }
@@ -278,7 +277,7 @@ interface QuestionnaireFormRepeatablesProps {
   item: QuestionnaireItem;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
-  handleRepeatableItem?: (currentItem: QuestionnaireItem, index: number) => void;
+  handleRepeatableItem?: (currentItem: QuestionnaireItem) => void;
   handleRemoveItem?: (currentItem: QuestionnaireItem) => void;
   index: number;
 }
@@ -300,7 +299,7 @@ function QuestionnaireFormRepeatables(props: QuestionnaireFormRepeatablesProps):
             onClick={(e) => {
               e.preventDefault();
               if (props.handleRepeatableItem && allowRepeatable(props.item, props.answers)) {
-                props.handleRepeatableItem(props.item, props.index);
+                props.handleRepeatableItem(props.item);
               }
             }}
           >
@@ -329,7 +328,7 @@ function QuestionnaireFormRepeatables(props: QuestionnaireFormRepeatablesProps):
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
-  handleRepeatableItem?: (currentItem: QuestionnaireItem, index: number) => void;
+  handleRepeatableItem?: (currentItem: QuestionnaireItem) => void;
   handleRemoveItem?: (currentItem: QuestionnaireItem) => void;
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
@@ -841,7 +840,7 @@ function removeRecentItem(items: QuestionnaireItem[], currentItem: Questionnaire
   return items;
 }
 
-function createRepeatableItem(item: QuestionnaireItem, index: number): QuestionnaireItem {
+function createRepeatableItem(item: QuestionnaireItem): QuestionnaireItem {
   let newText = item.text ?? '';
   if (!newText.endsWith(' continued')) {
     newText += ' continued';
@@ -849,7 +848,7 @@ function createRepeatableItem(item: QuestionnaireItem, index: number): Questionn
   return {
     ...item,
     text: newText,
-    linkId: repeatableLinkId(item.linkId ?? '', index),
+    linkId: repeatableLinkId(item.linkId ?? ''),
     repeats: true,
     extension: [
       {

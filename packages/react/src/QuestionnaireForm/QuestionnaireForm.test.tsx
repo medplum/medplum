@@ -968,6 +968,62 @@ describe('QuestionnaireForm', () => {
     expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
   });
 
+  test('repeatableQuestion', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'repeatable-when',
+        title: 'repeatable Questionnaire',
+        item: [
+          {
+            linkId: 'question1',
+            text: 'Question 1',
+            type: 'string',
+            repeats: true,
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 1'), { target: { value: 'answer' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add Additional Item'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Remove'));
+    });
+  });
+
+  test('isQuestionEnabled', () => {
+    // enableBehavior=any, match
+    expect(
+      isQuestionEnabled(
+        {
+          enableBehavior: 'any',
+          enableWhen: [
+            {
+              question: 'q1',
+              answerString: 'Yes',
+            },
+            {
+              question: 'q2',
+              answerString: 'Yes',
+            },
+          ],
+        },
+        {
+          q1: { valueString: 'No' },
+          q2: { valueString: 'Yes' },
+        }
+      )
+    ).toBe(true);
+  });
+
   describe('isQuestionEnabled', () => {
     test('enableBehavior=any, match', () => {
       expect(
