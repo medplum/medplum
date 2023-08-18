@@ -91,23 +91,21 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     setAnswers(getQuestionnaireAnswers(newResponse));
   }
 
-  const handleRepeatableItem = (
-    currentItem: QuestionnaireItem,
-    index: number,
-    questionnaireItems: QuestionnaireItem[]
-  ) => {
+  function handleRepeatableItem(currentItem: QuestionnaireItem, index: number): void {
     currentItem.repeats = false;
-
+    let newText = currentItem.text ?? '';
+    if (!newText.endsWith(' continued')) {
+        newText += ' continued';
+    }
     const newItem: QuestionnaireItem = {
+      ...currentItem,
+      text: newText,
       linkId: repeatableLinkId(currentItem.linkId ?? '', index + 1),
-      type: currentItem.type,
-      text: currentItem.text,
-      item: currentItem.item,
       repeats: true,
     };
-
-    return addRepeatableItem(questionnaireItems, currentItem.linkId ?? '', newItem);
-  };
+    const updatedQuestionnaireItems = repeatableInsert([...questionnaireItems], currentItem, newItem);
+    setQuestionnaireItems(updatedQuestionnaireItems);
+  }
 
   if (!schema || !questionnaire) {
     return null;
@@ -157,11 +155,7 @@ interface QuestionnaireFormItemArrayProps {
   answers: Record<string, QuestionnaireResponseItemAnswer>;
   renderPages?: boolean;
   activePage?: number;
-  handleRepeatableItem?: (
-    currentItem: QuestionnaireItem,
-    index: number,
-    questionnaireItems: QuestionnaireItem[]
-  ) => QuestionnaireItem[];
+  handleRepeatableItem?: (currentItem: QuestionnaireItem, index: number) => void;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
 
@@ -838,25 +832,23 @@ function allowRepeatable(item: QuestionnaireItem, answers: Record<string, Questi
   return !!answers[linkId];
 }
 
-const addRepeatableItem = (
+function repeatableInsert(
   items: QuestionnaireItem[],
-  linkIdToFind: string,
+  currentItem: QuestionnaireItem,
   newItem: QuestionnaireItem
-): QuestionnaireItem[] => {
+): QuestionnaireItem[] {
   for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    if (item.linkId === linkIdToFind) {
+    if (items[i].linkId === currentItem.linkId) {
       const updatedItems = [...items.slice(0, i + 1), newItem, ...items.slice(i + 1)];
       return updatedItems;
     }
 
-    if (item && item.item) {
-      const nestedItems = addRepeatableItem(item.item, linkIdToFind, newItem);
-      if (nestedItems !== item.item) {
-        item.item = nestedItems;
-        return items;
+    if (items[i].item) {
+      const updatedNestedItems = repeatableInsert(items[i].item ?? [], currentItem, newItem);
+      if (updatedNestedItems !== items[i].item) {
+        items[i].item = updatedNestedItems;
       }
     }
   }
   return items;
-};
+}
