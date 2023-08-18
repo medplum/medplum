@@ -224,7 +224,7 @@ export const PageAndNonPageSequence = (): JSX.Element => (
                     },
                   ],
                 },
-              }
+              },
             ],
           },
           {
@@ -254,7 +254,7 @@ export const PageAndNonPageSequence = (): JSX.Element => (
                     },
                   ],
                 },
-              }
+              },
             ],
           },
           {
