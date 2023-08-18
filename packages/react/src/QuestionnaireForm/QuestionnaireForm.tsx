@@ -534,7 +534,7 @@ interface ButtonGroupProps {
 function ButtonGroup(props: ButtonGroupProps): JSX.Element {
   if (props.activePage === 0 && props.numberOfPages <= 0) {
     return <Button type="submit">{props.submitButtonText ?? 'OK'}</Button>;
-  } else if (props.activePage >= props.numberOfPages - 1) {
+  } else if (props.activePage >= props.numberOfPages) {
     return (
       <>
         <Button onClick={props.prevStep}>Back</Button>
@@ -636,8 +636,8 @@ export function isQuestionEnabled(
 
 function getNumberOfPages(items: QuestionnaireItem[]): number {
   const pages = items.filter((item) => {
-    const extension = getExtension(item, 'http://hl7.org/fhir/R4B/extension-questionnaire-itemcontrol.html');
-    return !!extension;
+    const extension = getExtension(item, 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl');
+    return extension?.valueCodeableConcept?.coding?.[0]?.code === 'page';
   });
   return pages.length > 0 ? items.length : 0;
 }
