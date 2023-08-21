@@ -1,11 +1,11 @@
-import { main } from '.';
-import os from 'os';
-import { mkdtempSync, rmSync } from 'fs';
-import { sep } from 'path';
-import { createMedplumClient } from './util/client';
-import { FileSystemStorage } from './storage';
-import { FetchLike, MedplumClient, getStatus, isOperationOutcome } from '@medplum/core';
+import { FetchLike, getStatus, isOperationOutcome, MedplumClient } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
+import { mkdtempSync, rmSync } from 'fs';
+import os from 'os';
+import { sep } from 'path';
+import { main } from '.';
+import { FileSystemStorage } from './storage';
+import { createMedplumClient } from './util/client';
 
 jest.mock('os');
 jest.mock('fast-glob', () => ({
@@ -18,7 +18,7 @@ jest.mock('fs', () => ({
     callback();
   }),
   readFileSync: jest.fn((filePath) => {
-    if (filePath.includes('/testPrivateKey.pem')) {
+    if (filePath.endsWith('testPrivateKey.pem')) {
       return testPrivateKey;
     }
     return jest.requireActual('fs').readFileSync(filePath);
@@ -169,6 +169,7 @@ describe('Profiles Auth', () => {
     });
   });
 });
+
 function createFakeJwt(claims: Record<string, string | number>): string {
   const payload = JSON.stringify(claims);
   const encodedPayload = Buffer.from(payload).toString('base64');
