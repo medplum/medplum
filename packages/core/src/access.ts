@@ -146,7 +146,7 @@ export function matchesAccessPolicy(accessPolicy: AccessPolicy, resource: Resour
 }
 
 /**
- * Check that there is an access policy permitting the given resource interaction, returning the matching policy object.
+ * Checks that there is an access policy permitting the given resource interaction, returning the matching policy object.
  * @param resource The resource being acted upon.
  * @param interaction The interaction being performed on the resource.
  * @param accessPolicy The relevant access policy for the current user.
