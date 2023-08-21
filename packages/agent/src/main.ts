@@ -8,7 +8,10 @@ export class App {
   readonly log: EventLogger;
   readonly channels: AgentHl7Channel[];
 
-  constructor(readonly medplum: MedplumClient, readonly agentId: string) {
+  constructor(
+    readonly medplum: MedplumClient,
+    readonly agentId: string
+  ) {
     this.log = {
       info: console.log,
       warn: console.warn,
@@ -44,7 +47,11 @@ export class AgentHl7Channel {
   readonly server: Hl7Server;
   readonly connections: AgentHl7ChannelConnection[] = [];
 
-  constructor(readonly app: App, readonly definition: AgentChannel, readonly endpoint: Endpoint) {
+  constructor(
+    readonly app: App,
+    readonly definition: AgentChannel,
+    readonly endpoint: Endpoint
+  ) {
     this.server = new Hl7Server((connection) => {
       this.app.log.info('HL7 connection established');
       this.connections.push(new AgentHl7ChannelConnection(this, connection));
@@ -74,7 +81,10 @@ export class AgentHl7ChannelConnection {
   readonly hl7ConnectionQueue: Hl7Message[] = [];
   live = false;
 
-  constructor(readonly channel: AgentHl7Channel, readonly hl7Connection: Hl7Connection) {
+  constructor(
+    readonly channel: AgentHl7Channel,
+    readonly hl7Connection: Hl7Connection
+  ) {
     const app = channel.app;
     const medplum = app.medplum;
 
