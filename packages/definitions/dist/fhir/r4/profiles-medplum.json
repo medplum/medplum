@@ -3862,14 +3862,14 @@
       "abstract" : false,
       "type" : "Agent",
       "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
-      "description" : "Contains details of long running asynchronous/background jobs.",
+      "description" : "Configuration details for an instance of the Medplum agent application.",
       "snapshot" : {
         "element" : [
           {
             "id" : "Agent",
             "path" : "Agent",
-            "short" : "Contains details of long running asynchronous/background jobs.",
-            "definition" : "Contains details of long running asynchronous/background jobs.",
+            "short" : "Configuration details for an instance of the Medplum agent application.",
+            "definition" : "Configuration details for an instance of the Medplum agent application.",
             "min" : 0,
             "max" : "*",
             "base": {
