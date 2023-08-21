@@ -806,7 +806,9 @@ describe('QuestionnaireForm', () => {
     // The hidden text should now be visible
     expect(screen.getByText(hiddenQuestion)).toBeInTheDocument();
 
-    expect(screen.getByText('Back')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByText('Back'));
+    });
   });
 
   test('Page Sequence with non page items in root', async () => {
