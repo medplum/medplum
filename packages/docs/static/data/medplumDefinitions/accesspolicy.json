@@ -237,6 +237,54 @@
       "inherited": false
     },
     {
+      "name": "writeCriteria",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "AccessPolicy.resource.writeCriteria",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Invariants that must be satisfied for the resource to be written.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "pre",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "AccessPolicy.resource.writeCriteria.pre",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Invariant to check against the state of the resource before modification.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "post",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "AccessPolicy.resource.writeCriteria.post",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Invariant to check against the state of the resource with modifications tentatively applied.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "ipAccessRule",
       "depth": 1,
       "types": [
@@ -289,7 +337,7 @@
       "depth": 2,
       "types": [
         {
-          "datatype": "string"
+          "datatype": "code"
         }
       ],
       "path": "AccessPolicy.ipAccessRule.action",

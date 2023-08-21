@@ -1285,6 +1285,51 @@ describe('AccessPolicy', () => {
     expect(historyBundle.entry?.[0]?.resource?.id).toBe(questionnaire.id);
   });
 
+  test('Pre- and post-write criteria', async () => {
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Observation',
+          writeCriteria: {
+            pre: `status != 'final'`,
+            post: `status = 'final' implies subject.exists()`,
+          },
+        },
+      ],
+    };
+
+    const repo = new Repository({
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy,
+    });
+
+    // Create test resource
+    const obs: Observation = {
+      resourceType: 'Observation',
+      status: 'preliminary',
+      code: {
+        coding: [
+          {
+            system: 'http://loinc.org',
+            code: '11111-1',
+          },
+        ],
+      },
+    };
+    const resource = await repo.createResource(obs);
+    expect(resource.status).toEqual('preliminary');
+
+    resource.status = 'final';
+    await expect(repo.updateResource(resource)).rejects.toEqual(new Error('Forbidden'));
+    resource.subject = { reference: 'Patient/test' };
+    await expect(repo.updateResource(resource)).resolves.toBeDefined();
+    resource.status = 'cancelled';
+    await expect(repo.updateResource(resource)).rejects.toEqual(new Error('Forbidden'));
+  });
+
   test('Overlapping resource policies', async () => {
     const accessPolicy: AccessPolicy = {
       resourceType: 'AccessPolicy',

@@ -1,6 +1,13 @@
 import { readJson } from '@medplum/definitions';
 import { AccessPolicy, Bundle, SearchParameter } from '@medplum/fhirtypes';
-import { canReadResourceType, canWriteResource, canWriteResourceType, matchesAccessPolicy } from './access';
+import {
+  AccessPolicyInteraction,
+  canReadResourceType,
+  canWriteResource,
+  canWriteResourceType,
+  matchesAccessPolicy,
+  satisfiedAccessPolicy,
+} from './access';
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from './types';
 
 const nullPolicy: AccessPolicy = {
@@ -82,6 +89,41 @@ describe('Access', () => {
     expect(canWriteResource(restrictedPolicy, { resourceType: 'Communication' })).toBe(false);
     expect(canWriteResource(restrictedPolicy, { resourceType: 'Communication', status: 'in-progress' })).toBe(true);
     expect(canWriteResource(restrictedPolicy, { resourceType: 'Communication', status: 'completed' })).toBe(false);
+  });
+
+  test('satisfiedAccessPolicy()', () => {
+    expect(
+      satisfiedAccessPolicy({ resourceType: 'Patient' }, AccessPolicyInteraction.UPDATE, nullPolicy)
+    ).toBeUndefined();
+
+    expect(
+      satisfiedAccessPolicy({ resourceType: 'Patient' }, AccessPolicyInteraction.UPDATE, undefined)?.resourceType
+    ).toEqual('*');
+    expect(
+      satisfiedAccessPolicy({ resourceType: 'Patient' }, AccessPolicyInteraction.UPDATE, wildcardPolicy)?.resourceType
+    ).toEqual('*');
+
+    expect(
+      satisfiedAccessPolicy({ resourceType: 'Patient' }, AccessPolicyInteraction.UPDATE, restrictedPolicy)
+    ).toBeUndefined();
+    expect(
+      satisfiedAccessPolicy({ resourceType: 'Observation' }, AccessPolicyInteraction.UPDATE, restrictedPolicy)
+        ?.resourceType
+    ).toEqual('Observation');
+    expect(
+      satisfiedAccessPolicy(
+        { resourceType: 'Communication', status: 'in-progress' },
+        AccessPolicyInteraction.UPDATE,
+        restrictedPolicy
+      )?.criteria
+    ).toEqual('Communication?status=in-progress');
+    expect(
+      satisfiedAccessPolicy(
+        { resourceType: 'Communication', status: 'completed' },
+        AccessPolicyInteraction.UPDATE,
+        restrictedPolicy
+      )
+    ).toBeUndefined();
   });
 
   test('Legacy compartment case', () => {
