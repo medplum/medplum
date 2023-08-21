@@ -1059,7 +1059,7 @@ export const RepeatableItems = (): JSX.Element => (
   </Document>
 );
 
-export const Repeatables = (): JSX.Element => (
+export const RepeatablesItems = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
       questionnaire={{
