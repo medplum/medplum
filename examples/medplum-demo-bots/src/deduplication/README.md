@@ -7,7 +7,7 @@ The implementation consists of two bots:
 - [`find-matching-patients`](./find-matching-patients.ts) - Identifies duplicated Patients and performs a series of steps:
   - Check for the first name, last name, birth date, and zip code.
   - If it's a match, it will check a list to see if it's not on the doNotMatch list
-  - Creates a `RiskAssessment` representing the candidate match
+  - Creates a `RiskAssessment`, with a numeric score, representing the candidate match.
   - Creates a `Task` for a human to review the match
 - [`merge-matching-patients`](./merge-matching-patients.ts) -The other that merges the two Patients into one
   - [Link the Patient records](https://www.medplum.com/docs/fhir-datastore/patient-deduplication#linking-patient-records-in-fhir)
@@ -64,7 +64,7 @@ Deploy result: All OK
 Set up a `Subscription` following the instructions [here](https://www.medplum.com/docs/bots/bot-basics#executing-automatically-using-a-subscription) to trigger the Bot when a `Patient` record is updated.
 
 - Critera: `Patient?active=true`
-- Endpoint: `Bot/:your-bot-id`
+- Endpoint: `Bot/:find-matching-patients-bot-id`
 
 [Create second Bot](https://www.medplum.com/docs/cli#bots) :
 
@@ -92,4 +92,4 @@ Use the [batch upload tool](https://www.medplum.com/docs/tutorials/importing-sam
 Set up a `Subscription` following the instructions [here](https://www.medplum.com/docs/bots/bot-basics#executing-automatically-using-a-subscription) to trigger the bot when the questionnaire is submitted.
 
 - Critera: `QuestionnaireResponse?questionnaire=Questionnaire/:merge-questionnaire-id`
-- Endpoint: `Bot/your-bot-id`
+- Endpoint: `Bot/:merge-matching-patients-bot-id`

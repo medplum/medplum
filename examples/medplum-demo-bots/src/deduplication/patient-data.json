@@ -33,12 +33,6 @@
         ],
         "gender": "male",
         "birthDate": "1970-01-01",
-        "photo": [
-          {
-            "contentType": "image/jpeg",
-            "url": "https://storage.medplum.com/binary/d4e40f2b-48bd-45b8-982a-5064aef277f5/1100faa2-2268-498b-ba02-f6b3e6108415?Expires=1692303630&Key-Pair-Id=K1PPSRCGJGLWV7&Signature=nYqkShRQQGI-mFBLTiwlDZnXALBT-woEbvLCOOn-LB0rufddQjL4yLS8G1jVW9yHEK6qInqoz~NTpnUEQSda3Cc6yocZMFW5-zplNWHY4uMkZZws4CFqquZcW6bBpJuqHZmMksJ~qtnNIwemA6xyd~yozzEVTru~K6X3-AmWS4n4k4SyxhJhasUuF74O6j5eEPaH82fl8e9dMxLZyHeWuyJyUlR6XQkQwkHHuSs-uICZAT0bFookQB0qr~qqRJ91CQ1qU~Yr~g3GFx5H6ZUF85dFE-BgXo9kOy6BPFMIIHW6KSQS-1~gCQC1~6kxbhEyjGzV4sUryEvfZmXzsFjulA__"
-          }
-        ],
         "active": true
       }
     },
@@ -136,12 +130,6 @@
           {
             "given": ["Alex"],
             "family": "Smith"
-          }
-        ],
-        "photo": [
-          {
-            "contentType": "image/jpeg",
-            "url": "https://storage.medplum.com/binary/428a92cb-7478-4248-8548-d4119a579a38/0cc33a94-36b4-47c7-93c2-d60b8f847bc2?Expires=1692303630&Key-Pair-Id=K1PPSRCGJGLWV7&Signature=HQqHhc4UJ-8tnQzRXMdmjlHwWRQXZtJCbXMnKolBggTI1B8QE5ITVHhAjajpNj8xZgvfsO2hSgQMVccyoz7wji17IdSnw9yq9FL~CG27lh7XlkPOSsFXOTfJVi1w5zzbPW0Ow48i~xTgITdzTt96EG~IrmCW2QNumEPnoWk1nPm6NkxirtdLktu7AFDN9areDP0tImU~PhX8F-M8JIeZ~3RkcjNk0k95ifb2rKvNZXtkGwfUo1m0FJO2C2CsJzzkqAP4E1OnuVAwssb-1NoCOnJya48vdb1ZCCsGgR-XHlF8CAXK2QibT1Y7UW2JEbsbm4w4rUomkrGjNOIlLlPk3A__"
           }
         ],
         "address": [
@@ -288,13 +276,7 @@
             "postalCode": "94123"
           }
         ],
-        "active": true,
-        "photo": [
-          {
-            "contentType": "image/jpeg",
-            "url": "https://storage.medplum.com/binary/c04c486c-a7d3-415e-ac1b-2f1a9c13f201/eae77f84-23c1-42f0-9f08-53e5ace66f60?Expires=1692303630&Key-Pair-Id=K1PPSRCGJGLWV7&Signature=RupGpoK~tmUvn-Ux~cAeiEOHq8HjKqckszgUXmPIpvYZNYEWXa9dxds9rllPqccuc05urJMVfY~19Qucjn6OJoEUAFO7hDA1ldEhbgxVKjqDpMCheCOyksdJsWkS6YXOAWBmICIOhKNqfE6ArICrum5OH5QRRnCECFRl6ejPvPXCVZ7MoEror8sqk1y2vYcYkWGEmqV-axwVXLR6ixD2vckfpF108PSEZn4rE4XRBNnxKYuXEQeDQu-G3da866P2aU7nBhyEcL-NQX1phGTLVjGzKUYcGaR0J23Hiy-pwtrrEIJRnNytO9nBBLJvfnvk6YTTOaZ7OODFU-Yfzc2qhQ__"
-          }
-        ]
+        "active": true
       }
     },
     {

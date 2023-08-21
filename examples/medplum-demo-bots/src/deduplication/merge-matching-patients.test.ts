@@ -116,7 +116,7 @@ describe('Deduplication', () => {
     const targetPatient = {
       resourceType: 'Patient',
       id: 'target',
-      identifier: [{ use: 'usual', value: '123', system: 'http://medplum.com' }],
+      identifier: [{ use: 'usual', value: '123', system: 'http://example.org' }],
     } as Patient;
 
     const fields = {
@@ -128,7 +128,7 @@ describe('Deduplication', () => {
     expect(result.src).toEqual(srcPatient);
     expect(result.target.id).toBe('target');
     expect(result.target.address).toBe(fields.address);
-    expect(result.target.identifier).toEqual([{ use: 'usual', value: '123', system: 'http://medplum.com' }]);
+    expect(result.target.identifier).toEqual([{ use: 'usual', value: '123', system: 'http://example.org' }]);
   });
 
   test('Should rewrite Clinical Resource to new patient', async () => {

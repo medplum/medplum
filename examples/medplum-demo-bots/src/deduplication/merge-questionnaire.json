@@ -3,61 +3,6 @@
   "type": "transaction",
   "entry": [
     {
-      "fullUrl": "urn:uuid:48367c93-0211-4d41-9e1d-5e1ded2560d2",
-      "request": {
-        "method": "POST",
-        "url": "Questionnaire"
-      },
-      "resource": {
-        "resourceType": "Questionnaire",
-        "title": "Medical History",
-        "name": "Medical History",
-        "identifier": [
-          {
-            "system": "example/careplan",
-            "value": "q1"
-          }
-        ],
-        "item": [
-          {
-            "linkId": "a1",
-            "text": "Please List all your medical ailments",
-            "type": "text"
-          }
-        ]
-      }
-    },
-    {
-      "fullUrl": "urn:uuid:11600710-ac9f-468a-a258-a4a10bef4a21",
-      "request": {
-        "method": "POST",
-        "url": "Questionnaire"
-      },
-      "resource": {
-        "resourceType": "Questionnaire",
-        "title": "Submit Insurance",
-        "name": "Submit Insurance",
-        "identifier": [
-          {
-            "system": "example/careplan",
-            "value": "q2"
-          }
-        ],
-        "item": [
-          {
-            "linkId": "a1",
-            "text": "Insurance Company",
-            "type": "string"
-          },
-          {
-            "linkId": "a2",
-            "text": "Insurance Id",
-            "type": "string"
-          }
-        ]
-      }
-    },
-    {
       "fullUrl": "urn:uuid:1712ef48-41f9-46be-939f-b1509d1a9f9e",
       "request": {
         "method": "POST",

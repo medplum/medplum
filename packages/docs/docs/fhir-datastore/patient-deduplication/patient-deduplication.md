@@ -191,3 +191,7 @@ Maintaining references to source records is preferable when absolute clarity abo
 ## Conclusion
 
 While this guide might not be exhaustive, this guide serves as a starting point for building a production-ready deduplication workflow. While it requires some planning up front, reconciling patient data from multiple sources can create a powerful data asset to power your clinical workflows. You can also check out our [blog post](/blog/patient-deduplication) on the topic for more information.
+
+## See Also
+
+- Patient deduplication [reference implementation](https://github.com/medplum/medplum-demo-bots/tree/main/src/deduplication)
