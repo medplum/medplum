@@ -190,7 +190,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     } as T);
   }
 
-  function handleRepeatableValue(item: QuestionnaireItem): void {
+  function toggleRepeatable(item: QuestionnaireItem): void {
     props.onChange({
       ...props.item,
       item: props.item.item?.map((i) => (i === item ? { ...i, repeats: !i.repeats } : i)),
@@ -250,7 +250,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             setHoverKey={props.setHoverKey}
             onChange={changeItem}
             onRemove={() => removeItem(i)}
-            onRepeatable={handleRepeatableValue}
+            onRepeatable={toggleRepeatable}
           />
         </div>
       ))}

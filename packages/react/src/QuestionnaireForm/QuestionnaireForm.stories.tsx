@@ -469,7 +469,7 @@ export const EnableWhen = (): JSX.Element => (
   </Document>
 );
 
-export const Repeatables = (): JSX.Element => (
+export const RepeatablesItems = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
       questionnaire={{

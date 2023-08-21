@@ -66,7 +66,6 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer>>({});
   const [activePage, setActivePage] = useState(0);
-  const [questionnaireItems, setQuestionnaireItems] = useState(questionnaire?.item ?? []);
 
   const numberOfPages = getNumberOfPages(questionnaire?.item ?? []);
   const nextStep = (): void => setActivePage((current) => (current >= numberOfPages ? current : current + 1));
@@ -96,19 +95,19 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   function handleRepeatableItem(currentItem: QuestionnaireItem): void {
     currentItem.repeats = false;
     const newItem: QuestionnaireItem = createRepeatableItem(currentItem);
-    const updatedQuestionnaireItems = repeatableInsert([...questionnaireItems], currentItem, newItem);
-    setQuestionnaireItems(updatedQuestionnaireItems);
+    const updatedQuestionnaireItems = repeatableInsert([...questionnaire?.item], currentItem, newItem);
+    questionnaire ? questionnaire.item = updatedQuestionnaireItems : null; 
   }
 
   function handleRemoveItem(currentItem: QuestionnaireItem): void {
-    const updatedQuestionnaireItems = removeRecentItem([...questionnaireItems], currentItem);
-    setQuestionnaireItems(updatedQuestionnaireItems);
+    const updatedQuestionnaireItems = removeRecentItem([...questionnaire?.item], currentItem);
+    questionnaire ? questionnaire.item = updatedQuestionnaireItems : null; 
   }
 
   if (!schema || !questionnaire) {
     return null;
   }
-
+  console.log(answers)
   return (
     <Form
       testid="questionnaire-form"
@@ -126,9 +125,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }}
     >
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
-      {questionnaireItems && (
+      {questionnaire && (
         <QuestionnaireFormItemArray
-          items={questionnaireItems}
+          items={questionnaire.item ?? []}
           answers={answers}
           onChange={setItems}
           renderPages={numberOfPages > 1}
@@ -775,18 +774,6 @@ function addTargetTypes(item: QuestionnaireItem): string[] {
   return targets;
 }
 
-function repeatableLinkId(linkId: string): string {
-  const repeatablePattern = /-repeatable-(\d+)$/;
-  const match = repeatablePattern.exec(linkId);
-
-  if (match) {
-    const currentRepeatableIndex = parseInt(match[1], 10);
-    return linkId.replace(repeatablePattern, `-repeatable-${currentRepeatableIndex + 1}`);
-  } else {
-    return `${linkId}-repeatable-1`;
-  }
-}
-
 function allowRepeatable(item: QuestionnaireItem, answers: Record<string, QuestionnaireResponseItemAnswer>): boolean {
   if (item.type === QuestionnaireItemType.group) {
     return true;
@@ -848,7 +835,7 @@ function createRepeatableItem(item: QuestionnaireItem): QuestionnaireItem {
   return {
     ...item,
     text: newText,
-    linkId: repeatableLinkId(item.linkId ?? ''),
+    linkId: item.linkId,
     repeats: true,
     extension: [
       {
