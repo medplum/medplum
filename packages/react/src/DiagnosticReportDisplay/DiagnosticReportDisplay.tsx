@@ -264,9 +264,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
           )}
         </td>
         <td>
-          {observation.performer?.map((performer) => (
-            <ReferenceDisplay key={performer.reference} value={performer} />
-          ))}
+          {observation.performer?.map((performer) => <ReferenceDisplay key={performer.reference} value={performer} />)}
         </td>
         <td>{observation.status && <StatusBadge status={observation.status} />}</td>
       </tr>

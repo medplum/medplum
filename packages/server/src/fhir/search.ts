@@ -10,6 +10,7 @@ import {
   Filter,
   forbidden,
   formatSearchQuery,
+  getDataType,
   getReferenceString,
   getSearchParameterDetails,
   IncludeTarget,
@@ -21,10 +22,9 @@ import {
   SearchParameterType,
   SearchRequest,
   SortRule,
+  subsetResource,
   toTypedValue,
   validateResourceType,
-  subsetResource,
-  getDataType,
 } from '@medplum/core';
 import {
   Bundle,
@@ -127,7 +127,7 @@ async function getSearchEntries<T extends Resource>(
       ({
         fullUrl: getFullUrl(resourceType, resource.id as string),
         resource,
-      } as BundleEntry)
+      }) as BundleEntry
   );
 
   if (searchRequest.include || searchRequest.revInclude) {

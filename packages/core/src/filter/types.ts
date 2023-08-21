@@ -11,7 +11,11 @@ export type FhirFilterExpression = FhirFilterComparison | FhirFilterNegation | F
  * The FhirFilterComparison class represents a comparison expression.
  */
 export class FhirFilterComparison {
-  constructor(readonly path: string, readonly operator: Operator, readonly value: string) {}
+  constructor(
+    readonly path: string,
+    readonly operator: Operator,
+    readonly value: string
+  ) {}
 }
 
 /**

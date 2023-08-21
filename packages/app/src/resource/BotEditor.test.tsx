@@ -11,7 +11,7 @@ import { AppRoutes } from '../AppRoutes';
 
 describe('BotEditor', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
-    jest.spyOn(medplum, 'download').mockImplementation(async () => ({ text: async () => 'test' } as unknown as Blob));
+    jest.spyOn(medplum, 'download').mockImplementation(async () => ({ text: async () => 'test' }) as unknown as Blob);
 
     // Mock bot operations
     medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);

@@ -1,10 +1,10 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { evalFhirPathTyped, getTypedPropertyValue, toTypedValue } from '../fhirpath';
 import {
-  OperationOutcomeError,
   createConstraintIssue,
   createProcessingIssue,
   createStructureIssue,
+  OperationOutcomeError,
   validationError,
 } from '../outcomes';
 import { isResource, PropertyType, TypedValue } from '../types';
@@ -477,8 +477,11 @@ function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undef
   }
   for (const slice of slicingRules.slices) {
     if (
-      slicingRules.discriminator.every((discriminator) =>
-        arrayify(getNestedProperty(value, discriminator.path))?.some((v) => matchDiscriminant(v, discriminator, slice))
+      slicingRules.discriminator.every(
+        (discriminator) =>
+          arrayify(getNestedProperty(value, discriminator.path))?.some((v) =>
+            matchDiscriminant(v, discriminator, slice)
+          )
       )
     ) {
       return slice.name;

@@ -19,7 +19,11 @@ export class CloudWatchLogger {
   private initPromise?: Promise<void>;
   private timer?: NodeJS.Timeout;
 
-  constructor(region: string, private logGroupName: string, private logStreamName: string = hostname()) {
+  constructor(
+    region: string,
+    private logGroupName: string,
+    private logStreamName: string = hostname()
+  ) {
     this.client = new CloudWatchLogsClient({ region });
     this.queue = [];
   }

@@ -5,7 +5,10 @@ import { CR, FS, VT } from './constants';
 import { Hl7ErrorEvent, Hl7MessageEvent } from './events';
 
 export class Hl7Connection extends Hl7Base {
-  constructor(readonly socket: net.Socket, readonly encoding?: BufferEncoding) {
+  constructor(
+    readonly socket: net.Socket,
+    readonly encoding?: BufferEncoding
+  ) {
     super();
 
     let buffer = '';
