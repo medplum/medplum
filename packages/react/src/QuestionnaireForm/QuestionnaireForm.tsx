@@ -95,19 +95,19 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   function handleRepeatableItem(currentItem: QuestionnaireItem): void {
     currentItem.repeats = false;
     const newItem: QuestionnaireItem = createRepeatableItem(currentItem);
-    const updatedQuestionnaireItems = repeatableInsert([...questionnaireItems], currentItem, newItem);
-    setQuestionnaireItems(updatedQuestionnaireItems);
+    const updatedQuestionnaireItems = repeatableInsert([...questionnaire?.item], currentItem, newItem);
+    questionnaire ? questionnaire.item = updatedQuestionnaireItems : null; 
   }
 
   function handleRemoveItem(currentItem: QuestionnaireItem): void {
-    const updatedQuestionnaireItems = removeRecentItem([...questionnaireItems], currentItem);
-    setQuestionnaireItems(updatedQuestionnaireItems);
+    const updatedQuestionnaireItems = removeRecentItem([...questionnaire?.item], currentItem);
+    questionnaire ? questionnaire.item = updatedQuestionnaireItems : null; 
   }
 
   if (!schema || !questionnaire) {
     return null;
   }
-
+  console.log(answers)
   return (
     <Form
       testid="questionnaire-form"
@@ -125,9 +125,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }}
     >
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
-      {questionnaireItems && (
+      {questionnaire && (
         <QuestionnaireFormItemArray
-          items={questionnaireItems}
+          items={questionnaire.item ?? []}
           answers={answers}
           onChange={setItems}
           renderPages={numberOfPages > 1}
@@ -901,7 +901,7 @@ function createRepeatableItem(item: QuestionnaireItem): QuestionnaireItem {
   return {
     ...item,
     text: newText,
-    linkId: repeatableLinkId(item.linkId ?? ''),
+    linkId: item.linkId,
     repeats: true,
     extension: [
       {
