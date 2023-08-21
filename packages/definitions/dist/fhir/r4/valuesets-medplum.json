@@ -3,6 +3,118 @@
   "type": "collection",
   "entry": [
     {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/resource-types",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "resource-types",
+        "url": "https://medplum.com/fhir/CodeSystem/resource-types",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/resource-types",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "AccessPolicy",
+            "display": "AccessPolicy",
+            "definition": "Access Policy for user or user group that defines how entities can or cannot access resources."
+          },
+          {
+            "code": "Agent",
+            "display": "Agent",
+            "definition": "Configuration details for an instance of the Medplum agent application."
+          },
+          {
+            "code": "AsyncJob",
+            "display": "AsyncJob",
+            "definition": "Contains details of long running asynchronous/background jobs."
+          },
+          {
+            "code": "Bot",
+            "display": "Bot",
+            "definition": "Bot account for automated actions."
+          },
+          {
+            "code": "BulkDataExport",
+            "display": "BulkDataExport",
+            "definition": "User specific configuration for the Medplum application."
+          },
+          {
+            "code": "ClientApplication",
+            "display": "ClientApplication",
+            "definition": "Medplum client application for automated access."
+          },
+          {
+            "code": "DomainConfiguration",
+            "display": "DomainConfiguration",
+            "definition": "Domain specific configuration for the Medplum application."
+          },
+          {
+            "code": "IdentityProvider",
+            "display": "IdentityProvider",
+            "definition": "External Identity Provider (IdP) configuration details."
+          },
+          {
+            "code": "JsonWebKey",
+            "display": "JsonWebKey",
+            "definition": "A JSON object that represents a cryptographic key. The members of the object represent properties of the key, including its value."
+          },
+          {
+            "code": "Login",
+            "display": "Login",
+            "definition": "Login event and session details."
+          },
+          {
+            "code": "PasswordChangeRequest",
+            "display": "PasswordChangeRequest",
+            "definition": "Password change request for the 'forgot password' flow."
+          },
+          {
+            "code": "Project",
+            "display": "Project",
+            "definition": "Encapsulation of resources for a specific project or organization."
+          },
+          {
+            "code": "ProjectMembership",
+            "display": "ProjectMembership",
+            "definition": "Medplum project membership. A project membership grants a user access to a project."
+          },
+          {
+            "code": "SmartAppLaunch",
+            "display": "SmartAppLaunch",
+            "definition": "This resource contains context details for a SMART App Launch."
+          },
+          {
+            "code": "User",
+            "display": "User",
+            "definition": "Representation of a human user of the system."
+          },
+          {
+            "code": "UserConfiguration",
+            "display": "UserConfiguration",
+            "definition": "User specific configuration for the Medplum application."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/resource-types",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "resource-types",
+        "url": "https://medplum.com/fhir/ValueSet/resource-types",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "http://hl7.org/fhir/resource-types"
+            },
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/resource-types"
+            }
+          ]
+        }
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/CodeSystem/project-feature",
       "resource": {
         "resourceType": "CodeSystem",

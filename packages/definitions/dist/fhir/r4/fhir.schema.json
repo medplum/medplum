@@ -62429,7 +62429,7 @@
       ]
     },
     "Agent": {
-      "description": "Contains details of long running asynchronous/background jobs.",
+      "description": "Configuration details for an instance of the Medplum agent application.",
       "properties": {
         "resourceType": {
           "description": "This is a Agent resource",
