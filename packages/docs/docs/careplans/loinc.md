@@ -369,6 +369,7 @@ What's fantastic about the LOINC system is its intuitiveness. For instance, when
 
 - [<sup id="ref1">[1]</sup> Scope of Loinc](https://loinc.org/get-started/scope-of-loinc)
 - [<sup id="ref2">[2]</sup> LOINC Term Basics](https://loinc.org/get-started/loinc-term-basics)
+- [LOINC Typeahead](https://clinicaltables.nlm.nih.gov/apidoc/loinc/v3/doc.html) and other [code system typeaheads](https://clinicaltables.nlm.nih.gov/) can be found on the NIH website
 - [LOINC Browser](https://loinc.org/search)
 - [LOINC Top 2000 Lab Observations](https://loinc.org/usage/obs/)
 - [Social Determinants of Health (SDOH) LOINC Groups](https://loinc.org/search/?t=4&s=SDH)

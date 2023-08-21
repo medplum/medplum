@@ -41,6 +41,8 @@ Labs often require multiple integrations to work well, and are high leverage for
 ## Demos and Reference Material
 
 - [CLIA/CAP Checklist](/docs/compliance/clia-cap)
+- [Defining your Diagnostic Catalog](/docs/careplans/diagnostic-catalog) shows examples of how to administer panels
+- [Defining Reference Ranges](/docs/careplans/reference-ranges) shows how to configure normal, panic and other values for lab
 - [Lab Data Model Examples](https://github.com/medplum/medplum/blob/main/packages/react/src/stories/covid19.ts) on Github
 - Live Example: [Kit.com developer documentation](https://docs.kit.com/docs/overview)
 - [HL7 Bots Tutorial](/docs/bots/hl7-into-fhir) this is the common interface for lab and LIS systems.
