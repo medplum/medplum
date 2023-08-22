@@ -1,0 +1,308 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:926d9ef7-5a75-4a52-9005-bc69d78fcddc",
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      },
+      "resource": {
+        "resourceType": "Patient",
+        "name": [
+          {
+            "prefix": ["Mr."],
+            "given": ["Alex"],
+            "family": "Smith"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "8675305"
+          }
+        ],
+        "address": [
+          {
+            "line": ["123 Main Street."],
+            "city": "Pleasantville",
+            "state": "CA",
+            "postalCode": "94123"
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1970-01-01",
+        "active": true
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:78616dbe-74fa-4c70-8a75-1b73bb7ac245",
+      "request": {
+        "method": "POST",
+        "url": "List"
+      },
+      "resource": {
+        "resourceType": "List",
+        "status": "current",
+        "mode": "working",
+        "subject": {
+          "reference": "urn:uuid:926d9ef7-5a75-4a52-9005-bc69d78fcddc",
+          "display": "Mr. Alex Smith"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://example.org/listType",
+              "code": "doNotMatch",
+              "display": "Do Not Match"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:9f2e89cf-e81c-4e80-9b3e-4e07899b22e4",
+      "request": {
+        "method": "POST",
+        "url": "Encounter"
+      },
+      "resource": {
+        "resourceType": "Encounter",
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "1",
+          "display": "Therapy Appropriate"
+        },
+        "subject": {
+          "reference": "urn:uuid:926d9ef7-5a75-4a52-9005-bc69d78fcddc",
+          "display": "Mr. Alex Smith"
+        },
+        "participant": [
+          {
+            "individual": {
+              "reference": "urn:uuid:undefined",
+              "display": "Dr. Alice Smith"
+            }
+          }
+        ],
+        "period": {
+          "start": "2023-08-08T18:15:00.000Z",
+          "end": "2023-08-08T07:15:00.000Z"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b4f9cb48-993c-4dfa-88b7-35e49707a64f",
+      "request": {
+        "method": "POST",
+        "url": "Encounter"
+      },
+      "resource": {
+        "resourceType": "Encounter",
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "1",
+          "display": "Therapy Appropriate"
+        },
+        "subject": {
+          "reference": "urn:uuid:926d9ef7-5a75-4a52-9005-bc69d78fcddc",
+          "display": "Mr. Alex Smith"
+        },
+        "period": {
+          "start": "2023-08-01T18:15:00.000Z",
+          "end": "2023-08-01T07:15:00.000Z"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:18c0a57b-5a5a-4606-8044-f262fcc1a6b2",
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      },
+      "resource": {
+        "resourceType": "Patient",
+        "active": true,
+        "name": [
+          {
+            "given": ["Alex"],
+            "family": "Smith"
+          }
+        ],
+        "address": [
+          {
+            "line": ["123 Main Street."],
+            "city": "Pleasantville",
+            "state": "CA",
+            "postalCode": "94123"
+          }
+        ],
+        "birthDate": "1970-01-01",
+        "gender": "male"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3903aa28-4bf8-4b34-9baa-0082e38d66df",
+      "request": {
+        "method": "POST",
+        "url": "MedicationRequest"
+      },
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "861730",
+              "display": "metformin hydrochloride 250 MG"
+            }
+          ],
+          "text": "Metformin"
+        },
+        "subject": {
+          "reference": "urn:uuid:18c0a57b-5a5a-4606-8044-f262fcc1a6b2",
+          "display": "Alex Smith"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:24196aaf-7437-4a4e-a1ef-1cd243d2e676",
+      "request": {
+        "method": "POST",
+        "url": "MedicationRequest"
+      },
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "intent": "order",
+        "status": "completed",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "596",
+              "display": "Amlodipine"
+            }
+          ],
+          "text": "Amlodipine"
+        },
+        "subject": {
+          "reference": "urn:uuid:18c0a57b-5a5a-4606-8044-f262fcc1a6b2",
+          "display": "Alex Smith"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:28d9eacb-06a2-4297-8e3f-083d3bb013d2",
+      "request": {
+        "method": "POST",
+        "url": "MedicationRequest"
+      },
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "29046",
+              "display": "Lisinopril"
+            }
+          ],
+          "text": "Lisinopril"
+        },
+        "subject": {
+          "reference": "urn:uuid:18c0a57b-5a5a-4606-8044-f262fcc1a6b2",
+          "display": "Alex Smith"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cdc20f96-f751-4af6-a703-aca80ff2a2f8",
+      "request": {
+        "method": "POST",
+        "url": "List"
+      },
+      "resource": {
+        "resourceType": "List",
+        "status": "current",
+        "mode": "working",
+        "subject": {
+          "reference": "urn:uuid:18c0a57b-5a5a-4606-8044-f262fcc1a6b2",
+          "display": "Alex Smith"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://example.org/listType",
+              "code": "doNotMatch",
+              "display": "Do Not Match"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:82f09bce-b178-4a5b-9ed5-d83091c1aed4",
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      },
+      "resource": {
+        "resourceType": "Patient",
+        "name": [
+          {
+            "given": ["Alex"],
+            "family": "Smith",
+            "prefix": ["Ms."]
+          },
+          {
+            "given": ["Alexis"],
+            "family": "Smith"
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1970-01-01",
+        "address": [
+          {
+            "line": ["456 Main Street."],
+            "city": "Pleasantville",
+            "state": "CA",
+            "postalCode": "94123"
+          }
+        ],
+        "active": true
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:dee9f972-e1ca-4846-b39a-093e0b6b7278",
+      "request": {
+        "method": "POST",
+        "url": "List"
+      },
+      "resource": {
+        "resourceType": "List",
+        "status": "current",
+        "mode": "working",
+        "subject": {
+          "reference": "urn:uuid:82f09bce-b178-4a5b-9ed5-d83091c1aed4",
+          "display": "Ms. Alex Smith"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://example.org/listType",
+              "code": "doNotMatch",
+              "display": "Do Not Match"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
