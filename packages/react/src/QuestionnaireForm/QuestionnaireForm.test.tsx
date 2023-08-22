@@ -524,7 +524,11 @@ describe('QuestionnaireForm', () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
-    expect(onSubmit).toBeCalledWith(expect.objectContaining(expectedResponse));
+    const submittedData = onSubmit.mock.calls[0][0];
+
+    expect(submittedData.item[0].answer).toEqual(expectedResponse?.item?.[0].answer);
+    expect(submittedData.item[0].text).toEqual(expectedResponse?.item?.[0].text);
+    expect(submittedData.item[0].linkId).toEqual(expectedResponse?.item?.[0].linkId);
   });
 
   test('Reference input', async () => {
@@ -988,6 +992,12 @@ describe('QuestionnaireForm', () => {
             type: 'string',
             repeats: true,
           },
+          {
+            linkId: 'group1',
+            text: 'Group',
+            type: 'group',
+            repeats: true,
+          },
         ],
       },
       onSubmit: jest.fn(),
@@ -998,11 +1008,7 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Add Additional Item'));
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Remove'));
+      fireEvent.click(screen.getByText('Add Group'));
     });
   });
 

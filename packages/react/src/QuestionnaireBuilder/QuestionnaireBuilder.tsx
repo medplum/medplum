@@ -236,7 +236,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           <>
             {resource.title && <Title>{resource.title}</Title>}
             {item.text && <div>{item.text}</div>}
-            {!isContainer && <QuestionnaireFormItem item={item} answers={{}} onChange={() => undefined} />}
+            {!isContainer && <QuestionnaireFormItem item={item} index={0} answers={{}} onChange={() => undefined} />}
           </>
         )}
       </div>

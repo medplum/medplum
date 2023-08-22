@@ -1,12 +1,10 @@
 import {
   Anchor,
-  Box,
   Button,
   Checkbox,
   Group,
   NativeSelect,
   Radio,
-  Space,
   Stack,
   Stepper,
   Textarea,
@@ -92,22 +90,10 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     setAnswers(getQuestionnaireAnswers(newResponse));
   }
 
-  function handleRepeatableItem(currentItem: QuestionnaireItem): void {
-    currentItem.repeats = false;
-    const newItem: QuestionnaireItem = createRepeatableItem(currentItem);
-    const updatedQuestionnaireItems = repeatableInsert([...questionnaire?.item], currentItem, newItem);
-    questionnaire ? questionnaire.item = updatedQuestionnaireItems : null; 
-  }
-
-  function handleRemoveItem(currentItem: QuestionnaireItem): void {
-    const updatedQuestionnaireItems = removeRecentItem([...questionnaire?.item], currentItem);
-    questionnaire ? questionnaire.item = updatedQuestionnaireItems : null; 
-  }
-
   if (!schema || !questionnaire) {
     return null;
   }
-  console.log(answers)
+
   return (
     <Form
       testid="questionnaire-form"
@@ -127,13 +113,11 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
       {questionnaire && (
         <QuestionnaireFormItemArray
-          items={questionnaire.item ?? []}
+          items={questionnaire?.item ?? []}
           answers={answers}
           onChange={setItems}
           renderPages={numberOfPages > 1}
           activePage={activePage}
-          handleRepeatableItem={handleRepeatableItem}
-          handleRemoveItem={handleRemoveItem}
         />
       )}
       <Group position="right" mt="xl">
@@ -154,48 +138,48 @@ interface QuestionnaireFormItemArrayProps {
   answers: Record<string, QuestionnaireResponseItemAnswer>;
   renderPages?: boolean;
   activePage?: number;
-  handleRepeatableItem?: (currentItem: QuestionnaireItem) => void;
-  handleRemoveItem?: (currentItem: QuestionnaireItem) => void;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
-
 function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX.Element {
   const [responseItems, setResponseItems] = useState<QuestionnaireResponseItem[]>(
     buildInitialResponseItems(props.items)
   );
 
-  function setResponseItem(index: number, newResponseItem: QuestionnaireResponseItem): void {
-    const newResponseItems = responseItems.slice();
-    newResponseItems[index] = newResponseItem;
+  function setResponseItem(responseId: string, newResponseItem: QuestionnaireResponseItem): void {
+    const itemExists = responseItems.some((r) => r.id === responseId);
+    let newResponseItems;
+    if (itemExists) {
+      newResponseItems = responseItems.map((r) => (r.id === responseId ? newResponseItem : r));
+    } else {
+      newResponseItems = [...responseItems, newResponseItem];
+    }
     setResponseItems(newResponseItems);
     props.onChange(newResponseItems);
   }
 
-  const questionForm = props.items.map((item, index) => {
+  const questionForm = (props.items ?? []).map((item, index) => {
     if (props.renderPages) {
       return (
         <Stepper.Step label={item.text} key={item.linkId}>
           <QuestionnaireFormArrayContent
-            key={item.linkId}
+            key={`${item.linkId}-${index}`}
             item={item}
             index={index}
             answers={props.answers}
+            responseItems={responseItems}
             setResponseItem={setResponseItem}
-            handleRemoveItem={props.handleRemoveItem}
-            handleRepeatableItem={props.handleRepeatableItem}
           />
         </Stepper.Step>
       );
     }
     return (
       <QuestionnaireFormArrayContent
-        key={item.linkId}
+        key={`${item.linkId}-${index}`}
         item={item}
         index={index}
         answers={props.answers}
+        responseItems={responseItems}
         setResponseItem={setResponseItem}
-        handleRemoveItem={props.handleRemoveItem}
-        handleRepeatableItem={props.handleRepeatableItem}
       />
     );
   });
@@ -214,9 +198,8 @@ interface QuestionnaireFormArrayContentProps {
   item: QuestionnaireItem;
   index: number;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
-  handleRepeatableItem?: (currentItem: QuestionnaireItem) => void;
-  handleRemoveItem?: (currentItem: QuestionnaireItem) => void;
-  setResponseItem: (index: number, newResponseItem: QuestionnaireResponseItem) => void;
+  responseItems: QuestionnaireResponseItem[];
+  setResponseItem: (responseId: string, newResponseItem: QuestionnaireResponseItem) => void;
 }
 
 function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps): JSX.Element | null {
@@ -228,112 +211,86 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
   }
   if (props.item.type === QuestionnaireItemType.group) {
     return (
-      <QuestionnaireFormRepeatables
+      <QuestionnaireRepeatWrapper
         key={props.item.linkId}
-        index={props.index}
         item={props.item}
         answers={props.answers}
-        onChange={(newResponseItem) => props.setResponseItem(props.index, newResponseItem)}
-        handleRepeatableItem={props.handleRepeatableItem}
-        handleRemoveItem={props.handleRemoveItem}
+        responseItems={props.responseItems}
+        onChange={(newResponseItem) => props.setResponseItem(newResponseItem.id as string, newResponseItem)}
       />
-    );
-  }
-  if (props.item.type === QuestionnaireItemType.boolean) {
-    const initial = props.item.initial && props.item.initial.length > 0 ? props.item.initial[0] : undefined;
-    return (
-      <CheckboxFormSection key={props.item.linkId} title={props.item.text} htmlFor={props.item.linkId}>
-        <Checkbox
-          id={props.item.linkId}
-          name={props.item.linkId}
-          defaultChecked={initial?.valueBoolean}
-          onChange={(e) =>
-            props.setResponseItem(props.index, {
-              linkId: props.item.linkId,
-              text: props.item.text,
-              answer: [{ valueBoolean: e.currentTarget.checked }],
-            })
-          }
-        />
-      </CheckboxFormSection>
     );
   }
   return (
     <FormSection key={props.item.linkId} htmlFor={props.item.linkId} title={props.item.text ?? ''}>
-      <QuestionnaireFormRepeatables
+      <QuestionnaireRepeatWrapper
         item={props.item}
-        index={props.index}
         answers={props.answers}
-        onChange={(newResponseItem) => props.setResponseItem(props.index, newResponseItem)}
-        handleRepeatableItem={props.handleRepeatableItem}
-        handleRemoveItem={props.handleRemoveItem}
+        responseItems={props.responseItems}
+        onChange={(newResponseItem) => props.setResponseItem(newResponseItem.id as string, newResponseItem)}
       />
     </FormSection>
   );
 }
 
-interface QuestionnaireFormRepeatablesProps {
+export interface QuestionnaireRepeatWrapperProps {
   item: QuestionnaireItem;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
-  onChange: (newResponseItem: QuestionnaireResponseItem) => void;
-  handleRepeatableItem?: (currentItem: QuestionnaireItem) => void;
-  handleRemoveItem?: (currentItem: QuestionnaireItem) => void;
-  index: number;
+  responseItems: QuestionnaireResponseItem[];
+  onChange: (newResponseItem: QuestionnaireResponseItem, index?: number) => void;
 }
 
-function QuestionnaireFormRepeatables(props: QuestionnaireFormRepeatablesProps): JSX.Element {
-  return (
-    <>
-      <QuestionnaireFormItem
-        item={props.item}
+export function QuestionnaireRepeatWrapper(props: QuestionnaireRepeatWrapperProps): JSX.Element {
+  const item = props.item;
+  function onChangeItem(newResponseItems: QuestionnaireResponseItem[], number?: number): void {
+    const index = number ?? 0;
+    const responses = props.responseItems.filter((r) => r.linkId === item.linkId);
+    props.onChange({
+      id: getResponseId(responses, index),
+      linkId: item.linkId,
+      text: item.text,
+      item: newResponseItems,
+    });
+  }
+  if (item.type === QuestionnaireItemType.group) {
+    return (
+      <RepeatableGroup
+        key={props.item.linkId}
+        text={item.text ?? ''}
+        item={item ?? []}
         answers={props.answers}
-        onChange={props.onChange}
-        handleRepeatableItem={props.handleRepeatableItem}
-        handleRemoveItem={props.handleRemoveItem}
+        onChange={onChangeItem}
       />
-      {props.item.repeats && (
-        <Box display="flex">
-          <Anchor
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              if (props.handleRepeatableItem && allowRepeatable(props.item, props.answers)) {
-                props.handleRepeatableItem(props.item);
-              }
-            }}
-          >
-            Add Additional Item
-          </Anchor>
-          <Space w="md" />
-          {extensionForRemovingRepeatable(props.item) ? (
-            <Anchor
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                if (props.handleRemoveItem) {
-                  props.handleRemoveItem(props.item);
-                }
-              }}
-            >
-              Remove
-            </Anchor>
-          ) : null}
-        </Box>
-      )}
-    </>
+    );
+  }
+  return (
+    <RepeatableItem item={props.item} key={props.item.linkId}>
+      {({ index }: { index: number }) => <QuestionnaireFormItem {...props} index={index} />}
+    </RepeatableItem>
   );
 }
 
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
+  index: number;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
-  handleRepeatableItem?: (currentItem: QuestionnaireItem) => void;
-  handleRemoveItem?: (currentItem: QuestionnaireItem) => void;
+  responseItems?: QuestionnaireResponseItem[];
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
 
 export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element | null {
   const item = props.item;
+  const index = props.index;
+
+  function onChangeAnswer(newResponseAnswer: QuestionnaireResponseItemAnswer, repeatedIndex?: number): void {
+    const number = repeatedIndex ?? 0;
+    const responses = props.responseItems?.filter((r) => r.linkId === item.linkId) ?? [];
+    props.onChange({
+      id: responses[0].id,
+      linkId: item.linkId,
+      text: item.text,
+      answer: updateAnswerArray(responses[0]?.answer ?? [], number, newResponseAnswer),
+    });
+  }
 
   const type = item.type as QuestionnaireItemType;
   if (!type) {
@@ -347,46 +304,17 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
 
   const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
 
-  function onChangeItem(newResponseItems: QuestionnaireResponseItem[]): void {
-    props.onChange({
-      linkId: item.linkId,
-      text: item.text,
-      item: newResponseItems,
-    });
-  }
-
-  function onChangeAnswer(newResponseAnswer: QuestionnaireResponseItemAnswer): void {
-    props.onChange({
-      linkId: item.linkId,
-      text: item.text,
-      answer: [newResponseAnswer],
-    });
-  }
-
   switch (type) {
-    case QuestionnaireItemType.group:
-      return (
-        <div>
-          <h3>{item.text}</h3>
-          {item.item && (
-            <QuestionnaireFormItemArray
-              items={item.item}
-              answers={props.answers}
-              onChange={onChangeItem}
-              handleRepeatableItem={props.handleRepeatableItem}
-              handleRemoveItem={props.handleRemoveItem}
-            />
-          )}
-        </div>
-      );
     case QuestionnaireItemType.boolean:
       return (
-        <Checkbox
-          id={name}
-          name={name}
-          defaultChecked={initial?.valueBoolean}
-          onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked })}
-        />
+        <CheckboxFormSection key={props.item.linkId} title={props.item.text} htmlFor={props.item.linkId}>
+          <Checkbox
+            id={props.item.linkId}
+            name={props.item.linkId}
+            defaultChecked={initial?.valueBoolean}
+            onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked }, index)}
+          />
+        </CheckboxFormSection>
       );
     case QuestionnaireItemType.decimal:
       return (
@@ -396,7 +324,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           id={name}
           name={name}
           defaultValue={initial?.valueDecimal}
-          onChange={(e) => onChangeAnswer({ valueDecimal: e.currentTarget.valueAsNumber })}
+          onChange={(e) => onChangeAnswer({ valueDecimal: e.currentTarget.valueAsNumber }, index)}
         />
       );
     case QuestionnaireItemType.integer:
@@ -407,7 +335,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           id={name}
           name={name}
           defaultValue={initial?.valueInteger}
-          onChange={(e) => onChangeAnswer({ valueInteger: e.currentTarget.valueAsNumber })}
+          onChange={(e) => onChangeAnswer({ valueInteger: e.currentTarget.valueAsNumber }, index)}
         />
       );
     case QuestionnaireItemType.date:
@@ -417,7 +345,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           id={name}
           name={name}
           defaultValue={initial?.valueDate}
-          onChange={(e) => onChangeAnswer({ valueDate: e.currentTarget.value })}
+          onChange={(e) => onChangeAnswer({ valueDate: e.currentTarget.value }, index)}
         />
       );
     case QuestionnaireItemType.dateTime:
@@ -425,7 +353,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <DateTimeInput
           name={name}
           defaultValue={initial?.valueDateTime}
-          onChange={(newValue: string) => onChangeAnswer({ valueDateTime: newValue })}
+          onChange={(newValue: string) => onChangeAnswer({ valueDateTime: newValue }, index)}
         />
       );
     case QuestionnaireItemType.time:
@@ -435,7 +363,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           id={name}
           name={name}
           defaultValue={initial?.valueTime}
-          onChange={(e) => onChangeAnswer({ valueTime: e.currentTarget.value })}
+          onChange={(e) => onChangeAnswer({ valueTime: e.currentTarget.value }, index)}
         />
       );
     case QuestionnaireItemType.string:
@@ -445,7 +373,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           id={name}
           name={name}
           defaultValue={initial?.valueString}
-          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value })}
+          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
       );
     case QuestionnaireItemType.text:
@@ -454,7 +382,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           id={name}
           name={name}
           defaultValue={initial?.valueString}
-          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value })}
+          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
       );
     case QuestionnaireItemType.attachment:
@@ -462,7 +390,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <AttachmentInput
           name={name}
           defaultValue={initial?.valueAttachment}
-          onChange={(newValue) => onChangeAnswer({ valueAttachment: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueAttachment: newValue }, index)}
         />
       );
     case QuestionnaireItemType.reference:
@@ -471,7 +399,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           targetTypes={addTargetTypes(item)}
           defaultValue={initial?.valueReference}
-          onChange={(newValue) => onChangeAnswer({ valueReference: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueReference: newValue }, index)}
         />
       );
     case QuestionnaireItemType.quantity:
@@ -479,7 +407,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <QuantityInput
           name={name}
           defaultValue={initial?.valueQuantity}
-          onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue }, index)}
           disableWheel
         />
       );
@@ -487,11 +415,21 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     case QuestionnaireItemType.openChoice:
       if (isDropDownChoice(item)) {
         return (
-          <QuestionnaireChoiceDropDownInput name={name} item={item} initial={initial} onChangeAnswer={onChangeAnswer} />
+          <QuestionnaireChoiceDropDownInput
+            name={name}
+            item={item}
+            initial={initial}
+            onChangeAnswer={(e) => onChangeAnswer(e, index)}
+          />
         );
       } else {
         return (
-          <QuestionnaireChoiceRadioInput name={name} item={item} initial={initial} onChangeAnswer={onChangeAnswer} />
+          <QuestionnaireChoiceRadioInput
+            name={name}
+            item={item}
+            initial={initial}
+            onChangeAnswer={(e) => onChangeAnswer(e, index)}
+          />
         );
       }
     default:
@@ -668,11 +606,17 @@ function buildInitialResponseItems(items: QuestionnaireItem[] | undefined): Ques
 
 function buildInitialResponseItem(item: QuestionnaireItem): QuestionnaireResponseItem {
   return {
+    id: generateId(),
     linkId: item.linkId,
     text: item.text,
     item: buildInitialResponseItems(item.item),
     answer: item.initial?.map(buildInitialResponseAnswer) ?? [],
   };
+}
+
+let nextId = 1;
+function generateId(): string {
+  return 'id-' + nextId++;
 }
 
 function buildInitialResponseAnswer(answer: QuestionnaireItemInitial): QuestionnaireResponseItemAnswer {
@@ -774,82 +718,73 @@ function addTargetTypes(item: QuestionnaireItem): string[] {
   return targets;
 }
 
-function allowRepeatable(item: QuestionnaireItem, answers: Record<string, QuestionnaireResponseItemAnswer>): boolean {
-  if (item.type === QuestionnaireItemType.group) {
-    return true;
-  }
-  const linkId = item.linkId;
-  if (!linkId) {
-    return false;
-  }
-  return !!answers[linkId];
+interface RepeatableGroupProps {
+  item: QuestionnaireItem;
+  text: string;
+  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  onChange: (newResponseItem: QuestionnaireResponseItem[], index?: number) => void;
 }
 
-function repeatableInsert(
-  items: QuestionnaireItem[],
-  currentItem: QuestionnaireItem,
-  newItem: QuestionnaireItem
-): QuestionnaireItem[] {
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].linkId === currentItem.linkId) {
-      const updatedItems = [...items.slice(0, i + 1), newItem, ...items.slice(i + 1)];
-      return updatedItems;
-    }
-
-    if (items[i].item) {
-      const updatedNestedItems = repeatableInsert(items[i].item ?? [], currentItem, newItem);
-      if (updatedNestedItems !== items[i].item) {
-        items[i].item = updatedNestedItems;
-      }
-    }
-  }
-  return items;
-}
-
-function removeRecentItem(items: QuestionnaireItem[], currentItem: QuestionnaireItem): QuestionnaireItem[] {
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].linkId === currentItem.linkId) {
-      items.splice(i, 1);
-
-      if (i - 1 >= 0) {
-        items[i - 1].repeats = true;
-      }
-      return items;
-    }
-
-    if (items[i].item) {
-      const updatedNestedItems = removeRecentItem(items[i].item ?? [], currentItem);
-      if (updatedNestedItems !== items[i].item) {
-        items[i].item = updatedNestedItems;
-      }
-    }
-  }
-  return items;
-}
-
-function createRepeatableItem(item: QuestionnaireItem): QuestionnaireItem {
-  let newText = item.text ?? '';
-  if (!newText.endsWith(' continued')) {
-    newText += ' continued';
-  }
-  return {
-    ...item,
-    text: newText,
-    linkId: item.linkId,
-    repeats: true,
-    extension: [
-      {
-        url: 'http://hl7.org/fhir/R4/questionnaire-definitions.html#Questionnaire.item.repeats',
-        valueString: 'removable',
-      },
-    ],
-  };
-}
-
-function extensionForRemovingRepeatable(item: QuestionnaireItem): boolean {
-  const extension = getExtension(
-    item,
-    'http://hl7.org/fhir/R4/questionnaire-definitions.html#Questionnaire.item.repeats'
+function RepeatableGroup(props: RepeatableGroupProps): JSX.Element | null {
+  const [number, setNumber] = useState(1);
+  const item = props.item;
+  return (
+    <>
+      {[...Array(number)].map((_, i) => {
+        return (
+          <div key={i}>
+            <h3>{props.text}</h3>
+            <QuestionnaireFormItemArray
+              items={item.item ?? []}
+              answers={props.answers}
+              onChange={(response) => props.onChange(response, i)}
+            />
+          </div>
+        );
+      })}
+      {props.item.repeats && <Anchor onClick={() => setNumber((n) => n + 1)}>Add Group</Anchor>}
+    </>
   );
-  return extension?.valueString === 'removable';
+}
+
+interface RepeatableItemProps {
+  item: QuestionnaireItem;
+  children: (props: { index: number }) => JSX.Element;
+}
+
+function RepeatableItem(props: RepeatableItemProps): JSX.Element {
+  const [number, setNumber] = useState(1);
+
+  return (
+    <>
+      {[...Array(number)].map((_, i) => {
+        return <React.Fragment key={`${props.item.linkId}-${i}`}>{props.children({ index: i })}</React.Fragment>;
+      })}
+      {props.item?.repeats && <Anchor onClick={() => setNumber((n) => n + 1)}>Add Item</Anchor>}
+    </>
+  );
+}
+
+function updateAnswerArray(
+  answers: QuestionnaireResponseItemAnswer[],
+  index: number,
+  newResponseAnswer: QuestionnaireResponseItemAnswer
+): QuestionnaireResponseItemAnswer[] {
+  if (index < answers.length) {
+    answers[index] = newResponseAnswer;
+    return answers;
+  } else {
+    for (let i = answers.length; i < index; i++) {
+      answers.push({});
+    }
+    answers.push(newResponseAnswer);
+    return answers;
+  }
+}
+
+function getResponseId(responses: QuestionnaireResponseItem[], index: number): string {
+  if (responses.length === 0 || responses.length < index + 1) {
+    return generateId();
+  }
+  return responses[index].id as string;
 }
