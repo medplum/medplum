@@ -322,4 +322,4 @@ While creating sub-observations can provide powerful functionality, it can be co
 
 ## Reference Ranges
 
-For a more detailed discussion on reference ranges, please see the [`Observation` Reference Ranges docs](/docs/careplans/observatoin-reference-ranges). However, in this guide, it is important to note that the `Observation.range` field should reference the range from the `ObservationDefinition` that corresponds to what is considered normal for the _specific_ patient, given their age, gender, race, etc.
+For a more detailed discussion on reference ranges, please see the [`Observation` Reference Ranges docs](https://www.medplum.com/docs/careplans/reference-ranges). However, in this guide, it is important to note that the `Observation.range` field should reference the range from the `ObservationDefinition` that corresponds to what is considered normal for the _specific_ patient, given their age, gender, race, etc.
