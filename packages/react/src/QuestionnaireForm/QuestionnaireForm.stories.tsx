@@ -641,7 +641,6 @@ export const PageSequence = (): JSX.Element => (
                 linkId: 'question1',
                 text: 'Question 1',
                 type: 'string',
-                repeats: true,
               },
               {
                 linkId: 'question2',
@@ -652,7 +651,6 @@ export const PageSequence = (): JSX.Element => (
                 linkId: 'q1',
                 text: 'Question 1',
                 type: 'choice',
-                repeats: true,
                 answerOption: [
                   {
                     valueString: 'Yes',
@@ -1059,7 +1057,7 @@ export const RepeatableItems = (): JSX.Element => (
   </Document>
 );
 
-export const RepeatablesItems = (): JSX.Element => (
+export const RepeatableItems = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
       questionnaire={{
@@ -1087,9 +1085,20 @@ export const RepeatablesItems = (): JSX.Element => (
           },
           {
             linkId: 'question3',
-            text: 'Question 3',
+            text: 'Repeatable Question',
             type: 'string',
             repeats: true,
+          },
+          {
+            linkId: 'question4',
+            text: 'Repeatable Date',
+            type: 'date',
+            repeats: true,
+          },
+          {
+            linkId: 'boolean',
+            type: 'boolean',
+            text: 'Boolean',
           },
         ],
       }}
