@@ -1,5 +1,5 @@
 import { BotEvent, MedplumClient, createReference, getReferenceString, resolveId } from '@medplum/core';
-import { ListEntry, Patient, RiskAssessment, Task } from '@medplum/fhirtypes';
+import { Patient, RiskAssessment, Task } from '@medplum/fhirtypes';
 
 /**
  * This Bot listens for changes to a `Patient` resource and searches for potential patient duplicates.
@@ -29,10 +29,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
 
   // Search for potential active duplicate patients by matching first name, last name, birthdate, and postal code.
   const candidateMatches = await medplum.searchResources('Patient', {
-    name: srcPatient.name?.[0].family,
-    given: srcPatient.name?.[0].given,
+    'family:exact': srcPatient.name?.[0]?.family,
+    'given:exact': srcPatient.name?.[0]?.given,
     birthdate: srcPatient.birthDate,
-    'address-postalcode': srcPatient.address?.[0].postalCode,
+    'address-postalcode': srcPatient.address?.[0]?.postalCode,
     // only search for patients that are 'active' (have not already been)
     active: true,
     // Exclude the source patient,
@@ -49,7 +49,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   */
   for (const candidate of candidateMatches) {
     // Check if "Do Not Match" list contains the candidate match
-    const shouldMatch = !doNotMatchList?.entry?.some((entry: ListEntry) => resolveId(entry.item) === candidate.id);
+    const blockedIds = doNotMatchList?.entry?.map((entry) => resolveId(entry.item)) ?? [];
+    const shouldMatch = !blockedIds.some((blockedId) => blockedId === candidate.id);
 
     // If there are no lists marked with 'doNotMatch' for the potential duplicate patient, create a RiskAssessment and Task.
     if (shouldMatch) {

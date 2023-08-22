@@ -1,9 +1,9 @@
 import {
   BotEvent,
+  MedplumClient,
   createReference,
   deepClone,
   getQuestionnaireAnswers,
-  MedplumClient,
   getReferenceString,
 } from '@medplum/core';
 import {
@@ -12,12 +12,22 @@ import {
   QuestionnaireResponse,
   QuestionnaireResponseItemAnswer,
   Reference,
-  Resource,
+  ResourceType,
   RiskAssessment,
 } from '@medplum/fhirtypes';
 
 /**
  * Handler function to process incoming BotEvent containing a QuestionnaireResponse for potential patient record merges.
+ *
+ * Because this bot only considers a single (source, target) match, there is a risk of race conditions
+ * across multiple merge operations. Managing race conditions over record merges is a known hard problem,
+ * and n practice, this should be handled at the workflow level.
+ *
+ * There are a few different ways to handle such race conditions:
+ *   - Modify the merge bot to operate on all RiskAssessments assigned to a given target patient
+ *     rather than on each RiskAssessment individually. This would keep the merges sequential within the Bot.
+ *   - Make sure all matches for a given target patient are reviewed by the same person.
+ *     Have the reviewer-facing UI force the reviewer to handle all merges for a given target in sequence
  *
  * @param medplum - The Medplum client instance.
  * @param event - The BotEvent containing the QuestionnaireResponse.
@@ -62,7 +72,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   const patients = linkPatientRecords(sourcePatient, targetPatient);
 
-  // Copy some data from the source patuebt to the target, depending on the user input
+  // Copy some data from the source patient to the target, depending on the user input
   let fieldUpdates = {} as Partial<Patient>;
   const appendName = responses['appendName']?.valueBoolean;
   const appendAddress = responses['appendAddress']?.valueBoolean;
@@ -78,11 +88,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const mergedPatients = mergePatientRecords(patients.src, patients.target, fieldUpdates);
 
   // Update clinical data to point to the target resource
-  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'ServiceRequest');
-  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'Observation');
-  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'DiagnosticReport');
-  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'MedicationRequest');
-  await updateClinicalReferences(medplum, mergedPatients.src, mergedPatients.target, 'Encounter');
+  // To improve efficiency, consider grouping these requests into a batch transaction (http://hl7.org/fhir/R4/http.html#transaction)
+  await updateResourceReferences(medplum, mergedPatients.src, mergedPatients.target, 'ServiceRequest');
+  await updateResourceReferences(medplum, mergedPatients.src, mergedPatients.target, 'Observation');
+  await updateResourceReferences(medplum, mergedPatients.src, mergedPatients.target, 'DiagnosticReport');
+  await updateResourceReferences(medplum, mergedPatients.src, mergedPatients.target, 'MedicationRequest');
+  await updateResourceReferences(medplum, mergedPatients.src, mergedPatients.target, 'Encounter');
 
   // We might delete the source patient record if we don't want to continue to have a duplicate of an existing patient
   // despite the fact that it is an inactive record.
@@ -103,12 +114,6 @@ interface MergedPatients {
   readonly target: Patient;
 }
 
-type HasSubject = {
-  subject?: Reference<Patient>;
-};
-
-type ResourceWithSubject = Resource & HasSubject;
-
 /**
  * Links two patient records indicating one replaces the other.
  *
@@ -128,8 +133,8 @@ export function linkPatientRecords(src: Patient, target: Patient): MergedPatient
 }
 
 /**
- * Merges contact information (identifiers) of two patient records, where the source patient record will be marked as an old record.
- * The target patient record will be overwritten with the merged data and will be the master record.
+ * Merges contact information (identifiers) of two patient records, where the source patient record will be marked as
+ * an old record. The target patient record will be overwritten with the merged data and will be the master record.
  *
  * @param src - The source patient record.
  * @param target - The target patient record.
@@ -137,38 +142,73 @@ export function linkPatientRecords(src: Patient, target: Patient): MergedPatient
  * @returns - Object containing the original source and the merged target patient records.
  */
 export function mergePatientRecords(src: Patient, target: Patient, fields?: Partial<Patient>): MergedPatients {
-  const srcIdentifiers = src.identifier ?? [];
-  const mergedIdentifiers = srcIdentifiers.map((identifier) => ({
-    ...identifier,
-    use: 'old' as Identifier['use'],
-  }));
   const targetCopy = deepClone(target);
-  targetCopy.identifier = [...(targetCopy.identifier ?? []), ...mergedIdentifiers];
+  const mergedIdentifiers = targetCopy.identifier ?? [];
+  const srcIdentifiers = src.identifier ?? [];
+
+  // Check for conflicts between the source and target records' identifiers
+  for (const srcIdentifier of srcIdentifiers) {
+    const targetIdentifier = mergedIdentifiers?.find((identifier) => identifier.system === srcIdentifier.system);
+    // If the targetRecord has an identifier with the same system, check if source and target agree on the identifier value
+    if (targetIdentifier) {
+      if (targetIdentifier.value !== srcIdentifier.value) {
+        throw new Error(`Mismatched identifier for system ${srcIdentifier.system}`);
+      }
+    }
+    // If this identifier is not present on the target, add it to the merged record and mark it as 'old'
+    else {
+      mergedIdentifiers.push({ ...srcIdentifier, use: 'old' } as Identifier);
+    }
+  }
+
+  targetCopy.identifier = mergedIdentifiers;
   const targetMerged = { ...targetCopy, ...fields };
   return { src: src, target: targetMerged };
 }
 
 /**
- * Updates the subject of clinical resources from the source patient to the target patient.
+ * Rewrites all references to source patient to the target patient, for the given resource type.
  *
- * @param medplum - Instance of the MedplumClient for server interactions.
- * @param src - The source patient record.
- * @param target - The target patient record.
- * @param clinicalResource - The type of the clinical resource (e.g., 'ServiceRequest').
+ * @param medplum The MedplumClient
+ * @param sourcePatient Source `Patient` resource. After this operation, no resources of the specified type will refer
+ * to this `Patient`
+ * @param targetPatient Target `Patient` resource. After this operation, no resources of the specified type will refer
+ * to this `Patient`
+ * @param resourceType Resource type to rewrite (e.g. `Encounter`)
  */
-export async function updateClinicalReferences<T extends ResourceWithSubject>(
+export async function updateResourceReferences<T extends ResourceType>(
   medplum: MedplumClient,
-  src: Patient,
-  target: Patient,
-  clinicalResource: T['resourceType']
+  sourcePatient: Patient,
+  targetPatient: Patient,
+  resourceType: T
 ): Promise<void> {
-  // Search for clinical resources related to the source patient.
-  const reports = await medplum.searchResources(clinicalResource, { subject: getReferenceString(src) });
-  (reports as ResourceWithSubject[]).map(async (report) => {
-    // Update each found resource's subject to the target patient.
-    report.subject = createReference(target);
-    await medplum.updateResource(report);
+  // Search for clinical resources related to the source patient, by searching for all resources in the patient compartment
+  // Refer to the FHIR documentation on compartments for more information:
+  // https://hl7.org/fhir/R4/compartmentdefinition-patient.html
+  const clinicalResources = await medplum.searchResources(resourceType, {
+    _compartment: getReferenceString(sourcePatient),
   });
+
+  for (const clinicalResource of clinicalResources) {
+    replaceReferences(clinicalResource, getReferenceString(sourcePatient), getReferenceString(targetPatient));
+    await medplum.updateResource(clinicalResource);
+  }
+}
+
+/**
+ * Recursive function to search for all references to the source resource, and translate them to the target resource
+ * @param obj A FHIR resource or element
+ * @param srcReference The reference string referring to the source resource
+ * @param targetReference The reference string referring to the target resource
+ */
+function replaceReferences(obj: any, srcReference: string, targetReference: string): void {
+  for (const key in obj) {
+    if (typeof obj[key] === 'object' && obj[key] !== null) {
+      replaceReferences(obj[key], srcReference, targetReference);
+    } else if (typeof obj[key] === 'string' && obj[key] === srcReference) {
+      obj[key] = targetReference;
+    }
+  }
 }
 
 /**

@@ -1,7 +1,7 @@
 import { ContentType, MedplumClient, createReference, getStatus, isOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Patient, PatientLink, ServiceRequest } from '@medplum/fhirtypes';
 import { Mock, vi } from 'vitest';
-import { linkPatientRecords, mergePatientRecords, updateClinicalReferences } from './merge-matching-patients';
+import { linkPatientRecords, mergePatientRecords, updateResourceReferences } from './merge-matching-patients';
 
 function mockFetch(
   status: number,
@@ -83,13 +83,13 @@ describe('Deduplication', () => {
     const srcPatient = {
       resourceType: 'Patient',
       id: 'src',
-      identifier: [{ use: 'usual', value: '123' }],
+      identifier: [{ use: 'usual', system: 'http://foo.org', value: '123' }],
     } as Patient;
 
     const targetPatient = {
       resourceType: 'Patient',
       id: 'target',
-      identifier: [{ use: 'official', value: '456' }],
+      identifier: [{ use: 'official', system: 'http://bar.org', value: '456' }],
     } as Patient;
 
     const fields = {
@@ -102,8 +102,8 @@ describe('Deduplication', () => {
     expect(result.target.id).toBe('target');
     expect(result.target.address).toBe(fields.address);
     expect(result.target.identifier).toEqual([
-      { use: 'official', value: '456' },
-      { use: 'old', value: '123' },
+      { use: 'official', system: 'http://bar.org', value: '456' },
+      { use: 'old', system: 'http://foo.org', value: '123' },
     ]);
   });
 
@@ -163,7 +163,7 @@ describe('Deduplication', () => {
     });
     const client = new MedplumClient({ fetch });
 
-    await updateClinicalReferences(client, srcPatient, targetPatient, 'ServiceRequest');
+    await updateResourceReferences(client, srcPatient, targetPatient, 'ServiceRequest');
     const clinicalResourceUpdated = (await client.readResource('ServiceRequest', '123')) as ServiceRequest;
     expect(clinicalResourceUpdated.subject).toEqual({ reference: 'Patient/target' });
   });
