@@ -102,8 +102,7 @@
       "short": "accepted | error | completed",
       "definition": "The status of the request.",
       "comment": "",
-      "inherited": true,
-      "base": "ServiceRequest"
+      "inherited": false
     },
     {
       "name": "requestTime",

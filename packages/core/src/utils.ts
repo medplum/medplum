@@ -68,7 +68,7 @@ export function resolveId(reference: Reference | undefined): string | undefined 
 export function parseReference(reference: Reference): [ResourceType, string] | undefined;
 export function parseReference(reference: undefined): undefined;
 export function parseReference(reference: Reference | undefined): [ResourceType, string] | undefined {
-  if (reference === undefined || reference?.reference === undefined) {
+  if (reference?.reference === undefined) {
     return undefined;
   }
   const [type, id] = reference.reference.split('/');

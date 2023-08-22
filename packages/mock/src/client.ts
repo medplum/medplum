@@ -173,15 +173,14 @@ export class MockClient extends MedplumClient {
 }
 
 class MockFetchClient {
-  readonly router: FhirRouter;
-  readonly repo: MemoryRepository;
   initialized = false;
   initPromise?: Promise<void>;
 
-  constructor(router: FhirRouter, repo: MemoryRepository, readonly debug = false) {
-    this.router = router;
-    this.repo = new MemoryRepository();
-  }
+  constructor(
+    readonly router: FhirRouter,
+    readonly repo: MemoryRepository,
+    readonly debug = false
+  ) {}
 
   async mockFetch(url: string, options: any): Promise<Partial<Response>> {
     if (!this.initialized) {

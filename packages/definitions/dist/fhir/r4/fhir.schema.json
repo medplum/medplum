@@ -61915,6 +61915,10 @@
             "$ref": "#/definitions/string"
           },
           "type": "array"
+        },
+        "writeCriteria": {
+          "description": "Invariants that must be satisfied for the resource to be written.",
+          "$ref": "#/definitions/AccessPolicy_Resource_WriteCriteria"
         }
       },
       "additionalProperties": false,
@@ -62429,7 +62433,7 @@
       ]
     },
     "Agent": {
-      "description": "Contains details of long running asynchronous/background jobs.",
+      "description": "Configuration details for an instance of the Medplum agent application.",
       "properties": {
         "resourceType": {
           "description": "This is a Agent resource",
@@ -62539,6 +62543,20 @@
       "required": [
         "name"
       ]
+    },
+    "AccessPolicy_Resource_WriteCriteria": {
+      "description": "Invariants that must be satisfied for the resource to be written.",
+      "properties": {
+        "pre": {
+          "description": "Invariant to check against the state of the resource before modification.",
+          "$ref": "#/definitions/string"
+        },
+        "post": {
+          "description": "Invariant to check against the state of the resource with modifications tentatively applied.",
+          "$ref": "#/definitions/string"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

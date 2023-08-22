@@ -657,3 +657,102 @@ export const ExampleReport: DiagnosticReport = {
   result: [createReference(CreatinineObservation)],
   conclusion: 'All observations within normal limits',
 };
+
+export const KidneyLabDefinition: ObservationDefinition = {
+  resourceType: 'ObservationDefinition',
+  category: [
+    {
+      coding: [
+        {
+          system: 'https://foomedical.com/observationCategory',
+          code: 'Nephrology',
+        },
+      ],
+    },
+  ],
+  code: {
+    coding: [
+      {
+        system: 'https://loinc.org',
+        code: '14959-1',
+        display: 'Microalbumin/Creat Ur',
+      },
+    ],
+    text: 'Albumin/Creatinine, Urine',
+  },
+  permittedDataType: ['Quantity'],
+  quantitativeDetails: {
+    unit: {
+      coding: [
+        {
+          code: 'mg/g{creat}',
+          display: 'mg/g',
+          system: 'http://unitsofmeasure.org',
+        },
+      ],
+      text: 'mg/g',
+    },
+    decimalPrecision: 0,
+  },
+  qualifiedInterval: [
+    {
+      condition: 'Roche range',
+      category: 'absolute',
+      range: {
+        low: {
+          value: 29,
+          unit: 'mg/g',
+          system: 'http://unitsofmeasure.org',
+        },
+        high: {
+          value: 226,
+          unit: 'mg/g',
+          system: 'http://unitsofmeasure.org',
+        },
+      },
+    },
+    {
+      condition: 'Normal',
+      category: 'reference',
+      range: {
+        low: {
+          value: 0,
+          unit: 'mg/dL',
+          system: 'http://unitsofmeasure.org',
+        },
+        high: {
+          value: 29,
+          unit: 'mg/dL',
+          system: 'http://unitsofmeasure.org',
+        },
+      },
+    },
+    {
+      condition: 'Microalbuminuria',
+      category: 'reference',
+      range: {
+        low: {
+          value: 30,
+          unit: 'mg/g',
+          system: 'http://unitsofmeasure.org',
+        },
+        high: {
+          value: 299,
+          unit: 'mg/g',
+          system: 'http://unitsofmeasure.org',
+        },
+      },
+    },
+    {
+      condition: 'Clinical Albuminuria',
+      category: 'reference',
+      range: {
+        low: {
+          value: 300,
+          unit: 'mg/g',
+          system: 'http://unitsofmeasure.org',
+        },
+      },
+    },
+  ],
+};

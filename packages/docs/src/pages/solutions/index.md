@@ -30,6 +30,10 @@ Build an application that supports common pediatric patterns such as parental ac
 
 Quickly comply with CMS 9115 FHIR requirements for payors with easy to implement interfaces and turnkey solution for CARIN Blue Button and DaVinci Implementation Guides. [Learn More](/docs/compliance/cms-fhir)
 
+## Enterprise Master Patient Index (EMPI)
+
+Run and maintain an EMPI including patient identification, data accuracy/risk scoring, EHR/data integrations, and human-in-the-loop merge tooling using the FHIR data model. [Learn More](/docs/fhir-datastore/patient-deduplication)
+
 ## Interoperability Service
 
 Highly customizable internal service that supports integrations that are common in healthcare such as FHIR and Smart-on-FHIR integrations, HL7 connections, SFTP, Lab data, home health integrations, logistics providers and more. Available hosted or self-hosted. [Learn More](/products/integration)

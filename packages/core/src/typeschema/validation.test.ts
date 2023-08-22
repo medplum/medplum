@@ -33,11 +33,15 @@ describe('FHIR resource validation', () => {
 
   beforeAll(() => {
     console.log = jest.fn();
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-    loadDataTypes(readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>);
-    loadDataTypes(readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>);
+    const typesData = readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>;
+    const resourcesData = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
+    const medplumResourcesData = readJson('fhir/r4/profiles-medplum.json') as Bundle<StructureDefinition>;
+    indexStructureDefinitionBundle(typesData);
+    indexStructureDefinitionBundle(resourcesData);
+    indexStructureDefinitionBundle(medplumResourcesData);
+    loadDataTypes(typesData);
+    loadDataTypes(resourcesData);
+    loadDataTypes(medplumResourcesData);
 
     observationProfile = JSON.parse(
       readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8')

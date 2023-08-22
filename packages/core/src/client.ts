@@ -2602,7 +2602,7 @@ export class MedplumClient extends EventTarget {
               url: e.url,
             },
             resource: e.options.body ? (JSON.parse(e.options.body as string) as Resource) : undefined,
-          } as BundleEntry)
+          }) as BundleEntry
       ),
     };
 
