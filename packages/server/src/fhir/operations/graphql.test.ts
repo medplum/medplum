@@ -257,7 +257,7 @@ describe('GraphQL', () => {
     expect(res.headers['cache-control']).toBe('public, max-age=31536000');
   });
 
-  test.skip('Get __type', async () => {
+  test('Get __type', async () => {
     // https://graphql.org/learn/introspection/
     const res = await request(app)
       .post('/fhir/R4/$graphql')
