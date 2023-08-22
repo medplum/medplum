@@ -272,7 +272,7 @@ describe('GraphQL', () => {
         }`,
       });
     expect(res.status).toBe(200);
-    expect(res.headers['cache-control']).toBe('public, max-age=31536000');
+    expect(res.headers['cache-control']).toBe('no-store, no-cache, must-revalidate');
   });
 
   test('Read by ID', async () => {
