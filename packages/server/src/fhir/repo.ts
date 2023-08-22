@@ -989,7 +989,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    */
   private addProjectFilter(builder: SelectQuery): void {
     if (this.context.project) {
-      builder.where('compartments', Operator.ARRAY_CONTAINS, [this.context.project], 'UUID[]');
+      builder.where('compartments', Operator.ARRAY_CONTAINS, this.context.project, 'UUID[]');
     }
   }
 
@@ -1011,7 +1011,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         if (policyCompartmentId) {
           // Deprecated - to be removed
           // Add compartment restriction for the access policy.
-          expressions.push(new Condition('compartments', Operator.ARRAY_CONTAINS, [policyCompartmentId], 'UUID[]'));
+          expressions.push(new Condition('compartments', Operator.ARRAY_CONTAINS, policyCompartmentId, 'UUID[]'));
         } else if (policy.criteria) {
           // Add subquery for access policy criteria.
           const searchRequest = parseCriteriaAsSearchRequest(policy.criteria);

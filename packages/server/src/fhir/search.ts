@@ -35,13 +35,23 @@ import {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
-import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { getLookupTable, Repository } from './repo';
-import { Column, Condition, Conjunction, Disjunction, Expression, Negation, Operator, SelectQuery } from './sql';
+import {
+  ArraySubquery,
+  Column,
+  Condition,
+  Conjunction,
+  Disjunction,
+  Expression,
+  Negation,
+  Operator,
+  SelectQuery,
+} from './sql';
 import { getSearchParameter } from './structure';
+import validator from 'validator';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
@@ -459,7 +469,7 @@ export function buildSearchExpression(selectQuery: SelectQuery, searchRequest: S
   const expressions: Expression[] = [];
   if (searchRequest.filters) {
     for (const filter of searchRequest.filters) {
-      const expr = buildSearchFilterExpression(selectQuery, searchRequest, filter);
+      const expr = buildSearchFilterExpression(selectQuery, searchRequest.resourceType, filter);
       if (expr) {
         expressions.push(expr);
       }
@@ -477,25 +487,24 @@ export function buildSearchExpression(selectQuery: SelectQuery, searchRequest: S
 /**
  * Builds a single search filter as "WHERE" clause to the query builder.
  * @param selectQuery The select query builder.
- * @param searchRequest The search request.
+ * @param resourceType The type of resources requested.
  * @param filter The search filter.
  * @returns The search query where expression
  */
 function buildSearchFilterExpression(
   selectQuery: SelectQuery,
-  searchRequest: SearchRequest,
+  resourceType: ResourceType,
   filter: Filter
 ): Expression | undefined {
   if (typeof filter.value !== 'string') {
     throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
   }
 
-  const specialParamExpression = trySpecialSearchParameter(selectQuery, searchRequest, filter);
+  const specialParamExpression = trySpecialSearchParameter(selectQuery, resourceType, filter);
   if (specialParamExpression) {
     return specialParamExpression;
   }
 
-  const resourceType = searchRequest.resourceType;
   let param = getSearchParameter(resourceType, filter.code);
   if (!param?.code) {
     throw new OperationOutcomeError(badRequest(`Unknown search parameter: ${filter.code}`));
@@ -552,83 +561,68 @@ function buildNormalSearchFilterExpression(resourceType: string, param: SearchPa
  *
  * See: https://www.hl7.org/fhir/search.html#all
  * @param selectQuery The select query builder.
- * @param searchRequest The overall search request.
+ * @param resourceType The type of resources requested.
  * @param filter The search filter.
  * @returns True if the search parameter is a special code.
  */
 function trySpecialSearchParameter(
   selectQuery: SelectQuery,
-  searchRequest: SearchRequest,
+  resourceType: ResourceType,
   filter: Filter
 ): Expression | undefined {
-  const resourceType = searchRequest.resourceType;
-  const code = filter.code;
-
-  if (code === '_id') {
-    return buildIdSearchFilter(resourceType, { columnName: 'id', type: SearchParameterType.UUID }, filter);
+  switch (filter.code) {
+    case '_id':
+      return buildIdSearchFilter(resourceType, { columnName: 'id', type: SearchParameterType.UUID }, filter);
+    case '_lastUpdated':
+      return buildDateSearchFilter({ type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
+    case '_compartment':
+    case '_project':
+      return buildIdSearchFilter(
+        resourceType,
+        { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
+        filter
+      );
+    case '_filter':
+      return buildFilterParameterExpression(selectQuery, resourceType, parseFilterParameter(filter.value));
+    default:
+      return undefined;
   }
-
-  if (code === '_lastUpdated') {
-    return buildDateSearchFilter({ type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
-  }
-
-  if (code === '_compartment' || code === '_project') {
-    return buildIdSearchFilter(
-      resourceType,
-      { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
-      filter
-    );
-  }
-
-  if (code === '_filter') {
-    return buildFilterParameterExpression(selectQuery, searchRequest, parseFilterParameter(filter.value));
-  }
-
-  return undefined;
 }
 
 function buildFilterParameterExpression(
   selectQuery: SelectQuery,
-  searchRequest: SearchRequest,
+  resourceType: ResourceType,
   filterExpression: FhirFilterExpression
 ): Expression {
   if (filterExpression instanceof FhirFilterNegation) {
-    return buildFilterParameterNegation(selectQuery, searchRequest, filterExpression);
+    return new Negation(buildFilterParameterExpression(selectQuery, resourceType, filterExpression.child));
   } else if (filterExpression instanceof FhirFilterConnective) {
-    return buildFilterParameterConnective(selectQuery, searchRequest, filterExpression);
+    return buildFilterParameterConnective(selectQuery, resourceType, filterExpression);
   } else if (filterExpression instanceof FhirFilterComparison) {
-    return buildFilterParameterComparison(selectQuery, searchRequest, filterExpression);
+    return buildFilterParameterComparison(selectQuery, resourceType, filterExpression);
   } else {
     throw new OperationOutcomeError(badRequest('Unknown filter expression type'));
   }
 }
 
-function buildFilterParameterNegation(
-  selectQuery: SelectQuery,
-  searchRequest: SearchRequest,
-  filterNegation: FhirFilterNegation
-): Expression {
-  return new Negation(buildFilterParameterExpression(selectQuery, searchRequest, filterNegation.child));
-}
-
 function buildFilterParameterConnective(
   selectQuery: SelectQuery,
-  searchRequest: SearchRequest,
+  resourceType: ResourceType,
   filterConnective: FhirFilterConnective
 ): Expression {
   const expressions = [
-    buildFilterParameterExpression(selectQuery, searchRequest, filterConnective.left),
-    buildFilterParameterExpression(selectQuery, searchRequest, filterConnective.right),
+    buildFilterParameterExpression(selectQuery, resourceType, filterConnective.left),
+    buildFilterParameterExpression(selectQuery, resourceType, filterConnective.right),
   ];
   return filterConnective.keyword === 'and' ? new Conjunction(expressions) : new Disjunction(expressions);
 }
 
 function buildFilterParameterComparison(
   selectQuery: SelectQuery,
-  searchRequest: SearchRequest,
+  resourceType: ResourceType,
   filterComparison: FhirFilterComparison
 ): Expression {
-  return buildSearchFilterExpression(selectQuery, searchRequest, {
+  return buildSearchFilterExpression(selectQuery, resourceType, {
     code: filterComparison.path,
     operator: filterComparison.operator as FhirOperator,
     value: filterComparison.value,
@@ -642,13 +636,19 @@ function buildFilterParameterComparison(
  * @returns The select query condition.
  */
 function buildStringSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
-  if (details.array) {
-    return new Condition(details.columnName, Operator.ARRAY_CONTAINS, filter.value, details.type + '[]');
-  }
+  let expression: Expression;
   if (filter.operator === FhirOperator.EXACT) {
-    return new Condition(details.columnName, Operator.EQUALS, filter.value);
+    expression = new Condition(details.columnName, Operator.EQUALS, filter.value);
+  } else if (filter.operator === FhirOperator.CONTAINS) {
+    expression = new Condition(details.columnName, Operator.LIKE, `$${filter.value}%`);
+  } else {
+    expression = new Condition(details.columnName, Operator.LIKE, `${filter.value}%`);
   }
-  return new Condition(details.columnName, Operator.LIKE, '%' + filter.value + '%');
+
+  if (details.array) {
+    expression = new ArraySubquery(details.columnName, expression);
+  }
+  return expression;
 }
 
 /**
@@ -660,26 +660,24 @@ function buildStringSearchFilter(details: SearchParameterDetails, filter: Filter
  */
 function buildIdSearchFilter(resourceType: string, details: SearchParameterDetails, filter: Filter): Expression {
   const column = new Column(resourceType, details.columnName);
-  const expressions = [];
-  for (const valueStr of filter.value.split(',')) {
-    let value: string | boolean = valueStr;
-    if (valueStr.includes('/')) {
-      value = valueStr.split('/').pop() as string;
-    }
-    if (!validator.isUUID(value)) {
-      value = '00000000-0000-0000-0000-000000000000';
-    }
-    if (details.array) {
-      expressions.push(new Condition(column, Operator.ARRAY_CONTAINS, value, details.type + '[]'));
-    } else {
-      expressions.push(new Condition(column, Operator.EQUALS, value));
-    }
+  const values = filter.value
+    .split(',')
+    .map((v) => (v.includes('/') ? (v.split('/').pop() as string) : v))
+    .filter((v) => validator.isUUID(v));
+
+  let condition: Condition;
+  if (details.array) {
+    condition = new Condition(column, Operator.ARRAY_CONTAINS, values, details.type + '[]');
+  } else if (values.length > 1) {
+    condition = new Condition(column, Operator.IN, values, details.type);
+  } else {
+    condition = new Condition(column, Operator.EQUALS, values[0], details.type);
   }
-  const disjunction = new Disjunction(expressions);
+
   if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
-    return new Negation(disjunction);
+    return new Negation(condition);
   }
-  return disjunction;
+  return condition;
 }
 
 /**
@@ -691,27 +689,21 @@ function buildIdSearchFilter(resourceType: string, details: SearchParameterDetai
  */
 function buildTokenSearchFilter(resourceType: string, details: SearchParameterDetails, filter: Filter): Expression {
   const column = new Column(resourceType, details.columnName);
-  const expressions = [];
-  for (const valueStr of filter.value.split(',')) {
-    let value: string | boolean = valueStr;
-    if (details.type === SearchParameterType.BOOLEAN) {
-      value = valueStr === 'true';
-    } else if (valueStr.includes('|')) {
-      value = valueStr.split('|').pop() as string;
-    }
-    if (details.array) {
-      expressions.push(new Condition(column, Operator.ARRAY_CONTAINS, value, details.type + '[]'));
-    } else if (filter.operator === FhirOperator.CONTAINS) {
-      expressions.push(new Condition(column, Operator.LIKE, '%' + value + '%'));
-    } else {
-      expressions.push(new Condition(column, Operator.EQUALS, value));
-    }
+  const values = filter.value.split(',');
+
+  let condition: Condition;
+  if (details.array) {
+    condition = new Condition(column, Operator.ARRAY_CONTAINS, values, details.type + '[]');
+  } else if (values.length > 1) {
+    condition = new Condition(column, Operator.IN, values, details.type);
+  } else {
+    condition = new Condition(column, Operator.EQUALS, values[0], details.type);
   }
-  const disjunction = new Disjunction(expressions);
+
   if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
-    return new Negation(disjunction);
+    return new Negation(condition);
   }
-  return disjunction;
+  return condition;
 }
 
 /**
@@ -721,14 +713,11 @@ function buildTokenSearchFilter(resourceType: string, details: SearchParameterDe
  * @returns The select query condition.
  */
 function buildReferenceSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
-  const values = [];
-  for (const value of filter.value.split(',')) {
-    if (!value.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient')) {
-      values.push('Patient/' + value);
-    } else {
-      values.push(value);
-    }
-  }
+  const values = filter.value
+    .split(',')
+    .map((v) =>
+      !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
+    );
   if (details.array) {
     return new Condition(details.columnName, Operator.ARRAY_CONTAINS, values);
   }
