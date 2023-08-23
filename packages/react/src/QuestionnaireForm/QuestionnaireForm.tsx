@@ -111,9 +111,10 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }}
     >
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
-      {questionnaire && (
+
+      {questionnaire.item && (
         <QuestionnaireFormItemArray
-          items={questionnaire?.item ?? []}
+          items={questionnaire.item}
           answers={answers}
           onChange={setItems}
           renderPages={numberOfPages > 1}
@@ -140,6 +141,7 @@ interface QuestionnaireFormItemArrayProps {
   activePage?: number;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
+
 function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX.Element {
   const [responseItems, setResponseItems] = useState<QuestionnaireResponseItem[]>(
     buildInitialResponseItems(props.items)
@@ -157,7 +159,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
     props.onChange(newResponseItems);
   }
 
-  const questionForm = (props.items ?? []).map((item, index) => {
+  const questionForm = props.items.map((item, index) => {
     if (props.renderPages) {
       return (
         <Stepper.Step label={item.text} key={item.linkId}>
