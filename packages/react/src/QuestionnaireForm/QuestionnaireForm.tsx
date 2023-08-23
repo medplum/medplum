@@ -689,7 +689,6 @@ export function isQuestionEnabled(
   item: QuestionnaireItem,
   answers: Record<string, QuestionnaireResponseItemAnswer[]>
 ): boolean {
-  console.log(answers)
   if (!item.enableWhen) {
     return true;
   }
