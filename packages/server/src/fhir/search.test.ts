@@ -2848,7 +2848,7 @@ describe('FHIR Search', () => {
         {
           code: 'name',
           operator: Operator.EQUALS,
-          value: (org.name as string).slice(0, 5),
+          value: `wrongname,${(org.name as string).slice(0, 5)}`,
         },
       ],
     });
