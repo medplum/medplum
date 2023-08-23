@@ -6,7 +6,7 @@ import {
   FhirFilterConnective,
   FhirFilterExpression,
   FhirFilterNegation,
-  Operator as FhirOperator,
+  Operator,
   Filter,
   forbidden,
   formatSearchQuery,
@@ -47,7 +47,7 @@ import {
   Disjunction,
   Expression,
   Negation,
-  Operator,
+  Operator as SQL,
   SelectQuery,
 } from './sql';
 import { getSearchParameter } from './structure';
@@ -209,12 +209,12 @@ async function getExtraEntries<T extends Resource>(
 
     const includes =
       searchRequest.include
-        ?.filter((param) => !iterateOnly || param.modifier === FhirOperator.ITERATE)
+        ?.filter((param) => !iterateOnly || param.modifier === Operator.ITERATE)
         ?.map((param) => getSearchIncludeEntries(repo, param, base)) || [];
 
     const revincludes =
       searchRequest.revInclude
-        ?.filter((param) => !iterateOnly || param.modifier === FhirOperator.ITERATE)
+        ?.filter((param) => !iterateOnly || param.modifier === Operator.ITERATE)
         ?.map((param) => getSearchRevIncludeEntries(repo, param, base)) || [];
 
     const includedResources = (await Promise.all([...includes, ...revincludes])).flat();
@@ -270,7 +270,7 @@ async function getSearchIncludeEntries(
         filters: [
           {
             code: 'url',
-            operator: FhirOperator.EQUALS,
+            operator: Operator.EQUALS,
             value: canonicalReferences.join(','),
           },
         ],
@@ -325,7 +325,7 @@ async function getSearchRevIncludeEntries(
       filters: [
         {
           code: revInclude.searchParam,
-          operator: FhirOperator.EQUALS,
+          operator: Operator.EQUALS,
           value: value,
         },
       ],
@@ -510,12 +510,12 @@ function buildSearchFilterExpression(
     throw new OperationOutcomeError(badRequest(`Unknown search parameter: ${filter.code}`));
   }
 
-  if (filter.operator === FhirOperator.IDENTIFIER) {
+  if (filter.operator === Operator.IDENTIFIER) {
     param = deriveIdentifierSearchParameter(param);
     filter = {
       ...filter,
       code: param.code as string,
-      operator: FhirOperator.EQUALS,
+      operator: Operator.EQUALS,
     };
   }
 
@@ -539,8 +539,8 @@ function buildSearchFilterExpression(
  */
 function buildNormalSearchFilterExpression(resourceType: string, param: SearchParameter, filter: Filter): Expression {
   const details = getSearchParameterDetails(resourceType, param);
-  if (filter.operator === FhirOperator.MISSING) {
-    return new Condition(details.columnName, filter.value === 'true' ? Operator.EQUALS : Operator.NOT_EQUALS, null);
+  if (filter.operator === Operator.MISSING) {
+    return new Condition(details.columnName, filter.value === 'true' ? SQL.EQUALS : SQL.NOT_EQUALS, null);
   } else if (param.type === 'string') {
     return buildStringSearchFilter(details, filter.operator, filter.value.split(','));
   } else if (param.type === 'token' || param.type === 'uri') {
@@ -630,7 +630,7 @@ function buildFilterParameterComparison(
 ): Expression {
   return buildSearchFilterExpression(selectQuery, resourceType, {
     code: filterComparison.path,
-    operator: filterComparison.operator as FhirOperator,
+    operator: filterComparison.operator as Operator,
     value: filterComparison.value,
   }) as Expression;
 }
@@ -642,18 +642,14 @@ function buildFilterParameterComparison(
  * @param values The string values to search against.
  * @returns The select query condition.
  */
-function buildStringSearchFilter(
-  details: SearchParameterDetails,
-  operator: FhirOperator,
-  values: string[]
-): Expression {
+function buildStringSearchFilter(details: SearchParameterDetails, operator: Operator, values: string[]): Expression {
   const conditions = values.map((v) => {
-    if (operator === FhirOperator.EXACT) {
-      return new Condition(details.columnName, Operator.EQUALS, v);
-    } else if (operator === FhirOperator.CONTAINS) {
-      return new Condition(details.columnName, Operator.LIKE, `%${v}%`);
+    if (operator === Operator.EXACT) {
+      return new Condition(details.columnName, SQL.EQUALS, v);
+    } else if (operator === Operator.CONTAINS) {
+      return new Condition(details.columnName, SQL.LIKE, `%${v}%`);
     } else {
-      return new Condition(details.columnName, Operator.LIKE, `${v}%`);
+      return new Condition(details.columnName, SQL.LIKE, `${v}%`);
     }
   });
 
@@ -675,7 +671,7 @@ function buildStringSearchFilter(
 function buildIdSearchFilter(
   resourceType: string,
   details: SearchParameterDetails,
-  operator: FhirOperator,
+  operator: Operator,
   values: string[]
 ): Expression {
   const column = new Column(resourceType, details.columnName);
@@ -683,14 +679,14 @@ function buildIdSearchFilter(
 
   let condition: Condition;
   if (details.array) {
-    condition = new Condition(column, Operator.ARRAY_CONTAINS, values, details.type + '[]');
+    condition = new Condition(column, SQL.ARRAY_CONTAINS, values, details.type + '[]');
   } else if (values.length > 1) {
-    condition = new Condition(column, Operator.IN, values, details.type);
+    condition = new Condition(column, SQL.IN, values, details.type);
   } else {
-    condition = new Condition(column, Operator.EQUALS, values[0], details.type);
+    condition = new Condition(column, SQL.EQUALS, values[0], details.type);
   }
 
-  if (operator === FhirOperator.NOT_EQUALS || operator === FhirOperator.NOT) {
+  if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
     return new Negation(condition);
   }
   return condition;
@@ -707,21 +703,21 @@ function buildIdSearchFilter(
 function buildTokenSearchFilter(
   resourceType: string,
   details: SearchParameterDetails,
-  operator: FhirOperator,
+  operator: Operator,
   values: string[]
 ): Expression {
   const column = new Column(resourceType, details.columnName);
 
   let condition: Condition;
   if (details.array) {
-    condition = new Condition(column, Operator.ARRAY_CONTAINS, values, details.type + '[]');
+    condition = new Condition(column, SQL.ARRAY_CONTAINS, values, details.type + '[]');
   } else if (values.length > 1) {
-    condition = new Condition(column, Operator.IN, values, details.type);
+    condition = new Condition(column, SQL.IN, values, details.type);
   } else {
-    condition = new Condition(column, Operator.EQUALS, values[0], details.type);
+    condition = new Condition(column, SQL.EQUALS, values[0], details.type);
   }
 
-  if (operator === FhirOperator.NOT_EQUALS || operator === FhirOperator.NOT) {
+  if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
     return new Negation(condition);
   }
   return condition;
@@ -738,12 +734,11 @@ function buildReferenceSearchFilter(details: SearchParameterDetails, values: str
     !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
   );
   if (details.array) {
-    return new Condition(details.columnName, Operator.ARRAY_CONTAINS, values);
+    return new Condition(details.columnName, SQL.ARRAY_CONTAINS, values);
+  } else if (values.length === 1) {
+    return new Condition(details.columnName, SQL.EQUALS, values[0]);
   }
-  if (values.length === 1) {
-    return new Condition(details.columnName, Operator.EQUALS, values[0]);
-  }
-  return new Condition(details.columnName, Operator.IN, values);
+  return new Condition(details.columnName, SQL.IN, values);
 }
 
 /**
@@ -809,23 +804,23 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
  * @param fhirOperator The FHIR operator.
  * @returns The equivalent SQL operator.
  */
-function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
+function fhirOperatorToSqlOperator(fhirOperator: Operator): SQL {
   switch (fhirOperator) {
-    case FhirOperator.EQUALS:
-      return Operator.EQUALS;
-    case FhirOperator.NOT:
-    case FhirOperator.NOT_EQUALS:
-      return Operator.NOT_EQUALS;
-    case FhirOperator.GREATER_THAN:
-    case FhirOperator.STARTS_AFTER:
-      return Operator.GREATER_THAN;
-    case FhirOperator.GREATER_THAN_OR_EQUALS:
-      return Operator.GREATER_THAN_OR_EQUALS;
-    case FhirOperator.LESS_THAN:
-    case FhirOperator.ENDS_BEFORE:
-      return Operator.LESS_THAN;
-    case FhirOperator.LESS_THAN_OR_EQUALS:
-      return Operator.LESS_THAN_OR_EQUALS;
+    case Operator.EQUALS:
+      return SQL.EQUALS;
+    case Operator.NOT:
+    case Operator.NOT_EQUALS:
+      return SQL.NOT_EQUALS;
+    case Operator.GREATER_THAN:
+    case Operator.STARTS_AFTER:
+      return SQL.GREATER_THAN;
+    case Operator.GREATER_THAN_OR_EQUALS:
+      return SQL.GREATER_THAN_OR_EQUALS;
+    case Operator.LESS_THAN:
+    case Operator.ENDS_BEFORE:
+      return SQL.LESS_THAN;
+    case Operator.LESS_THAN_OR_EQUALS:
+      return SQL.LESS_THAN_OR_EQUALS;
     default:
       throw new Error(`Unknown FHIR operator: ${fhirOperator}`);
   }
