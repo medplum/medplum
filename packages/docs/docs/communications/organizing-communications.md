@@ -2,43 +2,45 @@
 
 ## Introduction
 
-In a healthcare context, messages are sent all the time and can include many sceanrios (patient to physician, physician to physician, and more), so ensuring they are well-organized is vital. This guide covers how to model and organize threads using Mepdlum.
+In a healthcare context, messages are sent all the time and can include many sceanrios (patient to physician, physician to physician, and more), so ensuring they are well-organized is vital. This guide covers how to model and organize threads using Medplum.
 
-- How to build threads
+- Representing individual messages
+- Building and structuring threads
 - How to "tag" or group threads
-- Querying for and sorting communications and threads
+- Searching for and sorting communications and threads
+
+Representing individual messages with a `Communication` resource
+Put table up here – humanize the language in the descriptions a bit
+
+## Representing Individual Messages
+
+The FHIR `Communication` resource is a representation of any message sent in a healthcare setting. This can include emails, SMS messages, phone calls and more.
+
+| Element       | Description                                                                                      | Relevant Valueset                                                                      | Example                                                   |
+| ------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| payload       | Text, attachments, or resources that are being communicated to the recipient.                    |                                                                                        | You have an appointment scheduled for 2pm.                |
+| sender        | The person or team that sent the message.                                                        |                                                                                        | Practitioner/doctor-alice-smith                           |
+| recipient     | The person or team that received the message.                                                    |                                                                                        | Practitioner/id=doctor-gregory-house                      |
+| topic         | A description of the main focus of the message. Similar to the subject line of an email.         | Custom Internal Code                                                                   | In person physical with Homer Simpson on April 10th, 2023 |
+| category      | The type of message being conveyed. Like a tag that can be applied to the message.               | [SNOMED Codes](http://hl7.org/fhir/R4/valueset-medication-form-codes.html)             | [See below](#building-and-structuring-threads)            |
+| partOf        | A reference to a another resource which the `Communication` is a component.                      |                                                                                        | [See below](#how-to-"tag"-or-group-threads)               |
+| inResponseTo  | A reference to another `Communication` resource which the current one was created to respond to. |                                                                                        | Communication/previous-communication                      |
+| medium        | The technology used for this `Communication` (e.g. email, fax, phone).                           | [Participation Mode Codes](http://terminology.hl7.org/CodeSystem/v3-ParticipationMode) | email                                                     |
+| subject       | A reference to the patient or group that this `Communication` is about.                          |                                                                                        | Patient/homer-simpson                                     |
+| encounter     | A reference to a medical encounter to which this `Communication` is tightly associated.          |                                                                                        | Encounter/example-appointment                             |
+| sent/received | The time that the message was either sent or received.                                           |                                                                                        | 2023-04-10T10:00:00Z                                      |
 
 ## Building and Structuring Threads
 
-The FHIR `Communication` resource is a representation of any message sent in a healthcare setting. In the context of a thread, it is a single message that is a part of a conversation.
-
-| Element       | Description                                                                                      | DataType                                                                                                                                                                                                                                                                                                                                                                                             | Relevant Valueset                                                                      | Example                                                     |
-| ------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| payload       | Text, attachments, or resources that are being communicated to the recipient.                    | CommunicationPayload                                                                                                                                                                                                                                                                                                                                                                                 |                                                                                        | contentString: "You have an appointment scheduled for 2pm." |
-| sender        | The entity (e.g. person, practice, care team, etc.) that sent the message.                       | ([Device](/docs/api/fhir/resources/device), [Organization](/docs/api/fhir/resources/organization), [Patient](/docs/api/fhir/resources/patient), [Practitioner](/docs/api/fhir/resources/practitioner), [PractitionerRole](/docs/api/fhir/resources/practitioner-role), [RelatedPerson](/docs/api/fhir/resources/related-person), [HealthcareService](/docs/api/fhir/resources/healthcare-service))[] |                                                                                        | Practitioner/id="123"                                       |
-| recipient     | The entity (e.g. person, practice, care team, etc.) that received the message.                   | ([Device](/docs/api/fhir/resources/device), [Organization](/docs/api/fhir/resources/organization), [Patient](/docs/api/fhir/resources/patient), [Practitioner](/docs/api/fhir/resources/practitioner), [PractitionerRole](/docs/api/fhir/resources/practitioner-role), [RelatedPerson](/docs/api/fhir/resources/related-person), [HealthcareService](/docs/api/fhir/resources/healthcare-service))[] |                                                                                        | Practitioner/id="456"                                       |
-| topic         | A description of the main focus of the message. Like the subject line of an email.               | [CodeableConcept](/docs/api/fhir/resources/codeable-concept)                                                                                                                                                                                                                                                                                                                                         | Custom Internal Code                                                                   | In person physical with Homer Simpson on April 10th, 2023   |
-| category      | The type of message being conveyed. Like a tag that can be applied to the message. See Below.    | [CodeableConcept](/docs/api/fhir/resources/codeable-concept)[]                                                                                                                                                                                                                                                                                                                                       | [SNOMED Codes](http://hl7.org/fhir/R4/valueset-medication-form-codes.html)             | See below                                                   |
-| partOf        | A reference to a larger resource which the `Communication` is a component. See Below.            | Resource[]                                                                                                                                                                                                                                                                                                                                                                                           |                                                                                        | See below                                                   |
-| inResponseTo  | A reference to another `Communication` resource which the current one was created to respond to. | [Communication](/docs/api/fhir/resources/communication)[]                                                                                                                                                                                                                                                                                                                                            |                                                                                        | Communication/id="previous-communication"                   |
-| medium        | The channel used for this `Communication` (e.g. email, fax, phone).                              | [CodeableConcept](/docs/api/fhir/resources/codeable-concept)[]                                                                                                                                                                                                                                                                                                                                       | [Participation Mode Codes](http://terminology.hl7.org/CodeSystem/v3-ParticipationMode) | code: EMAILWRIT, display: Email                             |
-| subject       | A reference to the patient or group that this `Communication` is about.                          | [Patient](/docs/api/fhir/resources/patient), [Group](/docs/api/fhir/resources/group)                                                                                                                                                                                                                                                                                                                 |                                                                                        | Patient/id="789"                                            |
-| encounter     | A reference to a medical encounter to which this `Communication` is tightly associated.          | [Encounter](/docs/api/fhir/resources/encounter)                                                                                                                                                                                                                                                                                                                                                      |                                                                                        | Encounter/id="example-appointment"                          |
-| sent/received | The time that the message was either sent or received.                                           | string                                                                                                                                                                                                                                                                                                                                                                                               |                                                                                        | "2023-04-10T10:00:00Z"                                      |
-
 When building a thread, it is important to consider what type of resource should be used to group the thread together. Depending on the circumstances it makes sense to use different resources.
 
-If the messages are between a patient and a provider, you should use an `Encounter` resource to group the thread. For more details, please see the [Representing Asynchronous Encounters](https://www.medplum.com/docs/communications/async-encounters) docs.
+If the messages are between a patient and a provider, you should use an `Encounter` resource to group the thread. An `Encounter` can be any interaction between a patient and provider, including various types of messages, so it is important that these are classified correctly. For more details, please see the [Representing Asynchronous Encounters](https://www.medplum.com/docs/communications/async-encounters) docs.
 
-However, when a patient is not involved, threads should be grouped using the `Communication` resource with the `partOf` field. A `Communication` will be both a parent resource to represent the thread and a child resource to represent each individual message.
+However, when a patient is not involved, threads should be grouped using the `Communication` resource. A thread will have a two-level hierarchy – one parent `Communication` resource that represents the thread itself, and child `Communication` resources that represent each individual message. The child resources should be linked to the parent using the `partOf` field, which represents a parent resource of which the current `Communication` is a component. This allows you to refer to the parent resource to create a thread where each message is linked to the parent as a common reference point.
 
-The `Communication.partOf` element represents a larger resource of which the current `Communication` is a component. It can reference any resource type, allowing us to refer to other `Communication` resources to create a thread. The `partOf` element creates a thread in which each message is linked to a single parent message.
+In these threads, the parent resource needs to be distinguished from the children. Since the parent resource will not have any content or refer to a parent of its own, this can be done by omitting a message in the `payload` field and a resource reference in the `partOf` field.
 
-When using the `partOf` field to create a thread, the parent `Communication` resource needs to be distinguished from the children. This is done simply by omitting a message in the `payload` field and a resource referenced in the `partOf` field, while all children will have both of these fields.
-
-Once we have the parent resource, each message in the thread will create a new `Communication` resource, setting `partOf` to reference the parent `Communication`. As more messages are sent, each one will continue to point to the parent, creating a thread with a common reference point.
-
-To help organize threads, it is also useful to use the `topic` field. The topic field is like the subject line of an email, and should be given the same level of specificity as you would provide a subject line.
+Additionally, to help organize threads, it is useful to use add a `topic` element to give the thread a subject. Similar to the subject line of an email, the `topic` should be given a high level of specificity to help distinguish the thread. The `topic` should be assigned to both the parent and children `Communication` resources in any thread.
 
 :::Note
 
@@ -155,10 +157,11 @@ Because of how specific the `topic` field should be, it is best to use a custom 
 
 ```mermaid
 
-flowChart TD
-  A[Parent Communication] --> B(The specimen for your patient, Homer Simpson, has been received.)
-  A --> C(Will the results be ready by the end of the week?)
-  A --> D(Yes, we will have them to you by Thursday)
+flowchart BT
+  B(The specimen for you patient, Homer Simpson, has been received.) -->|partOf| A[Homer Simpson April 10th lab tests]
+  C(Will the results be ready by the end of the week?) -->|partOf| A
+  D(Yes, we will have them to you by Thursday.) -->|partOf| A
+  D -->|inResponseTo| C -->|inResponseTo| B
 
 
 ```
@@ -167,15 +170,17 @@ flowChart TD
 
 It can be useful to "tag", or group, threads so that a user can easily reference or interpret a certain type of message at a high level. For example, if there is a thread about a task that needs to be performed by a nurse, it can be tagged as such.
 
-Tagging can be effectively done using the `Communication.category` element, which represents the type of message being conveyed. It allows messages to be classified into different types or groups based on specifications like purpose, nature, or intended audience. It is also important to note that the `category` field is an array, so each `Communication` can have multiple tags.
+Tagging can be effectively done using the `Communication.category` element, which represents the type of message being conveyed. It allows messages to be classified into different types or groups based on specifications like purpose, nature, or intended audience. When assigning a `category` to a thread, it should be included on both the parent and child `Communication` resources. It is also important to note that the `category` field is an array, so each `Communication` can have multiple tags.
 
-:::Note
+Here are some common types of tags that can be used for grouping:
 
-When classifying the `Communication.category` field, it is best to use SNOMED codes. Specifically, for for practitioner roles and clinical specialty, SNOMED provides the [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) valueset.
+| Type of Tag         | Codesystem                                                                                                                                          |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Level of credential | [SNOMED Care Team Member Function valueset](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion)                              |
+| Clinical specialty  | [SNOMED Care Team Member Function valueset](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion)                              |
+| Product offering    | [SNOMED](http://hl7.org/fhir/R4/valueset-medication-form-codes.html), [LOINC](https://www.medplum.com/docs/careplans/loinc), Custom Internal Coding |
 
-:::
-
-<details><summary>Examples of Different Categories</summary>
+<details><summary>Example of Multiple Categories</summary>
 
 ```ts
 {
@@ -227,7 +232,7 @@ Alternatively, you can have threads that have just one `category` that combines 
 
 ## Searching for and Sorting `Communication` Resources
 
-`Communication` resources are easily searchable using the [Medplum Client SDK](/docs/sdk/classes/MedplumClient) `searchResources` method. Throughout this section, we will use an example of threading using `partOf` to reference a single parent `Communication` resource.
+### Searching for All Threads in a System
 
 When searching for threads, we need to differentiate between threads that are grouped by the `Communication` resource and those that are grouped with the `Encounter` resource. We'll begin with threads grouped by `Communication`.
 
@@ -239,15 +244,65 @@ To search for all threads in the system, we need to find each parent `Communicat
 // Search for a Communication-grouped thread
 await medplum.searchResources('Communication', {
   'part-of:missing': true,
-  _revinclude: 'Communication:part-of',
 });
 ```
 
 ```curl
-curl https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&_revinclude=Communication:part-of
+curl https://api.medplum.com/fhir/R4/Communication?part-of:missing=true
 ```
 
-In this example, we use the `:missing` search modifier to search for any `Communication` resources that do not reference another resource in their `partOf` field. However, this would only provide us with the parent `Communication` and none of the actual messages that are part of the thread. In order to get those messages, we use the `_revinclude` search paramter. This parameter adds any `Communication` resources whose `partOf` field references one of the original search results. If you only need the parent resource, you can omit the `_revinclude` field.
+In this example, we use the `:missing` search modifier to search for any `Communication` resources that do not reference another resource in their `partOf` field. This gives us the parent `Communication` of all threads in the system.
+
+### Searching For All Messages in a Thread
+
+Once you have found the thread you want, you may want to retrieve the messages from only that specific thread, in order. In the above example, though we retrieved the messages with each thread, there is no guarantee that they will be in the correct order. You can also filter down results so that you only get the messages specific to the thread you want.
+
+Again, we will separate how to search for `Communication` and `Encounter` grouped threads, beginning with `Communication`.
+
+**Example: **
+
+```ts
+/*
+curl https://api.medplum.com/fhir/R4/Communication?part-of=Communication/example-communication&_sort=sent
+*/
+
+await medplum.searchResources('Communication', {
+  `part-of`: 'Communication/example-communication',
+  _sort: 'sent'
+});
+
+```
+
+In the above example, we search for `Communication` resources that reference our parent in the `partOf` field and sort by the `sent` field. For more details on using the search functionality, see the [Search docs](https://www.medplum.com/docs/search/basic-search).
+
+To search for specific threads that are grouped by `Encounter`:
+
+```ts
+/*
+curl https://api.medplum.com/fhir/R4/Communication?encounter=Encounter/example-encounter&_include=Communication:encounter&_sort=sent
+*/
+
+await medplum.searchResources('Communication', {
+  encounter: 'Encounter/example-encounter',
+  _include: 'Communication:encounter',
+  _sort: 'sent',
+});
+```
+
+In this example, we search for any `Communication` resource that references our `Encounter` in the `encounter` field. We also `_include` that `Encounter`, though you can leave this out if you only want to return the messages themselves. We then use `_sort` to get them in the order they were sent.
+
+### Putting the It All Together
+
+To put this all together, we can also search for all threads and return their messages with them.
+
+```ts
+await medplum.searchResources('Communication', {
+  'part-of:missing': true,
+  _revinclude: 'Communication:part-of',
+});
+```
+
+Here we are using the same initial search to return all of the parent threads in the system. However, we include the `_revinclude` parameter, allowing us to also search for all `Communication` resources that reference one of our search results in the `partOf` field. This allows us to return all of the child messages as well.
 
 Searching for threads grouped by `Encounter` is a little different. Since there is no link from the parent `Encounter` to the child messages, we still search for `Communication` resources at the top level.
 
@@ -265,54 +320,22 @@ await medplum.searchResources('Communication', {
 
 In this example, we set the `encounter:missing` parameter to false, to include only `Communication` resources that reference an encounter. We then use `_include` to include those `Encounter` resources in our search results. Note that this search will include all of the messages as well as the parent resources.
 
-Once you have found the thread you want, you may want to retrieve the messages from only that specific thread, in order. In the above example, though we retrieved the messages with each thread, there is no guarantee that they will be in the correct order. You can also filter down results so that you only get the messages specific to the thread you want.
-
-Again, we will separate how to search for `Communication` and `Encounter` grouped threads, beginning with `Communication`.
-
-**Example: **
+You can also filter down your searches further by including additional parameters.
 
 ```ts
-/*
-curl https://api.medplum.com/fhir/R4/Communication?part-of=Communication/123&_sort=sent
-*/
-
-const communication = { resourceType: 'Communication', id: '123' };
 await medplum.searchResources('Communication', {
-  `part-of`: 'Communication/123',
-  _sort: 'sent'
+  'part-of:missing': true,
+  _revinclude: 'Communication:part-of',
+  subject: 'Patient/example-patient',
 });
 
 // OR
 
-await medplum.searchResources('Communication', {
-  'part-of': getReferenceString(communication),
-  _sort: 'sent'
+await medplum.searchResource('Communication', {
+  'encounter:missing': false,
+  _include: 'Communication:encounter',
+  subject: 'Patient/example-patient',
 });
 ```
 
-In the above example, we search for `Communication` resources that reference our thread in the `partOf` field. This can be done by passing in the reference string or, if you have the `Communication` resource for the thread you want, by using the `getReferenceString` utility method to help construct your query. In addition, we use the `_sort` parameter to sort the results based on the `sent` element. This element represents the time that a `Communication` was sent. You could also use the `received` element, which represents the time that a `Communication` was received. For more details on using the search functionality, see the [Search docs](/docs/search/index).
-
-To search for specific threads that are grouped by `Encounter`:
-
-```ts
-/*
-curl https://api.medplum.com/fhir/R4/Communication?encounter=Encounter/456&_include=Communication:encounter&_sort=sent
-*/
-
-const encounter = { resourceType: 'Encounter', id: '456' };
-await medplum.searchResources('Communication', {
-  encounter: 'Encounter/456',
-  _include: 'Communication:encounter',
-  _sort: 'sent',
-});
-
-// OR
-
-await medplum.searchResources('Communication', {
-  encounter: getReferenceString(encounter),
-  _include: 'Communication:encounter',
-  _sort: 'sent',
-});
-```
-
-In this example, we search for any `Communication` resource that references our `Encounter` in the `encounter` field. We also `_include` that `Encounter`, though you can leave this out if you only want to return the messages themselves. We then use `_sort` to get them in the order they were sent.
+Here we build upon our search by adding the `subject` parameter to search for all threads that are related to a a given patient. For other items to filter your search on, see the [`Communication` Search Parameters](https://www.medplum.com/docs/api/fhir/resources/communication#search-parameters).
