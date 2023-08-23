@@ -295,3 +295,7 @@ See [Access Control](/docs/auth/access-control) for more details.
 Creating Practitioners via API is an advanced scenario and should be done with extreme caution. If you are planning to do programmatic creation of Practitioners, we highly recommend trying it in a test environment first and ensuring that the logins and associated access controls behave as expected.
 
 :::
+
+## Promote Existing User to Admin
+
+To promote an existing user to an admin navigate to the [Project Admin panel](https://app.medplum.com/admin/project) and go to the Users tab. From here, select the `User` you want to make an admin.
