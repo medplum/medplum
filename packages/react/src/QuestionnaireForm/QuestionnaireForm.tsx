@@ -64,7 +64,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const questionnaire = useResource(props.questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
-  const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer>>({});
+  const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer[]>>({});
   const [activePage, setActivePage] = useState(0);
 
   const numberOfPages = getNumberOfPages(questionnaire?.item ?? []);
@@ -150,7 +150,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
 interface QuestionnaireFormItemArrayProps {
   items: QuestionnaireItem[];
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   renderPages?: boolean;
   activePage?: number;
   handleRepeatableItem?: (currentItem: QuestionnaireItem) => void;
@@ -219,7 +219,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 interface QuestionnaireFormArrayContentProps {
   item: QuestionnaireItem;
   index: number;
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   responseItems: QuestionnaireResponseItem[];
   setResponseItem: (responseId: string, newResponseItem: QuestionnaireResponseItem) => void;
 }
@@ -286,7 +286,7 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
 
 export interface QuestionnaireRepeatWrapperProps {
   item: QuestionnaireItem;
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   responseItems: QuestionnaireResponseItem[];
   onChange: (newResponseItem: QuestionnaireResponseItem, index?: number) => void;
 }
@@ -324,7 +324,7 @@ export function QuestionnaireRepeatWrapper(props: QuestionnaireRepeatWrapperProp
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
   index: number;
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   responseItems?: QuestionnaireResponseItem[];
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
@@ -687,8 +687,9 @@ function isDropDownChoice(item: QuestionnaireItem): boolean {
 
 export function isQuestionEnabled(
   item: QuestionnaireItem,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>
 ): boolean {
+  console.log(answers)
   if (!item.enableWhen) {
     return true;
   }
@@ -773,7 +774,7 @@ function addTargetTypes(item: QuestionnaireItem): string[] {
 interface RepeatableGroupProps {
   item: QuestionnaireItem;
   text: string;
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   onChange: (newResponseItem: QuestionnaireResponseItem[], index?: number) => void;
 }
 

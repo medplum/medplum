@@ -86,6 +86,97 @@ export const Groups = (): JSX.Element => (
   </Document>
 );
 
+export const HealthGorillaQuestionnaire = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'groups-example',
+        title: 'Groups Example',
+        item: [
+          {
+            linkId: 'question3',
+            text: 'Question 3',
+            type: 'string',
+            repeats: true,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'q2',
+            type: 'group',
+            text: 'The Groups',
+            item: [
+              {
+                linkId: 'q2',
+                type: 'group',
+                text: 'The Yes Group Selected',
+                enableWhen: [
+                  {
+                    question: 'question3',
+                    operator: 'exists',
+                    answerString: 'Yes',
+                  },
+                ],
+                item: [
+                  {
+                    linkId: 'question1',
+                    text: 'Question 1',
+                    type: 'string',
+                  },
+                  {
+                    linkId: 'question2',
+                    text: 'Question 2',
+                    type: 'string',
+                  },
+                ],
+              },
+              {
+                linkId: 'q3',
+                type: 'group',
+                text: 'The No Group Selected',
+                enableWhen: [
+                  {
+                    question: 'question3',
+                    operator: 'exists',
+                    answerString: 'No',
+                  },
+                ],
+                item: [
+                  {
+                    linkId: 'question1',
+                    text: 'Question 1',
+                    type: 'string',
+                  },
+                  {
+                    linkId: 'question2',
+                    text: 'Question 2',
+                    type: 'string',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
 export const PageSequence = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
