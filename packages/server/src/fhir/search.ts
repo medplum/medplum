@@ -676,16 +676,7 @@ function buildIdSearchFilter(
 ): Expression {
   const column = new Column(resourceType, details.columnName);
   values = values.map((v) => (v.includes('/') ? (v.split('/').pop() as string) : v)).filter((v) => validator.isUUID(v));
-
-  let condition: Condition;
-  if (details.array) {
-    condition = new Condition(column, SQL.ARRAY_CONTAINS, values, details.type + '[]');
-  } else if (values.length > 1) {
-    condition = new Condition(column, SQL.IN, values, details.type);
-  } else {
-    condition = new Condition(column, SQL.EQUALS, values[0], details.type);
-  }
-
+  const condition = buildEqualityCondition(details, values, column);
   if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
     return new Negation(condition);
   }
@@ -707,16 +698,7 @@ function buildTokenSearchFilter(
   values: string[]
 ): Expression {
   const column = new Column(resourceType, details.columnName);
-
-  let condition: Condition;
-  if (details.array) {
-    condition = new Condition(column, SQL.ARRAY_CONTAINS, values, details.type + '[]');
-  } else if (values.length > 1) {
-    condition = new Condition(column, SQL.IN, values, details.type);
-  } else {
-    condition = new Condition(column, SQL.EQUALS, values[0], details.type);
-  }
-
+  const condition = buildEqualityCondition(details, values, column);
   if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
     return new Negation(condition);
   }
@@ -823,5 +805,20 @@ function fhirOperatorToSqlOperator(fhirOperator: Operator): SQL {
       return SQL.LESS_THAN_OR_EQUALS;
     default:
       throw new Error(`Unknown FHIR operator: ${fhirOperator}`);
+  }
+}
+
+function buildEqualityCondition(
+  details: SearchParameterDetails,
+  values: string[],
+  column?: Column | string
+): Condition {
+  column = column ?? details.columnName;
+  if (details.array) {
+    return new Condition(column, SQL.ARRAY_CONTAINS, values, details.type + '[]');
+  } else if (values.length > 1) {
+    return new Condition(column, SQL.IN, values, details.type);
+  } else {
+    return new Condition(column, SQL.EQUALS, values[0], details.type);
   }
 }
