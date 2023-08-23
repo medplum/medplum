@@ -125,7 +125,8 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }}
     >
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
-      {questionnaire && (
+
+      {questionnaire.item && (
         <QuestionnaireFormItemArray
           items={questionnaire.item ?? []}
           answers={answers}
