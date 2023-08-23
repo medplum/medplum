@@ -506,6 +506,26 @@ export class SelectQuery extends BaseQuery {
   }
 }
 
+export class ArraySubquery implements Expression {
+  private filter: Expression;
+  private columnName: string;
+
+  constructor(columnName: string, filter: Expression) {
+    this.filter = filter;
+    this.columnName = columnName;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append('EXISTS(SELECT 1 FROM unnest(');
+    sql.appendIdentifier(this.columnName);
+    sql.append(') AS ');
+    sql.appendIdentifier(this.columnName);
+    sql.append(' WHERE ');
+    this.filter.buildSql(sql);
+    sql.append(')');
+  }
+}
+
 export class InsertQuery extends BaseQuery {
   private readonly values: Record<string, any>[];
   private merge?: boolean;

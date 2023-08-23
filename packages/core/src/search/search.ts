@@ -22,8 +22,6 @@ export interface Filter {
   code: string;
   operator: Operator;
   value: string;
-  unitSystem?: string;
-  unitCode?: string;
 }
 
 export interface SortRule {
@@ -173,7 +171,7 @@ export function parseCriteriaAsSearchRequest(criteria: string): SearchRequest {
 
 function parseSearchImpl<T extends Resource = Resource>(
   resourceType: T['resourceType'],
-  query: [string, string][] | IterableIterator<[string, string]>
+  query: Iterable<[string, string]>
 ): SearchRequest<T> {
   const searchRequest: SearchRequest<T> = {
     resourceType,
@@ -301,6 +299,7 @@ function parseParameter(
   switch (searchParam.type) {
     case 'number':
     case 'date':
+    case 'quantity':
       parsePrefixType(searchRequest, searchParam, value);
       break;
     case 'reference':
@@ -308,9 +307,6 @@ function parseParameter(
     case 'token':
     case 'uri':
       parseModifierType(searchRequest, searchParam, modifier, value);
-      break;
-    case 'quantity':
-      parseQuantity(searchRequest, searchParam, value);
       break;
     default:
       break;
@@ -336,18 +332,6 @@ function parseModifierType(
     code: param.code as string,
     operator: parseModifier(modifier),
     value,
-  });
-}
-
-function parseQuantity(searchRequest: SearchRequest, param: SearchParameter, input: string): void {
-  const [prefixNumber, unitSystem, unitCode] = input.split('|');
-  const { operator, value } = parsePrefix(prefixNumber);
-  addFilter(searchRequest, {
-    code: param.code as string,
-    operator,
-    value,
-    unitSystem,
-    unitCode,
   });
 }
 
