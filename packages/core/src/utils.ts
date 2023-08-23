@@ -264,20 +264,20 @@ export function calculateAgeString(birthDateStr: string, endDateStr?: string): s
  */
 export function getQuestionnaireAnswers(
   response: QuestionnaireResponse
-): Record<string, QuestionnaireResponseItemAnswer> {
-  const result: Record<string, QuestionnaireResponseItemAnswer> = {};
+): Record<string, QuestionnaireResponseItemAnswer[]> {
+  const result: Record<string, QuestionnaireResponseItemAnswer[]> = {};
   buildQuestionnaireAnswerItems(response.item, result);
   return result;
 }
 
 function buildQuestionnaireAnswerItems(
   items: QuestionnaireResponseItem[] | undefined,
-  result: Record<string, QuestionnaireResponseItemAnswer>
+  result: Record<string, QuestionnaireResponseItemAnswer[]>
 ): void {
   if (items) {
     for (const item of items) {
       if (item.linkId && item.answer && item.answer.length > 0) {
-        result[item.linkId] = item.answer[0];
+        result[item.linkId] = item.answer;
       }
       buildQuestionnaireAnswerItems(item.item, result);
     }
