@@ -430,7 +430,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <TextInput
           id={name}
           name={name}
-          defaultValue={initial?.valueString}
+          defaultValue={initial?.valueString ?? matchLinkIdValues(props.answers ?? [], item)}
           onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
       );
@@ -487,7 +487,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
                     { type: 'QuestionnaireItemAnswerOption', value: option },
                     'value'
                   ) as TypedValue;
-
                   return { valueCoding: optionValue.value };
                 });
                 const responses = props.responseItems?.filter((r) => r.linkId === item.linkId) ?? [];
@@ -719,7 +718,7 @@ function buildInitialResponseItems(items: QuestionnaireItem[] | undefined): Ques
 
 function buildInitialResponseItem(item: QuestionnaireItem): QuestionnaireResponseItem {
   return {
-    id: generateId(),
+    id: item.id ?? generateId(),
     linkId: item.linkId,
     text: item.text,
     item: buildInitialResponseItems(item.item),
