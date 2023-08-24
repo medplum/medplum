@@ -86,153 +86,243 @@ export const Groups = (): JSX.Element => (
   </Document>
 );
 
-export const HealthGorillaQuestionnaire = (): JSX.Element => (
-  <Document>
-    <QuestionnaireForm
-      questionnaire={{
-        resourceType: 'Questionnaire',
-        id: 'groups-example',
-        title: 'Groups Example',
+export const HealthGorillaQuestionnaire = (): JSX.Element => {
+  const vendors: any = {
+    linkId: 'question2',
+    text: 'Vendor',
+    type: 'choice',
+    answerOption: [
+      {
+        valueCoding: {
+          code: '1',
+          display: 'HGDX LabCorp',
+          system: 'http://loinc.org',
+        },
+      },
+      {
+        valueCoding: {
+          code: '2',
+          display: 'HGDX Quest',
+          system: 'http://loinc.org',
+        },
+      },
+    ],
+    extension: [
+      {
+        url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+        valueCodeableConcept: {
+          coding: [
+            {
+              system: 'http://hl7.org/fhir/questionnaire-item-control',
+              code: 'page',
+            },
+          ],
+        },
+      },
+    ],
+  };
+
+  const group: any = {
+    id: 'the-big',
+    linkId: 'q2',
+    type: 'group',
+    text: 'The Groups',
+    item: [
+      {
+        id: 'yes-group-1',
+        linkId: 'q2',
+        type: 'group',
+        text: 'The Yes Group Selected',
+        enableWhen: [
+          {
+            question: 'question3',
+            operator: 'exists',
+            answerString: 'LA10573-6',
+          },
+        ],
         item: [
           {
-            linkId: 'question3',
-            text: 'Question 3',
-            type: 'choice',
-            repeats: true,
-            answerOption: [
-              {
-                valueCoding: {
-                  code: 'LA10533-0',
-                  display: 'Blood Clots',
-                  system: 'http://loinc.org',
-                },
-              },
-              {
-                valueCoding: {
-                  code: 'LA10572-8',
-                  display: '-- Blood Clot in Leg',
-                  system: 'http://loinc.org',
-                },
-              },
-              {
-                valueCoding: {
-                  code: 'LA10573-6',
-                  display: '-- Blood Clot in Lungs',
-                  system: 'http://loinc.org',
-                },
-              },
-              {
-                valueCoding: {
-                  code: 'LA10524-9',
-                  display: 'Cancer',
-                  system: 'http://loinc.org',
-                },
-              },
-              {
-                valueCoding: {
-                  code: 'LA10549-6',
-                  display: '-- Bone Cancer',
-                  system: 'http://loinc.org',
-                },
-              },
-              {
-                valueCoding: {
-                  code: 'LA10536-3',
-                  display: '-- Breast Cancer',
-                  system: 'http://loinc.org',
-                },
-              },
-            ],
+            id: 'yes-1',
+            linkId: 'yes1',
+            text: 'Question 1',
+            type: 'string',
             extension: [
               {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'page',
-                    },
-                  ],
-                },
-              },
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'drop-down',
-                      display: 'Drop down',
-                    },
-                  ],
-                  text: 'Drop down',
-                },
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
+                valueString: 'match-values',
               },
             ],
           },
           {
-            linkId: 'q2',
-            type: 'group',
-            text: 'The Groups',
-            item: [
+            id: 'yes-2',
+            linkId: 'yes2',
+            text: 'Question 2',
+            type: 'string',
+            extension: [
               {
-                linkId: 'q2',
-                type: 'group',
-                text: 'The Yes Group Selected',
-                enableWhen: [
-                  {
-                    question: 'question3',
-                    operator: 'exists',
-                    answerString: 'LA10573-6',
-                  },
-                ],
-                item: [
-                  {
-                    linkId: 'question1',
-                    text: 'Question 1',
-                    type: 'string',
-                  },
-                  {
-                    linkId: 'question2',
-                    text: 'Question 2',
-                    type: 'string',
-                  },
-                ],
-              },
-              {
-                linkId: 'q3',
-                type: 'group',
-                text: 'The No Group Selected',
-                enableWhen: [
-                  {
-                    question: 'question3',
-                    operator: 'exists',
-                    answerString: 'LA10533-0',
-                  },
-                ],
-                item: [
-                  {
-                    linkId: 'question1',
-                    text: 'Question 1',
-                    type: 'string',
-                  },
-                  {
-                    linkId: 'question2',
-                    text: 'Question 2',
-                    type: 'string',
-                  },
-                ],
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
+                valueString: 'match-values',
               },
             ],
           },
         ],
-      }}
-      onSubmit={(formData: any) => {
-        console.log('submit', formData);
-      }}
-    />
-  </Document>
-);
+      },
+      {
+        id: 'no-group-1',
+        linkId: 'q3',
+        type: 'group',
+        text: 'The No Group Selected',
+        enableWhen: [
+          {
+            question: 'question3',
+            operator: 'exists',
+            answerString: 'LA10533-0',
+          },
+        ],
+        item: [
+          {
+            id: 'no-1',
+            linkId: 'no1',
+            text: 'Question 1',
+            type: 'string',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
+                valueString: 'match-values',
+              },
+            ],
+          },
+          {
+            id: 'no-2',
+            linkId: 'no2',
+            text: 'Question 2',
+            type: 'string',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
+                valueString: 'match-values',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  return (
+    <Document>
+      <QuestionnaireForm
+        questionnaire={{
+          resourceType: 'Questionnaire',
+          id: 'groups-example',
+          title: 'Groups Example',
+          item: [
+            {
+              linkId: 'patient-name',
+              text: 'Patient Name',
+              type: 'string',
+              extension: [
+                {
+                  url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                  valueCodeableConcept: {
+                    coding: [
+                      {
+                        system: 'http://hl7.org/fhir/questionnaire-item-control',
+                        code: 'page',
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+            vendors,
+            {
+              linkId: 'question3',
+              text: 'Question 3',
+              type: 'choice',
+              repeats: true,
+              answerOption: [
+                {
+                  valueCoding: {
+                    code: 'LA10533-0',
+                    display: 'Blood Clots',
+                    system: 'http://loinc.org',
+                  },
+                },
+                {
+                  valueCoding: {
+                    code: 'LA10572-8',
+                    display: '-- Blood Clot in Leg',
+                    system: 'http://loinc.org',
+                  },
+                },
+                {
+                  valueCoding: {
+                    code: 'LA10573-6',
+                    display: '-- Blood Clot in Lungs',
+                    system: 'http://loinc.org',
+                  },
+                },
+                {
+                  valueCoding: {
+                    code: 'LA10524-9',
+                    display: 'Cancer',
+                    system: 'http://loinc.org',
+                  },
+                },
+                {
+                  valueCoding: {
+                    code: 'LA10549-6',
+                    display: '-- Bone Cancer',
+                    system: 'http://loinc.org',
+                  },
+                },
+                {
+                  valueCoding: {
+                    code: 'LA10536-3',
+                    display: '-- Breast Cancer',
+                    system: 'http://loinc.org',
+                  },
+                },
+              ],
+              extension: [
+                {
+                  url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                  valueCodeableConcept: {
+                    coding: [
+                      {
+                        system: 'http://hl7.org/fhir/questionnaire-item-control',
+                        code: 'page',
+                      },
+                    ],
+                  },
+                },
+                {
+                  url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                  valueCodeableConcept: {
+                    coding: [
+                      {
+                        system: 'http://hl7.org/fhir/questionnaire-item-control',
+                        code: 'drop-down',
+                        display: 'Drop down',
+                      },
+                    ],
+                    text: 'Drop down',
+                  },
+                },
+              ],
+            },
+            group,
+            group,
+          ],
+        }}
+        onSubmit={(formData: any) => {
+          console.log('submit', formData);
+        }}
+      />
+    </Document>
+  );
+};
 
 export const PageSequence = (): JSX.Element => (
   <Document>
