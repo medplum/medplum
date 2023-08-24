@@ -241,46 +241,14 @@
       "depth": 2,
       "types": [
         {
-          "datatype": "BackboneElement"
+          "datatype": "string"
         }
       ],
       "path": "AccessPolicy.resource.writeCriteria",
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "Invariants that must be satisfied for the resource to be written.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "pre",
-      "depth": 3,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "AccessPolicy.resource.writeCriteria.pre",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "Invariant to check against the state of the resource before modification.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "post",
-      "depth": 3,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "AccessPolicy.resource.writeCriteria.post",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "Invariant to check against the state of the resource with modifications tentatively applied.",
+      "definition": "Invariant that must be satisfied for the resource to be written.  Can include %before and %after placeholders to refer to the resource before and after the updates are applied.",
       "comment": "",
       "inherited": false
     },

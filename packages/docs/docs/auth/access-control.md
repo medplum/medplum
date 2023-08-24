@@ -119,6 +119,10 @@ The following policy uses a FHIR Search Query to grant access only to Coverage w
 
 Note that in this implementation access policy, only the `Coverage` resources that have `payor=Organization/123` will be visible.
 
+Criteria for writes to a resource can also be specified with a [FHIRPath expression][fhirpath] in the `AccessPolicy.resource.writeCriteria` field.
+
+[fhirpath]: https://hl7.org/fhirpath/#expressions
+
 ### Parameterized Policies (Beta)
 
 :::caution
