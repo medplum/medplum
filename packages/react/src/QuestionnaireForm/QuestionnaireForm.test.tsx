@@ -1359,5 +1359,94 @@ describe('QuestionnaireForm', () => {
         )
       ).toBe(false);
     });
+
+    test('enableBehavior=any, enableWhen `=` operator for `valueCoding`', () => {
+      const enableWhen = [
+        { question: 'q1', operator: '=', answerCoding: { code: 'MEDPLUM123' } },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'MEDPLUM123' } },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `!=` operator for `valueCoding`', () => {
+      const enableWhen = [
+        { question: 'q1', operator: '!=', answerCoding: { code: 'MEDPLUM123' } },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'NOT_MEDPLUM123' } },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } },
+          }
+        )
+      ).toBe(false);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'MEDPLUM123' } },
+          }
+        )
+      ).toBe(false);
+    });
   });
 });

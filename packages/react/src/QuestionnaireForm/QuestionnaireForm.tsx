@@ -34,6 +34,7 @@ import {
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
   Reference,
+  Coding,
 } from '@medplum/fhirtypes';
 import React, { ChangeEvent, useEffect, useState } from 'react';
 import { AttachmentInput } from '../AttachmentInput/AttachmentInput';
@@ -599,7 +600,7 @@ function isDropDownChoice(item: QuestionnaireItem): boolean {
 }
 
 /**
- * This method is not called `areSameType` because it only checks if the two value's types are not explicitly different and allows one value to be `undefined`.
+ * This function is not called `areSameType` because it only checks if the two value's types are not explicitly different and allows one value to be `undefined`.
  * @param value1 A value or `undefined`.
  * @param value2 Another value to compare `value1`'s type to.
  * @returns If the two values are NOT different types. It returns `true` if both are the same type or if `value1` is `undefined`.
@@ -650,12 +651,19 @@ export function isQuestionEnabled(
     } else {
       switch (enableWhen.operator) {
         case '=':
-          // if actualAnswer is === to `expectedTruthyAnswer`
-          match = deepEquals(actualAnswer, expectedAnswer);
+          if (expectedAnswer.type === 'Coding') {
+            match = !!actualAnswer && (actualAnswer.value as Coding).code === (expectedAnswer.value as Coding).code;
+          } else {
+            match = deepEquals(actualAnswer, expectedAnswer);
+          }
           break;
         case '!=':
           // if actualAnswer is !== to `expectedTruthyAnswer`
-          match = !deepEquals(actualAnswer, expectedAnswer);
+          if (expectedAnswer.type === 'Coding') {
+            match = !!actualAnswer && (actualAnswer.value as Coding).code !== (expectedAnswer.value as Coding).code;
+          } else {
+            match = !deepEquals(actualAnswer, expectedAnswer);
+          }
           break;
         case '>':
           match = !!actualAnswer && actualAnswer.value > expectedAnswer.value;
