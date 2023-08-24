@@ -8,7 +8,7 @@ Vital signs are stored as [`Observation`](/docs/api/fhir/resources/observation) 
 
 | **Element**        | **Description**                                                                                                                                                                                                                                              | **Code System**                                                                                     | **Example**                                      |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `status`           | The status of the result value. Indicates if the observation is preliminary or final, if it has been ammended/corrected, or if it has an error or been cancelled.                                                                                            | [Observation status types](http://hl7.org/fhir/R4/valueset-observation-status.html)                 | registered                                       |
+| `status`           | The status of the result value. Indicates if the observation is preliminary or final, if it has been amended/corrected, or if it has an error or been cancelled.                                                                                             | [Observation status types](http://hl7.org/fhir/R4/valueset-observation-status.html)                 | registered                                       |
 | `code`             | The type of observation.                                                                                                                                                                                                                                     | [LOINC](https://www.medplum.com/docs/careplans/loinc)                                               | [8867-4](https://loinc.org/8867-4/) – Heart Rate |
 | `subject`          | A reference to who/what the observation is about.                                                                                                                                                                                                            |                                                                                                     | Patient/homer-simpson                            |
 | `encounter`        | A reference to the `Encounter` or visit during which the observation was made.                                                                                                                                                                               |                                                                                                     | Encounter/example-appointment                    |
@@ -16,10 +16,10 @@ Vital signs are stored as [`Observation`](/docs/api/fhir/resources/observation) 
 | `performer`        | Who performed the observation and is responsible for its accuracy.                                                                                                                                                                                           |                                                                                                     | Practitioner/dr-alice-smith                      |
 | `value[x] `        | The actual result(s) of the observation.                                                                                                                                                                                                                     | [See below](#observation-datatypes)                                                                 |                                                  |
 | `dataAbsentReason` | The reason why the result is missing.                                                                                                                                                                                                                        | [Observation data absent reason types](http://hl7.org/fhir/R4/valueset-data-absent-reason.html)     | Asked But Unknown                                |
-| `interpretation`   | A categorical assesment of the result. For example, high, low, or normal.                                                                                                                                                                                    | [Observation interpretation types](http://hl7.org/fhir/R4/valueset-observation-interpretation.html) | Normal                                           |
+| `interpretation`   | A categorical assessment of the result. For example, high, low, or normal.                                                                                                                                                                                   | [Observation interpretation types](http://hl7.org/fhir/R4/valueset-observation-interpretation.html) | Normal                                           |
 | `device`           | The device used to generate the measurement. This can be medical or non-medical and can range from a simple tongue depressor to an MRI machine. Also includes personal and wearable devices such as smart phones or watches                                  |                                                                                                     | Device/my-apple-watch                            |
 | `specimen`         | The specimen from which the observation was derived. A sample of material taken from the patient on which laboratory testing or analysis was performed.                                                                                                      |                                                                                                     | Specimen/finger-prick-blood-sample               |
-| `component`        | Some observations have multiple component observations. These component observations are expressed as separate code value paris that share the same attributes. An example is systolic and diastolic component observations for blood pressure measurements. | [See below](#multi-component-observations)                                                          |                                                  |
+| `component`        | Some observations have multiple component observations. These component observations are expressed as separate code value pairs that share the same attributes. An example is systolic and diastolic component observations for blood pressure measurements. | [See below](#multi-component-observations)                                                          |                                                  |
 
 To record the actual _value_ of a measurement, you can use one of the various `value` fields on the `Observation` resource. There are fields for `valueQuantity`, `valueString`, `valueBoolean` and more.
 
@@ -150,121 +150,6 @@ The `valueQuantity` field is stored as a `Quantity` resource, which contains a `
 | `valueTime`            | Used to represent the exact time an observation was made, without a date.     | string                                                                             | Time heart rate returned to normal | 15:30:00                                                                                                                                     |
 | `valueDateTime`        | Used to represent the exact time and date an observation was made.            | string                                                                             | Birth date and time                | 2023-07-24T13:22:00Z                                                                                                                         |
 | `valuePeriod`          | Used for observations that have a specific duration or period.                | [Period](https://www.medplum.com/docs/api/fhir/datatypes/period)                   | Menstrual cycle duration           | 2023-05-12 – 2023-6-09                                                                                                                       |
-
-<details><summary>Examples</summary>
-
-```json
-
-// valueQuantity
-{
-  "valueQuantity": {
-    "value": 177,
-    "unit": "centimeters",
-    "system": "http://unitsofmeasure.org/",
-    "code": "cm"
-  }
-}
-
-// valueCodeableConcept
-{
-  "valueCodeableConcept": {
-    "coding": [
-      {
-        "system": "http://snomed.info/sct",
-        "code": "260385009",
-        "display": "Negative"
-      }
-    ]
-  }
-}
-
-// valueString
-{
-  "valueString": "Mild pain"
-}
-
-// valueBoolean
-{
-  "valueBoolean": true
-}
-
-// valueInteger
-{
-  // age for example
-  "valueInteger": 28
-}
-
-// valueRange
-{
-  // body weight
-  "valueRange": {
-    "low": {
-      "value": 60,
-      "unit": "kg",
-      "system": "http://unitsofmeasure.org/"
-    },
-    "high": {
-      "value": 90,
-      "unit": "kg",
-      "system": "http://unitsofmeasure.org/"
-    }
-  }
-}
-
-// valueRatio
-{
-  // height over weight
-  "valueRatio": {
-    "numerator": {
-      "value": 177,
-      "unit": "cm",
-      "system": "http://unitsofmeasure.org/"
-    },
-    "denominator": {
-      "value": 72,
-      "unit": "kg",
-      "system": "http://unitofmeasure.org/"
-    }
-  }
-}
-
-// valueSampledData
-{
-  // glucose measurements
-  "valueSampledData": {
-    "origin": {
-      "value": 0,
-      "unit": "mmol/l"
-    },
-    "period": 5,
-    "factor": 0.5,
-    "lowerLimit": 0,
-    "upperLimit": 10,
-    "dimensions": 1,
-  }
-}
-
-// valueTime
-{
-  "valueTime": "14:30:00"
-}
-
-// valueDateTime
-{
-  "valueDateTime": "2023-07-15T14:30:00Z"
-}
-
-// valuePeriod
-{
-  // measurement interval for blood pressure measurements
-  "valuePeriod": {
-    "start": "2023-07-15T11:30:00Z",
-    "end": "2023-07-15T11:45:00Z"
-  }
-}
-```
-
-</details>
 
 ## Multi-component Observations
 
