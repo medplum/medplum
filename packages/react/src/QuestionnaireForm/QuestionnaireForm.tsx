@@ -636,10 +636,14 @@ export function isQuestionEnabled(
     } else if (actualAnswer === undefined) {
       match = false;
     } else {
-      const [{ value }] = evalFhirPathTyped(`%actualAnswer ${operator} %expectedAnswer`, [actualAnswer], {
-        actualAnswer,
-        expectedAnswer,
-      });
+      const [{ value }] = evalFhirPathTyped(
+        `%actualAnswer ${operator?.replace('=', '~')} %expectedAnswer`,
+        [actualAnswer],
+        {
+          actualAnswer,
+          expectedAnswer,
+        }
+      );
       match = value;
     }
 
