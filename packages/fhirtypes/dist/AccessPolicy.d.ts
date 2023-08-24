@@ -135,5 +135,5 @@ export interface AccessPolicyResource {
    * include %before and %after placeholders to refer to the resource
    * before and after the updates are applied.
    */
-  writeCriteria?: string;
+  writeCriteria?: string[];
 }

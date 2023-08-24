@@ -1291,10 +1291,7 @@ describe('AccessPolicy', () => {
       resource: [
         {
           resourceType: 'Observation',
-          writeCriteria: {
-            pre: `status != 'final'`,
-            post: `status = 'final' implies subject.exists()`,
-          },
+          writeCriteria: [`%before.status != 'final'`, `status = 'final' implies subject.exists()`],
         },
       ],
     };

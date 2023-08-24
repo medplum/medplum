@@ -2647,14 +2647,14 @@
             "path" : "AccessPolicy.resource.writeCriteria",
             "definition" : "Invariant that must be satisfied for the resource to be written.  Can include %before and %after placeholders to refer to the resource before and after the updates are applied.",
             "min" : 0,
-            "max" : "1",
+            "max" : "*",
             "type" : [{
               "code" : "string"
             }],
             "base" : {
               "path" : "AccessPolicy.resource.writeCriteria",
               "min" : 0,
-              "max" : "1"
+              "max" : "*"
             }
           },
           {
