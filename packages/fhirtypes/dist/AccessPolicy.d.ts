@@ -129,4 +129,27 @@ export interface AccessPolicyResource {
    * not writeable.
    */
   readonlyFields?: string[];
+
+  /**
+   * Invariants that must be satisfied for the resource to be written.
+   */
+  writeCriteria?: AccessPolicyResourceWriteCriteria;
+}
+
+/**
+ * Invariants that must be satisfied for the resource to be written.
+ */
+export interface AccessPolicyResourceWriteCriteria {
+
+  /**
+   * Invariant to check against the state of the resource before
+   * modification.
+   */
+  pre?: string;
+
+  /**
+   * Invariant to check against the state of the resource with
+   * modifications tentatively applied.
+   */
+  post?: string;
 }

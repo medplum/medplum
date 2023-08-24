@@ -102,8 +102,7 @@
       "short": "active | error | completed",
       "definition": "The status of the request.",
       "comment": "",
-      "inherited": true,
-      "base": "ServiceRequest"
+      "inherited": false
     },
     {
       "name": "requestTime",
@@ -316,7 +315,7 @@
   ],
   "searchParameters": [
     {
-      "name": "name",
+      "name": "status",
       "type": "token",
       "description": "The name of the access policy",
       "expression": "BulkDataExport.status"

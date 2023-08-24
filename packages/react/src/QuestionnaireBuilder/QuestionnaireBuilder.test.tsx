@@ -438,6 +438,58 @@ describe('QuestionnaireBuilder', () => {
     });
   });
 
+  test('Add Reference Profiles', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        title: 'My References',
+        item: [
+          {
+            linkId: 'reference1',
+            text: 'Reference 1',
+            type: 'reference',
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Reference 1'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add Resource'));
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue(''), {
+        target: { value: 'Patient' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add Resource'));
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue(''), {
+        target: { value: 'Organization' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue('Patient'), {
+        target: { value: 'Practicitioner' },
+      });
+    });
+    expect(screen.getByDisplayValue('Organization')).toBeDefined();
+    expect(screen.getByDisplayValue('Practicitioner')).toBeDefined();
+    const removeLinks = screen.getAllByText('Remove');
+    expect(removeLinks.length).toEqual(3);
+    await act(async () => {
+      fireEvent.click(removeLinks[0]);
+    });
+  });
+
   test('Change linkId', async () => {
     const onSubmit = jest.fn();
 
@@ -574,6 +626,25 @@ describe('QuestionnaireBuilder', () => {
         },
       ],
     });
+  });
+
+  test('Add Pages', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        title: 'My questionnaire',
+        item: [],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add Page'));
+    });
+
+    expect(screen.getByText('New Page')).toBeDefined();
   });
 
   test('Remove multiple choice', async () => {

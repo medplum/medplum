@@ -3,7 +3,7 @@ import React from 'react';
 import { Document } from '../Document/Document';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { ReferenceRangeEditor } from './ReferenceRangeEditor';
-import { HDLDefinition, TestosteroneDefinition } from '../stories/referenceLab';
+import { HDLDefinition, KidneyLabDefinition, TestosteroneDefinition } from '../stories/referenceLab';
 
 export default {
   title: 'Medplum/ReferenceRangeEditor',
@@ -42,6 +42,19 @@ export const Testosterone = (): JSX.Element => {
       <ErrorBoundary>
         <ReferenceRangeEditor
           definition={TestosteroneDefinition}
+          onSubmit={(definition) => console.debug('Definition', definition)}
+        />
+      </ErrorBoundary>
+    </Document>
+  );
+};
+
+export const ACR = (): JSX.Element => {
+  return (
+    <Document>
+      <ErrorBoundary>
+        <ReferenceRangeEditor
+          definition={KidneyLabDefinition}
           onSubmit={(definition) => console.debug('Definition', definition)}
         />
       </ErrorBoundary>

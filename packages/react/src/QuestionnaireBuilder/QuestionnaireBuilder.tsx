@@ -1,6 +1,13 @@
 import { Anchor, Button, createStyles, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
 import { globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
-import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Reference } from '@medplum/fhirtypes';
+import {
+  Coding,
+  Extension,
+  Questionnaire,
+  QuestionnaireItem,
+  QuestionnaireItemAnswerOption,
+  Reference,
+} from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
@@ -207,6 +214,9 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                 onChange={(e) => changeProperty('text', e.currentTarget.value)}
               />
             )}
+            {item.type === 'reference' && (
+              <ReferenceProfiles item={item} onChange={(newOptions) => changeProperty('extension', newOptions)} />
+            )}
             {isChoiceQuestion(item) && (
               <AnswerBuilder
                 options={item.answerOption}
@@ -309,6 +319,17 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             </Anchor>
           </>
         )}
+        {isResource && (
+          <Anchor
+            href="#"
+            onClick={(e: React.MouseEvent) => {
+              e.preventDefault();
+              addItem(createPage());
+            }}
+          >
+            Add Page
+          </Anchor>
+        )}
         {editing && !isResource && (
           <Anchor
             href="#"
@@ -400,6 +421,89 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
   );
 }
 
+interface ReferenceTypeProps {
+  item: QuestionnaireItem;
+  onChange: (newOptions: QuestionnaireItemAnswerOption[]) => void;
+}
+
+function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
+  const references = props.item.extension ?? [];
+  const referenceProfiles =
+    references.filter((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource') ?? [];
+  return (
+    <>
+      {referenceProfiles.map((reference: Extension) => {
+        return (
+          <div key={reference.id}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                width: '80%',
+              }}
+            >
+              <div>
+                <TextInput
+                  key={reference.id}
+                  name="value[x]"
+                  value={reference.valueCodeableConcept?.coding?.[0].code ?? ''}
+                  onChange={(e: any) => {
+                    e.preventDefault();
+                    const newReferences = [...references];
+                    const index = newReferences.findIndex((o) => o.id === reference.id);
+                    const coding = newReferences[index].valueCodeableConcept?.coding?.[0] ?? ([] as Coding);
+                    coding.display = e.target.value;
+                    coding.code = e.target.value;
+
+                    props.onChange(newReferences);
+                  }}
+                />
+              </div>
+            </div>
+            <div>
+              <Anchor
+                href="#"
+                onClick={(e: React.SyntheticEvent) => {
+                  killEvent(e);
+                  props.onChange(references.filter((r) => r.id !== reference.id));
+                }}
+              >
+                Remove
+              </Anchor>
+            </div>
+          </div>
+        );
+      })}
+      <Anchor
+        href="#"
+        onClick={(e: React.SyntheticEvent) => {
+          killEvent(e);
+          props.onChange([
+            ...references,
+            {
+              id: generateId(),
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+              valueCodeableConcept: {
+                coding: [
+                  {
+                    system: 'http://hl7.org/fhir/fhir-types',
+                    display: '',
+                    code: '',
+                  },
+                ],
+              },
+            },
+          ]);
+        }}
+      >
+        Add Resource
+      </Anchor>
+    </>
+  );
+}
+
 let nextLinkId = 1;
 let nextId = 1;
 
@@ -462,4 +566,26 @@ function ensureQuestionnaireOptionKeys(
     ...option,
     id: option.id || generateId(),
   }));
+}
+
+function createPage(): QuestionnaireItem {
+  return {
+    id: generateId(),
+    linkId: generateLinkId('s'),
+    type: 'group',
+    text: `New Page`,
+    extension: [
+      {
+        url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+        valueCodeableConcept: {
+          coding: [
+            {
+              system: 'http://hl7.org/fhir/questionnaire-item-control',
+              code: 'page',
+            },
+          ],
+        },
+      } as Extension,
+    ],
+  } as QuestionnaireItem;
 }

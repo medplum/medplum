@@ -8,7 +8,7 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { QuestionnaireItemType } from '../utils/questionnaire';
-import { isQuestionEnabled, QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
+import { QuestionnaireForm, QuestionnaireFormProps, isQuestionEnabled } from './QuestionnaireForm';
 
 const medplum = new MockClient();
 
@@ -621,6 +621,55 @@ describe('QuestionnaireForm', () => {
     expect(answers2['q1']).toMatchObject({ valueString: 'a2' });
   });
 
+  test('Reference Extensions', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.reference,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/fhir-types',
+                      display: 'Patient',
+                      code: 'Patient',
+                    },
+                  ],
+                },
+              },
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/fhir-types',
+                      display: 'Organization',
+                      code: 'Organization',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByText('Patient')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Patient'));
+    });
+  });
+
   test('Drop down choice input default value', async () => {
     const onSubmit = jest.fn();
 
@@ -672,6 +721,191 @@ describe('QuestionnaireForm', () => {
     expect(dropDown).toBeInTheDocument();
     expect(dropDown).toBeInstanceOf(HTMLSelectElement);
     expect((dropDown as HTMLSelectElement).value).toBe('a2');
+  });
+
+  test('Page Sequence', async () => {
+    const visibleQuestion = 'Visible Question';
+    const hiddenQuestion = 'Hidden Question';
+    await setup({
+      questionnaire: {
+        id: 'groups-example',
+        resourceType: 'Questionnaire',
+        title: 'Groups Example',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.group,
+            text: 'Visible Sequence',
+            item: [
+              {
+                linkId: 'question1',
+                text: visibleQuestion,
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'q2',
+            type: QuestionnaireItemType.group,
+            text: 'Hidden Sequence',
+            item: [
+              {
+                linkId: 'question2',
+                text: hiddenQuestion,
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+    // The form should render
+    expect(screen.getByText(visibleQuestion)).toBeInTheDocument();
+
+    // The hidden text should be hidden
+    expect(screen.queryByText(hiddenQuestion)).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    expect(screen.queryByText(visibleQuestion)).not.toBeInTheDocument();
+
+    // The hidden text should now be visible
+    expect(screen.getByText(hiddenQuestion)).toBeInTheDocument();
+
+    expect(screen.getByText('Back')).toBeInTheDocument();
+  });
+
+  test('Page Sequence with non page items in root', async () => {
+    const visibleQuestion = 'Visible Question';
+    const hiddenQuestion = 'Hidden Question';
+    await setup({
+      questionnaire: {
+        id: 'groups-example',
+        resourceType: 'Questionnaire',
+        title: 'Groups Example',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.group,
+            text: 'Visible Sequence',
+            item: [
+              {
+                linkId: 'question1',
+                text: visibleQuestion,
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'q2',
+            text: 'Question Choice',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+          },
+          {
+            linkId: 'q3',
+            type: QuestionnaireItemType.group,
+            text: 'Hidden Sequence',
+            item: [
+              {
+                linkId: 'question2',
+                text: hiddenQuestion,
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+    // The form should render
+    expect(screen.getByText(visibleQuestion)).toBeInTheDocument();
+
+    // The hidden text should be hidden
+    expect(screen.queryByText(hiddenQuestion)).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    expect(screen.queryByText(visibleQuestion)).not.toBeInTheDocument();
+
+    // The hidden text should still not be visible
+    expect(screen.queryByText(hiddenQuestion)).not.toBeInTheDocument();
+
+    expect(screen.getByText('Yes')).toBeInTheDocument();
+    expect(screen.getByText('Back')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    // The hidden text should now be visible
+    expect(screen.getByText(hiddenQuestion)).toBeInTheDocument();
+
+    expect(screen.getByText('Back')).toBeInTheDocument();
   });
 
   test('Conditional question', async () => {

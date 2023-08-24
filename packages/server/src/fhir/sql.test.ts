@@ -15,7 +15,10 @@ describe('SqlBuilder', () => {
 
   test('Select where expression', () => {
     const sql = new SqlBuilder();
-    new SelectQuery('MyTable').column('id').whereExpr(new Condition('name', Operator.EQUALS, 'x')).buildSql(sql);
+    new SelectQuery('MyTable')
+      .column('id')
+      .whereExpr(new Condition('name', Operator.EQUALS, 'x'))
+      .buildSql(sql);
     expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "name"=$1');
   });
 

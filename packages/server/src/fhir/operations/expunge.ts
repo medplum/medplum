@@ -39,7 +39,11 @@ export async function expungeHandler(req: Request, res: Response): Promise<void>
 }
 
 export class Expunger {
-  constructor(readonly repo: Repository, readonly compartment: string, readonly maxResultsPerPage = 10000) {
+  constructor(
+    readonly repo: Repository,
+    readonly compartment: string,
+    readonly maxResultsPerPage = 10000
+  ) {
     this.maxResultsPerPage = maxResultsPerPage;
   }
 

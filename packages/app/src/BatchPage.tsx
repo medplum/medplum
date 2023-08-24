@@ -1,10 +1,10 @@
 import { Button, Group, JsonInput, Tabs, Text, Title, useMantineTheme } from '@mantine/core';
 import { Dropzone, FileWithPath } from '@mantine/dropzone';
-import { showNotification } from '@mantine/notifications';
+import { notifications } from '@mantine/notifications';
 import { convertToTransactionBundle, normalizeErrorString } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
-import { IconUpload, IconX } from '@tabler/icons-react';
+import { IconUpload, IconX, IconCheck } from '@tabler/icons-react';
 import React, { useCallback, useState } from 'react';
 
 export const DEFAULT_VALUE = `{
@@ -27,6 +27,37 @@ export const DEFAULT_VALUE = `{
   ]
 }`;
 
+interface ShowNotificationProps {
+  id: string;
+  title: string;
+  message: string;
+  color?: string;
+  icon?: JSX.Element | null;
+  withCloseButton?: boolean;
+  method?: 'show' | 'update';
+}
+
+function showNotification({
+  id,
+  title,
+  message,
+  color,
+  icon,
+  withCloseButton = false,
+  method = 'show',
+}: ShowNotificationProps): void {
+  notifications[method]({
+    id,
+    loading: true,
+    title,
+    message,
+    color,
+    icon,
+    withCloseButton,
+    autoClose: false,
+  });
+}
+
 export function BatchPage(): JSX.Element {
   const theme = useMantineTheme();
   const medplum = useMedplum();
@@ -34,6 +65,14 @@ export function BatchPage(): JSX.Element {
 
   const submitBatch = useCallback(
     async (str: string, fileName: string) => {
+      const id = 'batch-upload';
+      showNotification({
+        id,
+        title: 'Batch Upload in Progress',
+        message: 'Your batch data is being uploaded. This may take a moment...',
+        method: 'show',
+      });
+
       try {
         setOutput({});
         let bundle = JSON.parse(str) as Bundle;
@@ -45,9 +84,25 @@ export function BatchPage(): JSX.Element {
           ...prev,
           [fileName]: result,
         }));
-        showNotification({ color: 'green', message: 'Success' });
+        showNotification({
+          id,
+          title: 'Batch Upload Successful',
+          message: 'Your batch data was successfully uploaded.',
+          color: 'green',
+          method: 'update',
+          icon: <IconCheck size="1rem" />,
+          withCloseButton: true,
+        });
       } catch (err) {
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({
+          id,
+          title: 'Batch Upload Failed',
+          color: 'red',
+          message: normalizeErrorString(err),
+          method: 'update',
+          icon: <IconX size="1rem" />,
+          withCloseButton: true,
+        });
       }
     },
     [medplum]

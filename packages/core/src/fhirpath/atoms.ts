@@ -15,7 +15,10 @@ import {
 } from './utils';
 
 export class FhirPathAtom implements Atom {
-  constructor(public readonly original: string, public readonly child: Atom) {}
+  constructor(
+    public readonly original: string,
+    public readonly child: Atom
+  ) {}
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     try {
@@ -94,7 +97,11 @@ export class EmptySetAtom implements Atom {
 }
 
 export class UnaryOperatorAtom extends PrefixOperatorAtom {
-  constructor(operator: string, child: Atom, public readonly impl: (x: TypedValue[]) => TypedValue[]) {
+  constructor(
+    operator: string,
+    child: Atom,
+    public readonly impl: (x: TypedValue[]) => TypedValue[]
+  ) {
     super(operator, child);
   }
 
@@ -380,7 +387,10 @@ export class ImpliesAtom extends BooleanInfixOperatorAtom {
 }
 
 export class FunctionAtom implements Atom {
-  constructor(public readonly name: string, public readonly args: Atom[]) {}
+  constructor(
+    public readonly name: string,
+    public readonly args: Atom[]
+  ) {}
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     const impl = functions[this.name];
     if (!impl) {
@@ -395,7 +405,10 @@ export class FunctionAtom implements Atom {
 }
 
 export class IndexerAtom implements Atom {
-  constructor(public readonly left: Atom, public readonly expr: Atom) {}
+  constructor(
+    public readonly left: Atom,
+    public readonly expr: Atom
+  ) {}
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     const evalResult = this.expr.eval(context, input);
     if (evalResult.length !== 1) {

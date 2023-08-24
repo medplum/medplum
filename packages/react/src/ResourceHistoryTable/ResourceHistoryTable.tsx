@@ -38,11 +38,7 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Elem
           <th>Version</th>
         </tr>
       </thead>
-      <tbody>
-        {value.entry?.map((entry, index) => (
-          <HistoryRow key={'entry-' + index} entry={entry} />
-        ))}
-      </tbody>
+      <tbody>{value.entry?.map((entry, index) => <HistoryRow key={'entry-' + index} entry={entry} />)}</tbody>
     </Table>
   );
 }

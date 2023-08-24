@@ -23,21 +23,21 @@
     "@medplum/fhirtypes": "2.0.30",
     "@medplum/mock": "2.0.30",
     "@medplum/react": "2.0.30",
-    "@tabler/icons-react": "2.30.0",
-    "@testing-library/jest-dom": "5.17.0",
+    "@tabler/icons-react": "2.31.0",
+    "@testing-library/jest-dom": "6.0.1",
     "@testing-library/react": "14.0.0",
     "@types/grecaptcha": "3.0.4",
     "@types/jest": "29.5.3",
-    "@types/node": "20.4.9",
+    "@types/node": "20.5.1",
     "@types/react": "18.2.20",
     "@types/react-dom": "18.2.7",
     "@vitejs/plugin-react": "4.0.4",
-    "babel-jest": "29.6.2",
+    "babel-jest": "29.6.3",
     "c8": "8.0.1",
     "chart.js": "4.3.3",
     "fast-json-patch": "3.1.1",
-    "jest": "29.6.2",
-    "jest-environment-jsdom": "29.6.2",
+    "jest": "29.6.3",
+    "jest-environment-jsdom": "29.6.3",
     "jest-transform-stub": "2.0.0",
     "jsdom": "22.1.0",
     "react": "18.2.0",
@@ -49,7 +49,8 @@
   },
   "prettier": {
     "printWidth": 120,
-    "singleQuote": true
+    "singleQuote": true,
+    "trailingComma": "es5"
   },
   "eslintConfig": {
     "extends": [

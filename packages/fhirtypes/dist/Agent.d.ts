@@ -10,7 +10,8 @@ import { Meta } from './Meta';
 import { Reference } from './Reference';
 
 /**
- * Contains details of long running asynchronous/background jobs.
+ * Configuration details for an instance of the Medplum agent
+ * application.
  */
 export interface Agent {
 

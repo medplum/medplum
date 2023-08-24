@@ -69,7 +69,7 @@ export interface ResourceBlameProps {
   id?: string;
 }
 
-export function ResourceBlame(props: ResourceBlameProps): JSX.Element {
+export function ResourceBlame(props: ResourceBlameProps): JSX.Element | null {
   const { classes } = useStyles();
   const medplum = useMedplum();
   const [value, setValue] = useState<Bundle | undefined>(props.history);
@@ -85,7 +85,13 @@ export function ResourceBlame(props: ResourceBlameProps): JSX.Element {
   }
 
   const resource = value.entry?.[0]?.resource as Resource;
+
+  if (!resource) {
+    return null;
+  }
+
   const table = blame(value);
+
   return (
     <div className={classes.container}>
       <table className={classes.root}>

@@ -714,7 +714,7 @@ describe('FHIR Search', () => {
   });
 
   test('String filter', async () => {
-    const bundle1 = await systemRepo.search({
+    const bundle1 = await systemRepo.search<StructureDefinition>({
       resourceType: 'StructureDefinition',
       filters: [
         {
@@ -730,10 +730,7 @@ describe('FHIR Search', () => {
         },
       ],
     });
-    expect(bundle1.entry?.length).toEqual(3);
-    expect((bundle1.entry?.[0]?.resource as StructureDefinition).name).toEqual('CQF-Questionnaire');
-    expect((bundle1.entry?.[1]?.resource as StructureDefinition).name).toEqual('Questionnaire');
-    expect((bundle1.entry?.[2]?.resource as StructureDefinition).name).toEqual('QuestionnaireResponse');
+    expect(bundle1.entry?.map((e) => e.resource?.name)).toEqual(['Questionnaire', 'QuestionnaireResponse']);
 
     const bundle2 = await systemRepo.search({
       resourceType: 'StructureDefinition',
@@ -2851,7 +2848,7 @@ describe('FHIR Search', () => {
         {
           code: 'name',
           operator: Operator.EQUALS,
-          value: org.name as string,
+          value: `wrongname,${(org.name as string).slice(0, 5)}`,
         },
       ],
     });

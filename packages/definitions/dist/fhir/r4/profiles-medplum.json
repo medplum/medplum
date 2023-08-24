@@ -2643,6 +2643,51 @@
             }
           },
           {
+            "id" : "AccessPolicy.resource.writeCriteria",
+            "path" : "AccessPolicy.resource.writeCriteria",
+            "definition" : "Invariants that must be satisfied for the resource to be written.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource.writeCriteria",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "AccessPolicy.resource.writeCriteria.pre",
+            "path" : "AccessPolicy.resource.writeCriteria.pre",
+            "definition" : "Invariant to check against the state of the resource before modification.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource.writeCriteria.pre",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "AccessPolicy.resource.writeCriteria.post",
+            "path" : "AccessPolicy.resource.writeCriteria.post",
+            "definition" : "Invariant to check against the state of the resource with modifications tentatively applied.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource.writeCriteria.post",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "AccessPolicy.ipAccessRule",
             "path" : "AccessPolicy.ipAccessRule",
             "definition" : "Use IP Access Rules to allowlist, block, and challenge traffic based on the visitor IP address.",
@@ -3862,14 +3907,14 @@
       "abstract" : false,
       "type" : "Agent",
       "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
-      "description" : "Contains details of long running asynchronous/background jobs.",
+      "description" : "Configuration details for an instance of the Medplum agent application.",
       "snapshot" : {
         "element" : [
           {
             "id" : "Agent",
             "path" : "Agent",
-            "short" : "Contains details of long running asynchronous/background jobs.",
-            "definition" : "Contains details of long running asynchronous/background jobs.",
+            "short" : "Configuration details for an instance of the Medplum agent application.",
+            "definition" : "Configuration details for an instance of the Medplum agent application.",
             "min" : 0,
             "max" : "*",
             "base": {
