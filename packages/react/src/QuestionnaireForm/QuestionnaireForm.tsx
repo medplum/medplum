@@ -13,7 +13,6 @@ import {
 import {
   capitalize,
   createReference,
-  deepEquals,
   getExtension,
   getQuestionnaireAnswers,
   getReferenceString,
@@ -24,6 +23,7 @@ import {
   PropertyType,
   stringify,
   TypedValue,
+  evalFhirPathTyped,
 } from '@medplum/core';
 import {
   Questionnaire,
@@ -34,7 +34,6 @@ import {
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
   Reference,
-  Coding,
 } from '@medplum/fhirtypes';
 import React, { ChangeEvent, useEffect, useState } from 'react';
 import { AttachmentInput } from '../AttachmentInput/AttachmentInput';
@@ -599,20 +598,6 @@ function isDropDownChoice(item: QuestionnaireItem): boolean {
   );
 }
 
-/**
- * This function is not called `areSameType` because it only checks if the two value's types are not explicitly different and allows one value to be `undefined`.
- * @param value1 A value or `undefined`.
- * @param value2 Another value to compare `value1`'s type to.
- * @returns If the two values are NOT different types. It returns `true` if both are the same type or if `value1` is `undefined`.
- */
-function areNotDifferentTypes(value1: TypedValue | undefined, value2: TypedValue): boolean {
-  // We return true for `undefined` since we handle the undefined case inside the case blocks
-  if (value1 === undefined || value1.type === value2.type) {
-    return true;
-  }
-  return false;
-}
-
 export function isQuestionEnabled(
   item: QuestionnaireItem,
   answers: Record<string, QuestionnaireResponseItemAnswer>
@@ -641,50 +626,21 @@ export function isQuestionEnabled(
     ) as TypedValue;
 
     let match: boolean;
+
+    const { operator } = enableWhen;
     // We handle exists separately since its so different in terms of comparisons than the other mathematical operators
-    if (enableWhen.operator === 'exists') {
+    if (operator === 'exists') {
       // if actualAnswer is not undefined, then exists: true passes
       // if actualAnswer is undefined, then exists: false passes
       match = !!actualAnswer === expectedAnswer.value;
-    } else if (!areNotDifferentTypes(actualAnswer, expectedAnswer)) {
+    } else if (actualAnswer === undefined) {
       match = false;
     } else {
-      switch (enableWhen.operator) {
-        case '=':
-          if (expectedAnswer.type === 'Coding') {
-            match = !!actualAnswer && (actualAnswer.value as Coding).code === (expectedAnswer.value as Coding).code;
-          } else {
-            match = deepEquals(actualAnswer, expectedAnswer);
-          }
-          break;
-        case '!=':
-          // if actualAnswer is !== to `expectedTruthyAnswer`
-          if (expectedAnswer.type === 'Coding') {
-            match = !!actualAnswer && (actualAnswer.value as Coding).code !== (expectedAnswer.value as Coding).code;
-          } else {
-            match = !deepEquals(actualAnswer, expectedAnswer);
-          }
-          break;
-        case '>':
-          match = !!actualAnswer && actualAnswer.value > expectedAnswer.value;
-          break;
-        case '<':
-          match = !!actualAnswer && actualAnswer.value < expectedAnswer.value;
-          break;
-        case '>=':
-          match = !!actualAnswer && actualAnswer.value >= expectedAnswer.value;
-          break;
-        case '<=':
-          match = !!actualAnswer && actualAnswer.value <= expectedAnswer.value;
-          break;
-        default:
-          // Potentially use this if we can do a conditional check for `import.meta.env.DEV === true` in Vite
-          // Currently that doesn't look like it works because of `tsconfig.json` specifying `module: common` and not `nodenext` or `esnext`
-          // throw new Error(
-          //   'Invalid operator in `enableWhen` condition! Operator must be one of: `exists` | `=` | `!=` | `>` | `<` | `>=` | `<=`'
-          // );
-          match = false;
-      }
+      const [{ value }] = evalFhirPathTyped(`%actualAnswer ${operator} %expectedAnswer`, [actualAnswer], {
+        actualAnswer,
+        expectedAnswer,
+      });
+      match = value;
     }
 
     if (enableBehavior === 'any' && match) {
