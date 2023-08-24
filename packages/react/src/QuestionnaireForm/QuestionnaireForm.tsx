@@ -4,6 +4,7 @@ import {
   Button,
   Checkbox,
   Group,
+  MultiSelect,
   NativeSelect,
   Radio,
   Space,
@@ -315,7 +316,12 @@ export function QuestionnaireRepeatWrapper(props: QuestionnaireRepeatWrapperProp
     );
   }
   return (
-    <RepeatableItem item={props.item} key={props.item.linkId}>
+    <RepeatableItem
+      item={props.item}
+      key={props.item.linkId}
+      responseItems={props.responseItems}
+      onChange={props.onChange}
+    >
       {({ index }: { index: number }) => <QuestionnaireFormItem {...props} index={index} />}
     </RepeatableItem>
   );
@@ -466,6 +472,36 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
       if (isDropDownChoice(item)) {
+        if (item.repeats) {
+          return (
+            <MultiSelect
+              data={convertToDesiredFormat(props.item)}
+              placeholder="Select items"
+              searchable
+              creatable
+              getCreateLabel={(query) => `+ Add ${query}`}
+              onChange={(selected) => {
+                const values = selected.map((o) => {
+                  const option = item.answerOption?.find((option) => option.valueCoding?.code === o);
+                  const optionValue = getTypedPropertyValue(
+                    { type: 'QuestionnaireItemAnswerOption', value: option },
+                    'value'
+                  ) as TypedValue;
+
+                  return { valueCoding: optionValue.value };
+                });
+                const responses = props.responseItems?.filter((r) => r.linkId === item.linkId) ?? [];
+                props.onChange({
+                  id: responses[0].id,
+                  linkId: item.linkId,
+                  text: item.text,
+                  answer: values,
+                });
+              }}
+              onCreate={(query) => query}
+            />
+          );
+        }
         return (
           <QuestionnaireChoiceDropDownInput
             name={name}
@@ -513,6 +549,31 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
     }
   }
 
+  if (props.item.repeats) {
+    return (
+      <MultiSelect
+        data={convertToDesiredFormat(props.item)}
+        placeholder="Select items"
+        searchable
+        creatable
+        getCreateLabel={(query) => `+ Add ${query}`}
+        onChange={(selected) => {
+          const values = selected.map((o) => {
+            const option = item.answerOption?.find((option) => option.valueCoding?.code === o);
+            const optionValue = getTypedPropertyValue(
+              { type: 'QuestionnaireItemAnswerOption', value: option },
+              'value'
+            ) as TypedValue;
+
+            const propertyName = 'value' + capitalize(optionValue.type);
+            return { [propertyName]: optionValue.value };
+          });
+          props.onChangeAnswer(values.reduce((acc, curr) => ({ ...acc, ...curr }), {}));
+        }}
+        onCreate={(query) => query}
+      />
+    );
+  }
   return (
     <NativeSelect
       id={name}
@@ -802,6 +863,8 @@ function RepeatableGroup(props: RepeatableGroupProps): JSX.Element | null {
 
 interface RepeatableItemProps {
   item: QuestionnaireItem;
+  responseItems?: QuestionnaireResponseItem[];
+  onChange: (newResponseItem: QuestionnaireResponseItem) => void;
   children: (props: { index: number }) => JSX.Element;
 }
 
@@ -832,6 +895,13 @@ function updateAnswerArray(
     answers.push(newResponseAnswer);
     return answers;
   }
+}
+
+function convertToDesiredFormat(item: QuestionnaireItem): any {
+  return (item.answerOption ?? []).map((a) => ({
+    value: a.valueCoding?.code,
+    label: a.valueCoding?.display,
+  }));
 }
 
 function getResponseId(responses: QuestionnaireResponseItem[], index: number): string {

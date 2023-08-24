@@ -97,8 +97,52 @@ export const HealthGorillaQuestionnaire = (): JSX.Element => (
           {
             linkId: 'question3',
             text: 'Question 3',
-            type: 'string',
+            type: 'choice',
             repeats: true,
+            answerOption: [
+              {
+                valueCoding: {
+                  code: 'LA10533-0',
+                  display: 'Blood Clots',
+                  system: 'http://loinc.org',
+                },
+              },
+              {
+                valueCoding: {
+                  code: 'LA10572-8',
+                  display: '-- Blood Clot in Leg',
+                  system: 'http://loinc.org',
+                },
+              },
+              {
+                valueCoding: {
+                  code: 'LA10573-6',
+                  display: '-- Blood Clot in Lungs',
+                  system: 'http://loinc.org',
+                },
+              },
+              {
+                valueCoding: {
+                  code: 'LA10524-9',
+                  display: 'Cancer',
+                  system: 'http://loinc.org',
+                },
+              },
+              {
+                valueCoding: {
+                  code: 'LA10549-6',
+                  display: '-- Bone Cancer',
+                  system: 'http://loinc.org',
+                },
+              },
+              {
+                valueCoding: {
+                  code: 'LA10536-3',
+                  display: '-- Breast Cancer',
+                  system: 'http://loinc.org',
+                },
+              },
+            ],
             extension: [
               {
                 url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
@@ -109,6 +153,19 @@ export const HealthGorillaQuestionnaire = (): JSX.Element => (
                       code: 'page',
                     },
                   ],
+                },
+              },
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
                 },
               },
             ],
@@ -126,7 +183,7 @@ export const HealthGorillaQuestionnaire = (): JSX.Element => (
                   {
                     question: 'question3',
                     operator: 'exists',
-                    answerString: 'Yes',
+                    answerString: 'LA10573-6',
                   },
                 ],
                 item: [
@@ -150,7 +207,7 @@ export const HealthGorillaQuestionnaire = (): JSX.Element => (
                   {
                     question: 'question3',
                     operator: 'exists',
-                    answerString: 'No',
+                    answerString: 'LA10533-0',
                   },
                 ],
                 item: [
