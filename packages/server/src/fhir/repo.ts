@@ -1565,9 +1565,6 @@ export class Repository extends BaseRepository implements FhirRepository {
       return false;
     } else if (matchingPolicy?.writeCriteria) {
       return matchingPolicy.writeCriteria.every((expression) => {
-        if (!previous && expression.includes('%before')) {
-          return true;
-        }
         const invariant = evalFhirPathTyped(expression, [{ type: current.resourceType, value: current }], {
           before: { type: previous?.resourceType ?? 'undefined', value: previous },
           after: { type: current.resourceType, value: current },
