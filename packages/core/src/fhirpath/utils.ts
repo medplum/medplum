@@ -1,4 +1,4 @@
-import { ElementDefinition, Period, Quantity } from '@medplum/fhirtypes';
+import { ElementDefinition, Period, Quantity, Coding } from '@medplum/fhirtypes';
 import { buildTypeName, getElementDefinition, isResource, PropertyType, TypedValue } from '../types';
 import { capitalize, isEmpty } from '../utils';
 
@@ -285,8 +285,11 @@ export function fhirPathArrayEquivalent(x: TypedValue[], y: TypedValue[]): Typed
  * @returns True if equivalent.
  */
 export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
-  const xValue = x.value?.valueOf();
-  const yValue = y.value?.valueOf();
+  const { type: xType, value: xValueRaw } = x;
+  const { type: yType, value: yValueRaw } = y;
+  const xValue = xValueRaw?.valueOf();
+  const yValue = yValueRaw?.valueOf();
+
   if (typeof xValue === 'number' && typeof yValue === 'number') {
     // Use more generous threshold than equality
     // Decimal: values must be equal, comparison is done on values rounded to the precision of the least precise operand.
@@ -296,8 +299,25 @@ export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
   if (isQuantity(xValue) && isQuantity(yValue)) {
     return booleanToTypedValue(isQuantityEquivalent(xValue, yValue));
   }
+
+  if (xType === 'Coding' && yType === 'Coding') {
+    if (typeof xValue !== 'object' || typeof yValue !== 'object') {
+      return booleanToTypedValue(false);
+    }
+    // "In addition, for Coding values, equivalence is defined based on the code and system elements only.
+    // The version, display, and userSelected elements are ignored for the purposes of determining Coding equivalence."
+    // Source: https://hl7.org/fhir/fhirpath.html#changes
+
+    // Basically checking if one of the `Coding` resources has a system defined. If so, then the two's system values must be compared
+    const systemsAreEquivalent =
+      (xValue as Coding).system || (yValue as Coding).system
+        ? (xValue as Coding).system === (yValue as Coding).system
+        : true;
+    return booleanToTypedValue((xValue as Coding).code === (yValue as Coding).code && systemsAreEquivalent);
+  }
+
   if (typeof xValue === 'object' && typeof yValue === 'object') {
-    return booleanToTypedValue(deepEquals(xValue, yValue));
+    return booleanToTypedValue(deepEquals({ ...xValue, id: undefined }, { ...yValue, id: undefined }));
   }
   if (typeof xValue === 'string' && typeof yValue === 'string') {
     // String: the strings must be the same, ignoring case and locale, and normalizing whitespace
