@@ -13,7 +13,6 @@ import {
 import {
   capitalize,
   createReference,
-  deepEquals,
   getExtension,
   getQuestionnaireAnswers,
   getReferenceString,
@@ -24,6 +23,7 @@ import {
   PropertyType,
   stringify,
   TypedValue,
+  evalFhirPathTyped,
 } from '@medplum/core';
 import {
   Questionnaire,
@@ -486,6 +486,7 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
         { type: 'QuestionnaireItemAnswerOption', value: option },
         'value'
       ) as TypedValue;
+
       if (initialValue && stringify(optionValue) === stringify(initialValue)) {
         defaultValue = optionName;
       }
@@ -604,23 +605,48 @@ export function isQuestionEnabled(
   if (!item.enableWhen) {
     return true;
   }
+
   const enableBehavior = item.enableBehavior ?? 'any';
+
   for (const enableWhen of item.enableWhen) {
-    const expectedAnswer = getTypedPropertyValue(
-      {
-        type: 'QuestionnaireItemEnableWhen',
-        value: enableWhen,
-      },
-      'answer[x]'
-    );
     const actualAnswer = getTypedPropertyValue(
       {
         type: 'QuestionnaireResponseItemAnswer',
         value: answers[enableWhen.question as string],
       },
       'value[x]'
-    );
-    const match = deepEquals(expectedAnswer, actualAnswer);
+    ) as TypedValue | undefined; // possibly undefined when question unanswered
+
+    const expectedAnswer = getTypedPropertyValue(
+      {
+        type: 'QuestionnaireItemEnableWhen',
+        value: enableWhen,
+      },
+      'answer[x]'
+    ) as TypedValue;
+
+    let match: boolean;
+
+    const { operator } = enableWhen;
+
+    // We handle exists separately since its so different in terms of comparisons than the other mathematical operators
+    if (operator === 'exists') {
+      // if actualAnswer is not undefined, then exists: true passes
+      // if actualAnswer is undefined, then exists: false passes
+      match = !!actualAnswer === expectedAnswer.value;
+    } else if (actualAnswer === undefined) {
+      match = false;
+    } else {
+      // `=` and `!=` should be treated as the FHIRPath `~` and `!~`
+      // All other operators should be unmodified
+      const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
+      const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirPathOperator} %expectedAnswer`, [actualAnswer], {
+        actualAnswer,
+        expectedAnswer,
+      });
+      match = value;
+    }
+
     if (enableBehavior === 'any' && match) {
       return true;
     }

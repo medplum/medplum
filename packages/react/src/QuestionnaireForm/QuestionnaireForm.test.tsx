@@ -1,5 +1,5 @@
 import { getQuestionnaireAnswers } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Questionnaire, QuestionnaireItemEnableWhen, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { randomUUID } from 'crypto';
@@ -968,97 +968,485 @@ describe('QuestionnaireForm', () => {
     expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
   });
 
-  test('isQuestionEnabled', () => {
-    // enableBehavior=any, match
-    expect(
-      isQuestionEnabled(
-        {
-          enableBehavior: 'any',
-          enableWhen: [
-            {
-              question: 'q1',
-              answerString: 'Yes',
-            },
-            {
-              question: 'q2',
-              answerString: 'Yes',
-            },
-          ],
-        },
-        {
-          q1: { valueString: 'No' },
-          q2: { valueString: 'Yes' },
-        }
-      )
-    ).toBe(true);
+  describe('isQuestionEnabled', () => {
+    test('enableBehavior=any, match', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'any',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: { valueString: 'No' },
+            q2: { valueString: 'Yes' },
+          }
+        )
+      ).toBe(true);
+    });
 
-    // enableBehavior=any, no match
-    expect(
-      isQuestionEnabled(
-        {
-          enableBehavior: 'any',
-          enableWhen: [
-            {
-              question: 'q1',
-              answerString: 'Yes',
-            },
-            {
-              question: 'q2',
-              answerString: 'Yes',
-            },
-          ],
-        },
-        {
-          q1: { valueString: 'No' },
-          q2: { valueString: 'No' },
-        }
-      )
-    ).toBe(false);
+    test('enableBehavior=any, no match', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'any',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: { valueString: 'No' },
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(false);
+    });
 
-    // enableBehavior=all, match
-    expect(
-      isQuestionEnabled(
-        {
-          enableBehavior: 'all',
-          enableWhen: [
-            {
-              question: 'q1',
-              answerString: 'Yes',
-            },
-            {
-              question: 'q2',
-              answerString: 'Yes',
-            },
-          ],
-        },
-        {
-          q1: { valueString: 'Yes' },
-          q2: { valueString: 'Yes' },
-        }
-      )
-    ).toBe(true);
+    test('enableBehavior=all, match', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'all',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: { valueString: 'Yes' },
+            q2: { valueString: 'Yes' },
+          }
+        )
+      ).toBe(true);
+    });
 
-    // enableBehavior=all, no match
-    expect(
-      isQuestionEnabled(
+    test('enableBehavior=all, no match', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'all',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: { valueString: 'Yes' },
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = true, answer present', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: true,
+              },
+            ],
+          },
+          {
+            q1: { valueString: 'Yes' },
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, answer present', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: false,
+              },
+            ],
+          },
+          {
+            q1: { valueString: 'Yes' },
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = true, answer missing', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: true,
+              },
+            ],
+          },
+          {
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, answer missing', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: false,
+              },
+            ],
+          },
+          {
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, answer missing', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: false,
+              },
+            ],
+          },
+          {
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, answer missing', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: false,
+              },
+            ],
+          },
+          {
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=any, enableWhen `!=` operator', () => {
+      const enableWhen = [
         {
-          enableBehavior: 'all',
-          enableWhen: [
-            {
-              question: 'q1',
-              answerString: 'Yes',
-            },
-            {
-              question: 'q2',
-              answerString: 'Yes',
-            },
-          ],
+          question: 'q1',
+          operator: '!=',
+          answerString: 'Yes',
         },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueString: 'No' },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueString: 'Yes' },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `>` operator', () => {
+      const enableWhen = [
         {
-          q1: { valueString: 'Yes' },
-          q2: { valueString: 'No' },
-        }
-      )
-    ).toBe(false);
+          question: 'q1',
+          operator: '>',
+          answerInteger: 3,
+        },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 4 },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 2 },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `>=` operator', () => {
+      const enableWhen = [
+        {
+          question: 'q1',
+          operator: '>=',
+          answerInteger: 3,
+        },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 4 },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 3 },
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=any, enableWhen `<` operator', () => {
+      const enableWhen = [
+        {
+          question: 'q1',
+          operator: '<',
+          answerInteger: 3,
+        },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 2 },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 3 },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `<=` operator', () => {
+      const enableWhen = [
+        {
+          question: 'q1',
+          operator: '<=',
+          answerInteger: 3,
+        },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 2 },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 3 },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 4 },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `=` operator for `valueCoding`', () => {
+      const enableWhen = [
+        { question: 'q1', operator: '=', answerCoding: { code: 'MEDPLUM123' } },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'MEDPLUM123' } },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `!=` operator for `valueCoding`', () => {
+      const enableWhen = [
+        { question: 'q1', operator: '!=', answerCoding: { code: 'MEDPLUM123' } },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'NOT_MEDPLUM123' } },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } },
+          }
+        )
+      ).toBe(false);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'MEDPLUM123' } },
+          }
+        )
+      ).toBe(false);
+    });
   });
 });

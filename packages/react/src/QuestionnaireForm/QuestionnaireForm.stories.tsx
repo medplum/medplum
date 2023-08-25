@@ -331,11 +331,11 @@ export const EnableWhen = (): JSX.Element => (
       questionnaire={{
         resourceType: 'Questionnaire',
         id: 'enable-when',
-        title: 'Enable When Example',
+        title: 'Enable When',
         item: [
           {
             linkId: 'q1',
-            text: 'Question 1',
+            text: 'Enabled when the answer is "Yes"',
             type: 'choice',
             answerOption: [
               {
@@ -349,12 +349,112 @@ export const EnableWhen = (): JSX.Element => (
           {
             linkId: 'q2',
             type: 'display',
-            text: 'Displayed!',
+            text: 'Displayed because the answer is "Yes"!',
             enableWhen: [
               {
                 question: 'q1',
                 operator: '=',
                 answerString: 'Yes',
+              },
+            ],
+          },
+          {
+            linkId: 'q3',
+            text: 'Enabled when there is an answer',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+          },
+          {
+            linkId: 'q4',
+            type: 'display',
+            text: 'Displayed because there is an answer!',
+            enableWhen: [
+              {
+                question: 'q3',
+                operator: 'exists', // `exists` signals if a given answer has a value
+                answerBoolean: true,
+              },
+            ],
+          },
+          {
+            linkId: 'q5',
+            text: "Enabled when there isn't an answer",
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+          },
+          {
+            linkId: 'q6',
+            type: 'display',
+            text: "Displayed because there isn't an answer!",
+            enableWhen: [
+              {
+                question: 'q5',
+                operator: 'exists',
+                answerBoolean: false,
+              },
+            ],
+          },
+          {
+            linkId: 'q7',
+            text: 'Enabled when greater than 2',
+            type: 'choice',
+            answerOption: [
+              {
+                valueInteger: 2,
+              },
+              {
+                valueInteger: 5,
+              },
+            ],
+          },
+          {
+            linkId: 'q8',
+            type: 'display',
+            text: 'Displayed because answer is greater than 2!',
+            enableWhen: [
+              {
+                question: 'q7',
+                operator: '>',
+                answerInteger: 2,
+              },
+            ],
+          },
+          {
+            linkId: 'q9',
+            text: 'Enabled when greater than or equal to 2',
+            type: 'choice',
+            answerOption: [
+              {
+                valueInteger: 2,
+              },
+              {
+                valueInteger: 5,
+              },
+            ],
+          },
+          {
+            linkId: 'q10',
+            type: 'display',
+            text: 'Displayed because answer is greater than or equal to 2!',
+            enableWhen: [
+              {
+                question: 'q9',
+                operator: '>=',
+                answerInteger: 2,
               },
             ],
           },
