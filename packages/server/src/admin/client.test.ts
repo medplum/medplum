@@ -93,12 +93,12 @@ describe('Client admin', () => {
       (e: BundleEntry<ProjectMembership>) =>
         e.resource?.profile?.reference === getReferenceString(res.body as ClientApplication)
     )?.resource;
+    expect(clientMembership).toBeDefined();
     expect(clientMembership.resourceType).toBe('ProjectMembership');
 
     // Get the id of the project attached to this membership
     const [, projectId] = parseReference(clientMembership.project) ?? [];
 
-    expect(clientMembership).toBeDefined();
     expect(projectId).toBe(project.id);
   });
 });
