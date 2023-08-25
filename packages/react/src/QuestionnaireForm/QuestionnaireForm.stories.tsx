@@ -312,7 +312,7 @@ export const LabOrdering = (): JSX.Element => {
         questionnaire={{
           resourceType: 'Questionnaire',
           id: 'lab-order-example',
-          title: 'Lab Order Example',
+          title: 'Lab Order Example (not complete)',
           item: [
             {
               linkId: 'patient-name',
