@@ -176,7 +176,7 @@ To search for specific threads that are grouped by `Encounter`:
 
 In this example, we search for any `Communication` resource that references our `Encounter` in the `encounter` field. We also `_include` that `Encounter`, though you can leave this out if you only want to return the messages themselves. We then use `_sort` to get them in the order they were sent.
 
-### Putting the It All Together
+### Putting It All Together
 
 To put this all together, we can also search for all threads and return their messages with them.
 
