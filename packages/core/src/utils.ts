@@ -285,7 +285,7 @@ function buildQuestionnaireAnswerItems(
 }
 
 /**
- * Returns all questionnaire answer arrays as a map by link ID.
+ * Returns an array of  questionnaire answers as a map by link ID.
  * @param response The questionnaire response resource.
  * @returns Questionnaire answer arrays mapped by link ID.
  */
@@ -300,7 +300,7 @@ export function getAllQuestionnaireAnswers(
 /**
  * Recursively builds the questionnaire answer items map.
  * @param items The current questionnaire response items.
- * @param result The cumulative result map of arrays.
+ * @param result The cumulative result map of answers.
  */
 function buildAllQuestionnaireAnswerItems(
   items: QuestionnaireResponseItem[] | undefined,
