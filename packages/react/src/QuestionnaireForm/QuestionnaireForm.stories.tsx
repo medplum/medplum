@@ -86,7 +86,7 @@ export const Groups = (): JSX.Element => (
   </Document>
 );
 
-export const HealthGorillaQuestionnaire = (): JSX.Element => {
+export const LabOrdering = (): JSX.Element => {
   function orderTypes(id: string, title: string, enableQuestion: string): any {
     return {
       id: id + '-group',
@@ -311,8 +311,8 @@ export const HealthGorillaQuestionnaire = (): JSX.Element => {
       <QuestionnaireForm
         questionnaire={{
           resourceType: 'Questionnaire',
-          id: 'hg-example',
-          title: 'New Order',
+          id: 'lab-order-example',
+          title: 'Lab Order Example',
           item: [
             {
               linkId: 'patient-name',

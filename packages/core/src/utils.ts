@@ -258,24 +258,51 @@ export function calculateAgeString(birthDateStr: string, endDateStr?: string): s
 }
 
 /**
- * @deprecated Returns all questionnaire answers as a map by link ID.
+ * Returns all questionnaire answers as a map by link ID.
  * @param response The questionnaire response resource.
  * @returns Questionnaire answers mapped by link ID.
  */
 export function getQuestionnaireAnswers(
   response: QuestionnaireResponse
+): Record<string, QuestionnaireResponseItemAnswer> {
+  const result: Record<string, QuestionnaireResponseItemAnswer> = {};
+  buildQuestionnaireAnswerItems(response.item, result);
+  return result;
+}
+
+function buildQuestionnaireAnswerItems(
+  items: QuestionnaireResponseItem[] | undefined,
+  result: Record<string, QuestionnaireResponseItemAnswer>
+): void {
+  if (items) {
+    for (const item of items) {
+      if (item.linkId && item.answer && item.answer.length > 0) {
+        result[item.linkId] = item.answer[0];
+      }
+      buildQuestionnaireAnswerItems(item.item, result);
+    }
+  }
+}
+
+/**
+ * Returns all questionnaire answer arrays as a map by link ID.
+ * @param response The questionnaire response resource.
+ * @returns Questionnaire answer arrays mapped by link ID.
+ */
+export function getAllQuestionnaireAnswers(
+  response: QuestionnaireResponse
 ): Record<string, QuestionnaireResponseItemAnswer[]> {
   const result: Record<string, QuestionnaireResponseItemAnswer[]> = {};
-  buildQuestionnaireAnswerItems(response.item, result);
+  buildAllQuestionnaireAnswerItems(response.item, result);
   return result;
 }
 
 /**
  * Recursively builds the questionnaire answer items map.
  * @param items The current questionnaire response items.
- * @param result The cumulative result map.
+ * @param result The cumulative result map of arrays.
  */
-function buildQuestionnaireAnswerItems(
+function buildAllQuestionnaireAnswerItems(
   items: QuestionnaireResponseItem[] | undefined,
   result: Record<string, QuestionnaireResponseItemAnswer[]>
 ): void {
@@ -284,7 +311,7 @@ function buildQuestionnaireAnswerItems(
       if (item.linkId && item.answer && item.answer.length > 0) {
         result[item.linkId] = item.answer;
       }
-      buildQuestionnaireAnswerItems(item.item, result);
+      buildAllQuestionnaireAnswerItems(item.item, result);
     }
   }
 }

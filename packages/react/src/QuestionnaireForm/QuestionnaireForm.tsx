@@ -430,7 +430,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <TextInput
           id={name}
           name={name}
-          defaultValue={initial?.valueString ?? matchLinkIdValues(props.answers ?? [], item)}
+          defaultValue={initial?.valueString}
           onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
       );
@@ -506,7 +506,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             name={name}
             item={item}
             initial={initial}
-            defaultValue={matchLinkIdValues(props.answers ?? [], item)}
             onChangeAnswer={(e) => onChangeAnswer(e, index)}
           />
         );
@@ -529,7 +528,6 @@ interface QuestionnaireChoiceInputProps {
   name: string;
   item: QuestionnaireItem;
   initial: QuestionnaireItemInitial | undefined;
-  defaultValue?: string;
   onChangeAnswer: (newResponseAnswer: QuestionnaireResponseItemAnswer) => void;
 }
 
@@ -593,7 +591,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
         const propertyName = 'value' + capitalize(optionValue.type);
         props.onChangeAnswer({ [propertyName]: optionValue.value });
       }}
-      defaultValue={typedValueToString(initialValue) ?? props.defaultValue}
+      defaultValue={typedValueToString(initialValue)}
       data={data}
     />
   );
@@ -875,7 +873,10 @@ function RepeatableItem(props: RepeatableItemProps): JSX.Element {
       {[...Array(number)].map((_, i) => {
         return <React.Fragment key={`${props.item.linkId}-${i}`}>{props.children({ index: i })}</React.Fragment>;
       })}
-      {props.item?.repeats && <Anchor onClick={() => setNumber((n) => n + 1)}>Add Item</Anchor>}
+      {(props.item?.repeats && props.item.type !== QuestionnaireItemType.choice) ||
+        (props.item.type !== QuestionnaireItemType.openChoice && (
+          <Anchor onClick={() => setNumber((n) => n + 1)}>Add Item</Anchor>
+        ))}
     </>
   );
 }
