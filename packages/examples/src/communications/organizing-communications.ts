@@ -28,7 +28,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true' \
 // start-block searchSpecificThreadTs
 await medplum.searchResources('Communication', {
   'part-of': 'Communication/example-communication',
-  _sort: 'sent'
+  _sort: 'sent',
 });
 // end-block searchSpecificThreadTs
 
@@ -123,7 +123,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&_revinc
 */
 
 // start-block searchFilteredEncountersTs
-await medplum.searchResource('Communication', {
+await medplum.searchResources('Communication', {
   'encounter:missing': false,
   _include: 'Communication:encounter',
   subject: 'Patient/example-patient',
@@ -142,144 +142,145 @@ curl 'https://api.medplum.com/fhir/R4/Communication?encounter:missing=false&_inc
 // end-block searchFilteredEncountersCurl
 */
 
-const communicationThread: Communication[] = 
-[
-// start-block communicationGroupedThread
-{
-  resourceType: 'Communication',
-  id: 'example-parent-communication',
-  // There is no `partOf` of `payload` field on this communication
-  // ...
-  topic: {
-    text: 'Homer Simpson April 10th lab tests'
-  }
-},
-
-// The initial communication
-{
-  resourceType: 'Communication',
-  id: 'example-message-1',
-  payload: [
-    {
-      id: 'example-message-1-payload',
-      contentString: 'The specimen for you patient, Homer Simpson, has been received.'
-    }
-  ],
-  topic: {
-    text: 'Homer Simpson April 10th lab tests'
-  },
-  // ...
-  partOf: [
-    {
-      resource: {
-        resourceType: 'Communication',
-        id: 'example-parent-communication'
-      }
-    }
-  ]
-},
-
-// A second response, directly to `example-message-1` but still referencing the parent communication
-{
-  resourceType: 'Communication',
-  id: 'example-message-2',
-  payload: [
-    {
-      id: 'example-message-2-payload',
-      contentString: 'Will the results be ready by the end of the week?'
-    }
-  ],
-  topic: {
-    text: 'Homer Simpson April 10th lab tests'
-  },
-  // ...
-  partOf: [
-    {
-      resource: {
-        resourceType: 'Communication',
-        id: 'example-parent-communication'
-      }
-    }
-  ],
-  inResponseTo: [
-    {
-      resource: {
-        resourceType: 'Communication',
-        id: 'example-message-1'
-      }
-    }
-  ]
-},
-
-// A third response
+const communicationThread: Communication[] = [
+  // start-block communicationGroupedThread
   {
     resourceType: 'Communication',
-    id: 'example-message-3',
+    id: 'example-parent-communication',
+    // There is no `partOf` of `payload` field on this communication
+    // ...
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+  },
+
+  // The initial communication
+  {
+    resourceType: 'Communication',
+    id: 'example-message-1',
     payload: [
       {
-        id: 'example-message-2-payload',
-        contentString: 'Yes, we will have them to you by Thursday.'
-      }
+        id: 'example-message-1-payload',
+        contentString: 'The specimen for you patient, Homer Simpson, has been received.',
+      },
     ],
     topic: {
-      text: 'Homer Simpson April 10th lab tests'
+      text: 'Homer Simpson April 10th lab tests',
     },
     // ...
     partOf: [
       {
         resource: {
           resourceType: 'Communication',
-          id: 'example-parent-communication'
-        }
-      }
+          id: 'example-parent-communication',
+        },
+      },
+    ],
+  },
+
+  // A second response, directly to `example-message-1` but still referencing the parent communication
+  {
+    resourceType: 'Communication',
+    id: 'example-message-2',
+    payload: [
+      {
+        id: 'example-message-2-payload',
+        contentString: 'Will the results be ready by the end of the week?',
+      },
+    ],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+    // ...
+    partOf: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-parent-communication',
+        },
+      },
     ],
     inResponseTo: [
       {
         resource: {
           resourceType: 'Communication',
-          id: 'example-message-2'
-        }
-      }
-    ]
-  }
+          id: 'example-message-1',
+        },
+      },
+    ],
+  },
+
+  // A third response
+  {
+    resourceType: 'Communication',
+    id: 'example-message-3',
+    payload: [
+      {
+        id: 'example-message-2-payload',
+        contentString: 'Yes, we will have them to you by Thursday.',
+      },
+    ],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+    // ...
+    partOf: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-parent-communication',
+        },
+      },
+    ],
+    inResponseTo: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-message-2',
+        },
+      },
+    ],
+  },
   // end-block communicationGroupedThread
-]
+];
+
+console.log(communicationThread);
 
 const categoryExampleCommunications: Communication =
-// start-block communicationCategories
-{
-  resourceType: 'Communication',
-  id: 'example-communication',
-  category: [
-    {
-      text: 'Doctor',
-      coding: [
-        {
-          code: '158965000',
-          system: 'http://snomed.info/sct'
-        }
-      ]
-    },
-    {
-      text: 'Endocrinology',
-      coding: [
-        {
-          code: '394583002',
-          system: 'http://snomed.info.sct'
-        }
-      ]
-    },
-    {
-      text: 'Diabetes self-management plan',
-      coding: [
-        {
-          code: '735985000',
-          system: 'http://snomed.info.sct'
-        }
-      ]
-    }
-  ]
-}
+  // start-block communicationCategories
+  {
+    resourceType: 'Communication',
+    id: 'example-communication',
+    category: [
+      {
+        text: 'Doctor',
+        coding: [
+          {
+            code: '158965000',
+            system: 'http://snomed.info/sct',
+          },
+        ],
+      },
+      {
+        text: 'Endocrinology',
+        coding: [
+          {
+            code: '394583002',
+            system: 'http://snomed.info.sct',
+          },
+        ],
+      },
+      {
+        text: 'Diabetes self-management plan',
+        coding: [
+          {
+            code: '735985000',
+            system: 'http://snomed.info.sct',
+          },
+        ],
+      },
+    ],
+  };
 // end-block communicationCategories
 
-console.log(communicationThread, categoryExampleCommunications);
+console.log(categoryExampleCommunications);
