@@ -4,7 +4,6 @@ import {
   Button,
   Checkbox,
   Group,
-  MultiSelect,
   NativeSelect,
   Radio,
   Space,
@@ -316,12 +315,7 @@ export function QuestionnaireRepeatWrapper(props: QuestionnaireRepeatWrapperProp
     );
   }
   return (
-    <RepeatableItem
-      item={props.item}
-      key={props.item.linkId}
-      responseItems={props.responseItems}
-      onChange={props.onChange}
-    >
+    <RepeatableItem item={props.item} key={props.item.linkId}>
       {({ index }: { index: number }) => <QuestionnaireFormItem {...props} index={index} />}
     </RepeatableItem>
   );
@@ -472,35 +466,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
       if (isDropDownChoice(item)) {
-        if (item.repeats) {
-          return (
-            <MultiSelect
-              data={convertToDesiredFormat(props.item)}
-              placeholder="Select items"
-              searchable
-              creatable
-              getCreateLabel={(query) => `+ Add ${query}`}
-              onChange={(selected) => {
-                const values = selected.map((o) => {
-                  const option = item.answerOption?.find((option) => option.valueCoding?.code === o);
-                  const optionValue = getTypedPropertyValue(
-                    { type: 'QuestionnaireItemAnswerOption', value: option },
-                    'value'
-                  ) as TypedValue;
-                  return { valueCoding: optionValue.value };
-                });
-                const responses = props.responseItems?.filter((r) => r.linkId === item.linkId) ?? [];
-                props.onChange({
-                  id: responses[0].id,
-                  linkId: item.linkId,
-                  text: item.text,
-                  answer: values,
-                });
-              }}
-              onCreate={(query) => query}
-            />
-          );
-        }
         return (
           <QuestionnaireChoiceDropDownInput
             name={name}
@@ -693,7 +658,7 @@ function buildInitialResponseItems(items: QuestionnaireItem[] | undefined): Ques
 
 function buildInitialResponseItem(item: QuestionnaireItem): QuestionnaireResponseItem {
   return {
-    id: item.id ?? generateId(),
+    id: generateId(),
     linkId: item.linkId,
     text: item.text,
     item: buildInitialResponseItems(item.item),
@@ -836,8 +801,6 @@ function RepeatableGroup(props: RepeatableGroupProps): JSX.Element | null {
 
 interface RepeatableItemProps {
   item: QuestionnaireItem;
-  responseItems?: QuestionnaireResponseItem[];
-  onChange: (newResponseItem: QuestionnaireResponseItem) => void;
   children: (props: { index: number }) => JSX.Element;
 }
 
@@ -848,10 +811,7 @@ function RepeatableItem(props: RepeatableItemProps): JSX.Element {
       {[...Array(number)].map((_, i) => {
         return <React.Fragment key={`${props.item.linkId}-${i}`}>{props.children({ index: i })}</React.Fragment>;
       })}
-      {(props.item?.repeats && props.item.type !== QuestionnaireItemType.choice) ||
-        (props.item.type !== QuestionnaireItemType.openChoice && (
-          <Anchor onClick={() => setNumber((n) => n + 1)}>Add Item</Anchor>
-        ))}
+      {props.item?.repeats && <Anchor onClick={() => setNumber((n) => n + 1)}>Add Item</Anchor>}
     </>
   );
 }
@@ -871,13 +831,6 @@ function updateAnswerArray(
     answers.push(newResponseAnswer);
     return answers;
   }
-}
-
-function convertToDesiredFormat(item: QuestionnaireItem): any {
-  return (item.answerOption ?? []).map((a) => ({
-    value: a.valueCoding?.code,
-    label: a.valueCoding?.display,
-  }));
 }
 
 function getResponseId(responses: QuestionnaireResponseItem[], index: number): string {
