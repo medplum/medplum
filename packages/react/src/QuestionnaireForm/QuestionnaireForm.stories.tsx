@@ -262,6 +262,18 @@ export const LabOrdering = (): JSX.Element => {
               },
             ],
           },
+          {
+            id: 'urine-culture-notes',
+            linkId: 'urine-culture-notes',
+            text: 'Test Notes',
+            type: 'string',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
+                valueString: 'match-values',
+              },
+            ],
+          },
         ],
       },
       {
@@ -317,7 +329,7 @@ export const LabOrdering = (): JSX.Element => {
             {
               linkId: 'patient-name',
               text: 'Patient Name',
-              type: 'string',
+              type: 'reference',
               extension: [
                 {
                   url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
@@ -326,6 +338,19 @@ export const LabOrdering = (): JSX.Element => {
                       {
                         system: 'http://hl7.org/fhir/questionnaire-item-control',
                         code: 'page',
+                      },
+                    ],
+                  },
+                },
+                {
+                  id: 'reference-patient',
+                  url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                  valueCodeableConcept: {
+                    coding: [
+                      {
+                        system: 'http://hl7.org/fhir/fhir-types',
+                        display: 'Patient',
+                        code: 'Patient',
                       },
                     ],
                   },
@@ -481,7 +506,22 @@ export const LabOrdering = (): JSX.Element => {
                     {
                       linkId: 'ordering-physician',
                       text: 'Ordering Physician',
-                      type: 'string',
+                      type: 'reference',
+                      extension: [
+                        {
+                          id: 'reference-physician',
+                          url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                          valueCodeableConcept: {
+                            coding: [
+                              {
+                                system: 'http://hl7.org/fhir/fhir-types',
+                                display: 'Practitioner',
+                                code: 'Practitioner',
+                              },
+                            ],
+                          },
+                        },
+                      ],
                     },
                     {
                       linkId: 'specimen-collection',
