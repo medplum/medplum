@@ -1,10 +1,8 @@
+import { getReferenceString, resolveId } from '@medplum/core';
+import type { BundleEntry, ClientApplication, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { getReferenceString, resolveId } from '@medplum/core';
-
-import type { ClientApplication, BundleEntry, ProjectMembership } from '@medplum/fhirtypes';
-
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
