@@ -639,8 +639,8 @@ export function isQuestionEnabled(
     } else {
       // `=` and `!=` should be treated as the FHIRPath `~` and `!~`
       // All other operators should be unmodified
-      const fhirOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
-      const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirOperator} %expectedAnswer`, [actualAnswer], {
+      const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
+      const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirPathOperator} %expectedAnswer`, [actualAnswer], {
         actualAnswer,
         expectedAnswer,
       });
