@@ -54,9 +54,14 @@ export class Storage extends Construct {
 
     if (region === 'us-east-1') {
       // Public key in PEM format
-      const publicKey = new cloudfront.PublicKey(this, 'StoragePublicKey', {
-        encodedKey: config.storagePublicKey,
-      });
+      let publicKey: cloudfront.IPublicKey;
+      if (config.signingKeyId) {
+        publicKey = cloudfront.PublicKey.fromPublicKeyId(this, 'StoragePublicKey', config.signingKeyId);
+      } else {
+        publicKey = new cloudfront.PublicKey(this, 'StoragePublicKey', {
+          encodedKey: config.storagePublicKey,
+        });
+      }
 
       // Authorized key group for presigned URLs
       const keyGroup = new cloudfront.KeyGroup(this, 'StorageKeyGroup', {
