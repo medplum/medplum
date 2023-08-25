@@ -241,7 +241,8 @@
       "depth": 2,
       "types": [
         {
-          "datatype": "string"
+          "datatype": "Expression",
+          "documentLocation": "datatype"
         }
       ],
       "path": "AccessPolicy.resource.writeCriteria",

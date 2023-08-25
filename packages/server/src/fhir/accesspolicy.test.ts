@@ -1292,8 +1292,14 @@ describe('AccessPolicy', () => {
         {
           resourceType: 'Observation',
           writeCriteria: [
-            `%before.exists() implies %before.status != 'final'`,
-            `status = 'final' implies subject.exists()`,
+            {
+              language: 'text/fhirpath',
+              expression: `%before.exists() implies %before.status != 'final'`,
+            },
+            {
+              language: 'text/fhirpath',
+              expression: `status = 'final' implies subject.exists()`,
+            },
           ],
         },
       ],

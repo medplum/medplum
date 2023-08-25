@@ -1564,11 +1564,15 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!matchingPolicy) {
       return false;
     } else if (matchingPolicy?.writeCriteria) {
-      return matchingPolicy.writeCriteria.every((expression) => {
-        const invariant = evalFhirPathTyped(expression, [{ type: current.resourceType, value: current }], {
-          before: { type: previous?.resourceType ?? 'undefined', value: previous },
-          after: { type: current.resourceType, value: current },
-        });
+      return matchingPolicy.writeCriteria.every((criteria) => {
+        const invariant = evalFhirPathTyped(
+          criteria.expression as string,
+          [{ type: current.resourceType, value: current }],
+          {
+            before: { type: previous?.resourceType ?? 'undefined', value: previous },
+            after: { type: current.resourceType, value: current },
+          }
+        );
         return invariant.length === 1 && invariant[0].value === true;
       });
     } else {
