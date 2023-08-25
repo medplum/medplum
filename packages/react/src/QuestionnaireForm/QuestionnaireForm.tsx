@@ -506,6 +506,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             name={name}
             item={item}
             initial={initial}
+            defaultValue={matchLinkIdValues(props.answers ?? [], item)}
             onChangeAnswer={(e) => onChangeAnswer(e, index)}
           />
         );
@@ -528,6 +529,7 @@ interface QuestionnaireChoiceInputProps {
   name: string;
   item: QuestionnaireItem;
   initial: QuestionnaireItemInitial | undefined;
+  defaultValue?: string;
   onChangeAnswer: (newResponseAnswer: QuestionnaireResponseItemAnswer) => void;
 }
 
@@ -591,7 +593,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
         const propertyName = 'value' + capitalize(optionValue.type);
         props.onChangeAnswer({ [propertyName]: optionValue.value });
       }}
-      defaultValue={typedValueToString(initialValue)}
+      defaultValue={typedValueToString(initialValue) ?? props.defaultValue}
       data={data}
     />
   );

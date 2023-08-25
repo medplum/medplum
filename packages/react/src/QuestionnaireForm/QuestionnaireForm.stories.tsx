@@ -87,6 +87,78 @@ export const Groups = (): JSX.Element => (
 );
 
 export const HealthGorillaQuestionnaire = (): JSX.Element => {
+  function orderTypes(id: string, title: string, enableQuestion: string): any {
+    return {
+      id: id + '-group',
+      linkId: id + '-group',
+      text: title,
+      type: 'group',
+      enableWhen: [
+        {
+          question: enableQuestion,
+          operator: '=',
+          answerString: id,
+        },
+      ],
+      item: [
+        {
+          id: id + '-priority',
+          linkId: id + '-priority',
+          type: 'choice',
+          text: 'Priority',
+
+          answerOption: [
+            {
+              valueCoding: {
+                code: 'STAT',
+                display: 'STAT',
+                system: 'http://loinc.org',
+              },
+            },
+            {
+              valueCoding: {
+                code: 'Unscheduled',
+                display: 'Unscheduled',
+                system: 'http://loinc.org',
+              },
+            },
+          ],
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
+              valueString: 'match-values',
+            },
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+              valueCodeableConcept: {
+                coding: [
+                  {
+                    system: 'http://hl7.org/fhir/questionnaire-item-control',
+                    code: 'drop-down',
+                    display: 'Drop down',
+                  },
+                ],
+                text: 'Drop down',
+              },
+            },
+          ],
+        },
+        {
+          id: id + 'notes',
+          linkId: id + 'notes',
+          text: 'Test Notes',
+          type: 'string',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
+              valueString: 'match-values',
+            },
+          ],
+        },
+      ],
+    };
+  }
+
   const vendors: any = {
     linkId: 'question2',
     text: 'Vendor',
@@ -122,61 +194,86 @@ export const HealthGorillaQuestionnaire = (): JSX.Element => {
     ],
   };
 
-  const group: any = {
+  const orders: any = {
     id: 'the-big',
     linkId: 'q2',
     type: 'group',
-    text: 'The Groups',
+    text: 'Orders',
     item: [
+      orderTypes('metabolicpanel', 'Comp. Metabolic Panel', 'labcorp-tests'),
+      orderTypes('factor', 'Factor XIII', 'labcorp-tests'),
+      orderTypes('glucose', 'Glucose', 'labcorp-tests'),
+      orderTypes('hemoglobin', 'Hemoglobin A1c', 'labcorp-tests'),
+      orderTypes('iron-and-tibc', 'Iron and TIBC', 'labcorp-tests'),
+      orderTypes('lead-blood', 'Lead,Blood (Adult)', 'labcorp-tests'),
+      orderTypes('rpr', 'RPR', 'labcorp-tests'),
+      orderTypes('1', 'TSH', 'quest-tests'),
       {
-        id: 'yes-group-1',
-        linkId: 'q2',
+        id: 'urine-culture-group',
+        linkId: 'urine-culture-group',
+        text: 'Urine Culture, Routine',
         type: 'group',
-        text: 'The Yes Group Selected',
         enableWhen: [
           {
-            question: 'question3',
-            operator: 'exists',
-            answerString: 'LA10573-6',
+            question: 'labcorp-tests',
+            operator: '=',
+            answerString: 'urine-culture',
           },
         ],
         item: [
           {
-            id: 'yes-1',
-            linkId: 'yes1',
-            text: 'Question 1',
-            type: 'string',
+            id: 'urine-culture-priority',
+            linkId: 'urine-culture-priority',
+            text: 'Priority',
+            type: 'choice',
+            answerOption: [
+              {
+                valueCoding: {
+                  code: 'STAT',
+                  display: 'STAT',
+                  system: 'http://loinc.org',
+                },
+              },
+              {
+                valueCoding: {
+                  code: 'Unscheduled',
+                  display: 'Unscheduled',
+                  system: 'http://loinc.org',
+                },
+              },
+            ],
             extension: [
               {
                 url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
                 valueString: 'match-values',
               },
-            ],
-          },
-          {
-            id: 'yes-2',
-            linkId: 'yes2',
-            text: 'Question 2',
-            type: 'string',
-            extension: [
               {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
-                valueString: 'match-values',
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
               },
             ],
           },
         ],
       },
       {
-        id: 'no-group-1',
+        id: 'quest-tests-group-1',
         linkId: 'q3',
         type: 'group',
         text: 'The No Group Selected',
         enableWhen: [
           {
-            question: 'question3',
-            operator: 'exists',
-            answerString: 'LA10533-0',
+            question: 'quest-tests',
+            operator: '=',
+            answerString: '1',
           },
         ],
         item: [
@@ -214,8 +311,8 @@ export const HealthGorillaQuestionnaire = (): JSX.Element => {
       <QuestionnaireForm
         questionnaire={{
           resourceType: 'Questionnaire',
-          id: 'groups-example',
-          title: 'Groups Example',
+          id: 'hg-example',
+          title: 'New Order',
           item: [
             {
               linkId: 'patient-name',
@@ -237,83 +334,211 @@ export const HealthGorillaQuestionnaire = (): JSX.Element => {
             },
             vendors,
             {
-              linkId: 'question3',
-              text: 'Question 3',
-              type: 'choice',
-              repeats: true,
-              answerOption: [
+              linkId: 'tests-page',
+              text: 'Tests',
+              type: 'group',
+              item: [
                 {
-                  valueCoding: {
-                    code: 'LA10533-0',
-                    display: 'Blood Clots',
-                    system: 'http://loinc.org',
-                  },
-                },
-                {
-                  valueCoding: {
-                    code: 'LA10572-8',
-                    display: '-- Blood Clot in Leg',
-                    system: 'http://loinc.org',
-                  },
-                },
-                {
-                  valueCoding: {
-                    code: 'LA10573-6',
-                    display: '-- Blood Clot in Lungs',
-                    system: 'http://loinc.org',
-                  },
-                },
-                {
-                  valueCoding: {
-                    code: 'LA10524-9',
-                    display: 'Cancer',
-                    system: 'http://loinc.org',
-                  },
-                },
-                {
-                  valueCoding: {
-                    code: 'LA10549-6',
-                    display: '-- Bone Cancer',
-                    system: 'http://loinc.org',
-                  },
-                },
-                {
-                  valueCoding: {
-                    code: 'LA10536-3',
-                    display: '-- Breast Cancer',
-                    system: 'http://loinc.org',
-                  },
-                },
-              ],
-              extension: [
-                {
-                  url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                  valueCodeableConcept: {
-                    coding: [
-                      {
-                        system: 'http://hl7.org/fhir/questionnaire-item-control',
-                        code: 'page',
+                  linkId: 'labcorp-tests',
+                  text: 'Available Tests',
+                  type: 'choice',
+                  repeats: true,
+                  enableWhen: [
+                    {
+                      question: 'question2',
+                      operator: '=',
+                      answerString: '1',
+                    },
+                  ],
+                  answerOption: [
+                    {
+                      valueCoding: {
+                        code: 'metabolicpanel',
+                        display: 'Comp. Metabolic Panel',
+                        system: 'http://loinc.org',
                       },
-                    ],
-                  },
+                    },
+                    {
+                      valueCoding: {
+                        code: 'factor',
+                        display: 'Factor XIII',
+                        system: 'http://loinc.org',
+                      },
+                    },
+                    {
+                      valueCoding: {
+                        code: 'glucose',
+                        display: 'Glucose',
+                        system: 'http://loinc.org',
+                      },
+                    },
+                    {
+                      valueCoding: {
+                        code: 'hemoglobin',
+                        display: 'Hemoglobin A1c',
+                        system: 'http://loinc.org',
+                      },
+                    },
+                    {
+                      valueCoding: {
+                        code: 'iron-and-tibc ',
+                        display: 'Iron and TIBC',
+                        system: 'http://loinc.org',
+                      },
+                    },
+                    {
+                      valueCoding: {
+                        code: 'lead-blood',
+                        display: 'Lead,Blood (Adult)',
+                        system: 'http://loinc.org',
+                      },
+                    },
+                    {
+                      valueCoding: {
+                        code: 'rpr',
+                        display: 'RPR',
+                        system: 'http://loinc.org',
+                      },
+                    },
+                    {
+                      valueCoding: {
+                        code: 'urine-culture',
+                        display: 'Urine Culture, Routine',
+                        system: 'http://loinc.org',
+                      },
+                    },
+                  ],
+                  extension: [
+                    {
+                      url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                      valueCodeableConcept: {
+                        coding: [
+                          {
+                            system: 'http://hl7.org/fhir/questionnaire-item-control',
+                            code: 'drop-down',
+                            display: 'Drop down',
+                          },
+                        ],
+                        text: 'Drop down',
+                      },
+                    },
+                  ],
                 },
                 {
-                  url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                  valueCodeableConcept: {
-                    coding: [
-                      {
-                        system: 'http://hl7.org/fhir/questionnaire-item-control',
-                        code: 'drop-down',
-                        display: 'Drop down',
+                  linkId: 'quest-tests',
+                  text: 'Available Tests',
+                  type: 'choice',
+                  repeats: true,
+                  enableWhen: [
+                    {
+                      question: 'question2',
+                      operator: '=',
+                      answerString: '2',
+                    },
+                  ],
+                  answerOption: [
+                    {
+                      valueCoding: {
+                        code: '1',
+                        display: 'TSH',
+                        system: 'http://loinc.org',
                       },
-                    ],
-                    text: 'Drop down',
-                  },
+                    },
+                  ],
+                  extension: [
+                    {
+                      url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                      valueCodeableConcept: {
+                        coding: [
+                          {
+                            system: 'http://hl7.org/fhir/questionnaire-item-control',
+                            code: 'drop-down',
+                            display: 'Drop down',
+                          },
+                        ],
+                        text: 'Drop down',
+                      },
+                    },
+                  ],
                 },
+                orders,
               ],
             },
-            group,
-            group,
+            {
+              linkId: 'complete',
+              text: 'Complete',
+              type: 'group',
+              item: [
+                {
+                  linkId: 'complete-form',
+                  type: 'group',
+                  item: [
+                    {
+                      linkId: 'selecting-patient-diagnoses',
+                      text: 'Selecting Patient Diagnoses',
+                      type: 'string',
+                    },
+                    {
+                      linkId: 'ordering-physician',
+                      text: 'Ordering Physician',
+                      type: 'string',
+                    },
+                    {
+                      linkId: 'specimen-collection',
+                      text: 'Specimen For the Order Collected',
+                      type: 'boolean',
+                    },
+                    {
+                      linkId: 'schedule-future-order',
+                      text: 'Schedule Future Order',
+                      type: 'boolean',
+                    },
+                    {
+                      linkId: 'billing',
+                      text: 'Bill To',
+                      type: 'choice',
+                      answerOption: [
+                        {
+                          valueCoding: {
+                            code: 'patient',
+                            display: 'Patient',
+                            system: 'http://loinc.org',
+                          },
+                        },
+                        {
+                          valueCoding: {
+                            code: 'client',
+                            display: 'Client',
+                            system: 'http://loinc.org',
+                          },
+                        },
+                        {
+                          valueCoding: {
+                            code: 'guarantor',
+                            display: 'Guarantor',
+                            system: 'http://loinc.org',
+                          },
+                        },
+                        {
+                          valueCoding: {
+                            code: 'third-party',
+                            display: 'Third Party',
+                            system: 'http://loinc.org',
+                          },
+                        },
+                      ],
+                    },
+                    {
+                      linkId: 'save-quick-order',
+                      text: 'Save as Quick Order',
+                      type: 'boolean',
+                    },
+                  ],
+                },
+                orders,
+              ],
+            },
+            orders,
           ],
         }}
         onSubmit={(formData: any) => {
