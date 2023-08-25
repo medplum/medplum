@@ -258,7 +258,7 @@ export function calculateAgeString(birthDateStr: string, endDateStr?: string): s
 }
 
 /**
- * Returns all questionnaire answers as a map by link ID.
+ * @deprecated Returns all questionnaire answers as a map by link ID.
  * @param response The questionnaire response resource.
  * @returns Questionnaire answers mapped by link ID.
  */
