@@ -48,13 +48,13 @@ In these threads, the parent resource needs to be distinguished from the childre
 
 Additionally, to help organize threads, it is useful to use add a `topic` element to give the thread a subject. Similar to the subject line of an email, the `topic` should be given a high level of specificity to help distinguish the thread. The `topic` should be assigned to both the parent and children `Communication` resources in any thread.
 
-:::Note
+:::note
 
 Because of how specific the `topic` field should be, it is best to use a custom coding rather than `LOINC` or `SNOMED` codes to classify the element.
 
 :::
 
-<details><summary>Example of a thread grouped using a `Communication` resource</summary>
+<details><summary>Example of a thread grouped using a Communication resource</summary>
   <MedplumCodeBlock language="ts" selectBlocks="communicationGroupedThread">
     {ExampleCode}
   </MedplumCodeBlock>
@@ -63,7 +63,7 @@ Because of how specific the `topic` field should be, it is best to use a custom 
 ```mermaid
 
 flowchart BT
-    A["`**Communication.topic:**`" Homer Simpson April 10th lab tests]
+    A[<b>Communication: </b> <br/> Homer Simpson April 10th lab tests]
     B(The specimen for you patient, Homer <br/> Simpson, has been received.) -->|partOf| A
     C(Will the results be ready by the end <br/> of the week?) -->|partOf| A
     D(Yes, we will have them to you <br/> by Thursday.) -->|partOf| A
@@ -92,7 +92,7 @@ Here are some common types of tags that can be used for grouping:
   </MedplumCodeBlock>
 </details>
 
-:::tip Note
+:::tip
 
 There are different ways that you can categorize threads, each one with its own pros and cons. For example, you can have threads with multiple `category` fields, one for specialty and one for level of credentials, etc., where you would search for multiple categories at once. The pros to this are that the data model is more self-explanatory, since each `category` is explicitly represented, and better maintainability, since it is easier to update and add individual categories. However, this can also lead to more complex queries.
 
