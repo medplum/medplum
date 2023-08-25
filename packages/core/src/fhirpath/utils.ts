@@ -1,5 +1,5 @@
-import { ElementDefinition, Period, Quantity, Coding } from '@medplum/fhirtypes';
-import { buildTypeName, getElementDefinition, isResource, PropertyType, TypedValue } from '../types';
+import { Coding, ElementDefinition, Period, Quantity } from '@medplum/fhirtypes';
+import { PropertyType, TypedValue, buildTypeName, getElementDefinition, isResource } from '../types';
 import { capitalize, isEmpty } from '../utils';
 
 /**
@@ -308,12 +308,12 @@ export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
     // The version, display, and userSelected elements are ignored for the purposes of determining Coding equivalence."
     // Source: https://hl7.org/fhir/fhirpath.html#changes
 
-    // Basically checking if one of the `Coding` resources has a system defined. If so, then the two's system values must be compared
-    const systemsAreEquivalent =
-      (xValue as Coding).system || (yValue as Coding).system
-        ? (xValue as Coding).system === (yValue as Coding).system
-        : true;
-    return booleanToTypedValue((xValue as Coding).code === (yValue as Coding).code && systemsAreEquivalent);
+    // We need to check if both `code` and `system` are equivalent.
+    // If both have undefined `system` fields, If so, then the two's `system` values must be compared.
+    // Essentially they must both be `undefined` or both the same.
+    return booleanToTypedValue(
+      (xValue as Coding).code === (yValue as Coding).code && (xValue as Coding).system === (yValue as Coding).system
+    );
   }
 
   if (typeof xValue === 'object' && typeof yValue === 'object') {
