@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { getReferenceString, parseReference } from '@medplum/core';
+import { getReferenceString, resolveId } from '@medplum/core';
 
 import type { ClientApplication, BundleEntry, ProjectMembership } from '@medplum/fhirtypes';
 
@@ -97,7 +97,7 @@ describe('Client admin', () => {
     expect(clientMembership.resourceType).toBe('ProjectMembership');
 
     // Get the id of the project attached to this membership
-    const [, projectId] = parseReference(clientMembership.project) ?? [];
+    const projectId = resolveId(clientMembership.project);
 
     expect(projectId).toBe(project.id);
   });
