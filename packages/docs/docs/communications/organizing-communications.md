@@ -1,8 +1,14 @@
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+import ExampleCode from '!!raw-loader!@site/..//examples/src/communications/organizing-communications.ts';
+
 # Organizing Communications Using Threads
 
 ## Introduction
 
-In a healthcare context, messages are sent all the time and can include many sceanrios (patient to physician, physician to physician, and more), so ensuring they are well-organized is vital. This guide covers how to model and organize threads using Medplum.
+In a healthcare context, messages are sent all the time and can include many scenarios (patient to physician, physician to physician, and more), so ensuring they are well-organized is vital. This guide covers how to model and organize threads using Medplum.
 
 - Representing individual messages
 - Building and structuring threads
@@ -16,19 +22,19 @@ Put table up here – humanize the language in the descriptions a bit
 
 The FHIR `Communication` resource is a representation of any message sent in a healthcare setting. This can include emails, SMS messages, phone calls and more.
 
-| Element       | Description                                                                                      | Relevant Valueset                                                                      | Example                                                   |
-| ------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| payload       | Text, attachments, or resources that are being communicated to the recipient.                    |                                                                                        | You have an appointment scheduled for 2pm.                |
-| sender        | The person or team that sent the message.                                                        |                                                                                        | Practitioner/doctor-alice-smith                           |
-| recipient     | The person or team that received the message.                                                    |                                                                                        | Practitioner/id=doctor-gregory-house                      |
-| topic         | A description of the main focus of the message. Similar to the subject line of an email.         | Custom Internal Code                                                                   | In person physical with Homer Simpson on April 10th, 2023 |
-| category      | The type of message being conveyed. Like a tag that can be applied to the message.               | [SNOMED Codes](http://hl7.org/fhir/R4/valueset-medication-form-codes.html)             | [See below](#building-and-structuring-threads)            |
-| partOf        | A reference to a another resource which the `Communication` is a component.                      |                                                                                        | [See below](#how-to-"tag"-or-group-threads)               |
-| inResponseTo  | A reference to another `Communication` resource which the current one was created to respond to. |                                                                                        | Communication/previous-communication                      |
-| medium        | The technology used for this `Communication` (e.g. email, fax, phone).                           | [Participation Mode Codes](http://terminology.hl7.org/CodeSystem/v3-ParticipationMode) | email                                                     |
-| subject       | A reference to the patient or group that this `Communication` is about.                          |                                                                                        | Patient/homer-simpson                                     |
-| encounter     | A reference to a medical encounter to which this `Communication` is tightly associated.          |                                                                                        | Encounter/example-appointment                             |
-| sent/received | The time that the message was either sent or received.                                           |                                                                                        | 2023-04-10T10:00:00Z                                      |
+| **Element**       | **Description**                                                                                  | **Relevant Valueset**                                                                  | **Example**                                               |
+| ----------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `payload`         | Text, attachments, or resources that are being communicated to the recipient.                    |                                                                                        | You have an appointment scheduled for 2pm.                |
+| `sender`          | The person or team that sent the message.                                                        |                                                                                        | Practitioner/doctor-alice-smith                           |
+| `recipient`       | The person or team that received the message.                                                    |                                                                                        | Practitioner/id=doctor-gregory-house                      |
+| `topic`           | A description of the main focus of the message. Similar to the subject line of an email.         | Custom Internal Code                                                                   | In person physical with Homer Simpson on April 10th, 2023 |
+| `category`        | The type of message being conveyed. Like a tag that can be applied to the message.               | [SNOMED Codes](http://hl7.org/fhir/R4/valueset-medication-form-codes.html)             | [See below](#building-and-structuring-threads)            |
+| `partOf`          | A reference to another resource which the `Communication` is a component.                        |                                                                                        | [See below](#how-to-"tag"-or-group-threads)               |
+| `inResponseTo`    | A reference to another `Communication` resource which the current one was created to respond to. |                                                                                        | Communication/previous-communication                      |
+| `medium`          | The technology used for this `Communication` (e.g. email, fax, phone).                           | [Participation Mode Codes](http://terminology.hl7.org/CodeSystem/v3-ParticipationMode) | email                                                     |
+| `subject`         | A reference to the patient or group that this `Communication` is about.                          |                                                                                        | Patient/homer-simpson                                     |
+| `encounter`       | A reference to a medical encounter to which this `Communication` is tightly associated.          |                                                                                        | Encounter/example-appointment                             |
+| `sent`/`received` | The time that the message was either sent or received.                                           |                                                                                        | 2023-04-10T10:00:00Z                                      |
 
 ## Building and Structuring Threads
 
@@ -49,119 +55,19 @@ Because of how specific the `topic` field should be, it is best to use a custom 
 :::
 
 <details><summary>Example of a thread grouped using a `Communication` resource</summary>
-
-```ts
-
-// The parent communication
-{
-  resourceType: 'Communication',
-  id: 'example-parent-communication',
-  // There is no `partOf` of `payload` field on this communication
-  // ...
-  topic: {
-    text: 'Homer Simpson April 10th lab tests'
-  }
-}
-
-// The initial communication
-{
-  resourceType: 'Communication',
-  id: 'example-message-1',
-  payload: [
-    {
-      id: 'example-message-1-payload',
-      contentString: 'The specimen for you patient, Homer Simpson, has been received.'
-    }
-  ],
-  topic: {
-    text: 'Homer Simpson April 10th lab tests'
-  },
-  // ...
-  partOf: [
-    {
-      resource: {
-        resourceType: 'Communication',
-        id: 'example-parent-communication'
-      }
-    }
-  ]
-}
-
-// A second response, directly to `example-message-1` but still referencing the parent communication
-{
-  resourceType: 'Communication',
-  id: 'example-message-2',
-  payload: [
-    {
-      id: 'example-message-2-payload',
-      contentString: 'Will the results be ready by the end of the week?'
-    }
-  ],
-  topic: {
-    text: 'Homer Simpson April 10th lab tests'
-  },
-  // ...
-  partOf: [
-    {
-      resource: {
-        resourceType: 'Communication',
-        id: 'example-parent-communication'
-      }
-    }
-  ]
-  inResponseTo: [
-    {
-      resource: {
-        resourceType: 'Communication',
-        id: 'example-message-1'
-      }
-    }
-  ]
-}
-
-// A third response
-{
-  resourceType: 'Communication',
-  id: 'example-message-3',
-  payload: [
-    {
-      id: 'example-message-2-payload',
-      contentString: 'Yes, we will have them to you by Thursday.'
-    }
-  ],
-  topic: {
-    text: 'Homer Simpson April 10th lab tests'
-  },
-  // ...
-  partOf: [
-    {
-      resource: {
-        resourceType: 'Communication',
-        id: 'example-parent-communication'
-      }
-    }
-  ]
-  inResponseTo: [
-    {
-      resource: {
-        resourceType: 'Communication',
-        id: 'example-message-2'
-      }
-    }
-  ]
-}
-
-```
-
+  <MedplumCodeBlock language="ts" selectBlocks="communicationGroupedThread">
+    {ExampleCode}
+  </MedplumCodeBlock>
 </details>
 
 ```mermaid
 
 flowchart BT
-  B(The specimen for you patient, Homer Simpson, has been received.) -->|partOf| A[Homer Simpson April 10th lab tests]
-  C(Will the results be ready by the end of the week?) -->|partOf| A
-  D(Yes, we will have them to you by Thursday.) -->|partOf| A
-  D -->|inResponseTo| C -->|inResponseTo| B
+    A["`**Communication.topic:**`" Homer Simpson April 10th lab tests]
+    B(The specimen for you patient, Homer <br/> Simpson, has been received.) -->|partOf| A
+    C(Will the results be ready by the end <br/> of the week?) -->|partOf| A
+    D(Yes, we will have them to you <br/> by Thursday.) -->|partOf| A
+
 
 
 ```
@@ -181,45 +87,9 @@ Here are some common types of tags that can be used for grouping:
 | Product offering    | [SNOMED](http://hl7.org/fhir/R4/valueset-medication-form-codes.html), [LOINC](https://www.medplum.com/docs/careplans/loinc), Custom Internal Coding |
 
 <details><summary>Example of Multiple Categories</summary>
-
-```ts
-{
-  resourceType: 'Communication',
-  id: 'example-communication',
-  category: [
-    {
-      text: 'Doctor',
-      coding: [
-        {
-          code: '158965000',
-          system: 'http://snomed.info/sct'
-        }
-      ]
-    },
-    {
-      text: 'Endocrinology',
-      coding: [
-        {
-          code: '394583002',
-          system: 'http://snomed.info.sct'
-        }
-      ]
-    },
-    {
-      text: 'Diabetes self-management plan',
-      coding: [
-        {
-          code: '735985000',
-          system: 'http://snomed.info.sct'
-        }
-      ]
-    }
-    }
-  ]
-  // ...
-}
-```
-
+  <MedplumCodeBlock language="ts" selectBlocks="communicationCategories">
+    {ExampleCode}
+  </MedplumCodeBlock>
 </details>
 
 :::tip Note
@@ -238,18 +108,23 @@ When searching for threads, we need to differentiate between threads that are gr
 
 To search for all threads in the system, we need to find each parent `Communication` resource. One of the factors that differentiates a "thread-level", or parent, resource from a "message-level", or child, resource is that thread-level resources do not have a value in the `partOf` field.
 
-**Example: **
-
-```ts
-// Search for a Communication-grouped thread
-await medplum.searchResources('Communication', {
-  'part-of:missing': true,
-});
-```
-
-```curl
-curl https://api.medplum.com/fhir/R4/Communication?part-of:missing=true
-```
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchParentThreadsTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="searchParentThreadsCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchParentThreadsCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
 
 In this example, we use the `:missing` search modifier to search for any `Communication` resources that do not reference another resource in their `partOf` field. This gives us the parent `Communication` of all threads in the system.
 
@@ -259,35 +134,45 @@ Once you have found the thread you want, you may want to retrieve the messages f
 
 Again, we will separate how to search for `Communication` and `Encounter` grouped threads, beginning with `Communication`.
 
-**Example: **
-
-```ts
-/*
-curl https://api.medplum.com/fhir/R4/Communication?part-of=Communication/example-communication&_sort=sent
-*/
-
-await medplum.searchResources('Communication', {
-  `part-of`: 'Communication/example-communication',
-  _sort: 'sent'
-});
-
-```
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchSpecificThreadTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="searchSpecificThreadCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchSpecificThreadCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
 
 In the above example, we search for `Communication` resources that reference our parent in the `partOf` field and sort by the `sent` field. For more details on using the search functionality, see the [Search docs](https://www.medplum.com/docs/search/basic-search).
 
 To search for specific threads that are grouped by `Encounter`:
 
-```ts
-/*
-curl https://api.medplum.com/fhir/R4/Communication?encounter=Encounter/example-encounter&_include=Communication:encounter&_sort=sent
-*/
-
-await medplum.searchResources('Communication', {
-  encounter: 'Encounter/example-encounter',
-  _include: 'Communication:encounter',
-  _sort: 'sent',
-});
-```
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchEncounterThreadTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="searchEncounterThreadCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchEncounterThreadCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
 
 In this example, we search for any `Communication` resource that references our `Encounter` in the `encounter` field. We also `_include` that `Encounter`, though you can leave this out if you only want to return the messages themselves. We then use `_sort` to get them in the order they were sent.
 
@@ -295,47 +180,84 @@ In this example, we search for any `Communication` resource that references our 
 
 To put this all together, we can also search for all threads and return their messages with them.
 
-```ts
-await medplum.searchResources('Communication', {
-  'part-of:missing': true,
-  _revinclude: 'Communication:part-of',
-});
-```
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchThreadsWithMessagesTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="searchThreadsWithMessagesCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchThreadsWithMessagesCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
 
 Here we are using the same initial search to return all of the parent threads in the system. However, we include the `_revinclude` parameter, allowing us to also search for all `Communication` resources that reference one of our search results in the `partOf` field. This allows us to return all of the child messages as well.
 
 Searching for threads grouped by `Encounter` is a little different. Since there is no link from the parent `Encounter` to the child messages, we still search for `Communication` resources at the top level.
 
-```ts
-/*
-curl https://api.medplum.com/fhir/R4/Communication?encounter:missing=false&_include=Communication:encounter
-*/
-
-// Search for an Encounter-grouped thread
-await medplum.searchResources('Communication', {
-  'encounter:missing': false,
-  _include: 'Communication:encounter',
-});
-```
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchEncountersWithMessagesTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="searchEncountersWithMessagesCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchEncountersWithMessagesCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
 
 In this example, we set the `encounter:missing` parameter to false, to include only `Communication` resources that reference an encounter. We then use `_include` to include those `Encounter` resources in our search results. Note that this search will include all of the messages as well as the parent resources.
 
 You can also filter down your searches further by including additional parameters.
 
-```ts
-await medplum.searchResources('Communication', {
-  'part-of:missing': true,
-  _revinclude: 'Communication:part-of',
-  subject: 'Patient/example-patient',
-});
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchFilteredThreadsTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="searchFilteredThreadsCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchFilteredThreadsCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
 
-// OR
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchFilteredEncountersTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="searchFilteredEncountersCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchFilteredEncountersCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
 
-await medplum.searchResource('Communication', {
-  'encounter:missing': false,
-  _include: 'Communication:encounter',
-  subject: 'Patient/example-patient',
-});
-```
-
-Here we build upon our search by adding the `subject` parameter to search for all threads that are related to a a given patient. For other items to filter your search on, see the [`Communication` Search Parameters](https://www.medplum.com/docs/api/fhir/resources/communication#search-parameters).
+Here we build upon our search by adding the `subject` parameter to search for all threads that are related to a given patient. For other items to filter your search on, see the [`Communication` Search Parameters](https://www.medplum.com/docs/api/fhir/resources/communication#search-parameters).
