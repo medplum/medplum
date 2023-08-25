@@ -27,7 +27,7 @@ export async function createClientHandler(req: Request, res: Response): Promise<
   if (localsProject.superAdmin) {
     project = { resourceType: 'Project', id: req.params.projectId };
   } else {
-    project = res.locals.project;
+    project = localsProject;
   }
 
   const client = await createClient(repo, {
