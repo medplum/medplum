@@ -15,9 +15,6 @@ In a healthcare context, messages are sent all the time and can include many sce
 - How to "tag" or group threads
 - Searching for and sorting communications and threads
 
-Representing individual messages with a `Communication` resource
-Put table up here – humanize the language in the descriptions a bit
-
 ## Representing Individual Messages
 
 The FHIR `Communication` resource is a representation of any message sent in a healthcare setting. This can include emails, SMS messages, phone calls and more.
@@ -26,7 +23,7 @@ The FHIR `Communication` resource is a representation of any message sent in a h
 | ----------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | `payload`         | Text, attachments, or resources that are being communicated to the recipient.                    |                                                                                        | You have an appointment scheduled for 2pm.                |
 | `sender`          | The person or team that sent the message.                                                        |                                                                                        | Practitioner/doctor-alice-smith                           |
-| `recipient`       | The person or team that received the message.                                                    |                                                                                        | Practitioner/id=doctor-gregory-house                      |
+| `recipient`       | The person or team that received the message.                                                    |                                                                                        | Practitioner/doctor-gregory-house                         |
 | `topic`           | A description of the main focus of the message. Similar to the subject line of an email.         | Custom Internal Code                                                                   | In person physical with Homer Simpson on April 10th, 2023 |
 | `category`        | The type of message being conveyed. Like a tag that can be applied to the message.               | [SNOMED Codes](http://hl7.org/fhir/R4/valueset-medication-form-codes.html)             | [See below](#building-and-structuring-threads)            |
 | `partOf`          | A reference to another resource which the `Communication` is a component.                        |                                                                                        | [See below](#how-to-"tag"-or-group-threads)               |
@@ -38,9 +35,13 @@ The FHIR `Communication` resource is a representation of any message sent in a h
 
 ## Building and Structuring Threads
 
-When building a thread, it is important to consider what type of resource should be used to group the thread together. Depending on the circumstances it makes sense to use different resources.
+Beyond producing individual messages, most healthcare communication tools group messages into "threads". When building a thread in FHIR, it is important to consider what type of resource should be used to group the thread together. Depending on the circumstances it makes sense to use different resources.
 
-If the messages are between a patient and a provider, you should use an `Encounter` resource to group the thread. An `Encounter` can be any interaction between a patient and provider, including various types of messages, so it is important that these are classified correctly. For more details, please see the [Representing Asynchronous Encounters](https://www.medplum.com/docs/communications/async-encounters) docs.
+### Threads Involving Patients
+
+If the messages are between a patient and a provider, you should use an `Encounter` resource to group the thread. An `Encounter` can be any interaction between a patient and provider, including various types of messages, so it is important that these are classified correctly. Using an `Encounter` resource to represent patient visits also makes it easier to submit claims to insurance to be reimbursed. For more details, please see the [Representing Asynchronous Encounters](https://www.medplum.com/docs/communications/async-encounters) docs.
+
+### Threads Between Providers
 
 However, when a patient is not involved, threads should be grouped using the `Communication` resource. A thread will have a two-level hierarchy – one parent `Communication` resource that represents the thread itself, and child `Communication` resources that represent each individual message. The child resources should be linked to the parent using the `partOf` field, which represents a parent resource of which the current `Communication` is a component. This allows you to refer to the parent resource to create a thread where each message is linked to the parent as a common reference point.
 
@@ -48,7 +49,7 @@ In these threads, the parent resource needs to be distinguished from the childre
 
 Additionally, to help organize threads, it is useful to use add a `topic` element to give the thread a subject. Similar to the subject line of an email, the `topic` should be given a high level of specificity to help distinguish the thread. The `topic` should be assigned to both the parent and children `Communication` resources in any thread.
 
-:::note
+:::tip Coding the topic field
 
 Because of how specific the `topic` field should be, it is best to use a custom coding rather than `LOINC` or `SNOMED` codes to classify the element.
 
@@ -63,20 +64,20 @@ Because of how specific the `topic` field should be, it is best to use a custom 
 ```mermaid
 
 flowchart BT
-    A[<b>Communication: </b> <br/> Homer Simpson April 10th lab tests]
-    B(The specimen for you patient, Homer <br/> Simpson, has been received.) -->|partOf| A
-    C(Will the results be ready by the end <br/> of the week?) -->|partOf| A
-    D(Yes, we will have them to you <br/> by Thursday.) -->|partOf| A
-
-
+    A[<b>Communication </b> <br/> Homer Simpson April 10th lab tests]
+    B(<b>Communication</b> <br/> The specimen for you patient, Homer <br/> Simpson, has been received.) -->|partOf| A
+    C(<b>Communication</b> <br/> Will the results be ready by the end <br/> of the week?) -->|partOf| A
+    D(<b>Communication</b> <br/> Yes, we will have them to you <br/> by Thursday.) -->|partOf| A
 
 ```
 
-## How to "Tag" or Group Threads
+## How to Tag or Group Threads
 
 It can be useful to "tag", or group, threads so that a user can easily reference or interpret a certain type of message at a high level. For example, if there is a thread about a task that needs to be performed by a nurse, it can be tagged as such.
 
-Tagging can be effectively done using the `Communication.category` element, which represents the type of message being conveyed. It allows messages to be classified into different types or groups based on specifications like purpose, nature, or intended audience. When assigning a `category` to a thread, it should be included on both the parent and child `Communication` resources. It is also important to note that the `category` field is an array, so each `Communication` can have multiple tags.
+Tagging can be effectively done using the `Communication.category` element, which represents the type of message being conveyed. It allows messages to be classified into different types or groups based on specifications like purpose, nature, or intended audience.
+
+When assigning a `category` to a thread, it should be included on both the parent and child `Communication` resources. It is also important to note that the `category` field is an array, so each `Communication` can have multiple tags.
 
 Here are some common types of tags that can be used for grouping:
 
@@ -92,7 +93,7 @@ Here are some common types of tags that can be used for grouping:
   </MedplumCodeBlock>
 </details>
 
-:::tip
+:::tip Designing category schemes
 
 There are different ways that you can categorize threads, each one with its own pros and cons. For example, you can have threads with multiple `category` fields, one for specialty and one for level of credentials, etc., where you would search for multiple categories at once. The pros to this are that the data model is more self-explanatory, since each `category` is explicitly represented, and better maintainability, since it is easier to update and add individual categories. However, this can also lead to more complex queries.
 

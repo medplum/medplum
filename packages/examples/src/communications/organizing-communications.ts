@@ -1,6 +1,6 @@
 // start-block imports
 import { MedplumClient } from '@medplum/core';
-import { Communication }  from '@medplum/fhirtypes'
+import { Communication } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -154,7 +154,7 @@ const communicationThread: Communication[] = [
     },
   },
 
-  // The initial communication
+  // The initial message
   {
     resourceType: 'Communication',
     id: 'example-message-1',
@@ -178,7 +178,7 @@ const communicationThread: Communication[] = [
     ],
   },
 
-  // A second response, directly to `example-message-1` but still referencing the parent communication
+  // A response directly to `example-message-1` but still referencing the parent communication
   {
     resourceType: 'Communication',
     id: 'example-message-2',
@@ -210,7 +210,7 @@ const communicationThread: Communication[] = [
     ],
   },
 
-  // A third response
+  // A second response
   {
     resourceType: 'Communication',
     id: 'example-message-3',
