@@ -547,32 +547,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
       data.push(typedValueToString(optionValue) as string);
     }
   }
-
-  if (props.item.repeats) {
-    return (
-      <MultiSelect
-        data={convertToDesiredFormat(props.item)}
-        placeholder="Select items"
-        searchable
-        creatable
-        getCreateLabel={(query) => `+ Add ${query}`}
-        onChange={(selected) => {
-          const values = selected.map((o) => {
-            const option = item.answerOption?.find((option) => option.valueCoding?.code === o);
-            const optionValue = getTypedPropertyValue(
-              { type: 'QuestionnaireItemAnswerOption', value: option },
-              'value'
-            ) as TypedValue;
-
-            const propertyName = 'value' + capitalize(optionValue.type);
-            return { [propertyName]: optionValue.value };
-          });
-          props.onChangeAnswer(values.reduce((acc, curr) => ({ ...acc, ...curr }), {}));
-        }}
-        onCreate={(query) => query}
-      />
-    );
-  }
+  
   return (
     <NativeSelect
       id={name}
