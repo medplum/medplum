@@ -73,8 +73,8 @@ describe('Client admin', () => {
       .post('/admin/projects/' + project.id + '/client')
       .set('Authorization', 'Bearer ' + superAdminAccessToken)
       .send({
-        name: 'Another one',
-        description: 'another one',
+        name: "Super Admin's test client",
+        description: 'A client for testing creating a client with superadmin privileges.',
       });
 
     expect(res.status).toBe(201);
