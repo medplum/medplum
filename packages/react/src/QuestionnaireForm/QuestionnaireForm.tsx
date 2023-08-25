@@ -547,7 +547,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
       data.push(typedValueToString(optionValue) as string);
     }
   }
-  
+
   return (
     <NativeSelect
       id={name}
