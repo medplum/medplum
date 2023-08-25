@@ -274,6 +274,41 @@ export const LabOrdering = (): JSX.Element => {
               },
             ],
           },
+          {
+            id: 'urine-culture-sample',
+            linkId: 'urine-culture-sample',
+            type: 'choice',
+            text: 'Sample',
+
+            answerOption: [
+              {
+                valueCoding: {
+                  code: 'urine',
+                  display: 'urine',
+                  system: 'http://loinc.org',
+                },
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
+                valueString: 'match-values',
+              },
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
         ],
       },
       {
