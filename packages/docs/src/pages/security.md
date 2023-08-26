@@ -71,6 +71,17 @@ We will adhere to the definitions and best practices outlined in NIST SP 800-180
 - Implementing security at all levels of the architecture, from individual microservices to the orchestration level.
 - Utilizing system virtual machines to isolate different applications and services as needed.
 
+#### Web Application Security Scanning (NIST SP 500-269)
+
+In alignment with the best practices defined in NIST SP 500-269, "Software Assurance Tools: Web Application Security Scanner Functional Specification", we utilize software assurance tools throughout our software development lifecycle (SDLC) to ensure the security of our web applications.
+
+Medplum uses [AWS Web Application Firewall](https://aws.amazon.com/waf/) as an additional layer of protection against common exploits. By default, the WAF includes the following rule groups:
+
+- [Core rule set](https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-baseline.html) - contains rules that are generally applicable to web applications. This provides protection against exploitation of a wide range of vulnerabilities, including some of the high risk and commonly occurring vulnerabilities described in OWASP publications such as [OWASP Top 10](https://owasp.org/www-project-top-ten/).
+- [Amazon IP reputation list](https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-ip-rep.html) - contains rules that are based on Amazon internal threat intelligence, typically associated with bots or other threats. Blocking these IP addresses can help mitigate bots and reduce the risk of a malicious actor discovering a vulnerable application.
+- [SQL database](https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-use-case.html#aws-managed-rule-groups-use-case-sql-db) - contains rules to block request patterns associated with exploitation of SQL databases, like SQL injection attacks. This can help prevent remote injection of unauthorized queries.
+- [Linux operating system](https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-use-case.html#aws-managed-rule-groups-use-case-linux-os) - contains rules that block request patterns associated with the exploitation of vulnerabilities specific to Linux, including Linux-specific Local File Inclusion (LFI) attacks.
+
 ## Application Security
 
 - Encryption - Data is encrypted in transit with TLS 1.2. Data is encrypted at rest with AES.
