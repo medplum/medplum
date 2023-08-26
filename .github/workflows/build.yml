@@ -50,8 +50,6 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-      - name: Install NSIS
-        run: sudo apt-get install -y nsis
       - name: Build Project
         run: ./scripts/build.sh
         env:
