@@ -21,14 +21,8 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "peerDependencies": {
-    "@typescript-eslint/eslint-plugin": "^6",
-    "eslint": "^8",
-    "eslint-plugin-jsdoc": "^46",
-    "eslint-plugin-react-hooks": "^4"
-  },
-  "dependencies": {
-    "@typescript-eslint/eslint-plugin": "6.4.1",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.4.1",
     "@typescript-eslint/parser": "6.4.1",
     "eslint": "8.47.0",
     "eslint-plugin-jsdoc": "46.5.0",
