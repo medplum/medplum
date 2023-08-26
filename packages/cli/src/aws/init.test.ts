@@ -1,6 +1,6 @@
 import { ACMClient, ListCertificatesCommand, RequestCertificateCommand } from '@aws-sdk/client-acm';
 import { CloudFormationClient } from '@aws-sdk/client-cloudformation';
-import { CloudFrontClient } from '@aws-sdk/client-cloudfront';
+import { CloudFrontClient, CreatePublicKeyCommand, PublicKey } from '@aws-sdk/client-cloudfront';
 import { ECSClient } from '@aws-sdk/client-ecs';
 import { S3Client } from '@aws-sdk/client-s3';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
@@ -16,12 +16,15 @@ jest.mock('readline');
 describe('init command', () => {
   beforeAll(() => {
     mockClient(CloudFormationClient);
-    mockClient(CloudFrontClient);
     mockClient(ECSClient);
     mockClient(S3Client);
   });
 
   beforeEach(() => {
+    const cloudFrontClient = mockClient(CloudFrontClient);
+
+    cloudFrontClient.on(CreatePublicKeyCommand).resolves({ PublicKey: { Id: 'K1234' } as PublicKey });
+
     const acmClient = mockClient(ACMClient);
 
     acmClient.on(ListCertificatesCommand).resolves({
@@ -533,6 +536,7 @@ describe('init command', () => {
         'y', // Yes, overwrite appBaseUrl
         'y', // Yes, overwrite storageBaseUrl
         'y', // Yes, overwrite binaryStorage
+        'y', // Yes, overwrite signingKeyId
         'y', // Yes, overwrite signingKey
         'y', // Yes, overwrite signingKeyPassphrase
         'y' // Yes, overwrite supportEmail

@@ -465,4 +465,37 @@ describe('Infra', () => {
     expect(() => main({ config: filename })).not.toThrow();
     unlinkSync(filename);
   });
+
+  test('Existing signing key', () => {
+    const filename = resolve('./medplum.signingKey.config.json');
+    writeFileSync(
+      filename,
+      JSON.stringify({
+        name: 'signingKey',
+        stackName: 'MedplumSigningKeyStack',
+        accountNumber: '647991932601',
+        region: 'us-east-1',
+        domainName: 'medplum.com',
+        apiPort: 8103,
+        apiDomainName: 'api.medplum.com',
+        apiSslCertArn: 'arn:aws:acm:us-east-1:647991932601:certificate/08bf1daf-3a2b-4cbe-91a0-739b4364a1ec',
+        appDomainName: 'app.medplum.com',
+        appSslCertArn: 'arn:aws:acm:us-east-1:647991932601:certificate/fd21b628-b2c0-4a5d-b4f5-b5c9a6d63b1a',
+        storageBucketName: 'medplum-storage',
+        storageDomainName: 'storage.medplum.com',
+        storageSslCertArn: 'arn:aws:acm:us-east-1:647991932601:certificate/19d85245-0a1d-4bf5-9789-23082b1a15fc',
+        signingKeyId: 'K1234',
+        maxAzs: 2,
+        rdsInstances: 2,
+        desiredServerCount: 1,
+        serverImage: 'medplum/medplum-server:staging',
+        serverMemory: 512,
+        serverCpu: 256,
+      }),
+      { encoding: 'utf-8' }
+    );
+
+    expect(() => main({ config: filename })).not.toThrow();
+    unlinkSync(filename);
+  });
 });

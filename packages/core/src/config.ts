@@ -17,6 +17,7 @@ export interface MedplumInfraConfig {
   storageBucketName: string;
   storageDomainName: string;
   storageSslCertArn: string;
+  signingKeyId: string;
   storagePublicKey: string;
   storageLoggingBucket?: string;
   storageLoggingPrefix?: string;
