@@ -66,12 +66,5 @@ done
 npx nyc merge coverage/packages coverage/combined/coverage.json
 npx nyc report -t coverage/combined --report-dir coverage --reporter=lcov
 
-# Agent installer
-pushd packages/agent
-npm run package
-npm run installer
-ls -la dist
-popd
-
 # Lint
 npm run lint
