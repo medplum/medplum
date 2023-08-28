@@ -136,7 +136,7 @@ For example, an access policy with write criteria could be used to manage state 
   "resource": [
     {
       "resourceType": "Observation",
-      "writeCriteria": [
+      "writeConstraint": [
         {
           "language": "text/fhirpath",
           "expression": "%before.exists() implies %before.status != 'final'"
