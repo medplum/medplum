@@ -27,7 +27,7 @@ export interface TimelineItemProps extends PanelProps {
 }
 
 export function TimelineItem(props: TimelineItemProps): JSX.Element {
-  const { resource, profile, padding, popupMenuItems, ...others } = props;
+  const { resource, profile, padding, popupMenuItems, children, ...others } = props;
   const author = profile ?? resource.meta?.author;
   const dateTime = props.dateTime ?? resource.meta?.lastUpdated;
 
@@ -40,21 +40,21 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
             <ResourceName color="dark" weight={500} value={author} link={true} />
           </Text>
           <Text size="xs">
-            <MedplumLink color="dimmed" to={props.resource}>
+            <MedplumLink color="dimmed" to={resource}>
               {formatDateTime(dateTime)}
             </MedplumLink>
             <Text component="span" color="dimmed" mx={8}>
               &middot;
             </Text>
-            <MedplumLink color="dimmed" to={props.resource}>
-              {props.resource.resourceType}
+            <MedplumLink color="dimmed" to={resource}>
+              {resource.resourceType}
             </MedplumLink>
           </Text>
         </div>
         {popupMenuItems && (
           <Menu position="bottom-end" shadow="md" width={200}>
             <Menu.Target>
-              <ActionIcon radius="xl" aria-label={`Actions for ${getReferenceString(props.resource)}`}>
+              <ActionIcon radius="xl" aria-label={`Actions for ${getReferenceString(resource)}`}>
                 <IconDots />
               </ActionIcon>
             </Menu.Target>
@@ -63,8 +63,7 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
         )}
       </Group>
       <ErrorBoundary>
-        {padding && <div style={{ padding: '0 16px 16px 16px' }}>{props.children}</div>}
-        {!padding && <>{props.children}</>}
+        {padding ? <div style={{ padding: '0 16px 16px 16px' }}>{children}</div> : <>{children}</>}
       </ErrorBoundary>
     </Panel>
   );
