@@ -2,7 +2,7 @@
 
 :::caution
 
-The Medplum Agent is currently in "alpha", and not ready for production use.
+The [Medplum Agent](https://github.com/medplum/medplum/tree/main/packages/agent) is currently in "alpha", and not ready for production use.
 
 Please [contact Medplum](mailto:hello@medplum.com) if you would like to learn more or get involved.
 
@@ -105,7 +105,9 @@ This guide walks through how to install the agent onto the host. The agent conne
 
 #### Windows Install
 
-To install on a Windows Host, remote into the host and download the MSI to the host filesystem. Double click on the MSI to start and go through the install screen, inputting the 4 pieces of information from the previous step into the screen.
+To install on a Windows Host, remote into the host and download the agent executable to the host filesystem. Double click on the MSI to start and go through the install screen, inputting the 4 pieces of information from the previous step into the screen.
+
+The agent executable for Windows is built with each release, and can be be downloaded from the [releases](https://github.com/medplum/medplum/releases) page.
 
 Once the install is complete you should be able to see the following:
 
@@ -116,13 +118,31 @@ Once the install is complete you should be able to see the following:
 
 TODO
 
-### Docker Image
+#### Docker Image
 
 TODO
 
 ## Testing your Setup
 
 Go through the following checklist to ensure that your setup is working.
+
+### Testing on localhost
+
+Testing the setup end-to-end on localhost can be done by doing the following steps. This assumes you are [running medplum on localhost](/docs/contributing/run-the-stack) as a prerequisite.
+
+Navigate to the `medplum/packages/agent`` folder on your drive and run the following command in your terminal
+
+```bash
+npm run agent <base_url> <client_id> <client_secret> <agent_id>
+```
+
+Keep the terminal open so that you can see the logs. At this point you can start sending messages to the agent. For a simple end-to-end test of HL7 over MLLP, we recommend using [Sim Hospital](https://github.com/google/simhospital) as follows. (Assumes you have docker installed)
+
+```bash
+docker run --rm -it -p 8000:8000 eu.gcr.io/simhospital-images/simhospital:latest health/simulator -output mllp -mllp_destination <ip_address>:<port> -pathways_per_hour 720
+```
+
+### Testing a site install
 
 - [ ] When you log into the host, ensure that the agent is running
 - [ ] Send a message to the Agent for testing
