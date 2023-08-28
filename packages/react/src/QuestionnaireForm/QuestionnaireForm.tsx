@@ -1,4 +1,5 @@
 import {
+  Anchor,
   Button,
   Checkbox,
   Group,
@@ -13,7 +14,6 @@ import {
 import {
   capitalize,
   createReference,
-  deepEquals,
   getExtension,
   getQuestionnaireAnswers,
   getReferenceString,
@@ -24,6 +24,7 @@ import {
   PropertyType,
   stringify,
   TypedValue,
+  evalFhirPathTyped,
 } from '@medplum/core';
 import {
   Questionnaire,
@@ -63,6 +64,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer>>({});
   const [activePage, setActivePage] = useState(0);
+
   const numberOfPages = getNumberOfPages(questionnaire?.item ?? []);
   const nextStep = (): void => setActivePage((current) => (current >= numberOfPages ? current : current + 1));
   const prevStep = (): void => setActivePage((current) => (current <= 0 ? current : current - 1));
@@ -115,8 +117,8 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
           items={questionnaire.item}
           answers={answers}
           onChange={setItems}
+          renderPages={numberOfPages > 1}
           activePage={activePage}
-          renderPages={numberOfPages > 0}
         />
       )}
       <Group position="right" mt="xl">
@@ -145,9 +147,14 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
     buildInitialResponseItems(props.items)
   );
 
-  function setResponseItem(index: number, newResponseItem: QuestionnaireResponseItem): void {
-    const newResponseItems = responseItems.slice();
-    newResponseItems[index] = newResponseItem;
+  function setResponseItem(responseId: string, newResponseItem: QuestionnaireResponseItem): void {
+    const itemExists = responseItems.some((r) => r.id === responseId);
+    let newResponseItems;
+    if (itemExists) {
+      newResponseItems = responseItems.map((r) => (r.id === responseId ? newResponseItem : r));
+    } else {
+      newResponseItems = [...responseItems, newResponseItem];
+    }
     setResponseItems(newResponseItems);
     props.onChange(newResponseItems);
   }
@@ -157,10 +164,11 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
       return (
         <Stepper.Step label={item.text} key={item.linkId}>
           <QuestionnaireFormArrayContent
-            key={item.linkId}
+            key={`${item.linkId}-${index}`}
             item={item}
             index={index}
             answers={props.answers}
+            responseItems={responseItems}
             setResponseItem={setResponseItem}
           />
         </Stepper.Step>
@@ -168,10 +176,11 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
     }
     return (
       <QuestionnaireFormArrayContent
-        key={item.linkId}
+        key={`${item.linkId}-${index}`}
         item={item}
         index={index}
         answers={props.answers}
+        responseItems={responseItems}
         setResponseItem={setResponseItem}
       />
     );
@@ -191,7 +200,8 @@ interface QuestionnaireFormArrayContentProps {
   item: QuestionnaireItem;
   index: number;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
-  setResponseItem: (index: number, newResponseItem: QuestionnaireResponseItem) => void;
+  responseItems: QuestionnaireResponseItem[];
+  setResponseItem: (responseId: string, newResponseItem: QuestionnaireResponseItem) => void;
 }
 
 function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps): JSX.Element | null {
@@ -203,52 +213,86 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
   }
   if (props.item.type === QuestionnaireItemType.group) {
     return (
-      <QuestionnaireFormItem
+      <QuestionnaireRepeatWrapper
         key={props.item.linkId}
         item={props.item}
         answers={props.answers}
-        onChange={(newResponseItem) => props.setResponseItem(props.index, newResponseItem)}
+        responseItems={props.responseItems}
+        onChange={(newResponseItem) => props.setResponseItem(newResponseItem.id as string, newResponseItem)}
       />
-    );
-  }
-  if (props.item.type === QuestionnaireItemType.boolean) {
-    const initial = props.item.initial && props.item.initial.length > 0 ? props.item.initial[0] : undefined;
-    return (
-      <CheckboxFormSection key={props.item.linkId} title={props.item.text} htmlFor={props.item.linkId}>
-        <Checkbox
-          id={props.item.linkId}
-          name={props.item.linkId}
-          defaultChecked={initial?.valueBoolean}
-          onChange={(e) =>
-            props.setResponseItem(props.index, {
-              linkId: props.item.linkId,
-              text: props.item.text,
-              answer: [{ valueBoolean: e.currentTarget.checked }],
-            })
-          }
-        />
-      </CheckboxFormSection>
     );
   }
   return (
     <FormSection key={props.item.linkId} htmlFor={props.item.linkId} title={props.item.text ?? ''}>
-      <QuestionnaireFormItem
+      <QuestionnaireRepeatWrapper
         item={props.item}
         answers={props.answers}
-        onChange={(newResponseItem) => props.setResponseItem(props.index, newResponseItem)}
+        responseItems={props.responseItems}
+        onChange={(newResponseItem) => props.setResponseItem(newResponseItem.id as string, newResponseItem)}
       />
     </FormSection>
   );
 }
 
-export interface QuestionnaireFormItemProps {
+export interface QuestionnaireRepeatWrapperProps {
   item: QuestionnaireItem;
   answers: Record<string, QuestionnaireResponseItemAnswer>;
+  responseItems: QuestionnaireResponseItem[];
+  onChange: (newResponseItem: QuestionnaireResponseItem, index?: number) => void;
+}
+
+export function QuestionnaireRepeatWrapper(props: QuestionnaireRepeatWrapperProps): JSX.Element {
+  const item = props.item;
+  function onChangeItem(newResponseItems: QuestionnaireResponseItem[], number?: number): void {
+    const index = number ?? 0;
+    const responses = props.responseItems.filter((r) => r.linkId === item.linkId);
+    props.onChange({
+      id: getResponseId(responses, index),
+      linkId: item.linkId,
+      text: item.text,
+      item: newResponseItems,
+    });
+  }
+  if (item.type === QuestionnaireItemType.group) {
+    return (
+      <RepeatableGroup
+        key={props.item.linkId}
+        text={item.text ?? ''}
+        item={item ?? []}
+        answers={props.answers}
+        onChange={onChangeItem}
+      />
+    );
+  }
+  return (
+    <RepeatableItem item={props.item} key={props.item.linkId}>
+      {({ index }: { index: number }) => <QuestionnaireFormItem {...props} index={index} />}
+    </RepeatableItem>
+  );
+}
+
+export interface QuestionnaireFormItemProps {
+  item: QuestionnaireItem;
+  index: number;
+  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  responseItems?: QuestionnaireResponseItem[];
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
 
 export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element | null {
   const item = props.item;
+  const index = props.index;
+
+  function onChangeAnswer(newResponseAnswer: QuestionnaireResponseItemAnswer, repeatedIndex?: number): void {
+    const number = repeatedIndex ?? 0;
+    const responses = props.responseItems?.filter((r) => r.linkId === item.linkId) ?? [];
+    props.onChange({
+      id: responses[0].id,
+      linkId: item.linkId,
+      text: item.text,
+      answer: updateAnswerArray(responses[0]?.answer ?? [], number, newResponseAnswer),
+    });
+  }
 
   const type = item.type as QuestionnaireItemType;
   if (!type) {
@@ -262,40 +306,17 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
 
   const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
 
-  function onChangeItem(newResponseItems: QuestionnaireResponseItem[]): void {
-    props.onChange({
-      linkId: item.linkId,
-      text: item.text,
-      item: newResponseItems,
-    });
-  }
-
-  function onChangeAnswer(newResponseAnswer: QuestionnaireResponseItemAnswer): void {
-    props.onChange({
-      linkId: item.linkId,
-      text: item.text,
-      answer: [newResponseAnswer],
-    });
-  }
-
   switch (type) {
-    case QuestionnaireItemType.group:
-      return (
-        <div>
-          <h3>{item.text}</h3>
-          {item.item && (
-            <QuestionnaireFormItemArray items={item.item} answers={props.answers} onChange={onChangeItem} />
-          )}
-        </div>
-      );
     case QuestionnaireItemType.boolean:
       return (
-        <Checkbox
-          id={name}
-          name={name}
-          defaultChecked={initial?.valueBoolean}
-          onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked })}
-        />
+        <CheckboxFormSection key={props.item.linkId} title={props.item.text} htmlFor={props.item.linkId}>
+          <Checkbox
+            id={props.item.linkId}
+            name={props.item.linkId}
+            defaultChecked={initial?.valueBoolean}
+            onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked }, index)}
+          />
+        </CheckboxFormSection>
       );
     case QuestionnaireItemType.decimal:
       return (
@@ -305,7 +326,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           id={name}
           name={name}
           defaultValue={initial?.valueDecimal}
-          onChange={(e) => onChangeAnswer({ valueDecimal: e.currentTarget.valueAsNumber })}
+          onChange={(e) => onChangeAnswer({ valueDecimal: e.currentTarget.valueAsNumber }, index)}
         />
       );
     case QuestionnaireItemType.integer:
@@ -316,7 +337,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           id={name}
           name={name}
           defaultValue={initial?.valueInteger}
-          onChange={(e) => onChangeAnswer({ valueInteger: e.currentTarget.valueAsNumber })}
+          onChange={(e) => onChangeAnswer({ valueInteger: e.currentTarget.valueAsNumber }, index)}
         />
       );
     case QuestionnaireItemType.date:
@@ -326,7 +347,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           id={name}
           name={name}
           defaultValue={initial?.valueDate}
-          onChange={(e) => onChangeAnswer({ valueDate: e.currentTarget.value })}
+          onChange={(e) => onChangeAnswer({ valueDate: e.currentTarget.value }, index)}
         />
       );
     case QuestionnaireItemType.dateTime:
@@ -334,7 +355,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <DateTimeInput
           name={name}
           defaultValue={initial?.valueDateTime}
-          onChange={(newValue: string) => onChangeAnswer({ valueDateTime: newValue })}
+          onChange={(newValue: string) => onChangeAnswer({ valueDateTime: newValue }, index)}
         />
       );
     case QuestionnaireItemType.time:
@@ -344,7 +365,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           id={name}
           name={name}
           defaultValue={initial?.valueTime}
-          onChange={(e) => onChangeAnswer({ valueTime: e.currentTarget.value })}
+          onChange={(e) => onChangeAnswer({ valueTime: e.currentTarget.value }, index)}
         />
       );
     case QuestionnaireItemType.string:
@@ -354,7 +375,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           id={name}
           name={name}
           defaultValue={initial?.valueString}
-          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value })}
+          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
       );
     case QuestionnaireItemType.text:
@@ -363,7 +384,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           id={name}
           name={name}
           defaultValue={initial?.valueString}
-          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value })}
+          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
       );
     case QuestionnaireItemType.attachment:
@@ -371,7 +392,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <AttachmentInput
           name={name}
           defaultValue={initial?.valueAttachment}
-          onChange={(newValue) => onChangeAnswer({ valueAttachment: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueAttachment: newValue }, index)}
         />
       );
     case QuestionnaireItemType.reference:
@@ -380,7 +401,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           targetTypes={addTargetTypes(item)}
           defaultValue={initial?.valueReference}
-          onChange={(newValue) => onChangeAnswer({ valueReference: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueReference: newValue }, index)}
         />
       );
     case QuestionnaireItemType.quantity:
@@ -388,7 +409,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <QuantityInput
           name={name}
           defaultValue={initial?.valueQuantity}
-          onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue }, index)}
           disableWheel
         />
       );
@@ -396,11 +417,21 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     case QuestionnaireItemType.openChoice:
       if (isDropDownChoice(item)) {
         return (
-          <QuestionnaireChoiceDropDownInput name={name} item={item} initial={initial} onChangeAnswer={onChangeAnswer} />
+          <QuestionnaireChoiceDropDownInput
+            name={name}
+            item={item}
+            initial={initial}
+            onChangeAnswer={(e) => onChangeAnswer(e, index)}
+          />
         );
       } else {
         return (
-          <QuestionnaireChoiceRadioInput name={name} item={item} initial={initial} onChangeAnswer={onChangeAnswer} />
+          <QuestionnaireChoiceRadioInput
+            name={name}
+            item={item}
+            initial={initial}
+            onChangeAnswer={(e) => onChangeAnswer(e, index)}
+          />
         );
       }
     default:
@@ -486,6 +517,7 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
         { type: 'QuestionnaireItemAnswerOption', value: option },
         'value'
       ) as TypedValue;
+
       if (initialValue && stringify(optionValue) === stringify(initialValue)) {
         defaultValue = optionName;
       }
@@ -576,11 +608,17 @@ function buildInitialResponseItems(items: QuestionnaireItem[] | undefined): Ques
 
 function buildInitialResponseItem(item: QuestionnaireItem): QuestionnaireResponseItem {
   return {
+    id: generateId(),
     linkId: item.linkId,
     text: item.text,
     item: buildInitialResponseItems(item.item),
     answer: item.initial?.map(buildInitialResponseAnswer) ?? [],
   };
+}
+
+let nextId = 1;
+function generateId(): string {
+  return 'id-' + nextId++;
 }
 
 function buildInitialResponseAnswer(answer: QuestionnaireItemInitial): QuestionnaireResponseItemAnswer {
@@ -604,23 +642,48 @@ export function isQuestionEnabled(
   if (!item.enableWhen) {
     return true;
   }
+
   const enableBehavior = item.enableBehavior ?? 'any';
+
   for (const enableWhen of item.enableWhen) {
-    const expectedAnswer = getTypedPropertyValue(
-      {
-        type: 'QuestionnaireItemEnableWhen',
-        value: enableWhen,
-      },
-      'answer[x]'
-    );
     const actualAnswer = getTypedPropertyValue(
       {
         type: 'QuestionnaireResponseItemAnswer',
         value: answers[enableWhen.question as string],
       },
       'value[x]'
-    );
-    const match = deepEquals(expectedAnswer, actualAnswer);
+    ) as TypedValue | undefined; // possibly undefined when question unanswered
+
+    const expectedAnswer = getTypedPropertyValue(
+      {
+        type: 'QuestionnaireItemEnableWhen',
+        value: enableWhen,
+      },
+      'answer[x]'
+    ) as TypedValue;
+
+    let match: boolean;
+
+    const { operator } = enableWhen;
+
+    // We handle exists separately since its so different in terms of comparisons than the other mathematical operators
+    if (operator === 'exists') {
+      // if actualAnswer is not undefined, then exists: true passes
+      // if actualAnswer is undefined, then exists: false passes
+      match = !!actualAnswer === expectedAnswer.value;
+    } else if (actualAnswer === undefined) {
+      match = false;
+    } else {
+      // `=` and `!=` should be treated as the FHIRPath `~` and `!~`
+      // All other operators should be unmodified
+      const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
+      const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirPathOperator} %expectedAnswer`, [actualAnswer], {
+        actualAnswer,
+        expectedAnswer,
+      });
+      match = value;
+    }
+
     if (enableBehavior === 'any' && match) {
       return true;
     }
@@ -655,4 +718,75 @@ function addTargetTypes(item: QuestionnaireItem): string[] {
   }
   const targets = extensions.map((e) => e.valueCodeableConcept?.coding?.[0]?.code) as string[];
   return targets;
+}
+
+interface RepeatableGroupProps {
+  item: QuestionnaireItem;
+  text: string;
+  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  onChange: (newResponseItem: QuestionnaireResponseItem[], index?: number) => void;
+}
+
+function RepeatableGroup(props: RepeatableGroupProps): JSX.Element | null {
+  const [number, setNumber] = useState(1);
+  const item = props.item;
+  return (
+    <>
+      {[...Array(number)].map((_, i) => {
+        return (
+          <div key={i}>
+            <h3>{props.text}</h3>
+            <QuestionnaireFormItemArray
+              items={item.item ?? []}
+              answers={props.answers}
+              onChange={(response) => props.onChange(response, i)}
+            />
+          </div>
+        );
+      })}
+      {props.item.repeats && <Anchor onClick={() => setNumber((n) => n + 1)}>Add Group</Anchor>}
+    </>
+  );
+}
+
+interface RepeatableItemProps {
+  item: QuestionnaireItem;
+  children: (props: { index: number }) => JSX.Element;
+}
+
+function RepeatableItem(props: RepeatableItemProps): JSX.Element {
+  const [number, setNumber] = useState(1);
+
+  return (
+    <>
+      {[...Array(number)].map((_, i) => {
+        return <React.Fragment key={`${props.item.linkId}-${i}`}>{props.children({ index: i })}</React.Fragment>;
+      })}
+      {props.item?.repeats && <Anchor onClick={() => setNumber((n) => n + 1)}>Add Item</Anchor>}
+    </>
+  );
+}
+
+function updateAnswerArray(
+  answers: QuestionnaireResponseItemAnswer[],
+  index: number,
+  newResponseAnswer: QuestionnaireResponseItemAnswer
+): QuestionnaireResponseItemAnswer[] {
+  if (index < answers.length) {
+    answers[index] = newResponseAnswer;
+    return answers;
+  } else {
+    for (let i = answers.length; i < index; i++) {
+      answers.push({});
+    }
+    answers.push(newResponseAnswer);
+    return answers;
+  }
+}
+
+function getResponseId(responses: QuestionnaireResponseItem[], index: number): string {
+  if (responses.length === 0 || responses.length < index + 1) {
+    return generateId();
+  }
+  return responses[index].id as string;
 }

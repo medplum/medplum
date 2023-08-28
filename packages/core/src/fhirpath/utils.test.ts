@@ -16,6 +16,12 @@ const TYPED_TRUE = { type: PropertyType.boolean, value: true };
 const TYPED_FALSE = { type: PropertyType.boolean, value: false };
 const TYPED_1 = { type: PropertyType.integer, value: 1 };
 const TYPED_2 = { type: PropertyType.integer, value: 2 };
+const TYPED_CODING_MEDPLUM123 = { type: PropertyType.Coding, value: { code: 'MEDPLUM123' } };
+const TYPED_CODING_MEDPLUM123_W_SYSTEM = {
+  type: PropertyType.Coding,
+  value: { code: 'MEDPLUM123', system: 'medplum-v123.456.789' },
+};
+const TYPED_CODING_NOT_MEDPLUM123 = { type: PropertyType.Coding, value: { code: 'NOT_MEDPLUM123' } };
 
 describe('FHIRPath utils', () => {
   beforeAll(() => {
@@ -86,6 +92,14 @@ describe('FHIRPath utils', () => {
     expect(fhirPathEquivalent(TYPED_1, TYPED_1)).toEqual([TYPED_TRUE]);
     expect(fhirPathEquivalent(TYPED_1, TYPED_2)).toEqual([TYPED_FALSE]);
     expect(fhirPathEquivalent(TYPED_2, TYPED_1)).toEqual([TYPED_FALSE]);
+
+    // Test `Coding` equivalence
+    expect(fhirPathEquivalent(TYPED_CODING_MEDPLUM123, TYPED_CODING_MEDPLUM123)).toEqual([TYPED_TRUE]);
+    expect(fhirPathEquivalent(TYPED_CODING_MEDPLUM123, TYPED_CODING_MEDPLUM123_W_SYSTEM)).toEqual([TYPED_FALSE]);
+    expect(fhirPathEquivalent(TYPED_CODING_MEDPLUM123, TYPED_CODING_NOT_MEDPLUM123)).toEqual([TYPED_FALSE]);
+    expect(fhirPathEquivalent(TYPED_CODING_MEDPLUM123_W_SYSTEM, TYPED_CODING_MEDPLUM123_W_SYSTEM)).toEqual([
+      TYPED_TRUE,
+    ]);
   });
 
   test('fhirPathArrayEquivalent', () => {

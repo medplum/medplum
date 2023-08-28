@@ -647,6 +647,40 @@ describe('QuestionnaireBuilder', () => {
     expect(screen.getByText('New Page')).toBeDefined();
   });
 
+  test('Add Repeatable', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        title: 'My questionnaire',
+        item: [
+          {
+            id: 'question1',
+            linkId: 'question1',
+            text: 'Question 1',
+            type: 'string',
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Question 1'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Make Repeatable'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Remove Repeatable'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Make Repeatable'));
+    });
+  });
+
   test('Remove multiple choice', async () => {
     const onSubmit = jest.fn();
 

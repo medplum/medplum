@@ -1,6 +1,6 @@
 {
   "name": "@medplum/react",
-  "version": "2.0.30",
+  "version": "2.0.31",
   "description": "Medplum React Component Library",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -32,6 +32,7 @@
     "@storybook/addon-actions": "7.3.2",
     "@storybook/addon-essentials": "7.3.2",
     "@storybook/addon-links": "7.3.2",
+    "@storybook/addon-storysource": "7.3.2",
     "@storybook/builder-vite": "7.3.2",
     "@storybook/react": "7.3.2",
     "@storybook/react-vite": "7.3.2",

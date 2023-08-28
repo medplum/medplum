@@ -10,6 +10,10 @@
           "value": "default-src 'none'; base-uri 'self'; child-src 'self'; connect-src 'self' *.medplum.com *.google.com *.google-analytics.com *.algolia.net vercel.live; font-src 'self' data: fonts.gstatic.com assets.vercel.com; form-action 'self' *.gstatic.com *.google.com; frame-ancestors 'self' *.medplum.com; frame-src 'self' *.medplum.com *.gstatic.com *.google.com *.youtube.com vercel.live; img-src 'self' data: *.medplum.com *.gstatic.com *.google.com *.googletagmanager.com github.com *.github.com *.githubusercontent.com *.youtube.com vercel.com assets.vercel.com; manifest-src 'self'; media-src 'self' *.medplum.com; script-src 'self' 'unsafe-inline' *.medplum.com *.gstatic.com *.google.com *.googleapis.com *.googletagmanager.com vercel.live; style-src 'self' 'unsafe-inline' *.medplum.com *.gstatic.com *.google.com *.googleapis.com; worker-src 'self' blob: *.medplum.com *.gstatic.com *.google.com; upgrade-insecure-requests"
         },
         {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains;"
+        },
+        {
           "key": "X-Content-Type-Options",
           "value": "nosniff"
         },

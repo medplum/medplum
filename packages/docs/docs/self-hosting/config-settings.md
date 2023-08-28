@@ -130,8 +130,10 @@ You will also be prompted for a parameter "Type". The default option is "String"
 | `recaptchaSecretKey`   | If using reCAPTCHA, this is the reCAPTCHA secret key.                                                                                                                                                 |          |            |                                     |
 | `botLambdaRoleArn`     | If using Medplum Bots, this is the ARN of the [Lambda execution role](https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html).                                                 |          | `cdk`      |                                     |
 | `botLambdaLayerName`   | If using Medplum Bots, this is the name of the [Lambda layer](https://docs.aws.amazon.com/lambda/latest/dg/invocation-layers.html). For example, `medplum-bot-layer`.                                 |          |            | `medplum-bot-layer`                 |
-| `database`             | The database connection details (created automatically).                                                                                                                                              |          | `cdk`      |                                     |
-| `redis`                | The redis connection details (created automatically).                                                                                                                                                 |          | `cdk`      |                                     |
+| `database`             | The database connection details as a JSON object. Only available when using JSON config file. See [AWS Secrets](#aws-secrets).                                                                        |          |            |                                     |
+| `DatabaseSecrets`      | The AWS Secret ID containing database connection details (created automatically by CDK). Only available when using AWS Parameter Store config. See [AWS Secrets](#aws-secrets).                       |          | `cdk`      |                                     |
+| `redis`                | The redis connection details as a JSON object. Only available when using JSON config file. See [AWS Secrets](#aws-secrets).                                                                           |          |            |                                     |
+| `RedisSecrets`         | The AWS Secret ID containing Redis connection details (created automatically by CDK). Only available when using AWS Parameter Store config. See [AWS Secrets](#aws-secrets).                          |          | `cdk`      |                                     |
 | `saveAuditEvents`      | Optional flag to save `AuditEvent` resources for all auth and RESTful operations in the database.                                                                                                     |          |            | `false`                             |
 | `logAuditEvents`       | Optional flag to log `AuditEvent` resources for all auth and RESTful operations to the logger.                                                                                                        |          |            | `false`                             |
 | `auditEventLogGroup`   | Optional AWS CloudWatch Log Group name for `AuditEvent` logs. If not specified, `AuditEvent` logs use the default logger.                                                                             |          |            |                                     |
@@ -139,3 +141,53 @@ You will also be prompted for a parameter "Type". The default option is "String"
 | `registerEnabled`      | Optional flag whether new user registration is enabled.                                                                                                                                               |          |            | `true`                              |
 | `maxJsonSize`          | Maximum JSON size for API calls. String is parsed with the [bytes](https://www.npmjs.com/package/bytes) library. Default is `1mb`.                                                                    |          |            | `1mb`                               |
 | `smtp`                 | Optional SMTP email settings to use SMTP for email. See [Sending SMTP Emails](/docs/self-hosting/sendgrid) for more details.                                                                          |          |            |
+
+### AWS Secrets
+
+Postgres and Redis connection details have special cases due the way CDK exposes them.
+
+When using a JSON config file, use JSON objects for `database` and `redis`. For example:
+
+```json
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "dbname": "medplum",
+    "username": "medplum",
+    "password": "medplum"
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "password": "medplum"
+  }
+```
+
+When using AWS Parameter Store config, instead use `DatabaseSecrets` and `RedisSecrets`. The value of these properties is the Secret ID in AWS Secrets Manager. This design is for CDK. When CDK creates an RDS cluster or Elasticache cluster, the connection details are published in AWS Secrets Manager.
+
+If you choose to "bring your own database" or "bring your own redis", you can specify your own Secret ID in those settings. The secret in AWS Secrets Manager must have the expected layout.
+
+Example `DatabaseSecrets` value:
+
+```json
+{
+  "dbClusterIdentifier": "my-cluster",
+  "password": "password",
+  "dbname": "medplum",
+  "engine": "postgres",
+  "port": 5432,
+  "host": "my-cluster.us-east-1.rds.amazonaws.com",
+  "username": "clusteradmin"
+}
+```
+
+Example `RedisSecrets` value:
+
+```json
+{
+  "password": "password",
+  "port": "6379",
+  "host": "my-cluster.cache.amazonaws.com",
+  "tls": {}
+}
+```
