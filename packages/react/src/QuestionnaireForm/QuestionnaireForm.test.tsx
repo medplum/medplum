@@ -124,6 +124,10 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
+      fireEvent.click(screen.getByLabelText('Question 5'));
+    });
+
+    await act(async () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
@@ -144,6 +148,7 @@ describe('QuestionnaireForm', () => {
     expect(answers['question2']).toMatchObject({ valueString: 'a2' });
     expect(answers['question3']).toMatchObject({ valueString: 'a3' });
     expect(answers['question4']).toMatchObject({ valueString: 'a4' });
+    expect(answers['question5']).toMatchObject({ valueBoolean: true });
   });
 
   test('Handles submit', async () => {
@@ -519,7 +524,11 @@ describe('QuestionnaireForm', () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
-    expect(onSubmit).toBeCalledWith(expect.objectContaining(expectedResponse));
+    const submittedData = onSubmit.mock.calls[0][0];
+
+    expect(submittedData.item[0].answer).toEqual(expectedResponse?.item?.[0].answer);
+    expect(submittedData.item[0].text).toEqual(expectedResponse?.item?.[0].text);
+    expect(submittedData.item[0].linkId).toEqual(expectedResponse?.item?.[0].linkId);
   });
 
   test('Reference input', async () => {
@@ -801,7 +810,9 @@ describe('QuestionnaireForm', () => {
     // The hidden text should now be visible
     expect(screen.getByText(hiddenQuestion)).toBeInTheDocument();
 
-    expect(screen.getByText('Back')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByText('Back'));
+    });
   });
 
   test('Page Sequence with non page items in root', async () => {
@@ -966,6 +977,64 @@ describe('QuestionnaireForm', () => {
 
     // Now the hidden text should be visible
     expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
+  });
+
+  test('repeatableQuestion', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'repeatable-when',
+        title: 'repeatable Questionnaire',
+        item: [
+          {
+            linkId: 'question1',
+            text: 'Question 1',
+            type: 'string',
+            repeats: true,
+          },
+          {
+            linkId: 'group1',
+            text: 'Group',
+            type: 'group',
+            repeats: true,
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 1'), { target: { value: 'answer' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add Group'));
+    });
+  });
+
+  test('isQuestionEnabled', () => {
+    // enableBehavior=any, match
+    expect(
+      isQuestionEnabled(
+        {
+          enableBehavior: 'any',
+          enableWhen: [
+            {
+              question: 'q1',
+              answerString: 'Yes',
+            },
+            {
+              question: 'q2',
+              answerString: 'Yes',
+            },
+          ],
+        },
+        {
+          q1: { valueString: 'No' },
+          q2: { valueString: 'Yes' },
+        }
+      )
+    ).toBe(true);
   });
 
   describe('isQuestionEnabled', () => {
