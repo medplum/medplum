@@ -1,8 +1,9 @@
 {
   "expo": {
-    "name": "medplum-react-native-test",
+    "name": "medplum-react-native-example",
     "slug": "medplum-react-native-test",
-    "version": "1.0.0",
+    "version": "2.0.31",
+    "entryPoint": "./src/main.ts",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -11,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true
     },

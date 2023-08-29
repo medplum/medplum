@@ -1,8 +1,7 @@
-import { getDisplayString, MedplumClient } from "@medplum/core";
-import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
-import { Button, StyleSheet, Text, View } from "react-native";
-import { TextInput } from "react-native-web";
+import { getDisplayString, LoginAuthenticationResponse, MedplumClient, ProfileResource } from '@medplum/core';
+import { StatusBar } from 'expo-status-bar';
+import React, { useState } from 'react';
+import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
 const medplum = new MedplumClient({
   // Enter your Medplum connection details here
@@ -12,16 +11,16 @@ const medplum = new MedplumClient({
   // projectId: 'MY_PROJECT_ID',
 });
 
-export default function App() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [profile, setProfile] = useState(undefined);
+export default function App(): JSX.Element {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [profile, setProfile] = useState<ProfileResource | undefined>(undefined);
 
-  function startLogin() {
-    medplum.startLogin({ email, password }).then(handleAuthResponse);
+  function startLogin(): void {
+    medplum.startLogin({ email, password }).then(handleAuthResponse).catch(console.error);
   }
 
-  function handleAuthResponse(response) {
+  function handleAuthResponse(response: LoginAuthenticationResponse): void {
     if (response.code) {
       handleCode(response.code);
     }
@@ -30,21 +29,22 @@ export default function App() {
       // In a real app, you would present a list of memberships to the user
       // For this example, just use the first membership
       medplum
-        .post("auth/profile", {
+        .post('auth/profile', {
           login: response.login,
           profile: response.memberships[0].id,
         })
-        .then(handleAuthResponse);
+        .then(handleAuthResponse)
+        .catch(console.error);
     }
   }
 
-  function handleCode(code) {
-    medplum.processCode(code).then(setProfile);
+  function handleCode(code: string): void {
+    medplum.processCode(code).then(setProfile).catch(console.error);
   }
 
-  function signOut() {
+  function signOut(): void {
     setProfile(undefined);
-    medplum.signOut();
+    medplum.signOut().catch(console.error);
   }
 
   return (
@@ -85,9 +85,9 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 10,
   },
   input: {

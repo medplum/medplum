@@ -1,6 +1,7 @@
 {
   "name": "medplum-react-native-example",
   "version": "2.0.31",
+  "main": "src/main.ts",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -18,6 +19,17 @@
     "react-native-web": "0.19.8"
   },
   "devDependencies": {
-    "@babel/core": "7.22.11"
+    "@babel/core": "7.22.11",
+    "typescript": "5.1.6"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
   }
 }
