@@ -1,4 +1,4 @@
-import { OperationOutcome } from '@medplum/fhirtypes';
+import { OperationOutcome, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -211,5 +211,28 @@ describe('Expand', () => {
     expect(res.status).toBe(200);
     expect(res.body.expansion.contains[0].system).toBe('http://loinc.org');
     expect(res.body.expansion.contains[0].display).toMatch(/left/i);
+  });
+
+  test('No null `display` field', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/observation-codes')}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+
+    const body = res.body as ValueSet;
+    expect(body).toBeDefined();
+
+    let foundNullDisplay = false;
+    const contains = body.expansion?.contains;
+    expect(contains).toBeDefined();
+    expect(contains?.length).toBeGreaterThan(0);
+    for (const code of contains as ValueSetExpansionContains[]) {
+      if (code.display && code.display === null) {
+        foundNullDisplay = true;
+        break;
+      }
+    }
+
+    expect(foundNullDisplay).toBe(false);
   });
 });
