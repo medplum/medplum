@@ -26,7 +26,7 @@ import {
  * See: [JSON Representation of Resources](https://hl7.org/fhir/json.html)
  * See: [FHIR Data Types](https://www.hl7.org/fhir/datatypes.html)
  */
-const fhirTypeToJsType = {
+export const fhirTypeToJsType = {
   base64Binary: 'string',
   boolean: 'boolean',
   canonical: 'string',

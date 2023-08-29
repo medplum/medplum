@@ -2,37 +2,8 @@ import { ElementDefinition, OperationOutcomeIssue, Resource } from '@medplum/fhi
 import { getTypedPropertyValue, toTypedValue } from './fhirpath';
 import { OperationOutcomeError, createStructureIssue, validationError } from './outcomes';
 import { PropertyType, TypedValue, globalSchema } from './types';
+import { fhirTypeToJsType } from './typeschema/validation';
 import { capitalize, getExtensionValue, isEmpty, isLowerCase } from './utils';
-
-/*
- * This file provides schema validation utilities for FHIR JSON objects.
- *
- * See: [JSON Representation of Resources](https://hl7.org/fhir/json.html)
- * See: [FHIR Data Types](https://www.hl7.org/fhir/datatypes.html)
- */
-const fhirTypeToJsType = {
-  base64Binary: 'string',
-  boolean: 'boolean',
-  canonical: 'string',
-  code: 'string',
-  date: 'string',
-  dateTime: 'string',
-  decimal: 'number',
-  id: 'string',
-  instant: 'string',
-  integer: 'number',
-  markdown: 'string',
-  oid: 'string',
-  positiveInt: 'number',
-  string: 'string',
-  time: 'string',
-  unsignedInt: 'number',
-  uri: 'string',
-  url: 'string',
-  uuid: 'string',
-  xhtml: 'string',
-  'http://hl7.org/fhirpath/System.String': 'string',
-} as const satisfies Record<string, 'string' | 'boolean' | 'number'>;
 
 const baseResourceProperties = new Set<string>([
   // Resource
