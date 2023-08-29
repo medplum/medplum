@@ -1564,9 +1564,9 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!matchingPolicy) {
       return false;
     } else if (matchingPolicy?.writeConstraint) {
-      return matchingPolicy.writeConstraint.every((criteria) => {
+      return matchingPolicy.writeConstraint.every((constraint) => {
         const invariant = evalFhirPathTyped(
-          criteria.expression as string,
+          constraint.expression as string,
           [{ type: current.resourceType, value: current }],
           {
             before: { type: previous?.resourceType ?? 'undefined', value: previous },

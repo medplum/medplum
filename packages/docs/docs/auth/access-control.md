@@ -123,16 +123,16 @@ Constraints on writes to a resource can also be specified using [FHIRPath expres
 
 :::tip
 
-On resource creation, `%before` will be undefined, so any expressions that refer to `%before` must account for this case. To select only updates or only creates, prefix the criteria with `%before.exists() implies` or `%before.exists().not() implies` respectively.
+In resource constraints, `%before` will be undefined, so any expressions that refer to `%before` must account for this case. To select only updates or only creates, prefix the criteria with `%before.exists() implies` or `%before.exists().not() implies` respectively.
 
 :::
 
-For example, an access policy with write criteria could be used to manage state transitions by prohibiting changing the status once a resource is marked as `final`, and ensure that a `subject` is set when the resource is finalized:
+For example, an access policy with write constraints could be used to manage state transitions by prohibiting changing the status once a resource is marked as `final`, and ensure that a `subject` is set when the resource is finalized:
 
 ```json
 {
   "resourceType": "AccessPolicy",
-  "name": "Write Criteria Access Policy",
+  "name": "Write Constraints Access Policy",
   "resource": [
     {
       "resourceType": "Observation",
