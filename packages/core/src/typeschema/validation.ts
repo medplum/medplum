@@ -275,9 +275,7 @@ class ResourceValidator {
   private constraintsCheck(value: TypedValue, element: ElementValidator, path: string): void {
     const constraints = element.constraints;
     for (const constraint of constraints) {
-      if (constraint.severity !== 'error' || constraint.key in skippedConstraintKeys) {
-        continue;
-      } else {
+      if (constraint.severity === 'error' && !(constraint.key in skippedConstraintKeys)) {
         const expression = this.isExpressionTrue(constraint, value, path);
         if (!expression) {
           this.issues.push(createConstraintIssue(path, constraint));
@@ -391,13 +389,11 @@ function getNestedProperty(value: TypedValue, key: string): (TypedValue | TypedV
   for (const prop of nestedProps) {
     const next = [];
     for (const current of propertyValues) {
-      if (current === undefined) {
-        continue;
-      } else if (Array.isArray(current)) {
+      if (Array.isArray(current)) {
         for (const element of current) {
           next.push(getTypedPropertyValue(element, prop));
         }
-      } else {
+      } else if (current !== undefined) {
         next.push(getTypedPropertyValue(current, prop));
       }
     }

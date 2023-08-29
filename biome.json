@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.0.0/schema.json",
   "organizeImports": {
-    "enabled": true
+    "enabled": false
   },
   "formatter": {
     "enabled": false,
