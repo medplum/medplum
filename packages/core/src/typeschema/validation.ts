@@ -26,7 +26,7 @@ import {
  * See: [JSON Representation of Resources](https://hl7.org/fhir/json.html)
  * See: [FHIR Data Types](https://www.hl7.org/fhir/datatypes.html)
  */
-const fhirTypeToJsType: Record<string, string> = {
+const fhirTypeToJsType = {
   base64Binary: 'string',
   boolean: 'boolean',
   canonical: 'string',
@@ -48,7 +48,7 @@ const fhirTypeToJsType: Record<string, string> = {
   uuid: 'string',
   xhtml: 'string',
   'http://hl7.org/fhirpath/System.String': 'string', // Not actually a FHIR type, but included in some StructureDefinition resources
-};
+} as const satisfies Record<string, 'string' | 'boolean' | 'number'>;
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -74,7 +74,7 @@ const validationRegexes: Record<string, RegExp> = {
   url: /^\S*$/,
   uuid: /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
   xhtml: /.*/,
-};
+} as const;
 
 /**
  * List of constraint keys that aren't to be checked in an expression.
@@ -308,7 +308,12 @@ class ResourceValidator {
     if (primitiveValue) {
       const { type, value } = primitiveValue;
       // First, make sure the value is the correct JS type
-      const expectedType = fhirTypeToJsType[type];
+      if (!(type in fhirTypeToJsType)) {
+        this.issues.push(createStructureIssue(path, `Invalid JSON type: ${type} is not a valid FHIR type`));
+        return;
+      }
+      const expectedType = fhirTypeToJsType[type as keyof typeof fhirTypeToJsType];
+      // rome-ignore lint/suspicious/useValidTypeof: expected value ensured to be one of: 'string' | 'boolean' | 'number'
       if (typeof value !== expectedType) {
         if (value !== null) {
           this.issues.push(
