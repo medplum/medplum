@@ -1,23 +1,23 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { evalFhirPathTyped, getTypedPropertyValue, toTypedValue } from '../fhirpath';
 import {
+  OperationOutcomeError,
   createConstraintIssue,
   createProcessingIssue,
   createStructureIssue,
-  OperationOutcomeError,
   validationError,
 } from '../outcomes';
-import { isResource, PropertyType, TypedValue } from '../types';
+import { PropertyType, TypedValue, isResource } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 import {
   Constraint,
   ElementValidator,
-  getDataType,
   InternalTypeSchema,
-  parseStructureDefinition,
   SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
+  getDataType,
+  parseStructureDefinition,
 } from './types';
 
 /*
@@ -82,7 +82,7 @@ const validationRegexes: Record<string, RegExp> = {
 const skippedConstraintKeys: Record<string, boolean> = { 'ele-1': true };
 
 export function validate(resource: Resource, profile?: StructureDefinition): void {
-  return new ResourceValidator(resource.resourceType, resource, profile).validate();
+  new ResourceValidator(resource.resourceType, resource, profile).validate();
 }
 
 class ResourceValidator {
