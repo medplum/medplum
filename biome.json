@@ -12,40 +12,56 @@
     "enabled": true,
     "rules": {
       "recommended": true,
+      "correctness": {
+        "noUnusedVariables": "warn"
+      },
       "style": {
-        "useTemplate": "off",
-        "noParameterAssign": "off",
-        "noUnusedTemplateLiteral": "off",
-        "useSelfClosingElements": "off",
-        "useExponentiationOperator": "off",
-        "useSingleVarDeclarator": "off",
-        "useEnumInitializers": "off"
+        "useTemplate": "warn",
+        "noParameterAssign": "warn",
+        "noUnusedTemplateLiteral": "warn",
+        "useSelfClosingElements": "warn",
+        "useExponentiationOperator": "warn",
+        "useSingleVarDeclarator": "warn",
+        "useEnumInitializers": "warn",
+
+        "useBlockStatements": "error"
       },
       "suspicious": {
-        "noExplicitAny": "off",
-        "noAssignInExpressions": "off"
+        "noExplicitAny": "warn",
+        "noAssignInExpressions": "warn"
       },
       "complexity": {
-        "useLiteralKeys": "off",
-        "useFlatMap": "off",
-        "noUselessFragments": "off"
+        "useLiteralKeys": "warn",
+        "useFlatMap": "warn",
+        "noUselessFragments": "warn",
+
+        "noForEach": "warn",
+        "useSimplifiedLogicExpression": "warn"
       },
       "performance": {
-        "noDelete": "off"
+        "noDelete": "warn"
       },
       "a11y": {
-        "noRedundantAlt": "off",
-        "useValidAnchor": "off",
         "noBlankTarget": "off",
 
-        "noSvgWithoutTitle": "off",
-        "useKeyWithClickEvents": "off",
-        "useIframeTitle": "off",
-        "useKeyWithMouseEvents": "off",
-        "useButtonType": "off",
-        "noPositiveTabindex": "off",
-        "useMediaCaption": "off",
-        "useAltText": "off"
+        "noRedundantAlt": "warn",
+        "useValidAnchor": "warn",
+        "noSvgWithoutTitle": "warn",
+        "useKeyWithClickEvents": "warn",
+        "useIframeTitle": "warn",
+        "useKeyWithMouseEvents": "warn",
+        "useButtonType": "warn",
+        "noPositiveTabindex": "warn",
+        "useMediaCaption": "warn",
+        "useAltText": "warn"
+      },
+      "nursery": {
+        "noExcessiveComplexity": {
+          "level": "warn",
+          "options": {
+            "maxAllowedComplexity": 15
+          }
+        }
       }
     }
   },
