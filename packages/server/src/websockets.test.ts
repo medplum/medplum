@@ -1,5 +1,5 @@
 import { ContentType, Hl7Message } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
+import { Agent, Bot } from '@medplum/fhirtypes';
 import express from 'express';
 import { Server } from 'http';
 import request from 'superwstest';
@@ -58,7 +58,7 @@ describe('WebSockets', () => {
     // Deploy the bot
     // This is a simple HL7 ack bot
     // Note that the code is actually run inside a vmcontext
-    const res5 = await request(server)
+    const res2 = await request(server)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -69,7 +69,22 @@ describe('WebSockets', () => {
           };
       `,
       });
-    expect(res5.status).toBe(200);
+    expect(res2.status).toBe(200);
+
+    // Create an agent
+    const res3 = await request(server)
+      .post('/fhir/R4/Agent')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        channel: [{ endpoint: { reference: 'Endpoint/123' }, targetReference: { reference: 'Bot/' + bot.id } }],
+      });
+    expect(res3.status).toBe(201);
+
+    const agent = res3.body as Agent;
 
     await request(server)
       .ws('/ws/agent')
@@ -92,6 +107,7 @@ describe('WebSockets', () => {
         JSON.stringify({
           type: 'connect',
           accessToken,
+          agentId: agent.id,
           botId: bot.id,
         })
       )
