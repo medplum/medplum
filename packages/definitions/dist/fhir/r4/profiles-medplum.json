@@ -2660,7 +2660,7 @@
               {
                 "key": "axp-1",
                 "severity": "error",
-                "human": "Write criteria expressions must be literal text/fhirpath strings",
+                "human": "Write constraint expressions must be literal text/fhirpath strings",
                 "expression": "expression.exists() and language = 'text/fhirpath'"
               }
             ]
