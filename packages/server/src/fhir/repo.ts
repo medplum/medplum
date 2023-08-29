@@ -1563,8 +1563,8 @@ export class Repository extends BaseRepository implements FhirRepository {
     const matchingPolicy = satisfiedAccessPolicy(current, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
     if (!matchingPolicy) {
       return false;
-    } else if (matchingPolicy?.writeCriteria) {
-      return matchingPolicy.writeCriteria.every((criteria) => {
+    } else if (matchingPolicy?.writeConstraint) {
+      return matchingPolicy.writeConstraint.every((criteria) => {
         const invariant = evalFhirPathTyped(
           criteria.expression as string,
           [{ type: current.resourceType, value: current }],
