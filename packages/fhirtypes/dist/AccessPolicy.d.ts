@@ -132,9 +132,9 @@ export interface AccessPolicyResource {
   readonlyFields?: string[];
 
   /**
-   * Invariant that must be satisfied for the resource to be written.  Can
+   * Invariants that must be satisfied for the resource to be written.  Can
    * include %before and %after placeholders to refer to the resource
    * before and after the updates are applied.
    */
-  writeCriteria?: Expression[];
+  writeConstraint?: Expression[];
 }
