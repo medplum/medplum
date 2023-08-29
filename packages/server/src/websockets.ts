@@ -1,5 +1,5 @@
 import { ContentType, normalizeErrorString } from '@medplum/core';
-import { Bot, ProjectMembership } from '@medplum/fhirtypes';
+import { Agent, Bot, ProjectMembership } from '@medplum/fhirtypes';
 import bytes from 'bytes';
 import { randomUUID } from 'crypto';
 import http from 'http';
@@ -84,6 +84,7 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
  * @param socket The WebSocket connection.
  */
 async function handleAgentConnection(socket: ws.WebSocket): Promise<void> {
+  let agent: Agent | undefined = undefined;
   let bot: Bot | undefined = undefined;
   let runAs: ProjectMembership | undefined = undefined;
 
@@ -111,9 +112,10 @@ async function handleAgentConnection(socket: ws.WebSocket): Promise<void> {
    * @param command The connect command.
    */
   async function handleConnect(command: any): Promise<void> {
-    const { accessToken, botId } = command;
+    const { accessToken, agentId, botId } = command;
     const { login, project, membership } = await getLoginForAccessToken(accessToken);
     const repo = await getRepoForLogin(login, membership, project.strictMode, true, project.checkReferencesOnWrite);
+    agent = await repo.readResource<Agent>('Agent', agentId);
     bot = await repo.readResource<Bot>('Bot', botId);
     runAs = membership;
     socket.send(JSON.stringify({ type: 'connected' }));
@@ -130,6 +132,7 @@ async function handleAgentConnection(socket: ws.WebSocket): Promise<void> {
       return;
     }
     const result = await executeBot({
+      agent,
       bot,
       runAs,
       contentType: ContentType.HL7_V2,

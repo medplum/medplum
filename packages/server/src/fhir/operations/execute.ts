@@ -12,14 +12,17 @@ import {
   resolveId,
 } from '@medplum/core';
 import {
+  Agent,
   AuditEvent,
   Binary,
   Bot,
+  Device,
   Login,
   Organization,
   Project,
   ProjectMembership,
   Reference,
+  Subscription,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import fetch from 'node-fetch';
@@ -33,6 +36,7 @@ import { logger } from '../../logger';
 import { generateAccessToken } from '../../oauth/keys';
 import { AuditEventOutcome } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
+import { createAuditEventEntities } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
 import { Repository, systemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
@@ -44,6 +48,10 @@ export interface BotExecutionRequest {
   readonly runAs: ProjectMembership;
   readonly input: any;
   readonly contentType: string;
+  readonly subscription?: Subscription;
+  readonly agent?: Agent;
+  readonly device?: Device;
+  readonly remoteAddress?: string;
 }
 
 export interface BotExecutionResult {
@@ -79,13 +87,6 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
   });
-
-  // Create the audit event
-  await createAuditEvent(
-    bot,
-    result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
-    result.logResult
-  );
 
   // Send the response
   res
@@ -134,20 +135,32 @@ async function getBotForRequest(req: Request, res: Response): Promise<Bot | unde
  */
 export async function executeBot(request: BotExecutionRequest): Promise<BotExecutionResult> {
   const { bot } = request;
+  const startTime = new Date().toISOString();
+
+  let result: BotExecutionResult;
 
   if (!(await isBotEnabled(bot))) {
-    return { success: false, logResult: 'Bots not enabled' };
-  }
-
-  await writeBotInputToStorage(request);
-
-  if (bot.runtimeVersion === 'awslambda') {
-    return runInLambda(request);
-  } else if (bot.runtimeVersion === 'vmcontext') {
-    return runInVmContext(request);
+    result = { success: false, logResult: 'Bots not enabled' };
   } else {
-    return { success: false, logResult: 'Unsupported bot runtime' };
+    await writeBotInputToStorage(request);
+
+    if (bot.runtimeVersion === 'awslambda') {
+      result = await runInLambda(request);
+    } else if (bot.runtimeVersion === 'vmcontext') {
+      result = await runInVmContext(request);
+    } else {
+      result = { success: false, logResult: 'Unsupported bot runtime' };
+    }
   }
+
+  await createAuditEvent(
+    request,
+    startTime,
+    result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
+    result.logResult
+  );
+
+  return result;
 }
 
 /**
@@ -180,7 +193,17 @@ async function writeBotInputToStorage(request: BotExecutionRequest): Promise<voi
   const now = new Date();
   const today = now.toISOString().substring(0, 10).replaceAll('-', '/');
   const key = `bot/${bot.meta?.project}/${today}/${now.getTime()}-${randomUUID()}.json`;
-  const row: Record<string, unknown> = { botId: bot.id, contentType, input };
+  const row: Record<string, unknown> = {
+    contentType,
+    input,
+    botId: bot.id,
+    projectId: bot.meta?.project,
+    accountId: bot.meta?.account,
+    subscriptionId: request.subscription?.id,
+    agentId: request.agent?.id,
+    deviceId: request.device?.id,
+    remoteAddress: request.remoteAddress,
+  };
 
   if (contentType === ContentType.HL7_V2) {
     let hl7Message: Hl7Message | undefined = undefined;
@@ -204,6 +227,14 @@ async function writeBotInputToStorage(request: BotExecutionRequest): Promise<voi
       row.hl7ReceivingFacility = msh.getComponent(6, 1);
       row.hl7MessageType = msh.getComponent(9, 1);
       row.hl7Version = msh.getComponent(12, 1);
+
+      const pid = hl7Message.getSegment('PID');
+      row.hl7PidId = pid?.getComponent(2, 1);
+      row.hl7PidMrn = pid?.getComponent(3, 1);
+
+      const obx = hl7Message.getSegment('OBX');
+      row.hl7ObxId = obx?.getComponent(3, 1);
+      row.hl7ObxAccession = obx?.getComponent(18, 1);
     }
   }
 
@@ -457,11 +488,18 @@ function getResponseContentType(req: Request): string {
 
 /**
  * Creates an AuditEvent for a subscription attempt.
- * @param bot The bot that produced the audit event.
+ * @param request The bot request.
+ * @param startTime The time the execution attempt started.
  * @param outcome The outcome code.
  * @param outcomeDesc The outcome description text.
  */
-async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDesc: string): Promise<void> {
+async function createAuditEvent(
+  request: BotExecutionRequest,
+  startTime: string,
+  outcome: AuditEventOutcome,
+  outcomeDesc: string
+): Promise<void> {
+  const { bot } = request;
   const trigger = bot.auditEventTrigger ?? 'always';
   if (
     trigger === 'never' ||
@@ -482,6 +520,10 @@ async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDes
       project: bot.meta?.project,
       account: bot.meta?.account,
     },
+    period: {
+      start: startTime,
+      end: new Date().toISOString(),
+    },
     recorded: new Date().toISOString(),
     type: {
       code: 'execute',
@@ -497,12 +539,7 @@ async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDes
     source: {
       observer: createReference(bot) as Reference as Reference<Organization>,
     },
-    entity: [
-      {
-        what: createReference(bot),
-        role: { code: '9', display: 'Subscriber' },
-      },
-    ],
+    entity: createAuditEventEntities(bot, request.input, request.subscription, request.agent, request.device),
     outcome,
     outcomeDesc,
   };
