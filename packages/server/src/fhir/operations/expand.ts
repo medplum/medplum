@@ -88,7 +88,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   const elements = rows.map((row) => ({
     system: row.system,
     code: row.code,
-    display: row.display,
+    display: row.display ?? undefined, // if display is NULL, we want to filter it out before sending this to the client
   }));
 
   res.status(200).json({
