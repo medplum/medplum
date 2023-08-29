@@ -1,7 +1,7 @@
 import { ElementDefinition, OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
 import { getTypedPropertyValue, toTypedValue } from './fhirpath';
 import { OperationOutcomeError, createStructureIssue, validationError } from './outcomes';
-import { globalSchema, PropertyType, TypedValue } from './types';
+import { PropertyType, TypedValue, globalSchema } from './types';
 import { capitalize, getExtensionValue, isEmpty, isLowerCase } from './utils';
 
 /*
@@ -10,7 +10,7 @@ import { capitalize, getExtensionValue, isEmpty, isLowerCase } from './utils';
  * See: [JSON Representation of Resources](https://hl7.org/fhir/json.html)
  * See: [FHIR Data Types](https://www.hl7.org/fhir/datatypes.html)
  */
-const fhirTypeToJsType: Record<string, string> = {
+const fhirTypeToJsType = {
   base64Binary: 'string',
   boolean: 'boolean',
   canonical: 'string',
@@ -32,7 +32,7 @@ const fhirTypeToJsType: Record<string, string> = {
   uuid: 'string',
   xhtml: 'string',
   'http://hl7.org/fhirpath/System.String': 'string',
-};
+} as const satisfies Record<string, 'string' | 'boolean' | 'number'>;
 
 const baseResourceProperties = new Set<string>([
   // Resource
@@ -272,7 +272,13 @@ export class FhirSchemaValidator<T extends Resource> {
     }
 
     // First, make sure the value is the correct JS type
-    const expectedType = fhirTypeToJsType[typedValue.type];
+    if (!(typedValue.type in fhirTypeToJsType)) {
+      this.createIssue(elementDefinition, `${type} is not a valid FHIR type`);
+      return;
+    }
+    const expectedType = fhirTypeToJsType[typedValue.type as keyof typeof fhirTypeToJsType];
+
+    // rome-ignore lint/suspicious/useValidTypeof: `expectedValue` guaranteed to be one of: 'string' | 'boolean' | 'number'
     if (typeof value !== expectedType && typeof value?.valueOf() !== expectedType) {
       this.createIssue(elementDefinition, 'Invalid type for ' + type);
       return;
