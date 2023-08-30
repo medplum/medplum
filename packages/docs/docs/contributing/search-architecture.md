@@ -4,6 +4,13 @@ sidebar_position: 205
 
 # Search Architecture
 
+:::caution
+
+This page documents internal Medplum implementation details, and refers to point-in-time code snapshots that may be
+different from the current application code, and are subject to change at any time without prior notice.
+
+:::
+
 ## Resource Table Schema
 
 In addition to `id` and `content` columns containing the resource's UUID and raw JSON, each FHIR resource type table in the Medplum DB (e.g. `"Observation"`) contains columns corresponding to the search parameters for that resource type (e.g. `"Observation".subject`). The data types of these columns are mapped from the search parameter type:
