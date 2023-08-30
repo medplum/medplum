@@ -17,8 +17,9 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { ContentType } from './contenttype';
 import { OperationOutcomeError } from './outcomes';
-import { validateResource, validateResourceType } from './schema';
-import { indexStructureDefinitionBundle } from './types';
+import { FhirSchemaValidator, validateResource, validateResourceType } from './schema';
+import { globalSchema, indexStructureDefinitionBundle } from './types';
+import { createReference } from './utils';
 
 describe('FHIR schema', () => {
   beforeAll(() => {
@@ -497,6 +498,30 @@ describe('FHIR schema', () => {
     expect(() =>
       validateResource({ resourceType: 'Patient', name: { family: 'foo' } as unknown as HumanName[] })
     ).toThrow('Expected array for property (Patient.name)');
+  });
+
+  describe('FhirSchemaValidator', () => {
+    test('Invalid FHIR type for primitive', () => {
+      const patient = { resourceType: 'Patient' } satisfies Patient;
+      const patientReference = createReference(patient);
+      const appt: Appointment = {
+        resourceType: 'Appointment',
+        status: 'booked',
+        participant: [{ status: 'accepted', actor: patientReference }],
+      };
+
+      const apptProps = globalSchema.types.Appointment.properties;
+      const origPrioritySchema = apptProps.priority;
+      apptProps.priority = {
+        ...origPrioritySchema,
+        type: [{ code: 'invalid' }],
+      };
+
+      appt.priority = 'x' as unknown as number;
+      const validator = new FhirSchemaValidator(appt);
+      expect(() => validator.validate()).toThrowError('invalid is not a valid FHIR type (Appointment.priority)');
+      apptProps.priority = origPrioritySchema;
+    });
   });
 });
 

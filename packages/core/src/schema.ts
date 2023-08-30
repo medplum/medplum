@@ -247,6 +247,7 @@ export class FhirSchemaValidator<T extends Resource> {
       this.createIssue(elementDefinition, `${type} is not a valid FHIR type`);
       return;
     }
+
     const expectedType = fhirTypeToJsType[typedValue.type as keyof typeof fhirTypeToJsType];
 
     // rome-ignore lint/suspicious/useValidTypeof: `expectedValue` guaranteed to be one of: 'string' | 'boolean' | 'number'
