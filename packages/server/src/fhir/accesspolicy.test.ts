@@ -1291,10 +1291,16 @@ describe('AccessPolicy', () => {
       resource: [
         {
           resourceType: 'Observation',
-          writeCriteria: {
-            pre: `status != 'final'`,
-            post: `status = 'final' implies subject.exists()`,
-          },
+          writeConstraint: [
+            {
+              language: 'text/fhirpath',
+              expression: `%before.exists() implies %before.status != 'final'`,
+            },
+            {
+              language: 'text/fhirpath',
+              expression: `status = 'final' implies subject.exists()`,
+            },
+          ],
         },
       ],
     };

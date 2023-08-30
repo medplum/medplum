@@ -502,7 +502,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     if (this.isNotModified(existing, result)) {
       return existing as T;
-    } else if (!this.isResourceWriteable(result)) {
+    } else if (!this.isResourceWriteable(existing, result)) {
       // Check after the update
       throw new OperationOutcomeError(forbidden);
     }
@@ -1550,33 +1550,31 @@ export class Repository extends BaseRepository implements FhirRepository {
     } else if (publicResourceTypes.includes(resourceType)) {
       return false;
     }
-    const matchingPolicy = satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
-    if (!matchingPolicy) {
-      return false;
-    } else if (matchingPolicy?.writeCriteria?.pre) {
-      const invariant = evalFhirPathTyped(matchingPolicy.writeCriteria.pre, [
-        { type: resource.resourceType, value: resource },
-      ]);
-      return invariant.length === 1 && invariant[0].value === true;
-    } else {
-      return true;
-    }
+    return !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
   }
 
   /**
    * Check that a resource can be written in its current form.
-   * @param resource The resource.
+   * @param previous The resource before updates were applied.
+   * @param current The resource as it will be written.
    * @returns True if the current user can write the specified resource type.
    */
-  private isResourceWriteable(resource: Resource): boolean {
-    const matchingPolicy = satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
+  private isResourceWriteable(previous: Resource | undefined, current: Resource): boolean {
+    const matchingPolicy = satisfiedAccessPolicy(current, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
     if (!matchingPolicy) {
       return false;
-    } else if (matchingPolicy?.writeCriteria?.post) {
-      const invariant = evalFhirPathTyped(matchingPolicy.writeCriteria.post, [
-        { type: resource.resourceType, value: resource },
-      ]);
-      return invariant.length === 1 && invariant[0].value === true;
+    } else if (matchingPolicy?.writeConstraint) {
+      return matchingPolicy.writeConstraint.every((constraint) => {
+        const invariant = evalFhirPathTyped(
+          constraint.expression as string,
+          [{ type: current.resourceType, value: current }],
+          {
+            before: { type: previous?.resourceType ?? 'undefined', value: previous },
+            after: { type: current.resourceType, value: current },
+          }
+        );
+        return invariant.length === 1 && invariant[0].value === true;
+      });
     } else {
       return true;
     }

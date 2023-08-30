@@ -61916,9 +61916,12 @@
           },
           "type": "array"
         },
-        "writeCriteria": {
-          "description": "Invariants that must be satisfied for the resource to be written.",
-          "$ref": "#/definitions/AccessPolicy_Resource_WriteCriteria"
+        "writeConstraint": {
+          "description": "Invariants that must be satisfied for the resource to be written.  Can include %before and %after placeholders to refer to the resource before and after the updates are applied.",
+          "items": {
+            "$ref": "#/definitions/Expression"
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false,

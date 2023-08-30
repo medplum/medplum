@@ -2643,49 +2643,27 @@
             }
           },
           {
-            "id" : "AccessPolicy.resource.writeCriteria",
-            "path" : "AccessPolicy.resource.writeCriteria",
-            "definition" : "Invariants that must be satisfied for the resource to be written.",
+            "id" : "AccessPolicy.resource.writeConstraint",
+            "path" : "AccessPolicy.resource.writeConstraint",
+            "definition" : "Invariants that must be satisfied for the resource to be written.  Can include %before and %after placeholders to refer to the resource before and after the updates are applied.",
             "min" : 0,
-            "max" : "1",
+            "max" : "*",
             "type" : [{
-              "code" : "BackboneElement"
+              "code" : "Expression"
             }],
             "base" : {
-              "path" : "AccessPolicy.resource.writeCriteria",
+              "path" : "AccessPolicy.resource.writeConstraint",
               "min" : 0,
-              "max" : "1"
-            }
-          },
-          {
-            "id" : "AccessPolicy.resource.writeCriteria.pre",
-            "path" : "AccessPolicy.resource.writeCriteria.pre",
-            "definition" : "Invariant to check against the state of the resource before modification.",
-            "min" : 0,
-            "max" : "1",
-            "type" : [{
-              "code" : "string"
-            }],
-            "base" : {
-              "path" : "AccessPolicy.resource.writeCriteria.pre",
-              "min" : 0,
-              "max" : "1"
-            }
-          },
-          {
-            "id" : "AccessPolicy.resource.writeCriteria.post",
-            "path" : "AccessPolicy.resource.writeCriteria.post",
-            "definition" : "Invariant to check against the state of the resource with modifications tentatively applied.",
-            "min" : 0,
-            "max" : "1",
-            "type" : [{
-              "code" : "string"
-            }],
-            "base" : {
-              "path" : "AccessPolicy.resource.writeCriteria.post",
-              "min" : 0,
-              "max" : "1"
-            }
+              "max" : "*"
+            },
+            "constraint": [
+              {
+                "key": "axp-1",
+                "severity": "error",
+                "human": "Write constraint expressions must be literal text/fhirpath strings",
+                "expression": "expression.exists() and language = 'text/fhirpath'"
+              }
+            ]
           },
           {
             "id" : "AccessPolicy.ipAccessRule",
