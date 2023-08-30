@@ -1,5 +1,7 @@
 import { Resource } from '@medplum/fhirtypes';
 
+const PRIORITY_RANKINGS = { stat: 4, asap: 3, urgent: 2 } as const;
+
 /**
  * Sorts an array of resources in place by meta.lastUpdated ascending.
  * @param resources Array of resources.
@@ -25,7 +27,7 @@ function getPriorityScore(resource: Resource, timelineResource: Resource | undef
 
     const priority = (resource as any).priority;
     if (typeof priority === 'string') {
-      return { stat: 4, asap: 3, urgent: 2 }[priority] ?? 0;
+      return PRIORITY_RANKINGS[priority as keyof typeof PRIORITY_RANKINGS] ?? 0;
     }
   }
   return 0;
