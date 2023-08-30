@@ -214,6 +214,33 @@ You can also use the `profile-type` search parameter to narrow your search
 
 Refer to our [search documentation](/docs/search/basic-search) for more details on FHIR search
 
+## Promote Existing User to Admin
+
+Only administrators are able to promote existing users to admins. To do so navigate to the [Project Admin panel](https://app.medplum.com/admin/project) and go to the Users tab. From here, select the `User` you want to make an admin. Check the box under the `Admin` label, and then save the user. This user will now be an admin on your project.
+
+![Promote to Admin]()
+
+Promoting a user to admin can also be done programatically. To do so, you will need to update the user's `ProjectMembership`, which defines the user's access to the project.
+
+```ts
+// The user's project membership
+const membership = {
+  resourceType: 'ProjectMembership',
+  id: 'example-membership-id',
+  // ...
+  admin: false,
+};
+
+// To update, create a new resource and spread the original in, only changing the admin field
+const updatedMembership = {
+  ...membership,
+  admin: true,
+};
+
+// Create a post request to make the update
+medplum.post(`admin/projects/${projectId}/members/example-membership-id`, updatedMembership);
+```
+
 ## Invite via API
 
 Inviting users can be done programmatically using the `/invite` endpoint
@@ -295,7 +322,3 @@ See [Access Control](/docs/auth/access-control) for more details.
 Creating Practitioners via API is an advanced scenario and should be done with extreme caution. If you are planning to do programmatic creation of Practitioners, we highly recommend trying it in a test environment first and ensuring that the logins and associated access controls behave as expected.
 
 :::
-
-## Promote Existing User to Admin
-
-To promote an existing user to an admin navigate to the [Project Admin panel](https://app.medplum.com/admin/project) and go to the Users tab. From here, select the `User` you want to make an admin.
