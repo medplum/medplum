@@ -1,6 +1,6 @@
 import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
 import { Attachment, Bundle, Encounter, ResourceType } from '@medplum/fhirtypes';
-import { HomerEncounter } from '@medplum/mock';
+import { HomerEncounter, HomerSimpsonSpecimen } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document/Document';
@@ -60,6 +60,25 @@ export const WithComments = (): JSX.Element => (
         operator: createReference(operator),
         content,
       })}
+    />
+  </Document>
+);
+
+export const WithNotes = (): JSX.Element => (
+  <Document>
+    <ResourceTimeline
+      value={HomerSimpsonSpecimen}
+      loadTimelineResources={(
+        medplum: MedplumClient,
+        resourceType: ResourceType,
+        id: string
+      ): Promise<PromiseSettledResult<Bundle>[]> => {
+        return Promise.allSettled([
+          medplum.readHistory(resourceType, id),
+          medplum.search('Communication', 'encounter=' + resourceType + '/' + id),
+          medplum.search('Media', 'encounter=' + resourceType + '/' + id),
+        ]);
+      }}
     />
   </Document>
 );

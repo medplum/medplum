@@ -66,7 +66,11 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   const loadTimelineResources = props.loadTimelineResources;
 
   const itemsRef = useRef<Resource[]>(items);
-  itemsRef.current = items;
+
+  // Without this effect, itemsRef will not stay in sync if the items object is changed
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   /**
    * Sorts and sets the items.
@@ -84,10 +88,10 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
    * See "sortByDateAndPriority()" for more details.
    */
   const sortAndSetItems = useCallback(
-    (newItmes: Resource[]): void => {
-      sortByDateAndPriority(newItmes, resource);
-      newItmes.reverse();
-      setItems(newItmes);
+    (newItems: Resource[]): void => {
+      sortByDateAndPriority(newItems, resource);
+      newItems.reverse();
+      setItems(newItems);
     },
     [resource]
   );
@@ -160,7 +164,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     }
     medplum
       .createResource(props.createCommunication(resource, sender, contentString))
-      .then((result) => addResource(result))
+      .then((result: Resource) => addResource(result))
       .catch(console.log);
   }
 
@@ -175,7 +179,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     }
     medplum
       .createResource(props.createMedia(resource, sender, attachment))
-      .then((result) => addResource(result))
+      .then((result: Resource) => addResource(result))
       .then(() =>
         updateNotification({
           id: 'upload-notification',
@@ -186,7 +190,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
           autoClose: 2000,
         })
       )
-      .catch((reason) =>
+      .catch((reason: Error) =>
         updateNotification({
           id: 'upload-notification',
           color: 'red',
