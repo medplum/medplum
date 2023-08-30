@@ -1,6 +1,6 @@
 import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
 import { Attachment, Bundle, Encounter, Resource, ResourceType } from '@medplum/fhirtypes';
-import { HomerEncounter, MockClient } from '@medplum/mock';
+import { HomerEncounter, HomerSimpsonSpecimen, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -56,6 +56,19 @@ describe('ResourceTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
+  });
+
+  test('Renders notes (`Annotation`s) on resources with `note` property', async () => {
+    await setup({
+      value: HomerSimpsonSpecimen,
+      loadTimelineResources,
+    });
+
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
+
+    const items = screen.getAllByTestId('timeline-item');
+    expect(items).toBeDefined();
+    expect(items.length).toEqual(3);
   });
 
   test('Create comment', async () => {

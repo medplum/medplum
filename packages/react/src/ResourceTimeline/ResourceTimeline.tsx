@@ -56,7 +56,7 @@ export interface ResourceTimelineProps<T extends Resource> {
   createMedia?: (resource: T, operator: ProfileResource, attachment: Attachment) => Media;
 }
 
-type TimestampedAnnotation = Annotation & TimeSortable;
+type ProcessedNote = Annotation & TimeSortable & { meta: { parentResource: Resource; indexInParent: number } };
 type ResourceWithNote = Resource & { note?: Annotation[] };
 
 export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProps<T>): JSX.Element {
@@ -320,8 +320,16 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
           return null;
         }
         if (!isResource(item)) {
-          console.log(item);
-          return null;
+          if (!('text' in item)) {
+            return null; // Return null if not an `Annotation` for now...
+          }
+          const {
+            meta: { parentResource, indexInParent },
+          } = item as ProcessedNote;
+          const firstEight = (item as ProcessedNote).text?.slice(0, 8);
+          const key = `${parentResource.id}/${parentResource.meta?.versionId}/note/${item.time}-${firstEight}-${indexInParent}`;
+
+          return <NoteTimelineItem key={key} note={item as ProcessedNote} />;
         }
         const key = `${item.resourceType}/${item.id}/${item.meta?.versionId}`;
         if (item.resourceType === resource.resourceType && item.id === resource.id) {
@@ -486,6 +494,25 @@ function CommunicationTimelineItem(props: BaseTimelineItemProps<Communication>):
   );
 }
 
+function NoteTimelineItem({ note }: { note: ProcessedNote }): JSX.Element {
+  const {
+    meta: { parentResource },
+    time,
+  } = note;
+  return (
+    <TimelineItem
+      resource={parentResource}
+      // profile={note.a}
+      dateTime={time}
+      padding={true}
+      // popupMenuItems={<TimelineItemPopupMenu {...props} />}
+    >
+      <p>{note.text}</p>
+    </TimelineItem>
+  );
+  // @TODO(ThatOneBro 30 Aug 2023): Note should support Markdown per spec
+}
+
 function MediaTimelineItem(props: BaseTimelineItemProps<Media>): JSX.Element {
   const contentType = props.resource.content?.contentType;
   const padding =
@@ -539,21 +566,23 @@ function formatFileSize(bytes: number): string {
  * based on the containing `Resource`'s `lastUpdated` time.
  *
  * @param notedResource A resource with a `note` property
- * @returns An array of `TimestampedAnnotation`.
+ * @returns An array of `ProcessedNote`.
  */
-function processNotesFromNotedResource(notedResource: ResourceWithNote): TimestampedAnnotation[] {
+function processNotesFromNotedResource(notedResource: ResourceWithNote): ProcessedNote[] {
   const { note: notes } = notedResource;
   if (!notes) {
     return [];
   }
   const timestampedNotes = [];
 
-  for (const note of notes) {
+  for (let i = 0; i < notes.length; i++) {
+    const note = notes[i];
     if (!note.time) {
       const lastUpdated = notedResource.meta?.lastUpdated;
       note.time = lastUpdated ? new Date(lastUpdated).toISOString() : new Date().toISOString(); // this undefined case really shouldn't be hit but just in case...
     }
-    timestampedNotes.push(note as TimestampedAnnotation);
+    (note as ProcessedNote).meta = { parentResource: notedResource, indexInParent: i };
+    timestampedNotes.push(note as ProcessedNote);
   }
 
   return timestampedNotes;
@@ -569,7 +598,7 @@ function processNotesFromNotedResource(notedResource: ResourceWithNote): Timesta
  * @param outputItems The output array for all the unpacked items. Caller assumes this will mutate.
  * @param bundleEntry The `BundleEntry` to process. Should contain a `Resource`.
  */
-function unpackBundleEntry(outputItems: TimeSortable[], bundleEntry: BundleEntry<Resource>): void {
+function unpackBundleEntry(outputItems: TimeSortable[], bundleEntry: BundleEntry): void {
   const { resource } = bundleEntry as { resource: Resource };
   outputItems.push(resource);
 

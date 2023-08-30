@@ -3,16 +3,16 @@ import { Resource } from '@medplum/fhirtypes';
 
 const PRIORITY_RANKINGS = { stat: 4, asap: 3, urgent: 2 } as const;
 
+interface Timestamped {
+  time: string;
+}
+
 /**
  * This is a type that you can use to check if something is sortable by `sortByDateAndPriorityGeneric` from this module.
  *
  * This could eventually be a mixin interface which establishes some methods to give information about how to sort a particular data type.
  */
-export type TimeSortable =
-  | {
-      time: string;
-    }
-  | Resource;
+export type TimeSortable = Timestamped | Resource;
 
 /**
  * Sorts an array of resources in place by meta.lastUpdated ascending.
