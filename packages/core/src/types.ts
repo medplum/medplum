@@ -160,15 +160,15 @@ export function indexStructureDefinition(structureDefinition: StructureDefinitio
   const elements = structureDefinition.snapshot?.element;
   if (elements) {
     // @TODO(ThatOneBro 29 Aug 2023): any reason why this can't be done in one loop?
-    // Using numeric for loops since they avoid overhead of iterators that you get with for...of
-    for (let i = 0; i < elements.length; i++) {
+    // @TODO(ThatOneBro): Using numeric for loops would be better since they avoid overhead of iterators that you get with for...of
+    for (const element of elements) {
       // First pass, build types
-      indexType(structureDefinition, elements[i]);
+      indexType(structureDefinition, element);
     }
 
-    for (let i = 0; i < elements.length; i++) {
+    for (const element of elements) {
       // Second pass, build properties
-      indexProperty(structureDefinition, elements[i]);
+      indexProperty(structureDefinition, element);
     }
   }
 }
