@@ -1,7 +1,8 @@
 import { ActionIcon, Center, createStyles, Group, Loader, Menu, ScrollArea, TextInput } from '@mantine/core';
 import { showNotification, updateNotification } from '@mantine/notifications';
-import { getReferenceString, MedplumClient, normalizeErrorString, ProfileResource } from '@medplum/core';
+import { getReferenceString, isResource, MedplumClient, normalizeErrorString, ProfileResource } from '@medplum/core';
 import {
+  Annotation,
   Attachment,
   AuditEvent,
   Bundle,
@@ -36,7 +37,7 @@ import { ResourceDiffTable } from '../ResourceDiffTable/ResourceDiffTable';
 import { ResourceTable } from '../ResourceTable/ResourceTable';
 import { Timeline, TimelineItem } from '../Timeline/Timeline';
 import { useResource } from '../useResource/useResource';
-import { sortByDateAndPriority } from '../utils/date';
+import { sortByDateAndPriorityGeneric, TimeSortable } from '../utils/date';
 
 const useStyles = createStyles((theme) => ({
   pinnedComment: {
@@ -55,6 +56,9 @@ export interface ResourceTimelineProps<T extends Resource> {
   createMedia?: (resource: T, operator: ProfileResource, attachment: Attachment) => Media;
 }
 
+type TimestampedAnnotation = Annotation & TimeSortable;
+type ResourceWithNote = Resource & { note?: Annotation[] };
+
 export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProps<T>): JSX.Element {
   const medplum = useMedplum();
   const navigate = useMedplumNavigate();
@@ -62,10 +66,10 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   const inputRef = useRef<HTMLInputElement>(null);
   const resource = useResource(props.value);
   const [history, setHistory] = useState<Bundle>();
-  const [items, setItems] = useState<Resource[]>([]);
+  const [items, setItems] = useState<TimeSortable[]>([]);
   const loadTimelineResources = props.loadTimelineResources;
 
-  const itemsRef = useRef<Resource[]>(items);
+  const itemsRef = useRef<TimeSortable[]>(items);
 
   // Without this effect, itemsRef will not stay in sync if the items object is changed
   useEffect(() => {
@@ -88,8 +92,8 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
    * See "sortByDateAndPriority()" for more details.
    */
   const sortAndSetItems = useCallback(
-    (newItems: Resource[]): void => {
-      sortByDateAndPriority(newItems, resource);
+    (newItems: TimeSortable[]): void => {
+      sortByDateAndPriorityGeneric(newItems, resource);
       newItems.reverse();
       setItems(newItems);
     },
@@ -102,7 +106,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
    */
   const handleBatchResponse = useCallback(
     (batchResponse: PromiseSettledResult<Bundle>[]): void => {
-      const newItems = [];
+      const newItems = [] as TimeSortable[];
 
       for (const settledResult of batchResponse) {
         if (settledResult.status !== 'fulfilled') {
@@ -117,11 +121,10 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 
         if (bundle.entry) {
           for (const entry of bundle.entry) {
-            newItems.push(entry.resource as Resource);
+            unpackBundleEntry(newItems, entry);
           }
         }
       }
-
       sortAndSetItems(newItems);
     },
     [sortAndSetItems]
@@ -132,7 +135,13 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
    * @param resource Resource to add.
    */
   const addResource = useCallback(
-    (resource: Resource): void => sortAndSetItems([...itemsRef.current, resource]),
+    (resource: Resource): void => {
+      const newItems = [resource] as TimeSortable[];
+      if ('note' in resource) {
+        newItems.push(...processNotesFromNotedResource(resource as ResourceWithNote));
+      }
+      sortAndSetItems([...itemsRef.current, ...newItems]);
+    },
     [sortAndSetItems]
   );
 
@@ -305,9 +314,13 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
           </Form>
         </Panel>
       )}
-      {items.map((item) => {
+      {items.map((item: TimeSortable) => {
         if (!item) {
           // TODO: Handle null history items for deleted versions.
+          return null;
+        }
+        if (!isResource(item)) {
+          console.log(item);
           return null;
         }
         const key = `${item.resourceType}/${item.id}/${item.meta?.versionId}`;
@@ -519,4 +532,50 @@ function formatFileSize(bytes: number): string {
   }
   const e = Math.floor(Math.log(bytes) / Math.log(1024));
   return (bytes / Math.pow(1024, e)).toFixed(2) + ' ' + ' KMGTP'.charAt(e) + 'B';
+}
+
+/**
+ * Processes the notes contained in a `Resource`'s `note` property. Adds timestamps to `Annotation`s which don't have them,
+ * based on the containing `Resource`'s `lastUpdated` time.
+ *
+ * @param notedResource A resource with a `note` property
+ * @returns An array of `TimestampedAnnotation`.
+ */
+function processNotesFromNotedResource(notedResource: ResourceWithNote): TimestampedAnnotation[] {
+  const { note: notes } = notedResource;
+  if (!notes) {
+    return [];
+  }
+  const timestampedNotes = [];
+
+  for (const note of notes) {
+    if (!note.time) {
+      const lastUpdated = notedResource.meta?.lastUpdated;
+      note.time = lastUpdated ? new Date(lastUpdated).toISOString() : new Date().toISOString(); // this undefined case really shouldn't be hit but just in case...
+    }
+    timestampedNotes.push(note as TimestampedAnnotation);
+  }
+
+  return timestampedNotes;
+}
+
+/**
+ * Takes a bundle entry and unpacks all items from the contained `Resource`.
+ *
+ * This is where logic for extracting non-resource items from resources is found.
+ * For example, the `note` field will be parsed from all `Resource`s which have `note`s, and put into their own items to be
+ * sorted and added to the timeline.
+ *
+ * @param outputItems The output array for all the unpacked items. Caller assumes this will mutate.
+ * @param bundleEntry The `BundleEntry` to process. Should contain a `Resource`.
+ */
+function unpackBundleEntry(outputItems: TimeSortable[], bundleEntry: BundleEntry<Resource>): void {
+  const { resource } = bundleEntry as { resource: Resource };
+  outputItems.push(resource);
+
+  if (!('note' in resource)) {
+    return;
+  }
+
+  outputItems.push(...processNotesFromNotedResource(resource as ResourceWithNote));
 }

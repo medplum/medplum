@@ -1,6 +1,18 @@
+import { isResource } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 
 const PRIORITY_RANKINGS = { stat: 4, asap: 3, urgent: 2 } as const;
+
+/**
+ * This is a type that you can use to check if something is sortable by `sortByDateAndPriorityGeneric` from this module.
+ *
+ * This could eventually be a mixin interface which establishes some methods to give information about how to sort a particular data type.
+ */
+export type TimeSortable =
+  | {
+      time: string;
+    }
+  | Resource;
 
 /**
  * Sorts an array of resources in place by meta.lastUpdated ascending.
@@ -9,19 +21,38 @@ const PRIORITY_RANKINGS = { stat: 4, asap: 3, urgent: 2 } as const;
  */
 export function sortByDateAndPriority(resources: Resource[], timelineResource?: Resource): void {
   resources.sort((a: Resource, b: Resource): number => {
-    const priority1 = getPriorityScore(a, timelineResource);
-    const priority2 = getPriorityScore(b, timelineResource);
+    const priority1 = getPriorityScoreForResource(a, timelineResource);
+    const priority2 = getPriorityScoreForResource(b, timelineResource);
     if (priority1 > priority2) {
       return 1;
     }
     if (priority1 < priority2) {
       return -1;
     }
-    return getTime(a, timelineResource) - getTime(b, timelineResource);
+    return getTimeForResource(a, timelineResource) - getTimeForResource(b, timelineResource);
   });
 }
 
-function getPriorityScore(resource: Resource, timelineResource: Resource | undefined): number {
+/**
+ * Sorts an array of generic `TimeSortable`s based on type-specified time-sorting logic.
+ * @param sortables Array of `TimeSortable`s. These are generic items that can be sorted alongside `Resource`s.
+ * @param timelineResource Optional primary resource of a timeline view. If specified, the primary resource will be sorted by meta.lastUpdated descending.
+ */
+export function sortByDateAndPriorityGeneric(sortables: TimeSortable[], timelineResource?: Resource): void {
+  sortables.sort((a: TimeSortable, b: TimeSortable): number => {
+    const priority1 = getPriorityScoreGeneric(a, timelineResource);
+    const priority2 = getPriorityScoreGeneric(b, timelineResource);
+    if (priority1 > priority2) {
+      return 1;
+    }
+    if (priority1 < priority2) {
+      return -1;
+    }
+    return getTimeGeneric(a, timelineResource) - getTimeGeneric(b, timelineResource);
+  });
+}
+
+function getPriorityScoreForResource(resource: Resource, timelineResource: Resource | undefined): number {
   if (!isSameResourceType(resource, timelineResource)) {
     // Only use priority if not the primary resource of a timeline view.
 
@@ -33,7 +64,14 @@ function getPriorityScore(resource: Resource, timelineResource: Resource | undef
   return 0;
 }
 
-function getTime(resource: Resource, timelineResource: Resource | undefined): number {
+function getPriorityScoreGeneric(sortable: TimeSortable, timelineResource: Resource | undefined): number {
+  if (isResource(sortable)) {
+    return getPriorityScoreForResource(sortable, timelineResource);
+  }
+  return 0;
+}
+
+function getTimeForResource(resource: Resource, timelineResource: Resource | undefined): number {
   if (!isSameResourceType(resource, timelineResource)) {
     // Only use special case timestamps if not the primary resource of a timeline view.
 
@@ -60,6 +98,21 @@ function getTime(resource: Resource, timelineResource: Resource | undefined): nu
     return 0;
   }
   return new Date(dateTime).getTime();
+}
+
+function getTimeGeneric(sortable: TimeSortable, timelineResource: Resource | undefined): number {
+  const sortableType = isResource(sortable) ? 'resource' : 'generic';
+
+  switch (sortableType) {
+    case 'resource':
+      return getTimeForResource(sortable as Resource, timelineResource);
+    case 'generic':
+      return new Date((sortable as { time: string }).time).getTime();
+    default:
+      // should be unreachable...
+      // if we get here there is a big problem
+      return 'UNREACHABLE' as unknown as number;
+  }
 }
 
 function isSameResourceType(a: Resource, b: Resource | undefined): boolean {
