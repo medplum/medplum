@@ -52,6 +52,7 @@ export interface BotExecutionRequest {
   readonly agent?: Agent;
   readonly device?: Device;
   readonly remoteAddress?: string;
+  readonly forwardedFor?: string;
 }
 
 export interface BotExecutionResult {
@@ -203,6 +204,7 @@ async function writeBotInputToStorage(request: BotExecutionRequest): Promise<voi
     agentId: request.agent?.id,
     deviceId: request.device?.id,
     remoteAddress: request.remoteAddress,
+    forwardedFor: request.forwardedFor,
   };
 
   if (contentType === ContentType.HL7_V2) {
