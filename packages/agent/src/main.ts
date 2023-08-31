@@ -104,6 +104,7 @@ export class AgentHl7ChannelConnection {
         JSON.stringify({
           type: 'connect',
           accessToken: medplum.getAccessToken(),
+          agentId: channel.app.agentId,
           botId: resolveId(channel.definition.targetReference as Reference<Bot>),
         })
       );
@@ -150,6 +151,7 @@ export class AgentHl7ChannelConnection {
           this.webSocket.send(
             JSON.stringify({
               type: 'transmit',
+              forwardedFor: this.hl7Connection.socket.remoteAddress,
               message: msg.toString(),
             })
           );

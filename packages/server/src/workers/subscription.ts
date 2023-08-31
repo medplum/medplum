@@ -421,7 +421,6 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
  * @param resource The resource that triggered the subscription.
  */
 async function execBot(subscription: Subscription, resource: Resource): Promise<void> {
-  const startTime = new Date().toISOString();
   const url = subscription.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
@@ -444,19 +443,13 @@ async function execBot(subscription: Subscription, resource: Resource): Promise<
     throw new Error('Could not find project membership for bot');
   }
 
-  let outcome: AuditEventOutcome;
-  let logResult: string;
-
-  try {
-    const result = await executeBot({ bot, runAs, input: resource, contentType: ContentType.FHIR_JSON });
-    outcome = result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure;
-    logResult = result.logResult;
-  } catch (error) {
-    outcome = AuditEventOutcome.MajorFailure;
-    logResult = (error as Error).message;
-  }
-
-  await createAuditEvent(resource, startTime, outcome, logResult, subscription, bot);
+  await executeBot({
+    subscription,
+    bot,
+    runAs,
+    input: resource,
+    contentType: ContentType.FHIR_JSON,
+  });
 }
 
 /**

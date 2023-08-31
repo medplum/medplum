@@ -1,7 +1,9 @@
-import { createReference, evalFhirPathTyped, getExtension, Operator, toTypedValue } from '@medplum/core';
+import { createReference, evalFhirPathTyped, getExtension, isResource, Operator, toTypedValue } from '@medplum/core';
 import {
   AuditEvent,
+  AuditEventEntity,
   Bot,
+  Coding,
   Practitioner,
   ProjectMembership,
   Reference,
@@ -47,27 +49,6 @@ export async function createAuditEvent(
   subscription?: Subscription,
   bot?: Bot
 ): Promise<void> {
-  const entity = [
-    {
-      what: createReference(resource),
-      role: { code: '4', display: 'Domain' },
-    },
-  ];
-
-  if (subscription) {
-    entity.push({
-      what: createReference(subscription),
-      role: { code: '9', display: 'Subscriber' },
-    });
-  }
-
-  if (bot) {
-    entity.push({
-      what: createReference(bot),
-      role: { code: '9', display: 'Subscriber' },
-    });
-  }
-
   const auditedEvent = subscription ?? resource;
 
   await systemRepo.createResource<AuditEvent>({
@@ -97,10 +78,32 @@ export async function createAuditEvent(
       // observer: createReference(auditedEvent)
       observer: createReference(auditedEvent) as Reference as Reference<Practitioner>,
     },
-    entity,
+    entity: createAuditEventEntities(resource, subscription, bot),
     outcome,
     outcomeDesc,
   });
+}
+
+export function createAuditEventEntities(...resources: unknown[]): AuditEventEntity[] {
+  return resources.filter(isResource).map(createAuditEventEntity);
+}
+
+export function createAuditEventEntity(resource: Resource): AuditEventEntity {
+  return {
+    what: createReference(resource),
+    role: getAuditEventEntityRole(resource),
+  };
+}
+
+export function getAuditEventEntityRole(resource: Resource): Coding {
+  switch (resource.resourceType) {
+    case 'Patient':
+      return { code: '1', display: 'Patient' };
+    case 'Subscription':
+      return { code: '9', display: 'Subscriber' };
+    default:
+      return { code: '4', display: 'Domain' };
+  }
 }
 
 export function isDeleteInteraction(subscription: Subscription): boolean {
