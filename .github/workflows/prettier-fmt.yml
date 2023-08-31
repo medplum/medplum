@@ -7,13 +7,14 @@ concurrency:
 
 on:
   push:
-    branches: [main]
+    # branches: [main]
+    branches: [derrick/test-actions]
   pull_request:
     branches:
-      - main
+      # - main
       - derrick/test-actions
-  merge_group:
-    types: [checks_requested]
+  # merge_group:
+  #   types: [checks_requested]
 
 jobs:
   prettier-fmt:
