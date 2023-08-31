@@ -97,9 +97,45 @@ Super admin features can cause unrepairable damage. We highly recommend adding a
 
 With is `ClientApplication`, you can create a `Project` resource and invite the a new user as a project admin.
 
-<MedplumCodeBlock language="ts" selectBlocks="createProject">
-  {ExampleCode}
-</MedplumCodeBlock>
+#### Create a New Project
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="createProjectTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="createProjectCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="createProjectCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+#### Invite a New User as an Admin
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="inviteNewAdminTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="inviteNewAdminCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="inviteNewAdminCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
 
 ## User Administration via Medplum App
 
@@ -214,32 +250,37 @@ You can also use the `profile-type` search parameter to narrow your search
 
 Refer to our [search documentation](/docs/search/basic-search) for more details on FHIR search
 
-## Promote Existing User to Admin
+### Promote Existing User to Admin
 
-Only administrators are able to promote existing users to admins. To do so navigate to the [Project Admin panel](https://app.medplum.com/admin/project) and go to the Users tab. From here, select the `User` you want to make an admin. Check the box under the `Admin` label, and then save the user. This user will now be an admin on your project.
+If you are already an admin, you can promote other existing users to an admin as well. To do so navigate to the [Project Admin panel](https://app.medplum.com/admin/project) and go to the Users tab. From here, select the `User` you want to make an admin.
 
-![Promote to Admin]()
+Check the box under the `Admin` label, and then save the user. This user will now be an admin on your project.
 
-Promoting a user to admin can also be done programatically. To do so, you will need to update the user's `ProjectMembership`, which defines the user's access to the project.
+![Promote To Admin](promote-to-admin.png)
 
-```ts
-// The user's project membership
-const membership = {
-  resourceType: 'ProjectMembership',
-  id: 'example-membership-id',
-  // ...
-  admin: false,
-};
+To _invite_ a user as an admin in the app, please see the [Invite a User docs](https://www.medplum.com/docs/app/invite).
 
-// To update, create a new resource and spread the original in, only changing the admin field
-const updatedMembership = {
-  ...membership,
-  admin: true,
-};
+Promoting a user to admin can also be done programatically. To do so, you will need to update the user's `ProjectMembership`.
 
-// Create a post request to make the update
-medplum.post(`admin/projects/${projectId}/members/example-membership-id`, updatedMembership);
-```
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="makeAdminTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="makeAdminCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="makeAdminCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+It is important to spread the original `ProjectMembership` to ensure that you are only updating the `admin` field.
 
 ## Invite via API
 
@@ -247,73 +288,43 @@ Inviting users can be done programmatically using the `/invite` endpoint
 
 Prepare JSON payload:
 
-```json
-{
-  "resourceType": "Patient",
-  "firstName": "Homer",
-  "lastName": "Simpson",
-  "email": "homer@example.com",
-  "sendEmail": false
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="prepareJson">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 Then POST to the `/invite` endpoint:
 
-```bash
-curl 'https://api.medplum.com/admin/projects/${projectId}/invite' \
-  -H 'Authorization: Bearer ${accessToken}' \
-  -H 'Content-Type: application/json' \
-  --data-raw '{"resourceType":"Patient","firstName":"Homer","lastName":"Simpson","email":"homer@example.com", "sendEmail":"false"}'
-```
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="inviteUserTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="inviteUserCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="inviteUserCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
 
 The `/invite` endpoint creates a [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership). The `ProjectMembership` resource includes additional properties to customize the user experience. The `/invite` endpoint accepts a partial `ProjectMembership` in the `membership` property where you can provide membership details.
 
 For example, use `admin: true` to make the new user a project administrator:
 
-```json
-{
-  "resourceType": "Practitioner",
-  "firstName": "Homer",
-  "lastName": "Simpson",
-  "email": "homer@example.com",
-  "membership": {
-    "admin": true
-  }
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="prepareJsonAdmin">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 Or use the `access` property to specify a user's `AccessPolicy` with optional parameters.
 
-```json
-{
-  "resourceType": "Patient",
-  "firstName": "Homer",
-  "lastName": "Simpson",
-  "email": "homer@example.com",
-  "membership": {
-    "access": [
-      {
-        "policy": { "reference": "AccessPolicy/123" },
-        "parameter": [
-          {
-            "name": "provider_organization",
-            "valueReference": { "reference": "Organization/abc" }
-          }
-        ]
-      },
-      {
-        "policy": { "reference": "AccessPolicy/123" },
-        "parameter": [
-          {
-            "name": "provider_organization",
-            "valueReference": { "reference": "Organization/def" }
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="prepareJsonAccessPolicy">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 See [Access Control](/docs/auth/access-control) for more details.
 
