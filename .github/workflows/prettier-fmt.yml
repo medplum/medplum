@@ -2,7 +2,7 @@
 name: prettier
 
 concurrency:
-  group: ci-build-${{ github.ref_name == 'main' && github.sha || github.ref }}
+  group: ci-prettier-${{ github.ref_name == 'main' && github.sha || github.ref }}
   cancel-in-progress: true
 
 on:

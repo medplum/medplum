@@ -10,6 +10,8 @@ node_modules/
 .env
 
 .failed
+prettier-fmt.err
+prettier-fmt1.err
 
 # Output
 packages/agent/dist/
