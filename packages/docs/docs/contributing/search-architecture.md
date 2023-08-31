@@ -27,7 +27,7 @@ In addition to `id` and `content` columns containing the resource's UUID and raw
 | `uri`                     | `text`                                       |
 | `special`                 | - (e.g. `id uuid` and `compartments uuid[]`) |
 
-<sup>\*</sup> Some parameters are handled by special lookup tables due to complex matching semantics, see below
+<sup>*</sup> Some parameters are handled by special lookup tables due to complex matching semantics, see below
 
 Many of these columns can contain multiple values of the same type in an array, e.g. `text[]`.
 
@@ -86,6 +86,22 @@ The [`Operator`][operator] enum represents a union over FHIR search [modifiers][
 [search-modifiers]: http://hl7.org/fhir/R4/valueset-search-modifier-code.html
 [search-prefixes]: http://hl7.org/fhir/R4/search.html#prefix
 
+## SQL Builder
+
+Medplum's core search logic translates FHIR search requests into a composable set of SQL expressions, from which the DB query is built. The [`SqlBuilder`][sql-builder] class provides basic functionality for constructing the SQL string, but most code uses it only indirectly through classes representing logical parts of the SQL expression, e.g. a [`Condition`][sql-condition]. Queries constructed this way are modular and flexible, allowing the server to easily manipulate the query without resorting to tricky string manipulation.
+
+The main search parameter processing logic takes places in [`buildSearchFilterExpression()`][build-search-filter-expr], which performs:
+
+1. Checking if the search parameter is a special one that needs specific handling (e.g. [`_filter`][filter-param])
+2. Identifying whether a lookup table is in use for the search parameter and constructing the JOIN
+   - The `:identifier` modifier is handled as a special case, using the token lookup table
+3. Constructing the correct SQL `WHERE` expression for the search parameter based on its type and modifiers
+
+[sql-builder]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/sql.ts#L213
+[sql-condition]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/sql.ts#L49
+[build-search-filter-expr]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/search.ts#L494
+[filter-param]: http://hl7.org/fhir/R4/search_filter.html
+
 ### Lookup Tables
 
 Some search parameters require specific matching logic, and a separate lookup table to map parameter values to resources with acceptable performance. These lookup tables are modeled in subclasses of [`LookupTable`][lookup-table], and define custom logic for adding JOIN statements and conditions against the lookup tables to the SQL query. Each lookup table contains a `resourceId` column used for joining to the main resource tables, alongside other column used for matching. Some lookup tables are global across all resource types, where others are resource type-specific. For example, the schema of the [`HumanName`][human-name-lookup] lookup table is given below:
@@ -105,22 +121,6 @@ Some search parameters require specific matching logic, and a separate lookup ta
 
 [lookup-table]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/lookups/lookuptable.ts
 [human-name-lookup]: https://github.com/medplum/medplum/blob/ecbfcbb0860e95ef3e7ea3ddc4508b9a18e55ca1/packages/server/src/fhir/lookups/humanname.ts
-
-### SQL Builder
-
-Medplum's core search logic translates FHIR search requests into a composable set of SQL expressions, from which the DB query is built. The [`SqlBuilder`][sql-builder] class provides basic functionality for constructing the SQL string, but most code uses it only indirectly through classes representing logical parts of the SQL expression, e.g. a [`Condition`][sql-condition]. Queries constructed this way are modular and flexible, allowing the server to easily manipulate the query without resorting to tricky string manipulation.
-
-The main search parameter processing logic takes places in [`buildSearchFilterExpression()`][build-search-filter-expr], which performs:
-
-1. Checking if the search parameter is a special one that needs specific handling (e.g. [`_filter`][filter-param])
-2. Identifying whether a lookup table is in use for the search parameter and constructing the JOIN
-   - The `:identifier` modifier is handled as a special case, using the token lookup table
-3. Constructing the correct SQL `WHERE` expression for the search parameter based on its type and modifiers
-
-[sql-builder]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/sql.ts#L213
-[sql-condition]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/sql.ts#L49
-[build-search-filter-expr]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/search.ts#L494
-[filter-param]: http://hl7.org/fhir/R4/search_filter.html
 
 ### Examples
 
