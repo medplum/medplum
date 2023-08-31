@@ -497,11 +497,13 @@ function CommunicationTimelineItem(props: BaseTimelineItemProps<Communication>):
 function NoteTimelineItem({ note }: { note: ProcessedNote }): JSX.Element {
   const {
     meta: { parentResource },
+    authorReference,
+    text,
     time,
   } = note;
   return (
-    <TimelineItem resource={parentResource} profile={note.authorReference} dateTime={time} padding={true}>
-      <p>{note.text}</p>
+    <TimelineItem resource={parentResource} profile={authorReference} dateTime={time} padding={true}>
+      <p>{text}</p>
     </TimelineItem>
   );
   // @TODO(ThatOneBro 30 Aug 2023): Note should support Markdown per spec
