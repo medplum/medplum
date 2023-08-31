@@ -2,6 +2,7 @@
 title: MedicinalProductContraindication
 sidebar_position: 82
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/medicinalproductcontraindication.json';
@@ -14,11 +15,11 @@ The clinical particulars - indications, contraindications etc. of a medicinal pr
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -33,7 +34,6 @@ The clinical particulars - indications, contraindications etc. of a medicinal pr
     <div>   <a name="scope"></a>      <p>    A reason why a medicinal product is not to be used in a certain context   </p>  </div>
     </TabItem>
   
-  
-  
+
 
 </Tabs>

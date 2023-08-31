@@ -2,6 +2,7 @@
 title: NamingSystem
 sidebar_position: 93
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/namingsystem.json';
@@ -9,16 +10,16 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # NamingSystem
 
-A curated namespace that issues unique symbols within that namespace for the identification of concepts, people, devices, etc.  Represents a "System" used within the <a href="/docs/api/fhir/datatypes/identifier">Identifier</a> and <a href="/docs/api/fhir/datatypes/coding">Coding</a> data types.
+A curated namespace that issues unique symbols within that namespace for the identification of concepts, people, devices, etc. Represents a "System" used within the <a href="/docs/api/fhir/datatypes/identifier">Identifier</a> and <a href="/docs/api/fhir/datatypes/coding">Coding</a> data types.
 
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -38,6 +39,5 @@ A curated namespace that issues unique symbols within that namespace for the ide
   <TabItem value="backgroundAndContext" label="Background and Context">
     <div> <a name="bnc"></a>  <p> For discussion of policy for creating well maintained OIDs and URIs for resources, see <a href="https://confluence.hl7.org/display/FHIR/Migrating+OIDs+to+FHIR">The HL7 Confluence site </a>. </p>  </div>
     </TabItem>
-  
 
 </Tabs>

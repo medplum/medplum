@@ -2,6 +2,7 @@
 title: Basic
 sidebar_position: 7
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/basic.json';
@@ -14,11 +15,11 @@ Basic is used for handling concepts not yet defined in FHIR, narrative-only reso
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -36,6 +37,5 @@ Basic is used for handling concepts not yet defined in FHIR, narrative-only reso
   <TabItem value="backgroundAndContext" label="Background and Context">
     <div> <a name="bnc"></a>  <p> <a href="/docs/api/fhir/resources/basic">Basic</a> defines only a minimal set of data elements - those necessary to identify what kind of resource it represents and those necessary to support resource <a href="/docs/api/fhir/resources/compartmentdefinition">compartmenting</a>.  All other data elements are represented using the <a href="https://www.hl7.org/fhir/extensibility.html">extension</a> mechanism.  It's entirely possible to have a <a href="/docs/api/fhir/resources/basic">Basic</a> resource instance with nothing other than narrative, a subject and code.  And, in practice, that's all many systems will understand. </p> </div>
     </TabItem>
-  
 
 </Tabs>

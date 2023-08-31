@@ -2,6 +2,7 @@
 title: Linkage
 sidebar_position: 68
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/linkage.json';
@@ -14,11 +15,11 @@ Identifies two or more records (resource instances) that refer to the same real-
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -35,7 +36,6 @@ Identifies two or more records (resource instances) that refer to the same real-
   <TabItem value="relationships" label="Relationships">
     <div>  <p> The <a href="/docs/api/fhir/resources/person">Person</a> resource should be used to link a person independent of a specific health-related context. <a href="/docs/api/fhir/resources/linkage">Linkage</a> can be used for all other use cases. </p> </div>
     </TabItem>
-  
-  
+
 
 </Tabs>

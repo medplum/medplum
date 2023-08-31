@@ -2,6 +2,7 @@
 title: EventDefinition
 sidebar_position: 48
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/eventdefinition.json';
@@ -14,11 +15,11 @@ The <a href="/docs/api/fhir/resources/eventdefinition">EventDefinition</a> resou
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -35,7 +36,6 @@ The <a href="/docs/api/fhir/resources/eventdefinition">EventDefinition</a> resou
   <TabItem value="relationships" label="Relationships">
     <div>  <p>The <a href="/docs/api/fhir/resources/eventdefinition">EventDefinition</a> resource is intended to be used to provide a reusable description of events for use by other resources that require event definition, such as <a href="/docs/api/fhir/resources/subscription">Subscription</a>. <a href="/docs/api/fhir/resources/eventdefinition">EventDefinition</a> is a definition of an event that could occur, whereas <a href="/docs/api/fhir/resources/subscription">Subscription</a> is asking for notification of events when they occur.</p> </div>
     </TabItem>
-  
-  
+
 
 </Tabs>

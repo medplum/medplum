@@ -2,6 +2,7 @@
 title: OrganizationAffiliation
 sidebar_position: 100
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/organizationaffiliation.json';
@@ -14,11 +15,11 @@ Defines an affiliation/assotiation/relationship between 2 distinct oganizations,
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -35,7 +36,6 @@ Defines an affiliation/assotiation/relationship between 2 distinct oganizations,
   <TabItem value="relationships" label="Relationships">
     <div> <a name="bnr"></a>  <p> The <a href="/docs/api/fhir/resources/organization">Organization</a>.partOf is used to form a hierarchical relationships within an organization which eventually resolves  to a single organization. Each child in the tree is a subdivision of the parent.<br/> The <a href="/docs/api/fhir/resources/organizationaffiliation">OrganizationAffiliation</a> is used to describe the relationship between two distinct organizations. It does not require a hierarchical relationship. A resource instance is for a singular linkage between 2 organizations (it does not contain all members), to create multiple affiliations, create additional resources for the other relationship between other organizations.<br/> Each instance contains its own period, and optionally links to specific related services/locations that are available. These referenced locations/services should be associated with the participating organization, and are available to the primary organization. </p> <p> This resource should not be used when the affiliates are part of a single organization. </p> </div>
     </TabItem>
-  
-  
+
 
 </Tabs>

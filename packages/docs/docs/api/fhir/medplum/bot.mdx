@@ -2,6 +2,7 @@
 title: Bot
 sidebar_position: 4
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/medplumDefinitions/bot.json';
@@ -14,11 +15,11 @@ Bot account for automated actions.
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -31,7 +32,6 @@ Bot account for automated actions.
 </TabItem>
   
   
-  
-  
+
 
 </Tabs>

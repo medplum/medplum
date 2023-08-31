@@ -2,6 +2,7 @@
 title: ConceptMap
 sidebar_position: 26
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/conceptmap.json';
@@ -14,11 +15,11 @@ A statement of relationships from one set of concepts to one or more other conce
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -38,6 +39,5 @@ A statement of relationships from one set of concepts to one or more other conce
   <TabItem value="backgroundAndContext" label="Background and Context">
     <div> <a name="bnc"></a>  <p> Further discussion of the issues involved in mapping between concept definition systems can be found in the   <a href="http://www.hl7.org/documentcenter/public/standards/V3/core_principles/infrastructure/coreprinciples/v3modelcoreprinciples.html">HL7 v3 Core Principles </a> document  and the functionality described in the <a href="http://www.omg.org/spec/CTS2/1.0/">OMG CTS 2 </a> specification.  </p>   </div>
     </TabItem>
-  
 
 </Tabs>

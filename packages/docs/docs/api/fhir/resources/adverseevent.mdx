@@ -2,6 +2,7 @@
 title: AdverseEvent
 sidebar_position: 2
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/adverseevent.json';
@@ -9,16 +10,16 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # AdverseEvent
 
-Actual or  potential/avoided event causing unintended physical injury resulting from or contributed to by medical care, a research study or other healthcare setting factors that requires additional monitoring, treatment, or hospitalization, or that results in death.
+Actual or potential/avoided event causing unintended physical injury resulting from or contributed to by medical care, a research study or other healthcare setting factors that requires additional monitoring, treatment, or hospitalization, or that results in death.
 
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -35,7 +36,6 @@ Actual or  potential/avoided event causing unintended physical injury resulting 
   <TabItem value="relationships" label="Relationships">
     <div>   <a name="bnr"></a>      <p>    The <a href="/docs/api/fhir/resources/adverseevent">AdverseEvent</a> resource is designed to represent events that have a harmful impact on a subject, or had the potential to cause harm to a subject but were avoided.  In the course of medical care there are many actions that may impact how a subject responds to a particular treatment impacting patient safety.  Therefore the <a href="/docs/api/fhir/resources/adverseevent">AdverseEvent</a> resource may reference multiple other resources to represent the context or details of an adverse event including but not limited to  <a href="/docs/api/fhir/resources/observation">Observation</a>, <a href="/docs/api/fhir/resources/condition">Condition</a>, MedicationAdminsitration, <a href="/docs/api/fhir/resources/immunization">Immunization</a>, <a href="/docs/api/fhir/resources/procedure">Procedure</a>, or <a href="/docs/api/fhir/resources/researchstudy">ResearchStudy</a>.     </p>   <p>    A <a href="/docs/api/fhir/resources/detectedissue">DetectedIssue</a> reference is also related to the context of an <a href="/docs/api/fhir/resources/adverseevent">AdverseEvent</a> to the extent that a known risk for a potential issue such as a drug-drug interaction is documented.  If in the context of a known issue, and adverse event occurs, citing this relationship is important for preventing such an occurrence in the future.   </p>   <p>    The <a href="/docs/api/fhir/resources/adverseevent">AdverseEvent</a> resource should not be used when a more specific resource exists.    </p>   <ul>    <li>The <a href="/docs/api/fhir/resources/allergyintolerance">AllergyIntolerance</a> resource is a case specific means of capturing the condition of an allergy or intolerance and the criticality (or potential for future harm) based on the response of a particular individual.</li>    <li>The Clinical Reasoning module provides resources and operations to enable the representation, distribution, and evaluation of clinical knowledge artifacts such as clinical decision support rules, quality measures, order sets, and protocols.  The suite of resources within the clinical reasoning module should be used to capture clinical quality measures and clinical protocols that help drive clinical best practices.</li>    <li>The <a href="/docs/api/fhir/resources/adverseevent">AdverseEvent</a> resource is not intended to be used to capture potential subject risk in a prospective manner.  A more appropriate resource for this purpose would be Risk Assessment which captures predicted outcomes for a patient or population on the basis of source information. Examples include a prognosis statement for a particular condition, risk of health outcome (heart attack, particular type of cancer) on the basis of lifestyle factors and/or family history or list of potential health risks based on a patient's genetic analysis.</li>   </ul>  </div>
     </TabItem>
-  
-  
+
 
 </Tabs>

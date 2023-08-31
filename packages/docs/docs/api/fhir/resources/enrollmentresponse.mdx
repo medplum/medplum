@@ -2,6 +2,7 @@
 title: EnrollmentResponse
 sidebar_position: 46
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/enrollmentresponse.json';
@@ -14,11 +15,11 @@ This resource provides enrollment and plan details from the processing of an <a 
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -33,7 +34,6 @@ This resource provides enrollment and plan details from the processing of an <a 
     <div> <a name="scope"></a>  <p><b>This resource has not yet undergone proper review by FM. At this time it is a 'stub', is known to be incomplete, and is to be considered as a draft.</b></p> <p> The <a href="/docs/api/fhir/resources/enrollmentresponse">EnrollmentResponse</a> resource provides enrollment and plan details from the processing of an  Enrollment resource.  </p>  <p>    </p> </div>
     </TabItem>
   
-  
-  
+
 
 </Tabs>

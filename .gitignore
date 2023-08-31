@@ -9,6 +9,8 @@ node_modules/
 # Dotenv
 .env
 
+.failed
+
 # Output
 packages/agent/dist/
 packages/app/dist/

@@ -183,11 +183,8 @@ div.theme-code-block {
 }
 
 li.theme-doc-sidebar-item-link:not(:first-child) strong {
-  margin-top: .75rem;
+  margin-top: 0.75rem;
 }
-
-
-
 
 /* Footer styles */
 

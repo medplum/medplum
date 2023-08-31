@@ -246,4 +246,3 @@ When Medplum authenticates through federation to third-party IdPs, Medplum might
   Found Location: https://client_redirect_uri?error=invalid_request&
                   error_description=Read+timed+out
   ```
-  
