@@ -500,12 +500,7 @@ function NoteTimelineItem({ note }: { note: ProcessedNote }): JSX.Element {
     time,
   } = note;
   return (
-    <TimelineItem
-      resource={parentResource}
-      profile={note.authorReference}
-      dateTime={time}
-      padding={true}
-    >
+    <TimelineItem resource={parentResource} profile={note.authorReference} dateTime={time} padding={true}>
       <p>{note.text}</p>
     </TimelineItem>
   );
