@@ -502,10 +502,9 @@ function NoteTimelineItem({ note }: { note: ProcessedNote }): JSX.Element {
   return (
     <TimelineItem
       resource={parentResource}
-      // profile={note.a}
+      profile={note.authorReference}
       dateTime={time}
       padding={true}
-      // popupMenuItems={<TimelineItemPopupMenu {...props} />}
     >
       <p>{note.text}</p>
     </TimelineItem>
