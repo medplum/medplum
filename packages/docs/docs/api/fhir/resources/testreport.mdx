@@ -2,6 +2,7 @@
 title: TestReport
 sidebar_position: 141
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/testreport.json';
@@ -14,11 +15,11 @@ A summary of information based on the results of executing a <a href="/docs/api/
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -36,6 +37,5 @@ A summary of information based on the results of executing a <a href="/docs/api/
   <TabItem value="backgroundAndContext" label="Background and Context">
     <div> <a name="bnc"></a>   <h3 class="self-link-parent"> Background <a href="https://www.hl7.org/fhir/testreport.html#7.4.2.1" title="link to here" class="self-link"></a></h3> <p> Implementers should be familiar with the testing concepts and descriptions found in <a href="https://www.hl7.org/fhir/testing.html">Testing FHIR</a> before working with this resource. </p>  </div>
     </TabItem>
-  
 
 </Tabs>

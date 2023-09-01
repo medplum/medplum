@@ -199,4 +199,3 @@ You can also check out our [blog post](/blog/patient-deduplication) on the topic
 ## See Also
 
 - Patient deduplication [reference implementation](https://github.com/medplum/medplum-demo-bots/tree/main/src/deduplication)
-

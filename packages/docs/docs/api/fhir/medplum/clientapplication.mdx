@@ -2,6 +2,7 @@
 title: ClientApplication
 sidebar_position: 1
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/medplumDefinitions/clientapplication.json';
@@ -9,16 +10,14 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # ClientApplication
 
-
-
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -31,7 +30,6 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 </TabItem>
   
   
-  
-  
+
 
 </Tabs>

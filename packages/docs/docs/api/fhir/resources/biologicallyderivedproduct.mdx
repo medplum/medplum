@@ -2,6 +2,7 @@
 title: BiologicallyDerivedProduct
 sidebar_position: 9
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/biologicallyderivedproduct.json';
@@ -15,11 +16,11 @@ into another (possibly the same) biological entity.
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -36,7 +37,6 @@ into another (possibly the same) biological entity.
   <TabItem value="relationships" label="Relationships">
     <div>  <p> This resource relates to these other resource:</p>  <ul>  <li>ProcedureRequest (for collection)</li>  <li>Patient ("receiver" and "source")</li>  <li>Practitioner (who collected product)</li>  <li>Substance (product processing)</li>  <li>DiagnosticReport (containing HLA-typing)</li>  <li>BiologicallyDerivedProduct ("parent" product for multi-day collections)</li>  <li>Procedure (one for collection and one for transplantation, will need to add <a href="/docs/api/fhir/resources/biologicallyderivedproduct">BiologicallyDerivedProduct</a> to the "usedReference")</li> </ul> </div>
     </TabItem>
-  
-  
+
 
 </Tabs>

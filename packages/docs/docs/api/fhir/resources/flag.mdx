@@ -2,6 +2,7 @@
 title: Flag
 sidebar_position: 54
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/flag.json';
@@ -14,11 +15,11 @@ Prospective warnings of potential issues when providing care to the patient.
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -35,7 +36,6 @@ Prospective warnings of potential issues when providing care to the patient.
   <TabItem value="relationships" label="Relationships">
     <div> <a name="bnr"></a>  <p> <a href="/docs/api/fhir/resources/flag">Flags</a> may highlight a highly condensed view of information found in the <a href="/docs/api/fhir/resources/allergyintolerance">AllergyIntolerance</a>,  <a href="/docs/api/fhir/resources/condition">Condition</a>, <a href="/docs/api/fhir/resources/observation">Observation</a>, <a href="/docs/api/fhir/resources/procedure">Procedure</a> and possibly  other resources.  A <a href="https://www.hl7.org/fhir/extension-flag-detail.html">common extension</a> allows the linkage of a <a href="/docs/api/fhir/resources/flag">Flag</a> to the supporting detail resource. The purpose of these other resources is to provide detailed clinical information.  The purpose of a <a href="/docs/api/fhir/resources/flag">Flag</a> is to alert practitioners to  information that is important to influence their interaction with a <a href="/docs/api/fhir/resources/patient">Patient</a> prior to detailed review of the record. </p> <p> <a href="/docs/api/fhir/resources/flag">Flags</a> are not used to convey information to a specific individual or organization (e.g. an abnormal lab result reported to the ordering  clinician, reporting of an adverse reaction to a regulatory authority).  These are handled using the  <a href="/docs/api/fhir/resources/communicationrequest">CommunicationRequest</a> and the <a href="/docs/api/fhir/resources/communication">Communication</a> resources. </p> <p> <a href="/docs/api/fhir/resources/flag">Flags</a> are not raised as a result of a reported or proposed action (e.g. drug-drug interactions, duplicate therapy warnings).   These would be handled using <a href="/docs/api/fhir/resources/detectedissue">DetectedIssue</a>. </p> </div>
     </TabItem>
-  
-  
+
 
 </Tabs>

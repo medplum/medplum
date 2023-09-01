@@ -25,7 +25,7 @@
     "experimentalDecorators": true,
     "strictPropertyInitialization": true,
     "allowJs": true,
-    "resolveJsonModule": true,
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]

@@ -12,9 +12,5 @@
   "setupFilesAfterEnv": ["./src/test.setup.ts"],
   "coverageDirectory": "coverage",
   "coverageReporters": ["json", "text"],
-  "collectCoverageFrom": [
-    "**/src/**/*",
-    "!**/stories",
-    "!**/*.stories.tsx"
-  ]
+  "collectCoverageFrom": ["**/src/**/*", "!**/stories", "!**/*.stories.tsx"]
 }

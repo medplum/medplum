@@ -2,6 +2,7 @@
 title: JsonWebKey
 sidebar_position: 7
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/medplumDefinitions/jsonwebkey.json';
@@ -14,11 +15,11 @@ A JSON object that represents a cryptographic key. The members of the object rep
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -31,7 +32,6 @@ A JSON object that represents a cryptographic key. The members of the object rep
 </TabItem>
   
   
-  
-  
+
 
 </Tabs>

@@ -16,7 +16,7 @@ FHIR has the option to query everything associated to an individual patient. Thi
 
 ### Output
 
-The output of the request is a [FHIR bundle](/docs/api/fhir/resources/bundle) with all resources belonging to the patient for whom the request is made.  The FHIR Bundle created from this operation is the supported machine readable Electronic Health Information Export (EHI) format for Medplum.
+The output of the request is a [FHIR bundle](/docs/api/fhir/resources/bundle) with all resources belonging to the patient for whom the request is made. The FHIR Bundle created from this operation is the supported machine readable Electronic Health Information Export (EHI) format for Medplum.
 
 ## Related Documentation
 

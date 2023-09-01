@@ -2,6 +2,7 @@
 title: ResearchDefinition
 sidebar_position: 115
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/researchdefinition.json';
@@ -14,11 +15,11 @@ The <a href="/docs/api/fhir/resources/researchdefinition">ResearchDefinition</a>
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -35,7 +36,6 @@ The <a href="/docs/api/fhir/resources/researchdefinition">ResearchDefinition</a>
   <TabItem value="relationships" label="Relationships">
     <div>  <p>TODO</p> </div>
     </TabItem>
-  
-  
+
 
 </Tabs>

@@ -2,6 +2,7 @@
 title: MoneyQuantity
 sidebar_position: 39
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/datatypeDefinitions/moneyquantity.json';
@@ -14,17 +15,15 @@ An amount of money. With regard to precision, see [Decimal Precision](https://ww
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 </TabItem>
   
   
-  
-  
+
 
 </Tabs>

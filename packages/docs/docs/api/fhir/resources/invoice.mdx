@@ -2,6 +2,7 @@
 title: Invoice
 sidebar_position: 66
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/invoice.json';
@@ -14,11 +15,11 @@ Invoice containing collected <a href="/docs/api/fhir/resources/chargeitem">Charg
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -35,7 +36,6 @@ Invoice containing collected <a href="/docs/api/fhir/resources/chargeitem">Charg
   <TabItem value="relationships" label="Relationships">
     <div>      <p> The existing <a href="/docs/api/fhir/resources/claim">Claim</a> resource is constricted to use cases where <a href="/docs/api/fhir/resources/claim">Claims</a> are sent to insurances for reimbursement, in a message-like style. It neither references <a href="/docs/api/fhir/resources/chargeitem">ChargeItems</a> nor <a href="/docs/api/fhir/resources/account">Accounts</a>. </p><p> Competing invoicing standards such as EDIFACT or X12 are aiming at inter-organizational exchange and do not offer human readable representations or traceable links to services rendered which is a requirement for invoicing towards patients.  This resource is used where existing <a href="/docs/api/fhir/resources/chargeitem">ChargeItems</a> in an <a href="/docs/api/fhir/resources/account">Account</a> are collected to create an <a href="/docs/api/fhir/resources/invoice">Invoice</a> to be sent out to Individuals or <a href="/docs/api/fhir/resources/organization">Organizations</a> in a structured way.  The invoice is the hospital's view, whereas the <a href="/docs/api/fhir/resources/claim">Claim</a> is the payer's view on the performed services.</p> <p> Since the individual <a href="/docs/api/fhir/resources/chargeitem">ChargeItem</a> resources that make up the line items of the <a href="/docs/api/fhir/resources/invoice">Invoice</a> do not carry any pricing information, <a href="/docs/api/fhir/resources/chargeitemdefinition">ChargeItemDefinitions</a> will have to be applied to the <a href="/docs/api/fhir/resources/chargeitem">ChargeItems</a> in order to calculate the price components for the <a href="/docs/api/fhir/resources/invoice">Invoice</a> depending on the context of the <a href="/docs/api/fhir/resources/chargeitem">ChargeItem</a></p>   </div>
     </TabItem>
-  
-  
+
 
 </Tabs>

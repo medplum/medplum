@@ -2,6 +2,7 @@
 title: ImmunizationEvaluation
 sidebar_position: 62
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/immunizationevaluation.json';
@@ -9,16 +10,16 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # ImmunizationEvaluation
 
-Describes a comparison of an immunization event against published recommendations to determine if the administration is "valid" in relation to those  recommendations.
+Describes a comparison of an immunization event against published recommendations to determine if the administration is "valid" in relation to those recommendations.
 
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
