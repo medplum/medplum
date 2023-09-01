@@ -96,5 +96,5 @@ jobs:
               repo: context.repo.repo,
               release_id: release.data.id,
               name: "medplum-agent-win-x64.exe",
-              data: await fs.readFileSync("packages/agent/dist/medplum-agent-win-x64.exe")
+              data: await fs.readFileSync("packages/agent/medplum-agent-installer.exe")
             });
