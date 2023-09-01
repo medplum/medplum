@@ -28,7 +28,7 @@ The installation of the agent has two parts, first setting up the configurations
 
 The Medplum App setup includes creating four resources which represent the configuration of the agent itself. These resources are `Endpoint`, `Bot`, `Agent`, and `ClientApplication`.
 
-**First**, set up the [Enpoint](/docs/api/fhir/resources/endpoint), here is the link to create a [new Endpoint](https://app.medplum.com/Endpoint/new) on the Medplum App. Assuming you want to configure the Endpoint to listen to HL7 v2 over MLLP you'll want set up agent as follows, for example.
+**First**, set up the [Endpoint](/docs/api/fhir/resources/endpoint), here is the link to create a [new Endpoint](https://app.medplum.com/Endpoint/new) on the Medplum App. Assuming you want to configure the Endpoint to listen to HL7 v2 over MLLP you'll want set up agent as follows, for example.
 
 ```json
 {
