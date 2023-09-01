@@ -77,8 +77,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
   const handleSearchChange = useCallback((): void => {
     if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setAbortController(undefined);
+      abortControllerRef.current.abort();setAbortController(undefined);
     }
 
     if (timerRef.current !== undefined) {
