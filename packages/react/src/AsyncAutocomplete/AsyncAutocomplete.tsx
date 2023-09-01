@@ -65,19 +65,24 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           setOptions(newValues.map(toOption));
           setAbortController(undefined);
           if (autoSubmitRef.current) {
-            if (newValues.length > 0) {onChange(newValues.slice(0, 1));}
+            if (newValues.length > 0) {
+              onChange(newValues.slice(0, 1));
+            }
             setAutoSubmit(false);
           }
         }
       })
       .catch((err) => {
-        if (!(newAbortController.signal.aborted || err.message.includes('aborted'))) {showNotification({ color: 'red', message: normalizeErrorString(err) });}
+        if (!(newAbortController.signal.aborted || err.message.includes('aborted'))) {
+          showNotification({ color: 'red', message: normalizeErrorString(err) });
+        }
       });
   }, [loadOptions, onChange, toOption]);
 
   const handleSearchChange = useCallback((): void => {
     if (abortControllerRef.current) {
-      abortControllerRef.current.abort();setAbortController(undefined);
+      abortControllerRef.current.abort();
+      setAbortController(undefined);
     }
 
     if (timerRef.current !== undefined) {
