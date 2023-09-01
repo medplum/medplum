@@ -1,7 +1,7 @@
 import { Loader, MultiSelect, MultiSelectProps, SelectItem } from '@mantine/core';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 
 export interface AsyncAutocompleteOption<T> extends SelectItem {
@@ -65,17 +65,13 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           setOptions(newValues.map(toOption));
           setAbortController(undefined);
           if (autoSubmitRef.current) {
-            if (newValues.length > 0) {
-              onChange(newValues.slice(0, 1));
-            }
+            if (newValues.length > 0) {onChange(newValues.slice(0, 1));}
             setAutoSubmit(false);
           }
         }
       })
       .catch((err) => {
-        if (!(newAbortController.signal.aborted || err.message.includes('aborted'))) {
-          showNotification({ color: 'red', message: normalizeErrorString(err) });
-        }
+        if (!(newAbortController.signal.aborted || err.message.includes('aborted'))) {showNotification({ color: 'red', message: normalizeErrorString(err) });}
       });
   }, [loadOptions, onChange, toOption]);
 
