@@ -37,5 +37,4 @@ The subscription resource is used to define a push-based subscription from a ser
     <div> <a name="bnr"></a>  <p> As an alternative to subscriptions, the RESTful API describes a  polling-based subscription method using <a href="/docs/api/fhir/resources/bundle">bundles</a>  and the <a href="https://www.hl7.org/fhir/http.html#history">history operation</a>. This method  of polling allows for a much tighter relationship between the client and  the server that doesn't involve missing updates and/or deletes.  </p> <p> When using the <code>Subscription</code> resource, the FHIR server combines  the roles of publisher and information distributer. Other arrangements of the publish and subscribe pattern describe separate agents for the two roles.  Implementers may implement the <code>Subscription</code> resource using an  architecture with separate agents, or using any other pub/sub architectire (e.g. see <a href="http://fhircast.org/">FHIRCast </a>, or, more generally,  <a href="https://www.w3.org/TR/websub/">W3C Pub/Sub </a>). </p> </div>
     </TabItem>
 
-
 </Tabs>
