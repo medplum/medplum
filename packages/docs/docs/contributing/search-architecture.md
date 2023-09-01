@@ -27,7 +27,7 @@ In addition to `id` and `content` columns containing the resource's UUID and raw
 | `uri`                     | `text`                                       |
 | `special`                 | - (e.g. `id uuid` and `compartments uuid[]`) |
 
-<sup>*</sup> Some parameters are handled by special lookup tables due to complex matching semantics, see below
+<sup>\*</sup> Some parameters are handled by special lookup tables due to complex matching semantics, see below
 
 Many of these columns can contain multiple values of the same type in an array, e.g. `text[]`.
 
