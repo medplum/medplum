@@ -79,15 +79,16 @@ export default function Home(): JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    backgroundColor: '#ecf0f1',
   },
   input: {
-    height: 50,
-    flex: 1,
+    width: 200,
+    height: 44,
     padding: 10,
-    marginLeft: 20,
+    borderWidth: 1,
+    borderColor: 'black',
+    marginBottom: 10,
   },
 });

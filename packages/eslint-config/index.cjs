@@ -152,6 +152,7 @@ module.exports = {
     'packages/docs/docusaurus.config.js',
     'packages/docs/sidebars.js',
     'packages/eslint-config/index.cjs',
+    'packages/expo-medplum-polyfills/build',
     'babel.config.js',
     'babel.config.cjs',
     'jest.sequencer.js',

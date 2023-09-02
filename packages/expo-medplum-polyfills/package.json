@@ -1,0 +1,50 @@
+{
+  "name": "@medplum/expo-medplum-polyfills",
+  "version": "0.1.0",
+  "description": "A module for polyfilling the minimum necessary web APIs for using the Medplum client on React Native",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "build": "expo-module build",
+    "clean": "expo-module clean",
+    "lint": "expo-module lint",
+    "test": "expo-module test",
+    "prepare": "expo-module prepare",
+    "prepublishOnly": "expo-module prepublishOnly",
+    "expo-module": "expo-module",
+    "open:ios": "open -a \"Xcode\" example/ios",
+    "open:android": "open -a \"Android Studio\" example/android"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "expo-medplum-polyfills",
+    "ExpoMedplumPolyfills"
+  ],
+  "repository": "https://github.com/medplum/medplum",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
+  "author": "Medplum <dev@medplum.com> (https://github.com/medplum)",
+  "license": "MIT",
+  "homepage": "https://github.com/medplum/medplum#readme",
+  "dependencies": {
+    "base-64": "1.0.0",
+    "expo-crypto": "12.4.1",
+    "expo-standard-web-crypto": "1.6.0",
+    "react-native-url-polyfill": "2.0.0",
+    "text-encoding": "0.7.0"
+  },
+  "devDependencies": {
+    "@types/base-64": "1.0.0",
+    "@types/react": "18.0.25",
+    "@types/text-encoding": "0.0.36",
+    "expo-module-scripts": "3.0.11",
+    "expo-modules-core": "1.5.7"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  }
+}
