@@ -9,7 +9,7 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "eslint .",
-    "prettier": "prettier --write .",
+    "prettier": "prettier --write \"**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}\"",
     "cyclonedx": "cyclonedx-npm --omit dev --omit optional --omit peer"
   },
   "workspaces": [
