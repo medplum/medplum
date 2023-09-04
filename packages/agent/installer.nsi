@@ -30,10 +30,19 @@ RequestExecutionLevel admin
 
 Var WelcomeDialog
 Var WelcomeLabel
+Var alreadyInstalled
 Var baseUrl
 Var clientId
 Var clientSecret
 Var agentId
+
+# The onInit handler is called when the installer is nearly finished initializing.
+# See: https://nsis.sourceforge.io/Reference/.onInit
+Function .onInit
+    ${If} ${FileExists} "$INSTDIR\winsw.xml"
+        StrCpy $alreadyInstalled 1
+    ${EndIf}
+FunctionEnd
 
 Page custom WelcomePage
 Page custom InputPage InputPageLeave
@@ -56,6 +65,10 @@ FunctionEnd
 
 # The InputPage captures all of the user input for the agent.
 Function InputPage
+    ${If} $alreadyInstalled == 1
+        Abort ; This skips the page
+    ${EndIf}
+
     nsDialogs::Create 1018
     Pop $0
 
@@ -91,29 +104,49 @@ Function InputPageLeave
     ${NSD_GetText} $R7 $agentId
 FunctionEnd
 
+# Main installation entry point.
+Section
+    DetailPrint "${APP_NAME}"
+    SetOutPath "$INSTDIR"
+
+    ${If} $alreadyInstalled == 1
+        Call UpgradeApp
+    ${Else}
+        Call InstallApp
+    ${EndIf}
+
+SectionEnd
+
+# Upgrade an existing installation.
+# This only copies files, and restarts the Windows Service.
+# It does not modify the existing configuration settings.
+Function UpgradeApp
+
+    # Stop the service
+    DetailPrint "Stopping service..."
+    ExecWait "winsw.exe stop --force" $1
+    DetailPrint "Stop service returned $1"
+
+    # Sleep for 3 seconds to let the service fully stop
+    # We cannot write the new version of the exe while the process is running
+    DetailPrint "Sleeping..."
+    Sleep 3000
+
+    # Copy the new files to the installation directory
+    File dist\medplum-agent-win-x64.exe
+    File README.md
+
+    # Start the service
+    DetailPrint "Starting service..."
+    ExecWait "winsw.exe start" $1
+    DetailPrint "Start service returned $1"
+
+FunctionEnd
+
 # Do the actual installation.
 # Install all of the files.
 # Install the Windows Service.
-Section
-    DetailPrint "${APP_NAME}"
-
-    # Call userInfo plugin to get user info.  The plugin puts the result in the stack
-    userInfo::getAccountType
-
-    # Pop the result from the stack into $0
-    Pop $0
-
-    # Compare the result with the string "Admin" to see if the user is admin.
-    # If match, jump 3 lines down.
-    strCmp $0 "Admin" +3
-
-    # If there is not a match, print message and return
-    DetailPrint "User is not admin: $0"
-    return
-
-    # Otherwise, confirm and return
-    DetailPrint "User is admin"
-
+Function InstallApp
     # Print user input
     DetailPrint "Base URL: $baseUrl"
     DetailPrint "Client ID: $clientId"
@@ -121,7 +154,6 @@ Section
     DetailPrint "Agent ID: $agentId"
 
     # Copy the service files to the root directory
-    SetOutPath "$INSTDIR"
     File ..\..\node_modules\node-windows\bin\winsw\winsw.exe
     File dist\medplum-agent-win-x64.exe
     File README.md
@@ -141,16 +173,12 @@ Section
 
     # Install the service
     DetailPrint "Installing service..."
-    StrCpy $0 "winsw.exe install"
-    #DetailPrint "$0"
-    ExecWait $0 $1
+    ExecWait "winsw.exe install" $1
     DetailPrint "Install returned $1"
 
     # Start the service
     DetailPrint "Starting service..."
-    StrCpy $0 "winsw.exe start"
-    #DetailPrint "$0"
-    ExecWait $0 $1
+    ExecWait "winsw.exe start" $1
     DetailPrint "Start service returned $1"
 
     # Create the uninstaller
@@ -170,8 +198,7 @@ Section
     CreateDirectory "$SMPROGRAMS\${APP_NAME}"
     CreateShortCut "$SMPROGRAMS\${APP_NAME}\${APP_NAME} Uninstall.lnk" "$INSTDIR\uninstall.exe"
 
-# default section end
-SectionEnd
+FunctionEnd
 
 # Start the uninstaller
 Section Uninstall
@@ -179,9 +206,7 @@ Section Uninstall
     # Uninstall the service
     DetailPrint "Uninstalling service..."
     SetOutPath "$INSTDIR"
-    StrCpy $0 "winsw.exe uninstall"
-    #DetailPrint "$0"
-    ExecWait $0 $1
+    ExecWait "winsw.exe uninstall" $1
     DetailPrint "Uninstall returned $1"
 
     # Get out of the service directory so we can delete it
