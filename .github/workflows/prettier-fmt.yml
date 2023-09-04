@@ -42,6 +42,7 @@ jobs:
         id: fmt
         run: |
           rm -f .failed
+          npx prettier --check "**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}"
           npx prettier --check "**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}" 2> prettier-fmt.err > prettier-fmt1.err || echo 'failed' > .failed 
 
           if [ -s .failed ]; then
