@@ -16,7 +16,7 @@ import {
   createReference,
   evalFhirPathTyped,
   getExtension,
-  getQuestionnaireAnswers,
+  getAllQuestionnaireAnswers,
   getReferenceString,
   getTypedPropertyValue,
   globalSchema,
@@ -62,7 +62,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const questionnaire = useResource(props.questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
-  const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer>>({});
+  const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer[]>>({});
   const [activePage, setActivePage] = useState(0);
 
   const numberOfPages = getNumberOfPages(questionnaire?.item ?? []);
@@ -87,7 +87,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       item: newResponseItems,
     };
     setResponse(newResponse);
-    setAnswers(getQuestionnaireAnswers(newResponse));
+    setAnswers(getAllQuestionnaireAnswers(newResponse));
   }
 
   if (!schema || !questionnaire) {
@@ -136,7 +136,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
 interface QuestionnaireFormItemArrayProps {
   items: QuestionnaireItem[];
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   renderPages?: boolean;
   activePage?: number;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
@@ -199,7 +199,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 interface QuestionnaireFormArrayContentProps {
   item: QuestionnaireItem;
   index: number;
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   responseItems: QuestionnaireResponseItem[];
   setResponseItem: (responseId: string, newResponseItem: QuestionnaireResponseItem) => void;
 }
@@ -236,7 +236,7 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
 
 export interface QuestionnaireRepeatWrapperProps {
   item: QuestionnaireItem;
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   responseItems: QuestionnaireResponseItem[];
   onChange: (newResponseItem: QuestionnaireResponseItem, index?: number) => void;
 }
@@ -274,7 +274,7 @@ export function QuestionnaireRepeatWrapper(props: QuestionnaireRepeatWrapperProp
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
   index: number;
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   responseItems?: QuestionnaireResponseItem[];
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
@@ -637,7 +637,7 @@ function isDropDownChoice(item: QuestionnaireItem): boolean {
 
 export function isQuestionEnabled(
   item: QuestionnaireItem,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>
 ): boolean {
   if (!item.enableWhen) {
     return true;
@@ -646,13 +646,12 @@ export function isQuestionEnabled(
   const enableBehavior = item.enableBehavior ?? 'any';
 
   for (const enableWhen of item.enableWhen) {
-    const actualAnswer = getTypedPropertyValue(
-      {
-        type: 'QuestionnaireResponseItemAnswer',
-        value: answers[enableWhen.question as string],
-      },
-      'value[x]'
-    ) as TypedValue | undefined; // possibly undefined when question unanswered
+    const actualAnswers = answers[enableWhen.question as string] || []; // possibly empty array when question unanswered
+
+    // Will be set to true if at least one actual answer matches the expected answer (for 'any' behavior)
+    // or if all actual answers match the expected answer (for 'all' behavior)
+    let anyMatch = false;
+    let allMatch = true;
 
     const expectedAnswer = getTypedPropertyValue(
       {
@@ -662,35 +661,51 @@ export function isQuestionEnabled(
       'answer[x]'
     ) as TypedValue;
 
-    let match: boolean;
+    for (const actualAnswerValue of actualAnswers) {
+      const actualAnswer = getTypedPropertyValue(
+        {
+          type: 'QuestionnaireResponseItemAnswer',
+          value: actualAnswerValue,
+        },
+        'value[x]'
+      ) as TypedValue | undefined;
 
-    const { operator } = enableWhen;
+      let match: boolean;
+      const { operator } = enableWhen;
 
-    // We handle exists separately since its so different in terms of comparisons than the other mathematical operators
-    if (operator === 'exists') {
-      // if actualAnswer is not undefined, then exists: true passes
-      // if actualAnswer is undefined, then exists: false passes
-      match = !!actualAnswer === expectedAnswer.value;
-    } else if (actualAnswer === undefined) {
-      match = false;
-    } else {
-      // `=` and `!=` should be treated as the FHIRPath `~` and `!~`
-      // All other operators should be unmodified
-      const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
-      const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirPathOperator} %expectedAnswer`, [actualAnswer], {
-        actualAnswer,
-        expectedAnswer,
-      });
-      match = value;
+      if (operator === 'exists') {
+        match = !!actualAnswer === expectedAnswer.value;
+      } else if (actualAnswer === undefined) {
+        match = false;
+      } else {
+        const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
+        const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirPathOperator} %expectedAnswer`, [actualAnswer], {
+          actualAnswer,
+          expectedAnswer,
+        });
+        match = value;
+      }
+
+      if (match) {
+        anyMatch = true;
+      } else {
+        allMatch = false;
+      }
+
+      // For 'any' behavior, if any match is found, we can break out early
+      if (enableBehavior === 'any' && anyMatch) {
+        break;
+      }
     }
 
-    if (enableBehavior === 'any' && match) {
+    if (enableBehavior === 'any' && anyMatch) {
       return true;
     }
-    if (enableBehavior === 'all' && !match) {
+    if (enableBehavior === 'all' && !allMatch) {
       return false;
     }
   }
+
   if (enableBehavior === 'any') {
     return false;
   } else {
@@ -723,7 +738,7 @@ function addTargetTypes(item: QuestionnaireItem): string[] {
 interface RepeatableGroupProps {
   item: QuestionnaireItem;
   text: string;
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   onChange: (newResponseItem: QuestionnaireResponseItem[], index?: number) => void;
 }
 

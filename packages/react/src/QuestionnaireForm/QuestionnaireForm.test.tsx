@@ -1030,8 +1030,8 @@ describe('QuestionnaireForm', () => {
           ],
         },
         {
-          q1: { valueString: 'No' },
-          q2: { valueString: 'Yes' },
+          q1: [{ valueString: 'No' }],
+          q2: [{ valueString: 'Yes' }],
         }
       )
     ).toBe(true);
@@ -1057,8 +1057,8 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q1: { valueString: 'No' },
-            q2: { valueString: 'Yes' },
+            q1: [{ valueString: 'No' }],
+            q2: [{ valueString: 'Yes' }],
           }
         )
       ).toBe(true);
@@ -1083,8 +1083,8 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q1: { valueString: 'No' },
-            q2: { valueString: 'No' },
+            q1: [{ valueString: 'No' }],
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(false);
@@ -1109,8 +1109,8 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q1: { valueString: 'Yes' },
-            q2: { valueString: 'Yes' },
+            q1: [{ valueString: 'Yes' }],
+            q2: [{ valueString: 'Yes' }],
           }
         )
       ).toBe(true);
@@ -1135,8 +1135,8 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q1: { valueString: 'Yes' },
-            q2: { valueString: 'No' },
+            q1: [{ valueString: 'Yes' }],
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(false);
@@ -1155,8 +1155,8 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q1: { valueString: 'Yes' },
-            q2: { valueString: 'No' },
+            q1: [{ valueString: 'Yes' }],
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(true);
@@ -1175,8 +1175,8 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q1: { valueString: 'Yes' },
-            q2: { valueString: 'No' },
+            q1: [{ valueString: 'Yes' }],
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(false);
@@ -1195,7 +1195,7 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q2: { valueString: 'No' },
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(false);
@@ -1214,7 +1214,7 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q2: { valueString: 'No' },
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(true);
@@ -1233,7 +1233,7 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q2: { valueString: 'No' },
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(true);
@@ -1252,7 +1252,7 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q2: { valueString: 'No' },
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(true);
@@ -1273,7 +1273,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueString: 'No' },
+            q1: [{ valueString: 'No' }],
           }
         )
       ).toBe(true);
@@ -1284,7 +1284,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueString: 'Yes' },
+            q1: [{ valueString: 'Yes' }],
           }
         )
       ).toBe(false);
@@ -1305,7 +1305,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 4 },
+            q1: [{ valueInteger: 4 }],
           }
         )
       ).toBe(true);
@@ -1316,7 +1316,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 2 },
+            q1: [{ valueInteger: 2 }],
           }
         )
       ).toBe(false);
@@ -1337,7 +1337,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 4 },
+            q1: [{ valueInteger: 4 }],
           }
         )
       ).toBe(true);
@@ -1348,7 +1348,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 3 },
+            q1: [{ valueInteger: 3 }],
           }
         )
       ).toBe(true);
@@ -1369,7 +1369,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 2 },
+            q1: [{ valueInteger: 2 }],
           }
         )
       ).toBe(true);
@@ -1380,7 +1380,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 3 },
+            q1: [{ valueInteger: 3 }],
           }
         )
       ).toBe(false);
@@ -1401,7 +1401,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 2 },
+            q1: [{ valueInteger: 2 }],
           }
         )
       ).toBe(true);
@@ -1412,7 +1412,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 3 },
+            q1: [{ valueInteger: 3 }],
           }
         )
       ).toBe(true);
@@ -1423,7 +1423,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 4 },
+            q1: [{ valueInteger: 4 }],
           }
         )
       ).toBe(false);
@@ -1440,7 +1440,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueCoding: { code: 'MEDPLUM123' } },
+            q1: [{ valueCoding: { code: 'MEDPLUM123' } }],
           }
         )
       ).toBe(true);
@@ -1451,7 +1451,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } },
+            q1: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
           }
         )
       ).toBe(true);
@@ -1462,7 +1462,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } },
+            q1: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
           }
         )
       ).toBe(false);
@@ -1479,7 +1479,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueCoding: { code: 'NOT_MEDPLUM123' } },
+            q1: [{ valueCoding: { code: 'NOT_MEDPLUM123' } }],
           }
         )
       ).toBe(true);
@@ -1490,7 +1490,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } },
+            q1: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
           }
         )
       ).toBe(true);
@@ -1501,7 +1501,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } },
+            q1: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
           }
         )
       ).toBe(false);
@@ -1512,7 +1512,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueCoding: { code: 'MEDPLUM123' } },
+            q1: [{ valueCoding: { code: 'MEDPLUM123' } }],
           }
         )
       ).toBe(false);
