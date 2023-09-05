@@ -14,6 +14,7 @@ import {
 import {
   capitalize,
   createReference,
+  evalFhirPathTyped,
   getExtension,
   getQuestionnaireAnswers,
   getReferenceString,
@@ -24,7 +25,6 @@ import {
   PropertyType,
   stringify,
   TypedValue,
-  evalFhirPathTyped,
 } from '@medplum/core';
 import {
   Questionnaire,
@@ -114,7 +114,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
       {questionnaire.item && (
         <QuestionnaireFormItemArray
-          items={questionnaire.item}
+          items={questionnaire.item ?? []}
           answers={answers}
           onChange={setItems}
           renderPages={numberOfPages > 1}
@@ -729,6 +729,7 @@ interface RepeatableGroupProps {
 
 function RepeatableGroup(props: RepeatableGroupProps): JSX.Element | null {
   const [number, setNumber] = useState(1);
+
   const item = props.item;
   return (
     <>
@@ -756,7 +757,6 @@ interface RepeatableItemProps {
 
 function RepeatableItem(props: RepeatableItemProps): JSX.Element {
   const [number, setNumber] = useState(1);
-
   return (
     <>
       {[...Array(number)].map((_, i) => {
