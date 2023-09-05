@@ -16,3 +16,5 @@ export const ContentType = {
   TEXT: 'text/plain',
   TYPESCRIPT: 'text/typescript',
 } as const;
+
+export type ContentTypeString = (typeof ContentType)[keyof typeof ContentType];
