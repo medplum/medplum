@@ -45,7 +45,7 @@ export default function Home(): JSX.Element {
     <View style={styles.container}>
       <Text>Medplum React Native Example</Text>
       {!profile ? (
-        <>
+        <View style={styles.formWrapper}>
           <View>
             <TextInput
               style={styles.input}
@@ -64,7 +64,7 @@ export default function Home(): JSX.Element {
             />
           </View>
           <Button onPress={startLogin} title="Sign in" />
-        </>
+        </View>
       ) : (
         <>
           <Text>Logged in as {getDisplayString(profile)}</Text>
@@ -82,6 +82,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#ecf0f1',
+  },
+  formWrapper: {
+    marginTop: 10,
   },
   input: {
     width: 200,
