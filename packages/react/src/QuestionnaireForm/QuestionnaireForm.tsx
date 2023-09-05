@@ -1,12 +1,10 @@
 import {
   Anchor,
-  Box,
   Button,
   Checkbox,
   Group,
   NativeSelect,
   Radio,
-  Space,
   Stack,
   Stepper,
   Textarea,
@@ -92,22 +90,10 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     setAnswers(getQuestionnaireAnswers(newResponse));
   }
 
-  function handleRepeatableItem(currentItem: QuestionnaireItem): void {
-    currentItem.repeats = false;
-    const newItem: QuestionnaireItem = createRepeatableItem(currentItem);
-    const updatedQuestionnaireItems = repeatableInsert([...questionnaire?.item], currentItem, newItem);
-    questionnaire ? questionnaire.item = updatedQuestionnaireItems : null; 
-  }
-
-  function handleRemoveItem(currentItem: QuestionnaireItem): void {
-    const updatedQuestionnaireItems = removeRecentItem([...questionnaire?.item], currentItem);
-    questionnaire ? questionnaire.item = updatedQuestionnaireItems : null; 
-  }
-
   if (!schema || !questionnaire) {
     return null;
   }
-  console.log(answers)
+
   return (
     <Form
       testid="questionnaire-form"
@@ -186,8 +172,6 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
             answers={props.answers}
             responseItems={responseItems}
             setResponseItem={setResponseItem}
-            handleRemoveItem={props.handleRemoveItem}
-            handleRepeatableItem={props.handleRepeatableItem}
           />
         </Stepper.Step>
       );
@@ -200,8 +184,6 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
         answers={props.answers}
         responseItems={responseItems}
         setResponseItem={setResponseItem}
-        handleRemoveItem={props.handleRemoveItem}
-        handleRepeatableItem={props.handleRepeatableItem}
       />
     );
   });
@@ -235,7 +217,6 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
     return (
       <QuestionnaireRepeatWrapper
         key={props.item.linkId}
-        index={props.index}
         item={props.item}
         answers={props.answers}
         responseItems={props.responseItems}
@@ -251,36 +232,7 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
         responseItems={props.responseItems}
         onChange={(newResponseItem) => props.setResponseItem(newResponseItem.id as string, newResponseItem)}
       />
-      {props.item.repeats && (
-        <Box display="flex">
-          <Anchor
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              if (props.handleRepeatableItem && allowRepeatable(props.item, props.answers)) {
-                props.handleRepeatableItem(props.item);
-              }
-            }}
-          >
-            Add Additional Item
-          </Anchor>
-          <Space w="md" />
-          {extensionForRemovingRepeatable(props.item) ? (
-            <Anchor
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                if (props.handleRemoveItem) {
-                  props.handleRemoveItem(props.item);
-                }
-              }}
-            >
-              Remove
-            </Anchor>
-          ) : null}
-        </Box>
-      )}
-    </>
+    </FormSection>
   );
 }
 
@@ -839,84 +791,4 @@ function getResponseId(responses: QuestionnaireResponseItem[], index: number): s
     return generateId();
   }
   return responses[index].id as string;
-}
-
-function allowRepeatable(item: QuestionnaireItem, answers: Record<string, QuestionnaireResponseItemAnswer>): boolean {
-  if (item.type === QuestionnaireItemType.group) {
-    return true;
-  }
-  const linkId = item.linkId;
-  if (!linkId) {
-    return false;
-  }
-  return !!answers[linkId];
-}
-
-function repeatableInsert(
-  items: QuestionnaireItem[],
-  currentItem: QuestionnaireItem,
-  newItem: QuestionnaireItem
-): QuestionnaireItem[] {
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].linkId === currentItem.linkId) {
-      const updatedItems = [...items.slice(0, i + 1), newItem, ...items.slice(i + 1)];
-      return updatedItems;
-    }
-
-    if (items[i].item) {
-      const updatedNestedItems = repeatableInsert(items[i].item ?? [], currentItem, newItem);
-      if (updatedNestedItems !== items[i].item) {
-        items[i].item = updatedNestedItems;
-      }
-    }
-  }
-  return items;
-}
-
-function removeRecentItem(items: QuestionnaireItem[], currentItem: QuestionnaireItem): QuestionnaireItem[] {
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].linkId === currentItem.linkId) {
-      items.splice(i, 1);
-
-      if (i - 1 >= 0) {
-        items[i - 1].repeats = true;
-      }
-      return items;
-    }
-
-    if (items[i].item) {
-      const updatedNestedItems = removeRecentItem(items[i].item ?? [], currentItem);
-      if (updatedNestedItems !== items[i].item) {
-        items[i].item = updatedNestedItems;
-      }
-    }
-  }
-  return items;
-}
-
-function createRepeatableItem(item: QuestionnaireItem): QuestionnaireItem {
-  let newText = item.text ?? '';
-  if (!newText.endsWith(' continued')) {
-    newText += ' continued';
-  }
-  return {
-    ...item,
-    text: newText,
-    linkId: item.linkId,
-    repeats: true,
-    extension: [
-      {
-        url: 'http://hl7.org/fhir/R4/questionnaire-definitions.html#Questionnaire.item.repeats',
-        valueString: 'removable',
-      },
-    ],
-  };
-}
-
-function extensionForRemovingRepeatable(item: QuestionnaireItem): boolean {
-  const extension = getExtension(
-    item,
-    'http://hl7.org/fhir/R4/questionnaire-definitions.html#Questionnaire.item.repeats'
-  );
-  return extension?.valueString === 'removable';
 }
