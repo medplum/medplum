@@ -1142,6 +1142,136 @@ describe('QuestionnaireForm', () => {
       ).toBe(false);
     });
 
+    test('enableBehavior=any, no match with multiple answers', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'any',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+            q2: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=all, no match with multiple answers', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'all',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+            q2: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, one match with multiple answers', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'any',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'No' }, { valueString: 'Yes' }],
+            q2: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=all, one non-match with multiple answers', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'all',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
+            q2: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=all, all match with multiple answers', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'all',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
+            q2: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
+          }
+        )
+      ).toBe(true);
+    });
+
     test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = true, answer present', () => {
       expect(
         isQuestionEnabled(
@@ -1252,6 +1382,86 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
+            q2: [{ valueString: 'No' }],
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = true, multiple answers present', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: true,
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            q2: [{ valueString: 'No' }],
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, multiple answers present', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: false,
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            q2: [{ valueString: 'No' }],
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = true, one of the answers missing', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q3',
+                operator: 'exists',
+                answerBoolean: true,
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            q2: [{ valueString: 'No' }],
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, one of the answers missing', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q3',
+                operator: 'exists',
+                answerBoolean: false,
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'Yes' }, { valueString: 'No' }],
             q2: [{ valueString: 'No' }],
           }
         )

@@ -30,6 +30,7 @@ import {
   Questionnaire,
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
+  QuestionnaireItemEnableWhen,
   QuestionnaireItemInitial,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
@@ -646,57 +647,16 @@ export function isQuestionEnabled(
   const enableBehavior = item.enableBehavior ?? 'any';
 
   for (const enableWhen of item.enableWhen) {
-    const actualAnswers = answers[enableWhen.question as string] || []; // possibly empty array when question unanswered
-
-    // Will be set to true if at least one actual answer matches the expected answer (for 'any' behavior)
-    // or if all actual answers match the expected answer (for 'all' behavior)
-    let anyMatch = false;
-    let allMatch = true;
-
-    const expectedAnswer = getTypedPropertyValue(
-      {
-        type: 'QuestionnaireItemEnableWhen',
-        value: enableWhen,
-      },
-      'answer[x]'
-    ) as TypedValue;
-
-    for (const actualAnswerValue of actualAnswers) {
-      const actualAnswer = getTypedPropertyValue(
-        {
-          type: 'QuestionnaireResponseItemAnswer',
-          value: actualAnswerValue,
-        },
-        'value[x]'
-      ) as TypedValue | undefined;
-
-      let match: boolean;
-      const { operator } = enableWhen;
-
-      if (operator === 'exists') {
-        match = !!actualAnswer === expectedAnswer.value;
-      } else if (actualAnswer === undefined) {
-        match = false;
-      } else {
-        const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
-        const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirPathOperator} %expectedAnswer`, [actualAnswer], {
-          actualAnswer,
-          expectedAnswer,
-        });
-        match = value;
-      }
-
-      if (match) {
-        anyMatch = true;
-      } else {
-        allMatch = false;
-      }
-
-      // For 'any' behavior, if any match is found, we can break out early
-      if (enableBehavior === 'any' && anyMatch) {
-        break;
-      }
+    if (
+      enableWhen.operator === 'exists' &&
+      !enableWhen.answerBoolean &&
+      !answers[enableWhen.question as string]?.length
+    ) {
+      if (enableBehavior === 'any') return true;
+      else continue;
     }
+
+    const { anyMatch, allMatch } = checkAnswers(enableWhen, answers, enableBehavior);
 
     if (enableBehavior === 'any' && anyMatch) {
       return true;
@@ -706,11 +666,63 @@ export function isQuestionEnabled(
     }
   }
 
-  if (enableBehavior === 'any') {
+  return enableBehavior !== 'any';
+}
+
+function evaluateMatch(actualAnswer: TypedValue | undefined, expectedAnswer: TypedValue, operator?: string): boolean {
+  if (operator === 'exists') {
+    return !!actualAnswer === expectedAnswer.value;
+  } else if (!actualAnswer) {
     return false;
   } else {
-    return true;
+    const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
+    const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirPathOperator} %expectedAnswer`, [actualAnswer], {
+      actualAnswer,
+      expectedAnswer,
+    });
+    return value;
   }
+}
+
+function checkAnswers(
+  enableWhen: QuestionnaireItemEnableWhen,
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>,
+  enableBehavior: 'any' | 'all'
+): { anyMatch: boolean; allMatch: boolean } {
+  const actualAnswers = answers[enableWhen.question as string] || [];
+  const expectedAnswer = getTypedPropertyValue(
+    {
+      type: 'QuestionnaireItemEnableWhen',
+      value: enableWhen,
+    },
+    'answer[x]'
+  ) as TypedValue;
+
+  let anyMatch = false;
+  let allMatch = true;
+
+  for (const actualAnswerValue of actualAnswers) {
+    const actualAnswer = getTypedPropertyValue(
+      {
+        type: 'QuestionnaireResponseItemAnswer',
+        value: actualAnswerValue,
+      },
+      'value[x]'
+    ) as TypedValue | undefined;
+    const { operator } = enableWhen;
+    const match = evaluateMatch(actualAnswer, expectedAnswer, operator);
+    if (match) {
+      anyMatch = true;
+    } else {
+      allMatch = false;
+    }
+
+    if (enableBehavior === 'any' && anyMatch) {
+      break;
+    }
+  }
+
+  return { anyMatch, allMatch };
 }
 
 function getNumberOfPages(items: QuestionnaireItem[]): number {
