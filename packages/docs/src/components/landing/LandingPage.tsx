@@ -87,7 +87,7 @@ export function LandingPage(): JSX.Element {
             <p>The future-ready, medical-grade backend that tames the complexity of healthcare development.</p>
           </SectionHeader>
           <Section>
-            <FeatureGrid>
+            <FeatureGrid columns={3}>
               <Feature title="API-first" imgSrc="/img/icons/api.svg">
                 Integrate with any partner, anywhere, in any way with data share options in a variety of formats.
               </Feature>
