@@ -139,8 +139,6 @@ interface QuestionnaireFormItemArrayProps {
   answers: Record<string, QuestionnaireResponseItemAnswer>;
   renderPages?: boolean;
   activePage?: number;
-  handleRepeatableItem?: (currentItem: QuestionnaireItem) => void;
-  handleRemoveItem?: (currentItem: QuestionnaireItem) => void;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
 
@@ -731,6 +729,7 @@ interface RepeatableGroupProps {
 
 function RepeatableGroup(props: RepeatableGroupProps): JSX.Element | null {
   const [number, setNumber] = useState(1);
+
   const item = props.item;
   return (
     <>
