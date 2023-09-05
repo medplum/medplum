@@ -1057,58 +1057,6 @@ export const RepeatableItems = (): JSX.Element => (
   </Document>
 );
 
-export const RepeatableItems = (): JSX.Element => (
-  <Document>
-    <QuestionnaireForm
-      questionnaire={{
-        resourceType: 'Questionnaire',
-        id: 'repeatables-example',
-        title: 'Repeatables Example',
-        item: [
-          {
-            linkId: 'group1',
-            text: 'Group 1',
-            type: 'group',
-            item: [
-              {
-                linkId: 'question1',
-                text: 'Question 1',
-                type: 'string',
-              },
-              {
-                linkId: 'question2',
-                text: 'Question 2',
-                type: 'string',
-              },
-            ],
-            repeats: true,
-          },
-          {
-            linkId: 'question3',
-            text: 'Repeatable Question',
-            type: 'string',
-            repeats: true,
-          },
-          {
-            linkId: 'question4',
-            text: 'Repeatable Date',
-            type: 'date',
-            repeats: true,
-          },
-          {
-            linkId: 'boolean',
-            type: 'boolean',
-            text: 'Boolean',
-          },
-        ],
-      }}
-      onSubmit={(formData: any) => {
-        console.log('submit', formData);
-      }}
-    />
-  </Document>
-);
-
 export const KitchenSink = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
