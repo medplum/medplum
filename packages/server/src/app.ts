@@ -22,9 +22,8 @@ import { initBinaryStorage } from './fhir/storage';
 import { getStructureDefinitions } from './fhir/structure';
 import { healthcheckHandler } from './healthcheck';
 import { hl7BodyParser } from './hl7/parser';
-import { logger } from './logger';
 import { initKeys } from './oauth/keys';
-import { authenticateToken } from './oauth/middleware';
+import { authenticateTokenImpl } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
 import { closeRateLimiter } from './ratelimit';
@@ -35,8 +34,21 @@ import { storageRouter } from './storage';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
+import { getRepoForLogin } from './fhir/accesspolicy';
+import { RequestContext } from './context';
+import { globalLogger } from './logger';
+import { AsyncLocalStorage } from 'async_hooks';
 
 let server: http.Server | undefined = undefined;
+
+export const requestContextStore = new AsyncLocalStorage<RequestContext>();
+export function getRequestContext(): RequestContext {
+  const ctx = requestContextStore.getStore();
+  if (!ctx) {
+    throw new Error('No request context available');
+  }
+  return ctx;
+}
 
 /**
  * Sets standard headers for all requests.
@@ -109,8 +121,29 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('File too large'));
     return;
   }
-  logger.error('Unhandled error', err);
+  const ctx = getRequestContext();
+  (ctx.logger ?? globalLogger).error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
+}
+
+async function authenticateRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const { login, project, membership } = await authenticateTokenImpl(req);
+  try {
+    const repo = await getRepoForLogin(
+      login,
+      membership,
+      project.strictMode,
+      isExtendedMode(req),
+      project.checkReferencesOnWrite
+    );
+    requestContextStore.run(new RequestContext(req, login, project, membership, repo), () => next());
+  } catch (err) {
+    next(err);
+  }
+}
+
+function isExtendedMode(req: Request): boolean {
+  return req.headers['x-medplum'] === 'extended';
 }
 
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
@@ -124,7 +157,8 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(standardHeaders);
   app.use(cors(corsOptions));
   app.use(compression());
-  app.use('/fhir/R4/Binary', [authenticateToken], binaryRouter);
+  app.use(authenticateRequest);
+  app.use('/fhir/R4/Binary', binaryRouter);
   app.use(
     urlencoded({
       extended: false,

@@ -32,14 +32,15 @@ import vm from 'node:vm';
 import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
-import { logger } from '../../logger';
 import { generateAccessToken } from '../../oauth/keys';
 import { AuditEventOutcome } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
 import { createAuditEventEntities } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
-import { Repository, systemRepo } from '../repo';
+import { systemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
+import { getRequestContext } from '../../app';
+import { globalLogger } from '../../logger';
 
 export const EXECUTE_CONTENT_TYPES = [ContentType.JSON, ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
 
@@ -69,8 +70,9 @@ export interface BotExecutionResult {
  * Assumes that input content-type is output content-type.
  */
 export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
+  const ctx = getRequestContext();
   // First read the bot as the user to verify access
-  const userBot = await getBotForRequest(req, res);
+  const userBot = await getBotForRequest(req);
   if (!userBot) {
     sendOutcome(res, badRequest('Must specify bot ID or identifier.'));
     return;
@@ -84,7 +86,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   // If the request is HTTP GET, then the query string is the input
   const result = await executeBot({
     bot,
-    runAs: res.locals.membership as ProjectMembership,
+    runAs: ctx.membership,
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
   });
@@ -102,22 +104,20 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
  * If using "/Bot/$execute?identifier=...", then the bot is searched by identifier.
  * Otherwise, returns undefined.
  * @param req The HTTP request.
- * @param res The HTTP response.
  * @returns The bot, or undefined if not found.
  */
-async function getBotForRequest(req: Request, res: Response): Promise<Bot | undefined> {
-  const repo = res.locals.repo as Repository;
-
+async function getBotForRequest(req: Request): Promise<Bot | undefined> {
+  const ctx = getRequestContext();
   // Prefer to search by ID from path parameter
   const { id } = req.params;
   if (id) {
-    return repo.readResource<Bot>('Bot', id);
+    return ctx.repo.readResource<Bot>('Bot', id);
   }
 
   // Otherwise, search by identifier
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
-    return repo.searchOne<Bot>({
+    return ctx.repo.searchOne<Bot>({
       resourceType: 'Bot',
       filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
     });
@@ -216,7 +216,8 @@ async function writeBotInputToStorage(request: BotExecutionRequest): Promise<voi
       try {
         hl7Message = Hl7Message.parse(request.input);
       } catch (err) {
-        logger.debug(`Failed to parse HL7 message: ${normalizeErrorString(err)}`);
+        const ctx = getRequestContext();
+        ctx.logger.debug(`Failed to parse HL7 message: ${normalizeErrorString(err)}`);
       }
     }
 
@@ -551,7 +552,7 @@ async function createAuditEvent(
     await systemRepo.createResource<AuditEvent>(auditEvent);
   }
   if (destination.includes('log')) {
-    logger.logAuditEvent(auditEvent);
+    globalLogger.logAuditEvent(auditEvent);
   }
 }
 

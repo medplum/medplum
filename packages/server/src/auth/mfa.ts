@@ -9,6 +9,7 @@ import { systemRepo } from '../fhir/repo';
 import { authenticateToken } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
 import { sendLoginResult } from './utils';
+import { getRequestContext } from '../app';
 
 authenticator.options = {
   window: 1,
@@ -20,7 +21,8 @@ mfaRouter.get(
   '/status',
   authenticateToken,
   asyncWrap(async (_req: Request, res: Response) => {
-    let user = await systemRepo.readReference<User>(res.locals.membership.user as Reference<User>);
+    const ctx = getRequestContext();
+    let user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
     if (user.mfaEnrolled) {
       res.json({ enrolled: true });
       return;
@@ -50,7 +52,8 @@ mfaRouter.post(
   authenticateToken,
   [body('token').notEmpty().withMessage('Missing token')],
   asyncWrap(async (req: Request, res: Response) => {
-    const user = await systemRepo.readReference<User>(res.locals.membership.user as Reference<User>);
+    const ctx = getRequestContext();
+    const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
 
     if (user.mfaEnrolled) {
       sendOutcome(res, badRequest('Already enrolled'));

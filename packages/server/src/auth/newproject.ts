@@ -5,9 +5,9 @@ import { body, validationResult } from 'express-validator';
 import { createClient } from '../admin/client';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
 import { setLoginMembership } from '../oauth/utils';
 import { createProfile, createProjectMembership } from './utils';
+import { getRequestContext } from '../app';
 
 export interface NewProjectRequest {
   readonly loginId: string;
@@ -68,9 +68,10 @@ export async function createProject(
   firstName: string,
   lastName: string
 ): Promise<{ project: Project; profile: ProfileResource; membership: ProjectMembership; client: ClientApplication }> {
+  const ctx = getRequestContext();
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
-  logger.info('Project creation request received', { name: projectName });
+  ctx.logger.info('Project creation request received', { name: projectName });
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: projectName,
@@ -78,7 +79,7 @@ export async function createProject(
     strictMode: true,
   });
 
-  logger.info('Project created', {
+  ctx.logger.info('Project created', {
     id: project.id,
     name: projectName,
   });

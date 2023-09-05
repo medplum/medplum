@@ -5,9 +5,9 @@ import { URL } from 'url';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
 import { MedplumIdTokenClaims, verifyJwt } from './keys';
 import { getClient } from './utils';
+import { getRequestContext } from '../app';
 
 /*
  * Handles the OAuth/OpenID Authorization Endpoint.
@@ -186,7 +186,7 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
   try {
     verifyResult = await verifyJwt(idTokenHint);
   } catch (err: any) {
-    logger.debug('Error verifying id_token_hint', err);
+    getRequestContext().logger.debug('Error verifying id_token_hint', err);
     return undefined;
   }
 

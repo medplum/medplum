@@ -53,7 +53,6 @@ import { applyPatch, Operation } from 'rfc6902';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
-import { logger } from '../logger';
 import { getRedis } from '../redis';
 import {
   AuditEventOutcome,
@@ -82,6 +81,7 @@ import { rewriteAttachments, RewriteMode } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, Operator, SelectQuery } from './sql';
 import { getSearchParameters } from './structure';
+import { getRequestContext } from '../app';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -528,7 +528,8 @@ export class Repository extends BaseRepository implements FhirRepository {
       const elapsedTime = Number(process.hrtime.bigint() - start);
       const MILLISECONDS = 1e6; // Conversion factor from ns to ms
       if (elapsedTime > 10 * MILLISECONDS) {
-        logger.debug('High validator latency', {
+        const ctx = getRequestContext();
+        ctx.logger.debug('High validator latency', {
           resourceType: resource.resourceType,
           id: resource.id,
           time: elapsedTime / MILLISECONDS,
@@ -544,8 +545,9 @@ export class Repository extends BaseRepository implements FhirRepository {
       const loadStart = process.hrtime.bigint();
       const profile = await this.loadProfile(url);
       const loadTime = Number(process.hrtime.bigint() - loadStart);
+      const ctx = getRequestContext();
       if (!profile) {
-        logger.warn('Unknown profile referenced', {
+        ctx.logger.warn('Unknown profile referenced', {
           resource: `${resource.resourceType}/${resource.id}`,
           url,
         });
@@ -554,7 +556,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       const validateStart = process.hrtime.bigint();
       validate(resource, profile);
       const validateTime = Number(process.hrtime.bigint() - validateStart);
-      logger.debug('Profile loaded', {
+      ctx.logger.debug('Profile loaded', {
         url,
         loadTime,
         validateTime,
@@ -721,7 +723,8 @@ export class Repository extends BaseRepository implements FhirRepository {
         (resource.meta as Meta).compartment = this.getCompartments(resource);
         await this.updateResourceImpl(JSON.parse(row.content) as Resource, false);
       } catch (err) {
-        logger.error('Failed to rebuild compartments for resource', { error: normalizeErrorString(err) });
+        const ctx = getRequestContext();
+        ctx.logger.error('Failed to rebuild compartments for resource', { error: normalizeErrorString(err) });
       }
     });
   }
@@ -745,7 +748,8 @@ export class Repository extends BaseRepository implements FhirRepository {
       try {
         await this.reindexResourceImpl(JSON.parse(row.content) as Resource);
       } catch (err) {
-        logger.error('Failed to reindex resource', { error: normalizeErrorString(err) });
+        const ctx = getRequestContext();
+        ctx.logger.error('Failed to reindex resource', { error: normalizeErrorString(err) });
       }
     });
   }
@@ -1460,7 +1464,8 @@ export class Repository extends BaseRepository implements FhirRepository {
             return patient.meta.account;
           }
         } catch (err: any) {
-          logger.debug('Error setting patient compartment', err);
+          const ctx = getRequestContext();
+          ctx.logger.debug('Error setting patient compartment', err);
         }
       }
     }

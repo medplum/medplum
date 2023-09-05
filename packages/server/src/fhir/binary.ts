@@ -5,9 +5,9 @@ import internal from 'stream';
 import zlib from 'zlib';
 import { asyncWrap } from '../async';
 import { sendOutcome } from './outcomes';
-import { Repository } from './repo';
 import { getPresignedUrl } from './signer';
 import { getBinaryStorage } from './storage';
+import { getRequestContext } from '../app';
 
 export const binaryRouter = Router();
 
@@ -15,10 +15,10 @@ export const binaryRouter = Router();
 binaryRouter.post(
   '/',
   asyncWrap(async (req: Request, res: Response) => {
+    const ctx = getRequestContext();
     const filename = req.query['_filename'] as string | undefined;
     const contentType = req.get('Content-Type');
-    const repo = res.locals.repo as Repository;
-    const resource = await repo.createResource<Binary>({
+    const resource = await ctx.repo.createResource<Binary>({
       resourceType: 'Binary',
       contentType,
       meta: {
@@ -48,11 +48,11 @@ binaryRouter.post(
 binaryRouter.put(
   '/:id',
   asyncWrap(async (req: Request, res: Response) => {
+    const ctx = getRequestContext();
     const { id } = req.params;
     const filename = req.query['_filename'] as string | undefined;
     const contentType = req.get('Content-Type');
-    const repo = res.locals.repo as Repository;
-    const resource = await repo.updateResource<Binary>({
+    const resource = await ctx.repo.updateResource<Binary>({
       resourceType: 'Binary',
       id,
       contentType,
@@ -76,9 +76,9 @@ binaryRouter.put(
 binaryRouter.get(
   '/:id',
   asyncWrap(async (req: Request, res: Response) => {
+    const ctx = getRequestContext();
     const { id } = req.params;
-    const repo = res.locals.repo as Repository;
-    const binary = await repo.readResource<Binary>('Binary', id);
+    const binary = await ctx.repo.readResource<Binary>('Binary', id);
 
     res.status(200).contentType(binary.contentType as string);
 

@@ -2,14 +2,14 @@ import { createReference } from '@medplum/core';
 import { Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { bcryptHashPassword } from './auth/utils';
 import { systemRepo } from './fhir/repo';
-import { logger } from './logger';
+import { globalLogger } from './logger';
 import { createSearchParameters } from './seeds/searchparameters';
 import { createStructureDefinitions } from './seeds/structuredefinitions';
 import { createValueSets } from './seeds/valuesets';
 
 export async function seedDatabase(): Promise<void> {
   if (await isSeeded()) {
-    logger.info('Already seeded');
+    globalLogger.info('Already seeded');
     return;
   }
 

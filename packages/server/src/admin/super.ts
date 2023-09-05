@@ -15,13 +15,14 @@ import { getConfig } from '../config';
 import { getClient } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { Repository, systemRepo } from '../fhir/repo';
+import { systemRepo } from '../fhir/repo';
 import { authenticateToken } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { createSearchParameters } from '../seeds/searchparameters';
 import { createStructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
+import { getRequestContext } from '../app';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateToken);
@@ -32,7 +33,7 @@ superAdminRouter.use(authenticateToken);
 superAdminRouter.post(
   '/valuesets',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
     requireAsync(req);
 
     await sendAsyncResponse(req, res, createValueSets);
@@ -45,7 +46,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/structuredefinitions',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
     requireAsync(req);
 
     await sendAsyncResponse(req, res, createStructureDefinitions);
@@ -58,7 +59,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/searchparameters',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
     requireAsync(req);
 
     await sendAsyncResponse(req, res, createSearchParameters);
@@ -71,7 +72,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/reindex',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
     requireAsync(req);
 
     const resourceType = req.body.resourceType;
@@ -89,7 +90,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/compartments',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
     requireAsync(req);
 
     const resourceType = req.body.resourceType;
@@ -110,7 +111,7 @@ superAdminRouter.post(
     body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
   ],
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -138,7 +139,8 @@ superAdminRouter.post(
     body('before').isISO8601().withMessage('Invalid before date'),
   ],
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    const ctx = getRequestContext();
+    requireSuperAdmin();
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -146,8 +148,7 @@ superAdminRouter.post(
       return;
     }
 
-    const repo = res.locals.repo as Repository;
-    await repo.purgeResources(req.body.resourceType, req.body.before);
+    await ctx.repo.purgeResources(req.body.resourceType, req.body.before);
     sendOutcome(res, allOk);
   })
 );
@@ -158,7 +159,7 @@ superAdminRouter.post(
   '/removebotidjobsfromqueue',
   [body('botId').notEmpty().withMessage('Bot ID is required')],
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -177,7 +178,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/rebuildprojectid',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
     requireAsync(req);
 
     await sendAsyncResponse(req, res, async () => {
@@ -191,8 +192,8 @@ superAdminRouter.post(
   })
 );
 
-function requireSuperAdmin(res: Response): void {
-  if (!res.locals.login.superAdmin) {
+function requireSuperAdmin(): void {
+  if (!getRequestContext().login.superAdmin) {
     throw new OperationOutcomeError(forbidden);
   }
 }
@@ -204,9 +205,9 @@ function requireAsync(req: Request): void {
 }
 
 async function sendAsyncResponse(req: Request, res: Response, callback: () => Promise<any>): Promise<void> {
+  const ctx = getRequestContext();
   const { baseUrl } = getConfig();
-  const repo = res.locals.repo as Repository;
-  const exec = new AsyncJobExecutor(repo);
+  const exec = new AsyncJobExecutor(ctx.repo);
   await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
   exec.start(callback);
   sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));

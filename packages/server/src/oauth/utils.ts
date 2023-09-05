@@ -31,7 +31,6 @@ import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
 import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
 import {
   generateAccessToken,
@@ -41,6 +40,8 @@ import {
   MedplumAccessTokenClaims,
   verifyJwt,
 } from './keys';
+import { AuthState } from './middleware';
+import { getRequestContext } from '../app';
 
 export interface LoginRequest {
   readonly email?: string;
@@ -700,6 +701,7 @@ export async function getExternalUserInfo(
   idp: IdentityProvider,
   externalAccessToken: string
 ): Promise<Record<string, unknown>> {
+  const ctx = getRequestContext();
   let response;
   try {
     response = await fetch(idp.userInfoUrl as string, {
@@ -710,17 +712,17 @@ export async function getExternalUserInfo(
       },
     });
   } catch (err: any) {
-    logger.warn('Error while verifying external auth code', err);
+    ctx.logger.warn('Error while verifying external auth code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
   if (response.status === 429) {
-    logger.warn('Auth rate limit exceeded', { url: idp.userInfoUrl, clientId: idp.clientId });
+    ctx.logger.warn('Auth rate limit exceeded', { url: idp.userInfoUrl, clientId: idp.clientId });
     throw new OperationOutcomeError(tooManyRequests);
   }
 
   if (response.status !== 200) {
-    logger.warn('Failed to verify external authorization code', { status: response.status });
+    ctx.logger.warn('Failed to verify external authorization code', { status: response.status });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
@@ -730,16 +732,16 @@ export async function getExternalUserInfo(
     try {
       text = await response.text();
     } catch (err: any) {
-      logger.debug('Failed to get response text', err);
+      ctx.logger.debug('Failed to get response text', err);
     }
-    logger.warn('Failed to verify external authorization code, non-JSON response', { text });
+    ctx.logger.warn('Failed to verify external authorization code, non-JSON response', { text });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
   try {
     return await response.json();
   } catch (err: any) {
-    logger.warn('Failed to verify external authorization code', err);
+    ctx.logger.warn('Failed to verify external authorization code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 }
@@ -776,11 +778,7 @@ export async function verifyMultipleMatchingException(
  * @param accessToken The access token as provided by the client.
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
-export async function getLoginForAccessToken(accessToken: string): Promise<{
-  login: Login;
-  membership: ProjectMembership;
-  project: Project;
-}> {
+export async function getLoginForAccessToken(accessToken: string): Promise<AuthState> {
   const verifyResult = await verifyJwt(accessToken);
   const claims = verifyResult.payload as MedplumAccessTokenClaims;
 

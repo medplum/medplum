@@ -6,7 +6,7 @@ import fetch from 'node-fetch';
 import { getConfig } from '../config';
 import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
+import { globalLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
 import { getDomainConfiguration } from './method';
 
@@ -166,7 +166,7 @@ async function verifyCode(idp: IdentityProvider, code: string): Promise<Record<s
     const tokens = await response.json();
     return parseJWTPayload(tokens.id_token);
   } catch (err: any) {
-    logger.warn('Failed to verify authorization code', err);
+    globalLogger.warn('Failed to verify authorization code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 }

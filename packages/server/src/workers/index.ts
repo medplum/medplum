@@ -1,6 +1,6 @@
 import { Resource } from '@medplum/fhirtypes';
 import { MedplumRedisConfig } from '../config';
-import { logger } from '../logger';
+import { globalLogger } from '../logger';
 import { BackgroundJobContext } from './context';
 import { addDownloadJobs, closeDownloadWorker, initDownloadWorker } from './download';
 import { addCronJobs, closeCronWorker, initCronWorker } from './cron';
@@ -11,11 +11,11 @@ import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } 
  * @param config The Redis config.
  */
 export function initWorkers(config: MedplumRedisConfig): void {
-  logger.debug('Initializing workers...');
+  globalLogger.debug('Initializing workers...');
   initSubscriptionWorker(config);
   initDownloadWorker(config);
   initCronWorker(config);
-  logger.debug('Workers initialized');
+  globalLogger.debug('Workers initialized');
 }
 
 /**

@@ -1,6 +1,6 @@
 import { Pool, PoolClient } from 'pg';
 import { MedplumDatabaseConfig } from './config';
-import { logger } from './logger';
+import { globalLogger } from './logger';
 import * as migrations from './migrations';
 
 let pool: Pool | undefined;
@@ -22,7 +22,7 @@ export async function initDatabase(config: MedplumDatabaseConfig): Promise<void>
   });
 
   pool.on('error', (err) => {
-    logger.error('Database connection error', err);
+    globalLogger.error('Database connection error', err);
   });
 
   let client: PoolClient | undefined;
@@ -62,7 +62,7 @@ async function migrate(client: PoolClient): Promise<void> {
   for (let i = version + 1; i <= migrationKeys.length; i++) {
     const migration = (migrations as Record<string, migrations.Migration>)['v' + i];
     if (migration) {
-      logger.info('Running database migration', { version: `v${i}` });
+      globalLogger.info('Running database migration', { version: `v${i}` });
       await migration.run(client);
       await client.query('UPDATE "DatabaseMigration" SET "version"=$1', [i]);
     }

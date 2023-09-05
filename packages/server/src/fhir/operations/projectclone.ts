@@ -1,10 +1,11 @@
 import { created, forbidden, getResourceTypes, isResourceType, Operator } from '@medplum/core';
-import { Login, Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import { Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { sendResponse } from '../routes';
+import { getRequestContext } from '../../app';
 
 /**
  * Handles a Project clone request.
@@ -14,15 +15,15 @@ import { sendResponse } from '../routes';
  * @param res The HTTP response.
  */
 export async function projectCloneHandler(req: Request, res: Response): Promise<void> {
-  if (!(res.locals.login as Login).superAdmin) {
+  const ctx = getRequestContext();
+  if (!ctx.login.superAdmin) {
     sendOutcome(res, forbidden);
     return;
   }
 
   const { id } = req.params;
   const { name, resourceTypes, includeIds, excludeIds } = req.body;
-  const repo = res.locals.repo as Repository;
-  const cloner = new ProjectCloner(repo, id, name, resourceTypes, includeIds, excludeIds);
+  const cloner = new ProjectCloner(ctx.repo, id, name, resourceTypes, includeIds, excludeIds);
   const result = await cloner.cloneProject();
   await sendResponse(res, created, result);
 }

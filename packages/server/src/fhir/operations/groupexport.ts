@@ -2,11 +2,11 @@ import { accepted } from '@medplum/core';
 import { Group, Patient, Project } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
-import { logger } from '../../logger';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { getPatientEverything } from './patienteverything';
 import { BulkExporter } from './utils/bulkexporter';
+import { getRequestContext } from '../../app';
 
 /**
  * Handles a Group export request.
@@ -20,24 +20,23 @@ import { BulkExporter } from './utils/bulkexporter';
  * @param res The HTTP response.
  */
 export async function groupExportHandler(req: Request, res: Response): Promise<void> {
+  const ctx = getRequestContext();
   const { baseUrl } = getConfig();
   const { id } = req.params;
   const query = req.query as Record<string, string | undefined>;
   const since = query._since;
   const types = query._type?.split(',');
-  const repo = res.locals.repo as Repository;
-  const project = res.locals.project as Project;
 
   // First read the group as the user to verify access
-  const group = await repo.readResource<Group>('Group', id);
+  const group = await ctx.repo.readResource<Group>('Group', id);
 
   // Start the exporter
-  const exporter = new BulkExporter(repo, since, types);
+  const exporter = new BulkExporter(ctx.repo, since, types);
   const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
-  groupExportResources(exporter, project, group, repo)
-    .then(() => logger.info('Group export completed', { id: project.id }))
-    .catch((err) => logger.error('Group export failed', { id: project.id, error: err }));
+  groupExportResources(exporter, ctx.project, group, ctx.repo)
+    .then(() => ctx.logger.info('Group export completed', { id: ctx.project.id }))
+    .catch((err) => ctx.logger.error('Group export failed', { id: ctx.project.id, error: err }));
 
   sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
 }
@@ -65,7 +64,8 @@ export async function groupExportResources(
           await exporter.writeResource(resource);
         }
       } catch (err) {
-        logger.warn('Unable to read patient for group export', { reference: member.entity.reference });
+        const ctx = getRequestContext();
+        ctx.logger.warn('Unable to read patient for group export', { reference: member.entity.reference });
       }
     }
 

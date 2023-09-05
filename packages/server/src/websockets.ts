@@ -7,7 +7,7 @@ import ws from 'ws';
 import { getConfig } from './config';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { executeBot } from './fhir/operations/execute';
-import { logger } from './logger';
+import { globalLogger } from './logger';
 import { getLoginForAccessToken } from './oauth/utils';
 import { getRedis } from './redis';
 
@@ -65,7 +65,7 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
   await redisSubscriber.subscribe(channel);
 
   redisSubscriber.on('message', (channel: string, message: string) => {
-    logger.debug('[WS] redis message', { channel, message });
+    globalLogger.debug('[WS] redis message', { channel, message });
     socket.send(message, { binary: false });
   });
 

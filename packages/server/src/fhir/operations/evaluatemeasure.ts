@@ -12,6 +12,7 @@ import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { isFhirJsonContentType, sendResponse } from '../routes';
+import { getRequestContext } from '../../app';
 
 interface EvaluateMeasureParameters {
   readonly periodStart: string;
@@ -39,16 +40,16 @@ interface EvaluateMeasureParameters {
  * @param res The HTTP response.
  */
 export async function evaluateMeasureHandler(req: Request, res: Response): Promise<void> {
+  const ctx = getRequestContext();
   const { id } = req.params;
-  const repo = res.locals.repo as Repository;
-  const measure = await repo.readResource<Measure>('Measure', id);
+  const measure = await ctx.repo.readResource<Measure>('Measure', id);
 
   const params = await validateParameters(req, res);
   if (!params) {
     return;
   }
 
-  const measureReport = await evaluateMeasure(repo, params, measure);
+  const measureReport = await evaluateMeasure(ctx.repo, params, measure);
   await sendResponse(res, created, measureReport);
 }
 

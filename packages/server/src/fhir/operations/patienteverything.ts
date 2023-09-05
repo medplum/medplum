@@ -12,6 +12,7 @@ import { getConfig } from '../../config';
 import { getPatientCompartments } from '../patient';
 import { Repository } from '../repo';
 import { sendResponse } from '../routes';
+import { getRequestContext } from '../../app';
 
 // Patient everything operation.
 // https://hl7.org/fhir/operation-patient-everything.html
@@ -23,14 +24,14 @@ import { sendResponse } from '../routes';
  * @param res The HTTP response.
  */
 export async function patientEverythingHandler(req: Request, res: Response): Promise<void> {
+  const ctx = getRequestContext();
   const { id } = req.params;
-  const repo = res.locals.repo as Repository;
 
   // First read the patient to verify access
-  const patient = await repo.readResource<Patient>('Patient', id);
+  const patient = await ctx.repo.readResource<Patient>('Patient', id);
 
   // Then read all of the patient data
-  const bundle = await getPatientEverything(repo, patient);
+  const bundle = await getPatientEverything(ctx.repo, patient);
 
   await sendResponse(res, allOk, bundle);
 }

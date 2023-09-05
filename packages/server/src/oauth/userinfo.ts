@@ -7,35 +7,32 @@ import {
   getReferenceString,
   ProfileResource,
 } from '@medplum/core';
-import { Reference } from '@medplum/fhirtypes';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
-import { Repository } from '../fhir/repo';
+import { getRequestContext } from '../app';
 
 /**
  * Handles the OAuth/OpenID UserInfo Endpoint.
  * See: https://openid.net/specs/openid-connect-core-1_0.html#UserInfo
  */
 export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, res: Response) => {
-  const repo = res.locals.repo as Repository;
-  const profile = await repo.readReference(res.locals.profile as Reference<ProfileResource>);
+  const ctx = getRequestContext();
+  const profile = await ctx.repo.readReference(ctx.profile);
   const userInfo: Record<string, any> = {
     sub: profile.id,
   };
 
-  if (res.locals.login.scope.includes('profile')) {
+  const scopes = ctx.login.scope?.split(' ');
+  if (scopes?.includes('profile')) {
     buildProfile(userInfo, profile);
   }
-
-  if (res.locals.login.scope.includes('email')) {
+  if (scopes?.includes('email')) {
     buildEmail(userInfo, profile);
   }
-
-  if (res.locals.login.scope.includes('phone')) {
+  if (scopes?.includes('phone')) {
     buildPhone(userInfo, profile);
   }
-
-  if (res.locals.login.scope.includes('address')) {
+  if (scopes?.includes('address')) {
     buildAddress(userInfo, profile);
   }
 

@@ -6,8 +6,8 @@ import fetch from 'node-fetch';
 import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { logger } from '../logger';
 import { getClient, getMembershipsForLogin } from '../oauth/utils';
+import { getRequestContext } from '../app';
 
 export async function createProfile(
   project: Project,
@@ -16,7 +16,8 @@ export async function createProfile(
   lastName: string,
   email: string | undefined
 ): Promise<ProfileResource> {
-  logger.info('Creating profile', { resourceType, firstName, lastName });
+  const ctx = getRequestContext();
+  ctx.logger.info('Creating profile', { resourceType, firstName, lastName });
   let telecom: ContactPoint[] | undefined = undefined;
   if (email) {
     telecom = [{ system: 'email', use: 'work', value: email }];
@@ -34,7 +35,7 @@ export async function createProfile(
     ],
     telecom,
   });
-  logger.info('Created profile', { id: result.id });
+  ctx.logger.info('Created profile', { id: result.id });
   return result;
 }
 
@@ -44,7 +45,8 @@ export async function createProjectMembership(
   profile: ProfileResource,
   details?: Partial<ProjectMembership>
 ): Promise<ProjectMembership> {
-  logger.info('Creating project membership', { name: project.name });
+  const ctx = getRequestContext();
+  ctx.logger.info('Creating project membership', { name: project.name });
   const result = await systemRepo.createResource<ProjectMembership>({
     ...details,
     resourceType: 'ProjectMembership',
@@ -52,7 +54,7 @@ export async function createProjectMembership(
     user: createReference(user),
     profile: createReference(profile),
   });
-  logger.info('Created project memberships', { id: result.id });
+  ctx.logger.info('Created project memberships', { id: result.id });
   return result;
 }
 

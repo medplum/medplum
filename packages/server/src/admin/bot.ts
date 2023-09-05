@@ -6,6 +6,7 @@ import { Readable } from 'stream';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { Repository, systemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
+import { getRequestContext } from '../app';
 
 export const createBotValidators = [body('name').notEmpty().withMessage('Bot name is required')];
 
@@ -17,15 +18,16 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 `;
 
 export async function createBotHandler(req: Request, res: Response): Promise<void> {
+  const ctx = getRequestContext();
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     sendOutcome(res, invalidRequest(errors));
     return;
   }
 
-  const bot = await createBot(res.locals.repo as Repository, {
+  const bot = await createBot(ctx.repo, {
     ...req.body,
-    project: res.locals.project,
+    project: ctx.project,
   });
 
   res.status(201).json(bot);
