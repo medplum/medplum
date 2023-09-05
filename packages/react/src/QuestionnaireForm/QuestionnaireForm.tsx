@@ -139,8 +139,6 @@ interface QuestionnaireFormItemArrayProps {
   answers: Record<string, QuestionnaireResponseItemAnswer>;
   renderPages?: boolean;
   activePage?: number;
-  handleRepeatableItem?: (currentItem: QuestionnaireItem) => void;
-  handleRemoveItem?: (currentItem: QuestionnaireItem) => void;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
 
