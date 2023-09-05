@@ -99,15 +99,15 @@ export default function AboutPage(): JSX.Element {
               name="Matt Willer"
               title="Founding Engineer"
               imgUrl="/img/people/mattwiller.jpg"
-              linkedInUrl="https://www.linkedin.com/in/codyebberson/"
-              githubUrl="https://github.com/codyebberson"
+              linkedInUrl="https://www.linkedin.com/in/matt-willer-0b779463/"
+              githubUrl="https://github.com/mattwiller"
             />
             <ProfileCard
               name="James Touri"
               title="Founding Engineer"
               imgUrl="/img/people/jamestouri.jpg"
-              linkedInUrl="https://www.linkedin.com/in/rahul-agarwal-330a979/"
-              githubUrl="https://github.com/rahul1"
+              linkedInUrl="https://www.linkedin.com/in/jamestouri/"
+              githubUrl="https://github.com/jamestouri"
             />
           </CardContainer>
         </Section>
