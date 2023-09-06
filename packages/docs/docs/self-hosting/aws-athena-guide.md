@@ -20,7 +20,9 @@ See [Athena Pricing](https://aws.amazon.com/athena/pricing/) for more details.
 
 For more background reading, see [What is Amazon Athena?](https://docs.aws.amazon.com/athena/latest/ug/what-is.html) and [Querying Application Load Balancer logs](https://docs.aws.amazon.com/athena/latest/ug/application-load-balancer-logs.html).
 
-## Prerequisites
+## Athena for ALB Logs
+
+### Prerequisites
 
 First, you must enable access logs so that AWS Application Load Balancer logs are saved to an AWS S3 bucket. Medplum makes this easy using the CDK config file. Add the following lines to your CDK config file:
 
@@ -34,7 +36,7 @@ And then deploy the CDK changes. See [Medplum Config Settings](./config-settings
 
 Next, if you do not have a "default" Athena database, follow [Creating databases in Athena](https://docs.aws.amazon.com/athena/latest/ug/creating-databases.html).
 
-## Creating the table for ALB logs
+### Creating the table for ALB logs
 
 Now that ALB access logs are enabled and stored in S3, we can create an Athena table for the data.
 
@@ -93,7 +95,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS alb_logs (
 
 Now Athena is ready for querying.
 
-## Querying ALB logs
+### Querying ALB logs
 
 :::caution
 
@@ -167,6 +169,66 @@ WHERE
     AND parse_datetime('2023-05-31-00:00:00', 'yyyy-MM-dd-HH:mm:ss')
 GROUP BY
     client_ip;
+```
+
+## Athena for Medplum Bot logs
+
+### Creating the table
+
+Medplum Bots automatically write input to S3 on every invocation.
+
+Medplum Bot logs have a known structure whose partition scheme you can specify in advance, you can reduce query runtime and automate partition management by using the Athena partition projection feature. Partition projection automatically adds new partitions as new data is added.
+
+```sql
+CREATE EXTERNAL TABLE my_bot_logs (
+    botId STRING,
+    projectId STRING,
+    accountId STRING,
+    agentId STRING,
+    deviceId STRING,
+    remoteAddress STRING,
+    forwardedFor STRING,
+    contentType STRING,
+    input STRING,
+    hl7SendingApplication STRING,
+    hl7SendingFacility STRING,
+    hl7ReceivingApplication STRING,
+    hl7ReceivingFacility STRING,
+    hl7MessageType STRING,
+    hl7Version STRING,
+    hl7PidId STRING,
+    hl7PidMrn STRING,
+    hl7ObxId STRING,
+    hl7ObxAccession STRING
+)
+PARTITIONED BY (
+   date STRING
+)
+ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
+STORED AS INPUTFORMAT 'org.apache.hadoop.mapred.TextInputFormat'
+OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
+LOCATION 's3://MY_STORAGE_BUCKET/bot/MY_PROJECT_ID/'
+TBLPROPERTIES (
+    "projection.enabled" = "true",
+    "projection.date.type" = "date",
+    "projection.date.range" = "2022/01/01,NOW",
+    "projection.date.format" = "yyyy/MM/dd",
+    "projection.date.interval" = "1",
+    "projection.date.interval.unit" = "DAYS",
+    "storage.location.template" = "s3://MY_STORAGE_BUCKET/bot/MY_PROJECT_ID/${date}/"
+);
+```
+
+### Querying
+
+Count HL7 message types by day:
+
+```sql
+SELECT hl7MessageType, COUNT(hl7MessageType) AS count
+FROM my_bot_logs
+WHERE date >= '2023-01-01'
+GROUP BY hl7MessageType
+LIMIT 100;
 ```
 
 ## Additional Reading
