@@ -97,7 +97,7 @@ export const LabOrdering = (): JSX.Element => {
         {
           question: enableQuestion,
           operator: '=',
-          answerString: id,
+          answerCoding: { code: id, system: 'http://loinc.org' },
         },
       ],
       item: [
@@ -217,7 +217,7 @@ export const LabOrdering = (): JSX.Element => {
           {
             question: 'labcorp-tests',
             operator: '=',
-            answerString: 'urine-culture',
+            answerCoding: { code: 'urine-culture', system: 'http://loinc.org' },
           },
         ],
         item: [
@@ -320,7 +320,7 @@ export const LabOrdering = (): JSX.Element => {
           {
             question: 'quest-tests',
             operator: '=',
-            answerString: '1',
+            answerCoding: { code: '1', system: 'http://loinc.org' },
           },
         ],
         item: [
@@ -407,7 +407,7 @@ export const LabOrdering = (): JSX.Element => {
                     {
                       question: 'question2',
                       operator: '=',
-                      answerString: '1',
+                      answerCoding: { code: '1', system: 'http://loinc.org' },
                     },
                   ],
                   answerOption: [
@@ -441,7 +441,7 @@ export const LabOrdering = (): JSX.Element => {
                     },
                     {
                       valueCoding: {
-                        code: 'iron-and-tibc ',
+                        code: 'iron-and-tibc',
                         display: 'Iron and TIBC',
                         system: 'http://loinc.org',
                       },
@@ -493,7 +493,7 @@ export const LabOrdering = (): JSX.Element => {
                     {
                       question: 'question2',
                       operator: '=',
-                      answerString: '2',
+                      answerCoding: { code: '2', system: 'http://loinc.org' },
                     },
                   ],
                   answerOption: [
