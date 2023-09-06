@@ -2,13 +2,30 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/patient-deduplication/merge-rules.ts';
+import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/patient-deduplication/merging.ts';
 
-# Merge Rules {#merge-rules}
+# Merging {#merge-rules}
 
 Surprisingly, the merge step of the deduplication pipeline typically contains the most complexity. The merge operation will depend on your clinical and business context, your downstream application, and how frequently you will _unmerge_ records.
 
 This section will discuss the major decisions you will need to make when designing your patient merge operation. The authors of FHIR are also drafting a [FHIR standard merge operation](https://build.fhir.org/patient-operation-merge.html), however the specification has not been finalized.
+
+## Linking Patient Records in FHIR
+
+**The FHIR [Patient](/docs/api/fhir/resources) has features to represent the link between source and master records.**
+
+The `Patient.active` element is used to indicate the master record for the patient. When there are multiple `Patient` resources per-patient in the target system, all but the master record should be marked as "inactive."
+
+The `Patient.link` element is used to connect duplicate patient records via reference.
+
+- For each source record
+
+  - `Patient.link.other` references the master record
+  - `Patient.link.type` takes the value `"replaced-by"`
+
+- For the master record
+  - `Patient.link.other` references each source record
+  - `Patient.link.type` takes the value `"replaces"`
 
 ## Master Record Structure
 

@@ -12,9 +12,9 @@ Most pipelines make a copy of each patient record from the source system into th
 
 While deduplication pipelines can take many forms, there three primary operations in every pipeline:
 
-1. **Ingestion:** Copying data from source systems into the target system to create source records.
-2. **Matching:** For each patient record, find all other records that could are potential matches.
-3. **Merging:** Merge all the information into a single record to serve as the source of truth.
+1. [**Ingestion:**](/docs/fhir-datastore/patient-deduplication/ingestion) Copying data from source systems into the target system to create source records.
+2. [**Matching:**](/docs/fhir-datastore/patient-deduplication/matching) For each patient record, find all other records that could are potential matches.
+3. [**Merging:**](/docs/fhir-datastore/patient-deduplication/merging) Merge all the information into a single record to serve as the source of truth.
 
 There are many different ways to implement this pipeline, but there are a few key decisions that you will need to make when choosing an architecture:
 
@@ -33,3 +33,5 @@ We'll discuss each of these in depth. The most important factors to consider whe
 - **Cost of false positives:** No deduplication system will be 100% perfect, and some patients records will be merged incorrectly. Certain architectural choices make it easier or harder to unmerge patient records once merged. The right choice for you will depend on your confidence threshold for performing a merge and on cost of an incorrect merge.
 
 - **Downstream application:** The right deduplication architecture will ultimately depend on how the deduplicated data will be used. Target systems that serve web and mobile applications will have different priorities than that systems that serve as data aggregators. For example, some systems support patient login and a merge will show a whole new set of data to a user, merging for this use case should be distinct from merging for population health or insurance billing purposes.
+
+In the next section, we will discuss the **Ingestion** stage of the deduplication pipeline.

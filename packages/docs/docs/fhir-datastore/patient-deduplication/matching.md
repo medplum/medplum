@@ -1,4 +1,10 @@
-# Matching Rules {#matching-rules}
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/patient-deduplication/matching.ts';
+
+# Matching {#matching-rules}
 
 The best deduplication systems use a library of matching rules with different strengths and weaknesses. While the effectiveness of different patient matching rules will vary depending on the clinical context, here we suggest some rules to get you started.
 
@@ -23,86 +29,18 @@ The likelihood of a candidate being a match can be represented by a `RiskAssessm
 | `subject`            | The patient or other resource that a potential match is being checked against.                | Patient/homer-simpson |
 | `basis`              | The patient or other resource that could be a potential match for the subject.                | Patient/marge-simpson |
 
-<details><summary>A `RiskAssessment` for a potential duped patient record</summary>
-```js
-{
-  resourceType: RiskAssessment,
-  id: 'homer-simpson-match-risk-assessment'
-  subject: {
-    resource: {
-      resourceType: 'Patient',
-      id: 'homer-simpson'
-    },
-  },
-  basis: {
-    resource: {
-      resourceType: 'Patient',
-      id: 'marge-simpson',
-    },
-  },
-  code: {
-    coding: [
-      {
-        system: 'http://example.org/risk-assessment-type',
-        code: 'duplicate-patient',
-      },
-    ],
-  },
-  method: {
-    coding: [
-      {
-        system: 'http://example.org/dedupe-method',
-        code: 'last-name',
-      },
-    ],
-  },
-  prediction: [
-    {
-      probabilityDecimal: 50,
-      qualitativeRisk: {
-        text: 'Somewhat likely',
-      },
-    },
-  ],
-}
-```
+<details><summary>Example: A `RiskAssessment` for a potential duped patient record</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="dupedPatientAssessment">
+    {ExampleCode}
+  </MedplumCodeBlock>
 </details>
 
 ## Do Not Match Lists
 
 To ensure that certain records are _not_ matched, you can create a Do Not Match List for a patient. This should be represented as a `List` resource, with the patient stored in the `subject` field. Any other patients that should not be matched to this patient can be stored as an `entry`.
 
-<details><summary>A patient's Do Not Match `List`</summary>
-```js
-{
-  resourceType: 'List',
-  id: 'homer-simpson-do-not-match-list',
-  subject: {
-    resource: {
-      resourceType: 'Patient',
-      id: 'homer-simpson',
-    },
-  },
-  entry: [
-    {
-      id: 'do-not-match-entry-1',
-      item: {
-        resource: {
-          resourceType: 'Patient',
-          id: 'marge-simpson',
-        },
-      },
-    },
-    {
-      id: 'do-not-match-entry-2',
-      item: {
-        resource: {
-          resourceType: 'Patient',
-          id: 'lisa-simpson',
-        },
-      },
-    },
-  ],
-}
-```
+<details><summary>Example: A patient's Do Not Match `List`</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="doNotMatch">
+    {ExampleCode}
+  </MedplumCodeBlock>
 </details>

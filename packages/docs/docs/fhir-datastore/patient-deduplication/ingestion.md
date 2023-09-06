@@ -1,10 +1,12 @@
-# Batch vs. Incremental Pipelines
+# Ingestion
+
+## Batch vs. Incremental Pipelines
 
 Your deduplication pipeline can be implemented in either _batch_ or _incremental_ versions. These are not mutually exclusive options, and many organizations will end up building both.
 
 The Medplum team recommends starting with a batch pipeline. If your source systems are short-lived or changing infrequently, a batch pipeline may be sufficient. Regardless, even if you end up building incremental pipelines, batch pipelines are typically easier to get started with as you iterate on your [matching](#matching-rules) and [merge](#merge-rules) rules.
 
-## Batch Pipelines
+### Batch Pipelines
 
 Batch pipelines run as offline jobs that consider all records at once to produce sets of patient matches. Most implementations schedule these pipelines to run on a regularly scheduled interval. As this is an N<sup>2</sup> problem, they are primarily constrained by memory rather than latency.
 
@@ -15,7 +17,7 @@ Typically, these pipelines compute matches in a data warehouse or a compute engi
 3. Use [merging rules](#merge-rules) to combine matched pairs into sets and _create_ the master record.
 4. Use the Medplum API to update the `Patient.active` and `Patient.link` elements for all records.
 
-## Incremental Pipelines
+### Incremental Pipelines
 
 Each invocation of an incremental pipeline considers a single record and finds all matches. Typically, these pipelines are run per-source-record at the time of creation or update. As these pipelines are typically used to manage high-frequency, event-driven updates, latency is more of a concern than memory.
 
