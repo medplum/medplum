@@ -1013,7 +1013,7 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(dropDown, { target: 'No'});
+      fireEvent.change(dropDown, { target: 'No' });
     });
   });
 
