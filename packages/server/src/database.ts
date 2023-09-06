@@ -56,7 +56,7 @@ async function migrate(client: PoolClient): Promise<void> {
   const version = result.rows[0]?.version ?? -1;
 
   if (version < 0) {
-    await client.query('INSERT INTO "DatabaseMigration" ("id", "version") VALUES (1, 0)');
+    await client.query('INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion") VALUES (1, 0, 0)');
   }
 
   const migrationKeys = Object.keys(migrations);
