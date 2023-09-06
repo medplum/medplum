@@ -919,6 +919,104 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByText('Back')).toBeInTheDocument();
   });
 
+  test('Default Values From Previous Input', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'default-values',
+        title: 'Default Values Example',
+        item: [
+          {
+            id: 'same',
+            linkId: 'same',
+            text: 'Question 1',
+            type: 'string',
+          },
+          {
+            id: 'same',
+            linkId: 'same',
+            text: 'Question 2',
+            type: 'string',
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+    const firstInput = screen.getByLabelText('Question 1');
+    const secondInput = screen.getByLabelText('Question 2');
+
+    // Type into the first input
+    fireEvent.change(firstInput, { target: { value: 'Hello' } });
+
+    // Assert that both inputs have the same value
+    expect((firstInput as HTMLSelectElement).value).toBe('Hello');
+    expect((secondInput as HTMLSelectElement).value).toBe('Hello');
+
+    // Type into the second input
+    fireEvent.change(secondInput, { target: { value: 'World' } });
+
+    // Assert that both inputs have the new value
+    expect((firstInput as HTMLSelectElement).value).toBe('World');
+    expect((secondInput as HTMLSelectElement).value).toBe('World');
+  });
+
+  test('Repeated Choice Dropdown', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'default-values',
+        title: 'Default Values Example',
+        item: [
+          {
+            id: 'choice',
+            linkId: 'choice',
+            text: 'choice',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+            repeats: true,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    const dropDown = screen.getByText('choice');
+
+    await act(async () => {
+      fireEvent.click(dropDown);
+    });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: 'Yes' });
+    });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: 'No'});
+    });
+  });
+
   test('Conditional question', async () => {
     await setup({
       questionnaire: {

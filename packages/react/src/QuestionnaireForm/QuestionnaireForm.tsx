@@ -190,7 +190,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 
   if (props.renderPages) {
     return (
-      <Stepper active={props.activePage ?? 0} allowNextStepsSelect={false}>
+      <Stepper active={props.activePage ?? 0} allowNextStepsSelect={false} style={{ padding: 6 }}>
         {questionForm}
       </Stepper>
     );
@@ -293,7 +293,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     const responses = props.responseItems?.filter((r) => r.linkId === item.linkId) ?? [];
 
     let updatedAnswers: QuestionnaireResponseItemAnswer[];
-    console.log(props.answers, item);
     if (Array.isArray(newResponseAnswer)) {
       // It's a multi-select case, so use the array directly.
       updatedAnswers = newResponseAnswer;
@@ -481,12 +480,13 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
     }
   }
   if (item.repeats) {
-    const { propertyName, data } = convertToDesiredFormat(props.item);
+    const { propertyName, data } = formatSelectData(props.item);
     return (
       <MultiSelect
         data={data}
         placeholder="Select items"
         searchable
+        defaultValue={defaultValueById(props.answers, item, true)}
         onChange={(selected) => {
           const values = selected.map((o) => {
             const option = item.answerOption?.find((option) =>
@@ -502,7 +502,6 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
           });
           props.onChangeAnswer(values as QuestionnaireResponseItemAnswer[]);
         }}
-        onCreate={(query) => query}
       />
     );
   }
@@ -867,7 +866,7 @@ function getResponseId(responses: QuestionnaireResponseItem[], index: number): s
   return responses[index].id as string;
 }
 
-function convertToDesiredFormat(item: QuestionnaireItem): any {
+function formatSelectData(item: QuestionnaireItem): any {
   if (item.answerOption?.length === 0) {
     return undefined;
   }
@@ -887,18 +886,27 @@ function convertToDesiredFormat(item: QuestionnaireItem): any {
   return { propertyName, data };
 }
 
-function defaultValueById(answers: Record<string, QuestionnaireResponseItemAnswer[]>, item: QuestionnaireItem): any {
+function defaultValueById(
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>,
+  item: QuestionnaireItem,
+  multiple?: boolean
+): any {
+  let results = [];
   for (const answer in answers) {
     if (answer === item.id) {
-      const answerValue = answers[answer][0];
-      const itemValue = getTypedPropertyValue(
-        { type: 'QuestionnaireItemAnswerOption', value: answerValue },
-        'value'
-      ) as TypedValue;
-      if (itemValue?.type === 'Coding') {
-        return itemValue?.value?.code;
+      for (const answerValue of answers[answer]) {
+        const itemValue = getTypedPropertyValue(
+          { type: 'QuestionnaireItemAnswerOption', value: answerValue },
+          'value'
+        ) as TypedValue;
+
+        if (itemValue?.type === 'Coding') {
+          results.push(itemValue?.value?.code);
+        } else {
+          results.push(itemValue?.value);
+        }
       }
-      return itemValue?.value;
     }
   }
+  return multiple ? results : results[0];
 }

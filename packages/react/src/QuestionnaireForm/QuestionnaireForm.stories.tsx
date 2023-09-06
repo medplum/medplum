@@ -125,10 +125,6 @@ export const LabOrdering = (): JSX.Element => {
           ],
           extension: [
             {
-              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
-              valueString: 'match-values',
-            },
-            {
               url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
               valueCodeableConcept: {
                 coding: [
@@ -160,6 +156,7 @@ export const LabOrdering = (): JSX.Element => {
   }
 
   const vendors: any = {
+    id: 'question2',
     linkId: 'question2',
     text: 'Vendor',
     type: 'choice',
@@ -244,10 +241,6 @@ export const LabOrdering = (): JSX.Element => {
             ],
             extension: [
               {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
-                valueString: 'match-values',
-              },
-              {
                 url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
                 valueCodeableConcept: {
                   coding: [
@@ -267,12 +260,6 @@ export const LabOrdering = (): JSX.Element => {
             linkId: 'urine-culture-notes',
             text: 'Test Notes',
             type: 'string',
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
-                valueString: 'match-values',
-              },
-            ],
           },
           {
             id: 'urine-culture-sample',
@@ -290,10 +277,6 @@ export const LabOrdering = (): JSX.Element => {
               },
             ],
             extension: [
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
-                valueString: 'match-values',
-              },
               {
                 url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
                 valueCodeableConcept: {
@@ -329,24 +312,12 @@ export const LabOrdering = (): JSX.Element => {
             linkId: 'no1',
             text: 'Question 1',
             type: 'string',
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
-                valueString: 'match-values',
-              },
-            ],
           },
           {
             id: 'no-2',
             linkId: 'no2',
             text: 'Question 2',
             type: 'string',
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-items',
-                valueString: 'match-values',
-              },
-            ],
           },
         ],
       },
@@ -359,7 +330,7 @@ export const LabOrdering = (): JSX.Element => {
         questionnaire={{
           resourceType: 'Questionnaire',
           id: 'lab-order-example',
-          title: 'Lab Order Example (not complete)',
+          title: 'Lab Order Example',
           item: [
             {
               linkId: 'patient-name',
@@ -399,6 +370,7 @@ export const LabOrdering = (): JSX.Element => {
               type: 'group',
               item: [
                 {
+                  id: 'labcorp-tests',
                   linkId: 'labcorp-tests',
                   text: 'Available Tests',
                   type: 'choice',
@@ -485,6 +457,7 @@ export const LabOrdering = (): JSX.Element => {
                   ],
                 },
                 {
+                  id: 'quest-tests',
                   linkId: 'quest-tests',
                   text: 'Available Tests',
                   type: 'choice',
@@ -1042,6 +1015,35 @@ export const RepeatableItems = (): JSX.Element => (
             text: 'Repeatable Date',
             type: 'date',
             repeats: true,
+          },
+          {
+            linkId: 'question5',
+            text: 'Multi Select',
+            type: 'choice',
+            repeats: true,
+            answerOption: [
+              {
+                valueString: 'value1',
+              },
+              {
+                valueString: 'value2',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
           },
           {
             linkId: 'boolean',
