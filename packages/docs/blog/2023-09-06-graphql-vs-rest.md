@@ -6,7 +6,7 @@ In this post, we'll discuss these tradeoffs and provide some guidance on how you
 
 ## GraphQL
 
-GraphQL has [surged in popularity](https://devops.com/key-findings-from-the-2022-state-of-graphql-report/#:~:text=GraphQL%2C%20the%20open%20source%20query,the%20specific%20client%20at%20hand.) in recent years.
+GraphQL has [surged in popularity](https://devops.com/key-findings-from-the-2022-state-of-graphql-report/#:~:text=GraphQL%2C%20the%20open%20source%20query,the%20specific%20client%20at%20hand.) in recent years. You can try out FHIR graphql queries on your medplum project using our [graphiql sandbox](https://graphiql.medplum.com/).
 
 In the context of FHIR, one of GraphQL's strongest features is the ability to quickly retrieve [multiple linked resources](/docs/graphql/basic-queries#resolving-nested-resources-with-the-resource-element). While the REST API allows similar functionality using the [`_include`](/docs/search/includes) and [`_revinclude`](/docs/search/includes) search parameters, GraphQL offers a more natural syntax for querying bundles of resources that reference each other.
 
