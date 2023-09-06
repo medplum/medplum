@@ -592,8 +592,8 @@ export const LabOrdering = (): JSX.Element => {
               type: 'group',
               item: [
                 {
-                  linkId: 'send-to-hg',
-                  text: 'Send to Health Gorilla',
+                  linkId: 'send-to-lab',
+                  text: 'Send to Lab',
                   type: 'boolean',
                 },
                 {
