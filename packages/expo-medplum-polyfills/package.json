@@ -36,6 +36,7 @@
     "text-encoding": "0.7.0"
   },
   "devDependencies": {
+    "@medplum/core": "*",
     "@types/base-64": "1.0.0",
     "@types/react": "18.0.25",
     "@types/text-encoding": "0.0.36",
