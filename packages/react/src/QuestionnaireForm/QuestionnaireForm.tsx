@@ -714,11 +714,16 @@ export function isQuestionEnabled(
 }
 
 function evaluateMatch(actualAnswer: TypedValue | undefined, expectedAnswer: TypedValue, operator?: string): boolean {
+  // We handle exists separately since its so different in terms of comparisons than the other mathematical operators
   if (operator === 'exists') {
+    // if actualAnswer is not undefined, then exists: true passes
+    // if actualAnswer is undefined, then exists: false passes
     return !!actualAnswer === expectedAnswer.value;
   } else if (!actualAnswer) {
     return false;
   } else {
+    // `=` and `!=` should be treated as the FHIRPath `~` and `!~`
+    // All other operators should be unmodified
     const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
     const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirPathOperator} %expectedAnswer`, [actualAnswer], {
       actualAnswer,
@@ -752,7 +757,7 @@ function checkAnswers(
         value: actualAnswerValue,
       },
       'value[x]'
-    ) as TypedValue | undefined;
+    ) as TypedValue | undefined; // possibly undefined when question unanswered
     const { operator } = enableWhen;
     const match = evaluateMatch(actualAnswer, expectedAnswer, operator);
     if (match) {

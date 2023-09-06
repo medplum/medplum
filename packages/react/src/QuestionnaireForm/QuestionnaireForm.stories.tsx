@@ -586,7 +586,24 @@ export const LabOrdering = (): JSX.Element => {
                 orders,
               ],
             },
-            orders,
+            {
+              linkId: 'review',
+              text: 'Review',
+              type: 'group',
+              item: [
+                {
+                  linkId: 'send-to-hg',
+                  text: 'Send to Health Gorilla',
+                  type: 'boolean',
+                },
+                {
+                  linkId: 'generate-pdf',
+                  text: 'Generate PDF',
+                  type: 'boolean',
+                },
+                orders,
+              ],
+            },
           ],
         }}
         onSubmit={(formData: any) => {
