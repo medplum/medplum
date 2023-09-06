@@ -82,7 +82,7 @@ medplum post Project '{"resourceType":"Project","name":"ProjectName","strictMode
 // end-block createProjectCli
 
 // start-block createProjectCurl
-curl 'https://api.medplum.com/admin/projects/' \
+curl 'https://api.medplum.com/admin/Project/' \
   -X POST \
   -H 'Authorization: Bearer ${accessToken}' \
   -H 'Content-Type: application/json' \
