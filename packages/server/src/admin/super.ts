@@ -206,15 +206,13 @@ superAdminRouter.post(
     await sendAsyncResponse(req, res, async () => {
       const client = getClient();
       const result = await client.query('SELECT "dataVersion" FROM "DatabaseMigration"');
-      const version = result.rows[0]?.dataVersion ?? 0;
+      const version = result.rows[0]?.dataVersion as number;
       const migrationKeys = Object.keys(dataMigrations);
       for (let i = version + 1; i <= migrationKeys.length; i++) {
         const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + i];
-        if (migration) {
-          logger.info('Running data migration', { version: `v${i}` });
-          await migration.run(systemRepo);
-          await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
-        }
+        logger.info('Running data migration', { version: `v${i}` });
+        await migration.run(systemRepo);
+        await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
       }
     });
   })
