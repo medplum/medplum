@@ -294,33 +294,6 @@ export const LabOrdering = (): JSX.Element => {
           },
         ],
       },
-      {
-        id: 'quest-tests-group-1',
-        linkId: 'q3',
-        type: 'group',
-        text: 'The No Group Selected',
-        enableWhen: [
-          {
-            question: 'quest-tests',
-            operator: '=',
-            answerCoding: { code: '1', system: 'http://loinc.org' },
-          },
-        ],
-        item: [
-          {
-            id: 'no-1',
-            linkId: 'no1',
-            text: 'Question 1',
-            type: 'string',
-          },
-          {
-            id: 'no-2',
-            linkId: 'no2',
-            text: 'Question 2',
-            type: 'string',
-          },
-        ],
-      },
     ],
   };
 
