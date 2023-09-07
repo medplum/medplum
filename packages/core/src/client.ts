@@ -38,7 +38,7 @@ import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
-import { isMedplumAccessToken, parseJWTPayload } from './jwt';
+import { isJwt, isMedplumAccessToken, parseJWTPayload } from './jwt';
 import {
   badRequest,
   isOk,
@@ -2501,6 +2501,12 @@ export class MedplumClient extends EventTarget {
       throw new OperationOutcomeError(notFound);
     }
 
+    const contentLocation = response.headers.get('content-location');
+    if (response.status === 201 && contentLocation && options.redirect === 'follow') {
+      // Follow redirect
+      return this.request('GET', contentLocation, { ...options, body: undefined });
+    }
+
     let obj: any = undefined;
     if (isJson) {
       try {
@@ -2919,24 +2925,25 @@ export class MedplumClient extends EventTarget {
   private async verifyTokens(tokens: TokenResponse): Promise<void> {
     const token = tokens.access_token;
 
-    // Verify token has not expired
-    const tokenPayload = parseJWTPayload(token);
+    if (isJwt(token)) {
+      // Verify token has not expired
+      const tokenPayload = parseJWTPayload(token);
 
-    if (Date.now() >= (tokenPayload.exp as number) * 1000) {
-      this.clearActiveLogin();
-      throw new Error('Token expired');
-    }
+      if (Date.now() >= (tokenPayload.exp as number) * 1000) {
+        this.clearActiveLogin();
+        throw new Error('Token expired');
+      }
 
-    // Verify app_client_id
-    // external tokenPayload
-    if (tokenPayload.cid) {
-      if (tokenPayload.cid !== this.clientId) {
+      // Verify app_client_id
+      if (tokenPayload.cid) {
+        if (tokenPayload.cid !== this.clientId) {
+          this.clearActiveLogin();
+          throw new Error('Token was not issued for this audience');
+        }
+      } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
         this.clearActiveLogin();
         throw new Error('Token was not issued for this audience');
       }
-    } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
-      this.clearActiveLogin();
-      throw new Error('Token was not issued for this audience');
     }
 
     return this.setActiveLogin({

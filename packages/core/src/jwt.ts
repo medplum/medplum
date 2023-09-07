@@ -18,6 +18,15 @@ function decodePayload(payload: string): Record<string, number | string> {
 }
 
 /**
+ * Returns true if the token is a JWT.
+ * @param token The potential JWT token.
+ * @returns True if the token is a JWT.
+ */
+export function isJwt(token: string): boolean {
+  return token.split('.').length === 3;
+}
+
+/**
  * Parses the JWT payload.
  * @param token JWT token.
  * @returns Collection of key value claims in the JWT payload.
