@@ -489,10 +489,8 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
         defaultValue={defaultValueById(props.answers, item, true)}
         onChange={(selected) => {
           const values = selected.map((o) => {
-            const option = item.answerOption?.find((option) =>
-              propertyName === 'valueCoding'
-                ? option.valueCoding?.code === o
-                : option[propertyName as keyof QuestionnaireItemAnswerOption] === o
+            const option = item.answerOption?.find(
+              (option) => option[propertyName as keyof QuestionnaireItemAnswerOption] === o
             );
             const optionValue = getTypedPropertyValue(
               { type: 'QuestionnaireItemAnswerOption', value: option },
@@ -871,9 +869,19 @@ function getResponseId(responses: QuestionnaireResponseItem[], index: number): s
   return responses[index].id as string;
 }
 
-function formatSelectData(item: QuestionnaireItem): any {
+interface MultiSelect {
+  value: any;
+  label: any;
+}
+
+interface FormattedData {
+  propertyName: string;
+  data: MultiSelect[];
+}
+
+function formatSelectData(item: QuestionnaireItem): FormattedData {
   if (item.answerOption?.length === 0) {
-    return undefined;
+    return { propertyName: '', data: [] };
   }
   const option = (item.answerOption as QuestionnaireItemAnswerOption[])[0];
   const optionValue = getTypedPropertyValue(
@@ -883,8 +891,7 @@ function formatSelectData(item: QuestionnaireItem): any {
   const propertyName = 'value' + capitalize(optionValue.type);
 
   const data = (item.answerOption ?? []).map((a) => ({
-    value:
-      propertyName === 'valueCoding' ? a.valueCoding?.code : a[propertyName as keyof QuestionnaireItemAnswerOption],
+    value: a[propertyName as keyof QuestionnaireItemAnswerOption],
     label:
       propertyName === 'valueCoding' ? a.valueCoding?.display : a[propertyName as keyof QuestionnaireItemAnswerOption],
   }));
