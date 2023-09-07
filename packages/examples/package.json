@@ -1,6 +1,6 @@
 {
   "name": "@medplum/examples",
-  "version": "2.0.30",
+  "version": "2.0.32",
   "description": "Medplum Code Examples",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -18,10 +18,10 @@
     "build": "npm run clean && tsc"
   },
   "devDependencies": {
-    "@jest/globals": "29.6.2",
+    "@jest/globals": "29.6.3",
     "@medplum/core": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
-    "jest": "29.6.2"
+    "jest": "29.6.3"
   }
 }

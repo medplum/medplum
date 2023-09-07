@@ -137,7 +137,7 @@ export async function graphqlHandler(
  * @returns True if the query is an introspection query.
  */
 function isIntrospectionQuery(query: string): boolean {
-  return query.includes('query IntrospectionQuery') || query.includes('__schema') || query.includes('__type');
+  return query.includes('query IntrospectionQuery') || query.includes('__schema');
 }
 
 export function getRootSchema(): GraphQLSchema {

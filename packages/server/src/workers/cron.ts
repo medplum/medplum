@@ -6,8 +6,7 @@ import { MedplumRedisConfig } from '../config';
 import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
-import { AuditEventOutcome } from '../util/auditevent';
-import { createAuditEvent, findProjectMembership } from './utils';
+import { findProjectMembership } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 
@@ -202,9 +201,7 @@ export function convertTimingToCron(timing: Timing): string | undefined {
 }
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
-  const startTime = new Date().toISOString();
   const bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.data.botId });
-
   const project = bot.meta?.project as string;
   const runAs = await findProjectMembership(project, createReference(bot));
 
@@ -212,17 +209,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
     throw new Error('Could not find project membership for bot');
   }
 
-  let outcome: AuditEventOutcome;
-  let logResult: string;
-  try {
-    const result = await executeBot({ bot, runAs, input: bot, contentType: ContentType.FHIR_JSON });
-    outcome = result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure;
-    logResult = result.logResult;
-  } catch (error) {
-    outcome = AuditEventOutcome.MajorFailure;
-    logResult = (error as Error).message;
-  }
-  await createAuditEvent(bot, startTime, outcome, logResult);
+  await executeBot({ bot, runAs, input: bot, contentType: ContentType.FHIR_JSON });
 }
 
 export async function removeBullMQJobByKey(botId: string): Promise<void> {

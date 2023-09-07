@@ -1,4 +1,5 @@
 import { ACMClient, CertificateSummary, ListCertificatesCommand, RequestCertificateCommand } from '@aws-sdk/client-acm';
+import { CloudFrontClient, CreatePublicKeyCommand } from '@aws-sdk/client-cloudfront';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { MedplumInfraConfig } from '@medplum/core';
@@ -197,7 +198,8 @@ export async function initStackCommand(): Promise<void> {
 
   header('SIGNING KEY');
   print('Medplum uses AWS CloudFront Presigned URLs for binary content such as file uploads.');
-  const { privateKey, publicKey, passphrase } = generateSigningKey();
+  const { keyId, privateKey, publicKey, passphrase } = await generateSigningKey(config.stackName + 'SigningKey');
+  config.signingKeyId = keyId;
   config.storagePublicKey = publicKey;
   writeConfig(configFileName, config);
 
@@ -231,6 +233,7 @@ export async function initStackCommand(): Promise<void> {
     appBaseUrl: `https://${config.appDomainName}/`,
     storageBaseUrl: `https://${config.storageDomainName}/binary/`,
     binaryStorage: `s3:${config.storageBucketName}`,
+    signingKeyId: config.signingKeyId,
     signingKey: privateKey,
     signingKeyPassphrase: passphrase,
     supportEmail: supportEmail,
@@ -491,9 +494,15 @@ async function requestCert(region: string, domain: string): Promise<string> {
  *   3. It must be a 2048-bit key pair.
  *
  * See: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs
+ * @param keyName The key name.
  * @returns A new signing key.
  */
-function generateSigningKey(): { publicKey: string; privateKey: string; passphrase: string } {
+async function generateSigningKey(keyName: string): Promise<{
+  keyId: string;
+  publicKey: string;
+  privateKey: string;
+  passphrase: string;
+}> {
   const passphrase = randomUUID();
   const signingKey = generateKeyPairSync('rsa', {
     modulusLength: 2048,
@@ -508,7 +517,19 @@ function generateSigningKey(): { publicKey: string; privateKey: string; passphra
       passphrase,
     },
   });
+
+  const response = await new CloudFrontClient({}).send(
+    new CreatePublicKeyCommand({
+      PublicKeyConfig: {
+        Name: keyName,
+        CallerReference: randomUUID(),
+        EncodedKey: signingKey.publicKey,
+      },
+    })
+  );
+
   return {
+    keyId: response.PublicKey?.Id as string,
     publicKey: signingKey.publicKey,
     privateKey: signingKey.privateKey,
     passphrase,

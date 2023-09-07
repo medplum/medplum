@@ -2,6 +2,7 @@
 title: PractitionerRole
 sidebar_position: 108
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/practitionerrole.json';
@@ -14,11 +15,11 @@ A specific set of Roles/Locations/specialties/services that a practitioner may p
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 

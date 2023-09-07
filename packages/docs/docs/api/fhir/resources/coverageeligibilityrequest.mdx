@@ -2,6 +2,7 @@
 title: CoverageEligibilityRequest
 sidebar_position: 31
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/coverageeligibilityrequest.json';
@@ -14,11 +15,11 @@ The <a href="/docs/api/fhir/resources/coverageeligibilityrequest">CoverageEligib
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 

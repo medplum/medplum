@@ -13,6 +13,7 @@ import {
   findObservationInterval,
   findObservationReferenceRange,
   findResourceByCode,
+  getAllQuestionnaireAnswers,
   getCodeBySystem,
   getDateProperty,
   getDisplayString,
@@ -272,6 +273,60 @@ describe('Core Utils', () => {
         ],
       })
     ).toMatchObject({ q1: { valueString: 'xyz' } });
+  });
+
+  test('Get All Questionnaire answers', () => {
+    expect(
+      getAllQuestionnaireAnswers({
+        resourceType: 'QuestionnaireResponse',
+      })
+    ).toMatchObject({});
+
+    expect(
+      getAllQuestionnaireAnswers({
+        resourceType: 'QuestionnaireResponse',
+        item: [
+          { linkId: 'q1', answer: [{ valueString: 'xyz' }, { valueString: 'abc' }] },
+          { linkId: 'q2', answer: [{ valueDecimal: 2.0 }, { valueDecimal: 3.0 }] },
+          { linkId: 'q3', answer: [{ valueBoolean: true }] },
+        ],
+      })
+    ).toMatchObject({
+      q1: [{ valueString: 'xyz' }, { valueString: 'abc' }],
+      q2: [{ valueDecimal: 2.0 }, { valueDecimal: 3.0 }],
+      q3: [{ valueBoolean: true }],
+    });
+
+    expect(
+      getAllQuestionnaireAnswers({
+        resourceType: 'QuestionnaireResponse',
+        item: [
+          {
+            linkId: 'group1',
+            item: [
+              {
+                linkId: 'group2',
+                item: [
+                  {
+                    linkId: 'q1',
+                    answer: [
+                      {
+                        valueString: 'xyz',
+                      },
+                      {
+                        valueString: 'abc',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      })
+    ).toMatchObject({
+      q1: [{ valueString: 'xyz' }, { valueString: 'abc' }],
+    });
   });
 
   test('Get identifier', () => {

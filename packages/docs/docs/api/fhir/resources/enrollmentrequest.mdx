@@ -2,6 +2,7 @@
 title: EnrollmentRequest
 sidebar_position: 45
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/enrollmentrequest.json';
@@ -14,11 +15,11 @@ This resource provides the insurance enrollment details to the insurer regarding
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 

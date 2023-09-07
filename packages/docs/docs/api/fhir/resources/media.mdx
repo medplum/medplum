@@ -2,6 +2,7 @@
 title: Media
 sidebar_position: 73
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/media.json';
@@ -14,11 +15,11 @@ A photo, video, or audio recording acquired or used in healthcare. The actual co
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 

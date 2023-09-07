@@ -1,0 +1,76 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:1712ef48-41f9-46be-939f-b1509d1a9f9e",
+      "request": {
+        "method": "POST",
+        "url": "Questionnaire"
+      },
+      "resource": {
+        "resourceType": "Questionnaire",
+        "name": "Merge Duplicate Patients",
+        "status": "active",
+        "item": [
+          {
+            "id": "id-15",
+            "linkId": "g3",
+            "type": "group",
+            "text": "Disable Merge ",
+            "item": [
+              {
+                "id": "id-23",
+                "linkId": "q1",
+                "type": "display",
+                "text": "Check this box is the Patient records ARE NOT a match. This will add each Patient to the other's \"Do Not Match\" list"
+              },
+              {
+                "id": "id-16",
+                "linkId": "disableMerge",
+                "type": "boolean",
+                "text": "*Do not Merge these records*"
+              }
+            ]
+          },
+          {
+            "id": "id-17",
+            "linkId": "g5",
+            "type": "group",
+            "text": "Merging Patients",
+            "item": [
+              {
+                "id": "id-18",
+                "linkId": "appendName",
+                "type": "boolean",
+                "text": "Merge names?\nIf selected, this will add the source patient's name to the target's list of names"
+              },
+              {
+                "id": "id-19",
+                "linkId": "appendAddress",
+                "type": "boolean",
+                "text": "Merge Addresses?\nIf selected, this will add the source patient's address to the target's list of addresses"
+              }
+            ]
+          },
+          {
+            "id": "id-21",
+            "linkId": "g9",
+            "type": "group",
+            "text": "Deleting Source Patient",
+            "item": [
+              {
+                "id": "id-22",
+                "linkId": "deleteSource",
+                "type": "boolean",
+                "text": "Would you like to delete the source patient after merging?"
+              }
+            ]
+          }
+        ],
+        "subjectType": ["RiskAssessment"],
+        "title": "Merge Duplicate Patients"
+      }
+    }
+  ]
+}

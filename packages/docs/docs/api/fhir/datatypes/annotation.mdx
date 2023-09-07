@@ -2,6 +2,7 @@
 title: Annotation
 sidebar_position: 2
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/datatypeDefinitions/annotation.json';
@@ -9,22 +10,19 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Annotation
 
-Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/annotation">Annotation</a> Type: A  text note which also  contains information about who made the statement and when.
+Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/annotation">Annotation</a> Type: A text note which also contains information about who made the statement and when.
 
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 </TabItem>
   
-  
-  
-  
+
 
 </Tabs>

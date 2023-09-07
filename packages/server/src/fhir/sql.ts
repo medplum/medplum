@@ -25,7 +25,11 @@ export enum Operator {
 }
 
 export class Column {
-  constructor(readonly tableName: string | undefined, readonly columnName: string, readonly raw?: boolean) {}
+  constructor(
+    readonly tableName: string | undefined,
+    readonly columnName: string,
+    readonly raw?: boolean
+  ) {}
 }
 
 export interface Expression {
@@ -138,7 +142,10 @@ export class Condition implements Expression {
 }
 
 export abstract class Connective implements Expression {
-  constructor(readonly keyword: string, readonly expressions: Expression[]) {}
+  constructor(
+    readonly keyword: string,
+    readonly expressions: Expression[]
+  ) {}
 
   whereExpr(expression: Expression): this {
     this.expressions.push(expression);
@@ -193,7 +200,10 @@ export class GroupBy {
 }
 
 export class OrderBy {
-  constructor(readonly column: Column, readonly descending?: boolean) {}
+  constructor(
+    readonly column: Column,
+    readonly descending?: boolean
+  ) {}
 }
 
 export interface Expression {
@@ -493,6 +503,26 @@ export class SelectQuery extends BaseQuery {
       }
       first = false;
     }
+  }
+}
+
+export class ArraySubquery implements Expression {
+  private filter: Expression;
+  private columnName: string;
+
+  constructor(columnName: string, filter: Expression) {
+    this.filter = filter;
+    this.columnName = columnName;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append('EXISTS(SELECT 1 FROM unnest(');
+    sql.appendIdentifier(this.columnName);
+    sql.append(') AS ');
+    sql.appendIdentifier(this.columnName);
+    sql.append(' WHERE ');
+    this.filter.buildSql(sql);
+    sql.append(')');
   }
 }
 

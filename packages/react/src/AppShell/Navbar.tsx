@@ -109,7 +109,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
               placeholder="Resource Type"
               property={{
                 binding: {
-                  valueSet: 'http://hl7.org/fhir/ValueSet/resource-types',
+                  valueSet: 'https://medplum.com/fhir/ValueSet/resource-types',
                 },
               }}
               onChange={(newValue) => navigateResourceType(newValue)}

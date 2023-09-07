@@ -4,7 +4,7 @@
   grid-auto-columns: 1fr;
   grid-column-gap: 1px;
   grid-row-gap: 1px;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(var(--columns), 1fr);
   grid-template-rows: auto auto;
   border: 1px solid #e6e6e6;
   border-radius: 32px;

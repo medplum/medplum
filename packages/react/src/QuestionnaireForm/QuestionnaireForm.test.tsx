@@ -1,5 +1,5 @@
 import { getQuestionnaireAnswers } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Questionnaire, QuestionnaireItemEnableWhen, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { randomUUID } from 'crypto';
@@ -8,7 +8,7 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { QuestionnaireItemType } from '../utils/questionnaire';
-import { isQuestionEnabled, QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
+import { QuestionnaireForm, QuestionnaireFormProps, isQuestionEnabled } from './QuestionnaireForm';
 
 const medplum = new MockClient();
 
@@ -124,6 +124,10 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
+      fireEvent.click(screen.getByLabelText('Question 5'));
+    });
+
+    await act(async () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
@@ -144,6 +148,7 @@ describe('QuestionnaireForm', () => {
     expect(answers['question2']).toMatchObject({ valueString: 'a2' });
     expect(answers['question3']).toMatchObject({ valueString: 'a3' });
     expect(answers['question4']).toMatchObject({ valueString: 'a4' });
+    expect(answers['question5']).toMatchObject({ valueBoolean: true });
   });
 
   test('Handles submit', async () => {
@@ -519,7 +524,11 @@ describe('QuestionnaireForm', () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
-    expect(onSubmit).toBeCalledWith(expect.objectContaining(expectedResponse));
+    const submittedData = onSubmit.mock.calls[0][0];
+
+    expect(submittedData.item[0].answer).toEqual(expectedResponse?.item?.[0].answer);
+    expect(submittedData.item[0].text).toEqual(expectedResponse?.item?.[0].text);
+    expect(submittedData.item[0].linkId).toEqual(expectedResponse?.item?.[0].linkId);
   });
 
   test('Reference input', async () => {
@@ -621,6 +630,55 @@ describe('QuestionnaireForm', () => {
     expect(answers2['q1']).toMatchObject({ valueString: 'a2' });
   });
 
+  test('Reference Extensions', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.reference,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/fhir-types',
+                      display: 'Patient',
+                      code: 'Patient',
+                    },
+                  ],
+                },
+              },
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/fhir-types',
+                      display: 'Organization',
+                      code: 'Organization',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByText('Patient')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Patient'));
+    });
+  });
+
   test('Drop down choice input default value', async () => {
     const onSubmit = jest.fn();
 
@@ -672,6 +730,193 @@ describe('QuestionnaireForm', () => {
     expect(dropDown).toBeInTheDocument();
     expect(dropDown).toBeInstanceOf(HTMLSelectElement);
     expect((dropDown as HTMLSelectElement).value).toBe('a2');
+  });
+
+  test('Page Sequence', async () => {
+    const visibleQuestion = 'Visible Question';
+    const hiddenQuestion = 'Hidden Question';
+    await setup({
+      questionnaire: {
+        id: 'groups-example',
+        resourceType: 'Questionnaire',
+        title: 'Groups Example',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.group,
+            text: 'Visible Sequence',
+            item: [
+              {
+                linkId: 'question1',
+                text: visibleQuestion,
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'q2',
+            type: QuestionnaireItemType.group,
+            text: 'Hidden Sequence',
+            item: [
+              {
+                linkId: 'question2',
+                text: hiddenQuestion,
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+    // The form should render
+    expect(screen.getByText(visibleQuestion)).toBeInTheDocument();
+
+    // The hidden text should be hidden
+    expect(screen.queryByText(hiddenQuestion)).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    expect(screen.queryByText(visibleQuestion)).not.toBeInTheDocument();
+
+    // The hidden text should now be visible
+    expect(screen.getByText(hiddenQuestion)).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Back'));
+    });
+  });
+
+  test('Page Sequence with non page items in root', async () => {
+    const visibleQuestion = 'Visible Question';
+    const hiddenQuestion = 'Hidden Question';
+    await setup({
+      questionnaire: {
+        id: 'groups-example',
+        resourceType: 'Questionnaire',
+        title: 'Groups Example',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.group,
+            text: 'Visible Sequence',
+            item: [
+              {
+                linkId: 'question1',
+                text: visibleQuestion,
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'q2',
+            text: 'Question Choice',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+          },
+          {
+            linkId: 'q3',
+            type: QuestionnaireItemType.group,
+            text: 'Hidden Sequence',
+            item: [
+              {
+                linkId: 'question2',
+                text: hiddenQuestion,
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+    // The form should render
+    expect(screen.getByText(visibleQuestion)).toBeInTheDocument();
+
+    // The hidden text should be hidden
+    expect(screen.queryByText(hiddenQuestion)).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    expect(screen.queryByText(visibleQuestion)).not.toBeInTheDocument();
+
+    // The hidden text should still not be visible
+    expect(screen.queryByText(hiddenQuestion)).not.toBeInTheDocument();
+
+    expect(screen.getByText('Yes')).toBeInTheDocument();
+    expect(screen.getByText('Back')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    // The hidden text should now be visible
+    expect(screen.getByText(hiddenQuestion)).toBeInTheDocument();
+
+    expect(screen.getByText('Back')).toBeInTheDocument();
   });
 
   test('Conditional question', async () => {
@@ -734,6 +979,39 @@ describe('QuestionnaireForm', () => {
     expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
   });
 
+  test('repeatableQuestion', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'repeatable-when',
+        title: 'repeatable Questionnaire',
+        item: [
+          {
+            linkId: 'question1',
+            text: 'Question 1',
+            type: 'string',
+            repeats: true,
+          },
+          {
+            linkId: 'group1',
+            text: 'Group',
+            type: 'group',
+            repeats: true,
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 1'), { target: { value: 'answer' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add Group'));
+    });
+  });
+
   test('isQuestionEnabled', () => {
     // enableBehavior=any, match
     expect(
@@ -757,74 +1035,487 @@ describe('QuestionnaireForm', () => {
         }
       )
     ).toBe(true);
+  });
 
-    // enableBehavior=any, no match
-    expect(
-      isQuestionEnabled(
-        {
-          enableBehavior: 'any',
-          enableWhen: [
-            {
-              question: 'q1',
-              answerString: 'Yes',
-            },
-            {
-              question: 'q2',
-              answerString: 'Yes',
-            },
-          ],
-        },
-        {
-          q1: { valueString: 'No' },
-          q2: { valueString: 'No' },
-        }
-      )
-    ).toBe(false);
+  describe('isQuestionEnabled', () => {
+    test('enableBehavior=any, match', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'any',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: { valueString: 'No' },
+            q2: { valueString: 'Yes' },
+          }
+        )
+      ).toBe(true);
+    });
 
-    // enableBehavior=all, match
-    expect(
-      isQuestionEnabled(
-        {
-          enableBehavior: 'all',
-          enableWhen: [
-            {
-              question: 'q1',
-              answerString: 'Yes',
-            },
-            {
-              question: 'q2',
-              answerString: 'Yes',
-            },
-          ],
-        },
-        {
-          q1: { valueString: 'Yes' },
-          q2: { valueString: 'Yes' },
-        }
-      )
-    ).toBe(true);
+    test('enableBehavior=any, no match', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'any',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: { valueString: 'No' },
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(false);
+    });
 
-    // enableBehavior=all, no match
-    expect(
-      isQuestionEnabled(
+    test('enableBehavior=all, match', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'all',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: { valueString: 'Yes' },
+            q2: { valueString: 'Yes' },
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=all, no match', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'all',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: { valueString: 'Yes' },
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = true, answer present', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: true,
+              },
+            ],
+          },
+          {
+            q1: { valueString: 'Yes' },
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, answer present', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: false,
+              },
+            ],
+          },
+          {
+            q1: { valueString: 'Yes' },
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = true, answer missing', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: true,
+              },
+            ],
+          },
+          {
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, answer missing', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: false,
+              },
+            ],
+          },
+          {
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, answer missing', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: false,
+              },
+            ],
+          },
+          {
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, answer missing', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: false,
+              },
+            ],
+          },
+          {
+            q2: { valueString: 'No' },
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=any, enableWhen `!=` operator', () => {
+      const enableWhen = [
         {
-          enableBehavior: 'all',
-          enableWhen: [
-            {
-              question: 'q1',
-              answerString: 'Yes',
-            },
-            {
-              question: 'q2',
-              answerString: 'Yes',
-            },
-          ],
+          question: 'q1',
+          operator: '!=',
+          answerString: 'Yes',
         },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueString: 'No' },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueString: 'Yes' },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `>` operator', () => {
+      const enableWhen = [
         {
-          q1: { valueString: 'Yes' },
-          q2: { valueString: 'No' },
-        }
-      )
-    ).toBe(false);
+          question: 'q1',
+          operator: '>',
+          answerInteger: 3,
+        },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 4 },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 2 },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `>=` operator', () => {
+      const enableWhen = [
+        {
+          question: 'q1',
+          operator: '>=',
+          answerInteger: 3,
+        },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 4 },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 3 },
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=any, enableWhen `<` operator', () => {
+      const enableWhen = [
+        {
+          question: 'q1',
+          operator: '<',
+          answerInteger: 3,
+        },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 2 },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 3 },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `<=` operator', () => {
+      const enableWhen = [
+        {
+          question: 'q1',
+          operator: '<=',
+          answerInteger: 3,
+        },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 2 },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 3 },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueInteger: 4 },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `=` operator for `valueCoding`', () => {
+      const enableWhen = [
+        { question: 'q1', operator: '=', answerCoding: { code: 'MEDPLUM123' } },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'MEDPLUM123' } },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } },
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `!=` operator for `valueCoding`', () => {
+      const enableWhen = [
+        { question: 'q1', operator: '!=', answerCoding: { code: 'MEDPLUM123' } },
+      ] satisfies QuestionnaireItemEnableWhen[];
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'NOT_MEDPLUM123' } },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } },
+          }
+        )
+      ).toBe(true);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } },
+          }
+        )
+      ).toBe(false);
+
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen,
+          },
+          {
+            q1: { valueCoding: { code: 'MEDPLUM123' } },
+          }
+        )
+      ).toBe(false);
+    });
   });
 });

@@ -3,6 +3,7 @@
  * Do not edit manually.
  */
 
+import { Expression } from './Expression';
 import { Meta } from './Meta';
 import { Reference } from './Reference';
 
@@ -129,4 +130,11 @@ export interface AccessPolicyResource {
    * not writeable.
    */
   readonlyFields?: string[];
+
+  /**
+   * Invariants that must be satisfied for the resource to be written.  Can
+   * include %before and %after placeholders to refer to the resource
+   * before and after the updates are applied.
+   */
+  writeConstraint?: Expression[];
 }

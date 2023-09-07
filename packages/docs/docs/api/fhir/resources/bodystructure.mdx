@@ -2,6 +2,7 @@
 title: BodyStructure
 sidebar_position: 10
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/bodystructure.json';
@@ -9,16 +10,16 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # BodyStructure
 
-Record details about an anatomical structure.  This resource may be used when a coded concept does not provide the necessary detail needed for the use case.
+Record details about an anatomical structure. This resource may be used when a coded concept does not provide the necessary detail needed for the use case.
 
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -35,7 +36,5 @@ Record details about an anatomical structure.  This resource may be used when a 
   <TabItem value="relationships" label="Relationships">
     <div> <a name="bnr"></a>  <p> The <a href="/docs/api/fhir/resources/bodystructure">BodyStructure</a> resource is not intended to substitute for precoordination of codes.  If precoordination of codes is  supported by an implementation the codeableConcept should be used.  This resource is not intended for describing the type of anatomical location but rather a specific body site on a specific patient. </p> </div>
     </TabItem>
-  
-  
 
 </Tabs>

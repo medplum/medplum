@@ -182,6 +182,10 @@ div.theme-code-block {
   margin-top: 1rem;
 }
 
+li.theme-doc-sidebar-item-link:not(:first-child) strong {
+  margin-top: 0.75rem;
+}
+
 /* Footer styles */
 
 .medplum-soc-compliance-image {

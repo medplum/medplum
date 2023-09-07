@@ -237,6 +237,23 @@
       "inherited": false
     },
     {
+      "name": "writeConstraint",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AccessPolicy.resource.writeConstraint",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Invariants that must be satisfied for the resource to be written.  Can include %before and %after placeholders to refer to the resource before and after the updates are applied.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "ipAccessRule",
       "depth": 1,
       "types": [
@@ -289,7 +306,7 @@
       "depth": 2,
       "types": [
         {
-          "datatype": "string"
+          "datatype": "code"
         }
       ],
       "path": "AccessPolicy.ipAccessRule.action",

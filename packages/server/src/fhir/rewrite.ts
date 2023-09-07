@@ -50,7 +50,10 @@ export async function rewriteAttachments<T>(mode: RewriteMode, repo: Repository,
 class Rewriter {
   readonly cache: Record<string, string> = {};
 
-  constructor(private readonly mode: RewriteMode, private readonly repo: Repository) {}
+  constructor(
+    private readonly mode: RewriteMode,
+    private readonly repo: Repository
+  ) {}
 
   /**
    * Rewrites an object to replace any attachment references with signed URLs.

@@ -2,6 +2,7 @@
 title: Evidence
 sidebar_position: 49
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/evidence.json';
@@ -14,11 +15,11 @@ The <a href="/docs/api/fhir/resources/evidence">Evidence</a> resource describes 
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -35,7 +36,5 @@ The <a href="/docs/api/fhir/resources/evidence">Evidence</a> resource describes 
   <TabItem value="relationships" label="Relationships">
     <div>  <p>The <a href="/docs/api/fhir/resources/evidence">Evidence</a> resource references the <a href="/docs/api/fhir/resources/evidencevariable">EvidenceVariable</a> resource two or more times to clearly specify the relationship among evidence variable concepts in framing a research question, evidence assertion, or recommendation.</p> </div>
     </TabItem>
-  
-  
 
 </Tabs>

@@ -42,5 +42,5 @@ export const useStyles = createStyles(
       actions: {
         textAlign: 'right',
       },
-    } as Record<string, any>)
+    }) as Record<string, any>
 );

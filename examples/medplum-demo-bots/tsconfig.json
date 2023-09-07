@@ -24,7 +24,8 @@
     "inlineSources": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization": true,
-    "allowJs": true
+    "allowJs": true,
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]

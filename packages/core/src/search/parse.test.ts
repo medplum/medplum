@@ -457,9 +457,7 @@ describe('Search parser', () => {
         {
           code: 'value-quantity',
           operator: Operator.EQUALS,
-          value: '5.4',
-          unitSystem: 'https://unitsofmeasure.org',
-          unitCode: 'mg',
+          value: '5.4|https://unitsofmeasure.org|mg',
         },
       ],
     });

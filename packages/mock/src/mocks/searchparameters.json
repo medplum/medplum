@@ -4,9 +4,7 @@
     "id": "ActivityDefinition-name",
     "name": "name",
     "code": "name",
-    "base": [
-      "ActivityDefinition"
-    ],
+    "base": ["ActivityDefinition"],
     "type": "string",
     "expression": "ActivityDefinition.name"
   },
@@ -15,9 +13,7 @@
     "id": "Communication-encounter",
     "name": "encounter",
     "code": "encounter",
-    "base": [
-      "Communication"
-    ],
+    "base": ["Communication"],
     "type": "reference",
     "expression": "Communication.encounter"
   },
@@ -26,9 +22,7 @@
     "id": "Encounter-length",
     "name": "length",
     "code": "length",
-    "base": [
-      "Encounter"
-    ],
+    "base": ["Encounter"],
     "type": "quantity",
     "expression": "Encounter.length"
   },
@@ -37,9 +31,7 @@
     "id": "Media-encounter",
     "name": "encounter",
     "code": "encounter",
-    "base": [
-      "Media"
-    ],
+    "base": ["Media"],
     "type": "reference",
     "expression": "Media.encounter"
   },
@@ -48,9 +40,7 @@
     "id": "Observation-value-quantity",
     "name": "value-quantity",
     "code": "value-quantity",
-    "base": [
-      "Observation"
-    ],
+    "base": ["Observation"],
     "type": "quantity",
     "expression": "(Observation.value as Quantity) | (Observation.value as SampledData)"
   },
@@ -59,9 +49,7 @@
     "id": "Observation-value-string",
     "name": "value-string",
     "code": "value-string",
-    "base": [
-      "Observation"
-    ],
+    "base": ["Observation"],
     "type": "string",
     "expression": "(Observation.value as string) | (Observation.value as CodeableConcept).text"
   },
@@ -70,9 +58,7 @@
     "id": "Patient-active",
     "name": "active",
     "code": "active",
-    "base": [
-      "Patient"
-    ],
+    "base": ["Patient"],
     "type": "token",
     "expression": "Patient.active"
   },
@@ -81,12 +67,7 @@
     "id": "individual-address-city",
     "name": "address-city",
     "code": "address-city",
-    "base": [
-      "Patient",
-      "Person",
-      "Practitioner",
-      "RelatedPerson"
-    ],
+    "base": ["Patient", "Person", "Practitioner", "RelatedPerson"],
     "type": "string",
     "expression": "Patient.address.city | Person.address.city | Practitioner.address.city | RelatedPerson.address.city"
   },
@@ -95,12 +76,7 @@
     "id": "individual-address-state",
     "name": "address-state",
     "code": "address-state",
-    "base": [
-      "Patient",
-      "Person",
-      "Practitioner",
-      "RelatedPerson"
-    ],
+    "base": ["Patient", "Person", "Practitioner", "RelatedPerson"],
     "type": "string",
     "expression": "Patient.address.state | Person.address.state | Practitioner.address.state | RelatedPerson.address.state"
   },
@@ -109,13 +85,7 @@
     "id": "individual-email",
     "name": "email",
     "code": "email",
-    "base": [
-      "Patient",
-      "Person",
-      "Practitioner",
-      "PractitionerRole",
-      "RelatedPerson"
-    ],
+    "base": ["Patient", "Person", "Practitioner", "PractitionerRole", "RelatedPerson"],
     "type": "token",
     "expression": "Patient.telecom.where(system='email') | Person.telecom.where(system='email') | Practitioner.telecom.where(system='email') | PractitionerRole.telecom.where(system='email') | RelatedPerson.telecom.where(system='email')"
   },
@@ -124,9 +94,7 @@
     "id": "Patient-name",
     "name": "name",
     "code": "name",
-    "base": [
-      "Patient"
-    ],
+    "base": ["Patient"],
     "type": "string",
     "expression": "Patient.name"
   },
@@ -135,9 +103,7 @@
     "id": "Patient-organization",
     "name": "organization",
     "code": "organization",
-    "base": [
-      "Patient"
-    ],
+    "base": ["Patient"],
     "type": "reference",
     "expression": "Patient.managingOrganization"
   },
@@ -146,13 +112,7 @@
     "id": "individual-phone",
     "name": "phone",
     "code": "phone",
-    "base": [
-      "Patient",
-      "Person",
-      "Practitioner",
-      "PractitionerRole",
-      "RelatedPerson"
-    ],
+    "base": ["Patient", "Person", "Practitioner", "PractitionerRole", "RelatedPerson"],
     "type": "token",
     "expression": "Patient.telecom.where(system='phone') | Person.telecom.where(system='phone') | Practitioner.telecom.where(system='phone') | PractitionerRole.telecom.where(system='phone') | RelatedPerson.telecom.where(system='phone')"
   },
@@ -161,13 +121,7 @@
     "id": "individual-telecom",
     "name": "telecom",
     "code": "telecom",
-    "base": [
-      "Patient",
-      "Person",
-      "Practitioner",
-      "PractitionerRole",
-      "RelatedPerson"
-    ],
+    "base": ["Patient", "Person", "Practitioner", "PractitionerRole", "RelatedPerson"],
     "type": "token",
     "expression": "Patient.telecom | Person.telecom | Practitioner.telecom | PractitionerRole.telecom | RelatedPerson.telecom"
   },
@@ -176,9 +130,7 @@
     "id": "Questionnaire-name",
     "name": "name",
     "code": "name",
-    "base": [
-      "Questionnaire"
-    ],
+    "base": ["Questionnaire"],
     "type": "string",
     "expression": "Questionnaire.name"
   },
@@ -187,9 +139,7 @@
     "id": "Schedule-identifier",
     "name": "identifier",
     "code": "identifier",
-    "base": [
-      "Schedule"
-    ],
+    "base": ["Schedule"],
     "type": "token",
     "expression": "Schedule.identifier"
   },
@@ -198,9 +148,7 @@
     "id": "ServiceRequest-authored",
     "name": "authored",
     "code": "authored",
-    "base": [
-      "ServiceRequest"
-    ],
+    "base": ["ServiceRequest"],
     "type": "date",
     "expression": "ServiceRequest.authoredOn"
   },
@@ -209,9 +157,7 @@
     "id": "ServiceRequest-subject",
     "name": "subject",
     "code": "subject",
-    "base": [
-      "ServiceRequest"
-    ],
+    "base": ["ServiceRequest"],
     "type": "reference",
     "expression": "ServiceRequest.subject"
   },
@@ -220,9 +166,7 @@
     "id": "Slot-schedule",
     "name": "schedule",
     "code": "schedule",
-    "base": [
-      "Slot"
-    ],
+    "base": ["Slot"],
     "type": "reference",
     "expression": "Slot.schedule"
   },
@@ -231,9 +175,7 @@
     "id": "Slot-start",
     "name": "start",
     "code": "start",
-    "base": [
-      "Slot"
-    ],
+    "base": ["Slot"],
     "type": "date",
     "expression": "Slot.start"
   },
@@ -242,9 +184,7 @@
     "id": "Task-identifier",
     "name": "identifier",
     "code": "identifier",
-    "base": [
-      "Task"
-    ],
+    "base": ["Task"],
     "type": "token",
     "expression": "Task.identifier"
   }

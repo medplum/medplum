@@ -1,8 +1,8 @@
 import { ContentType, normalizeErrorString } from '@medplum/core';
-import { Bot, ProjectMembership } from '@medplum/fhirtypes';
+import { Agent, Bot, ProjectMembership } from '@medplum/fhirtypes';
 import bytes from 'bytes';
 import { randomUUID } from 'crypto';
-import http from 'http';
+import http, { IncomingMessage } from 'http';
 import ws from 'ws';
 import { getConfig } from './config';
 import { getRepoForLogin } from './fhir/accesspolicy';
@@ -11,7 +11,7 @@ import { logger } from './logger';
 import { getLoginForAccessToken } from './oauth/utils';
 import { getRedis } from './redis';
 
-const handlerMap = new Map<string, (socket: ws.WebSocket) => Promise<void>>();
+const handlerMap = new Map<string, (socket: ws.WebSocket, request: IncomingMessage) => Promise<void>>();
 handlerMap.set('/ws/echo', handleEchoConnection);
 handlerMap.set('/ws/agent', handleAgentConnection);
 
@@ -34,7 +34,7 @@ export function initWebSockets(server: http.Server): void {
 
     const handler = handlerMap.get(request.url as string);
     if (handler) {
-      await handler(socket);
+      await handler(socket, request);
     }
   });
 
@@ -82,8 +82,11 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
  * Handles a new WebSocket connection to the agent service.
  * The agent service executes a bot and returns the result.
  * @param socket The WebSocket connection.
+ * @param request The HTTP request.
  */
-async function handleAgentConnection(socket: ws.WebSocket): Promise<void> {
+async function handleAgentConnection(socket: ws.WebSocket, request: IncomingMessage): Promise<void> {
+  const remoteAddress = request.socket.remoteAddress;
+  let agent: Agent | undefined = undefined;
   let bot: Bot | undefined = undefined;
   let runAs: ProjectMembership | undefined = undefined;
 
@@ -111,9 +114,10 @@ async function handleAgentConnection(socket: ws.WebSocket): Promise<void> {
    * @param command The connect command.
    */
   async function handleConnect(command: any): Promise<void> {
-    const { accessToken, botId } = command;
+    const { accessToken, agentId, botId } = command;
     const { login, project, membership } = await getLoginForAccessToken(accessToken);
     const repo = await getRepoForLogin(login, membership, project.strictMode, true, project.checkReferencesOnWrite);
+    agent = await repo.readResource<Agent>('Agent', agentId);
     bot = await repo.readResource<Bot>('Bot', botId);
     runAs = membership;
     socket.send(JSON.stringify({ type: 'connected' }));
@@ -130,10 +134,13 @@ async function handleAgentConnection(socket: ws.WebSocket): Promise<void> {
       return;
     }
     const result = await executeBot({
+      agent,
       bot,
       runAs,
       contentType: ContentType.HL7_V2,
       input: command.message,
+      remoteAddress,
+      forwardedFor: command.forwardedFor,
     });
     socket.send(JSON.stringify({ type: 'transmit', message: result.returnValue }), { binary: false });
   }

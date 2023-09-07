@@ -225,7 +225,7 @@
       "depth": 1,
       "types": [
         {
-          "datatype": "string"
+          "datatype": "code"
         }
       ],
       "path": "Login.authMethod",
@@ -305,7 +305,7 @@
       "depth": 1,
       "types": [
         {
-          "datatype": "string"
+          "datatype": "code"
         }
       ],
       "path": "Login.codeChallengeMethod",
@@ -486,7 +486,7 @@
   ],
   "searchParameters": [
     {
-      "name": "code",
+      "name": "user",
       "type": "reference",
       "description": "The user of the login",
       "expression": "Login.user"

@@ -20,7 +20,7 @@ const useStyles = createStyles((theme) => ({
 }));
 
 // Properties of qualified intervals used for grouping
-const intervalFilters = ['gender', 'age', 'gestationalAge', 'context', 'appliesTo'] as const;
+const intervalFilters = ['gender', 'age', 'gestationalAge', 'context', 'appliesTo', 'category'] as const;
 
 export interface ReferenceRangeEditorProps {
   definition: ObservationDefinition;
@@ -342,6 +342,24 @@ function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX
           }
         }}
       />
+      <NativeSelect
+        data={['', 'reference', 'critical', 'absolute']}
+        label="Category: "
+        defaultValue={intervalGroup.filters.category}
+        onChange={(e) => {
+          for (const interval of intervalGroup.intervals) {
+            const newCategory: string | undefined = e.currentTarget.value;
+            if (newCategory === '') {
+              onChange(intervalGroup.id, { ...interval, category: undefined });
+            } else {
+              onChange(intervalGroup.id, {
+                ...interval,
+                category: newCategory as 'reference' | 'critical' | 'absolute',
+              });
+            }
+          }
+        }}
+      />
     </Stack>
   );
 }
@@ -422,6 +440,7 @@ function generateGroupKey(interval: ObservationDefinitionQualifiedInterval): str
     `gestationalAge=${formatRange(interval.gestationalAge)}`,
     `context=${interval.context?.text}`,
     `appliesTo=${interval.appliesTo?.map((c) => c.text).join('+')}`,
+    `category=${interval.category}`,
   ];
 
   return results.join(':');

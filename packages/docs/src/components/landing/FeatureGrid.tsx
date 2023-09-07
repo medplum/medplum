@@ -2,11 +2,16 @@ import React from 'react';
 import styles from './FeatureGrid.module.css';
 
 export interface FeatureGridProps {
+  columns: number;
   children?: React.ReactNode;
 }
 
 export function FeatureGrid(props: FeatureGridProps): JSX.Element {
-  return <div className={styles.featureGrid}>{props.children}</div>;
+  return (
+    <div className={styles.featureGrid} style={{ '--columns': props.columns } as React.CSSProperties}>
+      {props.children}
+    </div>
+  );
 }
 
 export interface FeatureProps {

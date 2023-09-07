@@ -7,6 +7,7 @@ sidebar_position: 50
 Medplum strongly believes in the importance of testing.
 
 We use the following tools for testing:
+
 - [Jest](https://jestjs.io/) as the primary test runner
 - [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) for React testing
   - [@testing-library/dom](https://www.npmjs.com/package/@testing-library/dom) - DOM testing utilities
@@ -42,7 +43,7 @@ To run a single test in a single file, pass the file name and the test name:
 npm t -- src/App.test.tsx -t 'Click logo'
 ```
 
-Any time you run `npm t`, you can optionally pass in `--coverage` to collect code coverage stats.  They will be printed in the terminal:
+Any time you run `npm t`, you can optionally pass in `--coverage` to collect code coverage stats. They will be printed in the terminal:
 
 ```bash
 npm t -- --coverage

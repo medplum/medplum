@@ -138,9 +138,10 @@ describe('GraphQL', () => {
         params: {},
         body: {
           query: `{
-            __type(name: "Patient") {
-              name
-              kind
+            __schema {
+              types {
+                name
+              }
             }
           }`,
         },
@@ -160,11 +161,12 @@ describe('GraphQL', () => {
       params: {},
       body: {
         query: `{
-            __type(name: "Patient") {
+          __schema {
+            types {
               name
-              kind
             }
-          }`,
+          }
+        }`,
       },
     };
     const fhirRouter = new FhirRouter({ introspectionEnabled: true });

@@ -6,10 +6,11 @@ import {
   FhirFilterConnective,
   FhirFilterExpression,
   FhirFilterNegation,
-  Operator as FhirOperator,
+  Operator,
   Filter,
   forbidden,
   formatSearchQuery,
+  getDataType,
   getReferenceString,
   getSearchParameterDetails,
   IncludeTarget,
@@ -21,10 +22,9 @@ import {
   SearchParameterType,
   SearchRequest,
   SortRule,
+  subsetResource,
   toTypedValue,
   validateResourceType,
-  subsetResource,
-  getDataType,
 } from '@medplum/core';
 import {
   Bundle,
@@ -35,13 +35,23 @@ import {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
-import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { getLookupTable, Repository } from './repo';
-import { Column, Condition, Conjunction, Disjunction, Expression, Negation, Operator, SelectQuery } from './sql';
+import {
+  ArraySubquery,
+  Column,
+  Condition,
+  Conjunction,
+  Disjunction,
+  Expression,
+  Negation,
+  Operator as SQL,
+  SelectQuery,
+} from './sql';
 import { getSearchParameter } from './structure';
+import validator from 'validator';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
@@ -127,7 +137,7 @@ async function getSearchEntries<T extends Resource>(
       ({
         fullUrl: getFullUrl(resourceType, resource.id as string),
         resource,
-      } as BundleEntry)
+      }) as BundleEntry
   );
 
   if (searchRequest.include || searchRequest.revInclude) {
@@ -199,12 +209,12 @@ async function getExtraEntries<T extends Resource>(
 
     const includes =
       searchRequest.include
-        ?.filter((param) => !iterateOnly || param.modifier === FhirOperator.ITERATE)
+        ?.filter((param) => !iterateOnly || param.modifier === Operator.ITERATE)
         ?.map((param) => getSearchIncludeEntries(repo, param, base)) || [];
 
     const revincludes =
       searchRequest.revInclude
-        ?.filter((param) => !iterateOnly || param.modifier === FhirOperator.ITERATE)
+        ?.filter((param) => !iterateOnly || param.modifier === Operator.ITERATE)
         ?.map((param) => getSearchRevIncludeEntries(repo, param, base)) || [];
 
     const includedResources = (await Promise.all([...includes, ...revincludes])).flat();
@@ -260,7 +270,7 @@ async function getSearchIncludeEntries(
         filters: [
           {
             code: 'url',
-            operator: FhirOperator.EQUALS,
+            operator: Operator.EQUALS,
             value: canonicalReferences.join(','),
           },
         ],
@@ -315,7 +325,7 @@ async function getSearchRevIncludeEntries(
       filters: [
         {
           code: revInclude.searchParam,
-          operator: FhirOperator.EQUALS,
+          operator: Operator.EQUALS,
           value: value,
         },
       ],
@@ -459,7 +469,7 @@ export function buildSearchExpression(selectQuery: SelectQuery, searchRequest: S
   const expressions: Expression[] = [];
   if (searchRequest.filters) {
     for (const filter of searchRequest.filters) {
-      const expr = buildSearchFilterExpression(selectQuery, searchRequest, filter);
+      const expr = buildSearchFilterExpression(selectQuery, searchRequest.resourceType, filter);
       if (expr) {
         expressions.push(expr);
       }
@@ -477,36 +487,35 @@ export function buildSearchExpression(selectQuery: SelectQuery, searchRequest: S
 /**
  * Builds a single search filter as "WHERE" clause to the query builder.
  * @param selectQuery The select query builder.
- * @param searchRequest The search request.
+ * @param resourceType The type of resources requested.
  * @param filter The search filter.
  * @returns The search query where expression
  */
 function buildSearchFilterExpression(
   selectQuery: SelectQuery,
-  searchRequest: SearchRequest,
+  resourceType: ResourceType,
   filter: Filter
 ): Expression | undefined {
   if (typeof filter.value !== 'string') {
     throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
   }
 
-  const specialParamExpression = trySpecialSearchParameter(selectQuery, searchRequest, filter);
+  const specialParamExpression = trySpecialSearchParameter(selectQuery, resourceType, filter);
   if (specialParamExpression) {
     return specialParamExpression;
   }
 
-  const resourceType = searchRequest.resourceType;
   let param = getSearchParameter(resourceType, filter.code);
   if (!param?.code) {
     throw new OperationOutcomeError(badRequest(`Unknown search parameter: ${filter.code}`));
   }
 
-  if (filter.operator === FhirOperator.IDENTIFIER) {
+  if (filter.operator === Operator.IDENTIFIER) {
     param = deriveIdentifierSearchParameter(param);
     filter = {
       ...filter,
       code: param.code as string,
-      operator: FhirOperator.EQUALS,
+      operator: Operator.EQUALS,
     };
   }
 
@@ -530,18 +539,18 @@ function buildSearchFilterExpression(
  */
 function buildNormalSearchFilterExpression(resourceType: string, param: SearchParameter, filter: Filter): Expression {
   const details = getSearchParameterDetails(resourceType, param);
-  if (filter.operator === FhirOperator.MISSING) {
-    return new Condition(details.columnName, filter.value === 'true' ? Operator.EQUALS : Operator.NOT_EQUALS, null);
+  if (filter.operator === Operator.MISSING) {
+    return new Condition(details.columnName, filter.value === 'true' ? SQL.EQUALS : SQL.NOT_EQUALS, null);
   } else if (param.type === 'string') {
-    return buildStringSearchFilter(details, filter);
+    return buildStringSearchFilter(details, filter.operator, filter.value.split(','));
   } else if (param.type === 'token' || param.type === 'uri') {
-    return buildTokenSearchFilter(resourceType, details, filter);
+    return buildTokenSearchFilter(resourceType, details, filter.operator, filter.value.split(','));
   } else if (param.type === 'reference') {
-    return buildReferenceSearchFilter(details, filter);
+    return buildReferenceSearchFilter(details, filter.value.split(','));
   } else if (param.type === 'date') {
     return buildDateSearchFilter(details, filter);
   } else if (param.type === 'quantity') {
-    return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), parseFloat(filter.value));
+    return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
   } else {
     return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
   }
@@ -552,85 +561,76 @@ function buildNormalSearchFilterExpression(resourceType: string, param: SearchPa
  *
  * See: https://www.hl7.org/fhir/search.html#all
  * @param selectQuery The select query builder.
- * @param searchRequest The overall search request.
+ * @param resourceType The type of resources requested.
  * @param filter The search filter.
  * @returns True if the search parameter is a special code.
  */
 function trySpecialSearchParameter(
   selectQuery: SelectQuery,
-  searchRequest: SearchRequest,
+  resourceType: ResourceType,
   filter: Filter
 ): Expression | undefined {
-  const resourceType = searchRequest.resourceType;
-  const code = filter.code;
-
-  if (code === '_id') {
-    return buildIdSearchFilter(resourceType, { columnName: 'id', type: SearchParameterType.UUID }, filter);
+  switch (filter.code) {
+    case '_id':
+      return buildIdSearchFilter(
+        resourceType,
+        { columnName: 'id', type: SearchParameterType.UUID },
+        filter.operator,
+        filter.value.split(',')
+      );
+    case '_lastUpdated':
+      return buildDateSearchFilter({ type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
+    case '_compartment':
+    case '_project':
+      return buildIdSearchFilter(
+        resourceType,
+        { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
+        filter.operator,
+        filter.value.split(',')
+      );
+    case '_filter':
+      return buildFilterParameterExpression(selectQuery, resourceType, parseFilterParameter(filter.value));
+    default:
+      return undefined;
   }
-
-  if (code === '_lastUpdated') {
-    return buildDateSearchFilter({ type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
-  }
-
-  if (code === '_compartment' || code === '_project') {
-    return buildIdSearchFilter(
-      resourceType,
-      { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
-      filter
-    );
-  }
-
-  if (code === '_filter') {
-    return buildFilterParameterExpression(selectQuery, searchRequest, parseFilterParameter(filter.value));
-  }
-
-  return undefined;
 }
 
 function buildFilterParameterExpression(
   selectQuery: SelectQuery,
-  searchRequest: SearchRequest,
+  resourceType: ResourceType,
   filterExpression: FhirFilterExpression
 ): Expression {
   if (filterExpression instanceof FhirFilterNegation) {
-    return buildFilterParameterNegation(selectQuery, searchRequest, filterExpression);
+    return new Negation(buildFilterParameterExpression(selectQuery, resourceType, filterExpression.child));
   } else if (filterExpression instanceof FhirFilterConnective) {
-    return buildFilterParameterConnective(selectQuery, searchRequest, filterExpression);
+    return buildFilterParameterConnective(selectQuery, resourceType, filterExpression);
   } else if (filterExpression instanceof FhirFilterComparison) {
-    return buildFilterParameterComparison(selectQuery, searchRequest, filterExpression);
+    return buildFilterParameterComparison(selectQuery, resourceType, filterExpression);
   } else {
     throw new OperationOutcomeError(badRequest('Unknown filter expression type'));
   }
 }
 
-function buildFilterParameterNegation(
-  selectQuery: SelectQuery,
-  searchRequest: SearchRequest,
-  filterNegation: FhirFilterNegation
-): Expression {
-  return new Negation(buildFilterParameterExpression(selectQuery, searchRequest, filterNegation.child));
-}
-
 function buildFilterParameterConnective(
   selectQuery: SelectQuery,
-  searchRequest: SearchRequest,
+  resourceType: ResourceType,
   filterConnective: FhirFilterConnective
 ): Expression {
   const expressions = [
-    buildFilterParameterExpression(selectQuery, searchRequest, filterConnective.left),
-    buildFilterParameterExpression(selectQuery, searchRequest, filterConnective.right),
+    buildFilterParameterExpression(selectQuery, resourceType, filterConnective.left),
+    buildFilterParameterExpression(selectQuery, resourceType, filterConnective.right),
   ];
   return filterConnective.keyword === 'and' ? new Conjunction(expressions) : new Disjunction(expressions);
 }
 
 function buildFilterParameterComparison(
   selectQuery: SelectQuery,
-  searchRequest: SearchRequest,
+  resourceType: ResourceType,
   filterComparison: FhirFilterComparison
 ): Expression {
-  return buildSearchFilterExpression(selectQuery, searchRequest, {
+  return buildSearchFilterExpression(selectQuery, resourceType, {
     code: filterComparison.path,
-    operator: filterComparison.operator as FhirOperator,
+    operator: filterComparison.operator as Operator,
     value: filterComparison.value,
   }) as Expression;
 }
@@ -638,104 +638,89 @@ function buildFilterParameterComparison(
 /**
  * Adds a string search filter as "WHERE" clause to the query builder.
  * @param details The search parameter details.
- * @param filter The search filter.
+ * @param operator The search operator.
+ * @param values The string values to search against.
  * @returns The select query condition.
  */
-function buildStringSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
+function buildStringSearchFilter(details: SearchParameterDetails, operator: Operator, values: string[]): Expression {
+  const conditions = values.map((v) => {
+    if (operator === Operator.EXACT) {
+      return new Condition(details.columnName, SQL.EQUALS, v);
+    } else if (operator === Operator.CONTAINS) {
+      return new Condition(details.columnName, SQL.LIKE, `%${v}%`);
+    } else {
+      return new Condition(details.columnName, SQL.LIKE, `${v}%`);
+    }
+  });
+
+  const expression = new Disjunction(conditions);
   if (details.array) {
-    return new Condition(details.columnName, Operator.ARRAY_CONTAINS, filter.value, details.type + '[]');
+    return new ArraySubquery(details.columnName, expression);
   }
-  if (filter.operator === FhirOperator.EXACT) {
-    return new Condition(details.columnName, Operator.EQUALS, filter.value);
-  }
-  return new Condition(details.columnName, Operator.LIKE, '%' + filter.value + '%');
+  return expression;
 }
 
 /**
  * Adds an ID search filter as "WHERE" clause to the query builder.
  * @param resourceType The resource type.
  * @param details The search parameter details.
- * @param filter The search filter.
+ * @param operator The search operator.
+ * @param values The string values to search against.
  * @returns The select query condition.
  */
-function buildIdSearchFilter(resourceType: string, details: SearchParameterDetails, filter: Filter): Expression {
+function buildIdSearchFilter(
+  resourceType: string,
+  details: SearchParameterDetails,
+  operator: Operator,
+  values: string[]
+): Expression {
   const column = new Column(resourceType, details.columnName);
-  const expressions = [];
-  for (const valueStr of filter.value.split(',')) {
-    let value: string | boolean = valueStr;
-    if (valueStr.includes('/')) {
-      value = valueStr.split('/').pop() as string;
-    }
-    if (!validator.isUUID(value)) {
-      value = '00000000-0000-0000-0000-000000000000';
-    }
-    if (details.array) {
-      expressions.push(new Condition(column, Operator.ARRAY_CONTAINS, value, details.type + '[]'));
-    } else {
-      expressions.push(new Condition(column, Operator.EQUALS, value));
-    }
+  values = values.map((v) => (v.includes('/') ? (v.split('/').pop() as string) : v)).filter((v) => validator.isUUID(v));
+  const condition = buildEqualityCondition(details, values, column);
+  if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
+    return new Negation(condition);
   }
-  const disjunction = new Disjunction(expressions);
-  if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
-    return new Negation(disjunction);
-  }
-  return disjunction;
+  return condition;
 }
 
 /**
  * Adds a token search filter as "WHERE" clause to the query builder.
  * @param resourceType The resource type.
  * @param details The search parameter details.
- * @param filter The search filter.
+ * @param operator The search operator.
+ * @param values The string values to search against.
  * @returns The select query condition.
  */
-function buildTokenSearchFilter(resourceType: string, details: SearchParameterDetails, filter: Filter): Expression {
+function buildTokenSearchFilter(
+  resourceType: string,
+  details: SearchParameterDetails,
+  operator: Operator,
+  values: string[]
+): Expression {
   const column = new Column(resourceType, details.columnName);
-  const expressions = [];
-  for (const valueStr of filter.value.split(',')) {
-    let value: string | boolean = valueStr;
-    if (details.type === SearchParameterType.BOOLEAN) {
-      value = valueStr === 'true';
-    } else if (valueStr.includes('|')) {
-      value = valueStr.split('|').pop() as string;
-    }
-    if (details.array) {
-      expressions.push(new Condition(column, Operator.ARRAY_CONTAINS, value, details.type + '[]'));
-    } else if (filter.operator === FhirOperator.CONTAINS) {
-      expressions.push(new Condition(column, Operator.LIKE, '%' + value + '%'));
-    } else {
-      expressions.push(new Condition(column, Operator.EQUALS, value));
-    }
+  const condition = buildEqualityCondition(details, values, column);
+  if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
+    return new Negation(condition);
   }
-  const disjunction = new Disjunction(expressions);
-  if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
-    return new Negation(disjunction);
-  }
-  return disjunction;
+  return condition;
 }
 
 /**
  * Adds a reference search filter as "WHERE" clause to the query builder.
  * @param details The search parameter details.
- * @param filter The search filter.
+ * @param values The string values to search against.
  * @returns The select query condition.
  */
-function buildReferenceSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
-  const values = [];
-  for (const value of filter.value.split(',')) {
-    if (!value.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient')) {
-      values.push('Patient/' + value);
-    } else {
-      values.push(value);
-    }
-  }
+function buildReferenceSearchFilter(details: SearchParameterDetails, values: string[]): Expression {
+  values = values.map((v) =>
+    !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
+  );
   if (details.array) {
-    return new Condition(details.columnName, Operator.ARRAY_CONTAINS, values);
+    return new Condition(details.columnName, SQL.ARRAY_CONTAINS, values);
+  } else if (values.length === 1) {
+    return new Condition(details.columnName, SQL.EQUALS, values[0]);
   }
-  if (values.length === 1) {
-    return new Condition(details.columnName, Operator.EQUALS, values[0]);
-  }
-  return new Condition(details.columnName, Operator.IN, values);
+  return new Condition(details.columnName, SQL.IN, values);
 }
 
 /**
@@ -801,24 +786,39 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
  * @param fhirOperator The FHIR operator.
  * @returns The equivalent SQL operator.
  */
-function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
+function fhirOperatorToSqlOperator(fhirOperator: Operator): SQL {
   switch (fhirOperator) {
-    case FhirOperator.EQUALS:
-      return Operator.EQUALS;
-    case FhirOperator.NOT:
-    case FhirOperator.NOT_EQUALS:
-      return Operator.NOT_EQUALS;
-    case FhirOperator.GREATER_THAN:
-    case FhirOperator.STARTS_AFTER:
-      return Operator.GREATER_THAN;
-    case FhirOperator.GREATER_THAN_OR_EQUALS:
-      return Operator.GREATER_THAN_OR_EQUALS;
-    case FhirOperator.LESS_THAN:
-    case FhirOperator.ENDS_BEFORE:
-      return Operator.LESS_THAN;
-    case FhirOperator.LESS_THAN_OR_EQUALS:
-      return Operator.LESS_THAN_OR_EQUALS;
+    case Operator.EQUALS:
+      return SQL.EQUALS;
+    case Operator.NOT:
+    case Operator.NOT_EQUALS:
+      return SQL.NOT_EQUALS;
+    case Operator.GREATER_THAN:
+    case Operator.STARTS_AFTER:
+      return SQL.GREATER_THAN;
+    case Operator.GREATER_THAN_OR_EQUALS:
+      return SQL.GREATER_THAN_OR_EQUALS;
+    case Operator.LESS_THAN:
+    case Operator.ENDS_BEFORE:
+      return SQL.LESS_THAN;
+    case Operator.LESS_THAN_OR_EQUALS:
+      return SQL.LESS_THAN_OR_EQUALS;
     default:
       throw new Error(`Unknown FHIR operator: ${fhirOperator}`);
+  }
+}
+
+function buildEqualityCondition(
+  details: SearchParameterDetails,
+  values: string[],
+  column?: Column | string
+): Condition {
+  column = column ?? details.columnName;
+  if (details.array) {
+    return new Condition(column, SQL.ARRAY_CONTAINS, values, details.type + '[]');
+  } else if (values.length > 1) {
+    return new Condition(column, SQL.IN, values, details.type);
+  } else {
+    return new Condition(column, SQL.EQUALS, values[0], details.type);
   }
 }

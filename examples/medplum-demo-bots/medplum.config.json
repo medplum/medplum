@@ -47,6 +47,30 @@
       "id": "",
       "source": "src/stripe-bots/stripe-create-invoice.ts",
       "dist": "dist/stripe-bots/stripe-create-invoice.js"
+    },
+    {
+      "name": "merge-bot",
+      "id": "",
+      "source": "src/deduplication/merge-bot.ts",
+      "dist": "dist/deduplication/merge-bot.js"
+    },
+    {
+      "name": "patient-deduplication",
+      "id": "",
+      "source": "src/deduplication/patient-deduplication.ts",
+      "dist": "dist/deduplication/patient-deduplication.js"
+    },
+    {
+      "name": "find-matching-patients",
+      "id": "",
+      "source": "src/deduplication/find-matching-patients.ts",
+      "dist": "dist/deduplication/find-matching-patients.js"
+    },
+    {
+      "name": "merge-matching-patients",
+      "id": "",
+      "source": "src/deduplication/merge-matching-patients.ts",
+      "dist": "dist/deduplication/merge-matching-patients.js"
     }
   ]
 }

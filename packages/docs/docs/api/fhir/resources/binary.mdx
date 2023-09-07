@@ -2,6 +2,7 @@
 title: Binary
 sidebar_position: 8
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/binary.json';
@@ -9,16 +10,16 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Binary
 
-A resource that represents the data of a single raw artifact as digital content accessible in its native format.  A <a href="/docs/api/fhir/resources/binary">Binary</a> resource can contain any content, whether text, image, pdf, zip archive, etc.
+A resource that represents the data of a single raw artifact as digital content accessible in its native format. A <a href="/docs/api/fhir/resources/binary">Binary</a> resource can contain any content, whether text, image, pdf, zip archive, etc.
 
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 

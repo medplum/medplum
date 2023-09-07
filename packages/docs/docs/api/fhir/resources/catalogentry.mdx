@@ -2,6 +2,7 @@
 title: CatalogEntry
 sidebar_position: 15
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/catalogentry.json';
@@ -14,11 +15,11 @@ Catalog entries are wrappers that contextualize items included in a catalog.
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -35,7 +36,5 @@ Catalog entries are wrappers that contextualize items included in a catalog.
   <TabItem value="relationships" label="Relationships">
     <div> <a name="bnr"></a>     This <a href="/docs/api/fhir/resources/catalogentry">CatalogEntry</a> resource wraps and contextualizes definitional items that make up a catalog such as the following resources: <ul> <li><a href="/docs/api/fhir/resources/medication">Medication</a></li> <li><a href="/docs/api/fhir/resources/device">Device</a></li> <li><a href="/docs/api/fhir/resources/activitydefinition">Activity Definition (including laboratory service definitions)</a></li> <li><a href="/docs/api/fhir/resources/specimendefinition">Specimen Definition</a></li> <li>...</li> </ul>  <p> It is important to note that <a href="/docs/api/fhir/resources/catalogentry">CatalogEntry</a> shall not specify attributes that are pertinent to the item that it wraps if those attributes hold true regardless of the catalog context. For instance, a catalog entry should generally not provide attributes to describe the hierarchical relationship of an item to other items (e.g., drug class or other such ontological relationships) since that information holds outside of the context of a catalog and thus should reside in the referenced item itself. A catalog entry may, however, specify a status of a given item <b><i>in the context of the catalog</i></b> such as whether that item is orderable a given institution or context.  Catalog entries can also be related to one another. Here again, it is important to note that only relationships that hold within the context of a catalog and not generally for the item referenced by the catalog entry should be considered. For instance, in the context of a given laboratory service compendium, a laboratory order may be preferred over other laboratory orders. The other laboratory orders in this use case may thus be related to the preferred test using an 'is-replaced-by' relationship and assigned a new status of 'retired'. Other definitional relationships such as the specimen or expected input and output observation definitions associated with a particular laboratory test, relationships that generally hold outside of a laboratory catalog context, should reside at the level of the definitional resource itself. That is, laboratory tests often state the required input observation specifications, the format of the expected observation output, and the attributes of the required specimen and such relationships are probably best described outside of the <a href="/docs/api/fhir/resources/catalogentry">CatalogEntry</a> within the referenced item. </p>  </div>
     </TabItem>
-  
-  
 
 </Tabs>

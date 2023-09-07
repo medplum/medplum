@@ -7,8 +7,5 @@
   "testMatch": ["**/src/**/*.test.ts"],
   "coverageDirectory": "coverage",
   "coverageReporters": ["json", "text"],
-  "collectCoverageFrom": [
-    "**/src/**/*",
-    "!**/src/__mocks__/**/*.ts"
-  ]
+  "collectCoverageFrom": ["**/src/**/*", "!**/src/__mocks__/**/*.ts"]
 }

@@ -15,9 +15,13 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: 'medplum'
+      TURBO_REMOTE_ONLY: true
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [18.x, 20.5.1]
     services:
       postgres:
         image: postgres

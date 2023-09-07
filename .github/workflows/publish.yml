@@ -16,6 +16,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Install NSIS
+        run: sudo apt-get install -y nsis
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -46,7 +49,7 @@ jobs:
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
-      - name: Publish
+      - name: Publish to NPM
         run: ./scripts/publish.sh
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -70,3 +73,28 @@ jobs:
 
       - name: Deploy bot layer
         run: ./scripts/deploy-bot-layer.sh
+
+      - name: Build Agent installer
+        working-directory: ./packages/agent
+        run: |
+          npm run package
+          npm run installer
+
+      - name: Upload Agent installer
+        uses: actions/github-script@v4
+        with:
+          script: |
+            const fs = require('fs');
+            const tag = context.ref.replace("refs/tags/", "");
+            const release = await github.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag
+            });
+            await github.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-win-x64.exe",
+              data: await fs.readFileSync("packages/agent/medplum-agent-installer.exe")
+            });

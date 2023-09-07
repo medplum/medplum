@@ -602,6 +602,7 @@ export class MedplumClient extends EventTarget {
     this.baseUrl = ensureTrailingSlash(options?.baseUrl) ?? DEFAULT_BASE_URL;
     this.fhirBaseUrl = this.baseUrl + (ensureTrailingSlash(options?.fhirUrlPath) ?? 'fhir/R4/');
     this.clientId = options?.clientId ?? '';
+    this.clientSecret = options?.clientSecret ?? '';
     this.authorizeUrl = options?.authorizeUrl ?? this.baseUrl + 'oauth2/authorize';
     this.tokenUrl = options?.tokenUrl ?? this.baseUrl + 'oauth2/token';
     this.logoutUrl = options?.logoutUrl ?? this.baseUrl + 'oauth2/logout';
@@ -2602,7 +2603,7 @@ export class MedplumClient extends EventTarget {
               url: e.url,
             },
             resource: e.options.body ? (JSON.parse(e.options.body as string) as Resource) : undefined,
-          } as BundleEntry)
+          }) as BundleEntry
       ),
     };
 

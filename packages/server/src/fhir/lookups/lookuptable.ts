@@ -69,6 +69,8 @@ export abstract class LookupTable<T> {
     for (const option of filter.value.split(',')) {
       if (filter.operator === FhirOperator.EXACT) {
         disjunction.expressions.push(new Condition(new Column(joinName, columnName), Operator.EQUALS, option.trim()));
+      } else if (filter.operator === FhirOperator.CONTAINS) {
+        disjunction.expressions.push(new Condition(new Column(joinName, columnName), Operator.LIKE, `%${option}%`));
       } else {
         disjunction.expressions.push(
           new Condition(

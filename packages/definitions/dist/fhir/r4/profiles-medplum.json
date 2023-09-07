@@ -2643,6 +2643,29 @@
             }
           },
           {
+            "id" : "AccessPolicy.resource.writeConstraint",
+            "path" : "AccessPolicy.resource.writeConstraint",
+            "definition" : "Invariants that must be satisfied for the resource to be written.  Can include %before and %after placeholders to refer to the resource before and after the updates are applied.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Expression"
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource.writeConstraint",
+              "min" : 0,
+              "max" : "*"
+            },
+            "constraint": [
+              {
+                "key": "axp-1",
+                "severity": "error",
+                "human": "Write constraint expressions must be literal text/fhirpath strings",
+                "expression": "expression.exists() and language = 'text/fhirpath'"
+              }
+            ]
+          },
+          {
             "id" : "AccessPolicy.ipAccessRule",
             "path" : "AccessPolicy.ipAccessRule",
             "definition" : "Use IP Access Rules to allowlist, block, and challenge traffic based on the visitor IP address.",
@@ -3862,14 +3885,14 @@
       "abstract" : false,
       "type" : "Agent",
       "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
-      "description" : "Contains details of long running asynchronous/background jobs.",
+      "description" : "Configuration details for an instance of the Medplum agent application.",
       "snapshot" : {
         "element" : [
           {
             "id" : "Agent",
             "path" : "Agent",
-            "short" : "Contains details of long running asynchronous/background jobs.",
-            "definition" : "Contains details of long running asynchronous/background jobs.",
+            "short" : "Configuration details for an instance of the Medplum agent application.",
+            "definition" : "Configuration details for an instance of the Medplum agent application.",
             "min" : 0,
             "max" : "*",
             "base": {

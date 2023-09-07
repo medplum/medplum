@@ -1,6 +1,13 @@
 import { Anchor, Button, createStyles, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
 import { globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
-import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Reference } from '@medplum/fhirtypes';
+import {
+  Coding,
+  Extension,
+  Questionnaire,
+  QuestionnaireItem,
+  QuestionnaireItemAnswerOption,
+  Reference,
+} from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
@@ -128,6 +135,7 @@ interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
   setHoverKey: (key: string | undefined) => void;
   onChange: (item: T) => void;
   onRemove?: () => void;
+  onRepeatable?: (item: QuestionnaireItem) => void;
 }
 
 function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBuilderProps<T>): JSX.Element {
@@ -182,6 +190,13 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     } as T);
   }
 
+  function toggleRepeatable(item: QuestionnaireItem): void {
+    props.onChange({
+      ...props.item,
+      item: props.item.item?.map((i) => (i === item ? { ...i, repeats: !i.repeats } : i)),
+    });
+  }
+
   const className = cx(classes.section, {
     [classes.editing]: editing,
     [classes.hovering]: hovering && !editing,
@@ -207,6 +222,9 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                 onChange={(e) => changeProperty('text', e.currentTarget.value)}
               />
             )}
+            {item.type === 'reference' && (
+              <ReferenceProfiles item={item} onChange={(newOptions) => changeProperty('extension', newOptions)} />
+            )}
             {isChoiceQuestion(item) && (
               <AnswerBuilder
                 options={item.answerOption}
@@ -218,7 +236,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           <>
             {resource.title && <Title>{resource.title}</Title>}
             {item.text && <div>{item.text}</div>}
-            {!isContainer && <QuestionnaireFormItem item={item} answers={{}} onChange={() => undefined} />}
+            {!isContainer && <QuestionnaireFormItem item={item} index={0} answers={{}} onChange={() => undefined} />}
           </>
         )}
       </div>
@@ -232,6 +250,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             setHoverKey={props.setHoverKey}
             onChange={changeItem}
             onRemove={() => removeItem(i)}
+            onRepeatable={toggleRepeatable}
           />
         </div>
       ))}
@@ -309,18 +328,42 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             </Anchor>
           </>
         )}
-        {editing && !isResource && (
+        {isResource && (
           <Anchor
             href="#"
             onClick={(e: React.MouseEvent) => {
               e.preventDefault();
-              if (props.onRemove) {
-                props.onRemove();
-              }
+              addItem(createPage());
             }}
           >
-            Remove
+            Add Page
           </Anchor>
+        )}
+        {editing && !isResource && (
+          <>
+            <Anchor
+              href="#"
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                if (props.onRepeatable) {
+                  props.onRepeatable(item);
+                }
+              }}
+            >
+              {item.repeats ? 'Remove Repeatable' : 'Make Repeatable'}
+            </Anchor>
+            <Anchor
+              href="#"
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                if (props.onRemove) {
+                  props.onRemove();
+                }
+              }}
+            >
+              Remove
+            </Anchor>
+          </>
         )}
       </div>
     </div>
@@ -400,6 +443,89 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
   );
 }
 
+interface ReferenceTypeProps {
+  item: QuestionnaireItem;
+  onChange: (newOptions: QuestionnaireItemAnswerOption[]) => void;
+}
+
+function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
+  const references = props.item.extension ?? [];
+  const referenceProfiles =
+    references.filter((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource') ?? [];
+  return (
+    <>
+      {referenceProfiles.map((reference: Extension) => {
+        return (
+          <div key={reference.id}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                width: '80%',
+              }}
+            >
+              <div>
+                <TextInput
+                  key={reference.id}
+                  name="value[x]"
+                  value={reference.valueCodeableConcept?.coding?.[0].code ?? ''}
+                  onChange={(e: any) => {
+                    e.preventDefault();
+                    const newReferences = [...references];
+                    const index = newReferences.findIndex((o) => o.id === reference.id);
+                    const coding = newReferences[index].valueCodeableConcept?.coding?.[0] ?? ([] as Coding);
+                    coding.display = e.target.value;
+                    coding.code = e.target.value;
+
+                    props.onChange(newReferences);
+                  }}
+                />
+              </div>
+            </div>
+            <div>
+              <Anchor
+                href="#"
+                onClick={(e: React.SyntheticEvent) => {
+                  killEvent(e);
+                  props.onChange(references.filter((r) => r.id !== reference.id));
+                }}
+              >
+                Remove
+              </Anchor>
+            </div>
+          </div>
+        );
+      })}
+      <Anchor
+        href="#"
+        onClick={(e: React.SyntheticEvent) => {
+          killEvent(e);
+          props.onChange([
+            ...references,
+            {
+              id: generateId(),
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+              valueCodeableConcept: {
+                coding: [
+                  {
+                    system: 'http://hl7.org/fhir/fhir-types',
+                    display: '',
+                    code: '',
+                  },
+                ],
+              },
+            },
+          ]);
+        }}
+      >
+        Add Resource
+      </Anchor>
+    </>
+  );
+}
+
 let nextLinkId = 1;
 let nextId = 1;
 
@@ -462,4 +588,26 @@ function ensureQuestionnaireOptionKeys(
     ...option,
     id: option.id || generateId(),
   }));
+}
+
+function createPage(): QuestionnaireItem {
+  return {
+    id: generateId(),
+    linkId: generateLinkId('s'),
+    type: 'group',
+    text: `New Page`,
+    extension: [
+      {
+        url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+        valueCodeableConcept: {
+          coding: [
+            {
+              system: 'http://hl7.org/fhir/questionnaire-item-control',
+              code: 'page',
+            },
+          ],
+        },
+      } as Extension,
+    ],
+  } as QuestionnaireItem;
 }
