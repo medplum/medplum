@@ -21,7 +21,7 @@ jobs:
       TURBO_REMOTE_ONLY: true
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [18.x, 20.5.1]
     services:
       postgres:
         image: postgres
