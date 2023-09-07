@@ -11,6 +11,7 @@ import {
   Practitioner,
   ProjectSecret,
   QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
   Reference,
   RequestGroup,
 } from '@medplum/fhirtypes';
@@ -27,6 +28,8 @@ interface HealthGorillaConfig {
   userLogin: string;
   providerLabAccount: string;
   tenantId: string;
+  subtenantId: string;
+  subtenantAccountNumber: string;
   scopes: string;
 }
 
@@ -56,7 +59,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const healthGorillaPractitioner = await getPractitioner(healthGorilla, medplumPractitioner);
 
   // Place the order
-  await createRequestGroup(config, healthGorilla, healthGorillaPatient, healthGorillaPractitioner);
+  await createRequestGroup(config, healthGorilla, healthGorillaPatient, healthGorillaPractitioner, answers);
 }
 
 /**
@@ -75,6 +78,8 @@ function getHealthGorillaConfig(event: BotEvent): HealthGorillaConfig {
     userLogin: requireStringSecret(secrets, 'HEALTH_GORILLA_USER_LOGIN'),
     providerLabAccount: requireStringSecret(secrets, 'HEALTH_GORILLA_PROVIDER_LAB_ACCOUNT'),
     tenantId: requireStringSecret(secrets, 'HEALTH_GORILLA_TENANT_ID'),
+    subtenantId: requireStringSecret(secrets, 'HEALTH_GORILLA_SUBTENANT_ID'),
+    subtenantAccountNumber: requireStringSecret(secrets, 'HEALTH_GORILLA_SUBTENANT_ACCOUNT_NUMBER'),
     scopes: requireStringSecret(secrets, 'HEALTH_GORILLA_SCOPES'),
   };
 }
@@ -113,7 +118,6 @@ async function connectToHealthGorilla(config: HealthGorillaConfig): Promise<Medp
   const signature = createHmac('sha256', config.clientSecret).update(token).digest('base64url');
   const signedToken = `${token}.${signature}`;
   await healthGorilla.startJwtBearerLogin(config.clientId, signedToken, config.scopes);
-
   return healthGorilla;
 }
 
@@ -221,13 +225,19 @@ async function getPractitioner(healthGorilla: MedplumClient, practitioner: Pract
  * @param healthGorilla The Health Gorilla FHIR client.
  * @param healthGorillaPatient The patient resource.
  * @param healthGorillaPractitioner The practitioner resource.
+ * @param answers The questionnaire answers.
  */
 async function createRequestGroup(
   config: HealthGorillaConfig,
   healthGorilla: MedplumClient,
   healthGorillaPatient: Patient,
-  healthGorillaPractitioner: Practitioner
+  healthGorillaPractitioner: Practitioner,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
 ): Promise<void> {
+  const noteStr = answers.note?.valueString;
+  const note = noteStr ? [{ text: noteStr }] : undefined;
+  const priority = answers.priority?.valueString as 'routine' | 'urgent' | 'asap' | 'stat' | undefined;
+
   const inputJson: RequestGroup = {
     resourceType: 'RequestGroup',
     meta: {
@@ -266,7 +276,7 @@ async function createRequestGroup(
         identifier: [
           {
             system: 'https://www.healthgorilla.com',
-            value: 't-c7ed4760dc104c90bdad9e26',
+            value: config.subtenantId,
           },
           {
             type: {
@@ -279,7 +289,7 @@ async function createRequestGroup(
               ],
               text: 'Account_number',
             },
-            value: '12457895',
+            value: config.subtenantAccountNumber,
           },
         ],
         active: true,
@@ -292,8 +302,8 @@ async function createRequestGroup(
         id: 'labtest0',
         status: 'active',
         intent: 'order',
-        // note: 'test org',
-        // priority: '',
+        note,
+        priority,
         category: [
           {
             coding: [
