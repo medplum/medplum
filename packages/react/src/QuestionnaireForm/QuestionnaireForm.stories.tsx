@@ -556,7 +556,6 @@ export const LabOrdering = (): JSX.Element => {
                     },
                   ],
                 },
-                orders,
               ],
             },
             {
@@ -574,7 +573,6 @@ export const LabOrdering = (): JSX.Element => {
                   text: 'Generate PDF',
                   type: 'boolean',
                 },
-                orders,
               ],
             },
           ],
