@@ -896,7 +896,7 @@ function defaultValueById(
   item: QuestionnaireItem,
   multiple?: boolean
 ): any {
-  let results = [];
+  const results = [];
   for (const answer in answers) {
     if (answer === item.id) {
       for (const answerValue of answers[answer]) {
