@@ -1,5 +1,4 @@
 {
-  "type": "module",
   "name": "medplum-demo-bots",
   "version": "2.0.32",
   "description": "Medplum Demo Bots",
