@@ -11,12 +11,12 @@ import {
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
-import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireForm';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { useResource } from '../useResource/useResource';
 import { killEvent } from '../utils/dom';
 import { isChoiceQuestion, QuestionnaireItemType } from '../utils/questionnaire';
+import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
 
 const useStyles = createStyles((theme) => ({
   section: {
