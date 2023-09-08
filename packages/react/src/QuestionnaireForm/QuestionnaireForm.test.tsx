@@ -919,6 +919,63 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByText('Back')).toBeInTheDocument();
   });
 
+  test('Repeated Choice Dropdown', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'default-values',
+        title: 'Default Values Example',
+        item: [
+          {
+            id: 'choice',
+            linkId: 'choice',
+            text: 'choice',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+            repeats: true,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    const dropDown = screen.getByText('choice');
+
+    await act(async () => {
+      fireEvent.click(dropDown);
+    });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: 'Yes' });
+    });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: 'No' });
+    });
+  });
+
   test('Conditional question', async () => {
     await setup({
       questionnaire: {
@@ -1030,8 +1087,8 @@ describe('QuestionnaireForm', () => {
           ],
         },
         {
-          q1: { valueString: 'No' },
-          q2: { valueString: 'Yes' },
+          q1: [{ valueString: 'No' }],
+          q2: [{ valueString: 'Yes' }],
         }
       )
     ).toBe(true);
@@ -1057,8 +1114,8 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q1: { valueString: 'No' },
-            q2: { valueString: 'Yes' },
+            q1: [{ valueString: 'No' }],
+            q2: [{ valueString: 'Yes' }],
           }
         )
       ).toBe(true);
@@ -1083,8 +1140,8 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q1: { valueString: 'No' },
-            q2: { valueString: 'No' },
+            q1: [{ valueString: 'No' }],
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(false);
@@ -1109,8 +1166,8 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q1: { valueString: 'Yes' },
-            q2: { valueString: 'Yes' },
+            q1: [{ valueString: 'Yes' }],
+            q2: [{ valueString: 'Yes' }],
           }
         )
       ).toBe(true);
@@ -1135,11 +1192,141 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q1: { valueString: 'Yes' },
-            q2: { valueString: 'No' },
+            q1: [{ valueString: 'Yes' }],
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(false);
+    });
+
+    test('enableBehavior=any, no match with multiple answers', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'any',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+            q2: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=all, no match with multiple answers', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'all',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+            q2: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, one match with multiple answers', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'any',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'No' }, { valueString: 'Yes' }],
+            q2: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=all, one non-match with multiple answers', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'all',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
+            q2: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=all, all match with multiple answers', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableBehavior: 'all',
+            enableWhen: [
+              {
+                question: 'q1',
+                answerString: 'Yes',
+                operator: '=',
+              },
+              {
+                question: 'q2',
+                answerString: 'Yes',
+                operator: '=',
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
+            q2: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
+          }
+        )
+      ).toBe(true);
     });
 
     test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = true, answer present', () => {
@@ -1155,8 +1342,8 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q1: { valueString: 'Yes' },
-            q2: { valueString: 'No' },
+            q1: [{ valueString: 'Yes' }],
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(true);
@@ -1175,8 +1362,8 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q1: { valueString: 'Yes' },
-            q2: { valueString: 'No' },
+            q1: [{ valueString: 'Yes' }],
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(false);
@@ -1195,7 +1382,7 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q2: { valueString: 'No' },
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(false);
@@ -1214,7 +1401,7 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q2: { valueString: 'No' },
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(true);
@@ -1233,7 +1420,7 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q2: { valueString: 'No' },
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(true);
@@ -1252,7 +1439,87 @@ describe('QuestionnaireForm', () => {
             ],
           },
           {
-            q2: { valueString: 'No' },
+            q2: [{ valueString: 'No' }],
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = true, multiple answers present', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: true,
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            q2: [{ valueString: 'No' }],
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, multiple answers present', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: 'exists',
+                answerBoolean: false,
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            q2: [{ valueString: 'No' }],
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = true, one of the answers missing', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q3',
+                operator: 'exists',
+                answerBoolean: true,
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            q2: [{ valueString: 'No' }],
+          }
+        )
+      ).toBe(false);
+    });
+
+    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, one of the answers missing', () => {
+      expect(
+        isQuestionEnabled(
+          {
+            enableWhen: [
+              {
+                question: 'q3',
+                operator: 'exists',
+                answerBoolean: false,
+              },
+            ],
+          },
+          {
+            q1: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            q2: [{ valueString: 'No' }],
           }
         )
       ).toBe(true);
@@ -1273,7 +1540,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueString: 'No' },
+            q1: [{ valueString: 'No' }],
           }
         )
       ).toBe(true);
@@ -1284,7 +1551,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueString: 'Yes' },
+            q1: [{ valueString: 'Yes' }],
           }
         )
       ).toBe(false);
@@ -1305,7 +1572,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 4 },
+            q1: [{ valueInteger: 4 }],
           }
         )
       ).toBe(true);
@@ -1316,7 +1583,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 2 },
+            q1: [{ valueInteger: 2 }],
           }
         )
       ).toBe(false);
@@ -1337,7 +1604,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 4 },
+            q1: [{ valueInteger: 4 }],
           }
         )
       ).toBe(true);
@@ -1348,7 +1615,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 3 },
+            q1: [{ valueInteger: 3 }],
           }
         )
       ).toBe(true);
@@ -1369,7 +1636,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 2 },
+            q1: [{ valueInteger: 2 }],
           }
         )
       ).toBe(true);
@@ -1380,7 +1647,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 3 },
+            q1: [{ valueInteger: 3 }],
           }
         )
       ).toBe(false);
@@ -1401,7 +1668,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 2 },
+            q1: [{ valueInteger: 2 }],
           }
         )
       ).toBe(true);
@@ -1412,7 +1679,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 3 },
+            q1: [{ valueInteger: 3 }],
           }
         )
       ).toBe(true);
@@ -1423,7 +1690,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueInteger: 4 },
+            q1: [{ valueInteger: 4 }],
           }
         )
       ).toBe(false);
@@ -1440,7 +1707,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueCoding: { code: 'MEDPLUM123' } },
+            q1: [{ valueCoding: { code: 'MEDPLUM123' } }],
           }
         )
       ).toBe(true);
@@ -1451,7 +1718,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } },
+            q1: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
           }
         )
       ).toBe(true);
@@ -1462,7 +1729,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } },
+            q1: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
           }
         )
       ).toBe(false);
@@ -1479,7 +1746,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueCoding: { code: 'NOT_MEDPLUM123' } },
+            q1: [{ valueCoding: { code: 'NOT_MEDPLUM123' } }],
           }
         )
       ).toBe(true);
@@ -1490,7 +1757,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } },
+            q1: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
           }
         )
       ).toBe(true);
@@ -1501,7 +1768,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } },
+            q1: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
           }
         )
       ).toBe(false);
@@ -1512,7 +1779,7 @@ describe('QuestionnaireForm', () => {
             enableWhen,
           },
           {
-            q1: { valueCoding: { code: 'MEDPLUM123' } },
+            q1: [{ valueCoding: { code: 'MEDPLUM123' } }],
           }
         )
       ).toBe(false);

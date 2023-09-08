@@ -3,6 +3,7 @@ import {
   Button,
   Checkbox,
   Group,
+  MultiSelect,
   NativeSelect,
   Radio,
   Stack,
@@ -15,8 +16,8 @@ import {
   capitalize,
   createReference,
   evalFhirPathTyped,
+  getAllQuestionnaireAnswers,
   getExtension,
-  getQuestionnaireAnswers,
   getReferenceString,
   getTypedPropertyValue,
   globalSchema,
@@ -30,6 +31,7 @@ import {
   Questionnaire,
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
+  QuestionnaireItemEnableWhen,
   QuestionnaireItemInitial,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
@@ -62,7 +64,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const questionnaire = useResource(props.questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
-  const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer>>({});
+  const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer[]>>({});
   const [activePage, setActivePage] = useState(0);
 
   const numberOfPages = getNumberOfPages(questionnaire?.item ?? []);
@@ -87,7 +89,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       item: newResponseItems,
     };
     setResponse(newResponse);
-    setAnswers(getQuestionnaireAnswers(newResponse));
+    setAnswers(getAllQuestionnaireAnswers(newResponse));
   }
 
   if (!schema || !questionnaire) {
@@ -136,7 +138,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
 interface QuestionnaireFormItemArrayProps {
   items: QuestionnaireItem[];
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   renderPages?: boolean;
   activePage?: number;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
@@ -188,7 +190,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 
   if (props.renderPages) {
     return (
-      <Stepper active={props.activePage ?? 0} allowNextStepsSelect={false}>
+      <Stepper active={props.activePage ?? 0} allowNextStepsSelect={false} p={6}>
         {questionForm}
       </Stepper>
     );
@@ -199,7 +201,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 interface QuestionnaireFormArrayContentProps {
   item: QuestionnaireItem;
   index: number;
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   responseItems: QuestionnaireResponseItem[];
   setResponseItem: (responseId: string, newResponseItem: QuestionnaireResponseItem) => void;
 }
@@ -236,7 +238,7 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
 
 export interface QuestionnaireRepeatWrapperProps {
   item: QuestionnaireItem;
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   responseItems: QuestionnaireResponseItem[];
   onChange: (newResponseItem: QuestionnaireResponseItem, index?: number) => void;
 }
@@ -274,7 +276,7 @@ export function QuestionnaireRepeatWrapper(props: QuestionnaireRepeatWrapperProp
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
   index: number;
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   responseItems?: QuestionnaireResponseItem[];
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
@@ -283,14 +285,26 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
   const item = props.item;
   const index = props.index;
 
-  function onChangeAnswer(newResponseAnswer: QuestionnaireResponseItemAnswer, repeatedIndex?: number): void {
+  function onChangeAnswer(
+    newResponseAnswer: QuestionnaireResponseItemAnswer | QuestionnaireResponseItemAnswer[],
+    repeatedIndex?: number
+  ): void {
     const number = repeatedIndex ?? 0;
     const responses = props.responseItems?.filter((r) => r.linkId === item.linkId) ?? [];
+
+    let updatedAnswers: QuestionnaireResponseItemAnswer[];
+    if (Array.isArray(newResponseAnswer)) {
+      // It's a multi-select case, so use the array directly.
+      updatedAnswers = newResponseAnswer;
+    } else {
+      // It's a single answer case.
+      updatedAnswers = updateAnswerArray(responses[0]?.answer ?? [], number, newResponseAnswer);
+    }
     props.onChange({
       id: responses[0].id,
       linkId: item.linkId,
       text: item.text,
-      answer: updateAnswerArray(responses[0]?.answer ?? [], number, newResponseAnswer),
+      answer: updatedAnswers,
     });
   }
 
@@ -421,6 +435,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             name={name}
             item={item}
             initial={initial}
+            answers={props.answers}
             onChangeAnswer={(e) => onChangeAnswer(e, index)}
           />
         );
@@ -430,6 +445,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             name={name}
             item={item}
             initial={initial}
+            answers={props.answers}
             onChangeAnswer={(e) => onChangeAnswer(e, index)}
           />
         );
@@ -443,7 +459,8 @@ interface QuestionnaireChoiceInputProps {
   name: string;
   item: QuestionnaireItem;
   initial: QuestionnaireItemInitial | undefined;
-  onChangeAnswer: (newResponseAnswer: QuestionnaireResponseItemAnswer) => void;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
+  onChangeAnswer: (newResponseAnswer: QuestionnaireResponseItemAnswer | QuestionnaireResponseItemAnswer[]) => void;
 }
 
 function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
@@ -461,6 +478,30 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
       ) as TypedValue;
       data.push(typedValueToString(optionValue) as string);
     }
+  }
+  if (item.repeats) {
+    const { propertyName, data } = formatSelectData(props.item);
+    return (
+      <MultiSelect
+        data={data}
+        placeholder="Select items"
+        searchable
+        defaultValue={[typedValueToString(initialValue) ?? '']}
+        onChange={(selected) => {
+          const values = selected.map((o) => {
+            const option = item.answerOption?.find(
+              (option) => option[propertyName as keyof QuestionnaireItemAnswerOption] === o
+            );
+            const optionValue = getTypedPropertyValue(
+              { type: 'QuestionnaireItemAnswerOption', value: option },
+              'value'
+            ) as TypedValue;
+            return { [propertyName]: optionValue.value };
+          });
+          props.onChangeAnswer(values as QuestionnaireResponseItemAnswer[]);
+        }}
+      />
+    );
   }
 
   return (
@@ -637,7 +678,7 @@ function isDropDownChoice(item: QuestionnaireItem): boolean {
 
 export function isQuestionEnabled(
   item: QuestionnaireItem,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>
 ): boolean {
   if (!item.enableWhen) {
     return true;
@@ -646,56 +687,89 @@ export function isQuestionEnabled(
   const enableBehavior = item.enableBehavior ?? 'any';
 
   for (const enableWhen of item.enableWhen) {
-    const actualAnswer = getTypedPropertyValue(
-      {
-        type: 'QuestionnaireResponseItemAnswer',
-        value: answers[enableWhen.question as string],
-      },
-      'value[x]'
-    ) as TypedValue | undefined; // possibly undefined when question unanswered
-
-    const expectedAnswer = getTypedPropertyValue(
-      {
-        type: 'QuestionnaireItemEnableWhen',
-        value: enableWhen,
-      },
-      'answer[x]'
-    ) as TypedValue;
-
-    let match: boolean;
-
-    const { operator } = enableWhen;
-
-    // We handle exists separately since its so different in terms of comparisons than the other mathematical operators
-    if (operator === 'exists') {
-      // if actualAnswer is not undefined, then exists: true passes
-      // if actualAnswer is undefined, then exists: false passes
-      match = !!actualAnswer === expectedAnswer.value;
-    } else if (actualAnswer === undefined) {
-      match = false;
-    } else {
-      // `=` and `!=` should be treated as the FHIRPath `~` and `!~`
-      // All other operators should be unmodified
-      const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
-      const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirPathOperator} %expectedAnswer`, [actualAnswer], {
-        actualAnswer,
-        expectedAnswer,
-      });
-      match = value;
+    if (
+      enableWhen.operator === 'exists' &&
+      !enableWhen.answerBoolean &&
+      !answers[enableWhen.question as string]?.length
+    ) {
+      if (enableBehavior === 'any') {
+        return true;
+      } else {
+        continue;
+      }
     }
+    const { anyMatch, allMatch } = checkAnswers(enableWhen, answers, enableBehavior);
 
-    if (enableBehavior === 'any' && match) {
+    if (enableBehavior === 'any' && anyMatch) {
       return true;
     }
-    if (enableBehavior === 'all' && !match) {
+    if (enableBehavior === 'all' && !allMatch) {
       return false;
     }
   }
-  if (enableBehavior === 'any') {
+
+  return enableBehavior !== 'any';
+}
+
+function evaluateMatch(actualAnswer: TypedValue | undefined, expectedAnswer: TypedValue, operator?: string): boolean {
+  // We handle exists separately since its so different in terms of comparisons than the other mathematical operators
+  if (operator === 'exists') {
+    // if actualAnswer is not undefined, then exists: true passes
+    // if actualAnswer is undefined, then exists: false passes
+    return !!actualAnswer === expectedAnswer.value;
+  } else if (!actualAnswer) {
     return false;
   } else {
-    return true;
+    // `=` and `!=` should be treated as the FHIRPath `~` and `!~`
+    // All other operators should be unmodified
+    const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
+    const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirPathOperator} %expectedAnswer`, [actualAnswer], {
+      actualAnswer,
+      expectedAnswer,
+    });
+    return value;
   }
+}
+
+function checkAnswers(
+  enableWhen: QuestionnaireItemEnableWhen,
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>,
+  enableBehavior: 'any' | 'all'
+): { anyMatch: boolean; allMatch: boolean } {
+  const actualAnswers = answers[enableWhen.question as string] || [];
+  const expectedAnswer = getTypedPropertyValue(
+    {
+      type: 'QuestionnaireItemEnableWhen',
+      value: enableWhen,
+    },
+    'answer[x]'
+  ) as TypedValue;
+
+  let anyMatch = false;
+  let allMatch = true;
+
+  for (const actualAnswerValue of actualAnswers) {
+    const actualAnswer = getTypedPropertyValue(
+      {
+        type: 'QuestionnaireResponseItemAnswer',
+        value: actualAnswerValue,
+      },
+      'value[x]'
+    ) as TypedValue | undefined; // possibly undefined when question unanswered
+    const { operator } = enableWhen;
+    const match = evaluateMatch(actualAnswer, expectedAnswer, operator);
+    if (match) {
+      anyMatch = true;
+    } else {
+      allMatch = false;
+    }
+
+    if (enableBehavior === 'any' && anyMatch) {
+      break;
+    }
+  }
+
+  return { anyMatch, allMatch };
 }
 
 function getNumberOfPages(items: QuestionnaireItem[]): number {
@@ -723,7 +797,7 @@ function addTargetTypes(item: QuestionnaireItem): string[] {
 interface RepeatableGroupProps {
   item: QuestionnaireItem;
   text: string;
-  answers: Record<string, QuestionnaireResponseItemAnswer>;
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   onChange: (newResponseItem: QuestionnaireResponseItem[], index?: number) => void;
 }
 
@@ -757,12 +831,16 @@ interface RepeatableItemProps {
 
 function RepeatableItem(props: RepeatableItemProps): JSX.Element {
   const [number, setNumber] = useState(1);
+  const showAddButton =
+    props.item?.repeats &&
+    props.item.type !== QuestionnaireItemType.choice &&
+    props.item.type !== QuestionnaireItemType.openChoice;
   return (
     <>
       {[...Array(number)].map((_, i) => {
         return <React.Fragment key={`${props.item.linkId}-${i}`}>{props.children({ index: i })}</React.Fragment>;
       })}
-      {props.item?.repeats && <Anchor onClick={() => setNumber((n) => n + 1)}>Add Item</Anchor>}
+      {showAddButton && <Anchor onClick={() => setNumber((n) => n + 1)}>Add Item</Anchor>}
     </>
   );
 }
@@ -789,4 +867,33 @@ function getResponseId(responses: QuestionnaireResponseItem[], index: number): s
     return generateId();
   }
   return responses[index].id as string;
+}
+
+interface MultiSelect {
+  value: any;
+  label: any;
+}
+
+interface FormattedData {
+  propertyName: string;
+  data: MultiSelect[];
+}
+
+function formatSelectData(item: QuestionnaireItem): FormattedData {
+  if (item.answerOption?.length === 0) {
+    return { propertyName: '', data: [] };
+  }
+  const option = (item.answerOption as QuestionnaireItemAnswerOption[])[0];
+  const optionValue = getTypedPropertyValue(
+    { type: 'QuestionnaireItemAnswerOption', value: option },
+    'value'
+  ) as TypedValue;
+  const propertyName = 'value' + capitalize(optionValue.type);
+
+  const data = (item.answerOption ?? []).map((a) => ({
+    value: a[propertyName as keyof QuestionnaireItemAnswerOption],
+    label:
+      propertyName === 'valueCoding' ? a.valueCoding?.display : a[propertyName as keyof QuestionnaireItemAnswerOption],
+  }));
+  return { propertyName, data };
 }
