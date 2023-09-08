@@ -190,7 +190,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 
   if (props.renderPages) {
     return (
-      <Stepper active={props.activePage ?? 0} allowNextStepsSelect={false} style={{ padding: 6 }}>
+      <Stepper active={props.activePage ?? 0} allowNextStepsSelect={false} p={6}>
         {questionForm}
       </Stepper>
     );
