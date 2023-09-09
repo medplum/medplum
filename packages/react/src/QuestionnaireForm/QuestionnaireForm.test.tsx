@@ -1068,6 +1068,4 @@ describe('QuestionnaireForm', () => {
       fireEvent.click(screen.getByText('Add Group'));
     });
   });
-
-  
 });
