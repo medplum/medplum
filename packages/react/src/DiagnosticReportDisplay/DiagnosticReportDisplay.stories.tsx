@@ -5,6 +5,13 @@ import { Meta } from '@storybook/react';
 import React, { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import {
+  HealthGorillaDiagnosticReport,
+  HealthGorillaObservation1,
+  HealthGorillaObservation2,
+  HealthGorillaObservationGroup1,
+  HealthGorillaObservationGroup2,
+} from '../stories/healthgorilla';
 import { CreatinineObservation, ExampleReport } from '../stories/referenceLab';
 import { DiagnosticReportDisplay } from './DiagnosticReportDisplay';
 export default {
@@ -87,6 +94,32 @@ export const HideNotes = (): JSX.Element => {
   return (
     <Document>
       <DiagnosticReportDisplay hideObservationNotes value={HomerDiagnosticReport} />
+    </Document>
+  );
+};
+
+export const ObservationGroups = (): JSX.Element => {
+  const medplum = useMedplum();
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    medplum
+      .createResource(HealthGorillaObservation1)
+      .then(() => medplum.createResource(HealthGorillaObservation2))
+      .then(() => medplum.createResource(HealthGorillaObservationGroup1))
+      .then(() => medplum.createResource(HealthGorillaObservationGroup2))
+      .then(() => medplum.createResource(HealthGorillaDiagnosticReport))
+      .then(() => setLoaded(true))
+      .catch(console.log);
+  }, [medplum]);
+
+  if (!loaded) {
+    return <></>;
+  }
+
+  return (
+    <Document>
+      <DiagnosticReportDisplay value={HealthGorillaDiagnosticReport} />
     </Document>
   );
 };
