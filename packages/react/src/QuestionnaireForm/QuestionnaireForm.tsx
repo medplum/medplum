@@ -62,7 +62,11 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       item: newResponseItems,
     };
     setResponse(newResponse);
-    setAnswers(getAllQuestionnaireAnswers(newResponse));
+    const newAnswers = getAllQuestionnaireAnswers(newResponse);
+    setAnswers((prevAnswers) => ({
+      ...prevAnswers,
+      ...newAnswers,
+    }));
   }
 
   if (!schema || !questionnaire) {

@@ -61,6 +61,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
   if (!name) {
     return null;
   }
+  console.log('Default Value for', item.linkId, getDefaultAnswer(props.answers, item));
 
   const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
 
@@ -428,4 +429,24 @@ function typedValueToString(typedValue: TypedValue | undefined): string | undefi
     return typedValue.value.display;
   }
   return typedValue.value.toString();
+}
+
+function getDefaultAnswer(
+  answers: Record<string, QuestionnaireResponseItemAnswer[]>,
+  item: QuestionnaireItem,
+  multiple?: boolean
+): any {
+  const results = [];
+  for (const answer in answers) {
+    if (answer === item.linkId) {
+      for (const answerValue of answers[answer]) {
+        const itemValue = getTypedPropertyValue(
+          { type: 'QuestionnaireItemAnswerOption', value: answerValue },
+          'value'
+        ) as TypedValue;
+        results.push(itemValue?.value);
+      }
+    }
+  }
+  return multiple ? results : results[0];
 }
