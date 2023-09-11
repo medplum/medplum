@@ -117,7 +117,7 @@ Maintaining references to source records is preferable when absolute clarity abo
 
 ## Disabling Merges
 
-In some cases, you may want to completely disable merging for two records. This could be because they are similar, but not duplicates, or because the user simply does not want to merge two duplicates. In this case you can add them to a Do Not Match List. For more details, see the [Matching Rules docs](/docs/fhir-datastore/patient-deduplication/matching-rules#do-not-match-lists).
+In some cases, you may want to completely disable merging for two records. This could be because they are similar, but not duplicates, or because the user simply does not want to merge two duplicates. In this case you can add them to a Do Not Match List. For more details, see the [Matching Rules docs](/docs/fhir-datastore/patient-deduplication/matching#do-not-match-lists).
 
 <details><summary>Example: Add record to a Do Not Match List</summary>
   <MedplumCodeBlock language="ts" selectBlocks="doNotMatch">
