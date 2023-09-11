@@ -205,15 +205,28 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
         </tr>
       </thead>
       <tbody>
-        {props.value?.map((observation) => (
-          <ObservationRow
-            key={`obs-${isReference(observation) ? observation.reference : observation.id}`}
-            hideObservationNotes={props.hideObservationNotes}
-            value={observation}
-          />
-        ))}
+        <ObservationRowGroup value={props.value} hideObservationNotes={props.hideObservationNotes} />
       </tbody>
     </table>
+  );
+}
+
+interface ObservationRowGroupProps {
+  value?: Observation[] | Reference<Observation>[];
+  hideObservationNotes?: boolean;
+}
+
+function ObservationRowGroup(props: ObservationRowGroupProps): JSX.Element {
+  return (
+    <>
+      {props.value?.map((observation) => (
+        <ObservationRow
+          key={`obs-${isReference(observation) ? observation.reference : observation.id}`}
+          hideObservationNotes={props.hideObservationNotes}
+          value={observation}
+        />
+      ))}
+    </>
   );
 }
 
@@ -229,6 +242,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
   if (!observation) {
     return null;
   }
+
   const displayNotes = !props.hideObservationNotes && observation.note;
 
   const critical = isCritical(observation);
@@ -254,13 +268,13 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
         </td>
         <td>
           {observation.category && observation.category.length > 0 && (
-            <ul>
+            <>
               {observation.category.map((concept) => (
-                <li key={`category-${formatCodeableConcept(concept)}`}>
+                <div key={`category-${formatCodeableConcept(concept)}`}>
                   <CodeableConceptDisplay value={concept} />
-                </li>
+                </div>
               ))}
-            </ul>
+            </>
           )}
         </td>
         <td>
@@ -268,6 +282,12 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
         </td>
         <td>{observation.status && <StatusBadge status={observation.status} />}</td>
       </tr>
+      {observation.hasMember && (
+        <ObservationRowGroup
+          value={observation.hasMember as Reference<Observation>[]}
+          hideObservationNotes={props.hideObservationNotes}
+        />
+      )}
       {displayNotes && (
         <tr>
           <td colSpan={6}>

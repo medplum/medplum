@@ -5,6 +5,13 @@ import { act, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import {
+  HealthGorillaDiagnosticReport,
+  HealthGorillaObservation1,
+  HealthGorillaObservation2,
+  HealthGorillaObservationGroup1,
+  HealthGorillaObservationGroup2,
+} from '../stories/healthgorilla';
 import { CreatinineObservation, ExampleReport } from '../stories/referenceLab';
 import { DiagnosticReportDisplay, DiagnosticReportDisplayProps } from './DiagnosticReportDisplay';
 
@@ -182,5 +189,22 @@ describe('DiagnosticReportDisplay', () => {
     });
 
     expect(screen.queryByText('Collected:')).toBeNull();
+  });
+
+  test('Renders observation group', async () => {
+    await medplum.createResource(HealthGorillaObservation1);
+    await medplum.createResource(HealthGorillaObservation2);
+    await medplum.createResource(HealthGorillaObservationGroup1);
+    await medplum.createResource(HealthGorillaObservationGroup2);
+    await medplum.createResource(HealthGorillaDiagnosticReport);
+
+    await act(async () => {
+      setup({ value: HealthGorillaDiagnosticReport });
+    });
+
+    expect(screen.getByText('Example Panel Day 1')).toBeInTheDocument();
+    expect(screen.getByText('Above high normal')).toBeInTheDocument();
+    expect(screen.getByText('Example Panel Day 2')).toBeInTheDocument();
+    expect(screen.getByText('Normal')).toBeInTheDocument();
   });
 });
