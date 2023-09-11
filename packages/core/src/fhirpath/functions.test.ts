@@ -421,21 +421,21 @@ describe('FHIRPath functions', () => {
   });
 
   test('toString', () => {
-    const toString = functions.toString as unknown as FhirPathFunction;
-    expect(toString(context, [])).toEqual([]);
-    expect(() => toString(context, [null as unknown as TypedValue])).toThrow();
-    expect(() => toString(context, [undefined as unknown as TypedValue])).toThrow();
-    expect(() => toString(context, [TYPED_1, TYPED_2])).toThrow();
-    expect(toString(context, [TYPED_TRUE])).toEqual([toTypedValue('true')]);
-    expect(toString(context, [TYPED_FALSE])).toEqual([toTypedValue('false')]);
-    expect(toString(context, [TYPED_0])).toEqual([toTypedValue('0')]);
-    expect(toString(context, [TYPED_1])).toEqual([toTypedValue('1')]);
-    expect(toString(context, [toTypedValue(null)])).toEqual([]);
-    expect(toString(context, [toTypedValue(undefined)])).toEqual([]);
-    expect(toString(context, [toTypedValue('1')])).toEqual([toTypedValue('1')]);
-    expect(toString(context, [toTypedValue('true')])).toEqual([toTypedValue('true')]);
-    expect(toString(context, [toTypedValue('false')])).toEqual([toTypedValue('false')]);
-    expect(toString(context, [toTypedValue('xyz')])).toEqual([toTypedValue('xyz')]);
+    const fhirToString = functions.toString as unknown as FhirPathFunction;
+    expect(fhirToString(context, [])).toEqual([]);
+    expect(() => fhirToString(context, [null as unknown as TypedValue])).toThrow();
+    expect(() => fhirToString(context, [undefined as unknown as TypedValue])).toThrow();
+    expect(() => fhirToString(context, [TYPED_1, TYPED_2])).toThrow();
+    expect(fhirToString(context, [TYPED_TRUE])).toEqual([toTypedValue('true')]);
+    expect(fhirToString(context, [TYPED_FALSE])).toEqual([toTypedValue('false')]);
+    expect(fhirToString(context, [TYPED_0])).toEqual([toTypedValue('0')]);
+    expect(fhirToString(context, [TYPED_1])).toEqual([toTypedValue('1')]);
+    expect(fhirToString(context, [toTypedValue(null)])).toEqual([]);
+    expect(fhirToString(context, [toTypedValue(undefined)])).toEqual([]);
+    expect(fhirToString(context, [toTypedValue('1')])).toEqual([toTypedValue('1')]);
+    expect(fhirToString(context, [toTypedValue('true')])).toEqual([toTypedValue('true')]);
+    expect(fhirToString(context, [toTypedValue('false')])).toEqual([toTypedValue('false')]);
+    expect(fhirToString(context, [toTypedValue('xyz')])).toEqual([toTypedValue('xyz')]);
   });
 
   test('convertsToString', () => {

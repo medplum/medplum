@@ -21,7 +21,7 @@ export const Reference = (): JSX.Element => (
   </Document>
 );
 
-export const Error = (): JSX.Element => (
+export const Invalid = (): JSX.Element => (
   <Document>
     <ResourceName value={{ reference: 'Patient/xyz' }} />
   </Document>

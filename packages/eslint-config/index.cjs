@@ -6,7 +6,6 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:@typescript-eslint/strict',
     'plugin:jsdoc/recommended-typescript-error',
-    'plugin:prettier/recommended',
     'plugin:react-hooks/recommended',
   ],
   reportUnusedDisableDirectives: true,
