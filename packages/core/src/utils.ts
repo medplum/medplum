@@ -23,6 +23,12 @@ import { formatHumanName } from './format';
  */
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
 
+/**
+ * Allowed values for `code_challenge_method` in a PKCE exchange.
+ * @internal
+ */
+export type CodeChallengeMethod = 'plain' | 'S256';
+
 interface Code {
   code?: CodeableConcept;
 }

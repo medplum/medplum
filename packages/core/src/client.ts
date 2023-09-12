@@ -29,8 +29,6 @@ import {
   UserConfiguration,
   ValueSet,
 } from '@medplum/fhirtypes';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-/** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
@@ -40,17 +38,17 @@ import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
 import { isJwt, isMedplumAccessToken, parseJWTPayload } from './jwt';
 import {
+  OperationOutcomeError,
   badRequest,
   isOk,
   isOperationOutcome,
   normalizeOperationOutcome,
   notFound,
-  OperationOutcomeError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
-import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
-import { arrayBufferToBase64, createReference, ProfileResource, sleep } from './utils';
+import { IndexedStructureDefinition, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
+import { CodeChallengeMethod, ProfileResource, arrayBufferToBase64, createReference, sleep } from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 
@@ -278,7 +276,7 @@ export interface BaseLoginRequest {
   readonly scope?: string;
   readonly nonce?: string;
   readonly codeChallenge?: string;
-  readonly codeChallengeMethod?: string;
+  readonly codeChallengeMethod?: CodeChallengeMethod;
   readonly googleClientId?: string;
   readonly launch?: string;
   readonly redirectUri?: string;
@@ -1053,12 +1051,22 @@ export class MedplumClient extends EventTarget {
     redirectUri: string,
     loginRequest: BaseLoginRequest
   ): string {
+    const { codeChallenge, codeChallengeMethod } = loginRequest;
+    if (!codeChallengeMethod) {
+      throw new Error('`LoginRequest` for external auth must include a `codeChallengeMethod`.');
+    }
+    if (!codeChallenge) {
+      throw new Error('`LoginRequest` for external auth must include a `codeChallenge`.');
+    }
+
     const url = new URL(authorizeUrl);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('client_id', clientId);
     url.searchParams.set('redirect_uri', redirectUri);
     url.searchParams.set('scope', 'openid profile email');
     url.searchParams.set('state', JSON.stringify(loginRequest));
+    url.searchParams.set('code_challenge_method', codeChallengeMethod);
+    url.searchParams.set('code_challenge', codeChallenge);
     return url.toString();
   }
 
@@ -2716,7 +2724,7 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    * @returns The PKCE code challenge details.
    */
-  async startPkce(): Promise<{ codeChallengeMethod: string; codeChallenge: string }> {
+  async startPkce(): Promise<{ codeChallengeMethod: 'plain' | 'S256'; codeChallenge: string }> {
     const pkceState = getRandomString();
     sessionStorage.setItem('pkceState', pkceState);
 
