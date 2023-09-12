@@ -1,4 +1,4 @@
-import { Anchor, Button, createStyles, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
+import { Anchor, Box, Button, createStyles, NativeSelect, Space, Textarea, TextInput, Title } from '@mantine/core';
 import { globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
 import {
   Coding,
@@ -190,6 +190,13 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     } as T);
   }
 
+  function updateItem(updatedItem: QuestionnaireItem): void {
+    props.onChange({
+      ...props.item,
+      ...updatedItem,
+    });
+  }
+
   function toggleRepeatable(item: QuestionnaireItem): void {
     props.onChange({
       ...props.item,
@@ -227,8 +234,9 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             )}
             {isChoiceQuestion(item) && (
               <AnswerBuilder
-                options={item.answerOption}
-                onChange={(newOptions) => changeProperty('answerOption', newOptions)}
+                item={item}
+                // onChange={(newOptions) => changeProperty('answerOption', newOptions)}
+                onChange={(item) => updateItem(item)}
               />
             )}
           </>
@@ -371,13 +379,14 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
 }
 
 interface AnswerBuilderProps {
-  options?: QuestionnaireItemAnswerOption[];
-  onChange: (newOptions: QuestionnaireItemAnswerOption[]) => void;
+  item: QuestionnaireItem;
+  onChange: (item: QuestionnaireItem) => void;
 }
 
 function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
   const property = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
-  const options = props.options ?? [];
+  const options = props.item.answerOption ?? [];
+  console.log(props.item);
   return (
     <div>
       {options.map((option: QuestionnaireItemAnswerOption) => {
@@ -407,16 +416,20 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
                   const newOptions = [...options];
                   const index = newOptions.findIndex((o) => o.id === option.id);
                   newOptions[index] = { id: option.id, [propName as string]: newValue };
-                  props.onChange(newOptions);
+                  props.onChange('answerOption', newOptions);
                 }}
               />
             </div>
+
             <div>
               <Anchor
                 href="#"
                 onClick={(e: React.SyntheticEvent) => {
                   killEvent(e);
-                  props.onChange(options.filter((o) => o.id !== option.id));
+                  props.onChange(
+                    'answerOption',
+                    options.filter((o) => o.id !== option.id)
+                  );
                 }}
               >
                 Remove
@@ -425,20 +438,40 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
           </div>
         );
       })}
-      <Anchor
-        href="#"
-        onClick={(e: React.SyntheticEvent) => {
-          killEvent(e);
-          props.onChange([
-            ...options,
-            {
-              id: generateId(),
-            },
-          ]);
-        }}
-      >
-        Add choice
-      </Anchor>
+      <Box display="flex">
+        <Anchor
+          href="#"
+          onClick={(e: React.SyntheticEvent) => {
+            killEvent(e);
+            props.onChange({
+              ...props.item,
+              answerValueSet: undefined,
+              answerOption: [
+                ...options,
+                {
+                  id: generateId(),
+                },
+              ],
+            });
+          }}
+        >
+          Add choice
+        </Anchor>
+        <Space w="lg" />
+        <Anchor
+          href="#"
+          onClick={(e: React.SyntheticEvent) => {
+            killEvent(e);
+            props.onChange({
+              ...props.item,
+              answerOption: [],
+              answerValueSet: '',
+            });
+          }}
+        >
+          Add value set
+        </Anchor>
+      </Box>
     </div>
   );
 }

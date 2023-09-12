@@ -1300,6 +1300,12 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
             ],
           },
           {
+            linkId: 'value-set-choice',
+            type: 'choice',
+            text: 'Value Set Choice',
+            answerValueSet: 'http://loinc.org/vs/LL4436-3',
+          },
+          {
             linkId: 'open-choice',
             type: 'open-choice',
             text: 'Open Choice',
