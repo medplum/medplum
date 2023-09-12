@@ -2,19 +2,6 @@ import { AccessPolicy, AccessPolicyResource, Resource, ResourceType } from '@med
 import { parseCriteriaAsSearchRequest } from './search/search';
 import { matchesSearchRequest } from './search/match';
 
-/**
- * Public resource types are in the "public" project.
- * They are available to all users.
- */
-export const publicResourceTypes = [
-  'CapabilityStatement',
-  'CompartmentDefinition',
-  'ImplementationGuide',
-  'OperationDefinition',
-  'SearchParameter',
-  'StructureDefinition',
-];
-
 const universalAccessPolicy: AccessPolicyResource = {
   resourceType: '*',
 };
@@ -90,9 +77,6 @@ export function canReadResourceType(accessPolicy: AccessPolicy, resourceType: Re
  */
 export function canWriteResourceType(accessPolicy: AccessPolicy, resourceType: ResourceType): boolean {
   if (protectedResourceTypes.includes(resourceType)) {
-    return false;
-  }
-  if (publicResourceTypes.includes(resourceType)) {
     return false;
   }
   if (accessPolicy.resource) {

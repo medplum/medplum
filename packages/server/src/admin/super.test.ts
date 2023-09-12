@@ -10,7 +10,7 @@ import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { createSearchParameters } from '../seeds/searchparameters';
-import { createStructureDefinitions } from '../seeds/structuredefinitions';
+import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob } from '../test.setup';
 
@@ -181,7 +181,7 @@ describe('Super Admin routes', () => {
   });
 
   test('Rebuild StructureDefinitions as super admin with respond-async', async () => {
-    (createStructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
+    (rebuildR4StructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
       return Promise.resolve(true);
     });
 
@@ -199,7 +199,7 @@ describe('Super Admin routes', () => {
 
   test('Rebuild StructureDefinitions as super admin with respond-async error', async () => {
     const err = new Error('structuredefinitions test error');
-    (createStructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
+    (rebuildR4StructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
       return Promise.reject(err);
     });
     const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();

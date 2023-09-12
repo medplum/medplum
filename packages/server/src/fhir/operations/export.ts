@@ -1,4 +1,4 @@
-import { accepted, getResourceTypes, protectedResourceTypes, publicResourceTypes } from '@medplum/core';
+import { accepted, getResourceTypes, protectedResourceTypes } from '@medplum/core';
 import { Project, ResourceType } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
@@ -113,13 +113,8 @@ function getResourceTypesByExportLevel(exportLevel: string): ResourceType[] {
   return getResourceTypes();
 }
 
-function canBeExported(resourceType: string): boolean {
-  if (resourceType === 'BulkDataExport') {
-    return false;
-  }
+const unexportedResourceTypes = ['CodeSystem', 'SearchParameter', 'StructureDefinition', 'ValueSet', 'BulkDataExport'];
 
-  if (publicResourceTypes.includes(resourceType) || protectedResourceTypes.includes(resourceType)) {
-    return false;
-  }
-  return true;
+function canBeExported(resourceType: string): boolean {
+  return !unexportedResourceTypes.includes(resourceType) && !protectedResourceTypes.includes(resourceType);
 }

@@ -82,22 +82,6 @@ describe('AccessPolicy', () => {
     }
   });
 
-  test('Access policy allows public resources', async () => {
-    const accessPolicy: AccessPolicy = {
-      resourceType: 'AccessPolicy',
-    };
-
-    const repo2 = new Repository({
-      author: {
-        reference: 'Practitioner/123',
-      },
-      accessPolicy,
-    });
-
-    const bundle = await repo2.search({ resourceType: 'StructureDefinition' });
-    expect(bundle).toBeDefined();
-  });
-
   test('Access policy restricting write', async () => {
     const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
