@@ -3,10 +3,10 @@
  * Do not edit manually.
  */
 
-import { PoolClient } from 'pg';
-import { r4ProjectId } from '../seed';
-import { systemRepo } from '../fhir/repo';
 import { Project } from '@medplum/fhirtypes';
+import { PoolClient } from 'pg';
+import { systemRepo } from '../fhir/repo';
+import { r4ProjectId } from '../seed';
 
 export async function run(client: PoolClient): Promise<void> {
   await systemRepo.updateResource<Project>({
@@ -23,8 +23,10 @@ const updateQuery = `UPDATE "__TABLE__" SET
     "projectId" = $1::UUID,
     compartments = ARRAY[$1]::UUID[],
     content = jsonb_set(content::jsonb, '{meta, project}'::text[], to_jsonb($1), true)
-  WHERE
-    "projectId" IS NULL OR "projectId" = $1`;
+  WHERE ("projectId" IS NULL OR "projectId" = $1)
+  AND "content" IS NOT NULL
+  AND TRIM("content") <> ''`;
+
 async function moveOrphanResourcesIntoProject(table: string, projectId: string, client: PoolClient): Promise<void> {
-  await client.query(updateQuery.replaceAll('__TABLE__', table), [r4ProjectId]);
+  await client.query(updateQuery.replaceAll('__TABLE__', table), [projectId]);
 }
