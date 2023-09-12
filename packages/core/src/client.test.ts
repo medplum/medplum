@@ -21,8 +21,8 @@ import {
   NewUserRequest,
 } from './client';
 import { ContentType } from './contenttype';
-import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
-import { createReference, ProfileResource } from './utils';
+import { OperationOutcomeError, getStatus, isOperationOutcome, notFound, unauthorized } from './outcomes';
+import { ProfileResource, createReference } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -418,18 +418,70 @@ describe('Client', () => {
     );
   });
 
-  test('Get external auth redirect URI', async () => {
-    const fetch = mockFetch(200, {});
-    const client = new MedplumClient({ fetch });
-    const result = client.getExternalAuthRedirectUri(
-      'https://auth.example.com/authorize',
-      'external-client-123',
-      'https://me.example.com',
-      {
-        clientId: 'medplum-client-123',
-      }
-    );
-    expect(result).toMatch(/https:\/\/auth\.example\.com\/authorize\?.+scope=/);
+  describe('Get external auth redirect URI', () => {
+    let client: MedplumClient;
+
+    beforeAll(() => {
+      const fetch = mockFetch(200, {});
+      client = new MedplumClient({ fetch });
+    });
+
+    test('should give a valid url with all fields for PKCE exchange', async () => {
+      const result = client.getExternalAuthRedirectUri(
+        'https://auth.example.com/authorize',
+        'external-client-123',
+        'https://me.example.com',
+        {
+          clientId: 'medplum-client-123',
+          ...(await client.startPkce()),
+        }
+      );
+      expect(result).toMatch(/https:\/\/auth\.example\.com\/authorize\?.+scope=/);
+
+      const { searchParams } = new URL(result);
+      expect(searchParams.get('response_type')).toBe('code');
+      expect(searchParams.get('code_challenge')).toBeDefined();
+      expect(typeof searchParams.get('code_challenge')).toBe('string');
+      expect(searchParams.get('code_challenge_method')).toBe('S256');
+      expect(searchParams.get('client_id')).toBe('external-client-123');
+      expect(searchParams.get('redirect_uri')).toBe('https://me.example.com');
+      expect(searchParams.get('scope')).toBeDefined();
+      expect(typeof searchParams.get('scope')).toBe('string');
+      expect(searchParams.get('state')).toBeDefined();
+      expect(typeof searchParams.get('state')).toBe('string');
+      expect(() => JSON.parse(searchParams.get('state') as string)).not.toThrow();
+      expect(JSON.parse(searchParams.get('state') as string)?.codeChallengeMethod).toBe('S256');
+      expect(typeof JSON.parse(searchParams.get('state') as string)?.codeChallenge).toBe('string');
+      expect(searchParams.get('audience')).toBeDefined();
+    });
+
+    test('should throw if no `codeChallenge` is given', async () => {
+      expect(() =>
+        client.getExternalAuthRedirectUri(
+          'https://auth.example.com/authorize',
+          'external-client-123',
+          'https://me.example.com',
+          {
+            clientId: 'medplum-client-123',
+            codeChallengeMethod: 'S256',
+          }
+        )
+      ).toThrow();
+    });
+
+    test('should throw if no `codeChallengeMethod` is given', async () => {
+      expect(() =>
+        client.getExternalAuthRedirectUri(
+          'https://auth.example.com/authorize',
+          'external-client-123',
+          'https://me.example.com',
+          {
+            clientId: 'medplum-client-123',
+            codeChallenge: 'xyz-123',
+          }
+        )
+      ).toThrow();
+    });
   });
 
   test('New project success', async () => {

@@ -299,6 +299,7 @@ describe('OAuth utils', () => {
           scope: 'openid',
           nonce: 'nonce',
           codeChallenge: 'xyz',
+          // @ts-expect-error Invalid `codeChallengeMethod` value, must be `S256` or `plain`
           codeChallengeMethod: 'xyz',
         },
         client
