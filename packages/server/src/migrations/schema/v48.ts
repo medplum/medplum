@@ -5,8 +5,8 @@
 
 import { Project } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
-import { systemRepo } from '../fhir/repo';
-import { r4ProjectId } from '../seed';
+import { systemRepo } from '../../fhir/repo';
+import { r4ProjectId } from '../../seed';
 
 export async function run(client: PoolClient): Promise<void> {
   await systemRepo.updateResource<Project>({
