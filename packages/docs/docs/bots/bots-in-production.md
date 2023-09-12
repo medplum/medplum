@@ -277,28 +277,28 @@ This pattern is especially powerful when deploying Bots **as part of a CI pipeli
 
 ## Configuring Bot Logging
 
-Bots can be run at a very high volume - for example as part of an ADT feed or when triggered by high-frequency messages. This can result in thousands of invocations per day, which can be overwhelming to track. In these cases, it may make sense to fine-tune the level of logging for your bots.
+Bots can be run at a very high volume - for example as part of an ADT feed or when triggered by high-frequency messages. This can result in thousands of invocations per day, which can be overwhelming to track. In these cases, it may make sense to fine-tune the level of logging for your Bots.
 
-There are two ways to control bot logging in Medplum: the type of event logged (i.e. success, failure, etc.) and where the event gets logged to.
+There are two ways to control Bot logging in Medplum: the type of event logged (i.e., success, failure, etc.) and where the event gets logged to.
 
 ### Logging By Event Type
 
-You can choose to only log certain events using the `Bot.auditEventTrigger` field. This element represents the criteria for when an `AuditEvent` resource should be created, and has four possible values.
+You can choose to only log certain events using the `Bot.auditEventTrigger` field. This element represents the criteria for when an `AuditEvent` resource should be created and has four possible values.
 
-| Trigger     | Description                                                                       |
-| ----------- | --------------------------------------------------------------------------------- |
-| `always`    | An audit event is triggered every time the bot runs. This is the default setting. |
-| `never`     | An audit event will never be triggered by the bot.                                |
-| `on-error`  | An audit event is triggered if the bot throws an error.                           |
-| `on-output` | An audit event is triggered if running the bot results in a specific outcome.     |
+| Trigger     | Description                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------------ |
+| `always`    | An audit event is triggered every time the bot runs. This is the default setting.                |
+| `never`     | An audit event will never be triggered by the bot.                                               |
+| `on-error`  | An audit event is triggered if the bot throws an error.                                          |
+| `on-output` | An audit event is triggered if running the bot results in something being logged to the console. |
 
 ### Logging By Destination
 
-Logging can also be limited by setting the destination that your bot logs to. This is done using the `Bot.auditEventDestination` field. This element can be set to either `resource` or `log`.
+Logging can also be limited by setting the destination that your Bot logs to. This is done using the `Bot.auditEventDestination` field. This element can be set to either `resource` or `log`.
 
-Setting `auditEventDestination` to `resource` logs your `AuditEvent` to your database, so it will be visible in the app. It is best practice to always start by using `resource` as it allows for easier testing and debugging of your bot. This is the default setting of `auditEventDestination`.
+By default, `auditEventDestination` is set to `resource`. This logs any `AuditEvent` to your database, so it will be visible in your app. It is best practice to always start by using `resource` as it allows for easier testing and debugging of your Bot.
 
-Setting `auditEventDestination` to `log` will only log the bot to the log itself, so it will not be visible in the app. This makes testing and debugging more difficult, but is useful for high-volume as it will not clog the feed in your app.
+Setting `auditEventDestination` to `log` will only log the events to the log itself, so it will not be visible in the app. This makes testing and debugging more difficult, but is useful for high-volume as it will not clog the feed in your app.
 
 ## Conclusion
 
