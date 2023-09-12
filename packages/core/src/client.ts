@@ -2724,7 +2724,7 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    * @returns The PKCE code challenge details.
    */
-  async startPkce(): Promise<{ codeChallengeMethod: 'plain' | 'S256'; codeChallenge: string }> {
+  async startPkce(): Promise<{ codeChallengeMethod: CodeChallengeMethod; codeChallenge: string }> {
     const pkceState = getRandomString();
     sessionStorage.setItem('pkceState', pkceState);
 
