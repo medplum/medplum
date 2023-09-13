@@ -386,58 +386,16 @@ interface AnswerBuilderProps {
 function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
   const property = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
   const options = props.item.answerOption ?? [];
-  console.log(props.item);
   return (
     <div>
-      {options.map((option: QuestionnaireItemAnswerOption) => {
-        const [propertyValue, propertyType] = getValueAndType(
-          { type: 'QuestionnaireItemAnswerOption', value: option },
-          'value'
-        );
-        return (
-          <div
-            key={option.id}
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              width: '80%',
-            }}
-          >
-            <div>
-              <ResourcePropertyInput
-                key={option.id}
-                name="value[x]"
-                property={property}
-                defaultPropertyType={propertyType}
-                defaultValue={propertyValue}
-                onChange={(newValue: any, propName?: string) => {
-                  const newOptions = [...options];
-                  const index = newOptions.findIndex((o) => o.id === option.id);
-                  newOptions[index] = { id: option.id, [propName as string]: newValue };
-                  props.onChange('answerOption', newOptions);
-                }}
-              />
-            </div>
-
-            <div>
-              <Anchor
-                href="#"
-                onClick={(e: React.SyntheticEvent) => {
-                  killEvent(e);
-                  props.onChange(
-                    'answerOption',
-                    options.filter((o) => o.id !== option.id)
-                  );
-                }}
-              >
-                Remove
-              </Anchor>
-            </div>
-          </div>
-        );
-      })}
+      {props.item.answerValueSet !== undefined ? (
+        <TextInput
+          placeholder="Enter Value Set"
+          onChange={(e) => props.onChange({ ...props.item, answerValueSet: e.target.value })}
+        />
+      ) : (
+        <AnswerOptionsInput options={options} property={property} item={props.item} onChange={props.onChange} />
+      )}
       <Box display="flex">
         <Anchor
           href="#"
@@ -472,6 +430,72 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
           Add value set
         </Anchor>
       </Box>
+    </div>
+  );
+}
+
+interface AnswerOptionsInputProps {
+  options: QuestionnaireItemAnswerOption[];
+  property: any;
+  onChange: (item: QuestionnaireItem) => void;
+  item: QuestionnaireItem;
+}
+
+function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
+  return (
+    <div>
+      {props.options.map((option: QuestionnaireItemAnswerOption) => {
+        const [propertyValue, propertyType] = getValueAndType(
+          { type: 'QuestionnaireItemAnswerOption', value: option },
+          'value'
+        );
+        return (
+          <div
+            key={option.id}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              width: '80%',
+            }}
+          >
+            <div>
+              <ResourcePropertyInput
+                key={option.id}
+                name="value[x]"
+                property={props.property}
+                defaultPropertyType={propertyType}
+                defaultValue={propertyValue}
+                onChange={(newValue: any, propName?: string) => {
+                  const newOptions = [...props.options];
+                  const index = newOptions.findIndex((o) => o.id === option.id);
+                  newOptions[index] = { id: option.id, [propName as string]: newValue };
+                  props.onChange({
+                    ...props.item,
+                    answerOption: newOptions,
+                  });
+                }}
+              />
+            </div>
+
+            <div>
+              <Anchor
+                href="#"
+                onClick={(e: React.SyntheticEvent) => {
+                  killEvent(e);
+                  props.onChange({
+                    ...props.item,
+                    answerOption: props.options.filter((o) => o.id !== option.id),
+                  });
+                }}
+              >
+                Remove
+              </Anchor>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
