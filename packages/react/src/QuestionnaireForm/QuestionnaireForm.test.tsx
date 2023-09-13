@@ -919,6 +919,35 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByText('Back')).toBeInTheDocument();
   });
 
+  test('Value Set Choice', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'value-set-example',
+        title: 'Valueset',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Value Set',
+            type: 'choice',
+            answerValueSet: 'http://example.com/valueset',
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    const dropDown = screen.getByText('Valueset');
+
+    await act(async () => {
+      fireEvent.click(dropDown);
+    });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: 'Test Display' });
+    });
+  });
+
   test('Repeated Choice Dropdown', async () => {
     await setup({
       questionnaire: {

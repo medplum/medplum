@@ -681,6 +681,76 @@ describe('QuestionnaireBuilder', () => {
     });
   });
 
+  test('Add Value Set', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        title: 'My questionnaire',
+        item: [],
+      },
+      onSubmit,
+    });
+
+    // Add a new question
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add item'));
+    });
+
+    // Click on the question to start editing
+    await act(async () => {
+      fireEvent.click(screen.getByText('Question'));
+    });
+
+    // Change the question type from "string" (default) to "choice"
+    fireEvent.change(screen.getByDisplayValue('String'), {
+      target: { value: 'choice' },
+    });
+
+    // Add a new choice
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add choice'));
+    });
+
+    // Change the question type from "integer" (default) to "string"
+    fireEvent.change(screen.getByDisplayValue('integer'), {
+      target: { value: 'string' },
+    });
+
+    // Change the text for the choice
+    fireEvent.change(screen.getByTestId('value[x]'), {
+      target: { value: 'foo bar' },
+    });
+
+    // Add a value set
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add value set'));
+    });
+
+    // Change the value set
+    fireEvent.change(screen.getByDisplayValue(''), {
+      target: { value: 'http://example.com' },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toBeCalled();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      resourceType: 'Questionnaire',
+      item: [
+        {
+          text: 'Question',
+          type: 'choice',
+          answerOption: [],
+          answerValueSet: 'http://example.com',
+        },
+      ],
+    });
+  });
+
   test('Remove multiple choice', async () => {
     const onSubmit = jest.fn();
 

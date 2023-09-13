@@ -437,8 +437,8 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
 interface AnswerOptionsInputProps {
   options: QuestionnaireItemAnswerOption[];
   property: any;
-  onChange: (item: QuestionnaireItem) => void;
   item: QuestionnaireItem;
+  onChange: (item: QuestionnaireItem) => void;
 }
 
 function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
