@@ -11,6 +11,7 @@ import { Construct } from 'constructs';
 export class CloudTrailAlarms extends Construct {
   config: MedplumInfraConfig;
   logGroup?: logs.ILogGroup;
+  cloudTrail?: cloudtrail.Trail;
   alarmTopic?: sns.ITopic;
 
   constructor(scope: Construct, config: MedplumInfraConfig) {
@@ -29,9 +30,7 @@ export class CloudTrailAlarms extends Construct {
         logGroupName: config.cloudTrailAlarms.logGroupName,
         retention: logs.RetentionDays.ONE_YEAR,
       });
-
-      // eslint-disable-next-line no-new
-      new cloudtrail.Trail(this, 'CloudTrail', {
+      this.cloudTrail = new cloudtrail.Trail(this, 'CloudTrail', {
         sendToCloudWatchLogs: true,
         cloudWatchLogGroup: this.logGroup,
         includeGlobalServiceEvents: true,
@@ -104,6 +103,11 @@ export class CloudTrailAlarms extends Construct {
     for (const [name, filterPattern] of alarmDefinitions) {
       this.createMetricAlarm(name, filterPattern);
     }
+
+    // Debug
+    console.log('LogGroup', this.logGroup?.node.id);
+    console.log('CloudTrail', this.cloudTrail?.node.id);
+    console.log('AlarmTopic', this.alarmTopic?.node.id);
   }
 
   createMetricAlarm(name: string, filterPattern: string): void {
