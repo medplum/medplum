@@ -1,7 +1,7 @@
 import { Pool, PoolClient } from 'pg';
 import { MedplumDatabaseConfig } from './config';
 import { logger } from './logger';
-import * as migrations from './migrations';
+import * as migrations from './migrations/schema';
 
 let pool: Pool | undefined;
 
@@ -48,14 +48,15 @@ export async function closeDatabase(): Promise<void> {
 async function migrate(client: PoolClient): Promise<void> {
   await client.query(`CREATE TABLE IF NOT EXISTS "DatabaseMigration" (
     "id" INTEGER NOT NULL PRIMARY KEY,
-    "version" INTEGER NOT NULL
+    "version" INTEGER NOT NULL,
+    "dataVersion" INTEGER NOT NULL
   )`);
 
   const result = await client.query('SELECT "version" FROM "DatabaseMigration"');
   const version = result.rows[0]?.version ?? -1;
 
   if (version < 0) {
-    await client.query('INSERT INTO "DatabaseMigration" ("id", "version") VALUES (1, 0)');
+    await client.query('INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion") VALUES (1, 0, 0)');
   }
 
   const migrationKeys = Object.keys(migrations);

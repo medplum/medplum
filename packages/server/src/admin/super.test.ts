@@ -576,4 +576,17 @@ describe('Super Admin routes', () => {
     expect(res1.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
   });
+
+  test('Run data migrations', async () => {
+    const res1 = await request(app)
+      .post('/admin/super/migrate')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({});
+
+    expect(res1.status).toEqual(202);
+    expect(res1.headers['content-location']).toBeDefined();
+    await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
+  });
 });

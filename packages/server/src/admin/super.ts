@@ -16,12 +16,14 @@ import { getClient } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { Repository, systemRepo } from '../fhir/repo';
+import * as dataMigrations from '../migrations/data';
 import { authenticateToken } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { createSearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
+import { logger } from '../logger';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateToken);
@@ -186,6 +188,31 @@ superAdminRouter.post(
         await getClient().query(
           `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
         );
+      }
+    });
+  })
+);
+
+// POST to /admin/super/migrate
+// to run pending data migrations.
+// This is intended to replace all of the above endpoints,
+// because it will be run automatically by the server upgrade process.
+superAdminRouter.post(
+  '/migrate',
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin(res);
+    requireAsync(req);
+
+    await sendAsyncResponse(req, res, async () => {
+      const client = getClient();
+      const result = await client.query('SELECT "dataVersion" FROM "DatabaseMigration"');
+      const version = result.rows[0]?.dataVersion as number;
+      const migrationKeys = Object.keys(dataMigrations);
+      for (let i = version + 1; i <= migrationKeys.length; i++) {
+        const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + i];
+        logger.info('Running data migration', { version: `v${i}` });
+        await migration.run(systemRepo);
+        await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
       }
     });
   })
