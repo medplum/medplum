@@ -21,6 +21,7 @@ export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
   index: number;
   responses: QuestionnaireResponseItem[];
+  groupNumber?: number;
   responseItems?: QuestionnaireResponseItem[];
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
@@ -63,7 +64,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
   }
 
   const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
-  const responses = props.responseItems ?? []
+  // const responses = props.responseItems ?? [];
   switch (type) {
     case QuestionnaireItemType.boolean:
       return (
@@ -71,7 +72,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           <Checkbox
             id={props.item.linkId}
             name={props.item.linkId}
-            defaultChecked={initial?.valueBoolean ?? getDefaultAnswer(props.responses, item, index)}
+            defaultChecked={initial?.valueBoolean ?? getDefaultAnswer(props.responses, item, index, props.groupNumber)}
             onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked }, index)}
           />
         </CheckboxFormSection>
@@ -83,7 +84,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           step="any"
           id={name}
           name={name}
-          defaultValue={initial?.valueDecimal ?? getDefaultAnswer(props.responses, item, index)}
+          defaultValue={initial?.valueDecimal ?? getDefaultAnswer(props.responses, item, index, props.groupNumber)}
           onChange={(e) => onChangeAnswer({ valueDecimal: e.currentTarget.valueAsNumber }, index)}
         />
       );
@@ -94,7 +95,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           step={1}
           id={name}
           name={name}
-          defaultValue={initial?.valueInteger ?? getDefaultAnswer(props.responses, item, index)}
+          defaultValue={initial?.valueInteger ?? getDefaultAnswer(props.responses, item, index, props.groupNumber)}
           onChange={(e) => onChangeAnswer({ valueInteger: e.currentTarget.valueAsNumber }, index)}
         />
       );
@@ -104,7 +105,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           type="date"
           id={name}
           name={name}
-          defaultValue={initial?.valueDate ?? getDefaultAnswer(props.responses, item, index)}
+          defaultValue={initial?.valueDate ?? getDefaultAnswer(props.responses, item, index, props.groupNumber)}
           onChange={(e) => onChangeAnswer({ valueDate: e.currentTarget.value }, index)}
         />
       );
@@ -112,7 +113,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <DateTimeInput
           name={name}
-          defaultValue={initial?.valueDateTime ?? getDefaultAnswer(props.responses, item, index)}
+          defaultValue={initial?.valueDateTime ?? getDefaultAnswer(props.responses, item, index, props.groupNumber)}
           onChange={(newValue: string) => onChangeAnswer({ valueDateTime: newValue }, index)}
         />
       );
@@ -122,7 +123,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           type="time"
           id={name}
           name={name}
-          defaultValue={initial?.valueTime ?? getDefaultAnswer(props.responses, item, index)}
+          defaultValue={initial?.valueTime ?? getDefaultAnswer(props.responses, item, index, props.groupNumber)}
           onChange={(e) => onChangeAnswer({ valueTime: e.currentTarget.value }, index)}
         />
       );
@@ -132,7 +133,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <TextInput
           id={name}
           name={name}
-          defaultValue={initial?.valueString ?? getDefaultAnswer(props.responses, item, index)}
+          defaultValue={initial?.valueString ?? getDefaultAnswer(props.responses, item, index, props.groupNumber)}
           onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
       );
@@ -141,7 +142,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <Textarea
           id={name}
           name={name}
-          defaultValue={initial?.valueString ?? getDefaultAnswer(props.responses, item, index)}
+          defaultValue={initial?.valueString ?? getDefaultAnswer(props.responses, item, index, props.groupNumber)}
           onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
       );
@@ -149,7 +150,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <AttachmentInput
           name={name}
-          defaultValue={initial?.valueAttachment ?? getDefaultAnswer(props.responses, item, index)}
+          defaultValue={initial?.valueAttachment ?? getDefaultAnswer(props.responses, item, index, props.groupNumber)}
           onChange={(newValue) => onChangeAnswer({ valueAttachment: newValue }, index)}
         />
       );
@@ -158,7 +159,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <ReferenceInput
           name={name}
           targetTypes={addTargetTypes(item)}
-          defaultValue={initial?.valueReference ?? getDefaultAnswer(props.responses, item, index)}
+          defaultValue={initial?.valueReference ?? getDefaultAnswer(props.responses, item, index, props.groupNumber)}
           onChange={(newValue) => onChangeAnswer({ valueReference: newValue }, index)}
         />
       );
@@ -166,7 +167,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <QuantityInput
           name={name}
-          defaultValue={initial?.valueQuantity ?? getDefaultAnswer(props.responses, item, index)}
+          defaultValue={initial?.valueQuantity ?? getDefaultAnswer(props.responses, item, index, props.groupNumber)}
           onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue }, index)}
           disableWheel
         />
@@ -179,7 +180,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             name={name}
             item={item}
             initial={initial}
-            answers={props.answers}
+            responses={props.responses}
             onChangeAnswer={(e) => onChangeAnswer(e, index)}
           />
         );
@@ -189,8 +190,8 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             name={name}
             item={item}
             initial={initial}
-            answers={props.answers}
-            onChangeAnswer={(e: any) => onChangeAnswer(e, index)}
+            responses={props.responses}
+            onChangeAnswer={(e) => onChangeAnswer(e, index)}
           />
         );
       }
@@ -266,7 +267,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
         const propertyName = 'value' + capitalize(optionValue.type);
         props.onChangeAnswer({ [propertyName]: optionValue.value });
       }}
-      defaultValue={typedValueToString(initialValue) ?? getDefaultAnswer(props.responses, item, [])}
+      defaultValue={typedValueToString(initialValue) ?? getDefaultAnswer(props.responses, item, 0)}
       data={data}
     />
   );
@@ -430,72 +431,84 @@ function typedValueToString(typedValue: TypedValue | undefined): string | undefi
   return typedValue.value.toString();
 }
 
-function getAnswerResponse(
-  responses: QuestionnaireResponseItem[],
-  item: QuestionnaireItem,
-  index: number = 0
-): QuestionnaireResponseItemAnswer[] {
-  // const answerResponses: QuestionnaireResponseItemAnswer[][] = [];
-  // for (const answer in answers) {
-  //   if (answer === item.linkId) {
-  //     answerResponses.push(answers[answer]);
-  //   }
-  // }
-  // // console.log(answerResponses)
-  // return answerResponses[index] ?? [];
-  return [];
-}
+// function getAnswerResponse(
+//   responses: QuestionnaireResponseItem[],
+//   item: QuestionnaireItem,
+//   index: number = 0
+// ): QuestionnaireResponseItemAnswer[] {
+//   // const answerResponses: QuestionnaireResponseItemAnswer[][] = [];
+//   // for (const answer in answers) {
+//   //   if (answer === item.linkId) {
+//   //     answerResponses.push(answers[answer]);
+//   //   }
+//   // }
+//   // // console.log(answerResponses)
+//   // return answerResponses[index] ?? [];
+//   return [];
+// }
 
 // function getAnswerResponse(
-//   responses: QuestionnaireResponseItem[], 
+//   responses: QuestionnaireResponseItem[],
 //   item: QuestionnaireItem,
 //   index: number = 0
 // ): any[] {
-  
+
 // }
 
-function findItemsByLinkId(responses: QuestionnaireResponseItem[], linkId: string, index: number): QuestionnaireResponseItem {
+function findItemsByLinkId(responses: QuestionnaireResponseItem[], linkId: string): QuestionnaireResponseItem[] {
   let result: QuestionnaireResponseItem[] = [];
-  console.log(responses)
+
   for (let item of responses) {
-      // If the linkId matches, add it to the result array
-      if (item.linkId === linkId) {
-          result.push(item);
-      }
+    // If the linkId matches, add it to the result array
+    if (item.linkId === linkId) {
+      result.push(item);
+    }
 
-      // If the current item has nested items, search them too
-      if (item.item) {
-          result = result.concat(findItemsByLinkId(item.item, linkId, index));
-      }
+    // If the current item has nested items, search them too
+    if (item.item) {
+      result = result.concat(findItemsByLinkId(item.item, linkId));
+    }
   }
-
-  return result[index] ?? [];
+  return result;
 }
-
 
 function getDefaultAnswer(
   responses: QuestionnaireResponseItem[],
   item: QuestionnaireItem,
   index: number = 0,
+  groupNumber: number = 0,
   multiple?: boolean
 ): any {
-  const results = [];
-  const result = findItemsByLinkId(responses, item.linkId ?? '', index);
-  // console.log('items', result)
-  // return result?.answer?.[0]?.valueString ?? '';
-  const answerResponse = getAnswerResponse(responses, item, index);
-
-  for (const answerValue of answerResponse) {
-    const itemValue = getTypedPropertyValue(
-      { type: 'QuestionnaireItemAnswerOption', value: answerValue },
-      'value'
-    ) as TypedValue;
-    if (itemValue?.type === 'Coding') {
-      results.push(itemValue?.value?.display);
-    } else {
-      results.push(itemValue?.value);
-    }
+  const results = findItemsByLinkId(responses, item.linkId ?? '');
+  // console.log(responses);
+  // console.log('results', results[groupNumber]?.answer?.[index]?.valueString ?? '');
+  const selectedItem = results[groupNumber]?.answer?.[index];
+  const itemValue = getTypedPropertyValue(
+    { type: 'QuestionnaireItemAnswerOption', value: selectedItem },
+    'value'
+  ) as TypedValue;
+  if (itemValue?.type === 'Coding') {
+    return itemValue?.value?.display;
+  } else {
+    return itemValue?.value;
   }
 
-  return multiple ? results : results[0];
+  // console.log('items', result)
+  // return result?.answer?.[0]?.valueString ?? '';
+
+  // const answerResponse = getAnswerResponse(responses, item, index);
+
+  // for (const answerValue of answerResponse) {
+  //   const itemValue = getTypedPropertyValue(
+  //     { type: 'QuestionnaireItemAnswerOption', value: answerValue },
+  //     'value'
+  //   ) as TypedValue;
+  //   if (itemValue?.type === 'Coding') {
+  //     results.push(itemValue?.value?.display);
+  //   } else {
+  //     results.push(itemValue?.value);
+  //   }
+  // }
+
+  // return multiple ? results : results[0];
 }

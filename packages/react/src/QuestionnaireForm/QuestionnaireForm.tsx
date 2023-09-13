@@ -1,7 +1,6 @@
 import { Anchor, Button, Group, Stack, Stepper, Title } from '@mantine/core';
 import {
   createReference,
-  getAllQuestionnaireAnswers,
   getExtension,
   getReferenceString,
   IndexedStructureDefinition,
@@ -61,12 +60,8 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       resourceType: 'QuestionnaireResponse',
       item: newResponseItems,
     };
+
     setResponse(newResponse);
-    // const newAnswers = getAllQuestionnaireAnswers(newResponse);
-    // setAnswers((prevAnswers) => ({
-    //   ...prevAnswers,
-    //   ...newAnswers,
-    // }));
   }
 
   if (!schema || !questionnaire) {
@@ -118,6 +113,7 @@ interface QuestionnaireFormItemArrayProps {
   items: QuestionnaireItem[];
   // answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   responses: QuestionnaireResponseItem[];
+  groupNumber?: number;
   renderPages?: boolean;
   activePage?: number;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
@@ -148,6 +144,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
             key={`${item.linkId}-${index}`}
             item={item}
             index={index}
+            groupNumber={props.groupNumber}
             responses={props.responses}
             responseItems={responseItems}
             setResponseItem={setResponseItem}
@@ -160,6 +157,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
         key={`${item.linkId}-${index}`}
         item={item}
         index={index}
+        groupNumber={props.groupNumber}
         responses={props.responses}
         responseItems={responseItems}
         setResponseItem={setResponseItem}
@@ -182,6 +180,7 @@ interface QuestionnaireFormArrayContentProps {
   index: number;
   // answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   responses: QuestionnaireResponseItem[];
+  groupNumber?: number;
   responseItems: QuestionnaireResponseItem[];
   setResponseItem: (responseId: string, newResponseItem: QuestionnaireResponseItem) => void;
 }
@@ -199,6 +198,7 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
         key={props.item.linkId}
         item={props.item}
         responses={props.responses}
+        groupNumber={props.groupNumber}
         responseItems={props.responseItems}
         onChange={(newResponseItem) => props.setResponseItem(newResponseItem.id as string, newResponseItem)}
       />
@@ -209,6 +209,7 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
       <QuestionnaireRepeatWrapper
         item={props.item}
         responses={props.responses}
+        groupNumber={props.groupNumber}
         responseItems={props.responseItems}
         onChange={(newResponseItem) => props.setResponseItem(newResponseItem.id as string, newResponseItem)}
       />
@@ -219,6 +220,7 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
 export interface QuestionnaireRepeatWrapperProps {
   item: QuestionnaireItem;
   responses: QuestionnaireResponseItem[];
+  groupNumber?: number;
   responseItems: QuestionnaireResponseItem[];
   onChange: (newResponseItem: QuestionnaireResponseItem, index?: number) => void;
 }
@@ -341,7 +343,7 @@ interface RepeatableGroupProps {
 }
 
 function RepeatableGroup(props: RepeatableGroupProps): JSX.Element | null {
-  const [number, setNumber] = useState(1);
+  const [number, setNumber] = useState(getNumberOfGroups(props.item, props.responses));
 
   const item = props.item;
   return (
@@ -353,6 +355,7 @@ function RepeatableGroup(props: RepeatableGroupProps): JSX.Element | null {
             <QuestionnaireFormItemArray
               items={item.item ?? []}
               responses={props.responses}
+              groupNumber={i}
               onChange={(response) => props.onChange(response, i)}
             />
           </div>
@@ -389,4 +392,9 @@ function getResponseId(responses: QuestionnaireResponseItem[], index: number): s
     return generateId();
   }
   return responses[index].id as string;
+}
+
+function getNumberOfGroups(item: QuestionnaireItem, responses: QuestionnaireResponseItem[]): number {
+  // This is to maintain the number of groups for the stepper when typing backwards
+  return responses.filter((r) => r.linkId === item.linkId).length ?? 0;
 }
