@@ -20,7 +20,7 @@ import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocom
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
   index: number;
-  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
+  responses: QuestionnaireResponseItem[];
   responseItems?: QuestionnaireResponseItem[];
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
@@ -71,7 +71,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           <Checkbox
             id={props.item.linkId}
             name={props.item.linkId}
-            defaultChecked={initial?.valueBoolean ?? getDefaultAnswer(props.answers, item, responses, index)}
+            defaultChecked={initial?.valueBoolean ?? getDefaultAnswer(props.responses, item, index)}
             onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked }, index)}
           />
         </CheckboxFormSection>
@@ -83,7 +83,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           step="any"
           id={name}
           name={name}
-          defaultValue={initial?.valueDecimal ?? getDefaultAnswer(props.answers, item, responses, index)}
+          defaultValue={initial?.valueDecimal ?? getDefaultAnswer(props.responses, item, index)}
           onChange={(e) => onChangeAnswer({ valueDecimal: e.currentTarget.valueAsNumber }, index)}
         />
       );
@@ -94,7 +94,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           step={1}
           id={name}
           name={name}
-          defaultValue={initial?.valueInteger ?? getDefaultAnswer(props.answers, item, responses, index)}
+          defaultValue={initial?.valueInteger ?? getDefaultAnswer(props.responses, item, index)}
           onChange={(e) => onChangeAnswer({ valueInteger: e.currentTarget.valueAsNumber }, index)}
         />
       );
@@ -104,7 +104,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           type="date"
           id={name}
           name={name}
-          defaultValue={initial?.valueDate ?? getDefaultAnswer(props.answers, item, responses, index)}
+          defaultValue={initial?.valueDate ?? getDefaultAnswer(props.responses, item, index)}
           onChange={(e) => onChangeAnswer({ valueDate: e.currentTarget.value }, index)}
         />
       );
@@ -112,7 +112,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <DateTimeInput
           name={name}
-          defaultValue={initial?.valueDateTime ?? getDefaultAnswer(props.answers, item, responses, index)}
+          defaultValue={initial?.valueDateTime ?? getDefaultAnswer(props.responses, item, index)}
           onChange={(newValue: string) => onChangeAnswer({ valueDateTime: newValue }, index)}
         />
       );
@@ -122,7 +122,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           type="time"
           id={name}
           name={name}
-          defaultValue={initial?.valueTime ?? getDefaultAnswer(props.answers, item, responses, index)}
+          defaultValue={initial?.valueTime ?? getDefaultAnswer(props.responses, item, index)}
           onChange={(e) => onChangeAnswer({ valueTime: e.currentTarget.value }, index)}
         />
       );
@@ -132,7 +132,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <TextInput
           id={name}
           name={name}
-          defaultValue={initial?.valueString ?? getDefaultAnswer(props.answers, item, responses, index)}
+          defaultValue={initial?.valueString ?? getDefaultAnswer(props.responses, item, index)}
           onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
       );
@@ -141,7 +141,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <Textarea
           id={name}
           name={name}
-          defaultValue={initial?.valueString ?? getDefaultAnswer(props.answers, item, responses, index)}
+          defaultValue={initial?.valueString ?? getDefaultAnswer(props.responses, item, index)}
           onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
       );
@@ -149,7 +149,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <AttachmentInput
           name={name}
-          defaultValue={initial?.valueAttachment ?? getDefaultAnswer(props.answers, item, responses, index)}
+          defaultValue={initial?.valueAttachment ?? getDefaultAnswer(props.responses, item, index)}
           onChange={(newValue) => onChangeAnswer({ valueAttachment: newValue }, index)}
         />
       );
@@ -158,7 +158,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <ReferenceInput
           name={name}
           targetTypes={addTargetTypes(item)}
-          defaultValue={initial?.valueReference ?? getDefaultAnswer(props.answers, item, responses, index)}
+          defaultValue={initial?.valueReference ?? getDefaultAnswer(props.responses, item, index)}
           onChange={(newValue) => onChangeAnswer({ valueReference: newValue }, index)}
         />
       );
@@ -166,7 +166,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <QuantityInput
           name={name}
-          defaultValue={initial?.valueQuantity ?? getDefaultAnswer(props.answers, item, responses, index)}
+          defaultValue={initial?.valueQuantity ?? getDefaultAnswer(props.responses, item, index)}
           onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue }, index)}
           disableWheel
         />
@@ -203,7 +203,7 @@ interface QuestionnaireChoiceInputProps {
   name: string;
   item: QuestionnaireItem;
   initial: QuestionnaireItemInitial | undefined;
-  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
+  responses: QuestionnaireResponseItem[];
   onChangeAnswer: (newResponseAnswer: QuestionnaireResponseItemAnswer | QuestionnaireResponseItemAnswer[]) => void;
 }
 
@@ -266,7 +266,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
         const propertyName = 'value' + capitalize(optionValue.type);
         props.onChangeAnswer({ [propertyName]: optionValue.value });
       }}
-      defaultValue={typedValueToString(initialValue) ?? getDefaultAnswer(props.answers, item, [])}
+      defaultValue={typedValueToString(initialValue) ?? getDefaultAnswer(props.responses, item, [])}
       data={data}
     />
   );
@@ -431,18 +431,19 @@ function typedValueToString(typedValue: TypedValue | undefined): string | undefi
 }
 
 function getAnswerResponse(
-  answers: Record<string, QuestionnaireResponseItemAnswer[]>,
+  responses: QuestionnaireResponseItem[],
   item: QuestionnaireItem,
   index: number = 0
 ): QuestionnaireResponseItemAnswer[] {
-  const answerResponses: QuestionnaireResponseItemAnswer[][] = [];
-  for (const answer in answers) {
-    if (answer === item.linkId) {
-      answerResponses.push(answers[answer]);
-    }
-  }
-  // console.log(answerResponses)
-  return answerResponses[index] ?? [];
+  // const answerResponses: QuestionnaireResponseItemAnswer[][] = [];
+  // for (const answer in answers) {
+  //   if (answer === item.linkId) {
+  //     answerResponses.push(answers[answer]);
+  //   }
+  // }
+  // // console.log(answerResponses)
+  // return answerResponses[index] ?? [];
+  return [];
 }
 
 // function getAnswerResponse(
@@ -473,17 +474,17 @@ function findItemsByLinkId(responses: QuestionnaireResponseItem[], linkId: strin
 
 
 function getDefaultAnswer(
-  answers: Record<string, QuestionnaireResponseItemAnswer[]>,
-  item: QuestionnaireItem,
   responses: QuestionnaireResponseItem[],
+  item: QuestionnaireItem,
   index: number = 0,
   multiple?: boolean
 ): any {
   const results = [];
-  // const result = findItemsByLinkId(responses, item.linkId ?? '', index);
+  const result = findItemsByLinkId(responses, item.linkId ?? '', index);
   // console.log('items', result)
   // return result?.answer?.[0]?.valueString ?? '';
-  const answerResponse = getAnswerResponse(answers, item, index);
+  const answerResponse = getAnswerResponse(responses, item, index);
+
   for (const answerValue of answerResponse) {
     const itemValue = getTypedPropertyValue(
       { type: 'QuestionnaireItemAnswerOption', value: answerValue },
