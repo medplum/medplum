@@ -385,6 +385,7 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
       {props.item.answerValueSet !== undefined ? (
         <TextInput
           placeholder="Enter Value Set"
+          defaultValue={props.item.answerValueSet}
           onChange={(e) => props.onChange({ ...props.item, answerValueSet: e.target.value })}
         />
       ) : (
