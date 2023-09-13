@@ -25,9 +25,33 @@ The demo bots expect a number of configuration settings in your Medplum Project 
 | HEALTH_GORILLA_SUBTENANT_ACCOUNT_NUMBER | The subtenant account number             |                                     |
 | HEALTH_GORILLA_SCOPES                   | OAuth scopes                             | `user/_._`                          |
 
+You will also need a FHIR `Organization` resource representing the performing lab. For example:
+
+```js
+{
+  "resourceType": "Organization",
+  "name": "Testing Lab Facility",
+  "identifier": [
+    {
+      "system": "https://www.healthgorilla.com",
+      "value": "f-123412341234" // This value will be provided by Health Gorilla
+    }
+  ]
+}
+```
+
 ## Sending Orders
 
-The `send-to-health-gorilla.ts` demonstrates how to convert a `QuestionnaireResponse` into a Health Gorilla order. It does the following:
+The `send-to-health-gorilla.ts` demonstrates how to convert a `QuestionnaireResponse` into a Health Gorilla order.
+
+The expected answers in the `QuestionnaireResponse` include:
+
+1. `patient` - reference to the `Patient` resource
+2. `practitioner` - reference to the `Practitioner` resource representing the ordering physician
+3. `performer` - referenc to the `Organization` resource representing the performing lab facility
+4. TODO: test details
+
+The bot then does the following:
 
 1. Gathers `Patient`, `Practitioner`, and order details
 2. Validates the input data
