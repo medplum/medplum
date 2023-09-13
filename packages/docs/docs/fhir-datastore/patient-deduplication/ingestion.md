@@ -30,4 +30,6 @@ Incremental pipelines can often be implemented using [Medplum Bots](/docs/bots),
 
 - Update the `Patient.active` and `Patient.link` elements for all relevant records.
 
-  Check out [this blog post](/blog/patient-deduplication) for more details on event-driven pipelines. The medplum-demo-bots repo also contains an [example](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/patient-deduplication.ts) of an incremental deduplication bot.
+Check out [this blog post](/blog/patient-deduplication) for more details on event-driven pipelines. The medplum-demo-bots repo also contains an [example](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/patient-deduplication.ts) of an incremental deduplication bot.
+
+The next section will discuss **matching** potential duplicate records.

@@ -20,27 +20,33 @@ These have been trialed in previous deduplication projects, and are rated by the
 
 The likelihood of a candidate being a match can be represented by a `RiskAssessment` resource. This allows you to classify how likely the match is, what was matched, and more.
 
-| Element              | Description                                                                                   | Example               |
-| -------------------- | --------------------------------------------------------------------------------------------- | --------------------- |
-| `probabilityDecimal` | The probability of a match, as a percent.                                                     | 85                    |
-| `qualitativeRisk`    | A readable description of how likely the match is.                                            | Very likely           |
-| `method`             | The rule or technique that was used to create the assessment.                                 | last-name             |
-| `code`               | Indicates what is being assessed. When deduping records, it will always be a duplicate match. | duplicate-patient     |
-| `subject`            | The patient or other resource that a potential match is being checked against.                | Patient/homer-simpson |
-| `basis`              | The patient or other resource that could be a potential match for the subject.                | Patient/marge-simpson |
+| Element              | Description                                                                                                      | Example                                         |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `probabilityDecimal` | The probability of a match, as a percent.                                                                        | 85.0                                            |
+| `qualitativeRisk`    | A readable description of how likely the match is.                                                               | Very likely                                     |
+| `method`             | The rule or technique that was used to create the assessment.                                                    | email – phone-number – last-name – gender – dob |
+| `code`               | Indicates what is being assessed. When deduping records, it will always be a duplicate match.                    | duplicate-patient                               |
+| `subject`            | The patient or other resource that a potential match is being checked against, considered the **source record**. | Patient/homer-simpson                           |
+| `basis`              | The patient or other resource that could be a potential match for the subject, considered the **target record**. | Patient/homer-j-simpson                         |
 
-<details><summary>Example: A `RiskAssessment` for a potential duped patient record</summary>
+<details><summary>Example: A `RiskAssessment` for a potential duplicated patient record</summary>
   <MedplumCodeBlock language="ts" selectBlocks="dupedPatientAssessment">
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
 
+Check out [Medplum's demo bots](https://github.com/medplum/medplum/blob/08d11217b7b399c6232432f04389d4c66ce85f18/examples/medplum-demo-bots/src/deduplication/find-matching-patients.ts#L58-L87) to see an example of how a `RiskAssessment` is created in practice. 
+
 ## Do Not Match Lists
 
-To ensure that certain records are _not_ matched, you can create a Do Not Match List for a patient. This should be represented as a `List` resource, with the patient stored in the `subject` field. Any other patients that should not be matched to this patient can be stored as an `entry`.
+In some cases, it is already known that two similar records should _not_ be matched. For example, there may be two patients with the same name, but the records have been human-reviewed and determined to be different patients.
 
-<details><summary>Example: A patient's Do Not Match `List`</summary>
+To ensure that certain records are not matched, you can create a Do Not Match List for a patient. This should be represented as a `List` resource, with the patient stored in the `subject` field. Any other patients that should not be matched to this patient can be stored as an `entry`. To ensure that records on a Do Not Match List are not merged, see the docs on [disabling merging](/docs/fhir-datastore/patient-deduplication/merging#disabling-merges).
+
+<details><summary>Example: A patient's Do Not Match List</summary>
   <MedplumCodeBlock language="ts" selectBlocks="doNotMatch">
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
+
+In the next section, we will discuss **merging** duplicate records.

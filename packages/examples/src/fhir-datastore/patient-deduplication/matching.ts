@@ -8,17 +8,11 @@ const dedupeAssessment: RiskAssessment =
     resourceType: 'RiskAssessment',
     id: 'homer-simpson-match-risk-assessment',
     subject: {
-      resource: {
-        resourceType: 'Patient',
-        id: 'homer-simpson',
-      },
+      reference: 'Patient/homer-simpson',
     },
     basis: [
       {
-        resource: {
-          resourceType: 'Patient',
-          id: 'marge-simpson',
-        },
+        reference: 'Patient/homer-j-simpson',
       },
     ],
     code: {
@@ -32,7 +26,7 @@ const dedupeAssessment: RiskAssessment =
     method: {
       coding: [
         {
-          system: 'http://example.org/dedupe-method',
+          system: 'http://example.org/deduplication-method',
           code: 'last-name',
         },
       ],
@@ -54,28 +48,17 @@ const doNotMatchList: List =
     resourceType: 'List',
     id: 'homer-simpson-do-not-match-list',
     subject: {
-      resource: {
-        resourceType: 'Patient',
-        id: 'homer-simpson',
-      },
+      reference: 'Patient/homer-simpson',
     },
     entry: [
       {
-        id: 'do-not-match-entry-1',
         item: {
-          resource: {
-            resourceType: 'Patient',
-            id: 'marge-simpson',
-          },
+          reference: 'Patient/marge-simpson',
         },
       },
       {
-        id: 'do-not-match-entry-2',
         item: {
-          resource: {
-            resourceType: 'Patient',
-            id: 'lisa-simpson',
-          },
+          reference: 'Patient/lisa-simpson',
         },
       },
     ],

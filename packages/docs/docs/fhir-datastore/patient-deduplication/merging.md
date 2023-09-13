@@ -6,26 +6,32 @@ import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/pati
 
 # Merging {#merge-rules}
 
-Surprisingly, the merge step of the deduplication pipeline typically contains the most complexity. The merge operation will depend on your clinical and business context, your downstream application, and how frequently you will _unmerge_ records.
+The merge step of the deduplication pipeline typically contains the most complexity. The merge operation will depend on your clinical and business context, your downstream application, and how frequently you will _unmerge_ records.
 
 This section will discuss the major decisions you will need to make when designing your patient merge operation. The authors of FHIR are also drafting a [FHIR standard merge operation](https://build.fhir.org/patient-operation-merge.html), however the specification has not been finalized.
 
 ## Linking Patient Records in FHIR
 
-**The FHIR [Patient](/docs/api/fhir/resources) has features to represent the link between source and master records.**
+The FHIR [Patient](/docs/api/fhir/resources) has features to represent the link between source and master records.
 
 The `Patient.active` element is used to indicate the master record for the patient. When there are multiple `Patient` resources per-patient in the target system, all but the master record should be marked as "inactive."
 
 The `Patient.link` element is used to connect duplicate patient records via reference.
 
-- For each source record
+- For each [**source record**](/docs/fhir-datastore/patient-deduplication/architecture-overview#glossary)
 
   - `Patient.link.other` references the master record
   - `Patient.link.type` takes the value `"replaced-by"`
 
-- For the master record
+- For the [**master record**](/docs/fhir-datastore/patient-deduplication/architecture-overview#glossary)
   - `Patient.link.other` references each source record
   - `Patient.link.type` takes the value `"replaces"`
+
+<details><summary>Example: Linking patient records</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="linkPatientRecords">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
 
 ## Master Record Structure
 
@@ -71,7 +77,7 @@ With this approach, you'll have to make a few additional design decisions:
 1. How do you select the promoted record?
 2. When do you eliminate inactive source records?
 
-## Combining and Splitting Master Records
+### Combining and Splitting Master Records
 
 Over time, you may find that two master records actually correspond to the same patient, or that a group of matched records actually correspond to separate patients. This can happen as:
 
@@ -117,7 +123,7 @@ Maintaining references to source records is preferable when absolute clarity abo
 
 ## Disabling Merges
 
-In some cases, you may want to completely disable merging for two records. This could be because they are similar, but not duplicates, or because the user simply does not want to merge two duplicates. In this case you can add them to a Do Not Match List. For more details, see the [Matching Rules docs](/docs/fhir-datastore/patient-deduplication/matching#do-not-match-lists).
+In some cases, you may want to completely disable merging for two records. This could be because they are similar, but have been determined not to be duplicates by a human review. In this case you can add them to a Do Not Match List. For more details, see the docs on [Do Not Match Lists](/docs/fhir-datastore/patient-deduplication/matching#do-not-match-lists).
 
 <details><summary>Example: Add record to a Do Not Match List</summary>
   <MedplumCodeBlock language="ts" selectBlocks="doNotMatch">

@@ -1,8 +1,8 @@
 # Architecture Overview
 
-## Terminology
+## Glossary
 
-Before we get started, let's define some terminology.
+Before we get started, let's define some terms.
 
 In this guide, we will call each input system that contributes patient data a **source system.** The output of your deduplication pipeline will be called the **target system**.
 
@@ -10,11 +10,14 @@ Most pipelines make a copy of each patient record from the source system into th
 
 ## Pipeline
 
-While deduplication pipelines can take many forms, there three primary operations in every pipeline:
+While deduplication pipelines can take many forms, there are three primary operations in every pipeline:
 
 1. [**Ingestion:**](/docs/fhir-datastore/patient-deduplication/ingestion) Copying data from source systems into the target system to create source records.
-2. [**Matching:**](/docs/fhir-datastore/patient-deduplication/matching) For each patient record, find all other records that could are potential matches.
+2. [**Matching:**](/docs/fhir-datastore/patient-deduplication/matching) For each patient record, find all other records that are potential matches.
 3. [**Merging:**](/docs/fhir-datastore/patient-deduplication/merging) Merge all the information into a single record to serve as the source of truth.
+
+
+## Key Decisions
 
 There are many different ways to implement this pipeline, but there are a few key decisions that you will need to make when choosing an architecture:
 
@@ -22,13 +25,11 @@ There are many different ways to implement this pipeline, but there are a few ke
 - Which matching rules to use
 - How to merge matching patients into a single record
 
-## Decision Factors
-
 We'll discuss each of these in depth. The most important factors to consider when making these decisions are:
 
 - **Prevalence of duplicates:** Making estimate of your duplication rate, both _within_ and _between_ source systems, will help you determine the complexity needed in your deduplication pipeline. Some applications have rare duplication rates (e.g. < 1%) while others have frequent duplicates (10-50%). Still others have very bi-modal duplication patterns (e.g 99% of records have 0 duplicates, 1% of records have 5+ duplicates).
 
-- **Lifetime of source systems:** Some pipelines are built to ingest patient data from short-lived source systems, and target system quickly replace them as the source of truth. For example, when migrating from legacy systems into medplum. In contrast, some source systems are long lived or permanent, as when deduplicating patients from multiple healthcare providers or from Health Information Exchanges (HIEs).
+- **Lifetime of source systems:** Some pipelines are built to ingest patient data from short-lived source systems, and target systems quickly replace them as the source of truth. For example, when migrating from legacy systems into Medplum. In contrast, some source systems are long lived or permanent, as when deduplicating patients from multiple healthcare providers or from Health Information Exchanges (HIEs).
 
 - **Cost of false positives:** No deduplication system will be 100% perfect, and some patients records will be merged incorrectly. Certain architectural choices make it easier or harder to unmerge patient records once merged. The right choice for you will depend on your confidence threshold for performing a merge and on cost of an incorrect merge.
 

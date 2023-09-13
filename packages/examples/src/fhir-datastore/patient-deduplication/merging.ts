@@ -1,8 +1,34 @@
 // start-block imports
-import { MedplumClient, getReferenceString, deepClone } from '@medplum/core';
+import { MedplumClient, getReferenceString, deepClone, createReference } from '@medplum/core';
 import { Identifier, Patient, Reference, ResourceType } from '@medplum/fhirtypes';
 
 // end-block imports
+
+// start-block linkPatientRecords
+interface MergedPatients {
+  readonly src: Patient;
+  readonly target: Patient;
+}
+
+/**
+ * Links two patient records indicating one replaces the other.
+ *
+ * @param src - The source patient record which is being replaced.
+ * @param target - The target patient record which will replace the source.
+ * @returns - Object containing updated source and target patient records with their links.
+*/
+export function linkPatientRecords(src: Patient, target: Patient): MergedPatients {
+  const targetCopy = deepClone(target);
+  const targetLinks = targetCopy.link ?? [];
+  targetLinks.push({ other: createReference(src), type: 'replaces' });
+
+  const srcCopy = deepClone(src);
+  const srcLinks = srcCopy.link ?? [];
+  srcLinks.push({ other: createReference(target), type: 'replaced-by' });
+  return { src: { ...srcCopy, link: srcLinks, active: false }, target: { ...targetCopy, link: targetLinks }};
+}
+
+// end-block linkPatientRecords
 
 // start-block updateReferences
 /**
@@ -52,11 +78,6 @@ function replaceReferences(obj: any, srcReference: string, targetReference: stri
 // end-block updateReferences
 
 // start-block mergeIdentifiers
-interface MergedPatients {
-  readonly src: Patient;
-  readonly target: Patient;
-}
-
 /**
  * Merges contact information (identifiers) of two patient records, where the source patient record will be marked as
  * an old record. The target patient record will be overwritten with the merged data and will be the master record.
