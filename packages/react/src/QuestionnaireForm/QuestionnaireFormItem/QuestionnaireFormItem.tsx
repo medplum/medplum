@@ -15,6 +15,7 @@ import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { QuantityInput } from '../../QuantityInput/QuantityInput';
 import { ResourcePropertyDisplay } from '../../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { DateTimeInput } from '../../DateTimeInput/DateTimeInput';
+import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
@@ -184,12 +185,12 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         );
       } else {
         return (
-          <QuestionnaireChoiceRadioInput
+          <QuestionnaireChoiceSetInput
             name={name}
             item={item}
             initial={initial}
             answers={props.answers}
-            onChangeAnswer={(e) => onChangeAnswer(e, index)}
+            onChangeAnswer={(e: any) => onChangeAnswer(e, index)}
           />
         );
       }
@@ -267,6 +268,27 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
       }}
       defaultValue={typedValueToString(initialValue)}
       data={data}
+    />
+  );
+}
+
+function QuestionnaireChoiceSetInput(props: any): JSX.Element {
+  const { name, item, initial, onChangeAnswer, answers } = props;
+  if (item.answerValueSet) {
+    return (
+      <ValueSetAutocomplete
+        elementDefinition={{ binding: { valueSet: item.answerValueSet } }}
+        onChange={onChangeAnswer}
+      />
+    );
+  }
+  return (
+    <QuestionnaireChoiceRadioInput
+      name={name}
+      item={item}
+      initial={initial}
+      answers={answers}
+      onChangeAnswer={onChangeAnswer}
     />
   );
 }
