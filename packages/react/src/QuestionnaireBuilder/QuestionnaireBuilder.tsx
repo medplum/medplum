@@ -235,7 +235,6 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             {isChoiceQuestion(item) && (
               <AnswerBuilder
                 item={item}
-                // onChange={(newOptions) => changeProperty('answerOption', newOptions)}
                 onChange={(item) => updateItem(item)}
               />
             )}
