@@ -232,12 +232,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             {item.type === 'reference' && (
               <ReferenceProfiles item={item} onChange={(newOptions) => changeProperty('extension', newOptions)} />
             )}
-            {isChoiceQuestion(item) && (
-              <AnswerBuilder
-                item={item}
-                onChange={(item) => updateItem(item)}
-              />
-            )}
+            {isChoiceQuestion(item) && <AnswerBuilder item={item} onChange={(item) => updateItem(item)} />}
           </>
         ) : (
           <>
