@@ -1,6 +1,6 @@
 {
   "name": "@medplum/graphiql",
-  "version": "2.0.32",
+  "version": "2.1.0",
   "description": "Medplum GraphiQL",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",

@@ -16,10 +16,10 @@ IFS='.' read -ra CURR_VERSION_PARTS <<< "$CURR_VERSION"
 DATA_MIGRATIONS=$(git diff v$CURR_VERSION --name-only -- packages/server/src/migrations/data)
 if [ -z "$DATA_MIGRATIONS" ]; then
     echo "No data migrations since v$CURR_VERSION, increasing patch version"
-    ((CURR_VERSION_PARTS[2]++))
+    ((CURR_VERSION_PARTS[2]++)) || true
 else
     echo "New data migrations since v$CURR_VERSION, increasing minor version"
-    ((CURR_VERSION_PARTS[1]++))
+    ((CURR_VERSION_PARTS[1]++)) || true
     CURR_VERSION_PARTS[2]=0
 fi
 
