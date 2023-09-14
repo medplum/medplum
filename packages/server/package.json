@@ -30,7 +30,7 @@
     "@aws-sdk/client-ssm": "3.395.0",
     "@aws-sdk/cloudfront-signer": "3.391.0",
     "@aws-sdk/lib-storage": "3.395.0",
-    "@aws-sdk/types": "3.391.0",
+    "@aws-sdk/types": "3.398.0",
     "@aws-sdk/util-stream": "3.370.0",
     "@medplum/core": "*",
     "@medplum/definitions": "*",
