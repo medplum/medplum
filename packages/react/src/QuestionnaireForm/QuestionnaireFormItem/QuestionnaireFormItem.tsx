@@ -445,7 +445,7 @@ function typedValueToString(typedValue: TypedValue | undefined): string | undefi
 function getItemsByLinkId(responses: QuestionnaireResponseItem[], linkId: string): QuestionnaireResponseItem[] {
   let result: QuestionnaireResponseItem[] = [];
 
-  for (let item of responses) {
+  for (const item of responses) {
     // If the linkId matches, add it to the result array
     if (item.linkId === linkId) {
       result.push(item);
@@ -476,7 +476,7 @@ function getDefaultAnswer(
   item: QuestionnaireItem,
   index: number = 0,
   groupSequence: number = 0,
-  multiple?: boolean
+  multiple: boolean = false
 ): any {
   const results = getItemsByLinkId(responses, item.linkId ?? '');
   const selectedItem = results[groupSequence]?.answer;
