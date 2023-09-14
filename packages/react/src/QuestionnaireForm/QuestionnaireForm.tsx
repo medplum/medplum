@@ -396,5 +396,6 @@ function getResponseId(responses: QuestionnaireResponseItem[], index: number): s
 
 function getNumberOfGroups(item: QuestionnaireItem, responses: QuestionnaireResponseItem[]): number {
   // This is to maintain the number of groups for the stepper when typing backwards
-  return responses.filter((r) => r.linkId === item.linkId).length ?? 0;
+  const responseLength = responses.filter((r) => r.linkId === item.linkId).length;
+  return responseLength > 0 ? responseLength : 1;
 }
