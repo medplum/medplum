@@ -24,7 +24,7 @@
   "dependencies": {
     "@aws-sdk/client-cloudwatch-logs": "3.395.0",
     "@aws-sdk/client-lambda": "3.395.0",
-    "@aws-sdk/client-s3": "3.395.0",
+    "@aws-sdk/client-s3": "3.398.0",
     "@aws-sdk/client-secrets-manager": "3.395.0",
     "@aws-sdk/client-sesv2": "3.395.0",
     "@aws-sdk/client-ssm": "3.395.0",
