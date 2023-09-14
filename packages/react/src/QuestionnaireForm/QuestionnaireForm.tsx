@@ -36,7 +36,6 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const questionnaire = useResource(props.questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
-  // const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer[]>>({});
   const [activePage, setActivePage] = useState(0);
 
   const numberOfPages = getNumberOfPages(questionnaire?.item ?? []);
@@ -89,7 +88,6 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       {questionnaire.item && (
         <QuestionnaireFormItemArray
           items={questionnaire.item ?? []}
-          // answers={answers}
           responses={response?.item ?? []}
           onChange={setItems}
           renderPages={numberOfPages > 1}
@@ -111,28 +109,27 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
 interface QuestionnaireFormItemArrayProps {
   items: QuestionnaireItem[];
-  // answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   responses: QuestionnaireResponseItem[];
-  groupNumber?: number;
   renderPages?: boolean;
   activePage?: number;
+  groupSequence?: number;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
 
 function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX.Element {
-  const [responseItems, setResponseItems] = useState<QuestionnaireResponseItem[]>(
+  const [currentResponseItems, setCurrentResponseItems] = useState<QuestionnaireResponseItem[]>(
     buildInitialResponseItems(props.items)
   );
 
   function setResponseItem(responseId: string, newResponseItem: QuestionnaireResponseItem): void {
-    const itemExists = responseItems.some((r) => r.id === responseId);
+    const itemExists = currentResponseItems.some((r) => r.id === responseId);
     let newResponseItems;
     if (itemExists) {
-      newResponseItems = responseItems.map((r) => (r.id === responseId ? newResponseItem : r));
+      newResponseItems = currentResponseItems.map((r) => (r.id === responseId ? newResponseItem : r));
     } else {
-      newResponseItems = [...responseItems, newResponseItem];
+      newResponseItems = [...currentResponseItems, newResponseItem];
     }
-    setResponseItems(newResponseItems);
+    setCurrentResponseItems(newResponseItems);
     props.onChange(newResponseItems);
   }
 
@@ -144,9 +141,9 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
             key={`${item.linkId}-${index}`}
             item={item}
             index={index}
-            groupNumber={props.groupNumber}
             responses={props.responses}
-            responseItems={responseItems}
+            currentResponseItems={currentResponseItems}
+            groupSequence={props.groupSequence}
             setResponseItem={setResponseItem}
           />
         </Stepper.Step>
@@ -157,9 +154,9 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
         key={`${item.linkId}-${index}`}
         item={item}
         index={index}
-        groupNumber={props.groupNumber}
+        groupSequence={props.groupSequence}
         responses={props.responses}
-        responseItems={responseItems}
+        currentResponseItems={currentResponseItems}
         setResponseItem={setResponseItem}
       />
     );
@@ -178,10 +175,9 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 interface QuestionnaireFormArrayContentProps {
   item: QuestionnaireItem;
   index: number;
-  // answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   responses: QuestionnaireResponseItem[];
-  groupNumber?: number;
-  responseItems: QuestionnaireResponseItem[];
+  currentResponseItems: QuestionnaireResponseItem[];
+  groupSequence?: number;
   setResponseItem: (responseId: string, newResponseItem: QuestionnaireResponseItem) => void;
 }
 
@@ -198,8 +194,8 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
         key={props.item.linkId}
         item={props.item}
         responses={props.responses}
-        groupNumber={props.groupNumber}
-        responseItems={props.responseItems}
+        currentResponseItems={props.currentResponseItems}
+        groupSequence={props.groupSequence}
         onChange={(newResponseItem) => props.setResponseItem(newResponseItem.id as string, newResponseItem)}
       />
     );
@@ -209,8 +205,8 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
       <QuestionnaireRepeatWrapper
         item={props.item}
         responses={props.responses}
-        groupNumber={props.groupNumber}
-        responseItems={props.responseItems}
+        currentResponseItems={props.currentResponseItems}
+        groupSequence={props.groupSequence}
         onChange={(newResponseItem) => props.setResponseItem(newResponseItem.id as string, newResponseItem)}
       />
     </FormSection>
@@ -220,8 +216,8 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
 export interface QuestionnaireRepeatWrapperProps {
   item: QuestionnaireItem;
   responses: QuestionnaireResponseItem[];
-  groupNumber?: number;
-  responseItems: QuestionnaireResponseItem[];
+  currentResponseItems: QuestionnaireResponseItem[];
+  groupSequence?: number;
   onChange: (newResponseItem: QuestionnaireResponseItem, index?: number) => void;
 }
 
@@ -229,7 +225,7 @@ export function QuestionnaireRepeatWrapper(props: QuestionnaireRepeatWrapperProp
   const item = props.item;
   function onChangeItem(newResponseItems: QuestionnaireResponseItem[], number?: number): void {
     const index = number ?? 0;
-    const responses = props.responseItems.filter((r) => r.linkId === item.linkId);
+    const responses = props.currentResponseItems.filter((r) => r.linkId === item.linkId);
     props.onChange({
       id: getResponseId(responses, index),
       linkId: item.linkId,
@@ -337,7 +333,6 @@ function getNumberOfPages(items: QuestionnaireItem[]): number {
 interface RepeatableGroupProps {
   item: QuestionnaireItem;
   text: string;
-  // answers: Record<string, QuestionnaireResponseItemAnswer[]>;
   responses: QuestionnaireResponseItem[];
   onChange: (newResponseItem: QuestionnaireResponseItem[], index?: number) => void;
 }
@@ -355,7 +350,7 @@ function RepeatableGroup(props: RepeatableGroupProps): JSX.Element | null {
             <QuestionnaireFormItemArray
               items={item.item ?? []}
               responses={props.responses}
-              groupNumber={i}
+              groupSequence={i}
               onChange={(response) => props.onChange(response, i)}
             />
           </div>
@@ -395,7 +390,7 @@ function getResponseId(responses: QuestionnaireResponseItem[], index: number): s
 }
 
 function getNumberOfGroups(item: QuestionnaireItem, responses: QuestionnaireResponseItem[]): number {
-  // This is to maintain the number of groups for the stepper when typing backwards
+  // This is to maintain the group number for the stepper
   const responseLength = responses.filter((r) => r.linkId === item.linkId).length;
   return responseLength > 0 ? responseLength : 1;
 }

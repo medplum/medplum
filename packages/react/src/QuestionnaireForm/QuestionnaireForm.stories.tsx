@@ -597,7 +597,6 @@ export const PageSequence = (): JSX.Element => (
             linkId: 'group1',
             text: 'Page Sequence 1',
             type: 'group',
-            repeats: true,
             item: [
               {
                 linkId: 'question1',
@@ -619,6 +618,35 @@ export const PageSequence = (): JSX.Element => (
                   },
                   {
                     valueString: 'No',
+                  },
+                ],
+              },
+              {
+                linkId: 'question4',
+                text: 'Multi Select Question',
+                type: 'choice',
+                repeats: true,
+                answerOption: [
+                  {
+                    valueString: 'value1',
+                  },
+                  {
+                    valueString: 'value2',
+                  },
+                ],
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                    valueCodeableConcept: {
+                      coding: [
+                        {
+                          system: 'http://hl7.org/fhir/questionnaire-item-control',
+                          code: 'drop-down',
+                          display: 'Drop down',
+                        },
+                      ],
+                      text: 'Drop down',
+                    },
                   },
                 ],
               },
