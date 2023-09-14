@@ -284,8 +284,8 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
   );
 }
 
-function QuestionnaireChoiceSetInput(props: any): JSX.Element {
-  const { name, item, initial, onChangeAnswer, answers } = props;
+function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+  const { name, item, initial, onChangeAnswer, responses } = props;
   if (item.answerValueSet) {
     return (
       <ValueSetAutocomplete
@@ -299,7 +299,7 @@ function QuestionnaireChoiceSetInput(props: any): JSX.Element {
       name={name}
       item={item}
       initial={initial}
-      answers={answers}
+      responses={responses}
       onChangeAnswer={onChangeAnswer}
     />
   );
