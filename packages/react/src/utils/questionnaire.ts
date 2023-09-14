@@ -30,10 +30,7 @@ export function isChoiceQuestion(item: QuestionnaireItem): boolean {
   return item.type === 'choice' || item.type === 'open-choice';
 }
 
-export function isQuestionEnabled(
-  item: QuestionnaireItem,
-  responseItems: QuestionnaireResponseItem[]
-): boolean {
+export function isQuestionEnabled(item: QuestionnaireItem, responseItems: QuestionnaireResponseItem[]): boolean {
   if (!item.enableWhen) {
     return true;
   }

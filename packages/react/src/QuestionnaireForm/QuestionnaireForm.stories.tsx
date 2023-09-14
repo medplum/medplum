@@ -622,7 +622,7 @@ export const PageSequence = (): JSX.Element => (
                 ],
               },
               {
-                linkId: 'question4',
+                linkId: 'question1-4',
                 text: 'Multi Select Question',
                 type: 'choice',
                 repeats: true,

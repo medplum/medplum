@@ -10,7 +10,6 @@ describe('QuestionnaireUtils', () => {
 });
 
 test('isQuestionEnabled', () => {
-  // enableBehavior=any, match
   expect(
     isQuestionEnabled(
       {
@@ -36,10 +35,6 @@ test('isQuestionEnabled', () => {
           answer: [{ valueString: 'Yes' }],
         },
       ]
-      // {
-      //   q1: [{ valueString: 'No' }],
-      //   q2: [{ valueString: 'Yes' }],
-      // }
     )
   ).toBe(true);
 });
@@ -73,10 +68,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'Yes' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'No' }],
-        //   q2: [{ valueString: 'Yes' }],
-        // }
       )
     ).toBe(true);
   });
@@ -109,10 +100,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'No' }],
-        //   q2: [{ valueString: 'No' }],
-        // }
       )
     ).toBe(false);
   });
@@ -145,10 +132,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'Yes' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'Yes' }],
-        //   q2: [{ valueString: 'Yes' }],
-        // }
       )
     ).toBe(true);
   });
@@ -181,11 +164,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'Yes' }],
           },
         ]
-        // },
-        // {
-        //   q1: [{ valueString: 'Yes' }],
-        //   q2: [{ valueString: 'No' }],
-        // }
       )
     ).toBe(false);
   });
@@ -212,17 +190,13 @@ describe('isQuestionEnabled', () => {
         [
           {
             linkId: 'q1',
-            answer: [{ valueString: 'No' }, {valueString: 'Maybe'}],
+            answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
           },
           {
             linkId: 'q2',
-            answer: [{ valueString: 'No' }, {valueString: 'Maybe'}],
+            answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'No' }, { valueString: 'Maybe' }],
-        //   q2: [{ valueString: 'No' }, { valueString: 'Maybe' }],
-        // }
       )
     ).toBe(false);
   });
@@ -255,10 +229,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'No' }, { valueString: 'Maybe' }],
-        //   q2: [{ valueString: 'No' }, { valueString: 'Maybe' }],
-        // }
       )
     ).toBe(false);
   });
@@ -291,10 +261,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'No' }, { valueString: 'Yes' }],
-        //   q2: [{ valueString: 'No' }, { valueString: 'Maybe' }],
-        // }
       )
     ).toBe(true);
   });
@@ -327,10 +293,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
-        //   q2: [{ valueString: 'No' }, { valueString: 'Maybe' }],
-        // }
       )
     ).toBe(false);
   });
@@ -363,10 +325,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
-        //   q2: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
-        // }
       )
     ).toBe(true);
   });
@@ -393,10 +351,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'Yes' }],
-        //   q2: [{ valueString: 'No' }],
-        // }
       )
     ).toBe(true);
   });
@@ -423,10 +377,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'Yes' }],
-        //   q2: [{ valueString: 'No' }],
-        // }
       )
     ).toBe(false);
   });
@@ -449,9 +399,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }],
           },
         ]
-        // {
-        //   q2: [{ valueString: 'No' }],
-        // }
       )
     ).toBe(false);
   });
@@ -474,9 +421,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }],
           },
         ]
-        // {
-        //   q2: [{ valueString: 'No' }],
-        // }
       )
     ).toBe(true);
   });
@@ -499,9 +443,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }],
           },
         ]
-        // {
-        //   q2: [{ valueString: 'No' }],
-        // }
       )
     ).toBe(true);
   });
@@ -524,9 +465,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }],
           },
         ]
-        // {
-        //   q2: [{ valueString: 'No' }],
-        // }
       )
     ).toBe(true);
   });
@@ -553,10 +491,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'Yes' }, { valueString: 'No' }],
-        //   q2: [{ valueString: 'No' }],
-        // }
       )
     ).toBe(true);
   });
@@ -583,10 +517,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'Yes' }, { valueString: 'No' }],
-        //   q2: [{ valueString: 'No' }],
-        // }
       )
     ).toBe(false);
   });
@@ -613,10 +543,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'Yes' }, { valueString: 'No' }],
-        //   q2: [{ valueString: 'No' }],
-        // }
       )
     ).toBe(false);
   });
@@ -643,10 +569,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'Yes' }, { valueString: 'No' }],
-        //   q2: [{ valueString: 'No' }],
-        // }
       )
     ).toBe(true);
   });
@@ -671,9 +593,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'No' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'No' }],
-        // }
       )
     ).toBe(true);
 
@@ -688,9 +607,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueString: 'Yes' }],
           },
         ]
-        // {
-        //   q1: [{ valueString: 'Yes' }],
-        // }
       )
     ).toBe(false);
   });
@@ -715,9 +631,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueInteger: 4 }],
           },
         ]
-        // {
-        //   q1: [{ valueInteger: 4 }],
-        // }
       )
     ).toBe(true);
 
@@ -732,9 +645,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueInteger: 2 }],
           },
         ]
-        // {
-        //   q1: [{ valueInteger: 2 }],
-        // }
       )
     ).toBe(false);
   });
@@ -759,9 +669,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueInteger: 4 }],
           },
         ]
-        // {
-        //   q1: [{ valueInteger: 4 }],
-        // }
       )
     ).toBe(true);
 
@@ -776,9 +683,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueInteger: 3 }],
           },
         ]
-        // {
-        //   q1: [{ valueInteger: 3 }],
-        // }
       )
     ).toBe(true);
   });
@@ -803,9 +707,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueInteger: 2 }],
           },
         ]
-        // {
-        //   q1: [{ valueInteger: 2 }],
-        // }
       )
     ).toBe(true);
 
@@ -820,9 +721,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueInteger: 3 }],
           },
         ]
-        // {
-        //   q1: [{ valueInteger: 3 }],
-        // }
       )
     ).toBe(false);
   });
@@ -847,9 +745,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueInteger: 2 }],
           },
         ]
-        // {
-        //   q1: [{ valueInteger: 2 }],
-        // }
       )
     ).toBe(true);
 
@@ -864,9 +759,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueInteger: 3 }],
           },
         ]
-        // {
-        //   q1: [{ valueInteger: 3 }],
-        // }
       )
     ).toBe(true);
 
@@ -881,9 +773,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueInteger: 4 }],
           },
         ]
-        // {
-        //   q1: [{ valueInteger: 4 }],
-        // }
       )
     ).toBe(false);
   });
@@ -904,9 +793,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueCoding: { code: 'MEDPLUM123' } }],
           },
         ]
-        // {
-        //   q1: [{ valueCoding: { code: 'MEDPLUM123' } }],
-        // }
       )
     ).toBe(true);
 
@@ -938,9 +824,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
           },
         ]
-        // {
-        //   q1: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
-        // }
       )
     ).toBe(false);
   });
@@ -961,9 +844,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueCoding: { code: 'NOT_MEDPLUM123' } }],
           },
         ]
-        // {
-        //   q1: [{ valueCoding: { code: 'NOT_MEDPLUM123' } }],
-        // }
       )
     ).toBe(true);
 
@@ -978,9 +858,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
           },
         ]
-        // {
-        //   q1: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
-        // }
       )
     ).toBe(true);
 
@@ -995,9 +872,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
           },
         ]
-        // {
-        //   q1: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
-        // }
       )
     ).toBe(false);
 
@@ -1012,9 +886,6 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueCoding: { code: 'MEDPLUM123' } }],
           },
         ]
-        // {
-        //   q1: [{ valueCoding: { code: 'MEDPLUM123' } }],
-        // }
       )
     ).toBe(false);
   });
