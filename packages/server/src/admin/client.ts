@@ -12,7 +12,7 @@ import { body, validationResult } from 'express-validator';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { Repository, systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
-import { getRequestContext } from '../app';
+import { getAuthenticatedContext } from '../context';
 
 export const createClientValidators = [body('name').notEmpty().withMessage('Client name is required')];
 
@@ -24,7 +24,7 @@ export async function createClientHandler(req: Request, res: Response): Promise<
   }
 
   let project: Project;
-  const { project: localsProject, repo } = getRequestContext();
+  const { project: localsProject, repo } = getAuthenticatedContext();
   if (localsProject.superAdmin) {
     project = { resourceType: 'Project', id: req.params.projectId };
   } else {

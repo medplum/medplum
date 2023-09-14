@@ -12,7 +12,7 @@ import { getConfig } from '../../config';
 import { getPatientCompartments } from '../patient';
 import { Repository } from '../repo';
 import { sendResponse } from '../routes';
-import { getRequestContext } from '../../app';
+import { getAuthenticatedContext } from '../../context';
 
 // Patient everything operation.
 // https://hl7.org/fhir/operation-patient-everything.html
@@ -24,7 +24,7 @@ import { getRequestContext } from '../../app';
  * @param res The HTTP response.
  */
 export async function patientEverythingHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   const { id } = req.params;
 
   // First read the patient to verify access

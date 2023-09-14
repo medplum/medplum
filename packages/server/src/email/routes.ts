@@ -3,12 +3,12 @@ import { Request, Response, Router } from 'express';
 import { body, check, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { authenticateToken } from '../oauth/middleware';
+import { authenticateRequest } from '../oauth/middleware';
 import { sendEmail } from './email';
-import { getRequestContext } from '../app';
+import { getAuthenticatedContext } from '../context';
 
 export const emailRouter = Router();
-emailRouter.use(authenticateToken);
+emailRouter.use(authenticateRequest);
 
 const sendEmailValidators = [
   check('content-type').equals(ContentType.JSON),
@@ -20,7 +20,7 @@ emailRouter.post(
   '/send',
   sendEmailValidators,
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       sendOutcome(res, invalidRequest(errors));

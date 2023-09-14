@@ -5,12 +5,12 @@ import { body, validationResult } from 'express-validator';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { revokeLogin } from '../oauth/utils';
-import { getRequestContext } from '../app';
+import { getAuthenticatedContext } from '../context';
 
 export const revokeValidators = [body('loginId').isUUID().withMessage('Login ID is required.')];
 
 export async function revokeHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     sendOutcome(res, invalidRequest(errors));

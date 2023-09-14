@@ -4,11 +4,14 @@ import { loadTestConfig } from './config';
 import { getClient } from './database';
 import { Operator, SelectQuery } from './fhir/sql';
 import { seedDatabase } from './seed';
+import { withTestContext } from './test.setup';
 
 describe('Seed', () => {
   beforeAll(async () => {
+    console.log = jest.fn();
+
     const config = await loadTestConfig();
-    await initAppServices(config);
+    return withTestContext(() => initAppServices(config));
   });
 
   afterAll(async () => {

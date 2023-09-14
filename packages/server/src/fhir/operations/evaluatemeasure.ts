@@ -12,7 +12,7 @@ import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { isFhirJsonContentType, sendResponse } from '../routes';
-import { getRequestContext } from '../../app';
+import { getAuthenticatedContext } from '../../context';
 
 interface EvaluateMeasureParameters {
   readonly periodStart: string;
@@ -40,7 +40,7 @@ interface EvaluateMeasureParameters {
  * @param res The HTTP response.
  */
 export async function evaluateMeasureHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   const { id } = req.params;
   const measure = await ctx.repo.readResource<Measure>('Measure', id);
 

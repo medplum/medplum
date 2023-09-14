@@ -1,4 +1,4 @@
-import { badRequest, ContentType } from '@medplum/core';
+import { badRequest, ContentType, isUUID } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
@@ -23,7 +23,6 @@ import { getStructureDefinitions } from './fhir/structure';
 import { healthcheckHandler } from './healthcheck';
 import { hl7BodyParser } from './hl7/parser';
 import { initKeys } from './oauth/keys';
-import { authenticateTokenImpl } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
 import { closeRateLimiter } from './ratelimit';
@@ -34,21 +33,11 @@ import { storageRouter } from './storage';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
-import { getRepoForLogin } from './fhir/accesspolicy';
-import { RequestContext } from './context';
+import { AuthenticatedRequestContext, getRequestContext, RequestContext, requestContextStore } from './context';
 import { globalLogger } from './logger';
-import { AsyncLocalStorage } from 'async_hooks';
+import { randomUUID } from 'crypto';
 
 let server: http.Server | undefined = undefined;
-
-export const requestContextStore = new AsyncLocalStorage<RequestContext>();
-export function getRequestContext(): RequestContext {
-  const ctx = requestContextStore.getStore();
-  if (!ctx) {
-    throw new Error('No request context available');
-  }
-  return ctx;
-}
 
 /**
  * Sets standard headers for all requests.
@@ -121,29 +110,17 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('File too large'));
     return;
   }
-  const ctx = getRequestContext();
-  (ctx.logger ?? globalLogger).error('Unhandled error', err);
+  try {
+    getRequestContext().logger.error('Unhandled error', err);
+  } catch {
+    globalLogger.error('Unhandled error', err);
+  }
   res.status(500).json({ msg: 'Internal Server Error' });
 }
 
-async function authenticateRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const { login, project, membership } = await authenticateTokenImpl(req);
-  try {
-    const repo = await getRepoForLogin(
-      login,
-      membership,
-      project.strictMode,
-      isExtendedMode(req),
-      project.checkReferencesOnWrite
-    );
-    requestContextStore.run(new RequestContext(req, login, project, membership, repo), () => next());
-  } catch (err) {
-    next(err);
-  }
-}
-
-function isExtendedMode(req: Request): boolean {
-  return req.headers['x-medplum'] === 'extended';
+async function attachRequestContext(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const { requestId, traceId } = requestIds(req);
+  requestContextStore.run(new RequestContext(requestId, traceId), () => next());
 }
 
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
@@ -157,7 +134,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(standardHeaders);
   app.use(cors(corsOptions));
   app.use(compression());
-  app.use(authenticateRequest);
+  app.use(attachRequestContext);
   app.use('/fhir/R4/Binary', binaryRouter);
   app.use(
     urlencoded({
@@ -202,14 +179,16 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   return server;
 }
 
-export async function initAppServices(config: MedplumServerConfig): Promise<void> {
-  getStructureDefinitions();
-  initRedis(config.redis);
-  await initDatabase(config.database);
-  await seedDatabase();
-  await initKeys(config);
-  initBinaryStorage(config.binaryStorage);
-  initWorkers(config.redis);
+export function initAppServices(config: MedplumServerConfig): Promise<void> {
+  return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
+    getStructureDefinitions();
+    initRedis(config.redis);
+    await initDatabase(config.database);
+    await seedDatabase();
+    await initKeys(config);
+    initBinaryStorage(config.binaryStorage);
+    initWorkers(config.redis);
+  });
 }
 
 export async function shutdownApp(): Promise<void> {
@@ -229,4 +208,30 @@ export async function shutdownApp(): Promise<void> {
   if (binaryStorage?.startsWith('file:' + join(tmpdir(), 'medplum-temp-storage'))) {
     rmSync(binaryStorage.replace('file:', ''), { recursive: true, force: true });
   }
+}
+
+function requestIds(req: Request): { requestId: string; traceId: string } {
+  const requestId = randomUUID();
+  const traceIdHeader = req.header('x-trace-id');
+  const traceParentHeader = req.header('traceparent');
+  let traceId: string | undefined;
+  if (traceIdHeader && isUUID(traceIdHeader)) {
+    traceId = traceIdHeader;
+  } else if (traceParentHeader?.startsWith('00-')) {
+    const id = traceParentHeader.split('-')[1];
+    const uuid = [
+      id.substring(0, 8),
+      id.substring(8, 12),
+      id.substring(12, 16),
+      id.substring(16, 20),
+      id.substring(20, 32),
+    ].join('-');
+    if (isUUID(uuid)) {
+      traceId = uuid;
+    }
+  }
+  if (!traceId) {
+    traceId = randomUUID();
+  }
+  return { requestId, traceId };
 }

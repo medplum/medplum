@@ -1,6 +1,6 @@
 import { forbidden, OperationOutcomeError } from '@medplum/core';
 import { NextFunction, Request, Response } from 'express';
-import { getRequestContext } from '../app';
+import { getAuthenticatedContext } from '../context';
 
 /**
  * Verifies that the current user is a project admin.
@@ -9,7 +9,7 @@ import { getRequestContext } from '../app';
  * @param next The next handler function.
  */
 export async function verifyProjectAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   if (ctx.project.superAdmin || ctx.membership.admin) {
     next();
   } else {

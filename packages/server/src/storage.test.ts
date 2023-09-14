@@ -10,6 +10,7 @@ import { initApp, shutdownApp } from './app';
 import { loadTestConfig, MedplumServerConfig } from './config';
 import { systemRepo } from './fhir/repo';
 import { getBinaryStorage } from './fhir/storage';
+import { withTestContext } from './test.setup';
 
 const app = express();
 let config: MedplumServerConfig;
@@ -20,10 +21,12 @@ describe('Storage Routes', () => {
     config = await loadTestConfig();
     await initApp(app, config);
 
-    binary = await systemRepo.createResource<Binary>({
-      resourceType: 'Binary',
-      contentType: ContentType.TEXT,
-    });
+    binary = await withTestContext(() =>
+      systemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      })
+    );
 
     const req = new Readable();
     req.push('hello world');
@@ -52,10 +55,12 @@ describe('Storage Routes', () => {
   });
 
   test('File not found', async () => {
-    const resource = await systemRepo.createResource<Binary>({
-      resourceType: 'Binary',
-      contentType: ContentType.TEXT,
-    });
+    const resource = await withTestContext(() =>
+      systemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      })
+    );
 
     const req = new Readable();
     req.push('hello world');

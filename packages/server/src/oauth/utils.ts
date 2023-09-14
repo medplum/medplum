@@ -41,7 +41,7 @@ import {
   verifyJwt,
 } from './keys';
 import { AuthState } from './middleware';
-import { getRequestContext } from '../app';
+import { getRequestContext } from '../context';
 
 export interface LoginRequest {
   readonly email?: string;

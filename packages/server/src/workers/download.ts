@@ -7,7 +7,7 @@ import { getConfig, MedplumRedisConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { globalLogger } from '../logger';
-import { getRequestContext } from '../app';
+import { getRequestContext } from '../context';
 
 /*
  * The download worker inspects resources,

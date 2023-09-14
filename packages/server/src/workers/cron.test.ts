@@ -2,7 +2,7 @@ import { Repository, systemRepo } from '../fhir/repo';
 import { loadTestConfig } from '../config';
 import { initAppServices, shutdownApp } from '../app';
 import { AuditEvent, Bot, Project, ProjectMembership } from '@medplum/fhirtypes';
-import { createTestProject } from '../test.setup';
+import { createTestProject, withTestContext } from '../test.setup';
 import { createReference } from '@medplum/core';
 import { convertTimingToCron, CronJobData, execBot, getCronQueue } from './cron';
 import { randomUUID } from 'crypto';
@@ -36,16 +36,18 @@ describe('Cron Worker', () => {
     // Add the bot and check that a job was added to the queue.
     const queue = getCronQueue() as any;
     queue.add.mockClear();
-    const bot = await botRepo.createResource<Bot>({
-      resourceType: 'Bot',
-      name: 'bot-1',
-      cronTiming: {
-        repeat: {
-          period: 30,
-          dayOfWeek: ['mon', 'wed', 'fri'],
+    const bot = await withTestContext(() =>
+      botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'bot-1',
+        cronTiming: {
+          repeat: {
+            period: 30,
+            dayOfWeek: ['mon', 'wed', 'fri'],
+          },
         },
-      },
-    });
+      })
+    );
     expect(bot).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
   });
@@ -54,11 +56,13 @@ describe('Cron Worker', () => {
     // Add the bot and check that a job was added to the queue.
     const queue = getCronQueue() as any;
     queue.add.mockClear();
-    const bot = await botRepo.createResource<Bot>({
-      resourceType: 'Bot',
-      name: 'bot-1',
-      cronString: '* */2 * * 4,5',
-    });
+    const bot = await withTestContext(() =>
+      botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'bot-1',
+        cronString: '* */2 * * 4,5',
+      })
+    );
     expect(bot).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
   });
@@ -67,11 +71,13 @@ describe('Cron Worker', () => {
     // Add the bot and check that a job was added to the queue.
     const queue = getCronQueue() as any;
     queue.add.mockClear();
-    const bot = await botRepo.createResource<Bot>({
-      resourceType: 'Bot',
-      name: 'bot-1',
-      cronString: 'testing',
-    });
+    const bot = await withTestContext(() =>
+      botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'bot-1',
+        cronString: 'testing',
+      })
+    );
     expect(bot).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
@@ -80,148 +86,154 @@ describe('Cron Worker', () => {
     // Add the bot and check that a job was added to the queue.
     const queue = getCronQueue() as any;
     queue.add.mockClear();
-    const bot = await botRepo.createResource<Bot>({
-      resourceType: 'Bot',
-      name: 'bot-1',
-    });
+    const bot = await withTestContext(() =>
+      botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'bot-1',
+      })
+    );
     // Bot should have still been created
     expect(bot).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
 
-  test('Update queue after updating bot', async () => {
-    // Add the bot and check that a job was added to the queue.
-    const queue = getCronQueue() as any;
-    queue.add.mockClear();
-    const bot = await botRepo.createResource<Bot>({
-      resourceType: 'Bot',
-      name: 'bot-1',
-      cronTiming: {
-        repeat: {
-          period: 30,
-          dayOfWeek: ['mon', 'wed', 'fri'],
-        },
-      },
-    });
-
-    await botRepo.updateResource({
-      resourceType: 'Bot',
-      id: bot.id,
-      cronTiming: {
-        repeat: {
-          period: 10,
-          dayOfWeek: ['mon'],
-        },
-      },
-    });
-
-    expect(bot).toBeDefined();
-    expect(queue.getRepeatableJobs).toBeCalled();
-    expect(queue.add).toBeCalledTimes(2);
-  });
-
-  test('Find a previous job to remove after updating bot', async () => {
-    const queue = getCronQueue() as any;
-    const bot = await botRepo.createResource<Bot>({
-      resourceType: 'Bot',
-      name: 'bot-1',
-      cronString: '* * * * *',
-    });
-
-    expect(bot).toBeDefined();
-    expect(queue.getRepeatableJobs).toBeCalled();
-    expect(queue.add).toBeCalled();
-
-    queue.getRepeatableJobs.mockImplementation(() => [
-      {
-        key: `CronJobData:${bot.id}:::* * * * *`,
-        id: bot.id,
-      },
-    ]);
-    await botRepo.updateResource({
-      resourceType: 'Bot',
-      id: bot.id,
-      cronTiming: {
-        repeat: {
-          period: 10,
-          dayOfWeek: ['mon'],
-        },
-      },
-    });
-
-    expect(queue.removeRepeatableByKey).toBeCalled();
-  });
-
-  test('Job should not be in queue if cron is not enabled', async () => {
-    // Create a simple project with no advanced features enabled
-    const queue = getCronQueue() as any;
-    queue.add.mockClear();
-
-    // Create one simple project with no advanced features enabled
-    const testProject = await systemRepo.createResource<Project>({
-      resourceType: 'Project',
-      name: 'Test Project',
-      owner: {
-        reference: 'User/' + randomUUID(),
-      },
-    });
-
-    const repo = new Repository({
-      extendedMode: true,
-      project: testProject.id,
-      author: {
-        reference: 'ClientApplication/' + randomUUID(),
-      },
-    });
-
-    const bot = await repo.createResource<Bot>({
-      resourceType: 'Bot',
-      name: 'bot-1',
-      cronTiming: {
-        repeat: {
-          period: 30,
-          dayOfWeek: ['mon', 'wed', 'fri'],
-        },
-      },
-    });
-    expect(bot).toBeDefined();
-    expect(queue.add).not.toBeCalled();
-  });
-
-  test('Bot should execute successfully', async () => {
-    const queue = getCronQueue() as any;
-    queue.add.mockClear();
-
-    const bot = await botRepo.createResource<Bot>({
-      resourceType: 'Bot',
-      name: 'bot-1',
-      cronTiming: {
-        repeat: {
-          period: 30,
-          dayOfWeek: ['mon', 'wed', 'fri'],
-        },
-      },
-    });
-    await systemRepo.createResource<ProjectMembership>({
-      resourceType: 'ProjectMembership',
-      project: createReference(botProject),
-      user: createReference(bot),
-      profile: createReference(bot),
-    });
-
-    // Create a job object to pass to execBot
-    const job: Job<CronJobData> = {
-      id: bot.id,
-      data: {
+  test('Update queue after updating bot', () =>
+    withTestContext(async () => {
+      // Add the bot and check that a job was added to the queue.
+      const queue = getCronQueue() as any;
+      queue.add.mockClear();
+      const bot = await botRepo.createResource<Bot>({
         resourceType: 'Bot',
-        botId: bot.id,
-      },
-    } as Job<CronJobData>;
+        name: 'bot-1',
+        cronTiming: {
+          repeat: {
+            period: 30,
+            dayOfWeek: ['mon', 'wed', 'fri'],
+          },
+        },
+      });
 
-    await execBot(job);
-    const bundle = await botRepo.search<AuditEvent>({ resourceType: 'AuditEvent' });
-    expect(bundle.entry?.length).toEqual(1);
-  });
+      await botRepo.updateResource({
+        resourceType: 'Bot',
+        id: bot.id,
+        cronTiming: {
+          repeat: {
+            period: 10,
+            dayOfWeek: ['mon'],
+          },
+        },
+      });
+
+      expect(bot).toBeDefined();
+      expect(queue.getRepeatableJobs).toBeCalled();
+      expect(queue.add).toBeCalledTimes(2);
+    }));
+
+  test('Find a previous job to remove after updating bot', () =>
+    withTestContext(async () => {
+      const queue = getCronQueue() as any;
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'bot-1',
+        cronString: '* * * * *',
+      });
+
+      expect(bot).toBeDefined();
+      expect(queue.getRepeatableJobs).toBeCalled();
+      expect(queue.add).toBeCalled();
+
+      queue.getRepeatableJobs.mockImplementation(() => [
+        {
+          key: `CronJobData:${bot.id}:::* * * * *`,
+          id: bot.id,
+        },
+      ]);
+      await botRepo.updateResource({
+        resourceType: 'Bot',
+        id: bot.id,
+        cronTiming: {
+          repeat: {
+            period: 10,
+            dayOfWeek: ['mon'],
+          },
+        },
+      });
+
+      expect(queue.removeRepeatableByKey).toBeCalled();
+    }));
+
+  test('Job should not be in queue if cron is not enabled', () =>
+    withTestContext(async () => {
+      // Create a simple project with no advanced features enabled
+      const queue = getCronQueue() as any;
+      queue.add.mockClear();
+
+      // Create one simple project with no advanced features enabled
+      const testProject = await systemRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'Test Project',
+        owner: {
+          reference: 'User/' + randomUUID(),
+        },
+      });
+
+      const repo = new Repository({
+        extendedMode: true,
+        project: testProject.id,
+        author: {
+          reference: 'ClientApplication/' + randomUUID(),
+        },
+      });
+
+      const bot = await repo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'bot-1',
+        cronTiming: {
+          repeat: {
+            period: 30,
+            dayOfWeek: ['mon', 'wed', 'fri'],
+          },
+        },
+      });
+      expect(bot).toBeDefined();
+      expect(queue.add).not.toBeCalled();
+    }));
+
+  test('Bot should execute successfully', () =>
+    withTestContext(async () => {
+      const queue = getCronQueue() as any;
+      queue.add.mockClear();
+
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'bot-1',
+        cronTiming: {
+          repeat: {
+            period: 30,
+            dayOfWeek: ['mon', 'wed', 'fri'],
+          },
+        },
+      });
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(botProject),
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+
+      // Create a job object to pass to execBot
+      const job: Job<CronJobData> = {
+        id: bot.id,
+        data: {
+          resourceType: 'Bot',
+          botId: bot.id,
+        },
+      } as Job<CronJobData>;
+
+      await execBot(job);
+      const bundle = await botRepo.search<AuditEvent>({ resourceType: 'AuditEvent' });
+      expect(bundle.entry?.length).toEqual(1);
+    }));
 });
 
 describe('convertTimingToCron', () => {

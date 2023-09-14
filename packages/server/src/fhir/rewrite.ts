@@ -2,7 +2,7 @@ import { Binary, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../config';
 import { Repository } from './repo';
 import { getPresignedUrl } from './signer';
-import { getRequestContext } from '../app';
+import { getRequestContext } from '../context';
 
 /**
  * The target type of the attachment rewrite.

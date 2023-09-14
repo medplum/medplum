@@ -4,13 +4,14 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
+import { withTestContext } from '../test.setup';
 
 const app = express();
 
 describe('Bot admin', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initApp(app, config);
+    return withTestContext(() => initApp(app, config));
   });
 
   afterAll(async () => {
@@ -19,13 +20,15 @@ describe('Bot admin', () => {
 
   test('Create new bot', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Next, Alice creates a bot
     const res2 = await request(app)

@@ -9,7 +9,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
 jest.mock('@aws-sdk/client-sesv2');
@@ -86,13 +86,15 @@ describe('Reset Password', () => {
   test('Success', async () => {
     const email = `george${randomUUID()}@example.com`;
 
-    await registerNew({
-      firstName: 'George',
-      lastName: 'Washington',
-      projectName: 'Washington Project',
-      email,
-      password: 'password!@#',
-    });
+    await withTestContext(() =>
+      registerNew({
+        firstName: 'George',
+        lastName: 'Washington',
+        projectName: 'Washington Project',
+        email,
+        password: 'password!@#',
+      })
+    );
 
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({
       email,
@@ -114,13 +116,15 @@ describe('Reset Password', () => {
 
     const email = `george${randomUUID()}@example.com`;
 
-    await registerNew({
-      firstName: 'George',
-      lastName: 'Washington',
-      projectName: 'Washington Project',
-      email,
-      password: 'password!@#',
-    });
+    await withTestContext(() =>
+      registerNew({
+        firstName: 'George',
+        lastName: 'Washington',
+        projectName: 'Washington Project',
+        email,
+        password: 'password!@#',
+      })
+    );
 
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({
       email,
@@ -140,17 +144,19 @@ describe('Reset Password', () => {
   test('External auth', async () => {
     // Create a domain with external auth
     const domain = randomUUID() + '.example.com';
-    await systemRepo.createResource<DomainConfiguration>({
-      resourceType: 'DomainConfiguration',
-      domain,
-      identityProvider: {
-        authorizeUrl: 'https://example.com/oauth2/authorize',
-        tokenUrl: 'https://example.com/oauth2/token',
-        userInfoUrl: 'https://example.com/oauth2/userinfo',
-        clientId: '123',
-        clientSecret: '456',
-      },
-    });
+    await withTestContext(() =>
+      systemRepo.createResource<DomainConfiguration>({
+        resourceType: 'DomainConfiguration',
+        domain,
+        identityProvider: {
+          authorizeUrl: 'https://example.com/oauth2/authorize',
+          tokenUrl: 'https://example.com/oauth2/token',
+          userInfoUrl: 'https://example.com/oauth2/userinfo',
+          clientId: '123',
+          clientSecret: '456',
+        },
+      })
+    );
 
     const res = await request(app)
       .post('/auth/resetpassword')

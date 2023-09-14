@@ -7,7 +7,7 @@ import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { MedplumIdTokenClaims, verifyJwt } from './keys';
 import { getClient } from './utils';
-import { getRequestContext } from '../app';
+import { getRequestContext } from '../context';
 
 /*
  * Handles the OAuth/OpenID Authorization Endpoint.

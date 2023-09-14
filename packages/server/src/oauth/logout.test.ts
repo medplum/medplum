@@ -4,6 +4,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
+import { withTestContext } from '../test.setup';
 
 const app = express();
 
@@ -26,15 +27,17 @@ describe('Revoke', () => {
     const email = `alex${randomUUID()}@example.com`;
     const password = randomUUID();
 
-    const { accessToken } = await registerNew({
-      firstName: 'Alexander',
-      lastName: 'Hamilton',
-      projectName: 'Hamilton Project',
-      email,
-      password,
-      remoteAddress: '5.5.5.5',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
-    });
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
+        email,
+        password,
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      })
+    );
 
     // Get user info (should succeed)
     const res1 = await request(app).get('/oauth2/userinfo').set('Authorization', `Bearer ${accessToken}`);

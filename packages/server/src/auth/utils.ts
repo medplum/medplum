@@ -7,7 +7,7 @@ import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getClient, getMembershipsForLogin } from '../oauth/utils';
-import { getRequestContext } from '../app';
+import { getRequestContext } from '../context';
 
 export async function createProfile(
   project: Project,

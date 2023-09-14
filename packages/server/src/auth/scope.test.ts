@@ -6,6 +6,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { registerNew } from './register';
+import { withTestContext } from '../test.setup';
 
 const app = express();
 const email = `multi${randomUUID()}@example.com`;
@@ -16,13 +17,15 @@ describe('Scope', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    await registerNew({
-      firstName: 'Scope',
-      lastName: 'Scope',
-      projectName: 'Scope Project',
-      email,
-      password,
-    });
+    await withTestContext(() =>
+      registerNew({
+        firstName: 'Scope',
+        lastName: 'Scope',
+        projectName: 'Scope Project',
+        email,
+        password,
+      })
+    );
   });
 
   afterAll(async () => {
@@ -67,10 +70,12 @@ describe('Scope', () => {
     expect(res1.body.login).toBeDefined();
 
     const login = await systemRepo.readResource<Login>('Login', res1.body.login);
-    await systemRepo.updateResource({
-      ...login,
-      revoked: true,
-    });
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...login,
+        revoked: true,
+      })
+    );
 
     const res2 = await request(app).post('/auth/scope').type('json').send({
       login: res1.body.login,
@@ -91,10 +96,12 @@ describe('Scope', () => {
     expect(res1.body.login).toBeDefined();
 
     const login = await systemRepo.readResource<Login>('Login', res1.body.login);
-    await systemRepo.updateResource({
-      ...login,
-      granted: true,
-    });
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...login,
+        granted: true,
+      })
+    );
 
     const res2 = await request(app).post('/auth/scope').type('json').send({
       login: res1.body.login,

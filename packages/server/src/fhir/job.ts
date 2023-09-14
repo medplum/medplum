@@ -1,39 +1,30 @@
 import { allOk } from '@medplum/core';
-import { AsyncJob, Bundle } from '@medplum/fhirtypes';
+import { AsyncJob } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { sendResponse } from './routes';
-import { getRequestContext } from '../app';
+import { getAuthenticatedContext } from '../context';
 
 // Asychronous Job Status API
 // https://hl7.org/fhir/async-bundle.html
 
 export const jobRouter = Router();
 
+const finalJobStatusCodes = ['completed', 'error'];
+
 jobRouter.get(
   '/:id/status',
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     const { id } = req.params;
     const asyncJob = await ctx.repo.readResource<AsyncJob>('AsyncJob', id);
 
-    if (asyncJob.status !== 'completed') {
+    if (!finalJobStatusCodes.includes(asyncJob.status as string)) {
       res.status(202).end();
       return;
     }
 
-    await sendResponse(res, allOk, {
-      resourceType: 'Bundle',
-      type: 'batch-response',
-      entry: [
-        {
-          response: {
-            status: '200 OK',
-            location: asyncJob.request,
-          },
-        },
-      ],
-    } as Bundle);
+    await sendResponse(res, allOk, asyncJob);
   })
 );
 

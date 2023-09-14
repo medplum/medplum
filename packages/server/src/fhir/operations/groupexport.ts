@@ -6,7 +6,7 @@ import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { getPatientEverything } from './patienteverything';
 import { BulkExporter } from './utils/bulkexporter';
-import { getRequestContext } from '../../app';
+import { getAuthenticatedContext, getRequestContext } from '../../context';
 
 /**
  * Handles a Group export request.
@@ -20,7 +20,7 @@ import { getRequestContext } from '../../app';
  * @param res The HTTP response.
  */
 export async function groupExportHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const { id } = req.params;
   const query = req.query as Record<string, string | undefined>;
@@ -64,8 +64,9 @@ export async function groupExportResources(
           await exporter.writeResource(resource);
         }
       } catch (err) {
-        const ctx = getRequestContext();
-        ctx.logger.warn('Unable to read patient for group export', { reference: member.entity.reference });
+        getRequestContext().logger.warn('Unable to read patient for group export', {
+          reference: member.entity.reference,
+        });
       }
     }
 

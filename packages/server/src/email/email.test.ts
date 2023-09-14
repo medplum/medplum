@@ -13,6 +13,7 @@ import { getConfig, loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { sendEmail } from './email';
+import { withTestContext } from '../test.setup';
 
 describe('Email', () => {
   let mockSESv2Client: AwsClientStub<SESv2Client>;
@@ -127,10 +128,12 @@ describe('Email', () => {
 
   test('Attach binary', async () => {
     // Create a binary
-    const binary = await systemRepo.createResource({
-      resourceType: 'Binary',
-      contentType: ContentType.TEXT,
-    });
+    const binary = await withTestContext(() =>
+      systemRepo.createResource({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      })
+    );
 
     // Emulate upload
     const req = new Readable();

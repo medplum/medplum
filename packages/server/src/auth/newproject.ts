@@ -7,7 +7,7 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { createProfile, createProjectMembership } from './utils';
-import { getRequestContext } from '../app';
+import { getRequestContext } from '../context';
 
 export interface NewProjectRequest {
   readonly loginId: string;

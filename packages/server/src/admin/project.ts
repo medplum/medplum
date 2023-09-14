@@ -4,15 +4,15 @@ import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
-import { authenticateToken } from '../oauth/middleware';
+import { authenticateRequest } from '../oauth/middleware';
 import { createBotHandler, createBotValidators } from './bot';
 import { createClientHandler, createClientValidators } from './client';
 import { inviteHandler, inviteValidators } from './invite';
 import { verifyProjectAdmin } from './utils';
-import { getRequestContext } from '../app';
+import { getAuthenticatedContext } from '../context';
 
 export const projectAdminRouter = Router();
-projectAdminRouter.use(authenticateToken);
+projectAdminRouter.use(authenticateRequest);
 projectAdminRouter.use(verifyProjectAdmin);
 projectAdminRouter.post('/:projectId/bot', createBotValidators, asyncWrap(createBotHandler));
 projectAdminRouter.post('/:projectId/client', createClientValidators, asyncWrap(createClientHandler));
@@ -25,7 +25,7 @@ projectAdminRouter.post('/:projectId/invite', inviteValidators, asyncWrap(invite
 projectAdminRouter.get(
   '/:projectId',
   asyncWrap(async (req: Request, res: Response) => {
-    const project = getRequestContext().project;
+    const project = getAuthenticatedContext().project;
     return res.status(200).json({
       project: {
         id: project.id,
@@ -40,7 +40,7 @@ projectAdminRouter.get(
 projectAdminRouter.post(
   '/:projectId/secrets',
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     const result = await ctx.repo.updateResource({
       ...ctx.project,
       secret: req.body,
@@ -53,7 +53,7 @@ projectAdminRouter.post(
 projectAdminRouter.post(
   '/:projectId/sites',
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     const result = await ctx.repo.updateResource({
       ...ctx.project,
       site: req.body,
@@ -66,7 +66,7 @@ projectAdminRouter.post(
 projectAdminRouter.get(
   '/:projectId/members/:membershipId',
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     const { membershipId } = req.params;
     const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
     if (membership.project?.reference !== getReferenceString(ctx.project)) {
@@ -80,7 +80,7 @@ projectAdminRouter.get(
 projectAdminRouter.post(
   '/:projectId/members/:membershipId',
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     const { membershipId } = req.params;
     const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
     if (membership.project?.reference !== getReferenceString(ctx.project)) {
@@ -100,7 +100,7 @@ projectAdminRouter.post(
 projectAdminRouter.delete(
   '/:projectId/members/:membershipId',
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     const { membershipId } = req.params;
     const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
     if (membership.project?.reference !== getReferenceString(ctx.project)) {

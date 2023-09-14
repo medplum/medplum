@@ -19,7 +19,7 @@ import {
 import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
 import { getSearchParameter } from '../structure';
-import { getRequestContext } from '../../app';
+import { getAuthenticatedContext } from '../../context';
 
 /**
  * Handles a CSV export request.
@@ -27,7 +27,7 @@ import { getRequestContext } from '../../app';
  * @param res The HTTP response.
  */
 export async function csvHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   const { resourceType } = req.params as { resourceType: ResourceType };
   const query = req.query as Record<string, string[] | string | undefined>;
 

@@ -3,7 +3,7 @@ import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { createTestClient } from '../test.setup';
+import { createTestClient, withTestContext } from '../test.setup';
 import {
   getAuthTokens,
   getClient,
@@ -203,14 +203,16 @@ describe('OAuth utils', () => {
   });
 
   test('Login successfully', async () => {
-    const login = await tryLogin({
-      clientId: client.id as string,
-      authMethod: 'password',
-      email: 'admin@example.com',
-      password: 'medplum_admin',
-      scope: 'openid',
-      nonce: 'nonce',
-    });
+    const login = await withTestContext(() =>
+      tryLogin({
+        clientId: client.id as string,
+        authMethod: 'password',
+        email: 'admin@example.com',
+        password: 'medplum_admin',
+        scope: 'openid',
+        nonce: 'nonce',
+      })
+    );
     expect(login).toBeDefined();
   });
 

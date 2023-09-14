@@ -9,10 +9,10 @@ import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 
 import { loadConfig } from './config';
-import { LogLevel, logger, parseLogLevel } from './logger';
+import { LogLevel, globalLogger, parseLogLevel } from './logger';
 import { waitFor } from './test.setup';
 
-describe('Logger', () => {
+describe('Global Logger', () => {
   let mockCloudWatchLogsClient: AwsClientStub<CloudWatchLogsClient>;
 
   beforeEach(() => {
@@ -33,12 +33,12 @@ describe('Logger', () => {
   test('Debug', () => {
     console.log = jest.fn();
 
-    logger.level = LogLevel.NONE;
-    logger.debug('test');
+    globalLogger.level = LogLevel.NONE;
+    globalLogger.debug('test');
     expect(console.log).not.toHaveBeenCalled();
 
-    logger.level = LogLevel.DEBUG;
-    logger.debug('test');
+    globalLogger.level = LogLevel.DEBUG;
+    globalLogger.debug('test');
     expect(console.log).toHaveBeenCalledWith(
       expect.stringMatching(/^\{"level":"DEBUG","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"test"\}$/)
     );
@@ -47,12 +47,12 @@ describe('Logger', () => {
   test('Info', () => {
     console.log = jest.fn();
 
-    logger.level = LogLevel.NONE;
-    logger.info('test');
+    globalLogger.level = LogLevel.NONE;
+    globalLogger.info('test');
     expect(console.log).not.toHaveBeenCalled();
 
-    logger.level = LogLevel.INFO;
-    logger.info('test');
+    globalLogger.level = LogLevel.INFO;
+    globalLogger.info('test');
     expect(console.log).toHaveBeenCalledWith(
       expect.stringMatching(/^\{"level":"INFO","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"test"\}$/)
     );
@@ -61,12 +61,12 @@ describe('Logger', () => {
   test('Warn', () => {
     console.log = jest.fn();
 
-    logger.level = LogLevel.NONE;
-    logger.warn('test');
+    globalLogger.level = LogLevel.NONE;
+    globalLogger.warn('test');
     expect(console.log).not.toHaveBeenCalled();
 
-    logger.level = LogLevel.WARN;
-    logger.warn('test');
+    globalLogger.level = LogLevel.WARN;
+    globalLogger.warn('test');
     expect(console.log).toHaveBeenCalledWith(
       expect.stringMatching(/^\{"level":"WARN","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"test"\}$/)
     );
@@ -75,12 +75,12 @@ describe('Logger', () => {
   test('Error', () => {
     console.log = jest.fn();
 
-    logger.level = LogLevel.NONE;
-    logger.error('test');
+    globalLogger.level = LogLevel.NONE;
+    globalLogger.error('test');
     expect(console.log).not.toHaveBeenCalled();
 
-    logger.level = LogLevel.ERROR;
-    logger.error('test');
+    globalLogger.level = LogLevel.ERROR;
+    globalLogger.error('test');
     expect(console.log).toHaveBeenCalledWith(
       expect.stringMatching(/^\{"level":"ERROR","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"test"\}$/)
     );
@@ -94,7 +94,7 @@ describe('Logger', () => {
 
     await loadConfig('file:test.json');
 
-    logger.logAuditEvent({ resourceType: 'AuditEvent' });
+    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' });
 
     expect(console.info).not.toHaveBeenCalled();
     expect(console.log).not.toHaveBeenCalled();
@@ -107,7 +107,7 @@ describe('Logger', () => {
     await loadConfig('file:test.json');
 
     // Log an AuditEvent
-    logger.logAuditEvent({ resourceType: 'AuditEvent' });
+    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' });
 
     // It should have been logged
     expect(console.log).toHaveBeenCalledWith('{"resourceType":"AuditEvent"}');
@@ -129,8 +129,8 @@ describe('Logger', () => {
     await loadConfig('file:test.json');
 
     // Log an AuditEvent
-    logger.logAuditEvent({ resourceType: 'AuditEvent' });
-    logger.logAuditEvent({ resourceType: 'AuditEvent' });
+    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' });
+    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' });
 
     await waitFor(async () => expect(mockCloudWatchLogsClient).toHaveReceivedCommand(PutLogEventsCommand));
 

@@ -6,9 +6,8 @@ import { body, validationResult } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
-import { authenticateTokenImpl } from '../oauth/middleware';
 import { bcryptHashPassword } from './utils';
-import { getRequestContext } from '../app';
+import { getAuthenticatedContext } from '../context';
 
 export const changePasswordValidators = [
   body('oldPassword').notEmpty().withMessage('Missing oldPassword'),
@@ -16,8 +15,7 @@ export const changePasswordValidators = [
 ];
 
 export async function changePasswordHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getRequestContext();
-  await authenticateTokenImpl(req);
+  const ctx = getAuthenticatedContext();
 
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

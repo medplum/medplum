@@ -28,7 +28,7 @@ import {
   isFhirCriteriaMet,
   isJobSuccessful,
 } from './utils';
-import { getRequestContext } from '../app';
+import { getRequestContext } from '../context';
 
 const MAX_JOB_ATTEMPTS = 18;
 

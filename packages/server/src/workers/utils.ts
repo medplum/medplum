@@ -12,7 +12,7 @@ import {
 } from '@medplum/fhirtypes';
 import { systemRepo } from '../fhir/repo';
 import { AuditEventOutcome } from '../util/auditevent';
-import { getRequestContext } from '../app';
+import { getRequestContext } from '../context';
 
 export function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
   return systemRepo.searchOne<ProjectMembership>({
@@ -136,7 +136,6 @@ export async function isFhirCriteriaMet(subscription: Subscription, currentResou
 }
 
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
-  const ctx = getRequestContext();
   const successCodes = getExtension(
     subscription,
     'https://medplum.com/fhir/StructureDefinition/subscription-success-codes'
@@ -156,7 +155,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
       const lowerBound = Number(codeRange[0]);
       const upperBound = Number(codeRange[1]);
       if (!(Number.isInteger(lowerBound) && Number.isInteger(upperBound))) {
-        ctx.logger.debug(
+        getRequestContext().logger.debug(
           `${lowerBound} and ${upperBound} aren't an integer, configured status codes need to be changed. Resorting to default codes`
         );
         return defaultStatusCheck(status);
@@ -167,7 +166,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
     } else {
       const codeValue = Number(code);
       if (!Number.isInteger(codeValue)) {
-        ctx.logger.debug(
+        getRequestContext().logger.debug(
           `${code} isn't an integer, configured status codes need to be changed. Resorting to default codes`
         );
         return defaultStatusCheck(status);

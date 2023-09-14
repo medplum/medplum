@@ -4,7 +4,7 @@ import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
-import { authenticateToken } from '../oauth/middleware';
+import { authenticateRequest } from '../oauth/middleware';
 import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
@@ -23,7 +23,7 @@ import { resourceGraphHandler } from './operations/resourcegraph';
 import { sendOutcome } from './outcomes';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { getRequestContext } from '../app';
+import { getAuthenticatedContext } from '../context';
 
 export const fhirRouter = Router();
 
@@ -77,8 +77,7 @@ publicRoutes.get('/.well-known/smart-configuration', smartConfigurationHandler);
 publicRoutes.get('/.well-known/smart-styles.json', smartStylingHandler);
 
 // Protected routes require authentication
-const protectedRoutes = Router();
-protectedRoutes.use(authenticateToken);
+const protectedRoutes = Router().use(authenticateRequest);
 fhirRouter.use(protectedRoutes);
 
 // Project $export
@@ -152,7 +151,7 @@ protectedRoutes.post(
 protectedRoutes.post(
   '/:resourceType/:id/([$])reindex',
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     const { resourceType, id } = req.params;
     await ctx.repo.reindexResource(resourceType, id);
     sendOutcome(res, allOk);
@@ -163,7 +162,7 @@ protectedRoutes.post(
 protectedRoutes.post(
   '/:resourceType/:id/([$])resend',
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     const { resourceType, id } = req.params;
     await ctx.repo.resendSubscriptions(resourceType, id);
     sendOutcome(res, allOk);
@@ -174,7 +173,7 @@ protectedRoutes.post(
 protectedRoutes.use(
   '*',
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     if (!internalFhirRouter) {
       internalFhirRouter = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
     }
@@ -203,7 +202,7 @@ export function isFhirJsonContentType(req: Request): boolean {
 }
 
 export async function sendResponse(res: Response, outcome: OperationOutcome, body: Resource): Promise<void> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   if (body.meta?.versionId) {
     res.set('ETag', `"${body.meta.versionId}"`);
   }

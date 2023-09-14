@@ -9,14 +9,14 @@ import {
 } from '@medplum/core';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
-import { getRequestContext } from '../app';
+import { getAuthenticatedContext } from '../context';
 
 /**
  * Handles the OAuth/OpenID UserInfo Endpoint.
  * See: https://openid.net/specs/openid-connect-core-1_0.html#UserInfo
  */
 export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, res: Response) => {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   const profile = await ctx.repo.readReference(ctx.profile);
   const userInfo: Record<string, any> = {
     sub: profile.id,

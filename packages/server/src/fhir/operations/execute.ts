@@ -39,8 +39,8 @@ import { createAuditEventEntities } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
 import { systemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
-import { getRequestContext } from '../../app';
 import { globalLogger } from '../../logger';
+import { getAuthenticatedContext, getRequestContext, requestContextStore } from '../../context';
 
 export const EXECUTE_CONTENT_TYPES = [ContentType.JSON, ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
 
@@ -70,7 +70,7 @@ export interface BotExecutionResult {
  * Assumes that input content-type is output content-type.
  */
 export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   // First read the bot as the user to verify access
   const userBot = await getBotForRequest(req);
   if (!userBot) {
@@ -107,7 +107,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
  * @returns The bot, or undefined if not found.
  */
 async function getBotForRequest(req: Request): Promise<Bot | undefined> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   // Prefer to search by ID from path parameter
   const { id } = req.params;
   if (id) {
@@ -216,8 +216,7 @@ async function writeBotInputToStorage(request: BotExecutionRequest): Promise<voi
       try {
         hl7Message = Hl7Message.parse(request.input);
       } catch (err) {
-        const ctx = getRequestContext();
-        ctx.logger.debug(`Failed to parse HL7 message: ${normalizeErrorString(err)}`);
+        getRequestContext().logger.debug(`Failed to parse HL7 message: ${normalizeErrorString(err)}`);
       }
     }
 
@@ -348,7 +347,7 @@ function parseLambdaLog(logResult: string): string {
 }
 
 /**
- * Executes a Bot in an AWS Lambda.
+ * Executes a Bot on the server in a separate Node.js VM.
  * @param request The bot request.
  * @returns The bot execution result.
  */
@@ -389,6 +388,8 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
       contentType,
       secrets,
     },
+    requestContextStore,
+    ctx: getRequestContext(),
   };
 
   const options: vm.RunningScriptOptions = {
@@ -403,7 +404,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
   ${code}
   // End user code
 
-  (async () => {
+  requestContextStore.run(ctx, async () => {
     const { baseUrl, accessToken, contentType, secrets } = event;
     const medplum = new MedplumClient({
       baseUrl,
@@ -430,7 +431,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
       }
       throw err;
     }
-  })();
+  });
   `;
 
   // Return the result of the code execution

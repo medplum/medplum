@@ -19,7 +19,7 @@ import { sendOutcome } from '../outcomes';
 import { systemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
 import { isBotEnabled } from './execute';
-import { getRequestContext } from '../../app';
+import { getAuthenticatedContext, getRequestContext } from '../../context';
 
 const LAMBDA_RUNTIME = 'nodejs18.x';
 
@@ -95,7 +95,7 @@ function createPdf(docDefinition, tableLayouts, fonts) {
 `;
 
 export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   const { id } = req.params;
 
   // Validate that the request body has a code property

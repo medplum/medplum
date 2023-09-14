@@ -5,7 +5,7 @@ import { getConfig } from '../../config';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
-import { getRequestContext } from '../../app';
+import { getAuthenticatedContext } from '../../context';
 
 /**
  * Handles an expunge request.
@@ -15,7 +15,7 @@ import { getRequestContext } from '../../app';
  * @param res The HTTP response.
  */
 export async function expungeHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   if (!ctx.login.superAdmin) {
     sendOutcome(res, forbidden);
     return;

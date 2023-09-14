@@ -23,7 +23,7 @@ import {
 import { Request, Response } from 'express';
 import { Repository } from '../repo';
 import { sendResponse } from '../routes';
-import { getRequestContext } from '../../app';
+import { getAuthenticatedContext, getRequestContext } from '../../context';
 
 /**
  * Handles a Resource $graph request.
@@ -35,7 +35,7 @@ import { getRequestContext } from '../../app';
  * @param res The HTTP response.
  */
 export async function resourceGraphHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   const { resourceType, id } = req.params;
 
   if (resourceType === 'undefined' || id === 'undefined') {
@@ -281,7 +281,7 @@ async function followSearchLink(
  * @returns The operation parameters if available; otherwise, undefined.
  */
 async function validateQueryParameters(req: Request): Promise<GraphDefinition> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   const { graph } = req.query;
   if (typeof graph !== 'string') {
     throw new OperationOutcomeError(badRequest('Missing required parameter: graph'));

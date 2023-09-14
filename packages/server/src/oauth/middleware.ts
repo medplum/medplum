@@ -3,6 +3,8 @@ import { ClientApplication, Login, Project, ProjectMembership, Reference } from 
 import { NextFunction, Request, Response } from 'express';
 import { systemRepo } from '../fhir/repo';
 import { getClientApplicationMembership, getLoginForAccessToken, timingSafeEqualStr } from './utils';
+import { getRequestContext, requestContextStore, AuthenticatedRequestContext } from '../context';
+import { getRepoForLogin } from '../fhir/accesspolicy';
 
 export interface AuthState {
   login: Login;
@@ -10,8 +12,20 @@ export interface AuthState {
   membership: ProjectMembership;
 }
 
-export function authenticateToken(req: Request, res: Response, next: NextFunction): Promise<void> {
-  return authenticateTokenImpl(req).then(next).catch(next);
+export function authenticateRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
+  return authenticateTokenImpl(req)
+    .then(async ({ login, project, membership }) => {
+      const ctx = getRequestContext();
+      const repo = await getRepoForLogin(
+        login,
+        membership,
+        project.strictMode,
+        isExtendedMode(req),
+        project.checkReferencesOnWrite
+      );
+      requestContextStore.run(new AuthenticatedRequestContext(ctx, login, project, membership, repo), () => next());
+    })
+    .catch(next);
 }
 
 export async function authenticateTokenImpl(req: Request): Promise<AuthState> {
@@ -29,12 +43,10 @@ export async function authenticateTokenImpl(req: Request): Promise<AuthState> {
   }
 }
 
-async function authenticateBearerToken(req: Request, token: string): Promise<AuthState> {
-  try {
-    return getLoginForAccessToken(token);
-  } catch (err) {
+function authenticateBearerToken(req: Request, token: string): Promise<AuthState> {
+  return getLoginForAccessToken(token).catch(() => {
     throw new OperationOutcomeError(unauthorized);
-  }
+  });
 }
 
 async function authenticateBasicAuth(req: Request, token: string): Promise<AuthState> {
@@ -71,4 +83,8 @@ async function authenticateBasicAuth(req: Request, token: string): Promise<AuthS
   };
 
   return { login, project, membership };
+}
+
+function isExtendedMode(req: Request): boolean {
+  return req.headers['x-medplum'] === 'extended';
 }

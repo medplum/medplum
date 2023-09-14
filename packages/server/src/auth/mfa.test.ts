@@ -5,6 +5,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { registerNew } from './register';
+import { withTestContext } from '../test.setup';
 
 const app = express();
 
@@ -22,15 +23,17 @@ describe('MFA', () => {
     const email = `alex${randomUUID()}@example.com`;
     const password = 'password!@#';
 
-    const { accessToken } = await registerNew({
-      firstName: 'Alexander',
-      lastName: 'Hamilton',
-      projectName: 'Hamilton Project',
-      email,
-      password,
-      remoteAddress: '5.5.5.5',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
-    });
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
+        email,
+        password,
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      })
+    );
 
     // Try to enroll before ever getting status, should fail
     const res1 = await request(app)

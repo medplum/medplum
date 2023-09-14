@@ -4,7 +4,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { initTestAuth } from '../../test.setup';
+import { initTestAuth, withTestContext } from '../../test.setup';
 import { systemRepo } from '../repo';
 
 const app = express();
@@ -39,11 +39,13 @@ describe('Expand', () => {
 
   test('No systems', async () => {
     const url = 'https://example.com/ValueSet/' + randomUUID();
-    await systemRepo.createResource({
-      resourceType: 'ValueSet',
-      status: 'active',
-      url,
-    });
+    await withTestContext(() =>
+      systemRepo.createResource({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url,
+      })
+    );
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
       .set('Authorization', 'Bearer ' + accessToken);

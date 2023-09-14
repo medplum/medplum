@@ -7,15 +7,16 @@ import { asyncWrap } from '../async';
 import { sendOutcome } from './outcomes';
 import { getPresignedUrl } from './signer';
 import { getBinaryStorage } from './storage';
-import { getRequestContext } from '../app';
+import { authenticateRequest } from '../oauth/middleware';
+import { getAuthenticatedContext } from '../context';
 
-export const binaryRouter = Router();
+export const binaryRouter = Router().use(authenticateRequest);
 
 // Create a binary
 binaryRouter.post(
   '/',
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     const filename = req.query['_filename'] as string | undefined;
     const contentType = req.get('Content-Type');
     const resource = await ctx.repo.createResource<Binary>({
@@ -48,7 +49,7 @@ binaryRouter.post(
 binaryRouter.put(
   '/:id',
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     const { id } = req.params;
     const filename = req.query['_filename'] as string | undefined;
     const contentType = req.get('Content-Type');
@@ -76,7 +77,7 @@ binaryRouter.put(
 binaryRouter.get(
   '/:id',
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     const { id } = req.params;
     const binary = await ctx.repo.readResource<Binary>('Binary', id);
 

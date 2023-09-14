@@ -7,7 +7,7 @@ import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { findProjectMembership } from './utils';
-import { getRequestContext } from '../app';
+import { getRequestContext } from '../context';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 

@@ -3,7 +3,7 @@ import { BulkDataExport } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { rewriteAttachments, RewriteMode } from './rewrite';
-import { getRequestContext } from '../app';
+import { getAuthenticatedContext } from '../context';
 
 // Bulk Data API
 // https://hl7.org/fhir/uv/bulkdata/STU2/
@@ -16,7 +16,7 @@ export const bulkDataRouter = Router();
 bulkDataRouter.get(
   '/export/:id',
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     const { id } = req.params;
     const bulkDataExport = await ctx.repo.readResource<BulkDataExport>('BulkDataExport', id);
 

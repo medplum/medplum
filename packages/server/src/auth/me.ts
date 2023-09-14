@@ -5,7 +5,7 @@ import { UAParser } from 'ua-parser-js';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { systemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { getRequestContext } from '../app';
+import { getAuthenticatedContext } from '../context';
 
 interface UserSession {
   id: string;
@@ -22,7 +22,7 @@ interface UserSecurity {
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
-  const { login, project, membership, profile: profileRef } = getRequestContext();
+  const { login, project, membership, profile: profileRef } = getAuthenticatedContext();
   const profile = await systemRepo.readReference<ProfileResource>(profileRef);
   const config = await getUserConfiguration(project, membership);
   const accessPolicy = await getAccessPolicyForLogin(login, membership);

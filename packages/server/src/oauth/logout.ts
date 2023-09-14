@@ -3,10 +3,10 @@ import { Request, Response } from 'express';
 import { asyncWrap } from '../async';
 import { sendOutcome } from '../fhir/outcomes';
 import { revokeLogin } from '../oauth/utils';
-import { getRequestContext } from '../app';
+import { getAuthenticatedContext } from '../context';
 
 export const logoutHandler = asyncWrap(async (req: Request, res: Response): Promise<void> => {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
 
   // Mark the login as revoked
   await revokeLogin(ctx.login);

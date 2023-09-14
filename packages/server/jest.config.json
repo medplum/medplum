@@ -1,6 +1,6 @@
 {
   "testEnvironment": "node",
-  "testTimeout": 600000,
+  "testTimeout": 60000,
   "testSequencer": "<rootDir>/jest.sequencer.js",
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
@@ -9,9 +9,5 @@
   "testMatch": ["**/src/**/*.test.ts"],
   "coverageDirectory": "coverage",
   "coverageReporters": ["json", "text"],
-  "collectCoverageFrom": [
-    "**/src/**/*",
-    "!**/src/__mocks__/**/*.ts",
-    "!**/src/migrations/**/*.ts"
-  ]
+  "collectCoverageFrom": ["**/src/**/*", "!**/src/__mocks__/**/*.ts", "!**/src/migrations/**/*.ts"]
 }

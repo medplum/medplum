@@ -5,7 +5,7 @@ import { getConfig } from '../../config';
 import { sendOutcome } from '../outcomes';
 import { getPatientResourceTypes } from '../patient';
 import { BulkExporter } from './utils/bulkexporter';
-import { getRequestContext } from '../../app';
+import { getAuthenticatedContext } from '../../context';
 
 /**
  * Handles a bulk export request.
@@ -38,7 +38,7 @@ export async function patientExportHandler(req: Request, res: Response): Promise
 }
 
 async function startExport(req: Request, res: Response, exportType: string): Promise<void> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const query = req.query as Record<string, string | undefined>;
   const since = query._since;

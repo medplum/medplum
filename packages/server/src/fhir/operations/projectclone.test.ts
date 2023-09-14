@@ -18,7 +18,13 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { createProject } from '../../auth/newproject';
 import { loadTestConfig } from '../../config';
-import { createTestProject, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock } from '../../test.setup';
+import {
+  createTestProject,
+  initTestAuth,
+  setupPwnedPasswordMock,
+  setupRecaptchaMock,
+  withTestContext,
+} from '../../test.setup';
 import { systemRepo } from '../repo';
 
 jest.mock('node-fetch');
@@ -172,7 +178,9 @@ describe('Project clone', () => {
     const { firstName, lastName } = user;
 
     expect(res1.status).toBe(200);
-    const { project } = await createProject(login, 'Test Project Name', firstName as string, lastName as string);
+    const { project } = await withTestContext(() =>
+      createProject(login, 'Test Project Name', firstName as string, lastName as string)
+    );
     const newProjectName = 'A New Name for a cloned project';
     expect(project).toBeDefined();
 

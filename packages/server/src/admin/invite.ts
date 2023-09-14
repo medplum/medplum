@@ -19,7 +19,7 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { getUserByEmailInProject, getUserByEmailWithoutProject } from '../oauth/utils';
-import { getRequestContext } from '../app';
+import { getAuthenticatedContext } from '../context';
 
 export const inviteValidators = [
   body('resourceType').isIn(['Patient', 'Practitioner', 'RelatedPerson']).withMessage('Resource type is required'),
@@ -35,7 +35,7 @@ export const inviteValidators = [
 ];
 
 export async function inviteHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     sendOutcome(res, invalidRequest(errors));
@@ -73,7 +73,7 @@ export interface ServerInviteResponse {
 }
 
 export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   if (request.email) {
     request.email = request.email.toLowerCase();
   }

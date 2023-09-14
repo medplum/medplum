@@ -16,16 +16,16 @@ import { getClient } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
-import { authenticateToken } from '../oauth/middleware';
+import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { createSearchParameters } from '../seeds/searchparameters';
 import { createStructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
-import { getRequestContext } from '../app';
+import { getAuthenticatedContext } from '../context';
 
 export const superAdminRouter = Router();
-superAdminRouter.use(authenticateToken);
+superAdminRouter.use(authenticateRequest);
 
 // POST to /admin/super/valuesets
 // to rebuild the "ValueSetElements" table.
@@ -139,7 +139,7 @@ superAdminRouter.post(
     body('before').isISO8601().withMessage('Invalid before date'),
   ],
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getRequestContext();
+    const ctx = getAuthenticatedContext();
     requireSuperAdmin();
 
     const errors = validationResult(req);
@@ -193,7 +193,7 @@ superAdminRouter.post(
 );
 
 function requireSuperAdmin(): void {
-  if (!getRequestContext().login.superAdmin) {
+  if (!getAuthenticatedContext().login.superAdmin) {
     throw new OperationOutcomeError(forbidden);
   }
 }
@@ -205,7 +205,7 @@ function requireAsync(req: Request): void {
 }
 
 async function sendAsyncResponse(req: Request, res: Response, callback: () => Promise<any>): Promise<void> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const exec = new AsyncJobExecutor(ctx.repo);
   await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);

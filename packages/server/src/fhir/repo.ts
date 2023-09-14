@@ -81,7 +81,7 @@ import { rewriteAttachments, RewriteMode } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, Operator, SelectQuery } from './sql';
 import { getSearchParameters } from './structure';
-import { getRequestContext } from '../app';
+import { getRequestContext } from '../context';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -723,8 +723,9 @@ export class Repository extends BaseRepository implements FhirRepository {
         (resource.meta as Meta).compartment = this.getCompartments(resource);
         await this.updateResourceImpl(JSON.parse(row.content) as Resource, false);
       } catch (err) {
-        const ctx = getRequestContext();
-        ctx.logger.error('Failed to rebuild compartments for resource', { error: normalizeErrorString(err) });
+        getRequestContext().logger.error('Failed to rebuild compartments for resource', {
+          error: normalizeErrorString(err),
+        });
       }
     });
   }
@@ -748,8 +749,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       try {
         await this.reindexResourceImpl(JSON.parse(row.content) as Resource);
       } catch (err) {
-        const ctx = getRequestContext();
-        ctx.logger.error('Failed to reindex resource', { error: normalizeErrorString(err) });
+        getRequestContext().logger.error('Failed to reindex resource', { error: normalizeErrorString(err) });
       }
     });
   }

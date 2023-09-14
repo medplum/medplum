@@ -22,7 +22,7 @@ import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { isFhirJsonContentType, sendResponse } from '../routes';
-import { getRequestContext } from '../../app';
+import { getAuthenticatedContext } from '../../context';
 
 type SubjectType =
   | CareTeam
@@ -48,7 +48,7 @@ interface PlanDefinitionApplyParameters {
  * @param res The HTTP response.
  */
 export async function planDefinitionApplyHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   const { id } = req.params;
 
   const planDefinition = await ctx.repo.readResource<PlanDefinition>('PlanDefinition', id);
@@ -84,7 +84,7 @@ export async function planDefinitionApplyHandler(req: Request, res: Response): P
  * @returns The operation parameters if available; otherwise, undefined.
  */
 async function validateParameters(req: Request, res: Response): Promise<PlanDefinitionApplyParameters | undefined> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   if (!isFhirJsonContentType(req)) {
     res.status(400).send('Unsupported content type');
     return undefined;

@@ -5,7 +5,7 @@ import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { sendResponse } from '../routes';
-import { getRequestContext } from '../../app';
+import { getAuthenticatedContext } from '../../context';
 
 /**
  * Handles a Project clone request.
@@ -15,7 +15,7 @@ import { getRequestContext } from '../../app';
  * @param res The HTTP response.
  */
 export async function projectCloneHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getRequestContext();
+  const ctx = getAuthenticatedContext();
   if (!ctx.login.superAdmin) {
     sendOutcome(res, forbidden);
     return;

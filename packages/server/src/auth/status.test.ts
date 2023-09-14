@@ -6,6 +6,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
+import { withTestContext } from '../test.setup';
 
 const app = express();
 let user: User;
@@ -15,12 +16,14 @@ describe('Status', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    user = await systemRepo.createResource<User>({
-      resourceType: 'User',
-      firstName: 'Test',
-      lastName: 'User',
-      email: randomUUID() + '@example.com',
-    });
+    user = await withTestContext(() =>
+      systemRepo.createResource<User>({
+        resourceType: 'User',
+        firstName: 'Test',
+        lastName: 'User',
+        email: randomUUID() + '@example.com',
+      })
+    );
   });
 
   afterAll(async () => {
@@ -43,12 +46,14 @@ describe('Status', () => {
   });
 
   test('Success', async () => {
-    const login = await systemRepo.createResource<Login>({
-      resourceType: 'Login',
-      authMethod: 'password',
-      authTime: new Date().toISOString(),
-      user: createReference(user),
-    });
+    const login = await withTestContext(() =>
+      systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+        user: createReference(user),
+      })
+    );
 
     const res = await request(app).get('/auth/login/' + login.id);
     expect(res.status).toBe(200);
@@ -56,26 +61,30 @@ describe('Status', () => {
   });
 
   test('Granted', async () => {
-    const login = await systemRepo.createResource<Login>({
-      resourceType: 'Login',
-      authMethod: 'password',
-      authTime: new Date().toISOString(),
-      user: createReference(user),
-      granted: true,
-    });
+    const login = await withTestContext(() =>
+      systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+        user: createReference(user),
+        granted: true,
+      })
+    );
 
     const res = await request(app).get('/auth/login/' + login.id);
     expect(res.status).toBe(400);
   });
 
   test('Revoked', async () => {
-    const login = await systemRepo.createResource<Login>({
-      resourceType: 'Login',
-      authMethod: 'password',
-      authTime: new Date().toISOString(),
-      user: createReference(user),
-      revoked: true,
-    });
+    const login = await withTestContext(() =>
+      systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+        user: createReference(user),
+        revoked: true,
+      })
+    );
 
     const res = await request(app).get('/auth/login/' + login.id);
     expect(res.status).toBe(400);

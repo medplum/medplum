@@ -7,7 +7,7 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { getClient } from '../../database';
 import { getRedis } from '../../redis';
-import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
+import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { systemRepo } from '../repo';
 import { SelectQuery, Operator as SqlOperator } from '../sql';
 import { Expunger } from './expunge';
@@ -38,10 +38,12 @@ describe('Expunge', () => {
   });
 
   test('Expunge single resource', async () => {
-    const patient = await systemRepo.createResource<Patient>({
-      resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }],
-    });
+    const patient = await withTestContext(() =>
+      systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      })
+    );
     expect(patient).toBeDefined();
 
     // Expect the patient to be in the "Patient" and "Patient_History" tables
