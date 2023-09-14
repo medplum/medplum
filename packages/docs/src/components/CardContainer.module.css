@@ -1,7 +1,7 @@
 .cardContainer {
   display: flex;
   flex: 1;
-  justify-content: space-between;
+  justify-content: space-evenly;
   gap: 2rem;
   margin: 2rem auto;
 }

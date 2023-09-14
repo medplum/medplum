@@ -10,7 +10,7 @@ import { systemRepo } from '../fhir/repo';
 // import { logger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { createSearchParameters } from '../seeds/searchparameters';
-import { createStructureDefinitions } from '../seeds/structuredefinitions';
+import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { AuthenticatedRequestContext, requestContextStore } from '../context';
@@ -183,7 +183,7 @@ describe('Super Admin routes', () => {
   });
 
   test('Rebuild StructureDefinitions as super admin with respond-async', async () => {
-    (createStructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
+    (rebuildR4StructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
       return Promise.resolve(true);
     });
 
@@ -201,7 +201,7 @@ describe('Super Admin routes', () => {
 
   test('Rebuild StructureDefinitions as super admin with respond-async error', async () => {
     const err = new Error('structuredefinitions test error');
-    (createStructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
+    (rebuildR4StructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
       return Promise.reject(err);
     });
     // const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
@@ -573,6 +573,19 @@ describe('Super Admin routes', () => {
   test('Rebuild projectId as super admin with respond-async', async () => {
     const res1 = await request(app)
       .post('/admin/super/rebuildprojectid')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({});
+
+    expect(res1.status).toEqual(202);
+    expect(res1.headers['content-location']).toBeDefined();
+    await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
+  });
+
+  test('Run data migrations', async () => {
+    const res1 = await request(app)
+      .post('/admin/super/migrate')
       .set('Authorization', 'Bearer ' + adminAccessToken)
       .set('Prefer', 'respond-async')
       .type('json')

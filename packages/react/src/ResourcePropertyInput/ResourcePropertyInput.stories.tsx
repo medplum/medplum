@@ -10,7 +10,7 @@ export default {
   component: ResourcePropertyInput,
 } as Meta;
 
-export const Address = (): JSX.Element => (
+export const AddressInput = (): JSX.Element => (
   <Document>
     <ResourcePropertyInput
       name="address-input"
@@ -22,7 +22,7 @@ export const Address = (): JSX.Element => (
   </Document>
 );
 
-export const Boolean = (): JSX.Element => (
+export const BooleanInput = (): JSX.Element => (
   <Document>
     <ResourcePropertyInput
       name="boolean-input"
@@ -34,7 +34,7 @@ export const Boolean = (): JSX.Element => (
   </Document>
 );
 
-export const Date = (): JSX.Element => (
+export const DateInput = (): JSX.Element => (
   <Document>
     <ResourcePropertyInput
       name="date-input"
@@ -46,7 +46,7 @@ export const Date = (): JSX.Element => (
   </Document>
 );
 
-export const DateTime = (): JSX.Element => (
+export const DateTimeInput = (): JSX.Element => (
   <Document>
     <ResourcePropertyInput
       name="date-input"

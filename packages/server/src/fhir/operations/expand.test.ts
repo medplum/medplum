@@ -1,3 +1,4 @@
+import { ContentType } from '@medplum/core';
 import { OperationOutcome, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -236,5 +237,51 @@ describe('Expand', () => {
     }
 
     expect(foundNullDisplay).toBe(false);
+  });
+
+  test('User uploaded ValueSet', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'https://example.com/fhir/ValueSet/fruits',
+        expansion: {
+          timestamp: '2023-09-13T23:24:00.000Z',
+        },
+        compose: {
+          include: [
+            {
+              system: 'http://example.com/fruits',
+              concept: [
+                {
+                  code: 'apple',
+                  display: 'Apple',
+                },
+                {
+                  code: 'banana',
+                  display: 'Banana',
+                },
+                {
+                  code: 'cherry',
+                  display: 'Cherry',
+                },
+              ],
+            },
+          ],
+        },
+      });
+    expect(res1.status).toBe(201);
+
+    const res2 = await request(app)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('https://example.com/fhir/ValueSet/fruits')}&filter=apple`
+      )
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(200);
+    expect(res2.body.expansion.contains[0].system).toBe('http://example.com/fruits');
+    expect(res2.body.expansion.contains[0].display).toMatch(/apple/i);
   });
 });

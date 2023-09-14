@@ -1,38 +1,9 @@
 import { ElementDefinition, OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
 import { getTypedPropertyValue, toTypedValue } from './fhirpath';
 import { OperationOutcomeError, createStructureIssue, validationError } from './outcomes';
-import { globalSchema, PropertyType, TypedValue } from './types';
+import { PropertyType, TypedValue, globalSchema } from './types';
+import { fhirTypeToJsType } from './typeschema/validation';
 import { capitalize, getExtensionValue, isEmpty, isLowerCase } from './utils';
-
-/*
- * This file provides schema validation utilities for FHIR JSON objects.
- *
- * See: [JSON Representation of Resources](https://hl7.org/fhir/json.html)
- * See: [FHIR Data Types](https://www.hl7.org/fhir/datatypes.html)
- */
-const fhirTypeToJsType: Record<string, string> = {
-  base64Binary: 'string',
-  boolean: 'boolean',
-  canonical: 'string',
-  code: 'string',
-  date: 'string',
-  dateTime: 'string',
-  decimal: 'number',
-  id: 'string',
-  instant: 'string',
-  integer: 'number',
-  markdown: 'string',
-  oid: 'string',
-  positiveInt: 'number',
-  string: 'string',
-  time: 'string',
-  unsignedInt: 'number',
-  uri: 'string',
-  url: 'string',
-  uuid: 'string',
-  xhtml: 'string',
-  'http://hl7.org/fhirpath/System.String': 'string',
-};
 
 const baseResourceProperties = new Set<string>([
   // Resource
@@ -272,7 +243,14 @@ export class FhirSchemaValidator<T extends Resource> {
     }
 
     // First, make sure the value is the correct JS type
-    const expectedType = fhirTypeToJsType[typedValue.type];
+    if (!(typedValue.type in fhirTypeToJsType)) {
+      this.createIssue(elementDefinition, `${type} is not a valid FHIR type`);
+      return;
+    }
+
+    const expectedType = fhirTypeToJsType[typedValue.type as keyof typeof fhirTypeToJsType];
+
+    // rome-ignore lint/suspicious/useValidTypeof: `expectedValue` guaranteed to be one of: 'string' | 'boolean' | 'number'
     if (typeof value !== expectedType && typeof value?.valueOf() !== expectedType) {
       this.createIssue(elementDefinition, 'Invalid type for ' + type);
       return;

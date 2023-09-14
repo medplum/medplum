@@ -2,6 +2,7 @@
 title: PaymentNotice
 sidebar_position: 103
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/paymentnotice.json';
@@ -14,11 +15,11 @@ This resource provides the status of the payment for goods and services rendered
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -35,7 +36,5 @@ This resource provides the status of the payment for goods and services rendered
   <TabItem value="relationships" label="Relationships">
     <div>  <p>  The <a href="/docs/api/fhir/resources/paymentnotice">PaymentNotice</a> resource is used to indicate that a payment is, or is about to occur. The resource is used commonly when tracking of payment occurences is required for regulatory or business purposes, such as ensuring that payment of claim adjudications occurs within a specific timeframe. The <a href="/docs/api/fhir/resources/paymentnotice">PaymentNotice</a> is not used to report adjudicated amounts (see <a href="/docs/api/fhir/resources/claimresponse">ClaimResponse</a>) or to reconcile adjudicated amounts against actual payment (see <a href="/docs/api/fhir/resources/paymentreconciliation">PaymentReconciliation</a>)  </p>  <p> The <a href="/docs/api/fhir/resources/claimresponse">ClaimResponse</a> resource is an insurer's adjudication and/or authorization of a set of healthcare-related goods and services for a patient against the patient's insurance coverages and does not indicate that payment has occured. </p>  <p>  The <a href="/docs/api/fhir/resources/paymentreconciliation">PaymentReconciliation</a> resource serves to correlate payment amounts to the adjudicated claim amounts appearing on one or more <a href="/docs/api/fhir/resources/claimresponse">ClaimResponses</a>. </p>    <p>    <b>The eClaim domain includes a number of related resources</b>   </p>   <table border="1" cellpadding="1" cellspacing="2" frame="box">    <tbody><tr>     <td>PaymentNotice</td>     <td>An indication that a payment has occured, is about to occur, or has been cancelled.</td>    </tr>    <tr>     <td><a href="/docs/api/fhir/resources/claimresponse">ClaimResponse</a></td>     <td>A payor's adjudication and/or authorization response to the suite of services provided in a <a href="/docs/api/fhir/resources/claim">Claim</a>. Typically the <a href="/docs/api/fhir/resources/claimresponse">ClaimResponse</a> references the <a href="/docs/api/fhir/resources/claim">Claim</a> but does not duplicate   the clinical or financial information provided in the claim.</td>    </tr>    <tr>     <td><a href="/docs/api/fhir/resources/paymentreconciliation">PaymentReconciliation</a></td>     <td>Provides the bulk payment details  associated with a payment by the payor for goods and services rendered by a provider to patients  covered by insurance plans offered by that payor.</td>    </tr>   </tbody></table> </div>
     </TabItem>
-  
-  
 
 </Tabs>

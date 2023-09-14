@@ -2,6 +2,7 @@
 title: VerificationResult
 sidebar_position: 144
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/verificationresult.json';
@@ -14,11 +15,11 @@ Describes validation requirements, source(s), status and dates for one or more e
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -35,7 +36,5 @@ Describes validation requirements, source(s), status and dates for one or more e
   <TabItem value="relationships" label="Relationships">
     <div> <a name="bnr"></a>  <p> TBD. </p> </div>
     </TabItem>
-  
-  
 
 </Tabs>

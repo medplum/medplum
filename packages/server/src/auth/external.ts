@@ -7,7 +7,7 @@ import { getConfig } from '../config';
 import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import { tryLogin } from '../oauth/utils';
+import { CodeChallengeMethod, tryLogin } from '../oauth/utils';
 import { getDomainConfiguration } from './method';
 
 /*
@@ -23,7 +23,7 @@ export interface ExternalAuthState {
   nonce?: string;
   launch?: string;
   codeChallenge?: string;
-  codeChallengeMethod?: 'plain' | 'S256';
+  codeChallengeMethod?: CodeChallengeMethod;
   redirectUri?: string;
 }
 

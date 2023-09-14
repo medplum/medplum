@@ -631,9 +631,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
             }
           ]
         },
@@ -644,9 +642,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Group"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Group"]
             }
           ]
         },
@@ -727,9 +723,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ValueSet"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ValueSet"]
             }
           ]
         },
@@ -993,9 +987,7 @@
           "type": [
             {
               "code": "Quantity",
-              "profile": [
-                "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
-              ]
+              "profile": ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]
             }
           ]
         },
@@ -1003,9 +995,7 @@
           "type": [
             {
               "code": "Quantity",
-              "profile": [
-                "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
-              ]
+              "profile": ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]
             }
           ]
         }
@@ -1043,9 +1033,7 @@
             },
             {
               "code": "Quantity",
-              "profile": [
-                "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
-              ]
+              "profile": ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]
             }
           ]
         },
@@ -1059,9 +1047,7 @@
             },
             {
               "code": "Quantity",
-              "profile": [
-                "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
-              ]
+              "profile": ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]
             }
           ]
         }
@@ -2333,9 +2319,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
             }
           ]
         }
@@ -2378,9 +2362,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ValueSet"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ValueSet"]
             }
           ]
         }
@@ -2803,9 +2785,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Organization"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
             }
           ]
         }
@@ -2921,9 +2901,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
             }
           ]
         },
@@ -3110,9 +3088,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
             }
           ]
         }
@@ -3456,9 +3432,7 @@
           "type": [
             {
               "code": "Quantity",
-              "profile": [
-                "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
-              ]
+              "profile": ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]
             }
           ]
         },
@@ -3466,9 +3440,7 @@
           "type": [
             {
               "code": "Quantity",
-              "profile": [
-                "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
-              ]
+              "profile": ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]
             }
           ]
         }
@@ -3621,9 +3593,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         }
@@ -3652,9 +3622,7 @@
           "type": [
             {
               "code": "Quantity",
-              "profile": [
-                "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
-              ]
+              "profile": ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]
             }
           ]
         },
@@ -4113,9 +4081,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Schedule"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Schedule"]
             },
             {
               "code": "date"

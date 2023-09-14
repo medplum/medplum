@@ -1,5 +1,5 @@
 import { getQuestionnaireAnswers } from '@medplum/core';
-import { Questionnaire, QuestionnaireItemEnableWhen, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { randomUUID } from 'crypto';
@@ -8,7 +8,7 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { QuestionnaireItemType } from '../utils/questionnaire';
-import { QuestionnaireForm, QuestionnaireFormProps, isQuestionEnabled } from './QuestionnaireForm';
+import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 
 const medplum = new MockClient();
 
@@ -919,6 +919,92 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByText('Back')).toBeInTheDocument();
   });
 
+  test('Value Set Choice', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'value-set-example',
+        title: 'Valueset',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Value Set',
+            type: 'choice',
+            answerValueSet: 'http://example.com/valueset',
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    const dropDown = screen.getByText('Valueset');
+
+    await act(async () => {
+      fireEvent.click(dropDown);
+    });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: 'Test Display' });
+    });
+  });
+
+  test('Repeated Choice Dropdown', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'default-values',
+        title: 'Default Values Example',
+        item: [
+          {
+            id: 'choice',
+            linkId: 'choice',
+            text: 'choice',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+            repeats: true,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    const dropDown = screen.getByText('choice');
+
+    await act(async () => {
+      fireEvent.click(dropDown);
+    });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: 'Yes' });
+    });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: 'No' });
+    });
+  });
+
   test('Conditional question', async () => {
     await setup({
       questionnaire: {
@@ -1009,513 +1095,6 @@ describe('QuestionnaireForm', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByText('Add Group'));
-    });
-  });
-
-  test('isQuestionEnabled', () => {
-    // enableBehavior=any, match
-    expect(
-      isQuestionEnabled(
-        {
-          enableBehavior: 'any',
-          enableWhen: [
-            {
-              question: 'q1',
-              answerString: 'Yes',
-            },
-            {
-              question: 'q2',
-              answerString: 'Yes',
-            },
-          ],
-        },
-        {
-          q1: { valueString: 'No' },
-          q2: { valueString: 'Yes' },
-        }
-      )
-    ).toBe(true);
-  });
-
-  describe('isQuestionEnabled', () => {
-    test('enableBehavior=any, match', () => {
-      expect(
-        isQuestionEnabled(
-          {
-            enableBehavior: 'any',
-            enableWhen: [
-              {
-                question: 'q1',
-                answerString: 'Yes',
-                operator: '=',
-              },
-              {
-                question: 'q2',
-                answerString: 'Yes',
-                operator: '=',
-              },
-            ],
-          },
-          {
-            q1: { valueString: 'No' },
-            q2: { valueString: 'Yes' },
-          }
-        )
-      ).toBe(true);
-    });
-
-    test('enableBehavior=any, no match', () => {
-      expect(
-        isQuestionEnabled(
-          {
-            enableBehavior: 'any',
-            enableWhen: [
-              {
-                question: 'q1',
-                answerString: 'Yes',
-                operator: '=',
-              },
-              {
-                question: 'q2',
-                answerString: 'Yes',
-                operator: '=',
-              },
-            ],
-          },
-          {
-            q1: { valueString: 'No' },
-            q2: { valueString: 'No' },
-          }
-        )
-      ).toBe(false);
-    });
-
-    test('enableBehavior=all, match', () => {
-      expect(
-        isQuestionEnabled(
-          {
-            enableBehavior: 'all',
-            enableWhen: [
-              {
-                question: 'q1',
-                answerString: 'Yes',
-                operator: '=',
-              },
-              {
-                question: 'q2',
-                answerString: 'Yes',
-                operator: '=',
-              },
-            ],
-          },
-          {
-            q1: { valueString: 'Yes' },
-            q2: { valueString: 'Yes' },
-          }
-        )
-      ).toBe(true);
-    });
-
-    test('enableBehavior=all, no match', () => {
-      expect(
-        isQuestionEnabled(
-          {
-            enableBehavior: 'all',
-            enableWhen: [
-              {
-                question: 'q1',
-                answerString: 'Yes',
-                operator: '=',
-              },
-              {
-                question: 'q2',
-                answerString: 'Yes',
-                operator: '=',
-              },
-            ],
-          },
-          {
-            q1: { valueString: 'Yes' },
-            q2: { valueString: 'No' },
-          }
-        )
-      ).toBe(false);
-    });
-
-    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = true, answer present', () => {
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen: [
-              {
-                question: 'q1',
-                operator: 'exists',
-                answerBoolean: true,
-              },
-            ],
-          },
-          {
-            q1: { valueString: 'Yes' },
-            q2: { valueString: 'No' },
-          }
-        )
-      ).toBe(true);
-    });
-
-    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, answer present', () => {
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen: [
-              {
-                question: 'q1',
-                operator: 'exists',
-                answerBoolean: false,
-              },
-            ],
-          },
-          {
-            q1: { valueString: 'Yes' },
-            q2: { valueString: 'No' },
-          }
-        )
-      ).toBe(false);
-    });
-
-    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = true, answer missing', () => {
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen: [
-              {
-                question: 'q1',
-                operator: 'exists',
-                answerBoolean: true,
-              },
-            ],
-          },
-          {
-            q2: { valueString: 'No' },
-          }
-        )
-      ).toBe(false);
-    });
-
-    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, answer missing', () => {
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen: [
-              {
-                question: 'q1',
-                operator: 'exists',
-                answerBoolean: false,
-              },
-            ],
-          },
-          {
-            q2: { valueString: 'No' },
-          }
-        )
-      ).toBe(true);
-    });
-
-    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, answer missing', () => {
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen: [
-              {
-                question: 'q1',
-                operator: 'exists',
-                answerBoolean: false,
-              },
-            ],
-          },
-          {
-            q2: { valueString: 'No' },
-          }
-        )
-      ).toBe(true);
-    });
-
-    test('enableBehavior=any, enableWhen `exists` operator, `answerBoolean` = false, answer missing', () => {
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen: [
-              {
-                question: 'q1',
-                operator: 'exists',
-                answerBoolean: false,
-              },
-            ],
-          },
-          {
-            q2: { valueString: 'No' },
-          }
-        )
-      ).toBe(true);
-    });
-
-    test('enableBehavior=any, enableWhen `!=` operator', () => {
-      const enableWhen = [
-        {
-          question: 'q1',
-          operator: '!=',
-          answerString: 'Yes',
-        },
-      ] satisfies QuestionnaireItemEnableWhen[];
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueString: 'No' },
-          }
-        )
-      ).toBe(true);
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueString: 'Yes' },
-          }
-        )
-      ).toBe(false);
-    });
-
-    test('enableBehavior=any, enableWhen `>` operator', () => {
-      const enableWhen = [
-        {
-          question: 'q1',
-          operator: '>',
-          answerInteger: 3,
-        },
-      ] satisfies QuestionnaireItemEnableWhen[];
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueInteger: 4 },
-          }
-        )
-      ).toBe(true);
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueInteger: 2 },
-          }
-        )
-      ).toBe(false);
-    });
-
-    test('enableBehavior=any, enableWhen `>=` operator', () => {
-      const enableWhen = [
-        {
-          question: 'q1',
-          operator: '>=',
-          answerInteger: 3,
-        },
-      ] satisfies QuestionnaireItemEnableWhen[];
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueInteger: 4 },
-          }
-        )
-      ).toBe(true);
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueInteger: 3 },
-          }
-        )
-      ).toBe(true);
-    });
-
-    test('enableBehavior=any, enableWhen `<` operator', () => {
-      const enableWhen = [
-        {
-          question: 'q1',
-          operator: '<',
-          answerInteger: 3,
-        },
-      ] satisfies QuestionnaireItemEnableWhen[];
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueInteger: 2 },
-          }
-        )
-      ).toBe(true);
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueInteger: 3 },
-          }
-        )
-      ).toBe(false);
-    });
-
-    test('enableBehavior=any, enableWhen `<=` operator', () => {
-      const enableWhen = [
-        {
-          question: 'q1',
-          operator: '<=',
-          answerInteger: 3,
-        },
-      ] satisfies QuestionnaireItemEnableWhen[];
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueInteger: 2 },
-          }
-        )
-      ).toBe(true);
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueInteger: 3 },
-          }
-        )
-      ).toBe(true);
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueInteger: 4 },
-          }
-        )
-      ).toBe(false);
-    });
-
-    test('enableBehavior=any, enableWhen `=` operator for `valueCoding`', () => {
-      const enableWhen = [
-        { question: 'q1', operator: '=', answerCoding: { code: 'MEDPLUM123' } },
-      ] satisfies QuestionnaireItemEnableWhen[];
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueCoding: { code: 'MEDPLUM123' } },
-          }
-        )
-      ).toBe(true);
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } },
-          }
-        )
-      ).toBe(true);
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } },
-          }
-        )
-      ).toBe(false);
-    });
-
-    test('enableBehavior=any, enableWhen `!=` operator for `valueCoding`', () => {
-      const enableWhen = [
-        { question: 'q1', operator: '!=', answerCoding: { code: 'MEDPLUM123' } },
-      ] satisfies QuestionnaireItemEnableWhen[];
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueCoding: { code: 'NOT_MEDPLUM123' } },
-          }
-        )
-      ).toBe(true);
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } },
-          }
-        )
-      ).toBe(true);
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } },
-          }
-        )
-      ).toBe(false);
-
-      expect(
-        isQuestionEnabled(
-          {
-            enableWhen,
-          },
-          {
-            q1: { valueCoding: { code: 'MEDPLUM123' } },
-          }
-        )
-      ).toBe(false);
     });
   });
 });

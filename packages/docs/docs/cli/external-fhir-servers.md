@@ -103,7 +103,6 @@ medplum profile set example \
 If you are authenticating with Epic and it returns {"error":"invalid_client","error_description":null}, here is a [Doc to Troubleshoot](https://fhir.epic.com/Resources/jwt_auth_troubleshoot_eof).
 :::
 
-
 ### Example: Client Credentials
 
 ```bash

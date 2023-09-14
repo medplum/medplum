@@ -48,4 +48,10 @@ export interface MedplumInfraConfig {
       [key: string]: string;
     };
   }[];
+  cloudTrailAlarms?: {
+    logGroupName: string;
+    logGroupCreate?: boolean;
+    snsTopicArn?: string;
+    snsTopicName?: string;
+  };
 }

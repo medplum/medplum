@@ -2,6 +2,7 @@
 title: Timing
 sidebar_position: 36
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/datatypeDefinitions/timing.json';
@@ -14,17 +15,14 @@ Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition<
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 </TabItem>
   
-  
-  
-  
+
 
 </Tabs>

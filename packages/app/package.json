@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@medplum/app",
-  "version": "2.0.31",
+  "version": "2.1.0",
   "description": "Medplum App",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -41,7 +41,6 @@
     "@types/grecaptcha": "3.0.4",
     "@types/react": "18.2.20",
     "@types/react-dom": "18.2.7",
-    "@types/react-router-dom": "5.3.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.15.0",

@@ -43,6 +43,8 @@ import {
 import { AuthState } from './middleware';
 import { getRequestContext } from '../context';
 
+export type CodeChallengeMethod = 'plain' | 'S256';
+
 export interface LoginRequest {
   readonly email?: string;
   readonly externalId?: string;
@@ -55,7 +57,7 @@ export interface LoginRequest {
   readonly clientId?: string;
   readonly launchId?: string;
   readonly codeChallenge?: string;
-  readonly codeChallengeMethod?: 'plain' | 'S256';
+  readonly codeChallengeMethod?: CodeChallengeMethod;
   readonly googleCredentials?: GoogleCredentialClaims;
   readonly remoteAddress?: string;
   readonly userAgent?: string;

@@ -6,14 +6,26 @@ set -e
 # Echo commands
 set -x
 
-# Get the new version number
-NEW_VERSION=$1
+# Get the current version number
+CURR_VERSION=$(node -p "require('./package.json').version")
 
-# If the new version is empty or not specified, exit
-if [[ -z "${NEW_VERSION}" ]]; then
-  echo "Usage: prepare-release.sh [NEW_VERSION]"
-  exit 1
+# Convert version string to array using '.' as delimiter
+IFS='.' read -ra CURR_VERSION_PARTS <<< "$CURR_VERSION"
+
+# Check if there have been any data migrations since the last release
+DATA_MIGRATIONS=$(git diff v$CURR_VERSION --name-only -- packages/server/src/migrations/data)
+if [ -z "$DATA_MIGRATIONS" ]; then
+    echo "No data migrations since v$CURR_VERSION, increasing patch version"
+    ((CURR_VERSION_PARTS[2]++)) || true
+else
+    echo "New data migrations since v$CURR_VERSION, increasing minor version"
+    ((CURR_VERSION_PARTS[1]++)) || true
+    CURR_VERSION_PARTS[2]=0
 fi
+
+# Build the new version number
+NEW_VERSION="${CURR_VERSION_PARTS[0]}.${CURR_VERSION_PARTS[1]}.${CURR_VERSION_PARTS[2]}"
+echo "New version: $NEW_VERSION"
 
 # Use the Github gh tool to make sure the user is logged in
 gh auth status

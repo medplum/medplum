@@ -1,85 +1,45 @@
-.title {
-  text-align: center;
-  margin: 50px auto 10px auto;
-  padding: 20px 20px 10px 20px;
-}
-
-.title h1 {
-  font-size: 2.5rem;
-  font-weight: 300;
-}
-
-.profileCard {
+.heroContent {
   display: flex;
   flex: 1;
-  max-width: 22rem;
-  padding: 2rem;
-  flex-direction: column;
-  align-items: center;
-  border: 1px solid #e6e6e6;
-  border-radius: 32px;
-  background-color: #fbfbfb;
-  transition: all 200ms ease;
-}
-
-[data-theme='dark'] .profileCard {
-  border-color: #333333;
-  background: #000;
-}
-
-.profileCard h3 {
-  font-size: 1.5rem;
-  line-height: 1.2;
-  font-weight: 300;
-}
-
-.profileImage {
-  display: flex;
-  overflow: hidden;
-  width: 12rem;
-  height: 12rem;
-  margin-bottom: 2rem;
-  justify-content: center;
-  align-items: center;
-  border-style: solid;
-  border-width: 4px;
-  border-color: #e6e6e6;
-  border-radius: 99%;
-}
-
-.profileImage img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  max-width: 100%;
-  vertical-align: middle;
-  display: inline-block;
-  border: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
 }
 
-.profileLink {
-  height: 1.875rem;
-  max-height: none;
-  margin-top: auto;
-  padding-right: 0.75rem;
-  padding-left: 1rem;
-  grid-column-gap: 0.5rem;
+.heroTitle {
+  font-size: 3.5rem;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+@media screen and (max-width: 996px) {
+  .heroTitle {
+    font-size: 2rem;
+  }
+}
+
+.heroText {
   font-size: 1.125rem;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  border-style: none;
-  border-width: 1px;
-  border-color: #000;
-  border-radius: 2.5rem;
-  text-align: center;
-  filter: brightness(55%) grayscale(110%);
+  color: #4d4d4d;
+  margin-bottom: 0;
+  margin-top: 0;
 }
 
-.profileLink:hover {
-  border-radius: 12px;
-  background-color: #f4f0fe;
-  filter: brightness(100%) grayscale(0%);
-  color: #946af9;
-  text-decoration: none;
+[data-theme='dark'] .heroText {
+  color: #b2b2b2;
+}
+
+.heroImage {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+@media screen and (max-width: 996px) {
+  .heroImage img {
+    width: 300px;
+    height: 300px;
+  }
 }

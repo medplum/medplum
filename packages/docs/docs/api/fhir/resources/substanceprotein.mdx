@@ -2,6 +2,7 @@
 title: SubstanceProtein
 sidebar_position: 133
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/substanceprotein.json';
@@ -14,11 +15,11 @@ A <a href="/docs/api/fhir/resources/substanceprotein">SubstanceProtein</a> is de
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 

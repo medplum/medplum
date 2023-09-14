@@ -2,6 +2,7 @@
 title: DeviceUseStatement
 sidebar_position: 38
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/deviceusestatement.json';
@@ -14,11 +15,11 @@ A record of a device being used by a patient where the record is the result of a
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -35,7 +36,5 @@ A record of a device being used by a patient where the record is the result of a
   <TabItem value="relationships" label="Relationships">
     <div> <a name="bnr"></a>  <p> This resource is different from <a href="/docs/api/fhir/resources/devicerequest">DeviceRequest</a> which records a request to use the device. This also is distinct from the <a href="/docs/api/fhir/resources/procedure">Procedure</a> resource which may describe the implantation or explantation of a device. </p> </div>
     </TabItem>
-  
-  
 
 </Tabs>

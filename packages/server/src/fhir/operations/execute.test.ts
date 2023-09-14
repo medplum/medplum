@@ -382,4 +382,48 @@ describe('Execute', () => {
     expect(res7.status).toBe(400);
     expect(res7.body.issue[0].details.text).toEqual('VM Context bots not enabled on this server');
   });
+
+  test('Handle number response', async () => {
+    // Temporarily enable VM context bots
+    getConfig().vmContextBotsEnabled = true;
+
+    // Create a bot with empty code
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'vmcontext',
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as Bot;
+
+    // Deploy the bot
+    const res5 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+          exports.handler = async function () {
+            return 42;
+          };
+      `,
+      });
+    expect(res5.status).toBe(200);
+
+    // Execute the bot success
+    const res6 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res6.status).toBe(200);
+    expect(res6.body).toEqual(42);
+
+    // Disable VM context bots
+    getConfig().vmContextBotsEnabled = false;
+  });
 });

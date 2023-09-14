@@ -1,0 +1,87 @@
+.profileCard {
+  display: flex;
+  flex: 1;
+  max-width: 22rem;
+  padding: 2rem;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid #e6e6e6;
+  border-radius: 32px;
+  background-color: #fbfbfb;
+  transition: all 200ms ease;
+}
+
+[data-theme='dark'] .profileCard {
+  border-color: #333333;
+  background: #000;
+}
+
+.profileCard h3 {
+  font-size: 1.375rem;
+  line-height: 1.2;
+  font-weight: 300;
+}
+
+.profileCard p {
+  font-size: 0.9375rem;
+  font-weight: 300;
+  line-height: 21px;
+}
+
+.profileImage {
+  display: flex;
+  overflow: hidden;
+  width: 10rem;
+  height: 10rem;
+  margin-bottom: 2rem;
+  justify-content: center;
+  align-items: center;
+  border-style: solid;
+  border-width: 4px;
+  border-color: #e6e6e6;
+  border-radius: 99%;
+}
+
+.profileImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  max-width: 100%;
+  vertical-align: middle;
+  display: inline-block;
+  border: 0;
+}
+
+.profileLinks {
+  display: flex;
+  flex-direction: row;
+  border-top: 1.5px solid rgba(0, 0, 0, 0.2);
+  padding-top: 2rem;
+}
+
+.profileLink {
+  height: 1.875rem;
+  max-height: none;
+  margin-top: auto;
+  padding-right: 0.75rem;
+  padding-left: 1rem;
+  grid-column-gap: 0.5rem;
+  font-size: 1rem;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  border-style: none;
+  border-width: 1px;
+  border-color: #000;
+  border-radius: 2.5rem;
+  text-align: center;
+  filter: brightness(55%) grayscale(110%);
+}
+
+.profileLink:hover {
+  border-radius: 12px;
+  background-color: #f4f0fe;
+  filter: brightness(100%) grayscale(0%);
+  color: #946af9;
+  text-decoration: none;
+}

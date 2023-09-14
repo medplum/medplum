@@ -1,6 +1,6 @@
 {
   "name": "@medplum/server",
-  "version": "2.0.31",
+  "version": "2.1.0",
   "description": "Medplum Server",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -60,6 +60,7 @@
     "pg-cursor": "2.10.3",
     "rfc6902": "5.0.1",
     "ua-parser-js": "1.0.35",
+    "uuid": "9.0.0",
     "validator": "13.11.0",
     "ws": "8.13.0"
   },
@@ -85,6 +86,7 @@
     "@types/set-cookie-parser": "2.4.3",
     "@types/supertest": "2.0.12",
     "@types/ua-parser-js": "0.7.36",
+    "@types/uuid": "9.0.2",
     "@types/validator": "13.11.1",
     "@types/ws": "8.5.5",
     "aws-sdk-client-mock": "3.0.0",

@@ -21,4 +21,4 @@ for dir in `ls examples`; do
   fi
 done
 
-npm i
+npm i --strict-peer-deps

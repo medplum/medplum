@@ -1,23 +1,23 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { evalFhirPathTyped, getTypedPropertyValue, toTypedValue } from '../fhirpath';
 import {
+  OperationOutcomeError,
   createConstraintIssue,
   createProcessingIssue,
   createStructureIssue,
-  OperationOutcomeError,
   validationError,
 } from '../outcomes';
-import { isResource, PropertyType, TypedValue } from '../types';
+import { PropertyType, TypedValue, isResource } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 import {
   Constraint,
   ElementValidator,
-  getDataType,
   InternalTypeSchema,
-  parseStructureDefinition,
   SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
+  getDataType,
+  parseStructureDefinition,
 } from './types';
 
 /*
@@ -26,7 +26,7 @@ import {
  * See: [JSON Representation of Resources](https://hl7.org/fhir/json.html)
  * See: [FHIR Data Types](https://www.hl7.org/fhir/datatypes.html)
  */
-const fhirTypeToJsType: Record<string, string> = {
+export const fhirTypeToJsType = {
   base64Binary: 'string',
   boolean: 'boolean',
   canonical: 'string',
@@ -48,7 +48,7 @@ const fhirTypeToJsType: Record<string, string> = {
   uuid: 'string',
   xhtml: 'string',
   'http://hl7.org/fhirpath/System.String': 'string', // Not actually a FHIR type, but included in some StructureDefinition resources
-};
+} as const satisfies Record<string, 'string' | 'boolean' | 'number'>;
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -74,7 +74,7 @@ const validationRegexes: Record<string, RegExp> = {
   url: /^\S*$/,
   uuid: /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
   xhtml: /.*/,
-};
+} as const;
 
 /**
  * List of constraint keys that aren't to be checked in an expression.
@@ -82,7 +82,7 @@ const validationRegexes: Record<string, RegExp> = {
 const skippedConstraintKeys: Record<string, boolean> = { 'ele-1': true };
 
 export function validate(resource: Resource, profile?: StructureDefinition): void {
-  return new ResourceValidator(resource.resourceType, resource, profile).validate();
+  new ResourceValidator(resource.resourceType, resource, profile).validate();
 }
 
 class ResourceValidator {
@@ -275,9 +275,7 @@ class ResourceValidator {
   private constraintsCheck(value: TypedValue, element: ElementValidator, path: string): void {
     const constraints = element.constraints;
     for (const constraint of constraints) {
-      if (constraint.severity !== 'error' || constraint.key in skippedConstraintKeys) {
-        continue;
-      } else {
+      if (constraint.severity === 'error' && !(constraint.key in skippedConstraintKeys)) {
         const expression = this.isExpressionTrue(constraint, value, path);
         if (!expression) {
           this.issues.push(createConstraintIssue(path, constraint));
@@ -310,7 +308,12 @@ class ResourceValidator {
     if (primitiveValue) {
       const { type, value } = primitiveValue;
       // First, make sure the value is the correct JS type
-      const expectedType = fhirTypeToJsType[type];
+      if (!(type in fhirTypeToJsType)) {
+        this.issues.push(createStructureIssue(path, `Invalid JSON type: ${type} is not a valid FHIR type`));
+        return;
+      }
+      const expectedType = fhirTypeToJsType[type as keyof typeof fhirTypeToJsType];
+      // rome-ignore lint/suspicious/useValidTypeof: expected value ensured to be one of: 'string' | 'boolean' | 'number'
       if (typeof value !== expectedType) {
         if (value !== null) {
           this.issues.push(
@@ -391,13 +394,11 @@ function getNestedProperty(value: TypedValue, key: string): (TypedValue | TypedV
   for (const prop of nestedProps) {
     const next = [];
     for (const current of propertyValues) {
-      if (current === undefined) {
-        continue;
-      } else if (Array.isArray(current)) {
+      if (Array.isArray(current)) {
         for (const element of current) {
           next.push(getTypedPropertyValue(element, prop));
         }
-      } else {
+      } else if (current !== undefined) {
         next.push(getTypedPropertyValue(current, prop));
       }
     }

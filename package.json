@@ -1,6 +1,6 @@
 {
   "name": "root",
-  "version": "2.0.31",
+  "version": "2.1.0",
   "engines": {
     "node": ">=18.0.0"
   },
@@ -9,7 +9,7 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "eslint .",
-    "prettier": "prettier --write .",
+    "prettier": "prettier --write \"**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}\"",
     "cyclonedx": "cyclonedx-npm --omit dev --omit optional --omit peer"
   },
   "workspaces": [
@@ -33,6 +33,7 @@
     "jest-environment-jsdom": "29.6.3",
     "npm-check-updates": "16.12.2",
     "nyc": "15.1.0",
+    "prettier": "3.0.3",
     "rimraf": "5.0.1",
     "source-map-explorer": "2.5.3",
     "ts-node": "10.9.1",
@@ -60,5 +61,6 @@
     "printWidth": 120,
     "singleQuote": true,
     "trailingComma": "es5"
-  }
+  },
+  "packageManager": "npm@9.8.1"
 }

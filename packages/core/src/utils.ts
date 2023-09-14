@@ -23,6 +23,12 @@ import { formatHumanName } from './format';
  */
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
 
+/**
+ * Allowed values for `code_challenge_method` in a PKCE exchange.
+ * @internal
+ */
+export type CodeChallengeMethod = 'plain' | 'S256';
+
 interface Code {
   code?: CodeableConcept;
 }
@@ -270,11 +276,6 @@ export function getQuestionnaireAnswers(
   return result;
 }
 
-/**
- * Recursively builds the questionnaire answer items map.
- * @param items The current questionnaire response items.
- * @param result The cumulative result map.
- */
 function buildQuestionnaireAnswerItems(
   items: QuestionnaireResponseItem[] | undefined,
   result: Record<string, QuestionnaireResponseItemAnswer>
@@ -285,6 +286,38 @@ function buildQuestionnaireAnswerItems(
         result[item.linkId] = item.answer[0];
       }
       buildQuestionnaireAnswerItems(item.item, result);
+    }
+  }
+}
+
+/**
+ * Returns an array of  questionnaire answers as a map by link ID.
+ * @param response The questionnaire response resource.
+ * @returns Questionnaire answer arrays mapped by link ID.
+ */
+export function getAllQuestionnaireAnswers(
+  response: QuestionnaireResponse
+): Record<string, QuestionnaireResponseItemAnswer[]> {
+  const result: Record<string, QuestionnaireResponseItemAnswer[]> = {};
+  buildAllQuestionnaireAnswerItems(response.item, result);
+  return result;
+}
+
+/**
+ * Recursively builds the questionnaire answer items map.
+ * @param items The current questionnaire response items.
+ * @param result The cumulative result map of answers.
+ */
+function buildAllQuestionnaireAnswerItems(
+  items: QuestionnaireResponseItem[] | undefined,
+  result: Record<string, QuestionnaireResponseItemAnswer[]>
+): void {
+  if (items) {
+    for (const item of items) {
+      if (item.linkId && item.answer && item.answer.length > 0) {
+        result[item.linkId] = item.answer;
+      }
+      buildAllQuestionnaireAnswerItems(item.item, result);
     }
   }
 }

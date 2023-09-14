@@ -92,10 +92,21 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   });
 
   // Send the response
+  // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
+  let responseBody = result.returnValue;
+  if (responseBody === undefined) {
+    // If the bot did not return a value, then return an OperationOutcome
+    responseBody = result.success ? allOk : badRequest(result.logResult);
+  } else if (typeof responseBody === 'number') {
+    // If the bot returned a number, then we must convert it to a string
+    // Otherwise, express will interpret it as an HTTP status code
+    responseBody = responseBody.toString();
+  }
+
   res
     .status(result.success ? 200 : 400)
     .type(getResponseContentType(req))
-    .send(result.returnValue ?? (result.success ? allOk : badRequest(result.logResult)));
+    .send(responseBody);
 });
 
 /**

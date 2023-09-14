@@ -44,7 +44,7 @@ For example, consider this `Patient`:
 }
 ```
 
-The SCIM `userName` property will be the system generated FHIR resource ID.  This can be used in combination with the SCIM `userType` to identify the FHIR resource for the user.
+The SCIM `userName` property will be the system generated FHIR resource ID. This can be used in combination with the SCIM `userType` to identify the FHIR resource for the user.
 
 ## Create a user
 

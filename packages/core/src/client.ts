@@ -38,19 +38,19 @@ import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
-import { isMedplumAccessToken, parseJWTPayload } from './jwt';
+import { isJwt, isMedplumAccessToken, parseJWTPayload } from './jwt';
 import {
+  OperationOutcomeError,
   badRequest,
   isOk,
   isOperationOutcome,
   normalizeOperationOutcome,
   notFound,
-  OperationOutcomeError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
-import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
-import { arrayBufferToBase64, createReference, ProfileResource, sleep } from './utils';
+import { IndexedStructureDefinition, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
+import { CodeChallengeMethod, ProfileResource, arrayBufferToBase64, createReference, sleep } from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 
@@ -278,7 +278,7 @@ export interface BaseLoginRequest {
   readonly scope?: string;
   readonly nonce?: string;
   readonly codeChallenge?: string;
-  readonly codeChallengeMethod?: string;
+  readonly codeChallengeMethod?: CodeChallengeMethod;
   readonly googleClientId?: string;
   readonly launch?: string;
   readonly redirectUri?: string;
@@ -1053,12 +1053,22 @@ export class MedplumClient extends EventTarget {
     redirectUri: string,
     loginRequest: BaseLoginRequest
   ): string {
+    const { codeChallenge, codeChallengeMethod } = loginRequest;
+    if (!codeChallengeMethod) {
+      throw new Error('`LoginRequest` for external auth must include a `codeChallengeMethod`.');
+    }
+    if (!codeChallenge) {
+      throw new Error('`LoginRequest` for external auth must include a `codeChallenge`.');
+    }
+
     const url = new URL(authorizeUrl);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('client_id', clientId);
     url.searchParams.set('redirect_uri', redirectUri);
     url.searchParams.set('scope', 'openid profile email');
     url.searchParams.set('state', JSON.stringify(loginRequest));
+    url.searchParams.set('code_challenge_method', codeChallengeMethod);
+    url.searchParams.set('code_challenge', codeChallenge);
     return url.toString();
   }
 
@@ -2501,6 +2511,12 @@ export class MedplumClient extends EventTarget {
       throw new OperationOutcomeError(notFound);
     }
 
+    const contentLocation = response.headers.get('content-location');
+    if (response.status === 201 && contentLocation && options.redirect === 'follow') {
+      // Follow redirect
+      return this.request('GET', contentLocation, { ...options, body: undefined });
+    }
+
     let obj: any = undefined;
     if (isJson) {
       try {
@@ -2710,7 +2726,7 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    * @returns The PKCE code challenge details.
    */
-  async startPkce(): Promise<{ codeChallengeMethod: string; codeChallenge: string }> {
+  async startPkce(): Promise<{ codeChallengeMethod: CodeChallengeMethod; codeChallenge: string }> {
     const pkceState = getRandomString();
     sessionStorage.setItem('pkceState', pkceState);
 
@@ -2919,24 +2935,25 @@ export class MedplumClient extends EventTarget {
   private async verifyTokens(tokens: TokenResponse): Promise<void> {
     const token = tokens.access_token;
 
-    // Verify token has not expired
-    const tokenPayload = parseJWTPayload(token);
+    if (isJwt(token)) {
+      // Verify token has not expired
+      const tokenPayload = parseJWTPayload(token);
 
-    if (Date.now() >= (tokenPayload.exp as number) * 1000) {
-      this.clearActiveLogin();
-      throw new Error('Token expired');
-    }
+      if (Date.now() >= (tokenPayload.exp as number) * 1000) {
+        this.clearActiveLogin();
+        throw new Error('Token expired');
+      }
 
-    // Verify app_client_id
-    // external tokenPayload
-    if (tokenPayload.cid) {
-      if (tokenPayload.cid !== this.clientId) {
+      // Verify app_client_id
+      if (tokenPayload.cid) {
+        if (tokenPayload.cid !== this.clientId) {
+          this.clearActiveLogin();
+          throw new Error('Token was not issued for this audience');
+        }
+      } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
         this.clearActiveLogin();
         throw new Error('Token was not issued for this audience');
       }
-    } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
-      this.clearActiveLogin();
-      throw new Error('Token was not issued for this audience');
     }
 
     return this.setActiveLogin({

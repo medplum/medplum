@@ -41,4 +41,3 @@ Medplum libraries such as `@medplum/core` and `@medplum/react` follow best pract
 - [Dead-code elimination](https://en.wikipedia.org/wiki/Dead-code_elimination)
 - [Webpack Tree Shaking](https://webpack.js.org/guides/tree-shaking/)
 - [Rollup Tree Shaking](https://rollupjs.org/guide/en/#tree-shaking)
-  

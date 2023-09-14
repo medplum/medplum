@@ -2,6 +2,7 @@
 title: DomainConfiguration
 sidebar_position: 12
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/medplumDefinitions/domainconfiguration.json';
@@ -14,11 +15,11 @@ Domain specific configuration for the Medplum application.
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -30,8 +31,6 @@ Domain specific configuration for the Medplum application.
 
 </TabItem>
   
-  
-  
-  
+
 
 </Tabs>

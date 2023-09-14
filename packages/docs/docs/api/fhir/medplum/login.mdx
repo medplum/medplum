@@ -2,6 +2,7 @@
 title: Login
 sidebar_position: 5
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/medplumDefinitions/login.json';
@@ -14,11 +15,11 @@ Login event and session details.
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -30,8 +31,6 @@ Login event and session details.
 
 </TabItem>
   
-  
-  
-  
+
 
 </Tabs>

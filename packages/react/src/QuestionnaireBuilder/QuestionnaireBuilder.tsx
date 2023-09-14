@@ -1,4 +1,4 @@
-import { Anchor, Button, createStyles, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
+import { Anchor, Box, Button, createStyles, NativeSelect, Space, Textarea, TextInput, Title } from '@mantine/core';
 import { globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
 import {
   Coding,
@@ -11,12 +11,12 @@ import {
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
-import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireForm';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { useResource } from '../useResource/useResource';
 import { killEvent } from '../utils/dom';
 import { isChoiceQuestion, QuestionnaireItemType } from '../utils/questionnaire';
+import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
 
 const useStyles = createStyles((theme) => ({
   section: {
@@ -190,6 +190,13 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     } as T);
   }
 
+  function updateItem(updatedItem: QuestionnaireItem): void {
+    props.onChange({
+      ...props.item,
+      ...updatedItem,
+    });
+  }
+
   function toggleRepeatable(item: QuestionnaireItem): void {
     props.onChange({
       ...props.item,
@@ -225,12 +232,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             {item.type === 'reference' && (
               <ReferenceProfiles item={item} onChange={(newOptions) => changeProperty('extension', newOptions)} />
             )}
-            {isChoiceQuestion(item) && (
-              <AnswerBuilder
-                options={item.answerOption}
-                onChange={(newOptions) => changeProperty('answerOption', newOptions)}
-              />
-            )}
+            {isChoiceQuestion(item) && <AnswerBuilder item={item} onChange={(item) => updateItem(item)} />}
           </>
         ) : (
           <>
@@ -371,16 +373,73 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
 }
 
 interface AnswerBuilderProps {
-  options?: QuestionnaireItemAnswerOption[];
-  onChange: (newOptions: QuestionnaireItemAnswerOption[]) => void;
+  item: QuestionnaireItem;
+  onChange: (item: QuestionnaireItem) => void;
 }
 
 function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
   const property = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
-  const options = props.options ?? [];
+  const options = props.item.answerOption ?? [];
   return (
     <div>
-      {options.map((option: QuestionnaireItemAnswerOption) => {
+      {props.item.answerValueSet !== undefined ? (
+        <TextInput
+          placeholder="Enter Value Set"
+          defaultValue={props.item.answerValueSet}
+          onChange={(e) => props.onChange({ ...props.item, answerValueSet: e.target.value })}
+        />
+      ) : (
+        <AnswerOptionsInput options={options} property={property} item={props.item} onChange={props.onChange} />
+      )}
+      <Box display="flex">
+        <Anchor
+          href="#"
+          onClick={(e: React.SyntheticEvent) => {
+            killEvent(e);
+            props.onChange({
+              ...props.item,
+              answerValueSet: undefined,
+              answerOption: [
+                ...options,
+                {
+                  id: generateId(),
+                },
+              ],
+            });
+          }}
+        >
+          Add choice
+        </Anchor>
+        <Space w="lg" />
+        <Anchor
+          href="#"
+          onClick={(e: React.SyntheticEvent) => {
+            killEvent(e);
+            props.onChange({
+              ...props.item,
+              answerOption: [],
+              answerValueSet: '',
+            });
+          }}
+        >
+          Add value set
+        </Anchor>
+      </Box>
+    </div>
+  );
+}
+
+interface AnswerOptionsInputProps {
+  options: QuestionnaireItemAnswerOption[];
+  property: any;
+  item: QuestionnaireItem;
+  onChange: (item: QuestionnaireItem) => void;
+}
+
+function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
+  return (
+    <div>
+      {props.options.map((option: QuestionnaireItemAnswerOption) => {
         const [propertyValue, propertyType] = getValueAndType(
           { type: 'QuestionnaireItemAnswerOption', value: option },
           'value'
@@ -400,23 +459,30 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
               <ResourcePropertyInput
                 key={option.id}
                 name="value[x]"
-                property={property}
+                property={props.property}
                 defaultPropertyType={propertyType}
                 defaultValue={propertyValue}
                 onChange={(newValue: any, propName?: string) => {
-                  const newOptions = [...options];
+                  const newOptions = [...props.options];
                   const index = newOptions.findIndex((o) => o.id === option.id);
                   newOptions[index] = { id: option.id, [propName as string]: newValue };
-                  props.onChange(newOptions);
+                  props.onChange({
+                    ...props.item,
+                    answerOption: newOptions,
+                  });
                 }}
               />
             </div>
+
             <div>
               <Anchor
                 href="#"
                 onClick={(e: React.SyntheticEvent) => {
                   killEvent(e);
-                  props.onChange(options.filter((o) => o.id !== option.id));
+                  props.onChange({
+                    ...props.item,
+                    answerOption: props.options.filter((o) => o.id !== option.id),
+                  });
                 }}
               >
                 Remove
@@ -425,20 +491,6 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
           </div>
         );
       })}
-      <Anchor
-        href="#"
-        onClick={(e: React.SyntheticEvent) => {
-          killEvent(e);
-          props.onChange([
-            ...options,
-            {
-              id: generateId(),
-            },
-          ]);
-        }}
-      >
-        Add choice
-      </Anchor>
     </div>
   );
 }

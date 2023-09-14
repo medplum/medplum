@@ -15,14 +15,15 @@ import { getConfig } from '../config';
 import { getClient } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
+import { systemRepo } from '../fhir/repo';
+import * as dataMigrations from '../migrations/data';
 import { getUserByEmail } from '../oauth/utils';
 import { createSearchParameters } from '../seeds/searchparameters';
-import { createStructureDefinitions } from '../seeds/structuredefinitions';
+import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
-import { getAuthenticatedContext } from '../context';
+import { getAuthenticatedContext, getRequestContext } from '../context';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
@@ -36,7 +37,7 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, createValueSets);
+    await sendAsyncResponse(req, res, () => createValueSets(res.locals.project));
   })
 );
 
@@ -49,7 +50,7 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, createStructureDefinitions);
+    await sendAsyncResponse(req, res, () => rebuildR4StructureDefinitions(res.locals.project));
   })
 );
 
@@ -62,7 +63,7 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, createSearchParameters);
+    await sendAsyncResponse(req, res, () => createSearchParameters(res.locals.project));
   })
 );
 
@@ -187,6 +188,32 @@ superAdminRouter.post(
         await getClient().query(
           `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
         );
+      }
+    });
+  })
+);
+
+// POST to /admin/super/migrate
+// to run pending data migrations.
+// This is intended to replace all of the above endpoints,
+// because it will be run automatically by the server upgrade process.
+superAdminRouter.post(
+  '/migrate',
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin();
+    requireAsync(req);
+
+    const ctx = getRequestContext();
+    await sendAsyncResponse(req, res, async () => {
+      const client = getClient();
+      const result = await client.query('SELECT "dataVersion" FROM "DatabaseMigration"');
+      const version = result.rows[0]?.dataVersion as number;
+      const migrationKeys = Object.keys(dataMigrations);
+      for (let i = version + 1; i <= migrationKeys.length; i++) {
+        const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + i];
+        ctx.logger.info('Running data migration', { version: `v${i}` });
+        await migration.run(systemRepo);
+        await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
       }
     });
   })

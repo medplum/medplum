@@ -9,6 +9,10 @@ node_modules/
 # Dotenv
 .env
 
+.failed
+prettier-fmt.err
+prettier-fmt1.err
+
 # Output
 packages/agent/dist/
 packages/app/dist/

@@ -5,12 +5,14 @@ import { resolve } from 'path';
 import { BackEnd } from './backend';
 import { FrontEnd } from './frontend';
 import { Storage } from './storage';
+import { CloudTrailAlarms } from './cloudtrail';
 
 class MedplumStack {
   primaryStack: Stack;
   backEnd: BackEnd;
   frontEnd: FrontEnd;
   storage: Storage;
+  cloudTrail: CloudTrailAlarms;
 
   constructor(scope: App, config: MedplumInfraConfig) {
     this.primaryStack = new Stack(scope, config.stackName, {
@@ -24,6 +26,7 @@ class MedplumStack {
     this.backEnd = new BackEnd(this.primaryStack, config);
     this.frontEnd = new FrontEnd(this.primaryStack, config, config.region);
     this.storage = new Storage(this.primaryStack, config, config.region);
+    this.cloudTrail = new CloudTrailAlarms(this.primaryStack, config);
 
     if (config.region !== 'us-east-1') {
       // Some resources must be created in us-east-1
@@ -39,6 +42,7 @@ class MedplumStack {
 
       this.frontEnd = new FrontEnd(usEast1Stack, config, 'us-east-1');
       this.storage = new Storage(usEast1Stack, config, 'us-east-1');
+      this.cloudTrail = new CloudTrailAlarms(usEast1Stack, config);
     }
   }
 }
@@ -61,6 +65,7 @@ export function main(context?: Record<string, string>): void {
   console.log('BackEnd', stack.backEnd.node.id);
   console.log('FrontEnd', stack.frontEnd.node.id);
   console.log('Storage', stack.storage.node.id);
+  console.log('CloudTrail', stack.cloudTrail.node.id);
 
   app.synth();
 }

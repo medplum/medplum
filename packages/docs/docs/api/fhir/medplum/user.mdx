@@ -2,6 +2,7 @@
 title: User
 sidebar_position: 2
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/medplumDefinitions/user.json';
@@ -14,11 +15,11 @@ Representation of a human user of the system.
 <Tabs queryString="section">
 <TabItem value="schema" label="Schema" default>
 
-
 ## Properties
 
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -30,8 +31,6 @@ Representation of a human user of the system.
 
 </TabItem>
   
-  
-  
-  
+
 
 </Tabs>
