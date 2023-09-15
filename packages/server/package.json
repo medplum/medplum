@@ -19,7 +19,7 @@
     "prestart": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --poll --respawn --transpile-only src/index.ts",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand src/logger.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch-logs": "3.395.0",

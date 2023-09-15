@@ -7,7 +7,6 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-// import { logger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { createSearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
@@ -204,7 +203,6 @@ describe('Super Admin routes', () => {
     (rebuildR4StructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
       return Promise.reject(err);
     });
-    // const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
 
     const res = await request(app)
       .post('/admin/super/structuredefinitions')
@@ -216,7 +214,6 @@ describe('Super Admin routes', () => {
     expect(res.status).toEqual(202);
     const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
     expect(job.status).toEqual('error');
-    // expect(loggerErrorSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ error: err }));
   });
 
   test('Rebuild StructureDefinitions access denied', async () => {

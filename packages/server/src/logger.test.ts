@@ -9,8 +9,10 @@ import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 
 import { loadConfig } from './config';
-import { LogLevel, globalLogger, parseLogLevel } from './logger';
+import { LogLevel, Logger, globalLogger, parseLogLevel } from './logger';
 import { waitFor } from './test.setup';
+import { PassThrough } from 'stream';
+import { randomUUID } from 'crypto';
 
 describe('Global Logger', () => {
   let mockCloudWatchLogsClient: AwsClientStub<CloudWatchLogsClient>;
@@ -153,5 +155,68 @@ describe('Global Logger', () => {
     expect(() => {
       parseLogLevel('foo');
     }).toThrow('Invalid log level: foo');
+  });
+});
+
+describe('Instance Logger', () => {
+  let testLogger: Logger;
+  let testStream: PassThrough;
+  let testOutput: jest.Mock<void, [Record<string, any>]>;
+
+  beforeEach(() => {
+    testOutput = jest.fn();
+    testStream = new PassThrough();
+    testStream.on('data', (data) => {
+      if (Buffer.isBuffer(data)) {
+        testOutput(JSON.parse(data.toString('utf8')));
+      }
+    });
+    testLogger = new Logger(testStream, undefined, LogLevel.DEBUG);
+  });
+
+  test('Writes simple message to output as JSON', () => {
+    testLogger.info('Boing!');
+    expect(testOutput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'INFO',
+        msg: 'Boing!',
+      })
+    );
+  });
+
+  test('Formats error message', () => {
+    testLogger.error('Fatal error', new Error('Catastrophe!'));
+    expect(testOutput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'ERROR',
+        msg: 'Fatal error',
+        error: 'Error: Catastrophe!',
+      })
+    );
+  });
+
+  test('Does not write when logger is disabled', () => {
+    const unlogger = new Logger(testStream, undefined, LogLevel.NONE);
+    unlogger.error('Annihilation imminent');
+    expect(testOutput).not.toBeCalled();
+  });
+
+  test('Does not log when level is above configured maximum', () => {
+    const logger = new Logger(testStream, undefined, LogLevel.INFO);
+    logger.debug('Evil bit unset');
+    expect(testOutput).not.toBeCalled();
+  });
+
+  test('Logger metadata attached to logs', () => {
+    const logger = new Logger(testStream, { foo: 'bar' }, LogLevel.INFO);
+    logger.info('Patient merged', { id: randomUUID() });
+    expect(testOutput).toBeCalledWith(
+      expect.objectContaining({
+        level: 'INFO',
+        msg: 'Patient merged',
+        id: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/),
+        foo: 'bar',
+      })
+    );
   });
 });

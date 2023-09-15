@@ -1,4 +1,4 @@
-import { badRequest, ContentType, isUUID } from '@medplum/core';
+import { badRequest, ContentType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
@@ -33,9 +33,8 @@ import { storageRouter } from './storage';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
-import { AuthenticatedRequestContext, getRequestContext, RequestContext, requestContextStore } from './context';
+import { attachRequestContext, AuthenticatedRequestContext, getRequestContext, requestContextStore } from './context';
 import { globalLogger } from './logger';
-import { randomUUID } from 'crypto';
 
 let server: http.Server | undefined = undefined;
 
@@ -116,11 +115,6 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     globalLogger.error('Unhandled error', err);
   }
   res.status(500).json({ msg: 'Internal Server Error' });
-}
-
-async function attachRequestContext(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const { requestId, traceId } = requestIds(req);
-  requestContextStore.run(new RequestContext(requestId, traceId), () => next());
 }
 
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
@@ -208,30 +202,4 @@ export async function shutdownApp(): Promise<void> {
   if (binaryStorage?.startsWith('file:' + join(tmpdir(), 'medplum-temp-storage'))) {
     rmSync(binaryStorage.replace('file:', ''), { recursive: true, force: true });
   }
-}
-
-function requestIds(req: Request): { requestId: string; traceId: string } {
-  const requestId = randomUUID();
-  const traceIdHeader = req.header('x-trace-id');
-  const traceParentHeader = req.header('traceparent');
-  let traceId: string | undefined;
-  if (traceIdHeader && isUUID(traceIdHeader)) {
-    traceId = traceIdHeader;
-  } else if (traceParentHeader?.startsWith('00-')) {
-    const id = traceParentHeader.split('-')[1];
-    const uuid = [
-      id.substring(0, 8),
-      id.substring(8, 12),
-      id.substring(12, 16),
-      id.substring(16, 20),
-      id.substring(20, 32),
-    ].join('-');
-    if (isUUID(uuid)) {
-      traceId = uuid;
-    }
-  }
-  if (!traceId) {
-    traceId = randomUUID();
-  }
-  return { requestId, traceId };
 }

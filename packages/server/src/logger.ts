@@ -10,12 +10,17 @@ import { Writable } from 'node:stream';
  * and that logging to console.log was actually perfectly adequate.
  */
 
+/**
+ * Logging level, with greater values representing more detailed logs emitted.
+ *
+ * The zero value means no server logs will be emitted.
+ */
 export enum LogLevel {
   NONE = 0,
-  ERROR = 4,
-  WARN = 3,
-  INFO = 2,
-  DEBUG = 1,
+  ERROR,
+  WARN,
+  INFO,
+  DEBUG,
 }
 
 function levelString(level: LogLevel): string {
@@ -35,12 +40,12 @@ function levelString(level: LogLevel): string {
 
 export class Logger {
   private out: Writable;
-  private minLevel: LogLevel;
+  private maxLevel: LogLevel;
   private metadata?: Record<string, any>;
 
-  constructor(stream: Writable, metadata?: Record<string, any>) {
+  constructor(stream: Writable, metadata?: Record<string, any>, maxLevel?: LogLevel) {
     this.out = stream;
-    this.minLevel = process.env.NODE_ENV === 'test' ? LogLevel.ERROR : LogLevel.INFO;
+    this.maxLevel = maxLevel ?? (process.env.NODE_ENV === 'test' ? LogLevel.ERROR : LogLevel.INFO);
     this.metadata = metadata;
   }
 
@@ -61,7 +66,7 @@ export class Logger {
   }
 
   log(level: LogLevel, msg: string, data?: Record<string, any>): void {
-    if (level < this.minLevel || this.minLevel === LogLevel.NONE) {
+    if (level > this.maxLevel) {
       return;
     }
     if (data instanceof Error) {
@@ -74,7 +79,8 @@ export class Logger {
         msg,
         ...data,
         ...this.metadata,
-      }) + '\n'
+      }) + '\n',
+      'utf8'
     );
   }
 }

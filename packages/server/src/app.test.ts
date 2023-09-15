@@ -77,7 +77,7 @@ describe('App', () => {
     await shutdownApp();
   });
 
-  test.skip('Database disconnect', async () => {
+  test('Database disconnect', async () => {
     const app = express();
     const config = await loadTestConfig();
     await initApp(app, config);
