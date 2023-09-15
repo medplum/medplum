@@ -33,6 +33,10 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
  */
 function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
   const searchParam = globalSchema.types[searchRequest.resourceType].searchParams?.[filter.code];
+  if (filter.operator === Operator.MISSING && searchParam) {
+    const values = evalFhirPath(searchParam.expression as string, resource);
+    return filter.value === 'true' ? !values.length : values.length > 0;
+  }
   switch (searchParam?.type) {
     case 'reference':
       return matchesReferenceFilter(resource, filter, searchParam);

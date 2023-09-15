@@ -592,4 +592,25 @@ describe('Search matching', () => {
     };
     expect(matchesSearchRequest(resource, search1)).toBe(true);
   });
+
+  test(':missing', () => {
+    const resource: Patient = {
+      resourceType: 'Patient',
+    };
+
+    const search1: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [{ code: 'organization', operator: Operator.MISSING, value: 'true' }],
+    };
+    expect(matchesSearchRequest(resource, search1)).toBe(true);
+
+    resource.managingOrganization = {
+      reference: 'Organization/FooMedical',
+    };
+    const search2: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [{ code: 'organization', operator: Operator.MISSING, value: 'false' }],
+    };
+    expect(matchesSearchRequest(resource, search2)).toBe(true);
+  });
 });
