@@ -1,5 +1,5 @@
-import { Bundle, BundleEntry, Resource, Specimen } from '@medplum/fhirtypes';
-import { convertToTransactionBundle } from './bundle';
+import { Bundle, BundleEntry, DiagnosticReport, Patient, Resource, Specimen } from '@medplum/fhirtypes';
+import { convertContainedResourcesToBundle, convertToTransactionBundle } from './bundle';
 import { isUUID } from './utils';
 
 let jsonFile: any;
@@ -183,6 +183,83 @@ describe('Bundle tests', () => {
 
       const specimen = transaction.entry?.find((e) => e.resource?.resourceType === 'Specimen')?.resource as Specimen;
       expect(isUUID(specimen?.subject?.reference?.split(':')[2] ?? '')).toBeTruthy();
+    });
+  });
+
+  describe('convertContainedResourcesToBundle', () => {
+    test('Simple resource', () => {
+      const input: Patient = { resourceType: 'Patient' };
+      const result = convertContainedResourcesToBundle(input);
+      expect(result).toMatchObject({
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            fullUrl: expect.stringMatching(/^urn:uuid:[a-f0-9-]{36}$/),
+            request: { method: 'POST', url: 'Patient' },
+            resource: {
+              resourceType: 'Patient',
+            },
+          },
+        ],
+      });
+    });
+
+    test('Contained observations', () => {
+      const input: DiagnosticReport = {
+        resourceType: 'DiagnosticReport',
+        contained: [
+          {
+            resourceType: 'Observation',
+            id: '123',
+            hasMember: [{ reference: '#456' }],
+          },
+          {
+            resourceType: 'Observation',
+            id: '456',
+          },
+        ],
+        result: [{ reference: '#123' }],
+      };
+
+      const result = convertContainedResourcesToBundle(input);
+      expect(result).toMatchObject({
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            fullUrl: expect.stringMatching(/^urn:uuid:[a-f0-9-]{36}$/),
+            request: { method: 'POST', url: 'Observation' },
+            resource: {
+              resourceType: 'Observation',
+            },
+          },
+          {
+            fullUrl: expect.stringMatching(/^urn:uuid:[a-f0-9-]{36}$/),
+            request: { method: 'POST', url: 'Observation' },
+            resource: {
+              resourceType: 'Observation',
+              hasMember: [
+                {
+                  reference: expect.stringMatching(/^urn:uuid:[a-f0-9-]{36}$/),
+                },
+              ],
+            },
+          },
+          {
+            fullUrl: expect.stringMatching(/^urn:uuid:[a-f0-9-]{36}$/),
+            request: { method: 'POST', url: 'DiagnosticReport' },
+            resource: {
+              resourceType: 'DiagnosticReport',
+              result: [
+                {
+                  reference: expect.stringMatching(/^urn:uuid:[a-f0-9-]{36}$/),
+                },
+              ],
+            },
+          },
+        ],
+      });
     });
   });
 });
