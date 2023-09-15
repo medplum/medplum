@@ -1,4 +1,4 @@
-import { allOk, ContentType, getStatus, isOk, OperationOutcomeError, validateResource } from '@medplum/core';
+import { allOk, ContentType, getStatus, isOk, OperationOutcomeError, validate } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
@@ -142,7 +142,7 @@ protectedRoutes.post(
       res.status(400).send('Unsupported content type');
       return;
     }
-    validateResource(req.body);
+    validate(req.body);
     sendOutcome(res, allOk);
   })
 );

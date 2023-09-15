@@ -19,9 +19,9 @@ import { authenticateRequest } from '../oauth/middleware';
 import { systemRepo } from '../fhir/repo';
 import * as dataMigrations from '../migrations/data';
 import { getUserByEmail } from '../oauth/utils';
-import { createSearchParameters } from '../seeds/searchparameters';
+import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
-import { createValueSets } from '../seeds/valuesets';
+import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
 import { getAuthenticatedContext, getRequestContext } from '../context';
 
@@ -37,7 +37,7 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => createValueSets(res.locals.project));
+    await sendAsyncResponse(req, res, () => rebuildR4ValueSets());
   })
 );
 
@@ -50,7 +50,7 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => rebuildR4StructureDefinitions(res.locals.project));
+    await sendAsyncResponse(req, res, () => rebuildR4StructureDefinitions());
   })
 );
 
@@ -63,7 +63,7 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => createSearchParameters(res.locals.project));
+    await sendAsyncResponse(req, res, () => rebuildR4SearchParameters());
   })
 );
 

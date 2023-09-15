@@ -8,11 +8,11 @@ import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { generateAccessToken } from '../oauth/keys';
-import { createSearchParameters } from '../seeds/searchparameters';
+import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
-import { createValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { AuthenticatedRequestContext, requestContextStore } from '../context';
+import { rebuildR4ValueSets } from '../seeds/valuesets';
 
 jest.mock('../seeds/valuesets');
 jest.mock('../seeds/structuredefinitions');
@@ -126,7 +126,7 @@ describe('Super Admin routes', () => {
   });
 
   test('Rebuild ValueSetElements as super admin with respond-async', async () => {
-    (createValueSets as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
+    (rebuildR4ValueSets as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
       return Promise.resolve(true);
     });
 
@@ -144,7 +144,7 @@ describe('Super Admin routes', () => {
 
   test('Rebuild ValueSetElements as super admin with respond-async error', async () => {
     const err = new Error('createvalueSet test error');
-    (createValueSets as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
+    (rebuildR4ValueSets as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
       return Promise.reject(err);
     });
 
@@ -238,7 +238,7 @@ describe('Super Admin routes', () => {
   });
 
   test('Rebuild searchparameters as super admin with respond-async', async () => {
-    (createSearchParameters as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
+    (rebuildR4SearchParameters as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
       return Promise.resolve(true);
     });
 
@@ -256,7 +256,7 @@ describe('Super Admin routes', () => {
 
   test('Rebuild searchparameters as super admin with respond-async error', async () => {
     const err = new Error('rebuild searchparameters test error');
-    (createSearchParameters as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
+    (rebuildR4SearchParameters as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
       return Promise.reject(err);
     });
 

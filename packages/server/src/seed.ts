@@ -1,12 +1,12 @@
 import { createReference } from '@medplum/core';
 import { Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import { NIL as nullUuid, v5 } from 'uuid';
 import { bcryptHashPassword } from './auth/utils';
 import { systemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
-import { createSearchParameters } from './seeds/searchparameters';
+import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
-import { createValueSets } from './seeds/valuesets';
-import { v5, NIL as nullUuid } from 'uuid';
+import { rebuildR4ValueSets } from './seeds/valuesets';
 
 export const r4ProjectId = v5('R4', nullUuid);
 
@@ -33,7 +33,7 @@ export async function seedDatabase(): Promise<void> {
     superAdmin: true,
   });
 
-  const r4Project = await systemRepo.updateResource<Project>({
+  await systemRepo.updateResource<Project>({
     resourceType: 'Project',
     id: r4ProjectId,
     name: 'FHIR R4',
@@ -67,9 +67,9 @@ export async function seedDatabase(): Promise<void> {
     admin: true,
   });
 
-  await rebuildR4StructureDefinitions(r4Project);
-  await createValueSets(r4Project);
-  await createSearchParameters(r4Project);
+  await rebuildR4StructureDefinitions();
+  await rebuildR4ValueSets();
+  await rebuildR4SearchParameters();
 }
 
 /**

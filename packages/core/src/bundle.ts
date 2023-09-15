@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 import { generateId } from './crypto';
 import { isReference } from './types';
 import { deepClone } from './utils';
@@ -50,6 +50,8 @@ function referenceReplacer(key: string, value: string, idToUuid: Record<string, 
       id = value.split('/')[1];
     } else if (value.startsWith('urn:uuid:')) {
       id = value.slice(9);
+    } else if (value.startsWith('#')) {
+      id = value.slice(1);
     }
     if (id) {
       return 'urn:uuid:' + idToUuid[id];
@@ -204,4 +206,44 @@ function buildAdjacencyList(bundle: Bundle): AdjacencyList {
   }
 
   return adjacencyList;
+}
+
+/**
+ * Converts a resource with contained resources to a transaction bundle.
+ * This function is useful when creating a resource that contains other resources.
+ * Handles local references and topological sorting.
+ * @param resource The input resource which may or may not include contained resources.
+ * @returns A bundle with the input resource and all contained resources.
+ */
+export function convertContainedResourcesToBundle(resource: Resource & { contained?: Resource[] }): Bundle {
+  // Create a clone so we don't modify the original resource
+  resource = deepClone(resource);
+
+  // Create the simple naive bundle
+  const simpleBundle = {
+    resourceType: 'Bundle',
+    type: 'transaction',
+    entry: [{ resource }] as BundleEntry[],
+  } satisfies Bundle;
+
+  // Move all contained resources to the bundle
+  if (resource.contained) {
+    for (const contained of resource.contained) {
+      simpleBundle.entry.push({ resource: contained });
+    }
+    resource.contained = undefined;
+  }
+
+  // Make sure that all resources have an ID
+  // This is required for convertToTransactionBundle
+  for (const entry of simpleBundle.entry) {
+    if (entry.resource && !entry.resource.id) {
+      entry.resource.id = generateId();
+    }
+  }
+
+  // Convert to a transaction bundle
+  // This adds fullUrl and request properties to each entry
+  // and reorders the bundle to ensure that contained resources are created before they are referenced.
+  return convertToTransactionBundle(simpleBundle);
 }
