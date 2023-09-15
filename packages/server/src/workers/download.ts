@@ -1,5 +1,5 @@
-import { isGone, normalizeOperationOutcome } from '@medplum/core';
-import { Binary, Meta, Resource } from '@medplum/fhirtypes';
+import { arrayify, crawlResource, isGone, normalizeOperationOutcome, TypedValue } from '@medplum/core';
+import { Attachment, Binary, Meta, Resource } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
@@ -98,17 +98,14 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * @param resource The resource that was created or updated.
  */
 export async function addDownloadJobs(resource: Resource): Promise<void> {
-  if (resource.resourceType === 'AuditEvent') {
-    // Never send downloaders for audit events
-    return;
-  }
-
-  if (resource.resourceType === 'Media' && isExternalUrl(resource.content?.url)) {
-    await addDownloadJobData({
-      resourceType: resource.resourceType,
-      id: resource.id as string,
-      url: resource.content?.url as string,
-    });
+  for (const attachment of getAttachments(resource)) {
+    if (isExternalUrl(attachment.url)) {
+      await addDownloadJobData({
+        resourceType: resource.resourceType,
+        id: resource.id as string,
+        url: attachment.url,
+      });
+    }
   }
 }
 
@@ -122,7 +119,7 @@ export async function addDownloadJobs(resource: Resource): Promise<void> {
  * @param url The Media content URL.
  * @returns True if the URL is an external URL.
  */
-function isExternalUrl(url: string | undefined): boolean {
+function isExternalUrl(url: string | undefined): url is string {
   return !!(
     url &&
     !url.startsWith(getConfig().baseUrl + 'fhir/R4/Binary/') &&
@@ -202,4 +199,22 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
     logger.info('Download exception: ' + ex);
     throw ex;
   }
+}
+
+function getAttachments(resource: Resource): Attachment[] {
+  const attachments: Attachment[] = [];
+  crawlResource(resource, {
+    visitProperty: (_parent, _key, _path, propertyValues) => {
+      for (const propertyValue of propertyValues) {
+        if (propertyValue) {
+          for (const value of arrayify(propertyValue) as TypedValue[]) {
+            if (value.type === 'Attachment') {
+              attachments.push(value.value as Attachment);
+            }
+          }
+        }
+      }
+    },
+  });
+  return attachments;
 }
