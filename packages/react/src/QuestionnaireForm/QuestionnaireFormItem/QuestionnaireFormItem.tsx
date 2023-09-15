@@ -346,10 +346,13 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
     }
   }
 
+  const defaultAnswer = getDefaultAnswer(props.allResponses, item, props.index, props.groupSequence);
+  const answerLinkId = options.find((option) => option[1].value === defaultAnswer)?.[0];
+
   return (
     <Radio.Group
       name={name}
-      defaultValue={defaultValue}
+      value={answerLinkId ?? defaultValue}
       onChange={(newValue) => {
         const option = options.find((option) => option[0] === newValue);
         if (option) {
