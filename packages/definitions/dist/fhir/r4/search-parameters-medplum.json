@@ -554,7 +554,7 @@
         "code": "priority-order",
         "base": ["CommunicationRequest", "MedicationRequest", "RequestGroup", "ServiceRequest", "Task"],
         "type": "number",
-        "expression": "iif(priority = 'stat', 10, iif(priority = 'asap', 20, iif(priority = 'urgent', 30, iif(priority = 'routine', 40, 50))))"
+        "expression": "iif(priority = 'stat', 50, iif(priority = 'asap', 40, iif(priority = 'urgent', 30, iif(priority = 'routine', 20, 10))))"
       }
     }
   ]

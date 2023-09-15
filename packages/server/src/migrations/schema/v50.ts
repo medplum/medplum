@@ -12,11 +12,11 @@ export async function run(client: PoolClient): Promise<void> {
     await client.query(`UPDATE "${table}"
     SET "priorityOrder" = 
     CASE 
-        WHEN "priority" = 'stat' THEN 10
-        WHEN "priority" = 'asap' THEN 20
+        WHEN "priority" = 'stat' THEN 50
+        WHEN "priority" = 'asap' THEN 40
         WHEN "priority" = 'urgent' THEN 30
-        WHEN "priority" = 'routine' THEN 40
-        ELSE 50
+        WHEN "priority" = 'routine' THEN 20
+        ELSE 10
     END`);
   }
 }
