@@ -1,5 +1,10 @@
 import { TypedValue, evalFhirPathTyped, getTypedPropertyValue } from '@medplum/core';
-import { QuestionnaireItem, QuestionnaireItemEnableWhen, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
+import {
+  QuestionnaireItem,
+  QuestionnaireItemEnableWhen,
+  QuestionnaireResponseItem,
+  QuestionnaireResponseItemAnswer,
+} from '@medplum/fhirtypes';
 
 export enum QuestionnaireItemType {
   group = 'group',
@@ -25,10 +30,7 @@ export function isChoiceQuestion(item: QuestionnaireItem): boolean {
   return item.type === 'choice' || item.type === 'open-choice';
 }
 
-export function isQuestionEnabled(
-  item: QuestionnaireItem,
-  answers: Record<string, QuestionnaireResponseItemAnswer[]>
-): boolean {
+export function isQuestionEnabled(item: QuestionnaireItem, responseItems: QuestionnaireResponseItem[]): boolean {
   if (!item.enableWhen) {
     return true;
   }
@@ -36,18 +38,16 @@ export function isQuestionEnabled(
   const enableBehavior = item.enableBehavior ?? 'any';
 
   for (const enableWhen of item.enableWhen) {
-    if (
-      enableWhen.operator === 'exists' &&
-      !enableWhen.answerBoolean &&
-      !answers[enableWhen.question as string]?.length
-    ) {
+    const actualAnswers = getByLinkId(responseItems, enableWhen.question as string);
+
+    if (enableWhen.operator === 'exists' && !enableWhen.answerBoolean && !actualAnswers?.length) {
       if (enableBehavior === 'any') {
         return true;
       } else {
         continue;
       }
     }
-    const { anyMatch, allMatch } = checkAnswers(enableWhen, answers, enableBehavior);
+    const { anyMatch, allMatch } = checkAnswers(enableWhen, actualAnswers, enableBehavior);
 
     if (enableBehavior === 'any' && anyMatch) {
       return true;
@@ -58,6 +58,33 @@ export function isQuestionEnabled(
   }
 
   return enableBehavior !== 'any';
+}
+
+function getByLinkId(
+  responseItems: QuestionnaireResponseItem[] | undefined,
+  linkId: string
+): QuestionnaireResponseItemAnswer[] | undefined {
+  if (!Array.isArray(responseItems)) {
+    return undefined;
+  }
+
+  const response = responseItems.find((response) => response.linkId === linkId);
+
+  if (response) {
+    return response.answer;
+  }
+
+  // If not found at the current level, search in nested items
+  for (const nestedResponse of responseItems) {
+    if (nestedResponse.item) {
+      const nestedAnswer = getByLinkId(nestedResponse.item, linkId);
+      if (nestedAnswer) {
+        return nestedAnswer;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function evaluateMatch(actualAnswer: TypedValue | undefined, expectedAnswer: TypedValue, operator?: string): boolean {
@@ -82,10 +109,10 @@ function evaluateMatch(actualAnswer: TypedValue | undefined, expectedAnswer: Typ
 
 function checkAnswers(
   enableWhen: QuestionnaireItemEnableWhen,
-  answers: Record<string, QuestionnaireResponseItemAnswer[]>,
+  answers: QuestionnaireResponseItemAnswer[] | undefined,
   enableBehavior: 'any' | 'all'
 ): { anyMatch: boolean; allMatch: boolean } {
-  const actualAnswers = answers[enableWhen.question as string] || [];
+  const actualAnswers = answers || [];
   const expectedAnswer = getTypedPropertyValue(
     {
       type: 'QuestionnaireItemEnableWhen',

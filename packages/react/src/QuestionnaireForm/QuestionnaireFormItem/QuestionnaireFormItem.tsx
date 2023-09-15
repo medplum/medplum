@@ -1,5 +1,13 @@
 import { Checkbox, MultiSelect, NativeSelect, Radio, TextInput, Textarea } from '@mantine/core';
-import { PropertyType, TypedValue, capitalize, getTypedPropertyValue, globalSchema, stringify } from '@medplum/core';
+import {
+  PropertyType,
+  TypedValue,
+  capitalize,
+  formatCoding,
+  getTypedPropertyValue,
+  globalSchema,
+  stringify,
+} from '@medplum/core';
 import {
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
@@ -8,20 +16,21 @@ import {
   QuestionnaireResponseItemAnswer,
 } from '@medplum/fhirtypes';
 import React, { ChangeEvent } from 'react';
-import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
-import { QuestionnaireItemType } from '../../utils/questionnaire';
-import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
-import { QuantityInput } from '../../QuantityInput/QuantityInput';
-import { ResourcePropertyDisplay } from '../../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
 import { DateTimeInput } from '../../DateTimeInput/DateTimeInput';
+import { QuantityInput } from '../../QuantityInput/QuantityInput';
+import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
+import { ResourcePropertyDisplay } from '../../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocomplete';
+import { QuestionnaireItemType } from '../../utils/questionnaire';
 
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
   index: number;
-  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
-  responseItems?: QuestionnaireResponseItem[];
+  allResponses: QuestionnaireResponseItem[];
+  currentResponseItems?: QuestionnaireResponseItem[];
+  groupSequence?: number;
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
 
@@ -34,7 +43,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     repeatedIndex?: number
   ): void {
     const number = repeatedIndex ?? 0;
-    const responses = props.responseItems?.filter((r) => r.linkId === item.linkId) ?? [];
+    const responses = props.currentResponseItems?.filter((r) => r.linkId === item.linkId) ?? [];
 
     let updatedAnswers: QuestionnaireResponseItemAnswer[];
     if (Array.isArray(newResponseAnswer)) {
@@ -63,7 +72,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
   }
 
   const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
-
   switch (type) {
     case QuestionnaireItemType.boolean:
       return (
@@ -71,7 +79,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           <Checkbox
             id={props.item.linkId}
             name={props.item.linkId}
-            defaultChecked={initial?.valueBoolean}
+            defaultChecked={
+              getDefaultAnswer(props.allResponses, item, index, props.groupSequence) ?? initial?.valueBoolean
+            }
             onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked }, index)}
           />
         </CheckboxFormSection>
@@ -83,7 +93,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           step="any"
           id={name}
           name={name}
-          defaultValue={initial?.valueDecimal}
+          defaultValue={getDefaultAnswer(props.allResponses, item, index, props.groupSequence) ?? initial?.valueDecimal}
           onChange={(e) => onChangeAnswer({ valueDecimal: e.currentTarget.valueAsNumber }, index)}
         />
       );
@@ -94,7 +104,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           step={1}
           id={name}
           name={name}
-          defaultValue={initial?.valueInteger}
+          defaultValue={getDefaultAnswer(props.allResponses, item, index, props.groupSequence) ?? initial?.valueInteger}
           onChange={(e) => onChangeAnswer({ valueInteger: e.currentTarget.valueAsNumber }, index)}
         />
       );
@@ -104,7 +114,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           type="date"
           id={name}
           name={name}
-          defaultValue={initial?.valueDate}
+          defaultValue={getDefaultAnswer(props.allResponses, item, index, props.groupSequence) ?? initial?.valueDate}
           onChange={(e) => onChangeAnswer({ valueDate: e.currentTarget.value }, index)}
         />
       );
@@ -112,7 +122,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <DateTimeInput
           name={name}
-          defaultValue={initial?.valueDateTime}
+          defaultValue={
+            getDefaultAnswer(props.allResponses, item, index, props.groupSequence) ?? initial?.valueDateTime
+          }
           onChange={(newValue: string) => onChangeAnswer({ valueDateTime: newValue }, index)}
         />
       );
@@ -122,7 +134,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           type="time"
           id={name}
           name={name}
-          defaultValue={initial?.valueTime}
+          defaultValue={getDefaultAnswer(props.allResponses, item, index, props.groupSequence) ?? initial?.valueTime}
           onChange={(e) => onChangeAnswer({ valueTime: e.currentTarget.value }, index)}
         />
       );
@@ -132,7 +144,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <TextInput
           id={name}
           name={name}
-          defaultValue={initial?.valueString}
+          defaultValue={getDefaultAnswer(props.allResponses, item, index, props.groupSequence) ?? initial?.valueString}
           onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
       );
@@ -141,7 +153,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <Textarea
           id={name}
           name={name}
-          defaultValue={initial?.valueString}
+          defaultValue={getDefaultAnswer(props.allResponses, item, index, props.groupSequence) ?? initial?.valueString}
           onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
       );
@@ -149,7 +161,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <AttachmentInput
           name={name}
-          defaultValue={initial?.valueAttachment}
+          defaultValue={
+            getDefaultAnswer(props.allResponses, item, index, props.groupSequence) ?? initial?.valueAttachment
+          }
           onChange={(newValue) => onChangeAnswer({ valueAttachment: newValue }, index)}
         />
       );
@@ -158,7 +172,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <ReferenceInput
           name={name}
           targetTypes={addTargetTypes(item)}
-          defaultValue={initial?.valueReference}
+          defaultValue={
+            getDefaultAnswer(props.allResponses, item, index, props.groupSequence) ?? initial?.valueReference
+          }
           onChange={(newValue) => onChangeAnswer({ valueReference: newValue }, index)}
         />
       );
@@ -166,7 +182,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <QuantityInput
           name={name}
-          defaultValue={initial?.valueQuantity}
+          defaultValue={
+            getDefaultAnswer(props.allResponses, item, index, props.groupSequence) ?? initial?.valueQuantity
+          }
           onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue }, index)}
           disableWheel
         />
@@ -179,7 +197,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             name={name}
             item={item}
             initial={initial}
-            answers={props.answers}
+            allResponses={props.allResponses}
+            index={index}
+            groupSequence={props.groupSequence}
             onChangeAnswer={(e) => onChangeAnswer(e, index)}
           />
         );
@@ -189,8 +209,8 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             name={name}
             item={item}
             initial={initial}
-            answers={props.answers}
-            onChangeAnswer={(e: any) => onChangeAnswer(e, index)}
+            allResponses={props.allResponses}
+            onChangeAnswer={(e) => onChangeAnswer(e, index)}
           />
         );
       }
@@ -203,7 +223,9 @@ interface QuestionnaireChoiceInputProps {
   name: string;
   item: QuestionnaireItem;
   initial: QuestionnaireItemInitial | undefined;
-  answers: Record<string, QuestionnaireResponseItemAnswer[]>;
+  allResponses: QuestionnaireResponseItem[];
+  index?: number;
+  groupSequence?: number;
   onChangeAnswer: (newResponseAnswer: QuestionnaireResponseItemAnswer | QuestionnaireResponseItemAnswer[]) => void;
 }
 
@@ -225,12 +247,16 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
   }
   if (item.repeats) {
     const { propertyName, data } = formatSelectData(props.item);
+    const defaultAnswer = getDefaultAnswer(props.allResponses, item, props.index, props.groupSequence, true)
+      ? getDefaultAnswer(props.allResponses, item, props.index, props.groupSequence, true)
+      : [typedValueToString(initialValue)];
+
     return (
       <MultiSelect
         data={data}
         placeholder="Select items"
         searchable
-        defaultValue={[typedValueToString(initialValue) ?? '']}
+        defaultValue={defaultAnswer}
         onChange={(selected) => {
           const values = selected.map((o) => {
             const option = item.answerOption?.find(
@@ -266,14 +292,16 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
         const propertyName = 'value' + capitalize(optionValue.type);
         props.onChangeAnswer({ [propertyName]: optionValue.value });
       }}
-      defaultValue={typedValueToString(initialValue)}
+      defaultValue={
+        getDefaultAnswer(props.allResponses, item, props.index, props.groupSequence) ?? typedValueToString(initialValue)
+      }
       data={data}
     />
   );
 }
 
-function QuestionnaireChoiceSetInput(props: any): JSX.Element {
-  const { name, item, initial, onChangeAnswer, answers } = props;
+function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+  const { name, item, initial, onChangeAnswer, allResponses } = props;
   if (item.answerValueSet) {
     return (
       <ValueSetAutocomplete
@@ -287,7 +315,7 @@ function QuestionnaireChoiceSetInput(props: any): JSX.Element {
       name={name}
       item={item}
       initial={initial}
-      answers={answers}
+      allResponses={allResponses}
       onChangeAnswer={onChangeAnswer}
     />
   );
@@ -318,10 +346,13 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
     }
   }
 
+  const defaultAnswer = getDefaultAnswer(props.allResponses, item, props.index, props.groupSequence);
+  const answerLinkId = options.find((option) => option[1].value === defaultAnswer)?.[0];
+
   return (
     <Radio.Group
       name={name}
-      defaultValue={defaultValue}
+      value={answerLinkId ?? defaultValue}
       onChange={(newValue) => {
         const option = options.find((option) => option[0] === newValue);
         if (option) {
@@ -428,4 +459,46 @@ function typedValueToString(typedValue: TypedValue | undefined): string | undefi
     return typedValue.value.display;
   }
   return typedValue.value.toString();
+}
+
+function getItemsByLinkId(allResponses: QuestionnaireResponseItem[], linkId: string): QuestionnaireResponseItem[] {
+  let result: QuestionnaireResponseItem[] = [];
+
+  for (const item of allResponses) {
+    // If the linkId matches, add it to the result array
+    if (item.linkId === linkId) {
+      result.push(item);
+    }
+
+    // If the current item has nested items, search them too
+    if (item.item) {
+      result = result.concat(getItemsByLinkId(item.item, linkId));
+    }
+  }
+  return result;
+}
+
+function getItemValue(answer: QuestionnaireResponseItemAnswer): any {
+  const itemValue = getTypedPropertyValue(
+    { type: 'QuestionnaireItemAnswerOption', value: answer },
+    'value'
+  ) as TypedValue;
+  // formatCoding returns '' if nothing is there so we need to use ||
+  return formatCoding(itemValue?.value) || itemValue?.value;
+}
+
+function getDefaultAnswer(
+  allResponses: QuestionnaireResponseItem[],
+  item: QuestionnaireItem,
+  index: number = 0,
+  groupSequence: number = 0,
+  multiple: boolean = false
+): any {
+  const results = getItemsByLinkId(allResponses, item.linkId ?? '');
+  const selectedItem = results[groupSequence]?.answer;
+  if (multiple) {
+    return selectedItem?.map((a) => getItemValue(a));
+  } else {
+    return getItemValue(selectedItem?.[index] ?? {});
+  }
 }
