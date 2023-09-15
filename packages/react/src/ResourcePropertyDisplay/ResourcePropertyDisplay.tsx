@@ -1,3 +1,4 @@
+import { ActionIcon, Box, CopyButton, Tooltip } from '@mantine/core';
 import {
   formatDateTime,
   formatPeriod,
@@ -8,6 +9,7 @@ import {
   TypedValue,
 } from '@medplum/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
+import { IconCheck, IconCopy } from '@tabler/icons-react';
 import React from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { AttachmentArrayDisplay } from '../AttachmentArrayDisplay/AttachmentArrayDisplay';
@@ -25,8 +27,6 @@ import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { RatioDisplay } from '../RatioDisplay/RatioDisplay';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceArrayDisplay } from '../ResourceArrayDisplay/ResourceArrayDisplay';
-import { ActionIcon, Box, CopyButton, Tooltip } from '@mantine/core';
-import { IconCheck, IconCopy } from '@tabler/icons-react';
 
 export interface ResourcePropertyDisplayProps {
   property?: ElementDefinition;
@@ -86,6 +86,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       return <div style={{ whiteSpace: 'pre-wrap' }}>{value}</div>;
     case PropertyType.code:
     case PropertyType.date:
+    case PropertyType.decimal:
     case PropertyType.integer:
     case PropertyType.positiveInt:
     case PropertyType.unsignedInt:
