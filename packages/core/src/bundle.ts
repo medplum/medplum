@@ -244,8 +244,6 @@ export function convertContainedResourcesToBundle(resource: Resource & { contain
 
   // Convert to a transaction bundle
   // This adds fullUrl and request properties to each entry
-  const transactionBundle = convertToTransactionBundle(simpleBundle);
-
-  // Reorder the bundle to ensure that contained resources are created before they are referenced
-  return reorderBundle(transactionBundle);
+  // and reorders the bundle to ensure that contained resources are created before they are referenced.
+  return convertToTransactionBundle(simpleBundle);
 }
