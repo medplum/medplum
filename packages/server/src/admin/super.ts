@@ -16,14 +16,14 @@ import { getClient } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { Repository, systemRepo } from '../fhir/repo';
+import { logger } from '../logger';
 import * as dataMigrations from '../migrations/data';
 import { authenticateToken } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
-import { createSearchParameters } from '../seeds/searchparameters';
+import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
-import { createValueSets } from '../seeds/valuesets';
+import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
-import { logger } from '../logger';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateToken);
@@ -37,7 +37,7 @@ superAdminRouter.post(
     requireSuperAdmin(res);
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => createValueSets(res.locals.project));
+    await sendAsyncResponse(req, res, () => rebuildR4ValueSets());
   })
 );
 
@@ -50,7 +50,7 @@ superAdminRouter.post(
     requireSuperAdmin(res);
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => rebuildR4StructureDefinitions(res.locals.project));
+    await sendAsyncResponse(req, res, () => rebuildR4StructureDefinitions());
   })
 );
 
@@ -63,7 +63,7 @@ superAdminRouter.post(
     requireSuperAdmin(res);
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => createSearchParameters(res.locals.project));
+    await sendAsyncResponse(req, res, () => rebuildR4SearchParameters());
   })
 );
 
