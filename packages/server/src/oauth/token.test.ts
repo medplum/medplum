@@ -1,6 +1,7 @@
 import {
   ContentType,
   createReference,
+  OAuthClientAssertionType,
   OAuthGrantType,
   OAuthTokenType,
   parseJWTPayload,
@@ -1161,7 +1162,7 @@ describe('OAuth2 Token', () => {
     // Then use the JWT for a client credentials grant
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
-      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
     expect(res.status).toBe(200);
@@ -1187,7 +1188,7 @@ describe('OAuth2 Token', () => {
     // Then use the JWT for a client credentials grant
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
-      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
     expect(res.status).toBe(400);
@@ -1213,7 +1214,7 @@ describe('OAuth2 Token', () => {
     // Then use the JWT for a client credentials grant
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
-      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
     expect(res.status).toBe(400);
@@ -1247,7 +1248,7 @@ describe('OAuth2 Token', () => {
     // Then use the JWT for a client credentials grant
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
-      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
     expect(res.status).toBe(400);
@@ -1281,7 +1282,7 @@ describe('OAuth2 Token', () => {
     // Then use the JWT for a client credentials grant
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
-      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
     expect(res.status).toBe(400);
@@ -1315,7 +1316,7 @@ describe('OAuth2 Token', () => {
     // Then use the JWT for a client credentials grant
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
-      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
     expect(res.status).toBe(400);
@@ -1349,7 +1350,7 @@ describe('OAuth2 Token', () => {
     // Then use the JWT for a client credentials grant
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
-      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
     expect(res.status).toBe(200);
@@ -1380,7 +1381,7 @@ describe('OAuth2 Token', () => {
     // Then use the JWT for a client credentials grant
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
-      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
     expect(res.status).toBe(400);
