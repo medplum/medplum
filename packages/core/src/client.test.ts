@@ -21,8 +21,8 @@ import {
   NewUserRequest,
 } from './client';
 import { ContentType } from './contenttype';
-import { OperationOutcomeError, getStatus, isOperationOutcome, notFound, unauthorized } from './outcomes';
-import { ProfileResource, createReference } from './utils';
+import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
+import { createReference, ProfileResource } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -134,6 +134,34 @@ describe('Client', () => {
   test('Missing trailing slash', () => {
     const client = new MedplumClient({ clientId: 'xyz', baseUrl: 'https://x' });
     expect(client.getBaseUrl()).toBe('https://x/');
+  });
+
+  test('Relative URLs', () => {
+    const client = new MedplumClient({
+      baseUrl: 'https://example.com',
+      fhirUrlPath: 'my-fhir-url-path',
+      authorizeUrl: 'my-authorize-url',
+      tokenUrl: 'my-token-url',
+      logoutUrl: 'my-logout-url',
+    });
+    expect(client.getBaseUrl()).toBe('https://example.com/');
+    expect(client.getAuthorizeUrl()).toBe('https://example.com/my-authorize-url');
+    expect(client.getTokenUrl()).toBe('https://example.com/my-token-url');
+    expect(client.getLogoutUrl()).toBe('https://example.com/my-logout-url');
+  });
+
+  test('Absolute URLs', () => {
+    const client = new MedplumClient({
+      baseUrl: 'https://example.com',
+      fhirUrlPath: 'https://fhir.example.com',
+      authorizeUrl: 'https://authorize.example.com',
+      tokenUrl: 'https://token.example.com',
+      logoutUrl: 'https://logout.example.com',
+    });
+    expect(client.getBaseUrl()).toBe('https://example.com/');
+    expect(client.getAuthorizeUrl()).toBe('https://authorize.example.com/');
+    expect(client.getTokenUrl()).toBe('https://token.example.com/');
+    expect(client.getLogoutUrl()).toBe('https://logout.example.com/');
   });
 
   test('getAuthorizeUrl', () => {
