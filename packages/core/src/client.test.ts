@@ -964,6 +964,14 @@ describe('Client', () => {
     expect(onUnauthenticated).toBeCalled();
   });
 
+  test('fhirUrl', () => {
+    const client = new MedplumClient({ fetch: jest.fn() });
+    expect(client.fhirUrl().toString()).toBe('https://api.medplum.com/fhir/R4/');
+    expect(client.fhirUrl('Patient').toString()).toBe('https://api.medplum.com/fhir/R4/Patient');
+    expect(client.fhirUrl('Patient', '123').toString()).toBe('https://api.medplum.com/fhir/R4/Patient/123');
+    expect(client.fhirUrl('Patient/123').toString()).toBe('https://api.medplum.com/fhir/R4/Patient/123');
+  });
+
   test('Read resource', async () => {
     const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
     const client = new MedplumClient({ fetch });
@@ -2319,65 +2327,42 @@ describe('Client', () => {
   describe('Downloading resources', () => {
     const baseUrl = 'https://api.medplum.com/';
     const fhirUrlPath = 'fhir/R4/';
+    let fetch: FetchLike;
+    let client: MedplumClient;
 
-    describe('normalizeFetchUrl', () => {
-      let client: MedplumClient;
-
-      beforeAll(() => {
-        client = new MedplumClient({ baseUrl, fhirUrlPath });
-      });
-
-      test('URL object', () => {
-        expect(client.normalizeFetchUrl(new URL(baseUrl))).toEqual(baseUrl);
-      });
-
-      test('URL string', () => {
-        expect(client.normalizeFetchUrl(baseUrl)).toEqual(baseUrl);
-      });
-
-      test('Binary URLs', () => {
-        expect(client.normalizeFetchUrl('Binary/fake-id')).toEqual(`${baseUrl}${fhirUrlPath}Binary/fake-id`);
-      });
+    beforeAll(() => {
+      fetch = mockFetch(200, (url: string) => ({
+        text: () => Promise.resolve(url),
+      }));
+      client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
     });
 
-    describe('Downloading resources', () => {
-      let fetch: FetchLike;
-      let client: MedplumClient;
+    test('Downloading resources via URL', async () => {
+      const blob = await client.download(baseUrl);
+      expect(fetch).toBeCalledWith(
+        baseUrl,
+        expect.objectContaining({
+          headers: {
+            Accept: ContentType.FHIR_JSON,
+            'X-Medplum': 'extended',
+          },
+        })
+      );
+      expect(await blob.text()).toEqual(baseUrl);
+    });
 
-      beforeAll(() => {
-        fetch = mockFetch(200, (url: string) => ({
-          text: () => Promise.resolve(url),
-        }));
-        client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
-      });
-
-      test('Downloading resources via URL', async () => {
-        const blob = await client.download(baseUrl);
-        expect(fetch).toBeCalledWith(
-          baseUrl,
-          expect.objectContaining({
-            headers: {
-              Accept: ContentType.FHIR_JSON,
-              'X-Medplum': 'extended',
-            },
-          })
-        );
-        expect(await blob.text()).toEqual(baseUrl);
-      });
-
-      test('Downloading resources via `Binary/{id}` URL', async () => {
-        const blob = await client.download('Binary/fake-id');
-        expect(fetch).toBeCalledWith(
-          `${baseUrl}${fhirUrlPath}Binary/fake-id`,
-          expect.objectContaining({
-            headers: {
-              Accept: ContentType.FHIR_JSON,
-              'X-Medplum': 'extended',
-            },
-          })
-        );
-        expect(await blob.text()).toEqual(`${baseUrl}${fhirUrlPath}Binary/fake-id`);
-      });
+    test('Downloading resources via `Binary/{id}` URL', async () => {
+      const blob = await client.download('Binary/fake-id');
+      expect(fetch).toBeCalledWith(
+        `${baseUrl}${fhirUrlPath}Binary/fake-id`,
+        expect.objectContaining({
+          headers: {
+            Accept: ContentType.FHIR_JSON,
+            'X-Medplum': 'extended',
+          },
+        })
+      );
+      expect(await blob.text()).toEqual(`${baseUrl}${fhirUrlPath}Binary/fake-id`);
     });
   });
 

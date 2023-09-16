@@ -1,7 +1,7 @@
-import { convertToTransactionBundle } from '@medplum/core';
+import { convertToTransactionBundle, MedplumClient } from '@medplum/core';
+import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
 import { prettyPrint } from './utils';
-import { createMedplumClient } from './util/client';
 
 export const deleteObject = createMedplumCommand('delete');
 export const get = createMedplumCommand('get');
@@ -11,7 +11,7 @@ export const put = createMedplumCommand('put');
 
 deleteObject.argument('<url>', 'Resource/$id').action(async (url, options) => {
   const medplum = await createMedplumClient(options);
-  prettyPrint(await medplum.delete(cleanUrl(url, options)));
+  prettyPrint(await medplum.delete(cleanUrl(medplum, url)));
 });
 
 get
@@ -19,7 +19,7 @@ get
   .option('--as-transaction', 'Print out the bundle as a transaction type')
   .action(async (url, options) => {
     const medplum = await createMedplumClient(options);
-    const response = await medplum.get(cleanUrl(url, options));
+    const response = await medplum.get(cleanUrl(medplum, url));
     if (options.asTransaction) {
       prettyPrint(convertToTransactionBundle(response));
     } else {
@@ -30,19 +30,19 @@ get
 patch.arguments('<url> <body>').action(async (url, body, options) => {
   const medplum = await createMedplumClient(options);
 
-  prettyPrint(await medplum.patch(cleanUrl(url, options), parseBody(body)));
+  prettyPrint(await medplum.patch(cleanUrl(medplum, url), parseBody(body)));
 });
 
 post.arguments('<url> <body>').action(async (url, body, options) => {
   const medplum = await createMedplumClient(options);
 
-  prettyPrint(await medplum.post(cleanUrl(url, options), parseBody(body)));
+  prettyPrint(await medplum.post(cleanUrl(medplum, url), parseBody(body)));
 });
 
 put.arguments('<url> <body>').action(async (url, body, options) => {
   const medplum = await createMedplumClient(options);
 
-  prettyPrint(await medplum.put(cleanUrl(url, options), parseBody(body)));
+  prettyPrint(await medplum.put(cleanUrl(medplum, url), parseBody(body)));
 });
 
 function parseBody(input: string | undefined): any {
@@ -56,19 +56,13 @@ function parseBody(input: string | undefined): any {
   }
 }
 
-export function cleanUrl(input: string, options: any): string {
+export function cleanUrl(medplum: MedplumClient, input: string): string {
   const knownPrefixes = ['admin/', 'auth/', 'fhir/R4'];
-  const { fhirUrlPath } = options;
   if (knownPrefixes.some((p) => input.startsWith(p))) {
     // If the URL starts with a known prefix, return it as-is
     return input;
   }
 
-  // when fhirUrlPath is specified
-  if (fhirUrlPath) {
-    return `${fhirUrlPath}/${input}`;
-  }
-
   // Otherwise, default to FHIR
-  return 'fhir/R4/' + input;
+  return medplum.fhirUrl(input).toString();
 }

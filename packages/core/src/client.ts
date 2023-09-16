@@ -1110,7 +1110,7 @@ export class MedplumClient extends EventTarget {
    * @returns The well-formed FHIR URL.
    */
   fhirUrl(...path: string[]): URL {
-    return new URL(this.fhirBaseUrl + path.join('/'));
+    return new URL(path.join('/'), this.fhirBaseUrl);
   }
 
   /**
@@ -2328,20 +2328,6 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * Translates/normalizes a URL so that it can be directly used with `MedplumClient.fetch`.
-   * Especially useful for translating `Binary/{id}` URLs to FHIR paths.
-   * @param url A valid URL within the `MedplumClient` context.
-   * @returns URL as a string that can be used with `MedplumClient.fetch`
-   */
-  normalizeFetchUrl(url: URL | string): string {
-    let urlString = url.toString();
-    if (urlString.startsWith(BINARY_URL_PREFIX)) {
-      urlString = this.fhirUrl(urlString).toString();
-    }
-    return urlString;
-  }
-
-  /**
    * Downloads the URL as a blob. Can accept binary URLs in the form of `Binary/{id}` as well.
    * @category Read
    * @param url The URL to request. Can be a standard URL or one in the form of `Binary/{id}`.
@@ -2352,8 +2338,12 @@ export class MedplumClient extends EventTarget {
     if (this.refreshPromise) {
       await this.refreshPromise;
     }
+    const urlString = url.toString();
+    if (urlString.startsWith(BINARY_URL_PREFIX)) {
+      url = this.fhirUrl(urlString);
+    }
     this.addFetchOptionsDefaults(options);
-    const response = await this.fetch(this.normalizeFetchUrl(url), options);
+    const response = await this.fetch(url.toString(), options);
     return response.blob();
   }
 
