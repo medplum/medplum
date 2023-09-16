@@ -40,17 +40,17 @@ import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
 import { isJwt, isMedplumAccessToken, parseJWTPayload } from './jwt';
 import {
-  OperationOutcomeError,
   badRequest,
   isOk,
   isOperationOutcome,
   normalizeOperationOutcome,
   notFound,
+  OperationOutcomeError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
-import { IndexedStructureDefinition, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
-import { CodeChallengeMethod, ProfileResource, arrayBufferToBase64, createReference, sleep } from './utils';
+import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
+import { arrayBufferToBase64, CodeChallengeMethod, createReference, ProfileResource, sleep } from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 
@@ -81,6 +81,8 @@ export interface MedplumClientOptions {
    *
    * Default value is baseUrl + "/oauth2/authorize".
    *
+   * Can be specified as absolute URL or relative to baseUrl.
+   *
    * Use this if you want to use a separate OAuth server.
    */
   authorizeUrl?: string;
@@ -89,6 +91,8 @@ export interface MedplumClientOptions {
    * FHIR URL path.
    *
    * Default value is "fhir/R4/".
+   *
+   * Can be specified as absolute URL or relative to baseUrl.
    *
    * Use this if you want to use a different path when connecting to a FHIR server.
    */
@@ -99,6 +103,8 @@ export interface MedplumClientOptions {
    *
    * Default value is baseUrl + "/oauth2/token".
    *
+   * Can be specified as absolute URL or relative to baseUrl.
+   *
    * Use this if you want to use a separate OAuth server.
    */
   tokenUrl?: string;
@@ -107,6 +113,8 @@ export interface MedplumClientOptions {
    * OAuth2 logout URL.
    *
    * Default value is baseUrl + "/oauth2/logout".
+   *
+   * Can be specified as absolute URL or relative to baseUrl.
    *
    * Use this if you want to use a separate OAuth server.
    */
@@ -599,13 +607,13 @@ export class MedplumClient extends EventTarget {
     this.fetch = options?.fetch ?? getDefaultFetch();
     this.storage = options?.storage ?? new ClientStorage();
     this.createPdfImpl = options?.createPdf;
-    this.baseUrl = ensureTrailingSlash(options?.baseUrl) ?? DEFAULT_BASE_URL;
-    this.fhirBaseUrl = this.baseUrl + (ensureTrailingSlash(options?.fhirUrlPath) ?? 'fhir/R4/');
+    this.baseUrl = ensureTrailingSlash(options?.baseUrl ?? DEFAULT_BASE_URL);
+    this.fhirBaseUrl = ensureTrailingSlash(concatUrls(this.baseUrl, options?.fhirUrlPath ?? 'fhir/R4/'));
+    this.authorizeUrl = concatUrls(this.baseUrl, options?.authorizeUrl ?? 'oauth2/authorize');
+    this.tokenUrl = concatUrls(this.baseUrl, options?.tokenUrl ?? 'oauth2/token');
+    this.logoutUrl = concatUrls(this.baseUrl, options?.logoutUrl ?? 'oauth2/logout');
     this.clientId = options?.clientId ?? '';
     this.clientSecret = options?.clientSecret ?? '';
-    this.authorizeUrl = options?.authorizeUrl ?? this.baseUrl + 'oauth2/authorize';
-    this.tokenUrl = options?.tokenUrl ?? this.baseUrl + 'oauth2/token';
-    this.logoutUrl = options?.logoutUrl ?? this.baseUrl + 'oauth2/logout';
     this.onUnauthenticated = options?.onUnauthenticated;
 
     this.cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
@@ -652,6 +660,28 @@ export class MedplumClient extends EventTarget {
    */
   getAuthorizeUrl(): string {
     return this.authorizeUrl;
+  }
+
+  /**
+   * Returns the current token URL.
+   * By default, this is set to `https://api.medplum.com/oauth2/token`.
+   * This can be overridden by setting the `tokenUrl` option when creating the client.
+   * @category HTTP
+   * @returns The current token URL.
+   */
+  getTokenUrl(): string {
+    return this.tokenUrl;
+  }
+
+  /**
+   * Returns the current logout URL.
+   * By default, this is set to `https://api.medplum.com/oauth2/logout`.
+   * This can be overridden by setting the `logoutUrl` option when creating the client.
+   * @category HTTP
+   * @returns The current logout URL.
+   */
+  getLogoutUrl(): string {
+    return this.logoutUrl;
   }
 
   /**
@@ -3019,11 +3049,26 @@ function getWindowOrigin(): string {
   return window.location.protocol + '//' + window.location.host + '/';
 }
 
-function ensureTrailingSlash(url: string | undefined): string | undefined {
-  if (!url) {
-    return url;
-  }
+/**
+ * Ensures the given URL has a trailing slash.
+ * @param url The URL to ensure has a trailing slash.
+ * @returns The URL with a trailing slash.
+ */
+function ensureTrailingSlash(url: string): string {
   return url.endsWith('/') ? url : url + '/';
+}
+
+/**
+ * Concatenates the given base URL and URL.
+ *
+ * If the URL is absolute, it is returned as-is.
+ *
+ * @param baseUrl The base URL.
+ * @param url The URL to concat. Can be relative or absolute.
+ * @returns The concatenated URL.
+ */
+function concatUrls(baseUrl: string, url: string): string {
+  return new URL(url, baseUrl).toString();
 }
 
 /**
