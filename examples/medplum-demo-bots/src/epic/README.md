@@ -1,3 +1,3 @@
-# EPIC Connection Demo
+# Epic Connection Demo
 
 TODO: Write up instructions

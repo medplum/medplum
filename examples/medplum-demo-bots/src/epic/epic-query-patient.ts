@@ -1,15 +1,16 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
+import { createPrivateKey, randomBytes } from 'crypto';
 import { SignJWT } from 'jose';
-import { randomBytes, createPrivateKey } from 'crypto';
 import fetch from 'node-fetch';
 
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<Patient> {
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<Patient | undefined> {
   const privateKeyString = event.secrets['EPIC_PRIVATE_KEY'] as string;
   const clientId = event.secrets['EPIC_CLIENT_ID'] as string;
   if (!privateKeyString || !clientId) {
-    return { resourceType: 'Patient' };
+    return undefined;
   }
+
   const privateKey = createPrivateKey(privateKeyString);
   const baseUrl = 'https://fhir.epic.com/interconnect-fhir-oauth/';
   const tokenUrl = 'https://fhir.epic.com/interconnect-fhir-oauth/oauth2/token';
@@ -54,7 +55,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   console.log('Logged in');
 
   // Read resource for Camila
-
   const camila = await epicClient.readResource('Patient', 'erXuFYUfucBZaryVksYEcMg3');
 
   if (!camila) {
