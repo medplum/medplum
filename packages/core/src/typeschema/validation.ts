@@ -7,7 +7,7 @@ import {
   OperationOutcomeError,
   validationError,
 } from '../outcomes';
-import { isResource, PropertyType, TypedValue } from '../types';
+import { PropertyType, TypedValue } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 import { crawlResource, getNestedProperty, ResourceVisitor } from './crawler';
 import {
@@ -95,7 +95,7 @@ class ResourceValidator implements ResourceVisitor {
   constructor(resourceType: string, rootResource: Resource, profile?: StructureDefinition) {
     this.issues = [];
     this.rootResource = rootResource;
-    this.currentResource = [rootResource];
+    this.currentResource = [];
     if (!profile) {
       this.schema = getDataType(resourceType);
     } else {
@@ -123,20 +123,18 @@ class ResourceValidator implements ResourceVisitor {
     }
   }
 
-  onEnterObject(_path: string, obj: TypedValue, _schema: InternalTypeSchema): void {
-    if (isResource(obj.value)) {
-      this.currentResource.push(obj.value);
-    }
-  }
-
   onExitObject(path: string, obj: TypedValue, schema: InternalTypeSchema): void {
     //@TODO(mattwiller 2023-06-05): Detect extraneous properties in a single pass by keeping track of all keys that
     // were correctly matched to resource properties as elements are validated above
     this.checkAdditionalProperties(obj, schema.fields, path);
+  }
 
-    if (isResource(obj.value)) {
-      this.currentResource.pop();
-    }
+  onEnterResource(_path: string, obj: TypedValue): void {
+    this.currentResource.push(obj.value);
+  }
+
+  onExitResource(): void {
+    this.currentResource.pop();
   }
 
   visitProperty(

@@ -1,12 +1,14 @@
 import { Resource } from '@medplum/fhirtypes';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath';
-import { TypedValue } from '../types';
+import { isResource, TypedValue } from '../types';
 import { arrayify, isLowerCase } from '../utils';
 import { getDataType, InternalTypeSchema } from './types';
 
 export interface ResourceVisitor {
   onEnterObject?: (path: string, value: TypedValue, schema: InternalTypeSchema) => void;
   onExitObject?: (path: string, value: TypedValue, schema: InternalTypeSchema) => void;
+  onEnterResource?: (path: string, value: TypedValue, schema: InternalTypeSchema) => void;
+  onExitResource?: (path: string, value: TypedValue, schema: InternalTypeSchema) => void;
   visitProperty?: (
     parent: TypedValue,
     key: string,
@@ -53,6 +55,12 @@ class ResourceCrawler {
   }
 
   private crawlObject(obj: TypedValue, schema: InternalTypeSchema, path: string): void {
+    const objIsResource = isResource(obj.value);
+
+    if (objIsResource && this.visitor.onEnterResource) {
+      this.visitor.onEnterResource(path, obj, schema);
+    }
+
     if (this.visitor.onEnterObject) {
       this.visitor.onEnterObject(path, obj, schema);
     }
@@ -63,6 +71,10 @@ class ResourceCrawler {
 
     if (this.visitor.onExitObject) {
       this.visitor.onExitObject(path, obj, schema);
+    }
+
+    if (objIsResource && this.visitor.onExitResource) {
+      this.visitor.onExitResource(path, obj, schema);
     }
   }
 
@@ -83,7 +95,7 @@ class ResourceCrawler {
 
   private crawlPropertyValue(value: TypedValue, path: string): void {
     if (!isLowerCase(value.type.charAt(0))) {
-      // Recursively validate as the expected data type
+      // Recursively crawl as the expected data type
       const type = getDataType(value.type);
       this.crawlObject(value, type, path);
     }

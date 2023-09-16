@@ -16,19 +16,25 @@ describe('ResourceCrawler', () => {
   });
 
   test('Simple case', () => {
-    let entered = false;
-    let exited = false;
+    let enteredObject = false;
+    let exitedObject = false;
+    let enteredResource = false;
+    let exitedResource = false;
 
     crawlResource(
       { resourceType: 'Patient' },
       {
-        onEnterObject: () => (entered = true),
-        onExitObject: () => (exited = true),
+        onEnterObject: () => (enteredObject = true),
+        onExitObject: () => (exitedObject = true),
+        onEnterResource: () => (enteredResource = true),
+        onExitResource: () => (exitedResource = true),
       }
     );
 
-    expect(entered).toBe(true);
-    expect(exited).toBe(true);
+    expect(enteredObject).toBe(true);
+    expect(exitedObject).toBe(true);
+    expect(enteredResource).toBe(true);
+    expect(exitedResource).toBe(true);
   });
 
   test('Attachment finder', () => {
