@@ -5,8 +5,9 @@ import { isValidCron } from 'cron-validator';
 import { MedplumRedisConfig } from '../config';
 import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
+import { globalLogger } from '../logger';
 import { findProjectMembership } from './utils';
+import { getRequestContext } from '../context';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 
@@ -58,8 +59,8 @@ export function initCronWorker(config: MedplumRedisConfig): void {
     },
   });
   worker = new Worker<CronJobData>(queueName, execBot, defaultOptions);
-  worker.on('completed', (job) => logger.info(`Completed job ${job.id} successfully`));
-  worker.on('failed', (job, err) => logger.info(`Failed job ${job?.id} with ${err}`));
+  worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
+  worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 }
 
 /**
@@ -92,6 +93,7 @@ export function getCronQueue(): Queue<CronJobData> | undefined {
  * @param resource The resource that was created or updated.
  */
 export async function addCronJobs(resource: Resource): Promise<void> {
+  const ctx = getRequestContext();
   if (resource.resourceType !== 'Bot') {
     // For now we have only the bot to execute on a timed job
     return;
@@ -100,10 +102,8 @@ export async function addCronJobs(resource: Resource): Promise<void> {
   const bot = resource;
   // Adding a new feature for project that allows users to add a cron
   const project = await systemRepo.readResource<Project>('Project', resource.meta?.project as string);
-  const isCronEnabled = !!project.features?.includes('cron');
-
-  if (!isCronEnabled) {
-    logger.debug('Cron not enabled. Cron needs to be enabled in project to create cron job for bot');
+  if (!project.features?.includes('cron')) {
+    ctx.logger.debug('Cron not enabled. Cron needs to be enabled in project to create cron job for bot');
     return;
   }
 
@@ -112,17 +112,17 @@ export async function addCronJobs(resource: Resource): Promise<void> {
   if (bot.cronTiming) {
     cron = convertTimingToCron(bot.cronTiming);
     if (!cron) {
-      logger.debug('cronTiming had the wrong format for a timed cron job');
+      ctx.logger.debug('cronTiming had the wrong format for a timed cron job');
       return;
     }
   } else if (bot.cronString && isValidCron(bot.cronString)) {
     cron = bot.cronString;
   } else if (bot.cronString === '') {
     await removeBullMQJobByKey(bot.id as string);
-    logger.debug(`no job for bot: ${bot.id}`);
+    ctx.logger.debug(`no job for bot: ${bot.id}`);
     return;
   } else {
-    logger.debug('cronString had the wrong format for a timed cron job');
+    ctx.logger.debug('cronString had the wrong format for a timed cron job');
     return;
   }
 
@@ -146,14 +146,15 @@ export async function addCronJobs(resource: Resource): Promise<void> {
  * @param repeatable The repeat format that instructs BullMQ when to run the job
  */
 async function addCronJobData(job: CronJobData, repeatable: Repeatable): Promise<void> {
+  const ctx = getRequestContext();
   // Check if there was a job previously for this bot, if there was, we remove it.
   await removeBullMQJobByKey(job.botId);
-  logger.debug('Adding Cron job');
+  ctx.logger.debug('Adding Cron job');
   // Parameters of queue.add https://api.docs.bullmq.io/classes/Queue.html#add
   if (queue) {
     await queue.add(jobName, job, repeatable);
   } else {
-    logger.debug('Cron queue not initialized');
+    ctx.logger.debug('Cron queue not initialized');
   }
 }
 
@@ -218,6 +219,6 @@ export async function removeBullMQJobByKey(botId: string): Promise<void> {
   // There likely should not be more than one repeatable job per bot id.
   for (const p of previousJobs) {
     await queue?.removeRepeatableByKey(p.key);
-    logger.debug(`Found a previous job for bot ${botId}, updating...`);
+    getRequestContext().logger.debug(`Found a previous job for bot ${botId}, updating...`);
   }
 }

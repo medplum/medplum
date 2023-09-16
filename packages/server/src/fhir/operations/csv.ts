@@ -18,8 +18,8 @@ import {
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
-import { Repository } from '../repo';
 import { getSearchParameter } from '../structure';
+import { getAuthenticatedContext } from '../../context';
 
 /**
  * Handles a CSV export request.
@@ -27,6 +27,7 @@ import { getSearchParameter } from '../structure';
  * @param res The HTTP response.
  */
 export async function csvHandler(req: Request, res: Response): Promise<void> {
+  const ctx = getAuthenticatedContext();
   const { resourceType } = req.params as { resourceType: ResourceType };
   const query = req.query as Record<string, string[] | string | undefined>;
 
@@ -56,10 +57,9 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
     }
   }
 
-  const repo = res.locals.repo as Repository;
   const searchRequest = parseSearchRequest(resourceType, query);
   searchRequest.count = 1000;
-  const resources = await repo.searchResources(searchRequest);
+  const resources = await ctx.repo.searchResources(searchRequest);
   const output: string[][] = [];
 
   // Header row

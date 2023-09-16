@@ -2,11 +2,10 @@ import { accepted, getResourceTypes, protectedResourceTypes } from '@medplum/cor
 import { Project, ResourceType } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
-import { logger } from '../../logger';
 import { sendOutcome } from '../outcomes';
 import { getPatientResourceTypes } from '../patient';
-import { Repository } from '../repo';
 import { BulkExporter } from './utils/bulkexporter';
+import { getAuthenticatedContext } from '../../context';
 
 /**
  * Handles a bulk export request.
@@ -39,19 +38,18 @@ export async function patientExportHandler(req: Request, res: Response): Promise
 }
 
 async function startExport(req: Request, res: Response, exportType: string): Promise<void> {
+  const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const query = req.query as Record<string, string | undefined>;
   const since = query._since;
   const types = query._type?.split(',');
-  const repo = res.locals.repo as Repository;
-  const project = res.locals.project as Project;
 
-  const exporter = new BulkExporter(repo, since);
+  const exporter = new BulkExporter(ctx.repo, since);
   const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
-  exportResources(exporter, project, types, exportType)
-    .then(() => logger.info('Export completed', { exportType, id: project.id }))
-    .catch((err) => logger.error('Export failure', { exportType, id: project.id, error: err }));
+  exportResources(exporter, ctx.project, types, exportType)
+    .then(() => ctx.logger.info('Export completed', { exportType, id: ctx.project.id }))
+    .catch((err) => ctx.logger.error('Export failure', { exportType, id: ctx.project.id, error: err }));
 
   sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
 }

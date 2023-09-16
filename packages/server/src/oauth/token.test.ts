@@ -18,7 +18,7 @@ import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { createTestProject } from '../test.setup';
+import { createTestProject, withTestContext } from '../test.setup';
 import { generateSecret } from './keys';
 import { hashCode } from './token';
 
@@ -238,13 +238,15 @@ describe('OAuth2 Token', () => {
 
   test('Token for client empty secret', async () => {
     // Create a client without an secret
-    const badClient = await systemRepo.createResource<ClientApplication>({
-      resourceType: 'ClientApplication',
-      name: 'Bad Client',
-      description: 'Bad Client',
-      secret: '',
-      redirectUri: 'https://example.com',
-    });
+    const badClient = await withTestContext(() =>
+      systemRepo.createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        name: 'Bad Client',
+        description: 'Bad Client',
+        secret: '',
+        redirectUri: 'https://example.com',
+      })
+    );
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
@@ -257,11 +259,13 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token for client without project membership', async () => {
-    const client = await systemRepo.createResource<ClientApplication>({
-      resourceType: 'ClientApplication',
-      name: 'Client without project membership',
-      secret: generateSecret(32),
-    });
+    const client = await withTestContext(() =>
+      systemRepo.createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        name: 'Client without project membership',
+        secret: generateSecret(32),
+      })
+    );
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
@@ -480,10 +484,12 @@ describe('OAuth2 Token', () => {
 
     // Revoke the login
     const login = loginBundle.entry?.[0]?.resource as Login;
-    await systemRepo.updateResource({
-      ...login,
-      revoked: true,
-    });
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...login,
+        revoked: true,
+      })
+    );
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
@@ -834,10 +840,12 @@ describe('OAuth2 Token', () => {
 
     // Revoke the login
     const login = loginBundle.entry?.[0]?.resource as Login;
-    await systemRepo.updateResource({
-      ...login,
-      revoked: true,
-    });
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...login,
+        revoked: true,
+      })
+    );
 
     const res3 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'refresh_token',
@@ -1087,18 +1095,21 @@ describe('OAuth2 Token', () => {
     const patientPassword = 'test-patient-password';
 
     // Invite a test patient
-    const testPatient = await inviteUser({
-      project,
-      resourceType: 'Patient',
-      firstName: 'Test',
-      lastName: 'Patient',
-      email: patientEmail,
-    });
-    expect(testPatient.user).toBeDefined();
-    expect(testPatient.profile).toBeDefined();
+    const testPatient = await withTestContext(async () => {
+      const patient = await inviteUser({
+        project,
+        resourceType: 'Patient',
+        firstName: 'Test',
+        lastName: 'Patient',
+        email: patientEmail,
+      });
+      expect(patient.user).toBeDefined();
+      expect(patient.profile).toBeDefined();
 
-    // Force set the password
-    await setPassword(testPatient.user, patientPassword);
+      // Force set the password
+      await setPassword(patient.user, patientPassword);
+      return patient;
+    });
 
     // Authenticate
     const res = await request(app)
@@ -1127,11 +1138,13 @@ describe('OAuth2 Token', () => {
   });
 
   test('Client assertion success', async () => {
-    // Create a new client
-    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
-
-    // Set the client jwksUri
-    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+    const client2 = await withTestContext(async () => {
+      // Create a new client
+      const client = await createClient(systemRepo, { project, name: 'Test Client 2' });
+      // Set the client jwksUri
+      await systemRepo.updateResource<ClientApplication>({ ...client, jwksUri: 'https://example.com/jwks.json' });
+      return client;
+    });
 
     // Create the JWT
     const keyPair = await generateKeyPair('ES384');
@@ -1211,11 +1224,13 @@ describe('OAuth2 Token', () => {
   });
 
   test('Client assertion invalid audience', async () => {
-    // Create a new client
-    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
-
-    // Set the client jwksUri
-    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+    const client2 = await withTestContext(async () => {
+      // Create a new client
+      const client = await createClient(systemRepo, { project, name: 'Test Client 2' });
+      // Set the client jwksUri
+      await systemRepo.updateResource<ClientApplication>({ ...client, jwksUri: 'https://example.com/jwks.json' });
+      return client;
+    });
 
     // Create the JWT
     const keyPair = await generateKeyPair('ES384');
@@ -1243,11 +1258,13 @@ describe('OAuth2 Token', () => {
   });
 
   test('Client assertion invalid issuer', async () => {
-    // Create a new client
-    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
-
-    // Set the client jwksUri
-    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+    const client2 = await withTestContext(async () => {
+      // Create a new client
+      const client = await createClient(systemRepo, { project, name: 'Test Client 2' });
+      // Set the client jwksUri
+      await systemRepo.updateResource<ClientApplication>({ ...client, jwksUri: 'https://example.com/jwks.json' });
+      return client;
+    });
 
     // Create the JWT
     const keyPair = await generateKeyPair('ES384');
@@ -1275,11 +1292,13 @@ describe('OAuth2 Token', () => {
   });
 
   test('Client assertion invalid signature', async () => {
-    // Create a new client
-    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
-
-    // Set the client jwksUri
-    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+    const client2 = await withTestContext(async () => {
+      // Create a new client
+      const client = await createClient(systemRepo, { project, name: 'Test Client 2' });
+      // Set the client jwksUri
+      await systemRepo.updateResource<ClientApplication>({ ...client, jwksUri: 'https://example.com/jwks.json' });
+      return client;
+    });
 
     // Create the JWT
     const keyPair = await generateKeyPair('ES384');
@@ -1307,11 +1326,13 @@ describe('OAuth2 Token', () => {
   });
 
   test('Client assertion multiple matching 3rd check success', async () => {
-    // Create a new client
-    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
-
-    // Set the client jwksUri
-    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+    const client2 = await withTestContext(async () => {
+      // Create a new client
+      const client = await createClient(systemRepo, { project, name: 'Test Client 2' });
+      // Set the client jwksUri
+      await systemRepo.updateResource<ClientApplication>({ ...client, jwksUri: 'https://example.com/jwks.json' });
+      return client;
+    });
 
     // Create the JWT
     const keyPair = await generateKeyPair('ES384');
@@ -1336,11 +1357,13 @@ describe('OAuth2 Token', () => {
   });
 
   test('Client assertion multiple inner error', async () => {
-    // Create a new client
-    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
-
-    // Set the client jwksUri
-    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+    const client2 = await withTestContext(async () => {
+      // Create a new client
+      const client = await createClient(systemRepo, { project, name: 'Test Client 2' });
+      // Set the client jwksUri
+      await systemRepo.updateResource<ClientApplication>({ ...client, jwksUri: 'https://example.com/jwks.json' });
+      return client;
+    });
 
     // Create the JWT
     const keyPair = await generateKeyPair('ES384');
@@ -1365,11 +1388,13 @@ describe('OAuth2 Token', () => {
   });
 
   test('Client assertion invalid assertion type', async () => {
-    // Create a new client
-    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
-
-    // Set the client jwksUri
-    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+    const client2 = await withTestContext(async () => {
+      // Create a new client
+      const client = await createClient(systemRepo, { project, name: 'Test Client 2' });
+      // Set the client jwksUri
+      await systemRepo.updateResource<ClientApplication>({ ...client, jwksUri: 'https://example.com/jwks.json' });
+      return client;
+    });
 
     // Create the JWT
     const keyPair = await generateKeyPair('ES384');
@@ -1398,11 +1423,13 @@ describe('OAuth2 Token', () => {
 
   test('Smart App Launch tokens', async () => {
     // Create a SmartAppLaunch
-    const launch = await systemRepo.createResource<SmartAppLaunch>({
-      resourceType: 'SmartAppLaunch',
-      patient: { reference: `Patient/${randomUUID()}` },
-      encounter: { reference: `Patient/${randomUUID()}` },
-    });
+    const launch = await withTestContext(() =>
+      systemRepo.createResource<SmartAppLaunch>({
+        resourceType: 'SmartAppLaunch',
+        patient: { reference: `Patient/${randomUUID()}` },
+        encounter: { reference: `Patient/${randomUUID()}` },
+      })
+    );
 
     const res = await request(app).post('/auth/login').type('json').send({
       clientId: client.id,

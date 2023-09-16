@@ -10,6 +10,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { registerNew } from './register';
+import { withTestContext } from '../test.setup';
 
 jest.mock('node-fetch');
 
@@ -24,64 +25,66 @@ let externalAuthClient: ClientApplication;
 let subjectAuthClient: ClientApplication;
 
 describe('Token Exchange', () => {
-  beforeAll(async () => {
-    const config = await loadTestConfig();
-    await initApp(app, config);
+  beforeAll(() =>
+    withTestContext(async () => {
+      const config = await loadTestConfig();
+      await initApp(app, config);
 
-    // Create a new project
-    const registration = await registerNew({
-      firstName: 'External',
-      lastName: 'Text',
-      projectName: 'External Test Project',
-      email,
-      password: 'password!@#',
-      remoteAddress: '5.5.5.5',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
-    });
-    project = registration.project;
-    defaultClient = registration.client;
+      // Create a new project
+      const registration = await registerNew({
+        firstName: 'External',
+        lastName: 'Text',
+        projectName: 'External Test Project',
+        email,
+        password: 'password!@#',
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      });
+      project = registration.project;
+      defaultClient = registration.client;
 
-    const identityProvider = {
-      authorizeUrl: 'https://example.com/oauth2/authorize',
-      tokenUrl: 'https://example.com/oauth2/token',
-      userInfoUrl: 'https://example.com/oauth2/userinfo',
-      clientId: '123',
-      clientSecret: '456',
-    };
+      const identityProvider = {
+        authorizeUrl: 'https://example.com/oauth2/authorize',
+        tokenUrl: 'https://example.com/oauth2/token',
+        userInfoUrl: 'https://example.com/oauth2/userinfo',
+        clientId: '123',
+        clientSecret: '456',
+      };
 
-    // Create a new client application with external auth
-    externalAuthClient = await createClient(systemRepo, {
-      project,
-      name: 'External Auth Client',
-      redirectUri,
-      identityProvider,
-    });
+      // Create a new client application with external auth
+      externalAuthClient = await createClient(systemRepo, {
+        project,
+        name: 'External Auth Client',
+        redirectUri,
+        identityProvider,
+      });
 
-    // Create a new client application with external subject auth
-    subjectAuthClient = await createClient(systemRepo, {
-      project,
-      name: 'Subject Auth Client',
-      redirectUri,
-    });
+      // Create a new client application with external subject auth
+      subjectAuthClient = await createClient(systemRepo, {
+        project,
+        name: 'Subject Auth Client',
+        redirectUri,
+      });
 
-    // Update client application with external auth
-    await systemRepo.updateResource<ClientApplication>({
-      ...subjectAuthClient,
-      identityProvider: {
-        ...identityProvider,
-        useSubject: true,
-      },
-    });
+      // Update client application with external auth
+      await systemRepo.updateResource<ClientApplication>({
+        ...subjectAuthClient,
+        identityProvider: {
+          ...identityProvider,
+          useSubject: true,
+        },
+      });
 
-    // Invite user with external ID
-    await inviteUser({
-      project,
-      externalId,
-      resourceType: 'Patient',
-      firstName: 'External',
-      lastName: 'User',
-    });
-  });
+      // Invite user with external ID
+      await inviteUser({
+        project,
+        externalId,
+        resourceType: 'Patient',
+        firstName: 'External',
+        lastName: 'User',
+      });
+    })
+  );
 
   afterAll(async () => {
     await shutdownApp();

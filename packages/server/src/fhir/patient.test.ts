@@ -4,6 +4,7 @@ import { loadTestConfig } from '../config';
 import { getPatientCompartmentParams, getPatient, getPatientResourceTypes } from './patient';
 import { systemRepo } from './repo';
 import { isResourceType } from '@medplum/core';
+import { withTestContext } from '../test.setup';
 
 describe('FHIR Patient utils', () => {
   beforeAll(async () => {
@@ -103,54 +104,55 @@ describe('FHIR Patient utils', () => {
     expect(getPatient(carePlan)).toMatchObject({ reference: 'Patient/123' });
   });
 
-  test('External patient ID', async () => {
-    // If a user creates a resource,
-    // and that resource has a reference to a patient,
-    // but the patient reference is an external patient ID,
-    // we should silently ignore the patient reference
-    const eob = await systemRepo.createResource<ExplanationOfBenefit>({
-      resourceType: 'ExplanationOfBenefit',
-      status: 'active',
-      use: 'claim',
-      provider: {
-        identifier: {
-          system: 'http://hl7.org/fhir/sid/us-npi',
-          value: '555555555',
+  test('External patient ID', () =>
+    withTestContext(async () => {
+      // If a user creates a resource,
+      // and that resource has a reference to a patient,
+      // but the patient reference is an external patient ID,
+      // we should silently ignore the patient reference
+      const eob = await systemRepo.createResource<ExplanationOfBenefit>({
+        resourceType: 'ExplanationOfBenefit',
+        status: 'active',
+        use: 'claim',
+        provider: {
+          identifier: {
+            system: 'http://hl7.org/fhir/sid/us-npi',
+            value: '555555555',
+          },
+          display: 'Alice Smith',
         },
-        display: 'Alice Smith',
-      },
-      patient: {
-        reference: 'Patient/74532b683658335246434e495a53425462476c5741673d3d',
-      },
-      insurer: {
-        display: 'Humana',
-      },
-      created: '2020-06-11',
-      outcome: 'complete',
-      insurance: [
-        {
-          focal: true,
-          coverage: {
-            identifier: {
-              system: 'https://fhir.humana.com/documentation/glossary/memberIdBase',
-              value: 'H40183968',
+        patient: {
+          reference: 'Patient/74532b683658335246434e495a53425462476c5741673d3d',
+        },
+        insurer: {
+          display: 'Humana',
+        },
+        created: '2020-06-11',
+        outcome: 'complete',
+        insurance: [
+          {
+            focal: true,
+            coverage: {
+              identifier: {
+                system: 'https://fhir.humana.com/documentation/glossary/memberIdBase',
+                value: 'H40183968',
+              },
             },
           },
-        },
-      ],
-      type: {
-        coding: [
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/claim-type',
-            code: 'pharmacy',
-            display: 'Pharmacy',
-          },
         ],
-        text: 'Pharmacy',
-      },
-    });
-    expect(eob).toBeDefined();
-  });
+        type: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/claim-type',
+              code: 'pharmacy',
+              display: 'Pharmacy',
+            },
+          ],
+          text: 'Pharmacy',
+        },
+      });
+      expect(eob).toBeDefined();
+    }));
 
   test('getPatientResourceTypes', () => {
     const resourceTypes = getPatientResourceTypes();

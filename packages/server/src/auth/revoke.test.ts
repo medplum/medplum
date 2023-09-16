@@ -7,6 +7,7 @@ import { loadTestConfig } from '../config';
 import { tryLogin } from '../oauth/utils';
 import { registerNew } from './register';
 import { setPassword } from './setpassword';
+import { withTestContext } from '../test.setup';
 
 jest.mock('@aws-sdk/client-sesv2');
 
@@ -31,15 +32,17 @@ describe('Revoke', () => {
     const email = `alex${randomUUID()}@example.com`;
     const password = randomUUID();
 
-    const { login, accessToken } = await registerNew({
-      firstName: 'Alexander',
-      lastName: 'Hamilton',
-      projectName: 'Hamilton Project',
-      email,
-      password,
-      remoteAddress: '5.5.5.5',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
-    });
+    const { login, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
+        email,
+        password,
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      })
+    );
 
     // Get sessions 1st time
     // Should be 1 session
@@ -50,13 +53,15 @@ describe('Revoke', () => {
     expect(res1.body.security.sessions.find((s: any) => s.id === login.id)).toBeTruthy();
 
     // Sign in again
-    const login2 = await tryLogin({
-      authMethod: 'password',
-      email,
-      password,
-      scope: 'openid',
-      nonce: 'nonce',
-    });
+    const login2 = await withTestContext(() =>
+      tryLogin({
+        authMethod: 'password',
+        email,
+        password,
+        scope: 'openid',
+        nonce: 'nonce',
+      })
+    );
     expect(login2).toBeDefined();
 
     // Get sessions 2nd time
@@ -110,37 +115,40 @@ describe('Revoke', () => {
     const bobEmail = `bob${randomUUID()}@example.com`;
     const bobPassword = randomUUID();
 
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Revoke Project',
-      email: aliceEmail,
-      password: alicePassword,
-      remoteAddress: '5.5.5.5',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
-    });
+    const { bobLogin, accessToken } = await withTestContext(async () => {
+      const { project, accessToken } = await registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Revoke Project',
+        email: aliceEmail,
+        password: alicePassword,
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      });
 
-    // Second, Alice invites Bob to the project
-    const { user } = await inviteUser({
-      project,
-      resourceType: 'Practitioner',
-      firstName: 'Bob',
-      lastName: 'Jones',
-      email: bobEmail,
-    });
+      // Second, Alice invites Bob to the project
+      const { user } = await inviteUser({
+        project,
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+      });
 
-    // Set Bob password
-    await setPassword(user, bobPassword);
+      // Set Bob password
+      await setPassword(user, bobPassword);
 
-    // Login as Bob
-    const bobLogin = await tryLogin({
-      authMethod: 'password',
-      email: bobEmail,
-      password: bobPassword,
-      scope: 'openid',
-      nonce: 'nonce',
+      // Login as Bob
+      const bobLogin = await tryLogin({
+        authMethod: 'password',
+        email: bobEmail,
+        password: bobPassword,
+        scope: 'openid',
+        nonce: 'nonce',
+      });
+      expect(bobLogin).toBeDefined();
+      return { bobLogin, accessToken };
     });
-    expect(bobLogin).toBeDefined();
 
     // Try to revoke Bob's session as Alice
     // This should fail

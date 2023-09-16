@@ -5,6 +5,7 @@ import { loadTestConfig } from '../config';
 import { initTestAuth } from '../test.setup';
 import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
 import { systemRepo } from './repo';
+import { AsyncJob } from '@medplum/fhirtypes';
 
 const app = express();
 
@@ -49,17 +50,9 @@ describe('Job status', () => {
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(resCompleted.status).toBe(200);
-    expect(resCompleted.body).toMatchObject({
-      resourceType: 'Bundle',
-      type: 'batch-response',
-      entry: [
-        {
-          response: {
-            location: 'http://example.com',
-            status: '200 OK',
-          },
-        },
-      ],
+    expect(resCompleted.body).toMatchObject<Partial<AsyncJob>>({
+      resourceType: 'AsyncJob',
+      status: 'completed',
     });
   });
 

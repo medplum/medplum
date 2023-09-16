@@ -1,8 +1,8 @@
 import { Binary, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../config';
-import { logger } from '../logger';
 import { Repository } from './repo';
 import { getPresignedUrl } from './signer';
+import { getRequestContext } from '../context';
 
 /**
  * The target type of the attachment rewrite.
@@ -158,7 +158,7 @@ class Rewriter {
         binary = await this.repo.readResource<Binary>('Binary', id);
       }
     } catch (err: any) {
-      logger.debug('Error reading binary to generate presigned URL', err);
+      getRequestContext().logger.debug('Error reading binary to generate presigned URL', err);
       return `Binary/${id}`;
     }
     return getPresignedUrl(binary);

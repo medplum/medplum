@@ -7,7 +7,7 @@ import { pwnedPassword } from 'hibp';
 import { getConfig } from '../config';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
+import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { bcryptHashPassword, verifyRecaptcha } from './utils';
 
@@ -136,7 +136,7 @@ export async function createUser(request: NewUserRequest): Promise<User> {
     return Promise.reject(badRequest('Password found in breach database', 'password'));
   }
 
-  logger.info('User creation request received', { email });
+  globalLogger.info('User creation request received', { email });
   const passwordHash = await bcryptHashPassword(password);
   const result = await systemRepo.createResource<User>({
     resourceType: 'User',
@@ -146,7 +146,7 @@ export async function createUser(request: NewUserRequest): Promise<User> {
     passwordHash,
     project: projectId ? { reference: `Project/${projectId}` } : undefined,
   });
-  logger.info('User created', { id: result.id, email });
+  globalLogger.info('User created', { id: result.id, email });
   return result;
 }
 

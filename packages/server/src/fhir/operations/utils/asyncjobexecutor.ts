@@ -1,6 +1,6 @@
 import { AsyncJob } from '@medplum/fhirtypes';
 import { Repository, systemRepo } from '../../repo';
-import { logger } from '../../../logger';
+import { getRequestContext } from '../../../context';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
@@ -21,14 +21,15 @@ export class AsyncJobExecutor {
   }
 
   start(callback: () => Promise<any>): void {
+    const ctx = getRequestContext();
     if (!this.resource) {
       throw new Error('AsyncJob missing');
     }
 
     this.run(callback)
-      .then(() => logger.info('Async job completed', { name: callback.name, asyncJobId: this.resource?.id }))
+      .then(() => ctx.logger.info('Async job completed', { name: callback.name, asyncJobId: this.resource?.id }))
       .catch((err) =>
-        logger.error('Async job failed', { name: callback.name, asyncJobId: this.resource?.id, error: err })
+        ctx.logger.error('Async job failed', { name: callback.name, asyncJobId: this.resource?.id, error: err })
       );
   }
 
@@ -36,12 +37,21 @@ export class AsyncJobExecutor {
     if (!this.resource) {
       throw new Error('AsyncJob missing');
     }
-    await callback();
-    await systemRepo.updateResource<AsyncJob>({
-      ...this.resource,
-      status: 'completed',
-      transactionTime: new Date().toISOString(),
-    });
+    try {
+      await callback();
+      await systemRepo.updateResource<AsyncJob>({
+        ...this.resource,
+        status: 'completed',
+        transactionTime: new Date().toISOString(),
+      });
+    } catch (err) {
+      await systemRepo.updateResource<AsyncJob>({
+        ...this.resource,
+        status: 'error',
+        transactionTime: new Date().toISOString(),
+      });
+      throw err;
+    }
   }
 
   getContentLocation(baseUrl: string): string {

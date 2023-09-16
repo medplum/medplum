@@ -4,7 +4,7 @@ import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
-import { authenticateToken } from '../oauth/middleware';
+import { authenticateRequest } from '../oauth/middleware';
 import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
@@ -21,9 +21,9 @@ import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { sendOutcome } from './outcomes';
-import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { getAuthenticatedContext } from '../context';
 
 export const fhirRouter = Router();
 
@@ -77,8 +77,7 @@ publicRoutes.get('/.well-known/smart-configuration', smartConfigurationHandler);
 publicRoutes.get('/.well-known/smart-styles.json', smartStylingHandler);
 
 // Protected routes require authentication
-const protectedRoutes = Router();
-protectedRoutes.use(authenticateToken);
+const protectedRoutes = Router().use(authenticateRequest);
 fhirRouter.use(protectedRoutes);
 
 // Project $export
@@ -152,9 +151,9 @@ protectedRoutes.post(
 protectedRoutes.post(
   '/:resourceType/:id/([$])reindex',
   asyncWrap(async (req: Request, res: Response) => {
+    const ctx = getAuthenticatedContext();
     const { resourceType, id } = req.params;
-    const repo = res.locals.repo as Repository;
-    await repo.reindexResource(resourceType, id);
+    await ctx.repo.reindexResource(resourceType, id);
     sendOutcome(res, allOk);
   })
 );
@@ -163,9 +162,9 @@ protectedRoutes.post(
 protectedRoutes.post(
   '/:resourceType/:id/([$])resend',
   asyncWrap(async (req: Request, res: Response) => {
+    const ctx = getAuthenticatedContext();
     const { resourceType, id } = req.params;
-    const repo = res.locals.repo as Repository;
-    await repo.resendSubscriptions(resourceType, id);
+    await ctx.repo.resendSubscriptions(resourceType, id);
     sendOutcome(res, allOk);
   })
 );
@@ -174,10 +173,10 @@ protectedRoutes.post(
 protectedRoutes.use(
   '*',
   asyncWrap(async (req: Request, res: Response) => {
+    const ctx = getAuthenticatedContext();
     if (!internalFhirRouter) {
       internalFhirRouter = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
     }
-    const repo = res.locals.repo as Repository;
     const request: FhirRequest = {
       method: req.method as HttpMethod,
       pathname: req.originalUrl.replace('/fhir/R4', '').split('?').shift() as string,
@@ -186,7 +185,7 @@ protectedRoutes.use(
       body: req.body,
     };
 
-    const result = await internalFhirRouter.handleRequest(request, repo);
+    const result = await internalFhirRouter.handleRequest(request, ctx.repo);
     if (result.length === 1) {
       if (!isOk(result[0])) {
         throw new OperationOutcomeError(result[0]);
@@ -203,12 +202,12 @@ export function isFhirJsonContentType(req: Request): boolean {
 }
 
 export async function sendResponse(res: Response, outcome: OperationOutcome, body: Resource): Promise<void> {
-  const repo = res.locals.repo as Repository;
+  const ctx = getAuthenticatedContext();
   if (body.meta?.versionId) {
     res.set('ETag', `"${body.meta.versionId}"`);
   }
   if (body.meta?.lastUpdated) {
     res.set('Last-Modified', new Date(body.meta.lastUpdated).toUTCString());
   }
-  res.status(getStatus(outcome)).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, body));
+  res.status(getStatus(outcome)).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body));
 }

@@ -1,8 +1,7 @@
 import { Request, Response, Router } from 'express';
-import { authenticateToken } from '../oauth/middleware';
+import { authenticateRequest } from '../oauth/middleware';
 
-export const dicomRouter = Router();
-dicomRouter.use(authenticateToken);
+export const dicomRouter = Router().use(authenticateRequest);
 
 // DICOMweb WADO
 // https://www.dicomstandard.org/dicomweb

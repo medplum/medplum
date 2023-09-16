@@ -7,12 +7,12 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
+import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
+import { AuthenticatedRequestContext, requestContextStore } from '../context';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
-import { createTestProject, waitForAsyncJob } from '../test.setup';
 
 jest.mock('../seeds/valuesets');
 jest.mock('../seeds/structuredefinitions');
@@ -29,6 +29,7 @@ describe('Super Admin routes', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
+    requestContextStore.enterWith(AuthenticatedRequestContext.system());
     ({ project, client } = await createTestProject());
 
     // Mark the project as a "Super Admin" project
@@ -121,7 +122,7 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toEqual(400);
-    expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
+    expect(res.body?.issue?.[0]?.details?.text).toBe('Operation requires "Prefer: respond-async"');
   });
 
   test('Rebuild ValueSetElements as super admin with respond-async', async () => {
@@ -146,7 +147,6 @@ describe('Super Admin routes', () => {
     (rebuildR4ValueSets as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
       return Promise.reject(err);
     });
-    const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
 
     const res = await request(app)
       .post('/admin/super/valuesets')
@@ -156,7 +156,8 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toEqual(202);
-    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ error: err }));
+    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    expect(job.status).toEqual('error');
   });
 
   test('Rebuild ValueSetElements access denied', async () => {
@@ -202,7 +203,6 @@ describe('Super Admin routes', () => {
     (rebuildR4StructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
       return Promise.reject(err);
     });
-    const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
 
     const res = await request(app)
       .post('/admin/super/structuredefinitions')
@@ -212,7 +212,8 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toEqual(202);
-    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ error: err }));
+    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    expect(job.status).toEqual('error');
   });
 
   test('Rebuild StructureDefinitions access denied', async () => {
@@ -258,7 +259,6 @@ describe('Super Admin routes', () => {
     (rebuildR4SearchParameters as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
       return Promise.reject(err);
     });
-    const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
 
     const res = await request(app)
       .post('/admin/super/searchparameters')
@@ -268,7 +268,8 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toEqual(202);
-    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ error: err }));
+    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    expect(job.status).toEqual('error');
   });
 
   test('Rebuild SearchParameters access denied', async () => {
@@ -338,7 +339,6 @@ describe('Super Admin routes', () => {
     jest.spyOn(systemRepo, 'reindexResourceType').mockImplementationOnce((): Promise<any> => {
       return Promise.reject(err);
     });
-    const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
 
     const res = await request(app)
       .post('/admin/super/reindex')
@@ -350,7 +350,8 @@ describe('Super Admin routes', () => {
       });
 
     expect(res.status).toEqual(202);
-    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ error: err }));
+    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    expect(job.status).toEqual('error');
   });
 
   test('Rebuild compartments access denied', async () => {
@@ -409,7 +410,6 @@ describe('Super Admin routes', () => {
     jest.spyOn(systemRepo, 'rebuildCompartmentsForResourceType').mockImplementationOnce((): Promise<any> => {
       return Promise.reject(err);
     });
-    const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
 
     const res = await request(app)
       .post('/admin/super/compartments')
@@ -421,7 +421,8 @@ describe('Super Admin routes', () => {
       });
 
     expect(res.status).toEqual(202);
-    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ error: err }));
+    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    expect(job.status).toEqual('error');
   });
 
   test('Set password access denied', async () => {
@@ -468,13 +469,15 @@ describe('Super Admin routes', () => {
   test('Set password success', async () => {
     const email = `alice${randomUUID()}@example.com`;
 
-    await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email,
-      password: 'password!@#',
-    });
+    await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email,
+        password: 'password!@#',
+      })
+    );
 
     const res = await request(app)
       .post('/admin/super/setpassword')

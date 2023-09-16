@@ -6,7 +6,8 @@ import { Readable } from 'stream';
 import { getConfig, MedplumRedisConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
-import { logger } from '../logger';
+import { globalLogger } from '../logger';
+import { getRequestContext } from '../context';
 
 /*
  * The download worker inspects resources,
@@ -53,8 +54,8 @@ export function initDownloadWorker(config: MedplumRedisConfig): void {
   });
 
   worker = new Worker<DownloadJobData>(queueName, execDownloadJob, defaultOptions);
-  worker.on('completed', (job) => logger.info(`Completed job ${job.id} successfully`));
-  worker.on('failed', (job, err) => logger.info(`Failed job ${job?.id} with ${err}`));
+  worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
+  worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 }
 
 /**
@@ -136,11 +137,12 @@ function isExternalUrl(url: string | undefined): boolean {
  * @param job The download job details.
  */
 async function addDownloadJobData(job: DownloadJobData): Promise<void> {
-  logger.debug(`Adding Download job`);
+  const ctx = getRequestContext();
+  ctx.logger.debug(`Adding Download job`);
   if (queue) {
     await queue.add(jobName, job);
   } else {
-    logger.debug(`Download queue not initialized`);
+    ctx.logger.debug(`Download queue not initialized`);
   }
 }
 
@@ -149,6 +151,7 @@ async function addDownloadJobData(job: DownloadJobData): Promise<void> {
  * @param job The download job details.
  */
 export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> {
+  const ctx = getRequestContext();
   const { resourceType, id, url } = job.data;
 
   let resource;
@@ -169,10 +172,10 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
   }
 
   try {
-    logger.info('Requesting content at: ' + url);
+    ctx.logger.info('Requesting content at: ' + url);
     const response = await fetch(url);
 
-    logger.info('Received status: ' + response.status);
+    ctx.logger.info('Received status: ' + response.status);
     if (response.status >= 400) {
       throw new Error('Received status ' + response.status);
     }
@@ -197,9 +200,9 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
     const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary.id}`)) as Resource;
     (updated.meta as Meta).author = { reference: 'system' };
     await systemRepo.updateResource(updated);
-    logger.info('Downloaded content successfully');
+    ctx.logger.info('Downloaded content successfully');
   } catch (ex) {
-    logger.info('Download exception: ' + ex);
+    ctx.logger.info('Download exception: ' + ex);
     throw ex;
   }
 }

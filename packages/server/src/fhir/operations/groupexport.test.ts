@@ -4,7 +4,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
+import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { systemRepo } from '../repo';
 import { groupExportResources } from './groupexport';
 import { BulkExporter } from './utils/bulkexporter';
@@ -168,15 +168,17 @@ describe('Group Export', () => {
 
     // Create observation "3 days ago"
     // (Use systemRepo to set meta.lastUpdated)
-    await systemRepo.createResource({
-      ...res2.body,
-      id: undefined,
-      meta: {
-        ...res2.body.meta,
-        lastUpdated: before.toISOString(),
-        versionId: undefined,
-      },
-    });
+    await withTestContext(() =>
+      systemRepo.createResource({
+        ...res2.body,
+        id: undefined,
+        meta: {
+          ...res2.body.meta,
+          lastUpdated: before.toISOString(),
+          versionId: undefined,
+        },
+      })
+    );
 
     // Create group
     const res4 = await request(app)

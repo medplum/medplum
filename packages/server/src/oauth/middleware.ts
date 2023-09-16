@@ -1,39 +1,55 @@
 import { OperationOutcomeError, unauthorized } from '@medplum/core';
 import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
-import { getRepoForLogin } from '../fhir/accesspolicy';
 import { systemRepo } from '../fhir/repo';
 import { getClientApplicationMembership, getLoginForAccessToken, timingSafeEqualStr } from './utils';
+import { getRequestContext, requestContextStore, AuthenticatedRequestContext } from '../context';
+import { getRepoForLogin } from '../fhir/accesspolicy';
 
-export function authenticateToken(req: Request, res: Response, next: NextFunction): Promise<void> {
-  return authenticateTokenImpl(req, res).then(next).catch(next);
+export interface AuthState {
+  login: Login;
+  project: Project;
+  membership: ProjectMembership;
 }
 
-export async function authenticateTokenImpl(req: Request, res: Response): Promise<void> {
+export function authenticateRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
+  return authenticateTokenImpl(req)
+    .then(async ({ login, project, membership }) => {
+      const ctx = getRequestContext();
+      const repo = await getRepoForLogin(
+        login,
+        membership,
+        project.strictMode,
+        isExtendedMode(req),
+        project.checkReferencesOnWrite
+      );
+      requestContextStore.run(new AuthenticatedRequestContext(ctx, login, project, membership, repo), () => next());
+    })
+    .catch(next);
+}
+
+export async function authenticateTokenImpl(req: Request): Promise<AuthState> {
   const [tokenType, token] = req.headers.authorization?.split(' ') ?? [];
   if (!tokenType || !token) {
     throw new OperationOutcomeError(unauthorized);
   }
 
   if (tokenType === 'Bearer') {
-    await authenticateBearerToken(req, res, token);
+    return authenticateBearerToken(req, token);
   } else if (tokenType === 'Basic') {
-    await authenticateBasicAuth(req, res, token);
+    return authenticateBasicAuth(req, token);
   } else {
     throw new OperationOutcomeError(unauthorized);
   }
 }
 
-async function authenticateBearerToken(req: Request, res: Response, token: string): Promise<void> {
-  try {
-    const { login, project, membership } = await getLoginForAccessToken(token);
-    await setupLocals(req, res, login, project, membership);
-  } catch (err) {
+function authenticateBearerToken(req: Request, token: string): Promise<AuthState> {
+  return getLoginForAccessToken(token).catch(() => {
     throw new OperationOutcomeError(unauthorized);
-  }
+  });
 }
 
-async function authenticateBasicAuth(req: Request, res: Response, token: string): Promise<void> {
+async function authenticateBasicAuth(req: Request, token: string): Promise<AuthState> {
   const credentials = Buffer.from(token, 'base64').toString('ascii');
   const [username, password] = credentials.split(':');
   if (!username || !password) {
@@ -41,13 +57,11 @@ async function authenticateBasicAuth(req: Request, res: Response, token: string)
   }
 
   let client = undefined;
-
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
   } catch (err) {
     throw new OperationOutcomeError(unauthorized);
   }
-
   if (!client) {
     throw new OperationOutcomeError(unauthorized);
   }
@@ -68,28 +82,7 @@ async function authenticateBasicAuth(req: Request, res: Response, token: string)
     superAdmin: project.superAdmin,
   };
 
-  await setupLocals(req, res, login, project, membership);
-}
-
-async function setupLocals(
-  req: Request,
-  res: Response,
-  login: Login,
-  project: Project,
-  membership: ProjectMembership
-): Promise<void> {
-  const locals = res.locals;
-  locals.login = login;
-  locals.project = project;
-  locals.membership = membership;
-  locals.profile = membership.profile;
-  locals.repo = await getRepoForLogin(
-    login,
-    membership,
-    locals.project.strictMode,
-    isExtendedMode(req),
-    locals.project.checkReferencesOnWrite
-  );
+  return { login, project, membership };
 }
 
 function isExtendedMode(req: Request): boolean {

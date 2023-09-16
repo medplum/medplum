@@ -8,6 +8,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { registerNew } from './register';
+import { withTestContext } from '../test.setup';
 
 jest.mock('@aws-sdk/client-sesv2');
 
@@ -18,31 +19,33 @@ let profile1: ProfileResource;
 let profile2: ProfileResource;
 
 describe('Profile', () => {
-  beforeAll(async () => {
-    const config = await loadTestConfig();
-    await initApp(app, config);
+  beforeAll(() =>
+    withTestContext(async () => {
+      const config = await loadTestConfig();
+      await initApp(app, config);
 
-    // Create a user with multiple profiles
-    // Use the same user/email in the same project
-    const registerResult = await registerNew({
-      firstName: 'Multi1',
-      lastName: 'Multi1',
-      projectName: 'Multi Project',
-      email,
-      password,
-    });
+      // Create a user with multiple profiles
+      // Use the same user/email in the same project
+      const registerResult = await registerNew({
+        firstName: 'Multi1',
+        lastName: 'Multi1',
+        projectName: 'Multi Project',
+        email,
+        password,
+      });
 
-    const inviteResult = await inviteUser({
-      project: registerResult.project,
-      resourceType: 'Practitioner',
-      firstName: 'Multi2',
-      lastName: 'Multi2',
-      email,
-    });
+      const inviteResult = await inviteUser({
+        project: registerResult.project,
+        resourceType: 'Practitioner',
+        firstName: 'Multi2',
+        lastName: 'Multi2',
+        email,
+      });
 
-    profile1 = registerResult.profile;
-    profile2 = inviteResult.profile;
-  });
+      profile1 = registerResult.profile;
+      profile2 = inviteResult.profile;
+    })
+  );
 
   afterAll(async () => {
     await shutdownApp();
@@ -89,10 +92,12 @@ describe('Profile', () => {
     expect(res1.body.login).toBeDefined();
 
     const login = await systemRepo.readResource<Login>('Login', res1.body.login);
-    await systemRepo.updateResource({
-      ...login,
-      revoked: true,
-    });
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...login,
+        revoked: true,
+      })
+    );
 
     const res2 = await request(app)
       .post('/auth/profile')
@@ -116,10 +121,12 @@ describe('Profile', () => {
     expect(res1.body.login).toBeDefined();
 
     const login = await systemRepo.readResource<Login>('Login', res1.body.login);
-    await systemRepo.updateResource({
-      ...login,
-      granted: true,
-    });
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...login,
+        granted: true,
+      })
+    );
 
     const res2 = await request(app)
       .post('/auth/profile')
@@ -143,12 +150,14 @@ describe('Profile', () => {
     expect(res1.body.login).toBeDefined();
 
     const login = await systemRepo.readResource<Login>('Login', res1.body.login);
-    await systemRepo.updateResource({
-      ...login,
-      membership: {
-        reference: `ProjectMembership/${randomUUID()}`,
-      },
-    });
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...login,
+        membership: {
+          reference: `ProjectMembership/${randomUUID()}`,
+        },
+      })
+    );
 
     const res2 = await request(app)
       .post('/auth/profile')
@@ -187,12 +196,14 @@ describe('Profile', () => {
 
   test('Membership for different user', async () => {
     // Create a dummy ProjectMembership
-    const membership = await systemRepo.createResource<ProjectMembership>({
-      resourceType: 'ProjectMembership',
-      project: { reference: randomUUID() },
-      profile: { reference: randomUUID() },
-      user: { reference: randomUUID() },
-    });
+    const membership = await withTestContext(() =>
+      systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: { reference: randomUUID() },
+        profile: { reference: randomUUID() },
+        user: { reference: randomUUID() },
+      })
+    );
 
     const res1 = await request(app).post('/auth/login').type('json').send({
       scope: 'openid',

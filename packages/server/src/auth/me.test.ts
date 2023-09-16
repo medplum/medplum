@@ -6,6 +6,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { registerNew } from './register';
+import { withTestContext } from '../test.setup';
 
 const app = express();
 
@@ -25,15 +26,17 @@ describe('Me', () => {
   });
 
   test('User configuration', async () => {
-    const { project, membership, accessToken } = await registerNew({
-      firstName: 'Alexander',
-      lastName: 'Hamilton',
-      projectName: 'Hamilton Project',
-      email: `alex${randomUUID()}@example.com`,
-      password: 'password!@#',
-      remoteAddress: '5.5.5.5',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
-    });
+    const { project, membership, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      })
+    );
 
     // Get the user profile with default user configuration
     const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
@@ -94,13 +97,15 @@ describe('Me', () => {
   });
 
   test('Get me as ClientApplication', async () => {
-    const { client } = await registerNew({
-      firstName: 'Client',
-      lastName: 'Test',
-      projectName: 'Client Test',
-      email: `client${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { client } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Client',
+        lastName: 'Test',
+        projectName: 'Client Test',
+        email: `client${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     const res = await request(app)
       .get('/auth/me')

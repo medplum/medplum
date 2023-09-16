@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config';
-import { initTestAuth } from '../../test.setup';
+import { initTestAuth, withTestContext } from '../../test.setup';
 import { getBinaryStorage } from '../storage';
 import { getLambdaFunctionName } from './execute';
 
@@ -202,13 +202,15 @@ describe('Execute', () => {
 
   test('Bots not enabled', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Next, Alice creates a bot
     const res2 = await request(app)

@@ -1,19 +1,18 @@
 import { allOk, resolveId } from '@medplum/core';
-import { Login } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../async';
 import { sendOutcome } from '../fhir/outcomes';
 import { revokeLogin } from '../oauth/utils';
+import { getAuthenticatedContext } from '../context';
 
 export const logoutHandler = asyncWrap(async (req: Request, res: Response): Promise<void> => {
-  // Get login from current session
-  const login = res.locals.login as Login;
+  const ctx = getAuthenticatedContext();
 
   // Mark the login as revoked
-  await revokeLogin(login);
+  await revokeLogin(ctx.login);
 
-  if (login.client) {
-    const cookieName = 'medplum-' + resolveId(login.client);
+  if (ctx.login.client) {
+    const cookieName = 'medplum-' + resolveId(ctx.login.client);
     res.clearCookie(cookieName, {
       maxAge: 3600 * 1000,
       sameSite: 'none',

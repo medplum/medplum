@@ -17,9 +17,9 @@ import { getConfig } from '../config';
 import { sendEmail } from '../email/email';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
 import { generateSecret } from '../oauth/keys';
 import { getUserByEmailInProject, getUserByEmailWithoutProject } from '../oauth/utils';
+import { getAuthenticatedContext } from '../context';
 
 export const inviteValidators = [
   body('resourceType').isIn(['Patient', 'Practitioner', 'RelatedPerson']).withMessage('Resource type is required'),
@@ -35,6 +35,7 @@ export const inviteValidators = [
 ];
 
 export async function inviteHandler(req: Request, res: Response): Promise<void> {
+  const ctx = getAuthenticatedContext();
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     sendOutcome(res, invalidRequest(errors));
@@ -43,17 +44,17 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
 
   const inviteRequest = { ...req.body } as ServerInviteRequest;
   const { projectId } = req.params;
-  if (res.locals.project.superAdmin) {
+  if (ctx.project.superAdmin) {
     inviteRequest.project = await systemRepo.readResource('Project', projectId as string);
   } else {
-    inviteRequest.project = res.locals.project;
+    inviteRequest.project = ctx.project;
   }
 
   try {
     const { membership } = await inviteUser(inviteRequest);
     res.status(200).json(membership);
   } catch (err) {
-    logger.info('Error inviting user to project', {
+    ctx.logger.info('Error inviting user to project', {
       project: projectId,
       error: normalizeErrorString(err),
     });
@@ -72,6 +73,7 @@ export interface ServerInviteResponse {
 }
 
 export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
+  const ctx = getAuthenticatedContext();
   if (request.email) {
     request.email = request.email.toLowerCase();
   }
@@ -92,7 +94,9 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 
   if (!user) {
     existingUser = false;
+    ctx.logger.info('User creation request received', { email });
     user = await createUser(request);
+    ctx.logger.info('User created', { id: user.id, email });
     passwordResetUrl = await resetPassword(user);
   }
 
@@ -138,7 +142,6 @@ async function createUser(request: ServerInviteRequest): Promise<User> {
   const { firstName, lastName, externalId } = request;
   const email = request.email?.toLowerCase();
   const password = request.password ?? generateSecret(16);
-  logger.info('User creation request received', { email });
   const passwordHash = await bcryptHashPassword(password);
 
   let project: Reference<Project> | undefined = undefined;
@@ -150,7 +153,7 @@ async function createUser(request: ServerInviteRequest): Promise<User> {
     project = createReference(request.project);
   }
 
-  const result = await systemRepo.createResource<User>({
+  return systemRepo.createResource<User>({
     resourceType: 'User',
     firstName,
     lastName,
@@ -158,9 +161,6 @@ async function createUser(request: ServerInviteRequest): Promise<User> {
     passwordHash,
     project,
   });
-
-  logger.info('User created', { id: result.id, email });
-  return result;
 }
 
 async function searchForExistingProfile(request: ServerInviteRequest): Promise<ProfileResource | undefined> {

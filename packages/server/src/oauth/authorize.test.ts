@@ -10,7 +10,7 @@ import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { createTestProject } from '../test.setup';
+import { createTestProject, withTestContext } from '../test.setup';
 import { revokeLogin } from './utils';
 
 jest.mock('@aws-sdk/client-sesv2');
@@ -302,13 +302,15 @@ describe('OAuth Authorize', () => {
 
     const cookie = cookies[0];
 
-    await revokeLogin(
-      (
-        await systemRepo.search({
-          resourceType: 'Login',
-          filters: [{ code: 'cookie', operator: Operator.EQUALS, value: cookie.value }],
-        })
-      ).entry?.[0]?.resource as Login
+    await withTestContext(async () =>
+      revokeLogin(
+        (
+          await systemRepo.search({
+            resourceType: 'Login',
+            filters: [{ code: 'cookie', operator: Operator.EQUALS, value: cookie.value }],
+          })
+        ).entry?.[0]?.resource as Login
+      )
     );
 
     const params = new URLSearchParams({
