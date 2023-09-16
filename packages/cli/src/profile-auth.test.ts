@@ -33,6 +33,7 @@ describe('Profiles Auth', () => {
   beforeEach(async () => {
     console.log = jest.fn();
   });
+
   beforeAll(async () => {
     Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
     (os.homedir as unknown as jest.Mock).mockReturnValue(testHomeDir);
@@ -115,7 +116,7 @@ describe('Profiles Auth', () => {
       clientSecret: 'validClientSecret',
       scope: 'validScope',
       authorizeUrl: 'https://valid.gov/authorize',
-      privateKeyPath: '/test_util/testPrivateKey.pem',
+      privateKeyPath: 'testPrivateKey.pem',
       audience: '/oauth2/token',
     };
 
