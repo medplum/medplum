@@ -815,9 +815,7 @@ export class MedplumClient extends EventTarget {
    */
   post(url: URL | string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
     url = url.toString();
-    if (body) {
-      this.setRequestBody(options, body);
-    }
+    this.setRequestBody(options, body);
     if (contentType) {
       this.setRequestContentType(options, contentType);
     }
@@ -840,9 +838,7 @@ export class MedplumClient extends EventTarget {
    */
   put(url: URL | string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
     url = url.toString();
-    if (body) {
-      this.setRequestBody(options, body);
-    }
+    this.setRequestBody(options, body);
     if (contentType) {
       this.setRequestContentType(options, contentType);
     }
@@ -2615,9 +2611,7 @@ export class MedplumClient extends EventTarget {
   private logResponse(response: Response): void {
     console.log(`< ${response.status} ${response.statusText}`);
     if (response.headers) {
-      response.headers.forEach((value, key) => {
-        console.log(`< ${key}: ${value}`);
-      });
+      response.headers.forEach((value, key) => console.log(`< ${key}: ${value}`));
     }
   }
 
