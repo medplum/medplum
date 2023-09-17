@@ -1,11 +1,12 @@
 import { created, forbidden, getResourceTypes, isResourceType, Operator } from '@medplum/core';
-import { Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
+import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { sendResponse } from '../routes';
-import { getAuthenticatedContext } from '../../context';
+import { getBinaryStorage } from '../storage';
 
 /**
  * Handles a Project clone request.
@@ -70,6 +71,9 @@ class ProjectCloner {
       if (result.resourceType === 'Project') {
         newProject = result;
       }
+      if (resource.resourceType === 'Binary') {
+        await getBinaryStorage().copyBinary(resource, result as Binary);
+      }
     }
 
     return newProject as Project;
@@ -133,7 +137,10 @@ class ProjectCloner {
     if ((key === 'id' || key === 'project') && typeof value === 'string' && this.idMap.has(value)) {
       return this.idMap.get(value);
     }
-    if (key === 'reference' && typeof value === 'string' && value.includes('/')) {
+    if (
+      (key === 'reference' && typeof value === 'string' && value.includes('/')) ||
+      (key === 'url' && typeof value === 'string' && value.startsWith('Binary/'))
+    ) {
       const [resourceType, id] = value.split('/');
       if (isResourceType(resourceType) && this.idMap.has(id)) {
         return resourceType + '/' + this.idMap.get(id);
