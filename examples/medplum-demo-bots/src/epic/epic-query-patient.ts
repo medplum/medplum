@@ -19,38 +19,25 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   // Construct Epic MedplumClient base
   const epicClient = new MedplumClient({
     fetch,
-    baseUrl: baseUrl,
-    tokenUrl: tokenUrl,
-    fhirUrlPath: fhirUrlPath,
-    clientId: clientId,
-    onUnauthenticated: () => console.error('Unauthenticated'),
+    baseUrl,
+    tokenUrl,
+    fhirUrlPath,
+    clientId,
   });
 
+  // Construct JWT assertion
   const jwt = await new SignJWT({})
     .setProtectedHeader({ alg: 'RS384', typ: 'JWT' })
     .setIssuer(clientId)
     .setSubject(clientId)
-    .setAudience(baseUrl + 'oauth2/token')
+    .setAudience(tokenUrl)
     .setJti(randomBytes(16).toString('hex'))
     .setIssuedAt()
     .setExpirationTime('5m')
     .sign(privateKey);
 
-  const formBody = new URLSearchParams();
-  formBody.append('grant_type', 'client_credentials');
-  formBody.append('client_assertion_type', 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer');
-  formBody.append('client_assertion', jwt);
-
-  // Authorize
-  const res = await epicClient.post(tokenUrl, formBody.toString(), 'application/x-www-form-urlencoded', {
-    credentials: 'include',
-  });
-
-  if (!res.access_token) {
-    throw new Error(`Failed to login: ${res}`);
-  }
-
-  epicClient.setAccessToken(res.access_token);
+  // Start the JWT assertion login
+  await epicClient.startJwtAssertionLogin(jwt);
 
   console.log('Logged in');
 

@@ -4,6 +4,7 @@ import {
   getStatus,
   normalizeErrorString,
   normalizeOperationOutcome,
+  OAuthClientAssertionType,
   OAuthGrantType,
   OAuthTokenType,
   Operator,
@@ -431,12 +432,15 @@ async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
  * 2. https://www.hl7.org/fhir/smart-app-launch/example-backend-services.html#step-2-discovery
  * 3. https://docs.oracle.com/en/cloud/get-started/subscriptions-cloud/csimg/obtaining-access-token-using-self-signed-client-assertion.html
  * 4. https://darutk.medium.com/oauth-2-0-client-authentication-4b5f929305d4
- * @param clientAssertiontype The client assertion type.
+ * @param clientAssertionType The client assertion type.
  * @param clientAssertion The client assertion JWT.
  * @returns The parsed client ID and secret on success, or an error message on failure.
  */
-async function parseClientAssertion(clientAssertiontype: string, clientAssertion: string): Promise<ClientIdAndSecret> {
-  if (clientAssertiontype !== 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer') {
+async function parseClientAssertion(
+  clientAssertionType: OAuthClientAssertionType,
+  clientAssertion: string
+): Promise<ClientIdAndSecret> {
+  if (clientAssertionType !== OAuthClientAssertionType.JwtBearer) {
     return { error: 'Unsupported client assertion type' };
   }
 

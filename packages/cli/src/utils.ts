@@ -237,7 +237,7 @@ export function profileExists(storage: FileSystemStorage, profile: string): bool
   return true;
 }
 
-export async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise<string> {
+export async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
   const header = {
     typ: 'JWT',
     alg: 'HS256',
@@ -259,22 +259,10 @@ export async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): 
     .update(token)
     .digest('base64url');
   const signedToken = `${token}.${signature}`;
-
-  const formBody = new URLSearchParams();
-  formBody.set('grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer');
-  formBody.set('client_id', profile.clientId as string);
-  formBody.set('assertion', signedToken);
-  formBody.set('scope', profile.scope ?? '');
-
-  const res = await medplum.post(profile.tokenUrl as string, formBody.toString(), 'application/x-www-form-urlencoded', {
-    credentials: 'include',
-  });
-
-  const obj = await JSON.parse(res);
-  return obj.access_token;
+  await medplum.startJwtBearerLogin(profile.clientId as string, signedToken, profile.scope ?? '');
 }
 
-export async function jwtAssertionLogin(externalClient: MedplumClient, profile: Profile): Promise<string> {
+export async function jwtAssertionLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
   const privateKey = createPrivateKey(readFileSync(resolve(profile.privateKeyPath as string)));
   const jwt = await new SignJWT({})
     .setProtectedHeader({ alg: 'RS384', typ: 'JWT' })
@@ -285,21 +273,5 @@ export async function jwtAssertionLogin(externalClient: MedplumClient, profile: 
     .setIssuedAt()
     .setExpirationTime('5m')
     .sign(privateKey);
-
-  const formBody = new URLSearchParams();
-  formBody.append('grant_type', 'client_credentials');
-  formBody.append('client_assertion_type', 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer');
-  formBody.append('client_assertion', jwt);
-
-  const res = await externalClient.post(
-    profile.tokenUrl as string,
-    formBody.toString(),
-    'application/x-www-form-urlencoded',
-    { credentials: 'include' }
-  );
-
-  if (!res.access_token) {
-    throw new Error(`Failed to login: ${res}`);
-  }
-  return res.access_token;
+  await medplum.startJwtAssertionLogin(jwt);
 }

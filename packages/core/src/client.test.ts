@@ -664,6 +664,28 @@ describe('Client', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  test('JWT assertion flow', async () => {
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token: createFakeJwt({ client_id: 'test-client-id', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: 'test-client-id' }),
+          profile: { reference: 'ClientApplication/123' },
+        };
+      }
+      if (url.includes('/auth/me')) {
+        return { profile: { resourceType: 'ClientApplication' } };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch });
+    const result1 = await client.startJwtAssertionLogin('my-jwt');
+    expect(result1).toBeDefined();
+    expect(result1).toMatchObject({ resourceType: 'ClientApplication' });
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   test('Basic auth in browser', async () => {
     Object.defineProperty(globalThis, 'Buffer', { get: () => undefined });
     Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
@@ -1082,6 +1104,30 @@ describe('Client', () => {
     expect(client.getCachedReference({ reference: '' })).toBeUndefined();
     expect(client.getCachedReference({ reference: 'xyz' })).toBeUndefined();
     expect(client.getCachedReference({ reference: 'xyz?abc' })).toBeUndefined();
+    expect(client.getCachedReference({ reference: 'system' })).toMatchObject({
+      resourceType: 'Device',
+      id: 'system',
+      deviceName: [{ name: 'System' }],
+    });
+  });
+
+  test('Read system reference', async () => {
+    const client = new MedplumClient({ fetch });
+
+    // Get
+    expect(client.getCachedReference({ reference: 'system' })).toMatchObject({
+      resourceType: 'Device',
+      id: 'system',
+      deviceName: [{ name: 'System' }],
+    });
+
+    // Read async
+    const result = await client.readReference({ reference: 'system' });
+    expect(result).toMatchObject({
+      resourceType: 'Device',
+      id: 'system',
+      deviceName: [{ name: 'System' }],
+    });
   });
 
   test('Disabled cache read cached resource', async () => {
@@ -1524,6 +1570,8 @@ describe('Client', () => {
     expect(schema).toBeDefined();
     expect(schema.types['Patient']).toBeDefined();
     expect(schema.types['Patient'].searchParams).toBeDefined();
+    const schema2 = await client.requestSchema('Patient');
+    expect(schema2).toBe(schema);
   });
 
   test('Get cached schema', async () => {
@@ -2450,6 +2498,37 @@ describe('Client', () => {
       expect(fetch).toHaveBeenCalledTimes(4);
       expect((response as any).resourceType).toEqual('Patient');
     });
+  });
+
+  test('Verbose mode', async () => {
+    const fetch = jest.fn(() => {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: {
+          get: () => ContentType.FHIR_JSON,
+          forEach: (cb: (value: string, key: string) => void) => cb('bar', 'foo'),
+        },
+        json: () => Promise.resolve({ resourceType: 'Patient', id: '123' }),
+      });
+    });
+
+    console.log = jest.fn();
+    const client = new MedplumClient({ fetch, verbose: true });
+    const result = await client.readResource('Patient', '123');
+    expect(result).toBeDefined();
+    expect(fetch).toBeCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient/123',
+      expect.objectContaining({ method: 'GET' })
+    );
+    expect(result.resourceType).toBe('Patient');
+    expect(result.id).toBe('123');
+    expect(console.log).toBeCalledWith('> GET https://api.medplum.com/fhir/R4/Patient/123');
+    expect(console.log).toBeCalledWith('> Accept: application/fhir+json');
+    expect(console.log).toBeCalledWith('> X-Medplum: extended');
+    expect(console.log).toBeCalledWith('< 200 OK');
+    expect(console.log).toBeCalledWith('< foo: bar');
   });
 });
 

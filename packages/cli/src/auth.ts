@@ -1,11 +1,11 @@
-import { ContentType, MedplumClient, getDisplayString, normalizeErrorString } from '@medplum/core';
+import { ContentType, getDisplayString, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { exec } from 'child_process';
 import { createServer } from 'http';
 import { platform } from 'os';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
-import { Profile, jwtAssertionLogin, jwtBearerLogin, loadProfile, profileExists, saveProfile } from './utils';
+import { jwtAssertionLogin, jwtBearerLogin, loadProfile, Profile, profileExists, saveProfile } from './utils';
 
 const clientId = 'medplum-cli';
 const redirectUri = 'http://localhost:9615';
@@ -44,15 +44,9 @@ async function startLogin(medplum: MedplumClient, profile: Profile): Promise<voi
       throw new Error('Missing values, make sure to add --client-id, and --client-secret for JWT Bearer login');
     }
     console.log('Starting JWT login...');
-    const accessToken = await jwtBearerLogin(medplum, profile);
-    const storage = new FileSystemStorage(profile.name as string);
-    storage.setObject('activeLogin', { accessToken });
+    await jwtBearerLogin(medplum, profile);
   } else if (profile.authType === 'jwt-assertion') {
-    const accessToken = await jwtAssertionLogin(medplum, profile);
-    const storage = new FileSystemStorage(profile.name as string);
-    storage.setObject('activeLogin', {
-      accessToken,
-    });
+    await jwtAssertionLogin(medplum, profile);
   }
   console.log('Login successful');
 }

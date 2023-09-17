@@ -2,7 +2,9 @@ import { MedplumClient, MedplumClientOptions } from '@medplum/core';
 import { FileSystemStorage } from '../storage';
 import { Profile } from '../utils';
 
-export async function createMedplumClient(options: MedplumClientOptions): Promise<MedplumClient> {
+export async function createMedplumClient(
+  options: MedplumClientOptions & { profile?: string }
+): Promise<MedplumClient> {
   const profileName = options.profile ?? 'default';
 
   const storage = new FileSystemStorage(profileName);
@@ -23,7 +25,8 @@ export async function createMedplumClient(options: MedplumClientOptions): Promis
     fhirUrlPath,
     authorizeUrl,
     storage,
-    onUnauthenticated: onUnauthenticated,
+    onUnauthenticated,
+    verbose: options.verbose,
   });
 
   if (accessToken) {

@@ -182,15 +182,6 @@ export interface MedplumClientOptions {
   fetch?: FetchLike;
 
   /**
-   * The profile name.
-   *
-   * This is for handling multiple profiles to access different FHIR Servers
-   *
-   * If undefined, the default profile is "default".
-   */
-  profile?: string;
-
-  /**
    * Storage implementation.
    *
    * Default is window.localStorage (if available), this is the common implementation for use in the browser, or an in-memory storage implementation.  If using Medplum on a server it may be useful to provide a custom storage implementation, for example using redis, a database or a file based storage.  Medplum CLI is an an example of `FileSystemStorage`, for reference.
@@ -246,6 +237,20 @@ export interface MedplumClientOptions {
    * For client side applications, consider redirecting to a sign in page.
    */
   onUnauthenticated?: () => void;
+
+  /**
+   * The default redirect behavior.
+   *
+   * The default behavior is to not follow redirects.
+   *
+   * Use "follow" to automatically follow redirects.
+   */
+  redirect?: RequestRedirect;
+
+  /**
+   * When the verbose flag is set, the client will log all requests and responses to the console.
+   */
+  verbose?: boolean;
 }
 
 export interface FetchLike {
@@ -511,6 +516,15 @@ export enum OAuthTokenType {
   Saml2Token = 'urn:ietf:params:oauth:token-type:saml2',
 }
 
+/**
+ * OAuth 2.0 Client Authentication Methods
+ * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.2
+ */
+export enum OAuthClientAssertionType {
+  /** Using JWTs for Client Authentication */
+  JwtBearer = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+}
+
 interface SessionDetails {
   project: Project;
   membership: ProjectMembership;
@@ -571,6 +585,7 @@ interface SessionDetails {
  *  </head>
  */
 export class MedplumClient extends EventTarget {
+  private readonly options: MedplumClientOptions;
   private readonly fetch: FetchLike;
   private readonly createPdfImpl?: CreatePdfFunction;
   private readonly storage: ClientStorage;
@@ -604,6 +619,7 @@ export class MedplumClient extends EventTarget {
       }
     }
 
+    this.options = options ?? {};
     this.fetch = options?.fetch ?? getDefaultFetch();
     this.storage = options?.storage ?? new ClientStorage();
     this.createPdfImpl = options?.createPdf;
@@ -799,9 +815,7 @@ export class MedplumClient extends EventTarget {
    */
   post(url: URL | string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
     url = url.toString();
-    if (body) {
-      this.setRequestBody(options, body);
-    }
+    this.setRequestBody(options, body);
     if (contentType) {
       this.setRequestContentType(options, contentType);
     }
@@ -824,9 +838,7 @@ export class MedplumClient extends EventTarget {
    */
   put(url: URL | string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
     url = url.toString();
-    if (body) {
-      this.setRequestBody(options, body);
-    }
+    this.setRequestBody(options, body);
     if (contentType) {
       this.setRequestContentType(options, contentType);
     }
@@ -2343,7 +2355,7 @@ export class MedplumClient extends EventTarget {
       url = this.fhirUrl(urlString);
     }
     this.addFetchOptionsDefaults(options);
-    const response = await this.fetch(url.toString(), options);
+    const response = await this.fetchWithRetry(url.toString(), options);
     return response.blob();
   }
 
@@ -2532,7 +2544,8 @@ export class MedplumClient extends EventTarget {
     }
 
     const contentLocation = response.headers.get('content-location');
-    if (response.status === 201 && contentLocation && options.redirect === 'follow') {
+    const redirectMode = options.redirect ?? this.options.redirect;
+    if (response.status === 201 && contentLocation && redirectMode === 'follow') {
       // Follow redirect
       return this.request('GET', contentLocation, { ...options, body: undefined });
     }
@@ -2566,7 +2579,13 @@ export class MedplumClient extends EventTarget {
     let response: Response | undefined = undefined;
     for (let retry = 0; retry < maxRetries; retry++) {
       try {
+        if (this.options.verbose) {
+          this.logRequest(url, options);
+        }
         response = (await this.fetch(url, options)) as Response;
+        if (this.options.verbose) {
+          this.logResponse(response);
+        }
         if (response.status < 500) {
           return response;
         }
@@ -2576,6 +2595,24 @@ export class MedplumClient extends EventTarget {
       await sleep(retryDelay);
     }
     return response as Response;
+  }
+
+  private logRequest(url: string, options: RequestInit): void {
+    console.log(`> ${options.method} ${url}`);
+    if (options.headers) {
+      const headers = options.headers as Record<string, string>;
+      const entries = Object.entries(headers).sort((a, b) => a[0].localeCompare(b[0]));
+      for (const [key, value] of entries) {
+        console.log(`> ${key}: ${value}`);
+      }
+    }
+  }
+
+  private logResponse(response: Response): void {
+    console.log(`< ${response.status} ${response.statusText}`);
+    if (response.headers) {
+      response.headers.forEach((value, key) => console.log(`< ${key}: ${value}`));
+    }
   }
 
   private async pollStatus<T>(statusUrl: string): Promise<T> {
@@ -2841,6 +2878,7 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
+   *
    * @category Authentication
    * @param clientId The client ID.
    * @param clientSecret The client secret.
@@ -2867,6 +2905,8 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.1
+   *
+   * @category Authentication
    * @param clientId The client ID.
    * @param assertion The JWT assertion.
    * @param scope The OAuth scope.
@@ -2880,6 +2920,23 @@ export class MedplumClient extends EventTarget {
     formBody.set('client_id', clientId);
     formBody.set('assertion', assertion);
     formBody.set('scope', scope);
+    return this.fetchTokens(formBody);
+  }
+
+  /**
+   * Starts a new OAuth2 JWT assertion flow.
+   *
+   * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.2
+   *
+   * @category Authentication
+   * @param jwt The JWT assertion.
+   * @returns Promise that resolves to the client profile.
+   */
+  async startJwtAssertionLogin(jwt: string): Promise<ProfileResource> {
+    const formBody = new URLSearchParams();
+    formBody.append('grant_type', OAuthGrantType.ClientCredentials);
+    formBody.append('client_assertion_type', OAuthClientAssertionType.JwtBearer);
+    formBody.append('client_assertion', jwt);
     return this.fetchTokens(formBody);
   }
 
@@ -2918,7 +2975,7 @@ export class MedplumClient extends EventTarget {
    * @returns The user profile resource.
    */
   private async fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
-    const options = {
+    const options: RequestInit = {
       method: 'POST',
       headers: { 'Content-Type': ContentType.FORM_URL_ENCODED },
       body: formBody.toString(),
@@ -2930,7 +2987,7 @@ export class MedplumClient extends EventTarget {
       headers['Authorization'] = `Basic ${this.basicAuth}`;
     }
 
-    const response = await this.fetch(this.tokenUrl, options);
+    const response = await this.fetchWithRetry(this.tokenUrl, options);
     if (!response.ok) {
       this.clearActiveLogin();
       try {
