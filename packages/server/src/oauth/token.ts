@@ -436,7 +436,10 @@ async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
  * @param clientAssertion The client assertion JWT.
  * @returns The parsed client ID and secret on success, or an error message on failure.
  */
-async function parseClientAssertion(clientAssertionType: string, clientAssertion: string): Promise<ClientIdAndSecret> {
+async function parseClientAssertion(
+  clientAssertionType: OAuthClientAssertionType,
+  clientAssertion: string
+): Promise<ClientIdAndSecret> {
   if (clientAssertionType !== OAuthClientAssertionType.JwtBearer) {
     return { error: 'Unsupported client assertion type' };
   }
