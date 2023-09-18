@@ -1,7 +1,7 @@
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CopyObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { Binary } from '@medplum/fhirtypes';
-import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
+import { copyFileSync, createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
 import { resolve, sep } from 'path';
 import { pipeline, Readable } from 'stream';
 import { getConfig } from '../config';
@@ -55,6 +55,10 @@ interface BinaryStorage {
   writeFile(key: string, contentType: string | undefined, stream: BinarySource): Promise<void>;
 
   readBinary(binary: Binary): Promise<Readable>;
+
+  copyBinary(sourceBinary: Binary, destinationBinary: Binary): Promise<void>;
+
+  copyFile(sourceKey: string, destinationKey: string): Promise<void>;
 }
 
 /**
@@ -105,6 +109,19 @@ class FileSystemStorage implements BinaryStorage {
       throw new Error('File not found');
     }
     return createReadStream(filePath);
+  }
+
+  async copyBinary(sourceBinary: Binary, destinationBinary: Binary): Promise<void> {
+    await this.copyFile(this.getKey(sourceBinary), this.getKey(destinationBinary));
+  }
+
+  async copyFile(sourceKey: string, destinationKey: string): Promise<void> {
+    const fullDestinationPath = resolve(this.baseDir, destinationKey);
+    const destDir = fullDestinationPath.substring(0, fullDestinationPath.lastIndexOf(sep));
+    if (!existsSync(destDir)) {
+      mkdirSync(destDir, { recursive: true });
+    }
+    copyFileSync(resolve(this.baseDir, sourceKey), resolve(this.baseDir, destinationKey));
   }
 
   private getKey(binary: Binary): string {
@@ -197,6 +214,20 @@ class S3Storage implements BinaryStorage {
       })
     );
     return output.Body as Readable;
+  }
+
+  async copyBinary(sourceBinary: Binary, destinationBinary: Binary): Promise<void> {
+    await this.copyFile(this.getKey(sourceBinary), this.getKey(destinationBinary));
+  }
+
+  async copyFile(sourceKey: string, destinationKey: string): Promise<void> {
+    await this.client.send(
+      new CopyObjectCommand({
+        CopySource: `${this.bucket}/${sourceKey}`,
+        Bucket: this.bucket,
+        Key: destinationKey,
+      })
+    );
   }
 
   private getKey(binary: Binary): string {

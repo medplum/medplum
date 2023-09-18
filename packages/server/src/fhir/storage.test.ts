@@ -1,13 +1,12 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CopyObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { sdkStreamMixin } from '@aws-sdk/util-stream';
+import { ContentType } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { Request } from 'express';
 import fs from 'fs';
 import internal, { Readable } from 'stream';
-
-import { ContentType } from '@medplum/core';
 import { loadTestConfig } from '../config';
 import { getBinaryStorage, initBinaryStorage } from './storage';
 
@@ -198,6 +197,56 @@ describe('Storage', () => {
       expect((err as Error).message).toEqual('File not found');
     }
   });
+
+  test('Copy S3 object', async () => {
+    initBinaryStorage('s3:foo');
+
+    const storage = getBinaryStorage();
+    expect(storage).toBeDefined();
+
+    // Write a file
+    const binary: Binary = {
+      resourceType: 'Binary',
+      id: '123',
+      meta: {
+        versionId: '456',
+      },
+    };
+    const req = new Readable();
+    req.push('foo');
+    req.push(null);
+    (req as any).headers = {};
+
+    const sdkStream = sdkStreamMixin(req);
+    mockS3Client.on(GetObjectCommand).resolves({ Body: sdkStream });
+
+    await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req as Request);
+
+    expect(mockS3Client.send.callCount).toBe(1);
+    expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
+      Bucket: 'foo',
+      Key: 'binary/123/456',
+      ContentType: ContentType.TEXT,
+    });
+    mockS3Client.reset();
+
+    // Copy the object
+    const destinationBinary: Binary = {
+      resourceType: 'Binary',
+      id: '789',
+      meta: {
+        versionId: '012',
+      },
+    };
+    await storage.copyBinary(binary, destinationBinary);
+
+    expect(mockS3Client.send.callCount).toBe(1);
+    expect(mockS3Client).toReceiveCommandWith(CopyObjectCommand, {
+      CopySource: 'foo/binary/123/456',
+      Bucket: 'foo',
+      Key: 'binary/789/012',
+    });
+  });
 });
 
 /**
@@ -206,7 +255,7 @@ describe('Storage', () => {
  * @param stream The readable stream.
  * @returns The string contents.
  */
-function streamToString(stream: internal.Readable): Promise<string> {
+export function streamToString(stream: internal.Readable): Promise<string> {
   const chunks: Buffer[] = [];
   return new Promise((resolve, reject) => {
     stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
