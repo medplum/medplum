@@ -21,7 +21,7 @@ export function FormPage(): JSX.Element {
   const queryParams = Object.fromEntries(new URLSearchParams(location.search).entries()) as Record<string, string>;
   const subjectParam = queryParams.subject;
   const medplum = useMedplum();
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>();
   const [subjectList, setSubjectList] = useState<string[] | undefined>();
   const [subject, setSubject] = useState<Resource | undefined>();

@@ -24,8 +24,8 @@ export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
   const { googleClientId, handleGoogleCredential } = props;
   const parentRef = useRef<HTMLDivElement>(null);
   const [scriptLoaded, setScriptLoaded] = useState<boolean>(typeof google !== 'undefined');
-  const [initialized, setInitialized] = useState<boolean>(false);
-  const [buttonRendered, setButtonRendered] = useState<boolean>(false);
+  const [initialized, setInitialized] = useState(false);
+  const [buttonRendered, setButtonRendered] = useState(false);
 
   useEffect(() => {
     if (typeof google === 'undefined') {
