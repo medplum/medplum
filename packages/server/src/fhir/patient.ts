@@ -74,7 +74,7 @@ export function getPatients(resource: Resource): Reference<Patient>[] {
     }
   }
   return Array.from(result)
-    .sort()
+    .sort((a, b) => a.localeCompare(b))
     .map((reference) => ({ reference }));
 }
 
