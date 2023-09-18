@@ -150,7 +150,7 @@ const useStyles = createStyles((theme) => ({
 export function SearchControl(props: SearchControlProps): JSX.Element {
   const { classes } = useStyles();
   const medplum = useMedplum();
-  const [schemaLoaded, setSchemaLoaded] = useState<boolean>(false);
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { search, onLoad } = props;
 

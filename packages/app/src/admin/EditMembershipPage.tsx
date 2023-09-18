@@ -20,7 +20,7 @@ export function EditMembershipPage(): JSX.Element {
   );
   const [admin, setAdmin] = useState<boolean>(membership.admin);
   const [outcome, setOutcome] = useState<OperationOutcome>();
-  const [success, setSuccess] = useState<boolean>(false);
+  const [success, setSuccess] = useState(false);
 
   function deleteMembership(): void {
     if (window.confirm('Are you sure?')) {
