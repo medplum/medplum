@@ -38,4 +38,4 @@ The Outcome Desc is a description of the results of the bot, including anything 
 
 It is possible that on the `Event` tab, there will not be any `AuditEvent` resources stored in the database. This is likely because the bot is configured to only write to the logs, which allows for large-scale bot execution. 
 
-To ensure that your bot is writing to your app, you can configure your bot using the `Bot.auditEventDestination` field. Setting this field to `resource` will update it so that all events executed by your bot appear in your console. 
+To ensure that your bot is writing to your app, you can configure your bot using the `Bot.auditEventDestination` field. Setting this field to `resource` will update it so that all events executed by your bot appear in your console. For more details see the [Configuring Bot Logging docs](/docs/bots/bots-in-production#configuring-bot-logging).
