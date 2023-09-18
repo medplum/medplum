@@ -817,7 +817,7 @@ describe('QuestionnaireForm', () => {
 
     // Check that the texts for visibleQuestion and question2-string are no longer in the document.
     expect(screen.queryByText(visibleQuestion)).not.toBeInTheDocument();
-    expect(screen.queryByText('visible question 1')).not.toBeInTheDocument();
+    expect(screen.queryByText('visible question 2')).not.toBeInTheDocument();
 
     // Check that the hidden text is now visible.
     expect(screen.getByText(hiddenQuestion)).toBeInTheDocument();
@@ -830,7 +830,7 @@ describe('QuestionnaireForm', () => {
     const updatedVisibleQuestionInput = screen.getByLabelText(visibleQuestion) as HTMLInputElement;
     expect(updatedVisibleQuestionInput.value).toBe('Test Value');
 
-    const updatedQuestion2StringInput = screen.getByLabelText('visible question 1') as HTMLInputElement;
+    const updatedQuestion2StringInput = screen.getByLabelText('visible question 2') as HTMLInputElement;
     expect(updatedQuestion2StringInput.value).toBe('Test Value for Question2-String');
   });
 
