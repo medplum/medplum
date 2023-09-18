@@ -53,9 +53,10 @@ export function getPatientCompartmentParams(resourceType: string): string[] | un
  * @param resource The resource to inspect.
  * @returns The patient ID if found; undefined otherwise.
  */
-export function getPatient(resource: Resource): Reference<Patient> | undefined {
-  if (resource.resourceType === 'Patient') {
-    return resource.id ? createReference(resource) : undefined;
+export function getPatients(resource: Resource): Reference<Patient>[] {
+  const result: Reference<Patient>[] = [];
+  if (resource.resourceType === 'Patient' && resource.id) {
+    result.push(createReference(resource));
   }
   const params = getPatientCompartmentParams(resource.resourceType);
   if (params) {
@@ -66,13 +67,13 @@ export function getPatient(resource: Resource): Reference<Patient> | undefined {
         for (const value of values) {
           const patientId = getPatientFromUnknownValue(value);
           if (patientId) {
-            return patientId;
+            result.push(patientId);
           }
         }
       }
     }
   }
-  return undefined;
+  return result;
 }
 
 /**

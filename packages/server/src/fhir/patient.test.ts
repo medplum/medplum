@@ -1,10 +1,18 @@
-import { Account, CarePlan, ExplanationOfBenefit, Observation, Patient, Reference } from '@medplum/fhirtypes';
+import { isResourceType } from '@medplum/core';
+import {
+  Account,
+  CarePlan,
+  Communication,
+  ExplanationOfBenefit,
+  Observation,
+  Patient,
+  Reference,
+} from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { getPatientCompartmentParams, getPatient, getPatientResourceTypes } from './patient';
-import { systemRepo } from './repo';
-import { isResourceType } from '@medplum/core';
 import { withTestContext } from '../test.setup';
+import { getPatientCompartmentParams, getPatientResourceTypes, getPatients } from './patient';
+import { systemRepo } from './repo';
 
 describe('FHIR Patient utils', () => {
   beforeAll(async () => {
@@ -21,78 +29,94 @@ describe('FHIR Patient utils', () => {
     expect(getPatientCompartmentParams('xxx')).toBeUndefined();
   });
 
-  test('getPatient', () => {
+  test('getPatients', () => {
     expect(
-      getPatient({
+      getPatients({
         resourceType: 'Account',
         subject: [] as Reference[],
       } as Account)
-    ).toBeUndefined();
-    expect(getPatient({ resourceType: 'Account', subject: [{}] } as Account)).toBeUndefined();
+    ).toEqual([]);
+    expect(getPatients({ resourceType: 'Account', subject: [{}] } as Account)).toEqual([]);
     expect(
-      getPatient({
+      getPatients({
         resourceType: 'Account',
         subject: [{ reference: 'Device/123' }],
       } as Account)
-    ).toBeUndefined();
+    ).toEqual([]);
     expect(
-      getPatient({
+      getPatients({
         resourceType: 'Account',
         subject: [{ reference: 'Patient/123' }],
       } as Account)
-    ).toMatchObject({ reference: 'Patient/123' });
+    ).toMatchObject([{ reference: 'Patient/123' }]);
 
-    expect(getPatient({ resourceType: 'Observation' } as Observation)).toBeUndefined();
+    expect(getPatients({ resourceType: 'Observation' } as Observation)).toEqual([]);
     expect(
-      getPatient({
+      getPatients({
         resourceType: 'Observation',
         subject: undefined,
       } as Observation)
-    ).toBeUndefined();
+    ).toEqual([]);
     expect(
-      getPatient({
+      getPatients({
         resourceType: 'Observation',
         subject: 'bad',
       } as Observation)
-    ).toBeUndefined();
+    ).toEqual([]);
     expect(
-      getPatient({
+      getPatients({
         resourceType: 'Observation',
         subject: null,
       } as unknown as Observation)
-    ).toBeUndefined();
-    expect(getPatient({ resourceType: 'Observation', subject: {} } as Observation)).toBeUndefined();
+    ).toEqual([]);
+    expect(getPatients({ resourceType: 'Observation', subject: {} } as Observation)).toEqual([]);
     expect(
-      getPatient({
+      getPatients({
         resourceType: 'Observation',
         subject: { reference: 'Device/123' },
       } as Observation)
-    ).toBeUndefined();
+    ).toEqual([]);
     expect(
-      getPatient({
+      getPatients({
         resourceType: 'Observation',
         subject: { reference: 'Patient/123' },
       } as Observation)
-    ).toMatchObject({ reference: 'Patient/123' });
+    ).toMatchObject([{ reference: 'Patient/123' }]);
 
     expect(
-      getPatient({
+      getPatients({
         resourceType: 'ServiceRequest',
         subject: { reference: 'Patient/123' },
       })
-    ).toMatchObject({ reference: 'Patient/123' });
+    ).toMatchObject([{ reference: 'Patient/123' }]);
 
     expect(
-      getPatient({
+      getPatients({
         resourceType: 'DiagnosticReport',
         subject: { reference: 'Patient/123' },
       })
-    ).toMatchObject({ reference: 'Patient/123' });
+    ).toMatchObject([{ reference: 'Patient/123' }]);
 
-    expect(getPatient({ resourceType: 'Patient' } as Patient)).toBeUndefined();
-    expect(getPatient({ resourceType: 'Patient', id: undefined } as Patient)).toBeUndefined();
-    expect(getPatient({ resourceType: 'Patient', id: null } as unknown as Patient)).toBeUndefined();
-    expect(getPatient({ resourceType: 'Patient', id: '123' } as Patient)).toMatchObject({ reference: 'Patient/123' });
+    expect(getPatients({ resourceType: 'Patient' } as Patient)).toEqual([]);
+    expect(getPatients({ resourceType: 'Patient', id: undefined } as Patient)).toEqual([]);
+    expect(getPatients({ resourceType: 'Patient', id: null } as unknown as Patient)).toEqual([]);
+    expect(getPatients({ resourceType: 'Patient', id: '123' } as Patient)).toMatchObject([
+      { reference: 'Patient/123' },
+    ]);
+  });
+
+  test('Multiple patients', () => {
+    const communication: Communication = {
+      resourceType: 'Communication',
+      subject: { reference: 'Patient/123' },
+      sender: { reference: 'Patient/456' },
+      recipient: [{ reference: 'Patient/789' }],
+    };
+    expect(getPatients(communication)).toMatchObject([
+      { reference: 'Patient/123' },
+      { reference: 'Patient/456' },
+      { reference: 'Patient/789' },
+    ]);
   });
 
   test('Follow search params', () => {
@@ -101,7 +125,7 @@ describe('FHIR Patient utils', () => {
       subject: { reference: 'Patient/123' },
     };
 
-    expect(getPatient(carePlan)).toMatchObject({ reference: 'Patient/123' });
+    expect(getPatients(carePlan)).toMatchObject([{ reference: 'Patient/123' }]);
   });
 
   test('External patient ID', () =>
