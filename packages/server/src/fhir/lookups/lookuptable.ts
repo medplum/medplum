@@ -74,8 +74,8 @@ export abstract class LookupTable<T> {
       } else {
         disjunction.expressions.push(
           new Condition(
-            new Column(joinName, columnName + '_tsv'),
-            Operator.TSVECTOR_MATCH,
+            new Column(joinName, `${columnName}_tsv`),
+            Operator.TSVECTOR_SIMPLE,
             option
               .trim()
               .split(/\s+/)
