@@ -428,9 +428,6 @@ function mergeItemsWithSameLinkId(
     } else if (newItems[i]) {
       // If only a new item exists for the current index, add it to the result.
       result.push(newItems[i]);
-    } else if (prevItems[i]) {
-      // If only an old item exists for the current index, add it to the result.
-      result.push(prevItems[i]);
     }
   }
   return result;
