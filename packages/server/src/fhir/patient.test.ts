@@ -119,6 +119,16 @@ describe('FHIR Patient utils', () => {
     ]);
   });
 
+  test('Duplicate patients', () => {
+    const communication: Communication = {
+      resourceType: 'Communication',
+      subject: { reference: 'Patient/123' },
+      sender: { reference: 'Patient/123' },
+      recipient: [{ reference: 'Patient/789' }],
+    };
+    expect(getPatients(communication)).toMatchObject([{ reference: 'Patient/123' }, { reference: 'Patient/789' }]);
+  });
+
   test('Follow search params', () => {
     const carePlan: CarePlan = {
       resourceType: 'CarePlan',
