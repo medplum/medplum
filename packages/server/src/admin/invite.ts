@@ -14,12 +14,12 @@ import Mail from 'nodemailer/lib/mailer';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProfile, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
+import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { getUserByEmailInProject, getUserByEmailWithoutProject } from '../oauth/utils';
-import { getAuthenticatedContext } from '../context';
 
 export const inviteValidators = [
   body('resourceType').isIn(['Patient', 'Practitioner', 'RelatedPerson']).withMessage('Resource type is required'),
@@ -211,7 +211,7 @@ async function sendInviteEmail(
     options.text = [
       `You were invited to ${request.project.name}`,
       '',
-      `The next time you sign-in, you will see ${request.project.name} as an option.`,
+      `The next time you sign in, you will see ${request.project.name} as an option.`,
       '',
       `You can sign in here: ${getConfig().appBaseUrl}signin`,
       '',
