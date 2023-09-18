@@ -1,12 +1,11 @@
 import {
   capitalize,
   evalFhirPathTyped,
+  getDataType,
   getElementDefinition,
   getElementDefinitionTypeName,
   getResourceTypes,
-  getResourceTypeSchema,
   getSearchParameters,
-  globalSchema,
   isLowerCase,
   isResourceTypeSchema,
   normalizeOperationOutcome,
@@ -57,7 +56,7 @@ export function buildGraphQLOutputType(resourceType: string): GraphQLOutputType 
     });
   }
 
-  const schema = getResourceTypeSchema(resourceType);
+  const schema = getDataType(resourceType);
   return new GraphQLObjectType({
     name: resourceType,
     description: schema.description,
@@ -73,8 +72,7 @@ function buildGraphQLOutputFields(resourceType: ResourceType): GraphQLFieldConfi
 }
 
 function buildOutputPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap<any, any>): void {
-  const schema = getResourceTypeSchema(resourceType);
-  const properties = schema.properties;
+  const schema = getDataType(resourceType);
 
   if (isResourceTypeSchema(schema)) {
     fields.resourceType = {
@@ -91,7 +89,7 @@ function buildOutputPropertyFields(resourceType: string, fields: GraphQLFieldCon
     };
   }
 
-  for (const key of Object.keys(properties)) {
+  for (const key of Object.keys(schema.fields)) {
     const elementDefinition = getElementDefinition(resourceType, key) as ElementDefinition;
     for (const type of elementDefinition.type as ElementDefinitionType[]) {
       buildOutputPropertyField(fields, key, elementDefinition, type);
@@ -120,7 +118,10 @@ function buildOutputPropertyField(
     fieldConfig.args = buildListPropertyFieldArgs(typeName);
   }
 
-  const propertyName = key.replace('[x]', capitalize(elementDefinitionType.code as string));
+  const propertyName = (key.split('.').pop() as string).replace(
+    '[x]',
+    capitalize(elementDefinitionType.code as string)
+  );
   fields[propertyName] = fieldConfig;
 }
 
@@ -157,9 +158,9 @@ function buildListPropertyFieldArgs(fieldTypeName: string): GraphQLFieldConfigAr
     };
 
     // Add all "string" and "code" properties as arguments
-    const fieldTypeSchema = globalSchema.types[fieldTypeName];
-    if (fieldTypeSchema.properties) {
-      for (const fieldKey of Object.keys(fieldTypeSchema.properties)) {
+    const fieldTypeSchema = getDataType(fieldTypeName);
+    if (fieldTypeSchema.fields) {
+      for (const fieldKey of Object.keys(fieldTypeSchema.fields)) {
         const fieldElementDefinition = getElementDefinition(fieldTypeName, fieldKey) as ElementDefinition;
         for (const type of fieldElementDefinition.type as ElementDefinitionType[]) {
           buildListPropertyFieldArg(fieldArgs, fieldKey, fieldElementDefinition, type);

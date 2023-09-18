@@ -1,20 +1,25 @@
 import { readJson } from '@medplum/definitions';
-import { Observation, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, Observation, StructureDefinition } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { TypedValue } from '../types';
 import {
   ElementValidator,
-  getDataType,
   InternalTypeSchema,
-  loadDataTypes,
-  parseStructureDefinition,
   SlicingRules,
+  getDataType,
+  indexStructureDefinitionBundle,
+  parseStructureDefinition,
   subsetResource,
 } from './types';
 import { LOINC } from '../constants';
 
 describe('FHIR resource and data type representations', () => {
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  });
+
   test('Base resource parsing', () => {
     const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'base-patient.json'), 'utf8'));
     const profile = parseStructureDefinition(sd);
@@ -31,7 +36,7 @@ describe('FHIR resource and data type representations', () => {
     const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8'));
     const profile = parseStructureDefinition(sd);
 
-    expect(profile.name).toBe('Observation');
+    expect(profile.name).toBe('USCoreBloodPressureProfile');
     expect(profile.constraints.map((c) => c.key).sort()).toEqual([
       'dom-2',
       'dom-3',
@@ -225,7 +230,6 @@ describe('FHIR resource and data type representations', () => {
   });
 
   test('subsetResource', () => {
-    loadDataTypes(readJson('fhir/r4/profiles-resources.json'));
     const observation: Observation = {
       resourceType: 'Observation',
       id: 'example',

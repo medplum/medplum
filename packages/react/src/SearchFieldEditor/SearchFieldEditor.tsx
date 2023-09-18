@@ -1,5 +1,6 @@
 import { Button, Modal } from '@mantine/core';
-import { globalSchema, SearchRequest, stringify, TypeSchema } from '@medplum/core';
+import { getDataType, getSearchParameters, InternalTypeSchema, SearchRequest, stringify } from '@medplum/core';
+import { SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { buildFieldNameString } from '../SearchControl/SearchUtils';
 
@@ -156,10 +157,11 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
   }
 
   const resourceType = props.search.resourceType;
-  const typeDef = globalSchema.types[resourceType];
+  const typeSchema = getDataType(resourceType);
+  const searchParams = getSearchParameters(resourceType);
 
   const selected = state.search.fields ?? [];
-  const available = getFieldsList(typeDef)
+  const available = getFieldsList(typeSchema, searchParams)
     .filter((field) => !selected.includes(field))
     .sort((a, b) => a.localeCompare(b));
 
@@ -250,23 +252,27 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
  * Returns a list of fields/columns available for a type.
  * The result is the union of properties and search parameters.
  * @param typeSchema The type definition.
+ * @param searchParams The search parameters.
  * @returns A list of fields/columns available for a resource type.
  */
-function getFieldsList(typeSchema: TypeSchema): string[] {
+function getFieldsList(
+  typeSchema: InternalTypeSchema,
+  searchParams: Record<string, SearchParameter> | undefined
+): string[] {
   const result = [] as string[];
   const keys = new Set<string>();
   const names = new Set<string>();
 
   // Add properties first
-  for (const key of Object.keys(typeSchema.properties)) {
+  for (const key of Object.keys(typeSchema.fields)) {
     result.push(key);
     keys.add(key.toLowerCase());
     names.add(buildFieldNameString(key));
   }
 
   // Add search parameters if unique
-  if (typeSchema.searchParams) {
-    for (const code of Object.keys(typeSchema.searchParams)) {
+  if (searchParams) {
+    for (const code of Object.keys(searchParams)) {
       const name = buildFieldNameString(code);
       if (!keys.has(code) && !names.has(name)) {
         result.push(code);

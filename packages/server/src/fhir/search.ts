@@ -11,6 +11,7 @@ import {
   formatSearchQuery,
   getDataType,
   getReferenceString,
+  getSearchParameter,
   getSearchParameterDetails,
   IncludeTarget,
   isResource,
@@ -51,7 +52,6 @@ import {
   SelectQuery,
   Operator as SQL,
 } from './sql';
-import { getSearchParameter } from './structure';
 
 /**
  * Defines the maximum number of resources returned in a single search result.

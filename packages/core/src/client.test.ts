@@ -22,6 +22,7 @@ import {
 } from './client';
 import { ContentType } from './contenttype';
 import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
+import { isDataTypeLoaded } from './typeschema/types';
 import { createReference, ProfileResource } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
@@ -1563,36 +1564,16 @@ describe('Client', () => {
 
   test('Request schema', async () => {
     const fetch = mockFetch(200, schemaResponse);
-    const client = new MedplumClient({ fetch });
-    expect(client.getSchema()).toBeDefined();
-    expect(client.getSchema().types['Patient']).toBeUndefined();
-    const schema = await client.requestSchema('Patient');
-    expect(schema).toBeDefined();
-    expect(schema.types['Patient']).toBeDefined();
-    expect(schema.types['Patient'].searchParams).toBeDefined();
-    const schema2 = await client.requestSchema('Patient');
-    expect(schema2).toBe(schema);
-  });
-
-  test('Get cached schema', async () => {
-    const fetch = mockFetch(200, schemaResponse);
 
     const client = new MedplumClient({ fetch });
 
     // Issue two requests simultaneously
     const request1 = client.requestSchema('Patient');
     const request2 = client.requestSchema('Patient');
+    expect(request2).toBe(request1);
 
-    const schema1 = await request1;
-    expect(schema1).toBeDefined();
-    expect(schema1.types['Patient']).toBeDefined();
-
-    const schema2 = await request2;
-    expect(schema2).toBeDefined();
-    expect(schema2).toEqual(schema1);
-
-    const schema3 = await client.requestSchema('Patient');
-    expect(schema3).toEqual(schema1);
+    await request1;
+    expect(isDataTypeLoaded('Patient')).toBe(true);
   });
 
   test('Search', async () => {

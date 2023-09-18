@@ -1,8 +1,8 @@
 import {
   capitalize,
+  getDataType,
   getElementDefinition,
   getElementDefinitionTypeName,
-  getResourceTypeSchema,
   isResourceType,
 } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, ResourceType } from '@medplum/fhirtypes';
@@ -32,7 +32,7 @@ export function getGraphQLInputType(inputType: string, nameSuffix: string): Grap
 }
 
 function buildGraphQLInputType(resourceType: string, nameSuffix: string): GraphQLInputType {
-  const schema = getResourceTypeSchema(resourceType);
+  const schema = getDataType(resourceType);
   return new GraphQLInputObjectType({
     name: resourceType + nameSuffix,
     description: schema.description,
@@ -57,9 +57,8 @@ function buildGraphQLInputFields(resourceType: ResourceType, nameSuffix: string)
 }
 
 function buildInputPropertyFields(resourceType: string, fields: GraphQLInputFieldConfigMap, nameSuffix: string): void {
-  const schema = getResourceTypeSchema(resourceType);
-  const properties = schema.properties;
-  for (const key of Object.keys(properties)) {
+  const schema = getDataType(resourceType);
+  for (const key of Object.keys(schema.fields)) {
     const elementDefinition = getElementDefinition(resourceType, key) as ElementDefinition;
     for (const type of elementDefinition.type as ElementDefinitionType[]) {
       buildInputPropertyField(fields, key, elementDefinition, type, nameSuffix);
@@ -91,6 +90,9 @@ function buildInputPropertyField(
     fieldConfig.type = new GraphQLNonNull(fieldConfig.type);
   }
 
-  const propertyName = key.replace('[x]', capitalize(elementDefinitionType.code as string));
+  const propertyName = (key.split('.').pop() as string).replace(
+    '[x]',
+    capitalize(elementDefinitionType.code as string)
+  );
   fields[propertyName] = fieldConfig;
 }

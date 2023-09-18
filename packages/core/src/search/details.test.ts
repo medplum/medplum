@@ -1,6 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { globalSchema, indexStructureDefinitionBundle } from '../types';
+import { globalSchema, indexSearchParameterBundle } from '../types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { getSearchParameterDetails, SearchParameterType } from './details';
 
 const searchParamsBundle = readJson('fhir/r4/search-parameters.json');
@@ -15,6 +16,8 @@ describe('SearchParameterDetails', () => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+    indexSearchParameterBundle(searchParamsBundle);
+    indexSearchParameterBundle(medplumSearchParamsBundle);
   });
 
   test('Get details', () => {

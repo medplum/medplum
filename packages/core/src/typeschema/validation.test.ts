@@ -22,9 +22,8 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { ContentType } from '../contenttype';
 import { OperationOutcomeError } from '../outcomes';
-import { indexStructureDefinitionBundle } from '../types';
 import { createReference } from '../utils';
-import { loadDataTypes } from './types';
+import { indexStructureDefinitionBundle } from './types';
 import { validate } from './validation';
 import { LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 
@@ -34,15 +33,9 @@ describe('FHIR resource validation', () => {
 
   beforeAll(() => {
     console.log = jest.fn();
-    const typesData = readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>;
-    const resourcesData = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
-    const medplumResourcesData = readJson('fhir/r4/profiles-medplum.json') as Bundle<StructureDefinition>;
-    indexStructureDefinitionBundle(typesData);
-    indexStructureDefinitionBundle(resourcesData);
-    indexStructureDefinitionBundle(medplumResourcesData);
-    loadDataTypes(typesData);
-    loadDataTypes(resourcesData);
-    loadDataTypes(medplumResourcesData);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
 
     observationProfile = JSON.parse(
       readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8')

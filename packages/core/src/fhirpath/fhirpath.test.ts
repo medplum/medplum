@@ -1,6 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle } from '@medplum/fhirtypes';
-import { indexStructureDefinitionBundle } from '../types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { evalFhirPath } from './parse';
 import { LOINC, SNOMED, UCUM } from '../constants';
 

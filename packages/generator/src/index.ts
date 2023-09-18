@@ -1,11 +1,11 @@
 import {
   buildTypeName,
   capitalize,
-  globalSchema,
+  getAllDataTypes,
   indexStructureDefinitionBundle,
+  InternalTypeSchema,
   isLowerCase,
   isResourceTypeSchema,
-  TypeSchema,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, ElementDefinition, ElementDefinitionType } from '@medplum/fhirtypes';
@@ -14,25 +14,17 @@ import { resolve } from 'path';
 import { FileBuilder, wordWrap } from './filebuilder';
 import { getValueSetValues } from './valuesets';
 
-const subTypesMap = new Map<string, TypeSchema[]>();
-
 export function main(): void {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-
-  for (const fhirType of Object.values(globalSchema.types)) {
-    if (fhirType.parentType) {
-      subTypesMap.set(fhirType.parentType, [...(subTypesMap.get(fhirType.parentType) || []), fhirType]);
-    }
-  }
 
   mkdirSync(resolve(__dirname, '../../fhirtypes/dist'), { recursive: true });
   writeIndexFile();
   writeResourceFile();
   writeResourceTypeFile();
 
-  for (const type of Object.values(globalSchema.types)) {
+  for (const type of Object.values(getAllDataTypes())) {
     if (isResourceTypeSchema(type)) {
       writeInterfaceFile(type);
     }
@@ -40,11 +32,9 @@ export function main(): void {
 }
 
 function writeIndexFile(): void {
-  const names = Object.values(globalSchema.types)
-    .filter(
-      (t) => t.structureDefinition.name !== 'DomainResource' && !t.parentType && !isLowerCase(t.display.charAt(0))
-    )
-    .map((t) => t.structureDefinition.name as string);
+  const names = Object.values(getAllDataTypes())
+    .filter((t) => t.name !== 'DomainResource' && !t.parentType && !isLowerCase(t.name.charAt(0)))
+    .map((t) => t.name as string);
   names.push('ResourceType');
   names.sort();
 
@@ -56,9 +46,9 @@ function writeIndexFile(): void {
 }
 
 function writeResourceFile(): void {
-  const names = Object.values(globalSchema.types)
+  const names = Object.values(getAllDataTypes())
     .filter(isResourceTypeSchema)
-    .map((t) => t.structureDefinition.name as string)
+    .map((t) => t.name as string)
     .sort();
 
   const b = new FileBuilder();
@@ -88,8 +78,8 @@ function writeResourceTypeFile(): void {
   writeFileSync(resolve(__dirname, '../../fhirtypes/dist/ResourceType.d.ts'), b.toString(), 'utf8');
 }
 
-function writeInterfaceFile(fhirType: TypeSchema): void {
-  if (Object.values(fhirType.properties).length === 0) {
+function writeInterfaceFile(fhirType: InternalTypeSchema): void {
+  if (Object.values(fhirType.fields).length === 0) {
     return;
   }
 
@@ -105,39 +95,35 @@ function writeInterfaceFile(fhirType: TypeSchema): void {
   }
 
   writeInterface(b, fhirType);
-  writeFileSync(
-    resolve(__dirname, '../../fhirtypes/dist/' + fhirType.structureDefinition.name + '.d.ts'),
-    b.toString(),
-    'utf8'
-  );
+  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/' + fhirType.name + '.d.ts'), b.toString(), 'utf8');
 }
 
-function writeInterface(b: FileBuilder, fhirType: TypeSchema): void {
-  if (Object.values(fhirType.properties).length === 0) {
+function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema): void {
+  if (Object.values(fhirType.fields).length === 0) {
     return;
   }
 
-  const typeName = buildTypeName((fhirType.elementDefinition.path as string).split('.'));
+  const typeName = fhirType.name;
   const genericTypes = ['Bundle', 'BundleEntry', 'Reference'];
   const genericModifier = genericTypes.includes(typeName) ? '<T extends Resource = Resource>' : '';
 
   b.newLine();
-  generateJavadoc(b, fhirType.elementDefinition.definition);
+  generateJavadoc(b, fhirType.description);
   b.append('export interface ' + typeName + genericModifier + ' {');
   b.indentCount++;
 
-  if (isResourceTypeSchema(fhirType)) {
+  if (fhirType.kind === 'resource') {
     b.newLine();
     generateJavadoc(b, `This is a ${typeName} resource`);
     b.append(`readonly resourceType: '${typeName}';`);
   }
 
-  for (const property of Object.values(fhirType.properties)) {
-    if (property.max === '0') {
+  for (const property of Object.values(fhirType.fields)) {
+    if (property.max === 0) {
       continue;
     }
     b.newLine();
-    writeInterfaceProperty(b, fhirType, property);
+    writeInterfaceProperty(b, fhirType, property.elementDefinition);
   }
 
   if (typeName === 'Reference') {
@@ -149,9 +135,9 @@ function writeInterface(b: FileBuilder, fhirType: TypeSchema): void {
   b.indentCount--;
   b.append('}');
 
-  const subTypes = subTypesMap.get(typeName);
+  const subTypes = fhirType.innerTypes;
   if (subTypes) {
-    subTypes.sort((t1, t2) => (t1.elementDefinition.path as string).localeCompare(t2.elementDefinition.path as string));
+    subTypes.sort((t1, t2) => t1.name.localeCompare(t2.name));
 
     for (const subType of subTypes) {
       writeInterface(b, subType);
@@ -159,7 +145,7 @@ function writeInterface(b: FileBuilder, fhirType: TypeSchema): void {
   }
 }
 
-function writeInterfaceProperty(b: FileBuilder, fhirType: TypeSchema, property: ElementDefinition): void {
+function writeInterfaceProperty(b: FileBuilder, fhirType: InternalTypeSchema, property: ElementDefinition): void {
   for (const typeScriptProperty of getTypeScriptProperties(property)) {
     b.newLine();
     generateJavadoc(b, property.definition);
@@ -167,17 +153,17 @@ function writeInterfaceProperty(b: FileBuilder, fhirType: TypeSchema, property: 
   }
 }
 
-function buildImports(fhirType: TypeSchema, includedTypes: Set<string>, referencedTypes: Set<string>): void {
-  const typeName = buildTypeName((fhirType.elementDefinition.path as string).split('.'));
+function buildImports(fhirType: InternalTypeSchema, includedTypes: Set<string>, referencedTypes: Set<string>): void {
+  const typeName = fhirType.name;
   includedTypes.add(typeName);
 
-  for (const property of Object.values(fhirType.properties)) {
-    for (const typeScriptProperty of getTypeScriptProperties(property)) {
+  for (const property of Object.values(fhirType.fields)) {
+    for (const typeScriptProperty of getTypeScriptProperties(property.elementDefinition)) {
       cleanReferencedType(typeScriptProperty.typeName).forEach((cleanName) => referencedTypes.add(cleanName));
     }
   }
 
-  const subTypes = subTypesMap.get(typeName);
+  const subTypes = fhirType.innerTypes;
   if (subTypes) {
     for (const subType of subTypes) {
       buildImports(subType, includedTypes, referencedTypes);

@@ -50,7 +50,8 @@ import {
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
-import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
+import { indexSearchParameter } from './types';
+import { indexStructureDefinitionBundle, isDataTypeLoaded } from './typeschema/types';
 import { arrayBufferToBase64, CodeChallengeMethod, createReference, ProfileResource, sleep } from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
@@ -1442,27 +1443,15 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * Returns a cached schema for a resource type.
-   * If the schema is not cached, returns undefined.
-   * It is assumed that a client will call requestSchema before using this method.
-   * @category Schema
-   * @returns The schema if immediately available, undefined otherwise.
-   * @deprecated Use globalSchema instead.
-   */
-  getSchema(): IndexedStructureDefinition {
-    return globalSchema;
-  }
-
-  /**
    * Requests the schema for a resource type.
    * If the schema is already cached, the promise is resolved immediately.
    * @category Schema
    * @param resourceType The FHIR resource type.
    * @returns Promise to a schema with the requested resource type.
    */
-  requestSchema(resourceType: string): Promise<IndexedStructureDefinition> {
-    if (resourceType in globalSchema.types) {
-      return Promise.resolve(globalSchema);
+  requestSchema(resourceType: string): Promise<void> {
+    if (isDataTypeLoaded(resourceType)) {
+      return Promise.resolve();
     }
 
     const cacheKey = resourceType + '-requestSchema';
@@ -1471,11 +1460,12 @@ export class MedplumClient extends EventTarget {
       return cached.value;
     }
 
-    const promise = new ReadablePromise<IndexedStructureDefinition>(
+    const promise = new ReadablePromise<void>(
       (async () => {
         const query = `{
       StructureDefinitionList(name: "${resourceType}") {
         name,
+        kind,
         description,
         snapshot {
           element {
@@ -1505,15 +1495,11 @@ export class MedplumClient extends EventTarget {
 
         const response = (await this.graphql(query)) as SchemaGraphQLResponse;
 
-        for (const structureDefinition of response.data.StructureDefinitionList) {
-          indexStructureDefinition(structureDefinition);
-        }
+        indexStructureDefinitionBundle(response.data.StructureDefinitionList);
 
         for (const searchParameter of response.data.SearchParameterList) {
           indexSearchParameter(searchParameter);
         }
-
-        return globalSchema;
       })()
     );
     this.setCacheEntry(cacheKey, promise);

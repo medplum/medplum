@@ -3,7 +3,7 @@ import {
   badRequest,
   ContentType,
   getStatus,
-  indexStructureDefinition,
+  loadDataType,
   LoginState,
   MedplumClient,
   MedplumClientOptions,
@@ -504,7 +504,8 @@ class MockFetchClient {
     }
 
     for (const structureDefinition of StructureDefinitionList as StructureDefinition[]) {
-      indexStructureDefinition(structureDefinition);
+      structureDefinition.kind = 'resource';
+      loadDataType(structureDefinition);
       await this.repo.createResource(structureDefinition);
     }
 

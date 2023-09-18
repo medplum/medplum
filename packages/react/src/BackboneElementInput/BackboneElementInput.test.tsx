@@ -91,7 +91,7 @@ describe('BackboneElementInput', () => {
     await medplum.requestSchema('ValueSet');
     await setup({ typeName: 'ValueSetCompose' });
     expect(screen.getByText('Locked Date')).toBeInTheDocument();
-    expect(screen.queryByText('Exclude')).toBeNull();
+    expect(screen.getByText('Exclude')).toBeInTheDocument();
   });
 
   test('Not implemented', async () => {

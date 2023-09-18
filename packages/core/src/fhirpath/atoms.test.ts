@@ -1,7 +1,8 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, Observation } from '@medplum/fhirtypes';
 import { AtomContext } from '../fhirlexer/parse';
-import { indexStructureDefinitionBundle, PropertyType } from '../types';
+import { PropertyType } from '../types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { LiteralAtom, SymbolAtom } from './atoms';
 import { evalFhirPath, parseFhirPath } from './parse';
 

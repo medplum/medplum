@@ -1,7 +1,7 @@
 import { Bundle, Coding, ElementDefinition, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, serverError } from '../outcomes';
-import { getElementDefinitionTypeName, TypedValue } from '../types';
+import { getElementDefinitionTypeName, isResourceTypeSchema, TypedValue } from '../types';
 import { capitalize, isEmpty } from '../utils';
 
 /**
@@ -9,14 +9,19 @@ import { capitalize, isEmpty } from '../utils';
  */
 export interface InternalTypeSchema {
   name: string;
+  url?: string;
+  kind?: string;
+  description?: string;
   fields: Record<string, ElementValidator>;
   constraints: Constraint[];
+  parentType?: InternalTypeSchema;
   innerTypes: InternalTypeSchema[];
   summaryProperties?: Set<string>;
   mandatoryProperties?: Set<string>;
 }
 
 export interface ElementValidator {
+  elementDefinition: ElementDefinition;
   min: number;
   max: number;
   isArray: boolean;
@@ -73,20 +78,38 @@ export function parseStructureDefinition(sd: StructureDefinition): InternalTypeS
 
 const DATA_TYPES: Record<string, InternalTypeSchema> = Object.create(null);
 
-export function loadDataTypes(bundle: Bundle<StructureDefinition>): void {
-  for (const { resource: sd } of bundle.entry ?? []) {
-    if (!sd?.name) {
-      throw new Error(`Failed loading StructureDefinition from bundle`);
-    }
-    if (sd.resourceType !== 'StructureDefinition') {
-      continue;
-    }
-    const schema = parseStructureDefinition(sd);
-    DATA_TYPES[sd.name] = schema;
-    for (const inner of schema.innerTypes) {
-      DATA_TYPES[inner.name] = inner;
-    }
+export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | Bundle): void {
+  const sds = Array.isArray(bundle) ? bundle : bundle.entry?.map((e) => e.resource as StructureDefinition) ?? [];
+  for (const sd of sds) {
+    loadDataType(sd);
   }
+}
+
+export function loadDataType(sd: StructureDefinition): void {
+  if (!sd?.name) {
+    throw new Error(`Failed loading StructureDefinition from bundle`);
+  }
+  if (sd.resourceType !== 'StructureDefinition') {
+    return;
+  }
+  const schema = parseStructureDefinition(sd);
+  DATA_TYPES[sd.name] = schema;
+  for (const inner of schema.innerTypes) {
+    inner.parentType = schema;
+    DATA_TYPES[inner.name] = inner;
+  }
+}
+
+export function getAllDataTypes(): Record<string, InternalTypeSchema> {
+  return DATA_TYPES;
+}
+
+export function isDataTypeLoaded(type: string): boolean {
+  return !!DATA_TYPES[type];
+}
+
+export function tryGetDataType(type: string): InternalTypeSchema | undefined {
+  return DATA_TYPES[type];
 }
 
 export function getDataType(type: string): InternalTypeSchema {
@@ -95,6 +118,22 @@ export function getDataType(type: string): InternalTypeSchema {
     throw new OperationOutcomeError(serverError(Error('Unknown data type: ' + type)));
   }
   return schema;
+}
+
+/**
+ * Returns true if the given string is a valid FHIR resource type.
+ *
+ * ```ts
+ * isResourceType('Patient'); // true
+ * isResourceType('XYZ'); // false
+ * ```
+ *
+ * @param resourceType The candidate resource type string.
+ * @returns True if the resource type is a valid FHIR resource type.
+ */
+export function isResourceType(resourceType: string): boolean {
+  const typeSchema = DATA_TYPES[resourceType];
+  return typeSchema && isResourceTypeSchema(typeSchema);
 }
 
 interface BackboneContext {
@@ -130,7 +169,10 @@ class StructureDefinitionParser {
     this.elementIndex = Object.create(null);
     this.index = 0;
     this.resourceSchema = {
-      name: sd.type as ResourceType,
+      name: sd.name as ResourceType,
+      url: sd.url as string,
+      kind: sd.kind,
+      description: sd.description,
       fields: {},
       constraints: this.parseFieldDefinition(this.root).constraints,
       innerTypes: [],
@@ -207,6 +249,7 @@ class StructureDefinitionParser {
       this.backboneContext = {
         type: {
           name: getElementDefinitionTypeName(element),
+          description: element.definition,
           fields: {},
           constraints: this.parseFieldDefinition(element).constraints,
           innerTypes: [],
@@ -287,6 +330,8 @@ class StructureDefinitionParser {
           path: element.path,
           min: element.min ?? ref.min,
           max: element.max ?? ref.max,
+          contentReference: element.contentReference,
+          definition: element.definition,
         };
       }
       return element;
@@ -323,6 +368,7 @@ class StructureDefinitionParser {
     const baseMax = ed.base?.max ? parseCardinality(ed.base.max) : max;
     const typedElementDef = { type: 'ElementDefinition', value: ed };
     return {
+      elementDefinition: ed,
       min: ed.min ?? 0,
       max: max,
       isArray: baseMax > 1,

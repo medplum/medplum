@@ -1,11 +1,5 @@
 import { Anchor, Button, Group, Stack, Stepper, Title } from '@mantine/core';
-import {
-  IndexedStructureDefinition,
-  ProfileResource,
-  createReference,
-  getExtension,
-  getReferenceString,
-} from '@medplum/core';
+import { ProfileResource, createReference, getExtension, getReferenceString } from '@medplum/core';
 import {
   Questionnaire,
   QuestionnaireItem,
@@ -33,7 +27,7 @@ export interface QuestionnaireFormProps {
 export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | null {
   const medplum = useMedplum();
   const source = medplum.getProfile();
-  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
   const questionnaire = useResource(props.questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [activePage, setActivePage] = useState(0);
@@ -46,7 +40,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     medplum
       .requestSchema('Questionnaire')
       .then(() => medplum.requestSchema('QuestionnaireResponse'))
-      .then(setSchema)
+      .then(() => setSchemaLoaded(true))
       .catch(console.log);
   }, [medplum]);
 
@@ -66,7 +60,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     setResponse(newResponse);
   }
 
-  if (!schema || !questionnaire) {
+  if (!schemaLoaded || !questionnaire) {
     return null;
   }
 

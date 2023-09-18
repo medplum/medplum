@@ -1,13 +1,13 @@
 import { Stack } from '@mantine/core';
-import { getPropertyDisplayName, globalSchema } from '@medplum/core';
+import { getPropertyDisplayName, tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
-import { DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { FormSection } from '../FormSection/FormSection';
 import { setPropertyValue } from '../ResourceForm/ResourceForm';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
+import { DEFAULT_IGNORED_PROPERTIES } from '../constants';
 
 export interface BackboneElementInputProps {
   typeName: string;
@@ -27,7 +27,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   }
 
   const typeName = props.typeName;
-  const typeSchema = globalSchema.types[typeName];
+  const typeSchema = tryGetDataType(typeName);
   if (!typeSchema) {
     return <div>{typeName}&nbsp;not implemented</div>;
   }
@@ -36,12 +36,12 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
 
   return (
     <Stack>
-      {Object.entries(typeSchema.properties).map((entry) => {
+      {Object.entries(typeSchema.fields).map((entry) => {
         const key = entry[0];
         if (key === 'id' || DEFAULT_IGNORED_PROPERTIES.includes(key)) {
           return null;
         }
-        const property = entry[1];
+        const property = entry[1].elementDefinition;
         if (!property.type) {
           return null;
         }
@@ -64,7 +64,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
                 defaultPropertyType={propertyType}
                 outcome={props.outcome}
                 onChange={(newValue: any, propName?: string) => {
-                  setValueWrapper(setPropertyValue(value, key, propName ?? key, entry[1], newValue));
+                  setValueWrapper(setPropertyValue(value, key, propName ?? key, property, newValue));
                 }}
               />
             </CheckboxFormSection>
@@ -86,7 +86,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
               defaultValue={propertyValue}
               defaultPropertyType={propertyType}
               onChange={(newValue: any, propName?: string) => {
-                setValueWrapper(setPropertyValue(value, key, propName ?? key, entry[1], newValue));
+                setValueWrapper(setPropertyValue(value, key, propName ?? key, property, newValue));
               }}
             />
           </FormSection>

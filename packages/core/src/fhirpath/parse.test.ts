@@ -8,7 +8,8 @@ import {
   SearchParameter,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { indexStructureDefinitionBundle, PropertyType } from '../types';
+import { PropertyType } from '../types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { evalFhirPath, evalFhirPathTyped, parseFhirPath } from './parse';
 import { toTypedValue } from './utils';
 

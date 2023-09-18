@@ -1,5 +1,5 @@
 import { Anchor, Button, createStyles, NativeSelect, Stack, TextInput } from '@mantine/core';
-import { getReferenceString, IndexedStructureDefinition, PropertyType } from '@medplum/core';
+import { getReferenceString, PropertyType } from '@medplum/core';
 import { ElementDefinition, PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
@@ -52,7 +52,7 @@ export interface PlanDefinitionBuilderProps {
 export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.Element | null {
   const medplum = useMedplum();
   const defaultValue = useResource(props.value);
-  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>(undefined);
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string>();
   const [hoverKey, setHoverKey] = useState<string>();
   const [value, setValue] = useState<PlanDefinition>();
@@ -69,7 +69,10 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
   valueRef.current = value;
 
   useEffect(() => {
-    medplum.requestSchema('PlanDefinition').then(setSchema).catch(console.log);
+    medplum
+      .requestSchema('PlanDefinition')
+      .then(() => setSchemaLoaded(true))
+      .catch(console.log);
   }, [medplum]);
 
   useEffect(() => {
@@ -82,7 +85,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
     };
   }, [defaultValue]);
 
-  if (!schema || !value) {
+  if (!schemaLoaded || !value) {
     return null;
   }
 

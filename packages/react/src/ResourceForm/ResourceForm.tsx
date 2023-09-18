@@ -1,5 +1,5 @@
 import { Button, Group, Stack, TextInput } from '@mantine/core';
-import { capitalize, deepClone, IndexedStructureDefinition } from '@medplum/core';
+import { capitalize, deepClone } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
@@ -17,17 +17,20 @@ export interface ResourceFormProps {
 export function ResourceForm(props: ResourceFormProps): JSX.Element {
   const medplum = useMedplum();
   const defaultValue = useResource(props.defaultValue);
-  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
   const [value, setValue] = useState<Resource | undefined>();
 
   useEffect(() => {
     if (defaultValue) {
       setValue(deepClone(defaultValue));
-      medplum.requestSchema(defaultValue.resourceType).then(setSchema).catch(console.log);
+      medplum
+        .requestSchema(defaultValue.resourceType)
+        .then(() => setSchemaLoaded(true))
+        .catch(console.log);
     }
   }, [medplum, defaultValue]);
 
-  if (!schema || !value) {
+  if (!schemaLoaded || !value) {
     return <div>Loading...</div>;
   }
 
