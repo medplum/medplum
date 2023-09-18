@@ -5,8 +5,8 @@ import { SignJWT } from 'jose';
 import fetch from 'node-fetch';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<Patient | undefined> {
-  const privateKeyString = event.secrets['EPIC_PRIVATE_KEY'] as string;
-  const clientId = event.secrets['EPIC_CLIENT_ID'] as string;
+  const privateKeyString = event.secrets['EPIC_PRIVATE_KEY'].valueString;
+  const clientId = event.secrets['EPIC_CLIENT_ID'].valueString;
   if (!privateKeyString || !clientId) {
     return undefined;
   }
