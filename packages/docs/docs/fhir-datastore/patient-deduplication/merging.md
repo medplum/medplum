@@ -1,8 +1,6 @@
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
-import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/patient-deduplication/merging.ts';
+import ExampleCode from '!!raw-loader!@site/../../examples/medplum-demo-bots/src/deduplication/merge-matching-patients.ts';
 
 # Merging {#merge-rules}
 

@@ -109,6 +109,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   await medplum.updateResource<Patient>(mergedPatients.target);
 }
 
+// start-block linkPatientRecords
 interface MergedPatients {
   readonly src: Patient;
   readonly target: Patient;
@@ -132,6 +133,9 @@ export function linkPatientRecords(src: Patient, target: Patient): MergedPatient
   return { src: { ...srcCopy, link: srcLinks, active: false }, target: { ...targetCopy, link: targetLinks } };
 }
 
+// end-block linkPatientRecords
+
+// start-block mergeIdentifiers
 /**
  * Merges contact information (identifiers) of two patient records, where the source patient record will be marked as
  * an old record. The target patient record will be overwritten with the merged data and will be the master record.
@@ -165,7 +169,9 @@ export function mergePatientRecords(src: Patient, target: Patient, fields?: Part
   const targetMerged = { ...targetCopy, ...fields };
   return { src: src, target: targetMerged };
 }
+// end-block mergeIdentifiers
 
+// start-block updateReferences
 /**
  * Rewrites all references to source patient to the target patient, for the given resource type.
  *
@@ -210,7 +216,9 @@ function replaceReferences(obj: any, srcReference: string, targetReference: stri
     }
   }
 }
+// end-block updateReferences
 
+// start-block doNotMatch
 /**
  * Adds a patient to the 'doNotMatch' list for a given patient list.
  *
@@ -237,3 +245,4 @@ async function addToDoNotMatchList(
   }
   console.warn('No doNotMatch list found for patient: ' + subject.reference);
 }
+// end-block doNotMatch
