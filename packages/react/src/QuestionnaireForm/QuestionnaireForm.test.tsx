@@ -751,6 +751,11 @@ describe('QuestionnaireForm', () => {
                 text: visibleQuestion,
                 type: 'string',
               },
+              {
+                linkId: 'question2-string',
+                text: 'visible question 2',
+                type: 'string',
+              },
             ],
             extension: [
               {
@@ -795,24 +800,38 @@ describe('QuestionnaireForm', () => {
       },
       onSubmit: jest.fn(),
     });
-    // The form should render
-    expect(screen.getByText(visibleQuestion)).toBeInTheDocument();
 
-    // The hidden text should be hidden
-    expect(screen.queryByText(hiddenQuestion)).not.toBeInTheDocument();
+    const visibleQuestionInput = screen.getByLabelText(visibleQuestion);
+    fireEvent.change(visibleQuestionInput, { target: { value: 'Test Value' } });
+
+    expect((visibleQuestionInput as HTMLInputElement).value).toBe('Test Value');
+
+    const question2StringInput = screen.getByLabelText('visible question 2');
+    fireEvent.change(question2StringInput, { target: { value: 'Test Value for Question2-String' } });
+
+    expect((question2StringInput as HTMLInputElement).value).toBe('Test Value for Question2-String');
 
     await act(async () => {
       fireEvent.click(screen.getByText('Next'));
     });
 
+    // Check that the texts for visibleQuestion and question2-string are no longer in the document.
     expect(screen.queryByText(visibleQuestion)).not.toBeInTheDocument();
+    expect(screen.queryByText('visible question 1')).not.toBeInTheDocument();
 
-    // The hidden text should now be visible
+    // Check that the hidden text is now visible.
     expect(screen.getByText(hiddenQuestion)).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Back'));
     });
+
+    // Check that the values in the visibleQuestion and question2-string inputs are still the same.
+    const updatedVisibleQuestionInput = screen.getByLabelText(visibleQuestion) as HTMLInputElement;
+    expect(updatedVisibleQuestionInput.value).toBe('Test Value');
+
+    const updatedQuestion2StringInput = screen.getByLabelText('visible question 1') as HTMLInputElement;
+    expect(updatedQuestion2StringInput.value).toBe('Test Value for Question2-String');
   });
 
   test('Page Sequence with non page items in root', async () => {
@@ -1083,6 +1102,13 @@ describe('QuestionnaireForm', () => {
             text: 'Group',
             type: 'group',
             repeats: true,
+            item: [
+              {
+                linkId: 'question2',
+                text: 'Question 2',
+                type: 'string',
+              },
+            ],
           },
         ],
       },
@@ -1096,5 +1122,9 @@ describe('QuestionnaireForm', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Add Group'));
     });
+
+    expect(screen.getAllByText('Group').length).toBe(2);
+
+    expect(screen.getAllByText('Question 2').length).toBe(2);
   });
 });
