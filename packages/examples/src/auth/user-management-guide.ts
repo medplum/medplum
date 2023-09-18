@@ -8,7 +8,6 @@ const medplum = new MedplumClient();
 await medplum.searchResources('ProjectMembership');
 // end-block searchProjectMembershipTs
 
-
 /*
 // start-block searchProjectMembershipCli
 medplum get 'ProjectMembership'
