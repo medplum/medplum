@@ -10,7 +10,7 @@ import {
   parseFhirPath,
   UnionAtom,
 } from '../fhirpath';
-import { buildTypeName, getElementDefinition, globalSchema, PropertyType } from '../types';
+import { getElementDefinition, getElementDefinitionTypeName, globalSchema, PropertyType } from '../types';
 import { capitalize } from '../utils';
 
 export enum SearchParameterType {
@@ -150,7 +150,7 @@ function crawlSearchParameterDetails(
   for (const elementDefinitionType of elementDefinition.type as ElementDefinitionType[]) {
     let propertyType = elementDefinitionType.code as string;
     if (isBackboneElement(propertyType)) {
-      propertyType = buildTypeName(elementDefinition.path?.split('.') as string[]);
+      propertyType = getElementDefinitionTypeName(elementDefinition);
     }
     crawlSearchParameterDetails(details, atoms, propertyType, nextIndex);
   }

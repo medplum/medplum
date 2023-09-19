@@ -1,5 +1,5 @@
 import { Coding, ElementDefinition, Period, Quantity } from '@medplum/fhirtypes';
-import { PropertyType, TypedValue, buildTypeName, getElementDefinition, isResource } from '../types';
+import { getElementDefinition, getElementDefinitionTypeName, isResource, PropertyType, TypedValue } from '../types';
 import { capitalize, isEmpty } from '../utils';
 
 /**
@@ -127,7 +127,7 @@ function getTypedPropertyValueWithSchema(
   }
 
   if (resultType === 'Element' || resultType === 'BackboneElement') {
-    resultType = buildTypeName(property.path?.split('.') as string[]);
+    resultType = getElementDefinitionTypeName(property);
   }
 
   if (Array.isArray(resultValue)) {

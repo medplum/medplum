@@ -321,7 +321,7 @@ export function indexSearchParameter(searchParam: SearchParameter): void {
 export function getElementDefinitionTypeName(elementDefinition: ElementDefinition): string {
   const code = elementDefinition.type?.[0]?.code as string;
   return code === 'BackboneElement' || code === 'Element'
-    ? buildTypeName(elementDefinition.path?.split('.') as string[])
+    ? buildTypeName((elementDefinition.base?.path ?? elementDefinition.path)?.split('.') as string[])
     : code;
 }
 

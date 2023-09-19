@@ -1,7 +1,7 @@
-import { Bundle, ElementDefinition, ResourceType, StructureDefinition, Resource, Coding } from '@medplum/fhirtypes';
+import { Bundle, Coding, ElementDefinition, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
 import { getTypedPropertyValue } from '../fhirpath';
 import { OperationOutcomeError, serverError } from '../outcomes';
-import { TypedValue } from '../types';
+import { getElementDefinitionTypeName, TypedValue } from '../types';
 import { capitalize, isEmpty } from '../utils';
 
 /**
@@ -197,7 +197,7 @@ class StructureDefinitionParser {
       }
       this.backboneContext = {
         type: {
-          name: buildTypeName(element.path?.split('.') ?? []) as ResourceType,
+          name: getElementDefinitionTypeName(element),
           fields: {},
           constraints: this.parseFieldDefinition(element).constraints,
           innerTypes: [],
@@ -325,7 +325,7 @@ class StructureDefinitionParser {
       })),
       type: (ed.type ?? []).map((t) => ({
         code: ['BackboneElement', 'Element'].includes(t.code as string)
-          ? buildTypeName(ed.base?.path?.split('.') ?? [])
+          ? getElementDefinitionTypeName(ed)
           : t.code ?? '',
         targetProfile: t.targetProfile ?? [],
       })),
@@ -407,13 +407,6 @@ function pathsCompatible(parent: string | undefined, child: string | undefined):
     return false;
   }
   return child.startsWith(parent + '.') || child === parent;
-}
-
-function buildTypeName(components: string[]): string {
-  if (components.length === 1) {
-    return components[0];
-  }
-  return components.map(capitalize).join('');
 }
 
 function firstValue(obj: TypedValue | TypedValue[] | undefined): TypedValue | undefined {
