@@ -1,10 +1,10 @@
 import { Anchor, Button, Group, Stack, Stepper, Title } from '@mantine/core';
 import {
+  IndexedStructureDefinition,
+  ProfileResource,
   createReference,
   getExtension,
   getReferenceString,
-  IndexedStructureDefinition,
-  ProfileResource,
 } from '@medplum/core';
 import {
   Questionnaire,
@@ -55,9 +55,12 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   }, [questionnaire]);
 
   function setItems(newResponseItems: QuestionnaireResponseItem[]): void {
+    const currentItems = response?.item ?? [];
+    const mergedItems = mergeItems(currentItems, newResponseItems);
+
     const newResponse: QuestionnaireResponse = {
       resourceType: 'QuestionnaireResponse',
-      item: newResponseItems,
+      item: mergedItems,
     };
 
     setResponse(newResponse);
@@ -393,4 +396,58 @@ function getNumberOfGroups(item: QuestionnaireItem, responses: QuestionnaireResp
   // This is to maintain the group number for the stepper
   const responseLength = responses.filter((r) => r.linkId === item.linkId).length;
   return responseLength > 0 ? responseLength : 1;
+}
+
+function mergeIndividualItems(
+  prevItem: QuestionnaireResponseItem,
+  newItem: QuestionnaireResponseItem
+): QuestionnaireResponseItem {
+  // Recursively merge the nested items.
+  const mergedNestedItems = mergeItems(prevItem.item ?? [], newItem.item ?? []);
+
+  return {
+    ...newItem,
+    item: mergedNestedItems,
+    // Prioritize answers from the new item, but fall back to the old item's answers if the new item doesn't provide any.
+    answer: newItem.answer && newItem.answer.length > 0 ? newItem.answer : prevItem.answer,
+  };
+}
+
+function mergeItemsWithSameLinkId(
+  prevItems: QuestionnaireResponseItem[],
+  newItems: QuestionnaireResponseItem[]
+): QuestionnaireResponseItem[] {
+  const result: QuestionnaireResponseItem[] = [];
+  const maxLength = Math.max(prevItems.length, newItems.length);
+
+  // Loop over items to handle cases where there are varying counts of items with the same linkId between old and new items.
+  for (let i = 0; i < maxLength; i++) {
+    if (prevItems[i] && newItems[i]) {
+      // If both old and new items exist for the current index, merge them.
+      result.push(mergeIndividualItems(prevItems[i], newItems[i]));
+    } else if (newItems[i]) {
+      // If only a new item exists for the current index, add it to the result.
+      result.push(newItems[i]);
+    }
+  }
+  return result;
+}
+
+function mergeItems(
+  prevItems: QuestionnaireResponseItem[],
+  newItems: QuestionnaireResponseItem[]
+): QuestionnaireResponseItem[] {
+  let result: QuestionnaireResponseItem[] = [];
+
+  // Iterate over unique linkIds from newItems.
+  for (const linkId of new Set(newItems.map((item) => item.linkId))) {
+    // Gather all items from the old and new list that share the current linkId.
+    const prevMatchedItems = prevItems.filter((oldItem) => oldItem.linkId === linkId);
+    const newMatchedItems = newItems.filter((newItem) => newItem.linkId === linkId);
+
+    // Merge the gathered items and append to the result.
+    result = result.concat(mergeItemsWithSameLinkId(prevMatchedItems, newMatchedItems));
+  }
+
+  return result;
 }
