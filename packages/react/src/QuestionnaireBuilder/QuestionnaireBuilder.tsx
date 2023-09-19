@@ -18,6 +18,11 @@ import { killEvent } from '../utils/dom';
 import { isChoiceQuestion, QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
 
+enum Direction {
+  UP,
+  DOWN,
+}
+
 const useStyles = createStyles((theme) => ({
   section: {
     position: 'relative',
@@ -53,6 +58,17 @@ const useStyles = createStyles((theme) => ({
   bottomActions: {
     position: 'absolute',
     right: 4,
+    bottom: 0,
+    fontSize: theme.fontSizes.xs,
+
+    '& a': {
+      marginLeft: 8,
+    },
+  },
+
+  movementActions: {
+    position: 'absolute',
+    left: 4,
     bottom: 0,
     fontSize: theme.fontSizes.xs,
 
@@ -106,6 +122,21 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
     };
   }, [defaultValue]);
 
+  function toggleItemOrder(itemToMove: QuestionnaireItem, direction: Direction): void {
+    if (!value) {
+      return;
+    }
+    const reorderedItems = reorderItems(value.item ?? [], itemToMove, direction);
+    if (!reorderedItems) {
+      return;
+    }
+
+    setValue({
+      ...value,
+      item: reorderedItems,
+    });
+  }
+
   if (!schema || !value) {
     return null;
   }
@@ -120,6 +151,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
           hoverKey={hoverKey}
           setHoverKey={setHoverKey}
           onChange={setValue}
+          onMove={toggleItemOrder}
         />
         <Button type="submit">Save</Button>
       </Form>
@@ -132,10 +164,13 @@ interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
   selectedKey: string | undefined;
   setSelectedKey: (key: string | undefined) => void;
   hoverKey: string | undefined;
+  isFirst?: boolean;
+  isLast?: boolean;
   setHoverKey: (key: string | undefined) => void;
   onChange: (item: T) => void;
   onRemove?: () => void;
   onRepeatable?: (item: QuestionnaireItem) => void;
+  onMove?(item: QuestionnaireItem, direction: Direction): void;
 }
 
 function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBuilderProps<T>): JSX.Element {
@@ -244,17 +279,20 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           </>
         )}
       </div>
-      {item.item?.map((i) => (
-        <div key={i.id}>
+      {item.item?.map((item, i) => (
+        <div key={item.id}>
           <ItemBuilder
-            item={i}
+            item={item}
             selectedKey={props.selectedKey}
             setSelectedKey={props.setSelectedKey}
             hoverKey={props.hoverKey}
+            isFirst={i === 0}
+            isLast={i === (props.item.item ?? []).length - 1}
             setHoverKey={props.setHoverKey}
             onChange={changeItem}
-            onRemove={() => removeItem(i)}
+            onRemove={() => removeItem(item)}
             onRepeatable={toggleRepeatable}
+            onMove={props.onMove}
           />
         </div>
       ))}
@@ -370,6 +408,33 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           </>
         )}
       </div>
+      {!isResource && (
+        <Box display="flex" className={classes.movementActions}>
+          {!props.isFirst && (
+            <>
+              <Anchor
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault();
+                  props.onMove && props.onMove(item, Direction.UP);
+                }}
+              >
+                Up
+              </Anchor>
+              <Space w="sm" />
+            </>
+          )}
+          {!props.isLast && (
+            <Anchor
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                props.onMove && props.onMove(item, Direction.DOWN);
+              }}
+            >
+              Down
+            </Anchor>
+          )}
+        </Box>
+      )}
     </div>
   );
 }
@@ -664,4 +729,61 @@ function createPage(): QuestionnaireItem {
       } as Extension,
     ],
   } as QuestionnaireItem;
+}
+
+function reorderItems(
+  value: QuestionnaireItem[],
+  itemToMove: QuestionnaireItem,
+  direction: Direction
+): QuestionnaireItem[] | undefined {
+  const currentItems = value;
+  if (!currentItems || !currentItems.length) {
+    return;
+  }
+
+  const index = currentItems.findIndex((i) => i.id === itemToMove.id);
+
+  if (index >= 0) {
+    return reorderCurrentLevelItems(currentItems, index, direction);
+  } else {
+    return reorderInNestedItems(currentItems, itemToMove, direction);
+  }
+}
+
+function reorderCurrentLevelItems(
+  items: QuestionnaireItem[],
+  index: number,
+  direction: Direction
+): QuestionnaireItem[] {
+  let newIndex = index;
+
+  if (direction === Direction.UP && index > 0) {
+    newIndex = index - 1;
+  } else if (direction === Direction.DOWN && index < items.length - 1) {
+    newIndex = index + 1;
+  } else {
+    return items;
+  }
+
+  const newItems = [...items];
+  [newItems[index], newItems[newIndex]] = [newItems[newIndex], newItems[index]];
+  return newItems;
+}
+
+function reorderInNestedItems(
+  items: QuestionnaireItem[],
+  itemToMove: QuestionnaireItem,
+  direction: Direction
+): QuestionnaireItem[] | undefined {
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].item) {
+      const reorderedNestedItems = reorderItems(items[i].item ?? [], itemToMove, direction);
+      if (reorderedNestedItems) {
+        const newItems = [...items];
+        newItems[i] = { ...newItems[i], item: reorderedNestedItems };
+        return newItems;
+      }
+    }
+  }
+  return;
 }
