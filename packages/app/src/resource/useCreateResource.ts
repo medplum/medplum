@@ -21,7 +21,7 @@ export function useCreateResource<T extends Resource>(
   const navigate = useNavigate();
   const defaultValue = { resourceType } as T;
 
-  const handleSubmit = async (newResource: T): Promise<void> => {
+  const handleSubmit = (newResource: T): void => {
     if (setOutcome) {
       setOutcome(undefined);
     }
@@ -33,8 +33,6 @@ export function useCreateResource<T extends Resource>(
           setOutcome(normalizeOperationOutcome(err));
         }
       });
-
-    return undefined;
   };
 
   return {
