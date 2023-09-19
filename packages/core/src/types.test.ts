@@ -113,6 +113,18 @@ describe('Type Utils', () => {
     expect(getElementDefinitionTypeName({ path: 'Timing.repeat', type: [{ code: 'Element' }] })).toEqual(
       'TimingRepeat'
     );
+
+    // There is an important special case for ElementDefinition with contentReference
+    // In the original StructureDefinition, contentReference is used to point to another ElementDefinition
+    // In StructureDefinitionParser.peek(), we merge the referenced ElementDefinition into the current one
+    // In that case, ElementDefinition.path will be the original, but ElementDefinition.base.path will be the referenced.
+    expect(
+      getElementDefinitionTypeName({
+        path: 'Questionnaire.item.item',
+        base: { path: 'Questionnaire.item' },
+        type: [{ code: 'Element' }],
+      })
+    ).toEqual('QuestionnaireItem');
   });
 
   test('isResourceTypeSchema', () => {
