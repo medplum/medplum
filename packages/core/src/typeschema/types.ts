@@ -168,6 +168,9 @@ class StructureDefinitionParser {
         }
 
         if (!parentContext) {
+          // Within R4 StructureDefinitions, there are 2 cases where StructureDefinition.name !== ElementDefinition.path.
+          // For SimpleQuantity and MoneyQuantity, the names are the names, but the root ElementDefinition.path is Quantity.
+          // We need to use StructureDefinition.name for the type name, and ElementDefinition.path for the path.
           const path = elementPath(element, this.root.path);
           if (element.isSummary) {
             this.resourceSchema.summaryProperties?.add(path.replace('[x]', ''));
