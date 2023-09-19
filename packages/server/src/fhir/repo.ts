@@ -82,7 +82,6 @@ import { rewriteAttachments, RewriteMode } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, Operator, SelectQuery } from './sql';
 import { getSearchParameters } from './structure';
-import { AsyncLocalStorage } from 'async_hooks';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
