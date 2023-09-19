@@ -7,9 +7,11 @@ import ws from 'ws';
 import { getConfig } from './config';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { executeBot } from './fhir/operations/execute';
-import { logger } from './logger';
+import { globalLogger } from './logger';
 import { getLoginForAccessToken } from './oauth/utils';
 import { getRedis } from './redis';
+import { RequestContext, requestContextStore } from './context';
+import { AsyncLocalStorage } from 'async_hooks';
 
 const handlerMap = new Map<string, (socket: ws.WebSocket, request: IncomingMessage) => Promise<void>>();
 handlerMap.set('/ws/echo', handleEchoConnection);
@@ -34,7 +36,7 @@ export function initWebSockets(server: http.Server): void {
 
     const handler = handlerMap.get(request.url as string);
     if (handler) {
-      await handler(socket, request);
+      await requestContextStore.run(RequestContext.empty(), () => handler(socket, request));
     }
   });
 
@@ -65,7 +67,7 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
   await redisSubscriber.subscribe(channel);
 
   redisSubscriber.on('message', (channel: string, message: string) => {
-    logger.debug('[WS] redis message', { channel, message });
+    globalLogger.debug('[WS] redis message', { channel, message });
     socket.send(message, { binary: false });
   });
 
@@ -90,22 +92,25 @@ async function handleAgentConnection(socket: ws.WebSocket, request: IncomingMess
   let bot: Bot | undefined = undefined;
   let runAs: ProjectMembership | undefined = undefined;
 
-  socket.on('message', async (data: ws.RawData) => {
-    try {
-      const command = JSON.parse((data as Buffer).toString('utf8'));
-      switch (command.type) {
-        case 'connect':
-          await handleConnect(command);
-          break;
+  socket.on(
+    'message',
+    AsyncLocalStorage.bind(async (data: ws.RawData) => {
+      try {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        switch (command.type) {
+          case 'connect':
+            await handleConnect(command);
+            break;
 
-        case 'transmit':
-          await handleTransmit(command);
-          break;
+          case 'transmit':
+            await handleTransmit(command);
+            break;
+        }
+      } catch (err) {
+        socket.send(JSON.stringify({ type: 'error', message: normalizeErrorString(err) }));
       }
-    } catch (err) {
-      socket.send(JSON.stringify({ type: 'error', message: normalizeErrorString(err) }));
-    }
-  });
+    })
+  );
 
   /**
    * Handles a connect command.

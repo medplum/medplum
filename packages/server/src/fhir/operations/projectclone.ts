@@ -1,10 +1,12 @@
 import { created, forbidden, getResourceTypes, isResourceType, Operator } from '@medplum/core';
-import { Login, Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
+import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { sendResponse } from '../routes';
+import { getBinaryStorage } from '../storage';
 
 /**
  * Handles a Project clone request.
@@ -14,15 +16,15 @@ import { sendResponse } from '../routes';
  * @param res The HTTP response.
  */
 export async function projectCloneHandler(req: Request, res: Response): Promise<void> {
-  if (!(res.locals.login as Login).superAdmin) {
+  const ctx = getAuthenticatedContext();
+  if (!ctx.login.superAdmin) {
     sendOutcome(res, forbidden);
     return;
   }
 
   const { id } = req.params;
   const { name, resourceTypes, includeIds, excludeIds } = req.body;
-  const repo = res.locals.repo as Repository;
-  const cloner = new ProjectCloner(repo, id, name, resourceTypes, includeIds, excludeIds);
+  const cloner = new ProjectCloner(ctx.repo, id, name, resourceTypes, includeIds, excludeIds);
   const result = await cloner.cloneProject();
   await sendResponse(res, created, result);
 }
@@ -68,6 +70,9 @@ class ProjectCloner {
       const result = await repo.updateResource(this.rewriteIds(resource));
       if (result.resourceType === 'Project') {
         newProject = result;
+      }
+      if (resource.resourceType === 'Binary') {
+        await getBinaryStorage().copyBinary(resource, result as Binary);
       }
     }
 
@@ -132,7 +137,10 @@ class ProjectCloner {
     if ((key === 'id' || key === 'project') && typeof value === 'string' && this.idMap.has(value)) {
       return this.idMap.get(value);
     }
-    if (key === 'reference' && typeof value === 'string' && value.includes('/')) {
+    if (
+      (key === 'reference' && typeof value === 'string' && value.includes('/')) ||
+      (key === 'url' && typeof value === 'string' && value.startsWith('Binary/'))
+    ) {
       const [resourceType, id] = value.split('/');
       if (isResourceType(resourceType) && this.idMap.has(id)) {
         return resourceType + '/' + this.idMap.get(id);

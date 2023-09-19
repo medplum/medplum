@@ -21,9 +21,9 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { logger } from '../../logger';
 import { Repository } from '../repo';
 import { sendResponse } from '../routes';
+import { getAuthenticatedContext, getRequestContext } from '../../context';
 
 /**
  * Handles a Resource $graph request.
@@ -35,16 +35,16 @@ import { sendResponse } from '../routes';
  * @param res The HTTP response.
  */
 export async function resourceGraphHandler(req: Request, res: Response): Promise<void> {
+  const ctx = getAuthenticatedContext();
   const { resourceType, id } = req.params;
-  const repo = res.locals.repo as Repository;
 
   if (resourceType === 'undefined' || id === 'undefined') {
     throw new OperationOutcomeError(notFound);
   }
 
-  const rootResource = await repo.readResource(resourceType, id);
+  const rootResource = await ctx.repo.readResource(resourceType, id);
 
-  const definition = await validateQueryParameters(req, res);
+  const definition = await validateQueryParameters(req);
 
   if (!definition.start || definition.start !== resourceType) {
     throw new OperationOutcomeError(badRequest('Missing or incorrect `start` type'));
@@ -55,7 +55,7 @@ export async function resourceGraphHandler(req: Request, res: Response): Promise
   if ('url' in rootResource) {
     resourceCache[(rootResource as any).url] = rootResource;
   }
-  await followLinks(repo, rootResource, definition.link, results, resourceCache);
+  await followLinks(ctx.repo, rootResource, definition.link, results, resourceCache);
 
   await sendResponse(res, allOk, {
     resourceType: 'Bundle',
@@ -224,7 +224,7 @@ async function followCanonicalElements(
         filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
       });
       if (linkedResources.length > 1) {
-        logger.warn('Found more than 1 resource with canonical URL', { url });
+        getRequestContext().logger.warn('Found more than 1 resource with canonical URL', { url });
       }
 
       // Cache here to speed up subsequent loop iterations
@@ -278,17 +278,16 @@ async function followSearchLink(
  * Parses and validates the operation parameters.
  * See: https://www.hl7.org/fhir/resource-operation-graph.html
  * @param req The HTTP request.
- * @param res The HTTP response.
  * @returns The operation parameters if available; otherwise, undefined.
  */
-async function validateQueryParameters(req: Request, res: Response): Promise<GraphDefinition> {
+async function validateQueryParameters(req: Request): Promise<GraphDefinition> {
+  const ctx = getAuthenticatedContext();
   const { graph } = req.query;
   if (typeof graph !== 'string') {
     throw new OperationOutcomeError(badRequest('Missing required parameter: graph'));
   }
 
-  const repo = res.locals.repo as Repository;
-  const bundle = await repo.search({
+  const bundle = await ctx.repo.search({
     resourceType: 'GraphDefinition',
     filters: [{ code: 'name', operator: Operator.EQUALS, value: graph }],
   });

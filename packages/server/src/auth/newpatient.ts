@@ -67,7 +67,6 @@ export async function createPatient(
   lastName: string
 ): Promise<ProjectMembership> {
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
-
   const project = await systemRepo.readResource<Project>('Project', projectId);
 
   if (!project.defaultPatientAccessPolicy) {
@@ -75,15 +74,14 @@ export async function createPatient(
   }
 
   const profile = (await createProfile(project, 'Patient', firstName, lastName, user.email as string)) as Patient;
-
   const policy = await systemRepo.readReference(project.defaultPatientAccessPolicy);
-
-  const membership = await createProjectMembership(user, project, profile, { accessPolicy: createReference(policy) });
+  const membership = await createProjectMembership(user, project, profile, {
+    accessPolicy: createReference(policy),
+  });
 
   await systemRepo.updateResource<Login>({
     ...login,
     membership: createReference(membership),
   });
-
   return membership;
 }

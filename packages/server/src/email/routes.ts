@@ -1,15 +1,14 @@
 import { allOk, ContentType, forbidden } from '@medplum/core';
-import { Project } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { body, check, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { Repository } from '../fhir/repo';
-import { authenticateToken } from '../oauth/middleware';
+import { authenticateRequest } from '../oauth/middleware';
 import { sendEmail } from './email';
+import { getAuthenticatedContext } from '../context';
 
 export const emailRouter = Router();
-emailRouter.use(authenticateToken);
+emailRouter.use(authenticateRequest);
 
 const sendEmailValidators = [
   check('content-type').equals(ContentType.JSON),
@@ -21,6 +20,7 @@ emailRouter.post(
   '/send',
   sendEmailValidators,
   asyncWrap(async (req: Request, res: Response) => {
+    const ctx = getAuthenticatedContext();
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       sendOutcome(res, invalidRequest(errors));
@@ -28,15 +28,13 @@ emailRouter.post(
     }
 
     // Make sure the user project has the email feature enabled
-    const project = res.locals.project as Project;
-    if (!project.features?.includes('email')) {
+    if (!ctx.project.features?.includes('email')) {
       sendOutcome(res, forbidden);
       return;
     }
 
     // Use the user repository to enforce permission checks on email attachments
-    const repo = res.locals.repo as Repository;
-    await sendEmail(repo, req.body);
+    await sendEmail(ctx.repo, req.body);
     sendOutcome(res, allOk);
   })
 );

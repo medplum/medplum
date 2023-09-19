@@ -15,11 +15,11 @@ import JSZip from 'jszip';
 import { Readable } from 'stream';
 import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
-import { logger } from '../../logger';
 import { sendOutcome } from '../outcomes';
-import { Repository, systemRepo } from '../repo';
+import { systemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
 import { isBotEnabled } from './execute';
+import { getAuthenticatedContext, getRequestContext } from '../../context';
 
 const LAMBDA_RUNTIME = 'nodejs18.x';
 
@@ -95,8 +95,8 @@ function createPdf(docDefinition, tableLayouts, fonts) {
 `;
 
 export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
   const { id } = req.params;
-  const repo = res.locals.repo as Repository;
 
   // Validate that the request body has a code property
   const code = req.body.code as string | undefined;
@@ -106,7 +106,7 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
   }
 
   // First read the bot as the user to verify access
-  await repo.readResource<Bot>('Bot', id);
+  await ctx.repo.readResource<Bot>('Bot', id);
 
   // Then read the bot as system user to load extended metadata
   const bot = await systemRepo.readResource<Bot>('Bot', id);
@@ -121,14 +121,14 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
     const contentType = ContentType.JAVASCRIPT;
 
     // Create a Binary for the executable code
-    const binary = await repo.createResource<Binary>({
+    const binary = await ctx.repo.createResource<Binary>({
       resourceType: 'Binary',
       contentType,
     });
     await getBinaryStorage().writeBinary(binary, filename, contentType, Readable.from(code));
 
     // Update the bot
-    const updatedBot = await repo.updateResource<Bot>({
+    const updatedBot = await ctx.repo.updateResource<Bot>({
       ...bot,
       executableCode: {
         contentType,
@@ -149,11 +149,12 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
 });
 
 async function deployLambda(bot: Bot, code: string): Promise<void> {
+  const ctx = getRequestContext();
   const client = new LambdaClient({ region: getConfig().awsRegion });
   const name = `medplum-bot-lambda-${bot.id}`;
-  logger.info('Deploying lambda function for bot', { name });
+  ctx.logger.info('Deploying lambda function for bot', { name });
   const zipFile = await createZipFile(code);
-  logger.debug('Lambda function zip size', { bytes: zipFile.byteLength });
+  ctx.logger.debug('Lambda function zip size', { bytes: zipFile.byteLength });
 
   const exists = await lambdaExists(client, name);
   if (!exists) {

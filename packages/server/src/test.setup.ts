@@ -1,6 +1,7 @@
 import { createReference, getReferenceString, ProfileResource, sleep } from '@medplum/core';
 import {
   AccessPolicy,
+  AsyncJob,
   Bundle,
   ClientApplication,
   Login,
@@ -16,6 +17,7 @@ import { inviteUser } from './admin/invite';
 import { systemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
+import { AuthenticatedRequestContext, requestContextStore } from './context';
 
 export async function createTestProject(
   projectOptions?: Partial<Project>,
@@ -25,6 +27,7 @@ export async function createTestProject(
   client: ClientApplication;
   membership: ProjectMembership;
 }> {
+  requestContextStore.enterWith(AuthenticatedRequestContext.system());
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: 'Test Project',
@@ -106,6 +109,7 @@ export async function addTestUser(
   project: Project,
   accessPolicy?: AccessPolicy
 ): Promise<{ user: User; profile: ProfileResource; accessToken: string }> {
+  requestContextStore.enterWith(AuthenticatedRequestContext.system());
   if (accessPolicy) {
     accessPolicy = await systemRepo.createResource<AccessPolicy>({
       ...accessPolicy,
@@ -198,15 +202,19 @@ export function waitFor(fn: () => Promise<void>): Promise<void> {
   });
 }
 
-export async function waitForAsyncJob(contentLocation: string, app: Express, accessToken: string): Promise<void> {
+export async function waitForAsyncJob(contentLocation: string, app: Express, accessToken: string): Promise<AsyncJob> {
   for (let i = 0; i < 10; i++) {
     const res = await request(app)
       .get(new URL(contentLocation).pathname)
       .set('Authorization', 'Bearer ' + accessToken);
     if (res.status !== 202) {
-      return;
+      return res.body as AsyncJob;
     }
     await sleep(1000);
   }
   throw new Error('Async Job did not complete');
+}
+
+export function withTestContext<T>(fn: () => T): T {
+  return requestContextStore.run(AuthenticatedRequestContext.system(), fn);
 }

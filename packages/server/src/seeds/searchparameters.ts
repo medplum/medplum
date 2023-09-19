@@ -2,7 +2,7 @@ import { readJson } from '@medplum/definitions';
 import { BundleEntry, SearchParameter } from '@medplum/fhirtypes';
 import { getClient } from '../database';
 import { systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
+import { globalLogger } from '../logger';
 import { r4ProjectId } from '../seed';
 
 /**
@@ -21,7 +21,7 @@ export async function rebuildR4SearchParameters(): Promise<void> {
 }
 
 async function createParameter(param: SearchParameter): Promise<void> {
-  logger.debug('SearchParameter: ' + param.name);
+  globalLogger.debug('SearchParameter: ' + param.name);
   await systemRepo.createResource<SearchParameter>({
     ...param,
     meta: { ...param.meta, project: r4ProjectId },

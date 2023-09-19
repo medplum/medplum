@@ -9,7 +9,7 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config';
-import { logger } from '../logger';
+import { globalLogger } from '../logger';
 
 /*
  * This file includes a collection of utility functions for working with AuditEvents.
@@ -229,6 +229,6 @@ export function logAuditEvent(
     entity,
   };
 
-  logger.logAuditEvent(auditEvent);
+  globalLogger.logAuditEvent(auditEvent);
   return auditEvent;
 }

@@ -21,8 +21,8 @@ import {
   NewUserRequest,
 } from './client';
 import { ContentType } from './contenttype';
-import { OperationOutcomeError, getStatus, isOperationOutcome, notFound, unauthorized } from './outcomes';
-import { ProfileResource, createReference } from './utils';
+import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
+import { createReference, ProfileResource } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -134,6 +134,34 @@ describe('Client', () => {
   test('Missing trailing slash', () => {
     const client = new MedplumClient({ clientId: 'xyz', baseUrl: 'https://x' });
     expect(client.getBaseUrl()).toBe('https://x/');
+  });
+
+  test('Relative URLs', () => {
+    const client = new MedplumClient({
+      baseUrl: 'https://example.com',
+      fhirUrlPath: 'my-fhir-url-path',
+      authorizeUrl: 'my-authorize-url',
+      tokenUrl: 'my-token-url',
+      logoutUrl: 'my-logout-url',
+    });
+    expect(client.getBaseUrl()).toBe('https://example.com/');
+    expect(client.getAuthorizeUrl()).toBe('https://example.com/my-authorize-url');
+    expect(client.getTokenUrl()).toBe('https://example.com/my-token-url');
+    expect(client.getLogoutUrl()).toBe('https://example.com/my-logout-url');
+  });
+
+  test('Absolute URLs', () => {
+    const client = new MedplumClient({
+      baseUrl: 'https://example.com',
+      fhirUrlPath: 'https://fhir.example.com',
+      authorizeUrl: 'https://authorize.example.com',
+      tokenUrl: 'https://token.example.com',
+      logoutUrl: 'https://logout.example.com',
+    });
+    expect(client.getBaseUrl()).toBe('https://example.com/');
+    expect(client.getAuthorizeUrl()).toBe('https://authorize.example.com/');
+    expect(client.getTokenUrl()).toBe('https://token.example.com/');
+    expect(client.getLogoutUrl()).toBe('https://logout.example.com/');
   });
 
   test('getAuthorizeUrl', () => {
@@ -636,6 +664,28 @@ describe('Client', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  test('JWT assertion flow', async () => {
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token: createFakeJwt({ client_id: 'test-client-id', login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: 'test-client-id' }),
+          profile: { reference: 'ClientApplication/123' },
+        };
+      }
+      if (url.includes('/auth/me')) {
+        return { profile: { resourceType: 'ClientApplication' } };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch });
+    const result1 = await client.startJwtAssertionLogin('my-jwt');
+    expect(result1).toBeDefined();
+    expect(result1).toMatchObject({ resourceType: 'ClientApplication' });
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   test('Basic auth in browser', async () => {
     Object.defineProperty(globalThis, 'Buffer', { get: () => undefined });
     Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
@@ -936,6 +986,14 @@ describe('Client', () => {
     expect(onUnauthenticated).toBeCalled();
   });
 
+  test('fhirUrl', () => {
+    const client = new MedplumClient({ fetch: jest.fn() });
+    expect(client.fhirUrl().toString()).toBe('https://api.medplum.com/fhir/R4/');
+    expect(client.fhirUrl('Patient').toString()).toBe('https://api.medplum.com/fhir/R4/Patient');
+    expect(client.fhirUrl('Patient', '123').toString()).toBe('https://api.medplum.com/fhir/R4/Patient/123');
+    expect(client.fhirUrl('Patient/123').toString()).toBe('https://api.medplum.com/fhir/R4/Patient/123');
+  });
+
   test('Read resource', async () => {
     const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
     const client = new MedplumClient({ fetch });
@@ -1046,6 +1104,30 @@ describe('Client', () => {
     expect(client.getCachedReference({ reference: '' })).toBeUndefined();
     expect(client.getCachedReference({ reference: 'xyz' })).toBeUndefined();
     expect(client.getCachedReference({ reference: 'xyz?abc' })).toBeUndefined();
+    expect(client.getCachedReference({ reference: 'system' })).toMatchObject({
+      resourceType: 'Device',
+      id: 'system',
+      deviceName: [{ name: 'System' }],
+    });
+  });
+
+  test('Read system reference', async () => {
+    const client = new MedplumClient({ fetch });
+
+    // Get
+    expect(client.getCachedReference({ reference: 'system' })).toMatchObject({
+      resourceType: 'Device',
+      id: 'system',
+      deviceName: [{ name: 'System' }],
+    });
+
+    // Read async
+    const result = await client.readReference({ reference: 'system' });
+    expect(result).toMatchObject({
+      resourceType: 'Device',
+      id: 'system',
+      deviceName: [{ name: 'System' }],
+    });
   });
 
   test('Disabled cache read cached resource', async () => {
@@ -1488,6 +1570,8 @@ describe('Client', () => {
     expect(schema).toBeDefined();
     expect(schema.types['Patient']).toBeDefined();
     expect(schema.types['Patient'].searchParams).toBeDefined();
+    const schema2 = await client.requestSchema('Patient');
+    expect(schema2).toBe(schema);
   });
 
   test('Get cached schema', async () => {
@@ -2291,65 +2375,42 @@ describe('Client', () => {
   describe('Downloading resources', () => {
     const baseUrl = 'https://api.medplum.com/';
     const fhirUrlPath = 'fhir/R4/';
+    let fetch: FetchLike;
+    let client: MedplumClient;
 
-    describe('normalizeFetchUrl', () => {
-      let client: MedplumClient;
-
-      beforeAll(() => {
-        client = new MedplumClient({ baseUrl, fhirUrlPath });
-      });
-
-      test('URL object', () => {
-        expect(client.normalizeFetchUrl(new URL(baseUrl))).toEqual(baseUrl);
-      });
-
-      test('URL string', () => {
-        expect(client.normalizeFetchUrl(baseUrl)).toEqual(baseUrl);
-      });
-
-      test('Binary URLs', () => {
-        expect(client.normalizeFetchUrl('Binary/fake-id')).toEqual(`${baseUrl}${fhirUrlPath}Binary/fake-id`);
-      });
+    beforeAll(() => {
+      fetch = mockFetch(200, (url: string) => ({
+        text: () => Promise.resolve(url),
+      }));
+      client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
     });
 
-    describe('Downloading resources', () => {
-      let fetch: FetchLike;
-      let client: MedplumClient;
+    test('Downloading resources via URL', async () => {
+      const blob = await client.download(baseUrl);
+      expect(fetch).toBeCalledWith(
+        baseUrl,
+        expect.objectContaining({
+          headers: {
+            Accept: ContentType.FHIR_JSON,
+            'X-Medplum': 'extended',
+          },
+        })
+      );
+      expect(await blob.text()).toEqual(baseUrl);
+    });
 
-      beforeAll(() => {
-        fetch = mockFetch(200, (url: string) => ({
-          text: () => Promise.resolve(url),
-        }));
-        client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
-      });
-
-      test('Downloading resources via URL', async () => {
-        const blob = await client.download(baseUrl);
-        expect(fetch).toBeCalledWith(
-          baseUrl,
-          expect.objectContaining({
-            headers: {
-              Accept: ContentType.FHIR_JSON,
-              'X-Medplum': 'extended',
-            },
-          })
-        );
-        expect(await blob.text()).toEqual(baseUrl);
-      });
-
-      test('Downloading resources via `Binary/{id}` URL', async () => {
-        const blob = await client.download('Binary/fake-id');
-        expect(fetch).toBeCalledWith(
-          `${baseUrl}${fhirUrlPath}Binary/fake-id`,
-          expect.objectContaining({
-            headers: {
-              Accept: ContentType.FHIR_JSON,
-              'X-Medplum': 'extended',
-            },
-          })
-        );
-        expect(await blob.text()).toEqual(`${baseUrl}${fhirUrlPath}Binary/fake-id`);
-      });
+    test('Downloading resources via `Binary/{id}` URL', async () => {
+      const blob = await client.download('Binary/fake-id');
+      expect(fetch).toBeCalledWith(
+        `${baseUrl}${fhirUrlPath}Binary/fake-id`,
+        expect.objectContaining({
+          headers: {
+            Accept: ContentType.FHIR_JSON,
+            'X-Medplum': 'extended',
+          },
+        })
+      );
+      expect(await blob.text()).toEqual(`${baseUrl}${fhirUrlPath}Binary/fake-id`);
     });
   });
 
@@ -2437,6 +2498,37 @@ describe('Client', () => {
       expect(fetch).toHaveBeenCalledTimes(4);
       expect((response as any).resourceType).toEqual('Patient');
     });
+  });
+
+  test('Verbose mode', async () => {
+    const fetch = jest.fn(() => {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: {
+          get: () => ContentType.FHIR_JSON,
+          forEach: (cb: (value: string, key: string) => void) => cb('bar', 'foo'),
+        },
+        json: () => Promise.resolve({ resourceType: 'Patient', id: '123' }),
+      });
+    });
+
+    console.log = jest.fn();
+    const client = new MedplumClient({ fetch, verbose: true });
+    const result = await client.readResource('Patient', '123');
+    expect(result).toBeDefined();
+    expect(fetch).toBeCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient/123',
+      expect.objectContaining({ method: 'GET' })
+    );
+    expect(result.resourceType).toBe('Patient');
+    expect(result.id).toBe('123');
+    expect(console.log).toBeCalledWith('> GET https://api.medplum.com/fhir/R4/Patient/123');
+    expect(console.log).toBeCalledWith('> Accept: application/fhir+json');
+    expect(console.log).toBeCalledWith('> X-Medplum: extended');
+    expect(console.log).toBeCalledWith('< 200 OK');
+    expect(console.log).toBeCalledWith('< foo: bar');
   });
 });
 

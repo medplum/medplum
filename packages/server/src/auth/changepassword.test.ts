@@ -7,7 +7,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
 jest.mock('@aws-sdk/client-sesv2');
@@ -36,13 +36,15 @@ describe('Change Password', () => {
   });
 
   test('Success', async () => {
-    const { accessToken } = await registerNew({
-      firstName: 'John',
-      lastName: 'Adams',
-      projectName: 'Adams Project',
-      email: `john${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'John',
+        lastName: 'Adams',
+        projectName: 'Adams Project',
+        email: `john${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     const res2 = await request(app)
       .post('/auth/changepassword')
@@ -56,13 +58,15 @@ describe('Change Password', () => {
   });
 
   test('Missing old password', async () => {
-    const { accessToken } = await registerNew({
-      firstName: 'Thomas',
-      lastName: 'Jefferson',
-      projectName: 'Jefferson Project',
-      email: `thomas${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Thomas',
+        lastName: 'Jefferson',
+        projectName: 'Jefferson Project',
+        email: `thomas${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     const res2 = await request(app)
       .post('/auth/changepassword')
@@ -76,13 +80,15 @@ describe('Change Password', () => {
   });
 
   test('Incorrect old password', async () => {
-    const { accessToken } = await registerNew({
-      firstName: 'Thomas',
-      lastName: 'Jefferson',
-      projectName: 'Jefferson Project',
-      email: `thomas${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Thomas',
+        lastName: 'Jefferson',
+        projectName: 'Jefferson Project',
+        email: `thomas${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     const res2 = await request(app)
       .post('/auth/changepassword')
@@ -97,13 +103,15 @@ describe('Change Password', () => {
   });
 
   test('Breached password', async () => {
-    const { accessToken } = await registerNew({
-      firstName: 'Thomas',
-      lastName: 'Jefferson',
-      projectName: 'Jefferson Project',
-      email: `thomas${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Thomas',
+        lastName: 'Jefferson',
+        projectName: 'Jefferson Project',
+        email: `thomas${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Mock the pwnedPassword function to return "1", meaning the password is breached.
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 1);

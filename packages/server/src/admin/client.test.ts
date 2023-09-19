@@ -6,14 +6,14 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { createTestProject, initTestAuth } from '../test.setup';
+import { createTestProject, initTestAuth, withTestContext } from '../test.setup';
 
 const app = express();
 
 describe('Client admin', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initApp(app, config);
+    await withTestContext(() => initApp(app, config));
   });
 
   afterAll(async () => {
@@ -22,13 +22,15 @@ describe('Client admin', () => {
 
   test('Create new client', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Next, Alice creates a client
     const res2 = await request(app)

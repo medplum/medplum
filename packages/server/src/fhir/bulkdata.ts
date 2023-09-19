@@ -2,8 +2,8 @@ import { ContentType } from '@medplum/core';
 import { BulkDataExport } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
+import { getAuthenticatedContext } from '../context';
 
 // Bulk Data API
 // https://hl7.org/fhir/uv/bulkdata/STU2/
@@ -16,16 +16,16 @@ export const bulkDataRouter = Router();
 bulkDataRouter.get(
   '/export/:id',
   asyncWrap(async (req: Request, res: Response) => {
+    const ctx = getAuthenticatedContext();
     const { id } = req.params;
-    const repo = res.locals.repo as Repository;
-    const bulkDataExport = await repo.readResource<BulkDataExport>('BulkDataExport', id);
+    const bulkDataExport = await ctx.repo.readResource<BulkDataExport>('BulkDataExport', id);
 
     if (bulkDataExport.status !== 'completed') {
       res.status(202).end();
       return;
     }
 
-    const json = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, {
+    const json = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, {
       transactionTime: bulkDataExport.transactionTime,
       request: bulkDataExport.request,
       requiresAccessToken: !!bulkDataExport.requiresAccessToken,

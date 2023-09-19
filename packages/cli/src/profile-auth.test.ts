@@ -33,6 +33,7 @@ describe('Profiles Auth', () => {
   beforeEach(async () => {
     console.log = jest.fn();
   });
+
   beforeAll(async () => {
     Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
     (os.homedir as unknown as jest.Mock).mockReturnValue(testHomeDir);
@@ -44,27 +45,12 @@ describe('Profiles Auth', () => {
 
   test('JWT Bearer', async () => {
     const profileName = 'jwtProfile';
-    const jwtObj = {
-      authType: 'jwt-bearer',
-      baseUrl: 'https://valid.gov',
-      fhirUrlPath: 'api/v2',
-      tokenUrl: '/oauth2/token',
-      clientId: 'validClientId',
-      clientSecret: 'validClientSecret',
-      scope: 'validScope',
-      audience: '/oauth2/token',
-      authorizeUrl: 'https://valid.gov/authorize',
-      subject: 'john_doe',
-      issuer: 'https://valid.gov',
-    };
-
-    const accessTokenFromClientId = createFakeJwt({ client_id: 'test-client-id', login_id: '123' });
+    const clientId = 'test-client-id';
+    const accessTokenFromClientId = createFakeJwt({ client_id: clientId, login_id: '123' });
 
     const fetch = mockFetch(200, (url) => {
       if (url.includes('oauth2/token')) {
-        return JSON.stringify({
-          access_token: accessTokenFromClientId,
-        });
+        return { access_token: accessTokenFromClientId };
       }
       return {};
     });
@@ -80,23 +66,23 @@ describe('Profiles Auth', () => {
       '-p',
       profileName,
       '--auth-type',
-      jwtObj.authType,
+      'jwt-bearer',
       '--client-id',
-      jwtObj.clientId,
-      '--scope',
-      jwtObj.scope,
-      '--authorize-url',
-      jwtObj.authorizeUrl,
-      '--subject',
-      jwtObj.subject,
-      '--audience',
-      jwtObj.audience,
+      clientId,
       '--client-secret',
-      jwtObj.clientSecret,
+      'validClientSecret',
+      '--scope',
+      'validScope',
+      '--authorize-url',
+      'https://valid.gov/authorize',
+      '--subject',
+      'john_doe',
+      '--audience',
+      '/oauth2/token',
       '--issuer',
-      jwtObj.issuer,
+      'https://valid.gov',
       '--token-url',
-      jwtObj.tokenUrl,
+      '/oauth2/token',
     ]);
 
     expect(profile.getObject('activeLogin')).toEqual({
@@ -115,7 +101,7 @@ describe('Profiles Auth', () => {
       clientSecret: 'validClientSecret',
       scope: 'validScope',
       authorizeUrl: 'https://valid.gov/authorize',
-      privateKeyPath: '/test_util/testPrivateKey.pem',
+      privateKeyPath: 'testPrivateKey.pem',
       audience: '/oauth2/token',
     };
 

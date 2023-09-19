@@ -346,7 +346,7 @@ Syntax:
 npx medplum bot create <bot name> <project id> <source file> <dist file>
 ```
 
-## Bots Example
+#### Bots Example
 
 Create a Medplum config file `medplum.config.json`:
 

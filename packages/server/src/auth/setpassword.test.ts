@@ -9,7 +9,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { generateSecret } from '../oauth/keys';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
 jest.mock('@aws-sdk/client-sesv2');
@@ -40,13 +40,15 @@ describe('Set Password', () => {
   test('Success', async () => {
     const email = `george${randomUUID()}@example.com`;
 
-    const res = await registerNew({
-      projectName: 'Set Password Project',
-      firstName: 'George',
-      lastName: 'Washington',
-      email,
-      password: 'password!@#',
-    });
+    const res = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+      })
+    );
     expect(res).toBeDefined();
 
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({

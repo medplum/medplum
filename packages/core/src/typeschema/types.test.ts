@@ -1,16 +1,17 @@
+import { readJson } from '@medplum/definitions';
+import { Observation, StructureDefinition } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
-import {
-  ElementValidator,
-  InternalTypeSchema,
-  SlicingRules,
-  loadDataTypes,
-  parseStructureDefinition,
-  subsetResource,
-} from './types';
 import { resolve } from 'path';
 import { TypedValue } from '../types';
-import { Observation, StructureDefinition } from '@medplum/fhirtypes';
-import { readJson } from '@medplum/definitions';
+import {
+  ElementValidator,
+  getDataType,
+  InternalTypeSchema,
+  loadDataTypes,
+  parseStructureDefinition,
+  SlicingRules,
+  subsetResource,
+} from './types';
 
 describe('FHIR resource and data type representations', () => {
   test('Base resource parsing', () => {
@@ -318,5 +319,12 @@ describe('FHIR resource and data type representations', () => {
         reference: 'Patient/example',
       },
     });
+  });
+
+  test('Deeply nested content reference', () => {
+    // Make sure we can handle contentReference more than 2 layers down
+    const structureMapGroupRuleType = getDataType('StructureMapGroupRule');
+    expect(structureMapGroupRuleType).toBeDefined();
+    expect(structureMapGroupRuleType.fields['rule']).toBeDefined();
   });
 });

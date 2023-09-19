@@ -1,12 +1,13 @@
-import { isGone, normalizeOperationOutcome } from '@medplum/core';
-import { Binary, Meta, Resource } from '@medplum/fhirtypes';
+import { arrayify, crawlResource, isGone, normalizeOperationOutcome, TypedValue } from '@medplum/core';
+import { Attachment, Binary, Meta, Resource } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import { getConfig, MedplumRedisConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
-import { logger } from '../logger';
+import { globalLogger } from '../logger';
+import { getRequestContext } from '../context';
 
 /*
  * The download worker inspects resources,
@@ -53,8 +54,8 @@ export function initDownloadWorker(config: MedplumRedisConfig): void {
   });
 
   worker = new Worker<DownloadJobData>(queueName, execDownloadJob, defaultOptions);
-  worker.on('completed', (job) => logger.info(`Completed job ${job.id} successfully`));
-  worker.on('failed', (job, err) => logger.info(`Failed job ${job?.id} with ${err}`));
+  worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
+  worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 }
 
 /**
@@ -98,17 +99,14 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * @param resource The resource that was created or updated.
  */
 export async function addDownloadJobs(resource: Resource): Promise<void> {
-  if (resource.resourceType === 'AuditEvent') {
-    // Never send downloaders for audit events
-    return;
-  }
-
-  if (resource.resourceType === 'Media' && isExternalUrl(resource.content?.url)) {
-    await addDownloadJobData({
-      resourceType: resource.resourceType,
-      id: resource.id as string,
-      url: resource.content?.url as string,
-    });
+  for (const attachment of getAttachments(resource)) {
+    if (isExternalUrl(attachment.url)) {
+      await addDownloadJobData({
+        resourceType: resource.resourceType,
+        id: resource.id as string,
+        url: attachment.url,
+      });
+    }
   }
 }
 
@@ -122,7 +120,7 @@ export async function addDownloadJobs(resource: Resource): Promise<void> {
  * @param url The Media content URL.
  * @returns True if the URL is an external URL.
  */
-function isExternalUrl(url: string | undefined): boolean {
+function isExternalUrl(url: string | undefined): url is string {
   return !!(
     url &&
     !url.startsWith(getConfig().baseUrl + 'fhir/R4/Binary/') &&
@@ -136,11 +134,12 @@ function isExternalUrl(url: string | undefined): boolean {
  * @param job The download job details.
  */
 async function addDownloadJobData(job: DownloadJobData): Promise<void> {
-  logger.debug(`Adding Download job`);
+  const ctx = getRequestContext();
+  ctx.logger.debug(`Adding Download job`);
   if (queue) {
     await queue.add(jobName, job);
   } else {
-    logger.debug(`Download queue not initialized`);
+    ctx.logger.debug(`Download queue not initialized`);
   }
 }
 
@@ -149,6 +148,7 @@ async function addDownloadJobData(job: DownloadJobData): Promise<void> {
  * @param job The download job details.
  */
 export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> {
+  const ctx = getRequestContext();
   const { resourceType, id, url } = job.data;
 
   let resource;
@@ -169,10 +169,10 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
   }
 
   try {
-    logger.info('Requesting content at: ' + url);
+    ctx.logger.info('Requesting content at: ' + url);
     const response = await fetch(url);
 
-    logger.info('Received status: ' + response.status);
+    ctx.logger.info('Received status: ' + response.status);
     if (response.status >= 400) {
       throw new Error('Received status ' + response.status);
     }
@@ -197,9 +197,27 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
     const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary.id}`)) as Resource;
     (updated.meta as Meta).author = { reference: 'system' };
     await systemRepo.updateResource(updated);
-    logger.info('Downloaded content successfully');
+    ctx.logger.info('Downloaded content successfully');
   } catch (ex) {
-    logger.info('Download exception: ' + ex);
+    ctx.logger.info('Download exception: ' + ex);
     throw ex;
   }
+}
+
+function getAttachments(resource: Resource): Attachment[] {
+  const attachments: Attachment[] = [];
+  crawlResource(resource, {
+    visitProperty: (_parent, _key, _path, propertyValues) => {
+      for (const propertyValue of propertyValues) {
+        if (propertyValue) {
+          for (const value of arrayify(propertyValue) as TypedValue[]) {
+            if (value.type === 'Attachment') {
+              attachments.push(value.value as Attachment);
+            }
+          }
+        }
+      }
+    },
+  });
+  return attachments;
 }

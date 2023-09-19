@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
 jest.mock('hibp');
@@ -148,30 +148,32 @@ describe('New user', () => {
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
     const recaptchaSecretKey = 'recaptcha-secret-key-' + randomUUID();
 
-    // Register and create a project
-    const { project } = await registerNew({
-      firstName: 'Google',
-      lastName: 'Google',
-      projectName: 'Require Google Auth',
-      email,
-      password,
-    });
-
-    // As a super admin, set the recaptcha site key
-    // and the default access policy
-    await systemRepo.updateResource({
-      ...project,
-      site: [
-        {
-          name: 'Test Site',
-          domain: ['example.com'],
-          recaptchaSiteKey,
-          recaptchaSecretKey,
+    const project = await withTestContext(async () => {
+      // Register and create a project
+      const { project } = await registerNew({
+        firstName: 'Google',
+        lastName: 'Google',
+        projectName: 'Require Google Auth',
+        email,
+        password,
+      });
+      // As a super admin, set the recaptcha site key
+      // and the default access policy
+      await systemRepo.updateResource({
+        ...project,
+        site: [
+          {
+            name: 'Test Site',
+            domain: ['example.com'],
+            recaptchaSiteKey,
+            recaptchaSecretKey,
+          },
+        ],
+        defaultPatientAccessPolicy: {
+          reference: 'AccessPolicy/' + randomUUID(),
         },
-      ],
-      defaultPatientAccessPolicy: {
-        reference: 'AccessPolicy/' + randomUUID(),
-      },
+      });
+      return project;
     });
 
     const res = await request(app)
@@ -199,29 +201,31 @@ describe('New user', () => {
     const recaptchaSecretKey = 'recaptcha-secret-key-' + randomUUID();
 
     // Register and create a project
-    const { project } = await registerNew({
-      firstName: 'Google',
-      lastName: 'Google',
-      projectName: 'Require Google Auth',
-      email,
-      password,
-    });
-
-    // As a super admin, set the recaptcha site key
-    // and the default access policy
-    await systemRepo.updateResource({
-      ...project,
-      site: [
-        {
-          name: 'Test Site',
-          domain: ['example.com'],
-          recaptchaSiteKey,
-          recaptchaSecretKey,
+    await withTestContext(async () => {
+      const { project } = await registerNew({
+        firstName: 'Google',
+        lastName: 'Google',
+        projectName: 'Require Google Auth',
+        email,
+        password,
+      });
+      // As a super admin, set the recaptcha site key
+      // and the default access policy
+      await systemRepo.updateResource({
+        ...project,
+        site: [
+          {
+            name: 'Test Site',
+            domain: ['example.com'],
+            recaptchaSiteKey,
+            recaptchaSecretKey,
+          },
+        ],
+        defaultPatientAccessPolicy: {
+          reference: 'AccessPolicy/' + randomUUID(),
         },
-      ],
-      defaultPatientAccessPolicy: {
-        reference: 'AccessPolicy/' + randomUUID(),
-      },
+      });
+      return project;
     });
 
     const res = await request(app)
@@ -248,26 +252,28 @@ describe('New user', () => {
     const recaptchaSecretKey = 'recaptcha-secret-key-' + randomUUID();
 
     // Register and create a project
-    const { project } = await registerNew({
-      firstName: 'Google',
-      lastName: 'Google',
-      projectName: 'Require Google Auth',
-      email,
-      password,
-    });
-
-    // As a super admin, set the recaptcha site key
-    // but *not* the access policy
-    await systemRepo.updateResource({
-      ...project,
-      site: [
-        {
-          name: 'Test Site',
-          domain: ['example.com'],
-          recaptchaSiteKey,
-          recaptchaSecretKey,
-        },
-      ],
+    const project = await withTestContext(async () => {
+      const { project } = await registerNew({
+        firstName: 'Google',
+        lastName: 'Google',
+        projectName: 'Require Google Auth',
+        email,
+        password,
+      });
+      // As a super admin, set the recaptcha site key
+      // but *not* the access policy
+      await systemRepo.updateResource({
+        ...project,
+        site: [
+          {
+            name: 'Test Site',
+            domain: ['example.com'],
+            recaptchaSiteKey,
+            recaptchaSecretKey,
+          },
+        ],
+      });
+      return project;
     });
 
     const res = await request(app)
@@ -309,24 +315,26 @@ describe('New user', () => {
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
 
     // Register and create a project
-    const { project } = await registerNew({
-      firstName: 'Google',
-      lastName: 'Google',
-      projectName: 'Require Google Auth',
-      email,
-      password,
-    });
-
-    // As a super admin, set the recaptcha site key
-    await systemRepo.updateResource({
-      ...project,
-      site: [
-        {
-          name: 'Test Site',
-          domain: ['example.com'],
-          recaptchaSiteKey,
-        },
-      ],
+    const project = await withTestContext(async () => {
+      const { project } = await registerNew({
+        firstName: 'Google',
+        lastName: 'Google',
+        projectName: 'Require Google Auth',
+        email,
+        password,
+      });
+      // As a super admin, set the recaptcha site key
+      await systemRepo.updateResource({
+        ...project,
+        site: [
+          {
+            name: 'Test Site',
+            domain: ['example.com'],
+            recaptchaSiteKey,
+          },
+        ],
+      });
+      return project;
     });
 
     const res = await request(app)
@@ -356,27 +364,33 @@ describe('New user', () => {
     const password = 'password!@#';
 
     // Project P1 is owned by the email address
-    const reg1 = await registerNew({ firstName: 'P1', lastName: 'P1', projectName: 'P1', email, password });
+    const reg1 = await withTestContext(() =>
+      registerNew({ firstName: 'P1', lastName: 'P1', projectName: 'P1', email, password })
+    );
     expect(reg1).toBeDefined();
 
     // Project P2 is owned by someone else
-    const reg2 = await registerNew({
-      firstName: 'P2',
-      lastName: 'P2',
-      projectName: 'P2',
-      email: `test${randomUUID()}@example.com`,
-      password: randomUUID(),
-    });
+    const reg2 = await withTestContext(() =>
+      registerNew({
+        firstName: 'P2',
+        lastName: 'P2',
+        projectName: 'P2',
+        email: `test${randomUUID()}@example.com`,
+        password: randomUUID(),
+      })
+    );
     expect(reg2).toBeDefined();
 
     // Project P3 is owned by someone else
-    const reg3 = await registerNew({
-      firstName: 'P3',
-      lastName: 'P3',
-      projectName: 'P3',
-      email: `test${randomUUID()}@example.com`,
-      password: randomUUID(),
-    });
+    const reg3 = await withTestContext(() =>
+      registerNew({
+        firstName: 'P3',
+        lastName: 'P3',
+        projectName: 'P3',
+        email: `test${randomUUID()}@example.com`,
+        password: randomUUID(),
+      })
+    );
     expect(reg3).toBeDefined();
 
     // Try to register as a patient in Project P2

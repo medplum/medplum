@@ -2,12 +2,12 @@ import { createReference, MedplumClient } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID, webcrypto } from 'crypto';
-import { main } from '.';
-import { createMedplumClient } from './util/client';
 import { mkdtempSync, rmSync } from 'fs';
-import { sep } from 'path';
 import os from 'os';
+import { sep } from 'path';
+import { main } from '.';
 import { FileSystemStorage } from './storage';
+import { createMedplumClient } from './util/client';
 
 jest.mock('os');
 jest.mock('fast-glob', () => ({
@@ -81,15 +81,24 @@ describe('CLI rest', () => {
     expect(console.log).toBeCalledWith(expect.stringMatching('urn:uuid'));
   });
 
-  test('Get command with fhir-url-path flag', async () => {
-    const medplumGetSpy = jest.spyOn(medplum, 'get').mockImplementation((): any => {
-      return {
-        text: jest.fn(),
-      };
-    });
+  test('Get command with fhir-url flag', async () => {
+    await main(['node', 'index.js', 'get', `Patient`, '--fhir-url', 'fhirulrtest']);
 
+    expect(createMedplumClient).toBeCalledWith(
+      expect.objectContaining({
+        fhirUrlPath: 'fhirulrtest',
+      })
+    );
+  });
+
+  test('Get command with fhir-url-path flag', async () => {
     await main(['node', 'index.js', 'get', `Patient`, '--fhir-url-path', 'fhirpathtest']);
-    expect(medplumGetSpy).toBeCalledWith('fhirpathtest/Patient');
+
+    expect(createMedplumClient).toBeCalledWith(
+      expect.objectContaining({
+        fhirUrlPath: 'fhirpathtest',
+      })
+    );
   });
 
   test('Get command with invalid flag', async () => {

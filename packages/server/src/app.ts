@@ -22,9 +22,7 @@ import { initBinaryStorage } from './fhir/storage';
 import { getStructureDefinitions } from './fhir/structure';
 import { healthcheckHandler } from './healthcheck';
 import { hl7BodyParser } from './hl7/parser';
-import { logger } from './logger';
 import { initKeys } from './oauth/keys';
-import { authenticateToken } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
 import { closeRateLimiter } from './ratelimit';
@@ -35,6 +33,8 @@ import { storageRouter } from './storage';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
+import { attachRequestContext, AuthenticatedRequestContext, getRequestContext, requestContextStore } from './context';
+import { globalLogger } from './logger';
 
 let server: http.Server | undefined = undefined;
 
@@ -109,7 +109,11 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('File too large'));
     return;
   }
-  logger.error('Unhandled error', err);
+  try {
+    getRequestContext().logger.error('Unhandled error', err);
+  } catch {
+    globalLogger.error('Unhandled error', err);
+  }
   res.status(500).json({ msg: 'Internal Server Error' });
 }
 
@@ -124,7 +128,8 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(standardHeaders);
   app.use(cors(corsOptions));
   app.use(compression());
-  app.use('/fhir/R4/Binary', [authenticateToken], binaryRouter);
+  app.use(attachRequestContext);
+  app.use('/fhir/R4/Binary', binaryRouter);
   app.use(
     urlencoded({
       extended: false,
@@ -168,14 +173,16 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   return server;
 }
 
-export async function initAppServices(config: MedplumServerConfig): Promise<void> {
-  getStructureDefinitions();
-  initRedis(config.redis);
-  await initDatabase(config.database);
-  await seedDatabase();
-  await initKeys(config);
-  initBinaryStorage(config.binaryStorage);
-  initWorkers(config.redis);
+export function initAppServices(config: MedplumServerConfig): Promise<void> {
+  return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
+    getStructureDefinitions();
+    initRedis(config.redis);
+    await initDatabase(config.database);
+    await seedDatabase();
+    await initKeys(config);
+    initBinaryStorage(config.binaryStorage);
+    initWorkers(config.redis);
+  });
 }
 
 export async function shutdownApp(): Promise<void> {

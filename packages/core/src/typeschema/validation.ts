@@ -1,23 +1,24 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { evalFhirPathTyped, getTypedPropertyValue, toTypedValue } from '../fhirpath';
 import {
-  OperationOutcomeError,
   createConstraintIssue,
   createProcessingIssue,
   createStructureIssue,
+  OperationOutcomeError,
   validationError,
 } from '../outcomes';
-import { PropertyType, TypedValue, isResource } from '../types';
+import { PropertyType, TypedValue } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
+import { crawlResource, getNestedProperty, ResourceVisitor } from './crawler';
 import {
   Constraint,
   ElementValidator,
+  getDataType,
   InternalTypeSchema,
+  parseStructureDefinition,
   SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
-  getDataType,
-  parseStructureDefinition,
 } from './types';
 
 /*
@@ -85,7 +86,7 @@ export function validate(resource: Resource, profile?: StructureDefinition): voi
   new ResourceValidator(resource.resourceType, resource, profile).validate();
 }
 
-class ResourceValidator {
+class ResourceValidator implements ResourceVisitor {
   private issues: OperationOutcomeIssue[];
   private rootResource: Resource;
   private currentResource: Resource[];
@@ -94,7 +95,7 @@ class ResourceValidator {
   constructor(resourceType: string, rootResource: Resource, profile?: StructureDefinition) {
     this.issues = [];
     this.rootResource = rootResource;
-    this.currentResource = [rootResource];
+    this.currentResource = [];
     if (!profile) {
       this.schema = getDataType(resourceType);
     } else {
@@ -110,11 +111,7 @@ class ResourceValidator {
 
     checkObjectForNull(this.rootResource as unknown as Record<string, unknown>, resourceType, this.issues);
 
-    this.validateObject(
-      { type: resourceType, value: this.currentResource[this.currentResource.length - 1] },
-      this.schema,
-      resourceType
-    );
+    crawlResource(this.rootResource, this, this.schema);
 
     const issues = this.issues;
     this.issues = []; // Reset issues to allow re-using the validator for other resources
@@ -126,18 +123,27 @@ class ResourceValidator {
     }
   }
 
-  private validateObject(obj: TypedValue, schema: InternalTypeSchema, path: string): void {
-    for (const [key, _propSchema] of Object.entries(schema.fields)) {
-      this.checkProperty(obj, key, schema, `${path}.${key}`);
-    }
-
+  onExitObject(path: string, obj: TypedValue, schema: InternalTypeSchema): void {
     //@TODO(mattwiller 2023-06-05): Detect extraneous properties in a single pass by keeping track of all keys that
     // were correctly matched to resource properties as elements are validated above
     this.checkAdditionalProperties(obj, schema.fields, path);
   }
 
-  private checkProperty(parent: TypedValue, key: string, schema: InternalTypeSchema, path: string): void {
-    const propertyValues = getNestedProperty(parent, key);
+  onEnterResource(_path: string, obj: TypedValue): void {
+    this.currentResource.push(obj.value);
+  }
+
+  onExitResource(): void {
+    this.currentResource.pop();
+  }
+
+  visitProperty(
+    _parent: TypedValue,
+    key: string,
+    path: string,
+    propertyValues: (TypedValue | TypedValue[] | undefined)[],
+    schema: InternalTypeSchema
+  ): void {
     const element = schema.fields[key];
     if (!element) {
       throw new Error(`Missing element validation schema for ${key}`);
@@ -180,19 +186,11 @@ class ResourceValidator {
         ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
         : undefined;
       for (const value of values) {
-        // take next resource, push that onto the stack.
-        const validResourceType = isResource(value.value);
-        if (validResourceType) {
-          this.currentResource.push(value.value);
-        }
         this.constraintsCheck(value, element, path);
         this.checkPropertyValue(value, path);
         const sliceName = checkSliceElement(value, element.slicing);
         if (sliceName && sliceCounts) {
           sliceCounts[sliceName] += 1;
-        }
-        if (validResourceType) {
-          this.currentResource.pop();
         }
       }
       this.validateSlices(element.slicing?.slices, sliceCounts, path);
@@ -219,10 +217,6 @@ class ResourceValidator {
   private checkPropertyValue(value: TypedValue, path: string): void {
     if (isLowerCase(value.type.charAt(0))) {
       this.validatePrimitiveType(value, path);
-    } else {
-      // Recursively validate as the expected data type
-      const type = getDataType(value.type);
-      this.validateObject(value, type, path);
     }
   }
 
@@ -330,7 +324,7 @@ class ResourceValidator {
       }
     }
     if (extensionElement) {
-      this.validateObject(extensionElement, getDataType('Element'), path);
+      crawlResource(extensionElement.value, this, getDataType('Element'), path);
     }
   }
 
@@ -383,28 +377,6 @@ function isChoiceOfType(
     return !!typedPropertyValue;
   }
   return false;
-}
-
-function getNestedProperty(value: TypedValue, key: string): (TypedValue | TypedValue[] | undefined)[] {
-  if (key === '$this') {
-    return [value];
-  }
-  const [firstProp, ...nestedProps] = key.split('.');
-  let propertyValues = [getTypedPropertyValue(value, firstProp)];
-  for (const prop of nestedProps) {
-    const next = [];
-    for (const current of propertyValues) {
-      if (Array.isArray(current)) {
-        for (const element of current) {
-          next.push(getTypedPropertyValue(element, prop));
-        }
-      } else if (current !== undefined) {
-        next.push(getTypedPropertyValue(current, prop));
-      }
-    }
-    propertyValues = next;
-  }
-  return propertyValues;
 }
 
 function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {

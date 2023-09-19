@@ -15,18 +15,18 @@ import { getConfig } from '../config';
 import { getClient } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { Repository, systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
+import { authenticateRequest } from '../oauth/middleware';
+import { systemRepo } from '../fhir/repo';
 import * as dataMigrations from '../migrations/data';
-import { authenticateToken } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
+import { getAuthenticatedContext, getRequestContext } from '../context';
 
 export const superAdminRouter = Router();
-superAdminRouter.use(authenticateToken);
+superAdminRouter.use(authenticateRequest);
 
 // POST to /admin/super/valuesets
 // to rebuild the "ValueSetElements" table.
@@ -34,7 +34,7 @@ superAdminRouter.use(authenticateToken);
 superAdminRouter.post(
   '/valuesets',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
     requireAsync(req);
 
     await sendAsyncResponse(req, res, () => rebuildR4ValueSets());
@@ -47,7 +47,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/structuredefinitions',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
     requireAsync(req);
 
     await sendAsyncResponse(req, res, () => rebuildR4StructureDefinitions());
@@ -60,7 +60,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/searchparameters',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
     requireAsync(req);
 
     await sendAsyncResponse(req, res, () => rebuildR4SearchParameters());
@@ -73,7 +73,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/reindex',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
     requireAsync(req);
 
     const resourceType = req.body.resourceType;
@@ -91,7 +91,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/compartments',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
     requireAsync(req);
 
     const resourceType = req.body.resourceType;
@@ -112,7 +112,7 @@ superAdminRouter.post(
     body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
   ],
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -140,7 +140,8 @@ superAdminRouter.post(
     body('before').isISO8601().withMessage('Invalid before date'),
   ],
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    const ctx = getAuthenticatedContext();
+    requireSuperAdmin();
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -148,8 +149,7 @@ superAdminRouter.post(
       return;
     }
 
-    const repo = res.locals.repo as Repository;
-    await repo.purgeResources(req.body.resourceType, req.body.before);
+    await ctx.repo.purgeResources(req.body.resourceType, req.body.before);
     sendOutcome(res, allOk);
   })
 );
@@ -160,7 +160,7 @@ superAdminRouter.post(
   '/removebotidjobsfromqueue',
   [body('botId').notEmpty().withMessage('Bot ID is required')],
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -179,7 +179,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/rebuildprojectid',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
     requireAsync(req);
 
     await sendAsyncResponse(req, res, async () => {
@@ -200,9 +200,10 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/migrate',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin(res);
+    requireSuperAdmin();
     requireAsync(req);
 
+    const ctx = getRequestContext();
     await sendAsyncResponse(req, res, async () => {
       const client = getClient();
       const result = await client.query('SELECT "dataVersion" FROM "DatabaseMigration"');
@@ -210,7 +211,7 @@ superAdminRouter.post(
       const migrationKeys = Object.keys(dataMigrations);
       for (let i = version + 1; i <= migrationKeys.length; i++) {
         const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + i];
-        logger.info('Running data migration', { version: `v${i}` });
+        ctx.logger.info('Running data migration', { version: `v${i}` });
         await migration.run(systemRepo);
         await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
       }
@@ -218,8 +219,8 @@ superAdminRouter.post(
   })
 );
 
-function requireSuperAdmin(res: Response): void {
-  if (!res.locals.login.superAdmin) {
+function requireSuperAdmin(): void {
+  if (!getAuthenticatedContext().login.superAdmin) {
     throw new OperationOutcomeError(forbidden);
   }
 }
@@ -231,9 +232,9 @@ function requireAsync(req: Request): void {
 }
 
 async function sendAsyncResponse(req: Request, res: Response, callback: () => Promise<any>): Promise<void> {
+  const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
-  const repo = res.locals.repo as Repository;
-  const exec = new AsyncJobExecutor(repo);
+  const exec = new AsyncJobExecutor(ctx.repo);
   await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
   exec.start(callback);
   sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));

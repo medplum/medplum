@@ -1,6 +1,6 @@
 {
   "name": "medplum-nextjs-demo",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "type": "module",
   "private": true,
   "scripts": {
@@ -12,23 +12,23 @@
   "dependencies": {
     "@emotion/react": "11.11.1",
     "@emotion/server": "11.11.0",
-    "@mantine/core": "6.0.19",
-    "@mantine/hooks": "6.0.19",
-    "@mantine/next": "6.0.19",
-    "@mantine/notifications": "6.0.19",
-    "@medplum/core": "2.1.0",
-    "@medplum/react": "2.1.0",
+    "@mantine/core": "6.0.20",
+    "@mantine/hooks": "6.0.20",
+    "@mantine/next": "6.0.20",
+    "@mantine/notifications": "6.0.20",
+    "@medplum/core": "2.1.1",
+    "@medplum/react": "2.1.1",
     "next": "13.4.19",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "2.1.0",
-    "@types/node": "20.5.1",
-    "@types/react": "18.2.20",
+    "@medplum/fhirtypes": "2.1.1",
+    "@types/node": "20.6.2",
+    "@types/react": "18.2.21",
     "@types/react-dom": "18.2.7",
-    "eslint": "8.47.0",
+    "eslint": "8.49.0",
     "eslint-config-next": "13.4.19",
-    "typescript": "5.1.6"
+    "typescript": "5.2.2"
   }
 }

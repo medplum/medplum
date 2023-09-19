@@ -539,6 +539,23 @@
         "type": "token",
         "expression": "Agent.status"
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/priority-order",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "priority-order",
+        "url": "https://medplum.com/fhir/SearchParameter/priority-order",
+        "version": "4.0.1",
+        "name": "status",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Numeric priority order for resource types using http://hl7.org/fhir/ValueSet/request-priority",
+        "code": "priority-order",
+        "base": ["CommunicationRequest", "MedicationRequest", "RequestGroup", "ServiceRequest", "Task"],
+        "type": "number",
+        "expression": "iif(priority = 'stat', 50, iif(priority = 'asap', 40, iif(priority = 'urgent', 30, iif(priority = 'routine', 20, 10))))"
+      }
     }
   ]
 }

@@ -15,7 +15,7 @@ import {
 } from 'jose';
 import { MedplumServerConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
+import { globalLogger } from '../logger';
 
 export interface MedplumBaseClaims extends JWTPayload {
   /**
@@ -109,12 +109,12 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
   let jsonWebKeys: JsonWebKey[] | undefined;
 
   if (searchResult.length > 0) {
-    logger.info(`Loaded ${searchResult.length} key(s) from the database`);
+    globalLogger.info(`Loaded ${searchResult.length} key(s) from the database`);
     jsonWebKeys = searchResult;
   } else {
     // Generate a key pair
     // https://github.com/panva/jose/blob/HEAD/docs/functions/util_generate_key_pair.generatekeypair.md
-    logger.info('No keys found.  Creating new key...');
+    globalLogger.info('No keys found.  Creating new key...');
     const keyResult = await generateKeyPair(ALG);
     const jwk = await exportJWK(keyResult.privateKey);
     const createResult = await systemRepo.createResource<JsonWebKey>({

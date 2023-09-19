@@ -6,9 +6,10 @@ import { authenticator } from 'otplib';
 import { asyncWrap } from '../async';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
-import { authenticateToken } from '../oauth/middleware';
+import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
 import { sendLoginResult } from './utils';
+import { getAuthenticatedContext } from '../context';
 
 authenticator.options = {
   window: 1,
@@ -18,9 +19,10 @@ export const mfaRouter = Router();
 
 mfaRouter.get(
   '/status',
-  authenticateToken,
+  authenticateRequest,
   asyncWrap(async (_req: Request, res: Response) => {
-    let user = await systemRepo.readReference<User>(res.locals.membership.user as Reference<User>);
+    const ctx = getAuthenticatedContext();
+    let user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
     if (user.mfaEnrolled) {
       res.json({ enrolled: true });
       return;
@@ -47,10 +49,11 @@ mfaRouter.get(
 
 mfaRouter.post(
   '/enroll',
-  authenticateToken,
+  authenticateRequest,
   [body('token').notEmpty().withMessage('Missing token')],
   asyncWrap(async (req: Request, res: Response) => {
-    const user = await systemRepo.readReference<User>(res.locals.membership.user as Reference<User>);
+    const ctx = getAuthenticatedContext();
+    const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
 
     if (user.mfaEnrolled) {
       sendOutcome(res, badRequest('Already enrolled'));

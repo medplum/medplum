@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
 jest.mock('node-fetch');
@@ -111,13 +111,15 @@ describe('New patient', () => {
     expect(res6.status).toBe(201);
 
     // As a super admin, enable patient registration
-    await systemRepo.patchResource('Project', projectId, [
-      {
-        op: 'add',
-        path: '/defaultPatientAccessPolicy',
-        value: createReference(res6.body),
-      },
-    ]);
+    await withTestContext(() =>
+      systemRepo.patchResource('Project', projectId, [
+        {
+          op: 'add',
+          path: '/defaultPatientAccessPolicy',
+          value: createReference(res6.body),
+        },
+      ])
+    );
 
     // Try to register as a patient in the new project
     // (This should succeed)

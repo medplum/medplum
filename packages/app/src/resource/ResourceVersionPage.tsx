@@ -13,7 +13,7 @@ export function ResourceVersionPage(): JSX.Element {
     tab: string;
   };
   const medplum = useMedplum();
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [historyBundle, setHistoryBundle] = useState<Bundle | undefined>();
   const [error, setError] = useState<OperationOutcome | undefined>();
 

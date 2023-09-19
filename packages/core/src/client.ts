@@ -40,17 +40,17 @@ import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
 import { isJwt, isMedplumAccessToken, parseJWTPayload } from './jwt';
 import {
-  OperationOutcomeError,
   badRequest,
   isOk,
   isOperationOutcome,
   normalizeOperationOutcome,
   notFound,
+  OperationOutcomeError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
-import { IndexedStructureDefinition, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
-import { CodeChallengeMethod, ProfileResource, arrayBufferToBase64, createReference, sleep } from './utils';
+import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
+import { arrayBufferToBase64, CodeChallengeMethod, createReference, ProfileResource, sleep } from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 
@@ -81,6 +81,8 @@ export interface MedplumClientOptions {
    *
    * Default value is baseUrl + "/oauth2/authorize".
    *
+   * Can be specified as absolute URL or relative to baseUrl.
+   *
    * Use this if you want to use a separate OAuth server.
    */
   authorizeUrl?: string;
@@ -89,6 +91,8 @@ export interface MedplumClientOptions {
    * FHIR URL path.
    *
    * Default value is "fhir/R4/".
+   *
+   * Can be specified as absolute URL or relative to baseUrl.
    *
    * Use this if you want to use a different path when connecting to a FHIR server.
    */
@@ -99,6 +103,8 @@ export interface MedplumClientOptions {
    *
    * Default value is baseUrl + "/oauth2/token".
    *
+   * Can be specified as absolute URL or relative to baseUrl.
+   *
    * Use this if you want to use a separate OAuth server.
    */
   tokenUrl?: string;
@@ -107,6 +113,8 @@ export interface MedplumClientOptions {
    * OAuth2 logout URL.
    *
    * Default value is baseUrl + "/oauth2/logout".
+   *
+   * Can be specified as absolute URL or relative to baseUrl.
    *
    * Use this if you want to use a separate OAuth server.
    */
@@ -174,15 +182,6 @@ export interface MedplumClientOptions {
   fetch?: FetchLike;
 
   /**
-   * The profile name.
-   *
-   * This is for handling multiple profiles to access different FHIR Servers
-   *
-   * If undefined, the default profile is "default".
-   */
-  profile?: string;
-
-  /**
    * Storage implementation.
    *
    * Default is window.localStorage (if available), this is the common implementation for use in the browser, or an in-memory storage implementation.  If using Medplum on a server it may be useful to provide a custom storage implementation, for example using redis, a database or a file based storage.  Medplum CLI is an an example of `FileSystemStorage`, for reference.
@@ -238,6 +237,20 @@ export interface MedplumClientOptions {
    * For client side applications, consider redirecting to a sign in page.
    */
   onUnauthenticated?: () => void;
+
+  /**
+   * The default redirect behavior.
+   *
+   * The default behavior is to not follow redirects.
+   *
+   * Use "follow" to automatically follow redirects.
+   */
+  redirect?: RequestRedirect;
+
+  /**
+   * When the verbose flag is set, the client will log all requests and responses to the console.
+   */
+  verbose?: boolean;
 }
 
 export interface FetchLike {
@@ -503,6 +516,15 @@ export enum OAuthTokenType {
   Saml2Token = 'urn:ietf:params:oauth:token-type:saml2',
 }
 
+/**
+ * OAuth 2.0 Client Authentication Methods
+ * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.2
+ */
+export enum OAuthClientAssertionType {
+  /** Using JWTs for Client Authentication */
+  JwtBearer = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+}
+
 interface SessionDetails {
   project: Project;
   membership: ProjectMembership;
@@ -563,6 +585,7 @@ interface SessionDetails {
  *  </head>
  */
 export class MedplumClient extends EventTarget {
+  private readonly options: MedplumClientOptions;
   private readonly fetch: FetchLike;
   private readonly createPdfImpl?: CreatePdfFunction;
   private readonly storage: ClientStorage;
@@ -596,16 +619,17 @@ export class MedplumClient extends EventTarget {
       }
     }
 
+    this.options = options ?? {};
     this.fetch = options?.fetch ?? getDefaultFetch();
     this.storage = options?.storage ?? new ClientStorage();
     this.createPdfImpl = options?.createPdf;
-    this.baseUrl = ensureTrailingSlash(options?.baseUrl) ?? DEFAULT_BASE_URL;
-    this.fhirBaseUrl = this.baseUrl + (ensureTrailingSlash(options?.fhirUrlPath) ?? 'fhir/R4/');
+    this.baseUrl = ensureTrailingSlash(options?.baseUrl ?? DEFAULT_BASE_URL);
+    this.fhirBaseUrl = ensureTrailingSlash(concatUrls(this.baseUrl, options?.fhirUrlPath ?? 'fhir/R4/'));
+    this.authorizeUrl = concatUrls(this.baseUrl, options?.authorizeUrl ?? 'oauth2/authorize');
+    this.tokenUrl = concatUrls(this.baseUrl, options?.tokenUrl ?? 'oauth2/token');
+    this.logoutUrl = concatUrls(this.baseUrl, options?.logoutUrl ?? 'oauth2/logout');
     this.clientId = options?.clientId ?? '';
     this.clientSecret = options?.clientSecret ?? '';
-    this.authorizeUrl = options?.authorizeUrl ?? this.baseUrl + 'oauth2/authorize';
-    this.tokenUrl = options?.tokenUrl ?? this.baseUrl + 'oauth2/token';
-    this.logoutUrl = options?.logoutUrl ?? this.baseUrl + 'oauth2/logout';
     this.onUnauthenticated = options?.onUnauthenticated;
 
     this.cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
@@ -652,6 +676,28 @@ export class MedplumClient extends EventTarget {
    */
   getAuthorizeUrl(): string {
     return this.authorizeUrl;
+  }
+
+  /**
+   * Returns the current token URL.
+   * By default, this is set to `https://api.medplum.com/oauth2/token`.
+   * This can be overridden by setting the `tokenUrl` option when creating the client.
+   * @category HTTP
+   * @returns The current token URL.
+   */
+  getTokenUrl(): string {
+    return this.tokenUrl;
+  }
+
+  /**
+   * Returns the current logout URL.
+   * By default, this is set to `https://api.medplum.com/oauth2/logout`.
+   * This can be overridden by setting the `logoutUrl` option when creating the client.
+   * @category HTTP
+   * @returns The current logout URL.
+   */
+  getLogoutUrl(): string {
+    return this.logoutUrl;
   }
 
   /**
@@ -769,9 +815,7 @@ export class MedplumClient extends EventTarget {
    */
   post(url: URL | string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
     url = url.toString();
-    if (body) {
-      this.setRequestBody(options, body);
-    }
+    this.setRequestBody(options, body);
     if (contentType) {
       this.setRequestContentType(options, contentType);
     }
@@ -794,9 +838,7 @@ export class MedplumClient extends EventTarget {
    */
   put(url: URL | string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
     url = url.toString();
-    if (body) {
-      this.setRequestBody(options, body);
-    }
+    this.setRequestBody(options, body);
     if (contentType) {
       this.setRequestContentType(options, contentType);
     }
@@ -1080,7 +1122,7 @@ export class MedplumClient extends EventTarget {
    * @returns The well-formed FHIR URL.
    */
   fhirUrl(...path: string[]): URL {
-    return new URL(this.fhirBaseUrl + path.join('/'));
+    return new URL(path.join('/'), this.fhirBaseUrl);
   }
 
   /**
@@ -2298,20 +2340,6 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * Translates/normalizes a URL so that it can be directly used with `MedplumClient.fetch`.
-   * Especially useful for translating `Binary/{id}` URLs to FHIR paths.
-   * @param url A valid URL within the `MedplumClient` context.
-   * @returns URL as a string that can be used with `MedplumClient.fetch`
-   */
-  normalizeFetchUrl(url: URL | string): string {
-    let urlString = url.toString();
-    if (urlString.startsWith(BINARY_URL_PREFIX)) {
-      urlString = this.fhirUrl(urlString).toString();
-    }
-    return urlString;
-  }
-
-  /**
    * Downloads the URL as a blob. Can accept binary URLs in the form of `Binary/{id}` as well.
    * @category Read
    * @param url The URL to request. Can be a standard URL or one in the form of `Binary/{id}`.
@@ -2322,8 +2350,12 @@ export class MedplumClient extends EventTarget {
     if (this.refreshPromise) {
       await this.refreshPromise;
     }
+    const urlString = url.toString();
+    if (urlString.startsWith(BINARY_URL_PREFIX)) {
+      url = this.fhirUrl(urlString);
+    }
     this.addFetchOptionsDefaults(options);
-    const response = await this.fetch(this.normalizeFetchUrl(url), options);
+    const response = await this.fetchWithRetry(url.toString(), options);
     return response.blob();
   }
 
@@ -2512,7 +2544,8 @@ export class MedplumClient extends EventTarget {
     }
 
     const contentLocation = response.headers.get('content-location');
-    if (response.status === 201 && contentLocation && options.redirect === 'follow') {
+    const redirectMode = options.redirect ?? this.options.redirect;
+    if (response.status === 201 && contentLocation && redirectMode === 'follow') {
       // Follow redirect
       return this.request('GET', contentLocation, { ...options, body: undefined });
     }
@@ -2546,7 +2579,13 @@ export class MedplumClient extends EventTarget {
     let response: Response | undefined = undefined;
     for (let retry = 0; retry < maxRetries; retry++) {
       try {
+        if (this.options.verbose) {
+          this.logRequest(url, options);
+        }
         response = (await this.fetch(url, options)) as Response;
+        if (this.options.verbose) {
+          this.logResponse(response);
+        }
         if (response.status < 500) {
           return response;
         }
@@ -2556,6 +2595,24 @@ export class MedplumClient extends EventTarget {
       await sleep(retryDelay);
     }
     return response as Response;
+  }
+
+  private logRequest(url: string, options: RequestInit): void {
+    console.log(`> ${options.method} ${url}`);
+    if (options.headers) {
+      const headers = options.headers as Record<string, string>;
+      const entries = Object.entries(headers).sort((a, b) => a[0].localeCompare(b[0]));
+      for (const [key, value] of entries) {
+        console.log(`> ${key}: ${value}`);
+      }
+    }
+  }
+
+  private logResponse(response: Response): void {
+    console.log(`< ${response.status} ${response.statusText}`);
+    if (response.headers) {
+      response.headers.forEach((value, key) => console.log(`< ${key}: ${value}`));
+    }
   }
 
   private async pollStatus<T>(statusUrl: string): Promise<T> {
@@ -2821,6 +2878,7 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
+   *
    * @category Authentication
    * @param clientId The client ID.
    * @param clientSecret The client secret.
@@ -2847,6 +2905,8 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.1
+   *
+   * @category Authentication
    * @param clientId The client ID.
    * @param assertion The JWT assertion.
    * @param scope The OAuth scope.
@@ -2860,6 +2920,23 @@ export class MedplumClient extends EventTarget {
     formBody.set('client_id', clientId);
     formBody.set('assertion', assertion);
     formBody.set('scope', scope);
+    return this.fetchTokens(formBody);
+  }
+
+  /**
+   * Starts a new OAuth2 JWT assertion flow.
+   *
+   * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.2
+   *
+   * @category Authentication
+   * @param jwt The JWT assertion.
+   * @returns Promise that resolves to the client profile.
+   */
+  async startJwtAssertionLogin(jwt: string): Promise<ProfileResource> {
+    const formBody = new URLSearchParams();
+    formBody.append('grant_type', OAuthGrantType.ClientCredentials);
+    formBody.append('client_assertion_type', OAuthClientAssertionType.JwtBearer);
+    formBody.append('client_assertion', jwt);
     return this.fetchTokens(formBody);
   }
 
@@ -2898,7 +2975,7 @@ export class MedplumClient extends EventTarget {
    * @returns The user profile resource.
    */
   private async fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
-    const options = {
+    const options: RequestInit = {
       method: 'POST',
       headers: { 'Content-Type': ContentType.FORM_URL_ENCODED },
       body: formBody.toString(),
@@ -2910,7 +2987,7 @@ export class MedplumClient extends EventTarget {
       headers['Authorization'] = `Basic ${this.basicAuth}`;
     }
 
-    const response = await this.fetch(this.tokenUrl, options);
+    const response = await this.fetchWithRetry(this.tokenUrl, options);
     if (!response.ok) {
       this.clearActiveLogin();
       try {
@@ -3019,11 +3096,26 @@ function getWindowOrigin(): string {
   return window.location.protocol + '//' + window.location.host + '/';
 }
 
-function ensureTrailingSlash(url: string | undefined): string | undefined {
-  if (!url) {
-    return url;
-  }
+/**
+ * Ensures the given URL has a trailing slash.
+ * @param url The URL to ensure has a trailing slash.
+ * @returns The URL with a trailing slash.
+ */
+function ensureTrailingSlash(url: string): string {
   return url.endsWith('/') ? url : url + '/';
+}
+
+/**
+ * Concatenates the given base URL and URL.
+ *
+ * If the URL is absolute, it is returned as-is.
+ *
+ * @param baseUrl The base URL.
+ * @param url The URL to concat. Can be relative or absolute.
+ * @returns The concatenated URL.
+ */
+function concatUrls(baseUrl: string, url: string): string {
+  return new URL(url, baseUrl).toString();
 }
 
 /**

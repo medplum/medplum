@@ -6,8 +6,8 @@ import { body, validationResult } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
-import { authenticateTokenImpl } from '../oauth/middleware';
 import { bcryptHashPassword } from './utils';
+import { getAuthenticatedContext } from '../context';
 
 export const changePasswordValidators = [
   body('oldPassword').notEmpty().withMessage('Missing oldPassword'),
@@ -15,7 +15,7 @@ export const changePasswordValidators = [
 ];
 
 export async function changePasswordHandler(req: Request, res: Response): Promise<void> {
-  await authenticateTokenImpl(req, res);
+  const ctx = getAuthenticatedContext();
 
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -23,7 +23,7 @@ export async function changePasswordHandler(req: Request, res: Response): Promis
     return;
   }
 
-  const user = await systemRepo.readReference<User>(res.locals.membership.user as Reference<User>);
+  const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
 
   await changePassword({
     user,

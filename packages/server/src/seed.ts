@@ -3,7 +3,7 @@ import { Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtyp
 import { NIL as nullUuid, v5 } from 'uuid';
 import { bcryptHashPassword } from './auth/utils';
 import { systemRepo } from './fhir/repo';
-import { logger } from './logger';
+import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
@@ -12,7 +12,7 @@ export const r4ProjectId = v5('R4', nullUuid);
 
 export async function seedDatabase(): Promise<void> {
   if (await isSeeded()) {
-    logger.info('Already seeded');
+    globalLogger.info('Already seeded');
     return;
   }
 

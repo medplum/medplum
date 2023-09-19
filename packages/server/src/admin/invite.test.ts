@@ -14,7 +14,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
 jest.mock('node-fetch');
@@ -26,7 +26,7 @@ describe('Admin Invite', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initApp(app, config);
+    await withTestContext(() => initApp(app, config));
   });
 
   afterAll(async () => {
@@ -49,13 +49,15 @@ describe('Admin Invite', () => {
 
   test('New user to project', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Second, Alice invites Bob to the project
     const bobEmail = `bob${randomUUID()}@example.com`;
@@ -84,23 +86,27 @@ describe('Admin Invite', () => {
 
   test('Existing user to project', async () => {
     // First, Alice creates a project
-    const aliceRegistration = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const aliceRegistration = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Second, Bob creates a project
     const bobEmail = `bob${randomUUID()}@example.com`;
-    await registerNew({
-      firstName: 'Bob',
-      lastName: 'Jones',
-      projectName: 'Bob Project',
-      email: bobEmail,
-      password: 'password!@#',
-    });
+    await withTestContext(() =>
+      registerNew({
+        firstName: 'Bob',
+        lastName: 'Jones',
+        projectName: 'Bob Project',
+        email: bobEmail,
+        password: 'password!@#',
+      })
+    );
 
     // Third, Alice invites Bob to the project
     // Because Bob already has an account, no emails should be sent
@@ -128,13 +134,15 @@ describe('Admin Invite', () => {
 
   test('Existing practitioner to project', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Second, Alice creates a Practitioner resource
     const bobEmail = `bob${randomUUID()}@example.com`;
@@ -169,13 +177,15 @@ describe('Admin Invite', () => {
 
   test('Specified practitioner to project', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Second, Alice creates a Practitioner resource
     const bobEmail = `bob${randomUUID()}@example.com`;
@@ -212,13 +222,15 @@ describe('Admin Invite', () => {
 
   test('Access denied', async () => {
     // First, Alice creates a project
-    const aliceRegistration = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const aliceRegistration = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Second, Alice invites Bob to project
     const bobRegistration = await addTestUser(aliceRegistration.project);
@@ -243,13 +255,15 @@ describe('Admin Invite', () => {
 
   test('Input validation', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Second, Alice invites Bob to the project
     // But she forgets his email address
@@ -272,13 +286,15 @@ describe('Admin Invite', () => {
 
   test('Do not send email', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Second, Alice invites Bob to the project
     const bobEmail = `bob${randomUUID()}@example.com`;
@@ -300,13 +316,15 @@ describe('Admin Invite', () => {
 
   test('Invite by externalId', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Second, Alice invites Bob to the project
     const bobSub = randomUUID();
@@ -329,13 +347,15 @@ describe('Admin Invite', () => {
 
   test('Reuse deleted externalId', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Alice invites Bob to the project
     const bobSub = randomUUID();
@@ -377,13 +397,15 @@ describe('Admin Invite', () => {
 
   test('Invite as client', async () => {
     // First, Alice creates a project
-    const { project, accessToken, client } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken, client } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Get the client membership
     const res2 = await request(app)
@@ -431,13 +453,15 @@ describe('Admin Invite', () => {
 
   test('Invite user as admin', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Second, Alice invites Bob to the project
     const bobEmail = `bob${randomUUID()}@example.com`;
@@ -459,13 +483,15 @@ describe('Admin Invite', () => {
 
   test('Invite user with admin flag as false', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Second, Alice invites Bob to the project
     const bobEmail = `bob${randomUUID()}@example.com`;
@@ -489,13 +515,15 @@ describe('Admin Invite', () => {
     mockSESv2Client.rejects('error');
 
     // First, Alice creates a project
-    const aliceRegistration = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const aliceRegistration = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
     const bobEmail = `bob${randomUUID()}@example.com`;
 
     // Alice invites Bob. Under normal circumstances the email would be sent
@@ -517,13 +545,15 @@ describe('Admin Invite', () => {
 
   test('Super admin invite to different project', async () => {
     // First, Alice creates a project
-    const aliceRegistration = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const aliceRegistration = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // As a super admin, invite Bob to Alice's project
     const superAdminAccessToken = await initTestAuth({ superAdmin: true });
@@ -543,13 +573,15 @@ describe('Admin Invite', () => {
 
   test('Convert capitalized email to lower case', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Second, Alice invites Bob to the project
     const upperBobEmail = `BOB${randomUUID()}@example.com`;

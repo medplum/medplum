@@ -1,10 +1,13 @@
 import {
+  AccessPolicyInteraction,
   allOk,
   badRequest,
   canReadResourceType,
   canWriteResourceType,
   deepEquals,
   evalFhirPath,
+  evalFhirPathTyped,
+  Operator as FhirOperator,
   forbidden,
   formatSearchQuery,
   getSearchParameterDetails,
@@ -20,6 +23,7 @@ import {
   parseCriteriaAsSearchRequest,
   protectedResourceTypes,
   resolveId,
+  satisfiedAccessPolicy,
   SearchParameterDetails,
   SearchParameterType,
   SearchRequest,
@@ -27,10 +31,6 @@ import {
   tooManyRequests,
   validate,
   validateResourceType,
-  Operator as FhirOperator,
-  satisfiedAccessPolicy,
-  AccessPolicyInteraction,
-  evalFhirPathTyped,
 } from '@medplum/core';
 import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
 import {
@@ -51,9 +51,10 @@ import { Pool, PoolClient } from 'pg';
 import { applyPatch, Operation } from 'rfc6902';
 import validator from 'validator';
 import { getConfig } from '../config';
+import { getRequestContext } from '../context';
 import { getClient } from '../database';
-import { logger } from '../logger';
 import { getRedis } from '../redis';
+import { r4ProjectId } from '../seed';
 import {
   AuditEventOutcome,
   AuditEventSubtype,
@@ -75,13 +76,13 @@ import { HumanNameTable } from './lookups/humanname';
 import { LookupTable } from './lookups/lookuptable';
 import { TokenTable } from './lookups/token';
 import { ValueSetElementTable } from './lookups/valuesetelement';
-import { getPatient } from './patient';
+import { getPatients } from './patient';
 import { validateReferences } from './references';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, Operator, SelectQuery } from './sql';
 import { getSearchParameters } from './structure';
-import { r4ProjectId } from '../seed';
+import { AsyncLocalStorage } from 'async_hooks';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -528,7 +529,8 @@ export class Repository extends BaseRepository implements FhirRepository {
       const elapsedTime = Number(process.hrtime.bigint() - start);
       const MILLISECONDS = 1e6; // Conversion factor from ns to ms
       if (elapsedTime > 10 * MILLISECONDS) {
-        logger.debug('High validator latency', {
+        const ctx = getRequestContext();
+        ctx.logger.debug('High validator latency', {
           resourceType: resource.resourceType,
           id: resource.id,
           time: elapsedTime / MILLISECONDS,
@@ -544,8 +546,9 @@ export class Repository extends BaseRepository implements FhirRepository {
       const loadStart = process.hrtime.bigint();
       const profile = await this.loadProfile(url);
       const loadTime = Number(process.hrtime.bigint() - loadStart);
+      const ctx = getRequestContext();
       if (!profile) {
-        logger.warn('Unknown profile referenced', {
+        ctx.logger.warn('Unknown profile referenced', {
           resource: `${resource.resourceType}/${resource.id}`,
           url,
         });
@@ -554,7 +557,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       const validateStart = process.hrtime.bigint();
       validate(resource, profile);
       const validateTime = Number(process.hrtime.bigint() - validateStart);
-      logger.debug('Profile loaded', {
+      ctx.logger.debug('Profile loaded', {
         url,
         loadTime,
         validateTime,
@@ -715,15 +718,20 @@ export class Repository extends BaseRepository implements FhirRepository {
     const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
     this.addDeletedFilter(builder);
 
-    await builder.executeCursor(client, async (row: any) => {
-      try {
-        const resource = JSON.parse(row.content) as Resource;
-        (resource.meta as Meta).compartment = this.getCompartments(resource);
-        await this.updateResourceImpl(JSON.parse(row.content) as Resource, false);
-      } catch (err) {
-        logger.error('Failed to rebuild compartments for resource', { error: normalizeErrorString(err) });
-      }
-    });
+    await builder.executeCursor(
+      client,
+      AsyncLocalStorage.bind(async (row: any) => {
+        try {
+          const resource = JSON.parse(row.content) as Resource;
+          (resource.meta as Meta).compartment = this.getCompartments(resource);
+          await this.updateResourceImpl(JSON.parse(row.content) as Resource, false);
+        } catch (err) {
+          getRequestContext().logger.error('Failed to rebuild compartments for resource', {
+            error: normalizeErrorString(err),
+          });
+        }
+      })
+    );
   }
 
   /**
@@ -741,13 +749,16 @@ export class Repository extends BaseRepository implements FhirRepository {
     const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
     this.addDeletedFilter(builder);
 
-    await builder.executeCursor(client, async (row: any) => {
-      try {
-        await this.reindexResourceImpl(JSON.parse(row.content) as Resource);
-      } catch (err) {
-        logger.error('Failed to reindex resource', { error: normalizeErrorString(err) });
-      }
-    });
+    await builder.executeCursor(
+      client,
+      AsyncLocalStorage.bind(async (row: any) => {
+        try {
+          await this.reindexResourceImpl(JSON.parse(row.content) as Resource);
+        } catch (err) {
+          getRequestContext().logger.error('Failed to reindex resource', { error: normalizeErrorString(err) });
+        }
+      })
+    );
   }
 
   /**
@@ -1089,8 +1100,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       result.push(resource.meta.account);
     }
 
-    const patient = getPatient(resource);
-    if (patient) {
+    for (const patient of getPatients(resource)) {
       const patientId = resolveId(patient);
       if (patientId && validator.isUUID(patientId)) {
         result.push(patient);
@@ -1441,8 +1451,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
 
     if (updated.resourceType !== 'Patient') {
-      const patientRef = getPatient(updated);
-      if (patientRef) {
+      for (const patientRef of getPatients(updated)) {
         // If the resource is in a patient compartment, then lookup the patient.
         try {
           const patient = await systemRepo.readReference(patientRef);
@@ -1451,7 +1460,8 @@ export class Repository extends BaseRepository implements FhirRepository {
             return patient.meta.account;
           }
         } catch (err: any) {
-          logger.debug('Error setting patient compartment', err);
+          const ctx = getRequestContext();
+          ctx.logger.debug('Error setting patient compartment', err);
         }
       }
     }

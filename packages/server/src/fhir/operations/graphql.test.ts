@@ -6,7 +6,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config';
-import { addTestUser } from '../../test.setup';
+import { addTestUser, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
 
 const app = express();
@@ -20,104 +20,106 @@ let encounter2: Encounter;
 let bobAccessToken: string;
 
 describe('GraphQL', () => {
-  beforeAll(async () => {
-    const config = await loadTestConfig();
-    await initApp(app, config);
+  beforeAll(() =>
+    withTestContext(async () => {
+      const config = await loadTestConfig();
+      await initApp(app, config);
 
-    // Setup a new project
-    const aliceRegistration = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
-    accessToken = aliceRegistration.accessToken;
-    practitioner = aliceRegistration.profile as Practitioner;
+      // Setup a new project
+      const aliceRegistration = await registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      });
+      accessToken = aliceRegistration.accessToken;
+      practitioner = aliceRegistration.profile as Practitioner;
 
-    const aliceRepo = new Repository({
-      author: createReference(aliceRegistration.profile),
-      project: aliceRegistration.project.id as string,
-    });
+      const aliceRepo = new Repository({
+        author: createReference(aliceRegistration.profile),
+        project: aliceRegistration.project.id as string,
+      });
 
-    // Create a profile picture
-    binary = await aliceRepo.createResource<Binary>({ resourceType: 'Binary' });
+      // Create a profile picture
+      binary = await aliceRepo.createResource<Binary>({ resourceType: 'Binary' });
 
-    // Creat a simple patient
-    patient = await aliceRepo.createResource<Patient>({
-      resourceType: 'Patient',
-      name: [
-        {
-          given: ['Alice'],
-          family: 'Smith',
+      // Creat a simple patient
+      patient = await aliceRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+        photo: [
+          {
+            contentType: 'image/jpeg',
+            url: getReferenceString(binary),
+          },
+        ],
+        telecom: [
+          {
+            system: 'email',
+            value: 'alice@example.com',
+          },
+        ],
+        generalPractitioner: [createReference(aliceRegistration.profile as Practitioner)],
+      });
+
+      // Create a service request
+      serviceRequest = await aliceRepo.createResource<ServiceRequest>({
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        code: {
+          text: 'Chest CT',
         },
-      ],
-      photo: [
-        {
-          contentType: 'image/jpeg',
-          url: getReferenceString(binary),
-        },
-      ],
-      telecom: [
-        {
-          system: 'email',
-          value: 'alice@example.com',
-        },
-      ],
-      generalPractitioner: [createReference(aliceRegistration.profile as Practitioner)],
-    });
+        subject: createReference(patient),
+      });
 
-    // Create a service request
-    serviceRequest = await aliceRepo.createResource<ServiceRequest>({
-      resourceType: 'ServiceRequest',
-      status: 'active',
-      intent: 'order',
-      code: {
-        text: 'Chest CT',
-      },
-      subject: createReference(patient),
-    });
-
-    // Create an encounter referring to the patient
-    encounter1 = await aliceRepo.createResource<Encounter>({
-      resourceType: 'Encounter',
-      status: 'in-progress',
-      class: {
-        code: 'HH',
-      },
-      subject: createReference(patient),
-      basedOn: [createReference(serviceRequest)],
-    });
-
-    // Create an encounter referring to missing patient
-    encounter2 = await aliceRepo.createResource<Encounter>({
-      resourceType: 'Encounter',
-      status: 'in-progress',
-      class: {
-        code: 'HH',
-      },
-      subject: { reference: 'Patient/' + randomUUID() },
-    });
-
-    // Invite Bob with the access policy
-    const bobRegistration = await addTestUser(aliceRegistration.project, {
-      resourceType: 'AccessPolicy',
-      resource: [
-        {
-          resourceType: 'Encounter',
+      // Create an encounter referring to the patient
+      encounter1 = await aliceRepo.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: {
+          code: 'HH',
         },
-        {
-          resourceType: 'Patient',
-          hiddenFields: ['telecom'],
+        subject: createReference(patient),
+        basedOn: [createReference(serviceRequest)],
+      });
+
+      // Create an encounter referring to missing patient
+      encounter2 = await aliceRepo.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: {
+          code: 'HH',
         },
-        {
-          resourceType: 'ServiceRequest',
-          criteria: 'ServiceRequest?status=completed',
-        },
-      ],
-    });
-    bobAccessToken = bobRegistration.accessToken;
-  });
+        subject: { reference: 'Patient/' + randomUUID() },
+      });
+
+      // Invite Bob with the access policy
+      const bobRegistration = await addTestUser(aliceRegistration.project, {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Encounter',
+          },
+          {
+            resourceType: 'Patient',
+            hiddenFields: ['telecom'],
+          },
+          {
+            resourceType: 'ServiceRequest',
+            criteria: 'ServiceRequest?status=completed',
+          },
+        ],
+      });
+      bobAccessToken = bobRegistration.accessToken;
+    })
+  );
 
   afterAll(async () => {
     await shutdownApp();

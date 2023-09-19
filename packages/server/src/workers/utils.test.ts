@@ -1,5 +1,6 @@
 import { Subscription } from '@medplum/fhirtypes';
 import { isJobSuccessful } from './utils';
+import { withTestContext } from '../test.setup';
 
 describe('Job Success Checker', () => {
   test('Successful job with no custom codes', () => {
@@ -31,7 +32,7 @@ describe('Job Success Checker', () => {
         },
       ],
     };
-    expect(isJobSuccessful(subscription, 200)).toBe(true);
+    withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(true));
   });
 
   test('Unsuccessful job with invalid custom codes', () => {
@@ -50,7 +51,7 @@ describe('Job Success Checker', () => {
         },
       ],
     };
-    expect(isJobSuccessful(subscription, 500)).toBe(false);
+    withTestContext(() => expect(isJobSuccessful(subscription, 500)).toBe(false));
   });
 
   test('Successful job with valid custom codes', () => {
@@ -69,7 +70,7 @@ describe('Job Success Checker', () => {
         },
       ],
     };
-    expect(isJobSuccessful(subscription, 500)).toBe(true);
+    withTestContext(() => expect(isJobSuccessful(subscription, 500)).toBe(true));
   });
 
   test('Unsuccessful job with valid custom codes', () => {
@@ -88,7 +89,7 @@ describe('Job Success Checker', () => {
         },
       ],
     };
-    expect(isJobSuccessful(subscription, 200)).toBe(false);
+    withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(false));
   });
 
   test('Successful job with valid custom codes comma separated', () => {
@@ -107,6 +108,6 @@ describe('Job Success Checker', () => {
         },
       ],
     };
-    expect(isJobSuccessful(subscription, 200)).toBe(true);
+    withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(true));
   });
 });

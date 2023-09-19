@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { createReference } from '@medplum/core';
 
 jest.mock('@aws-sdk/client-sesv2');
@@ -20,7 +20,7 @@ const app = express();
 describe('Project Admin routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initApp(app, config);
+    await withTestContext(() => initApp(app, config));
   });
 
   afterAll(async () => {
@@ -38,13 +38,15 @@ describe('Project Admin routes', () => {
 
   test('Get project and promote admin', async () => {
     // Register and create a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'John',
-      lastName: 'Adams',
-      projectName: 'Adams Project',
-      email: `john${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'John',
+        lastName: 'Adams',
+        projectName: 'Adams Project',
+        email: `john${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Invite a new member
     const res2 = await request(app)
@@ -126,13 +128,15 @@ describe('Project Admin routes', () => {
   });
 
   test('Get project access denied', async () => {
-    const aliceRegistration = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const aliceRegistration = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     const bobRegistration = await addTestUser(aliceRegistration.project, { resourceType: 'AccessPolicy' });
 
@@ -270,13 +274,15 @@ describe('Project Admin routes', () => {
 
   test('Delete membership', async () => {
     // Register and create a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Delete membership project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Delete membership project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Invite a new member
     const res2 = await request(app)
@@ -375,13 +381,15 @@ describe('Project Admin routes', () => {
 
   test('Save project secrets', async () => {
     // Register and create a project
-    const { project, profile, accessToken } = await registerNew({
-      firstName: 'John',
-      lastName: 'Adams',
-      projectName: 'Adams Project',
-      email: `john${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, profile, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'John',
+        lastName: 'Adams',
+        projectName: 'Adams Project',
+        email: `john${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Add a secret
     const res2 = await request(app)
@@ -415,13 +423,15 @@ describe('Project Admin routes', () => {
 
   test('Save project sites', async () => {
     // Register and create a project
-    const { project, accessToken } = await registerNew({
-      firstName: 'John',
-      lastName: 'Adams',
-      projectName: 'Adams Project',
-      email: `john${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'John',
+        lastName: 'Adams',
+        projectName: 'Adams Project',
+        email: `john${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     // Add a site
     const res2 = await request(app)

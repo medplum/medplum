@@ -18,7 +18,7 @@ import { URL } from 'url';
 import { MedplumRedisConfig } from '../config';
 import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
+import { globalLogger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext } from './context';
 import {
@@ -28,6 +28,7 @@ import {
   isFhirCriteriaMet,
   isJobSuccessful,
 } from './utils';
+import { getRequestContext } from '../context';
 
 const MAX_JOB_ATTEMPTS = 18;
 
@@ -74,8 +75,8 @@ export function initSubscriptionWorker(config: MedplumRedisConfig): void {
   });
 
   worker = new Worker<SubscriptionJobData>(queueName, execSubscriptionJob, defaultOptions);
-  worker.on('completed', (job) => logger.info(`Completed job ${job.id} successfully`));
-  worker.on('failed', (job, err) => logger.info(`Failed job ${job?.id} with ${err}`));
+  worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
+  worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 }
 
 /**
@@ -120,12 +121,13 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  * @param context The background job context.
  */
 export async function addSubscriptionJobs(resource: Resource, context: BackgroundJobContext): Promise<void> {
+  const ctx = getRequestContext();
   if (resource.resourceType === 'AuditEvent') {
     // Never send subscriptions for audit events
     return;
   }
   const subscriptions = await getSubscriptions(resource);
-  logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
+  ctx.logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
     const criteria = await matchesCriteria(resource, subscription, context);
     if (criteria) {
@@ -151,25 +153,26 @@ async function matchesCriteria(
   subscription: Subscription,
   context: BackgroundJobContext
 ): Promise<boolean> {
+  const ctx = getRequestContext();
   if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
-    logger.debug('Ignore resource in different account compartment');
+    ctx.logger.debug('Ignore resource in different account compartment');
     return false;
   }
 
   if (!matchesChannelType(subscription)) {
-    logger.debug(`Ignore subscription without recognized channel type`);
+    ctx.logger.debug(`Ignore subscription without recognized channel type`);
     return false;
   }
 
   const subscriptionCriteria = subscription.criteria;
   if (!subscriptionCriteria) {
-    logger.debug(`Ignore rest hook missing criteria`);
+    ctx.logger.debug(`Ignore rest hook missing criteria`);
     return false;
   }
 
   const searchRequest = parseSearchUrl(new URL(subscriptionCriteria, 'https://api.medplum.com/'));
   if (resource.resourceType !== searchRequest.resourceType) {
-    logger.debug(
+    ctx.logger.debug(
       `Ignore rest hook for different resourceType (wanted "${searchRequest.resourceType}", received "${resource.resourceType}")`
     );
     return false;
@@ -177,7 +180,7 @@ async function matchesCriteria(
 
   const fhirPathCriteria = await isFhirCriteriaMet(subscription, resource);
   if (!fhirPathCriteria) {
-    logger.debug(`Ignore rest hook for criteria returning false`);
+    ctx.logger.debug(`Ignore rest hook for criteria returning false`);
     return false;
   }
 
@@ -186,7 +189,7 @@ async function matchesCriteria(
     'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
   );
   if (supportedInteractionExtension && supportedInteractionExtension.valueCode !== context.interaction) {
-    logger.debug(
+    ctx.logger.debug(
       `Ignore rest hook for different interaction (wanted "${supportedInteractionExtension.valueCode}", received "${context.interaction}")`
     );
     return false;
@@ -206,7 +209,7 @@ function matchesChannelType(subscription: Subscription): boolean {
   if (channelType === 'rest-hook') {
     const url = subscription.channel?.endpoint;
     if (!url) {
-      logger.debug(`Ignore rest-hook missing URL`);
+      getRequestContext().logger.debug(`Ignore rest-hook missing URL`);
       return false;
     }
 
@@ -221,11 +224,12 @@ function matchesChannelType(subscription: Subscription): boolean {
  * @param job The subscription job details.
  */
 async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
-  logger.debug(`Adding Subscription job`);
+  const ctx = getRequestContext();
+  ctx.logger.debug(`Adding Subscription job`);
   if (queue) {
     await queue.add(jobName, job);
   } else {
-    logger.debug(`Subscription queue not initialized`);
+    ctx.logger.debug(`Subscription queue not initialized`);
   }
 }
 
@@ -337,10 +341,11 @@ async function sendRestHook(
   subscription: Subscription,
   resource: Resource
 ): Promise<void> {
+  const ctx = getRequestContext();
   const url = subscription.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
-    logger.debug(`Ignore rest hook missing URL`);
+    ctx.logger.debug(`Ignore rest hook missing URL`);
     return;
   }
 
@@ -350,10 +355,10 @@ async function sendRestHook(
   let error: Error | undefined = undefined;
 
   try {
-    logger.info('Sending rest hook to: ' + url);
-    logger.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
+    ctx.logger.info('Sending rest hook to: ' + url);
+    ctx.logger.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
     const response = await fetch(url, { method: 'POST', headers, body });
-    logger.info('Received rest hook status: ' + response.status);
+    ctx.logger.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(
       resource,
@@ -367,7 +372,7 @@ async function sendRestHook(
       error = new Error('Received status ' + response.status);
     }
   } catch (ex) {
-    logger.info('Subscription exception: ' + ex);
+    ctx.logger.info('Subscription exception: ' + ex);
     await createAuditEvent(
       resource,
       startTime,
@@ -416,7 +421,7 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
 }
 
 /**
- * Executes a Bot sbuscription.
+ * Executes a Bot subscription.
  * @param subscription The subscription.
  * @param resource The resource that triggered the subscription.
  */
@@ -424,7 +429,7 @@ async function execBot(subscription: Subscription, resource: Resource): Promise<
   const url = subscription.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
-    logger.debug(`Ignore rest hook missing URL`);
+    getRequestContext().logger.debug(`Ignore rest hook missing URL`);
     return;
   }
 
@@ -463,10 +468,11 @@ async function sendDeleteRestHook(
   subscription: Subscription,
   resource: Resource
 ): Promise<void> {
+  const ctx = getRequestContext();
   const url = subscription?.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
-    logger.debug(`Ignore rest hook missing URL`);
+    ctx.logger.debug(`Ignore rest hook missing URL`);
     return;
   }
 
@@ -476,10 +482,10 @@ async function sendDeleteRestHook(
   headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
 
   try {
-    logger.info('Sending rest hook to: ' + url);
-    logger.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
+    ctx.logger.info('Sending rest hook to: ' + url);
+    ctx.logger.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
     const response = await fetch(url, { method: 'POST', headers, body: '{}' });
-    logger.info('Received rest hook status: ' + response.status);
+    ctx.logger.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(
       resource,
@@ -489,7 +495,7 @@ async function sendDeleteRestHook(
       subscription
     );
   } catch (ex) {
-    logger.info('Subscription exception: ' + ex);
+    ctx.logger.info('Subscription exception: ' + ex);
     await createAuditEvent(
       resource,
       startTime,
@@ -506,10 +512,10 @@ function catchJobError(subscription: Subscription, job: Job<SubscriptionJobData>
       ?.valueInteger ?? MAX_JOB_ATTEMPTS;
 
   if (job.attemptsMade < maxJobAttempts) {
-    logger.debug(`Retrying job due to error: ${err}`);
+    globalLogger.debug(`Retrying job due to error: ${err}`);
     throw err;
   } else {
     // If the maxJobAttempts equals the jobs.attemptsMade, we won't throw, which won't trigger a retry
-    logger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
+    globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
   }
 }

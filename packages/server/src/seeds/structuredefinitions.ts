@@ -2,7 +2,7 @@ import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { getClient } from '../database';
 import { systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
+import { globalLogger } from '../logger';
 import { r4ProjectId } from '../seed';
 
 /**
@@ -21,14 +21,14 @@ async function createStructureDefinitionsForBundle(structureDefinitions: Bundle)
     const resource = entry.resource as Resource;
 
     if (resource.resourceType === 'StructureDefinition' && resource.name) {
-      logger.debug('StructureDefinition: ' + resource.name);
+      globalLogger.debug('StructureDefinition: ' + resource.name);
       const result = await systemRepo.createResource<StructureDefinition>({
         ...resource,
         meta: { ...resource.meta, project: r4ProjectId },
         text: undefined,
         differential: undefined,
       });
-      logger.debug('Created: ' + result.id);
+      globalLogger.debug('Created: ' + result.id);
     }
   }
 }

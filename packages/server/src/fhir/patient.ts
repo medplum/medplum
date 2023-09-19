@@ -1,4 +1,4 @@
-import { createReference, evalFhirPath } from '@medplum/core';
+import { evalFhirPath, getReferenceString } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
   CompartmentDefinition,
@@ -53,9 +53,10 @@ export function getPatientCompartmentParams(resourceType: string): string[] | un
  * @param resource The resource to inspect.
  * @returns The patient ID if found; undefined otherwise.
  */
-export function getPatient(resource: Resource): Reference<Patient> | undefined {
-  if (resource.resourceType === 'Patient') {
-    return resource.id ? createReference(resource) : undefined;
+export function getPatients(resource: Resource): Reference<Patient>[] {
+  const result = new Set<string>();
+  if (resource.resourceType === 'Patient' && resource.id) {
+    result.add(getReferenceString(resource));
   }
   const params = getPatientCompartmentParams(resource.resourceType);
   if (params) {
@@ -64,23 +65,25 @@ export function getPatient(resource: Resource): Reference<Patient> | undefined {
       if (searchParam) {
         const values = evalFhirPath(searchParam.expression as string, resource);
         for (const value of values) {
-          const patientId = getPatientFromUnknownValue(value);
-          if (patientId) {
-            return patientId;
+          const patient = getPatientFromUnknownValue(value);
+          if (patient) {
+            result.add(patient);
           }
         }
       }
     }
   }
-  return undefined;
+  return Array.from(result)
+    .sort((a, b) => a.localeCompare(b))
+    .map((reference) => ({ reference }));
 }
 
 /**
- * Tries to return a patient ID from an unknown value.
+ * Tries to return a patient reference from an unknown value.
  * @param value The unknown value.
- * @returns The patient ID if found; undefined otherwise.
+ * @returns The patient reference if found; undefined otherwise.
  */
-function getPatientFromUnknownValue(value: unknown): Reference<Patient> | undefined {
+function getPatientFromUnknownValue(value: unknown): string | undefined {
   if (value && typeof value === 'object') {
     return getPatientIdFromReference(value as Reference);
   }
@@ -88,13 +91,13 @@ function getPatientFromUnknownValue(value: unknown): Reference<Patient> | undefi
 }
 
 /**
- * Tries to return a patient ID from a FHIR reference.
+ * Tries to return a patient reference from a FHIR reference.
  * @param reference A FHIR reference.
- * @returns The patient ID if found; undefined otherwise.
+ * @returns The patient reference if found; undefined otherwise.
  */
-function getPatientIdFromReference(reference: Reference): Reference<Patient> | undefined {
+function getPatientIdFromReference(reference: Reference): string | undefined {
   if (reference.reference?.startsWith('Patient/')) {
-    return reference as Reference<Patient>;
+    return reference.reference;
   }
   return undefined;
 }

@@ -1,7 +1,7 @@
-import { Bundle, ElementDefinition, ResourceType, StructureDefinition, Resource, Coding } from '@medplum/fhirtypes';
+import { Bundle, Coding, ElementDefinition, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
 import { getTypedPropertyValue } from '../fhirpath';
 import { OperationOutcomeError, serverError } from '../outcomes';
-import { TypedValue } from '../types';
+import { getElementDefinitionTypeName, TypedValue } from '../types';
 import { capitalize, isEmpty } from '../utils';
 
 /**
@@ -107,6 +107,7 @@ interface BackboneContext {
  * @experimental
  */
 class StructureDefinitionParser {
+  private readonly root: ElementDefinition;
   private readonly elements: ElementDefinition[];
   private readonly elementIndex: Record<string, ElementDefinition>;
   private index: number;
@@ -123,15 +124,15 @@ class StructureDefinitionParser {
     if (!sd.snapshot?.element || sd.snapshot.element.length === 0) {
       throw new Error(`No snapshot defined for StructureDefinition '${sd.name}'`);
     }
-    const root = sd.snapshot.element[0];
 
+    this.root = sd.snapshot.element[0];
     this.elements = sd.snapshot.element.slice(1);
     this.elementIndex = Object.create(null);
     this.index = 0;
     this.resourceSchema = {
       name: sd.type as ResourceType,
       fields: {},
-      constraints: this.parseFieldDefinition(root).constraints,
+      constraints: this.parseFieldDefinition(this.root).constraints,
       innerTypes: [],
       summaryProperties: new Set(),
       mandatoryProperties: new Set(),
@@ -157,12 +158,20 @@ class StructureDefinitionParser {
         this.checkFieldEnter(element, field);
 
         // Record field in schema
-        if (this.backboneContext && element.path?.startsWith(this.backboneContext.path + '.')) {
-          this.backboneContext.type.fields[elementPath(element, this.backboneContext.path)] = field;
-        } else if (this.backboneContext?.parent && element.path?.startsWith(this.backboneContext.parent.path + '.')) {
-          this.backboneContext.parent.type.fields[elementPath(element, this.backboneContext.parent.path)] = field;
-        } else {
-          const path = elementPath(element, this.resourceSchema.name);
+        let parentContext: BackboneContext | undefined = this.backboneContext;
+        while (parentContext) {
+          if (element.path?.startsWith(parentContext.path + '.')) {
+            parentContext.type.fields[elementPath(element, parentContext.path)] = field;
+            break;
+          }
+          parentContext = parentContext.parent;
+        }
+
+        if (!parentContext) {
+          // Within R4 StructureDefinitions, there are 2 cases where StructureDefinition.name !== ElementDefinition.path.
+          // For SimpleQuantity and MoneyQuantity, the names are the names, but the root ElementDefinition.path is Quantity.
+          // We need to use StructureDefinition.name for the type name, and ElementDefinition.path for the path.
+          const path = elementPath(element, this.root.path);
           if (element.isSummary) {
             this.resourceSchema.summaryProperties?.add(path.replace('[x]', ''));
           }
@@ -197,7 +206,7 @@ class StructureDefinitionParser {
       }
       this.backboneContext = {
         type: {
-          name: buildTypeName(element.path?.split('.') ?? []) as ResourceType,
+          name: getElementDefinitionTypeName(element),
           fields: {},
           constraints: this.parseFieldDefinition(element).constraints,
           innerTypes: [],
@@ -325,7 +334,7 @@ class StructureDefinitionParser {
       })),
       type: (ed.type ?? []).map((t) => ({
         code: ['BackboneElement', 'Element'].includes(t.code as string)
-          ? buildTypeName(ed.base?.path?.split('.') ?? [])
+          ? getElementDefinitionTypeName(ed)
           : t.code ?? '',
         targetProfile: t.targetProfile ?? [],
       })),
@@ -407,13 +416,6 @@ function pathsCompatible(parent: string | undefined, child: string | undefined):
     return false;
   }
   return child.startsWith(parent + '.') || child === parent;
-}
-
-function buildTypeName(components: string[]): string {
-  if (components.length === 1) {
-    return components[0];
-  }
-  return components.map(capitalize).join('');
 }
 
 function firstValue(obj: TypedValue | TypedValue[] | undefined): TypedValue | undefined {

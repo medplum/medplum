@@ -6,7 +6,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { initTestAuth } from '../test.setup';
+import { initTestAuth, withTestContext } from '../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -493,13 +493,15 @@ describe('FHIR Routes', () => {
   });
 
   test('Resend as project admin', async () => {
-    const { profile, accessToken } = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const { profile, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
 
     const res = await request(app)
       .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)

@@ -7,7 +7,7 @@ import Mail, { Address } from 'nodemailer/lib/mailer';
 import { getConfig, MedplumSmtpConfig } from '../config';
 import { Repository } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
-import { logger } from '../logger';
+import { globalLogger } from '../logger';
 
 /**
  * Sends an email using the AWS SES service.
@@ -33,7 +33,7 @@ export async function sendEmail(repo: Repository, options: Mail.Options): Promis
   // "if set to true then fails with an error when a node tries to load content from a file"
   options.disableFileAccess = true;
 
-  logger.info('Sending email', { to: toAddresses?.join(', '), subject: options.subject });
+  globalLogger.info('Sending email', { to: toAddresses?.join(', '), subject: options.subject });
 
   if (config.smtp) {
     await sendEmailViaSmpt(config.smtp, options);
