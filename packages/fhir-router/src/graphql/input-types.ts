@@ -1,4 +1,10 @@
-import { buildTypeName, capitalize, getElementDefinition, getResourceTypeSchema, isResourceType } from '@medplum/core';
+import {
+  capitalize,
+  getElementDefinition,
+  getElementDefinitionTypeName,
+  getResourceTypeSchema,
+  isResourceType,
+} from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, ResourceType } from '@medplum/fhirtypes';
 import {
   GraphQLInputFieldConfig,
@@ -70,7 +76,7 @@ function buildInputPropertyField(
 ): void {
   let typeName = elementDefinitionType.code as string;
   if (typeName === 'Element' || typeName === 'BackboneElement') {
-    typeName = buildTypeName(elementDefinition.path?.split('.') as string[]);
+    typeName = getElementDefinitionTypeName(elementDefinition);
   }
 
   const fieldConfig: GraphQLInputFieldConfig = {

@@ -1,8 +1,8 @@
 import {
-  buildTypeName,
   capitalize,
   evalFhirPathTyped,
   getElementDefinition,
+  getElementDefinitionTypeName,
   getResourceTypes,
   getResourceTypeSchema,
   getSearchParameters,
@@ -107,7 +107,7 @@ function buildOutputPropertyField(
 ): void {
   let typeName = elementDefinitionType.code as string;
   if (typeName === 'Element' || typeName === 'BackboneElement') {
-    typeName = buildTypeName(elementDefinition.path?.split('.') as string[]);
+    typeName = getElementDefinitionTypeName(elementDefinition);
   }
 
   const fieldConfig: GraphQLFieldConfig<any, any> = {
