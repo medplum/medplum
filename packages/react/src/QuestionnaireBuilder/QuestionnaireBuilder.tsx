@@ -413,9 +413,12 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           {!props.isFirst && (
             <>
               <Anchor
+                href="#"
                 onClick={(e: React.MouseEvent) => {
                   e.preventDefault();
-                  props.onMove && props.onMove(item, Direction.UP);
+                  if (props.onMove) {
+                    props.onMove(item, Direction.UP);
+                  }
                 }}
               >
                 Up
@@ -425,9 +428,12 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           )}
           {!props.isLast && (
             <Anchor
+              href="#"
               onClick={(e: React.MouseEvent) => {
                 e.preventDefault();
-                props.onMove && props.onMove(item, Direction.DOWN);
+                if (props.onMove) {
+                  props.onMove(item, Direction.DOWN);
+                }
               }}
             >
               Down
@@ -735,10 +741,10 @@ function reorderItems(
   value: QuestionnaireItem[],
   itemToMove: QuestionnaireItem,
   direction: Direction
-): QuestionnaireItem[] | undefined {
+): QuestionnaireItem[] {
   const currentItems = value;
-  if (!currentItems || !currentItems.length) {
-    return;
+  if (!currentItems.length) {
+    return [];
   }
 
   const index = currentItems.findIndex((i) => i.id === itemToMove.id);
@@ -774,7 +780,7 @@ function reorderInNestedItems(
   items: QuestionnaireItem[],
   itemToMove: QuestionnaireItem,
   direction: Direction
-): QuestionnaireItem[] | undefined {
+): QuestionnaireItem[] {
   for (let i = 0; i < items.length; i++) {
     if (items[i].item) {
       const reorderedNestedItems = reorderItems(items[i].item ?? [], itemToMove, direction);
@@ -785,5 +791,5 @@ function reorderInNestedItems(
       }
     }
   }
-  return;
+  return [];
 }
