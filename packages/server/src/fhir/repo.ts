@@ -82,6 +82,7 @@ import { rewriteAttachments, RewriteMode } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, Operator, SelectQuery } from './sql';
 import { getSearchParameters } from './structure';
+import { AsyncLocalStorage } from 'async_hooks';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -717,17 +718,20 @@ export class Repository extends BaseRepository implements FhirRepository {
     const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
     this.addDeletedFilter(builder);
 
-    await builder.executeCursor(client, async (row: any) => {
-      try {
-        const resource = JSON.parse(row.content) as Resource;
-        (resource.meta as Meta).compartment = this.getCompartments(resource);
-        await this.updateResourceImpl(JSON.parse(row.content) as Resource, false);
-      } catch (err) {
-        getRequestContext().logger.error('Failed to rebuild compartments for resource', {
-          error: normalizeErrorString(err),
-        });
-      }
-    });
+    await builder.executeCursor(
+      client,
+      AsyncLocalStorage.bind(async (row: any) => {
+        try {
+          const resource = JSON.parse(row.content) as Resource;
+          (resource.meta as Meta).compartment = this.getCompartments(resource);
+          await this.updateResourceImpl(JSON.parse(row.content) as Resource, false);
+        } catch (err) {
+          getRequestContext().logger.error('Failed to rebuild compartments for resource', {
+            error: normalizeErrorString(err),
+          });
+        }
+      })
+    );
   }
 
   /**
@@ -745,13 +749,16 @@ export class Repository extends BaseRepository implements FhirRepository {
     const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
     this.addDeletedFilter(builder);
 
-    await builder.executeCursor(client, async (row: any) => {
-      try {
-        await this.reindexResourceImpl(JSON.parse(row.content) as Resource);
-      } catch (err) {
-        getRequestContext().logger.error('Failed to reindex resource', { error: normalizeErrorString(err) });
-      }
-    });
+    await builder.executeCursor(
+      client,
+      AsyncLocalStorage.bind(async (row: any) => {
+        try {
+          await this.reindexResourceImpl(JSON.parse(row.content) as Resource);
+        } catch (err) {
+          getRequestContext().logger.error('Failed to reindex resource', { error: normalizeErrorString(err) });
+        }
+      })
+    );
   }
 
   /**
