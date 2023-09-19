@@ -401,7 +401,7 @@ export class SelectQuery extends BaseQuery {
   }
 
   async executeCursor(pool: Pool, callback: (row: any) => Promise<void>): Promise<void> {
-    AsyncLocalStorage.bind(callback);
+    callback = AsyncLocalStorage.bind(callback);
     const BATCH_SIZE = 100;
 
     const sql = new SqlBuilder();

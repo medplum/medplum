@@ -11,7 +11,7 @@ import { NextFunction, Request, RequestHandler, Response } from 'express';
  * @returns Async wrapped handler.
  */
 export function asyncWrap(callback: (req: Request, res: Response, next: NextFunction) => Promise<any>): RequestHandler {
-  AsyncLocalStorage.bind(callback);
+  callback = AsyncLocalStorage.bind(callback);
   return function (req: Request, res: Response, next: NextFunction): void {
     callback(req, res, next).catch(next);
   };

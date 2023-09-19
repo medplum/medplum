@@ -35,7 +35,7 @@ export class AsyncJobExecutor {
   }
 
   async run(callback: () => Promise<any>): Promise<void> {
-    AsyncLocalStorage.bind(callback);
+    callback = AsyncLocalStorage.bind(callback);
     if (!this.resource) {
       throw new Error('AsyncJob missing');
     }
