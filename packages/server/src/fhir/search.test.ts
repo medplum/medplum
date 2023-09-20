@@ -2916,29 +2916,30 @@ describe('FHIR Search', () => {
       expect(result.entry?.length).toBe(1);
     }));
 
-  test('Patient by name with stop word', async () => {
-    const seed = randomUUID();
-    await systemRepo.createResource<Patient>({
-      resourceType: 'Patient',
-      name: [
-        {
-          given: [seed + 'Justin', 'Wynn'],
-          family: 'Sanders' + seed,
-        },
-      ],
-    });
-    const result = await systemRepo.search({
-      resourceType: 'Patient',
-      filters: [
-        {
-          code: 'name',
-          operator: Operator.CONTAINS,
-          value: `${seed.slice(-3)}just`,
-        },
-      ],
-    });
-    expect(result.entry?.length).toBe(1);
-  });
+  test('Patient by name with stop word', () =>
+    withTestContext(async () => {
+      const seed = randomUUID();
+      await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [
+          {
+            given: [seed + 'Justin', 'Wynn'],
+            family: 'Sanders' + seed,
+          },
+        ],
+      });
+      const result = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.CONTAINS,
+            value: `${seed.slice(-3)}just`,
+          },
+        ],
+      });
+      expect(result.entry?.length).toBe(1);
+    }));
 
   test('Sort by ID', () =>
     withTestContext(async () => {
