@@ -301,79 +301,77 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
         </div>
       ))}
       {!isContainer && (
-        <>
-          <div className={classes.topActions}>
-            {editing ? (
-              <>
-                <TextInput
+        <div className={classes.topActions}>
+          {editing ? (
+            <>
+              <TextInput
+                size="xs"
+                className={classes.linkIdInput}
+                defaultValue={item.linkId}
+                onChange={(e) => changeProperty('linkId', e.currentTarget.value)}
+              />
+              {!isContainer && (
+                <NativeSelect
                   size="xs"
-                  className={classes.linkIdInput}
-                  defaultValue={item.linkId}
-                  onChange={(e) => changeProperty('linkId', e.currentTarget.value)}
+                  className={classes.typeSelect}
+                  defaultValue={item.type}
+                  onChange={(e) => changeProperty('type', e.currentTarget.value)}
+                  data={[
+                    { value: 'display', label: 'Display' },
+                    { value: 'boolean', label: 'Boolean' },
+                    { value: 'decimal', label: 'Decimal' },
+                    { value: 'integer', label: 'Integer' },
+                    { value: 'date', label: 'Date' },
+                    { value: 'dateTime', label: 'Date/Time' },
+                    { value: 'time', label: 'Time' },
+                    { value: 'string', label: 'String' },
+                    { value: 'text', label: 'Text' },
+                    { value: 'url', label: 'URL' },
+                    { value: 'choice', label: 'Choice' },
+                    { value: 'open-choice', label: 'Open Choice' },
+                    { value: 'attachment', label: 'Attachment' },
+                    { value: 'reference', label: 'Reference' },
+                    { value: 'quantity', label: 'Quantity' },
+                  ]}
                 />
-                {!isContainer && (
-                  <NativeSelect
-                    size="xs"
-                    className={classes.typeSelect}
-                    defaultValue={item.type}
-                    onChange={(e) => changeProperty('type', e.currentTarget.value)}
-                    data={[
-                      { value: 'display', label: 'Display' },
-                      { value: 'boolean', label: 'Boolean' },
-                      { value: 'decimal', label: 'Decimal' },
-                      { value: 'integer', label: 'Integer' },
-                      { value: 'date', label: 'Date' },
-                      { value: 'dateTime', label: 'Date/Time' },
-                      { value: 'time', label: 'Time' },
-                      { value: 'string', label: 'String' },
-                      { value: 'text', label: 'Text' },
-                      { value: 'url', label: 'URL' },
-                      { value: 'choice', label: 'Choice' },
-                      { value: 'open-choice', label: 'Open Choice' },
-                      { value: 'attachment', label: 'Attachment' },
-                      { value: 'reference', label: 'Reference' },
-                      { value: 'quantity', label: 'Quantity' },
-                    ]}
-                  />
-                )}
-              </>
-            ) : (
-              <div>{linkId}</div>
-            )}
-          </div>
-          {!isResource && (
-            <Box className={classes.movementActions}>
-              <Box className={classes.columnAlignment}>
-                {!props.isFirst && (
-                  <Anchor
-                    href="#"
-                    onClick={(e: React.MouseEvent) => {
-                      e.preventDefault();
-                      if (props.onMove) {
-                        props.onMove(item, Direction.UP);
-                      }
-                    }}
-                  >
-                    <IconArrowUp data-testid="up-button" size={20} />
-                  </Anchor>
-                )}
-                {!props.isLast && (
-                  <Anchor
-                    href="#"
-                    onClick={(e: React.MouseEvent) => {
-                      e.preventDefault();
-                      if (props.onMove) {
-                        props.onMove(item, Direction.DOWN);
-                      }
-                    }}
-                  >
-                    <IconArrowDown data-testid="down-button" size={20} />
-                  </Anchor>
-                )}
-              </Box>
-            </Box>
+              )}
+            </>
+          ) : (
+            <div>{linkId}</div>
           )}
-        </>
+        </div>
+      )}
+      {!isResource && (
+        <Box className={classes.movementActions}>
+          <Box className={classes.columnAlignment}>
+            {!props.isFirst && (
+              <Anchor
+                href="#"
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault();
+                  if (props.onMove) {
+                    props.onMove(item, Direction.UP);
+                  }
+                }}
+              >
+                <IconArrowUp data-testid="up-button" size={20} />
+              </Anchor>
+            )}
+            {!props.isLast && (
+              <Anchor
+                href="#"
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault();
+                  if (props.onMove) {
+                    props.onMove(item, Direction.DOWN);
+                  }
+                }}
+              >
+                <IconArrowDown data-testid="down-button" size={20} />
+              </Anchor>
+            )}
+          </Box>
+        </Box>
       )}
       <div className={classes.bottomActions}>
         {isContainer && (
@@ -754,6 +752,7 @@ function reorderItems(
 
   const index = currentItems.findIndex((i) => i.id === itemToMove.id);
 
+  // If found, reorder at this level. Otherwise, try nested levels.
   if (index >= 0) {
     return reorderCurrentLevelItems(currentItems, index, direction);
   } else {
@@ -766,18 +765,17 @@ function reorderCurrentLevelItems(
   index: number,
   direction: Direction
 ): QuestionnaireItem[] {
-  let newIndex = index;
-
+  let updatedIndex = index;
+  // Calculate the new position for the item.
   if (direction === Direction.UP && index > 0) {
-    newIndex = index - 1;
+    updatedIndex = index - 1;
   } else if (direction === Direction.DOWN && index < items.length - 1) {
-    newIndex = index + 1;
+    updatedIndex = index + 1;
   } else {
     return items;
   }
-
   const newItems = [...items];
-  [newItems[index], newItems[newIndex]] = [newItems[newIndex], newItems[index]];
+  [newItems[index], newItems[updatedIndex]] = [newItems[updatedIndex], newItems[index]];
   return newItems;
 }
 
@@ -786,15 +784,18 @@ function reorderInNestedItems(
   itemToMove: QuestionnaireItem,
   direction: Direction
 ): QuestionnaireItem[] {
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].item) {
-      const reorderedNestedItems = reorderItems(items[i].item ?? [], itemToMove, direction);
-      if (reorderedNestedItems) {
-        const newItems = [...items];
-        newItems[i] = { ...newItems[i], item: reorderedNestedItems };
-        return newItems;
+  const updatedItems = [...items];
+
+  for (let i = 0; i < updatedItems.length; i++) {
+    // Check if this item has nested items.
+    if (updatedItems[i].item) {
+      // Attempt reorder on the nested items.
+      const reorderedNestedItems = reorderItems(updatedItems[i].item ?? [], itemToMove, direction);
+      if (JSON.stringify(reorderedNestedItems) !== JSON.stringify(updatedItems[i].item)) {
+        updatedItems[i] = { ...updatedItems[i], item: reorderedNestedItems };
       }
     }
   }
-  return [];
+
+  return updatedItems;
 }
