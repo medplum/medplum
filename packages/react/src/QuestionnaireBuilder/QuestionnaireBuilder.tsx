@@ -134,9 +134,6 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
       return;
     }
     const reorderedItems = reorderItems(value.item ?? [], itemToMove, direction);
-    if (!reorderedItems) {
-      return;
-    }
 
     setValue({
       ...value,
