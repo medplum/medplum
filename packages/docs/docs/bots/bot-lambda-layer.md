@@ -29,7 +29,8 @@ Medplum's process for Lambda Layers is straightforward:
 
 If you're hosting Medplum on your own infrastructure, remember that Bot layers don't auto-publish. To update the Bot Layer:
 
-1. [Clone the Medplum Repo](/docs/contributing/clone-the-repo)
+1. [Clone the Medplum Repo](/docs/contributing/local-dev-setup) (**Note:** You can clone the main Medplum repo instead
+   of creating a fork)
 2. [Build the Project](/docs/contributing/run-the-stack)
 3. Deploy: Utilize `./scripts/deploy-bot-layer.sh` to deploy the new version.
 

@@ -19,13 +19,13 @@ Medplum is a developer platform that enables flexible and rapid development of h
   - [Codebase](#codebase)
     - [Technologies](#technologies)
     - [Folder Structure](#folder-structure)
-  - [First time setup](#first-time-setup)
 
 ## Contributing
 
 **We heartily welcome any and all contributions that match our engineering standards!**
 
-That being said, this codebase isn't your typical open source project because it's not a library or package with a limited scope -- it's our entire product.
+That being said, this codebase isn't your typical open source project because it's not a library or package with a
+limited scope -- it's our entire product.
 
 ### Ground Rules
 
@@ -33,21 +33,37 @@ That being said, this codebase isn't your typical open source project because it
 
 By making a contribution to this project, you are deemed to have accepted the [Developer Certificate of Origin](https://developercertificate.org/) (DCO).
 
-All conversations and communities on Medplum agree to GitHub's [Community Guidelines](https://help.github.com/en/github/site-policy/github-community-guidelines) and [Acceptable Use Policies](https://help.github.com/en/github/site-policy/github-acceptable-use-policies). This code of conduct also applies to all conversations that happen within our contributor community here on GitHub. We expect discussions in issues and pull requests to stay positive, productive, and respectful. Remember: there are real people on the other side of that screen!
+All conversations and communities on Medplum are expected to follow GitHub's [Community Guidelines](https://help.github.com/en/github/site-policy/github-community-guidelines)
+and [Acceptable Use Policies](https://help.github.com/en/github/site-policy/github-acceptable-use-policies). We expect
+discussions in issues and pull requests to stay positive, productive, and respectful. Remember: there are real people on
+the other side of the screen!
 
-#### Reporting a bug or discussing a feature idea
+#### Reporting a bug or proposing a new feature
 
-If you found a technical bug on Medplum or have ideas for features we should implement, the issue tracker is the best place to share your ideas. Make sure to follow the issue template and you should be golden! ([click here to open a new issue](https://github.com/medplum/medplum/issues/new))
+If you found a technical bug on Medplum or have ideas for features we should implement, the issue tracker is the best
+place to . ([click here to open a new issue](https://github.com/medplum/medplum/issues/new))
+
+### Writing documentation or blog content
+
+Did you learn how to do something using Medplum that wasn't obvious on your first try? By contributing your new knowledge
+to our documentation, you cna help others who might have a similar use case!
+
+Our documentation is hosted on [medplum.com/docs](/docs), but it is built from [Markdown](https://www.markdownguide.org/)
+files in our [`docs` package](https://github.com/medplum/medplum/tree/main/packages/docs/docs).
+
+For relatively small changes, you can edit files directly from your web browser on [Github.dev](https://github.dev/medplum/medplum/blob/main/packages/docs/docs/home.md)
+without needing to clone the repository.
 
 #### Fixing a bug or implementing a new feature
 
-If you find a bug on Medplum and open a PR that fixes it we'll review it as soon as possible to ensure it matches our engineering standards.
+If you find a bug and open a Pull Request that fixes it, we'll review it as soon as possible to ensure it meets our engineering standards.
 
-If you want to implement a new feature, open an issue first to discuss what it'd look like and to ensure it fits in our roadmap and plans for the app.
+If you want to implement a new feature, open an issue first to discuss with us how the feature might work, and to ensure
+it fits into our roadmap and plans for the app.
 
 If you want to contribute but are unsure to start, we have [a "good first issue" label](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) which is applied to newcomer-friendly issues. Take a look at [the full list of good first issues](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and pick something you like!
 
-Want to fix a bug or implement an agreed-upon feature? Great, jump to the [local setup instructions](#first-time-setup)!
+**Ready to get started writing code?** Follow the [local setup instructions](https://www.medplum.com/docs/contributing/local-dev-setup) and jump in!
 
 ### Codebase
 
@@ -89,10 +105,6 @@ medplum/
 │   └── server       # Backend API server
 └── scripts          # Helper bash scripts
 ```
-
-### First time setup
-
-See developer setup documentation: https://www.medplum.com/docs/contributing
 
 ## License
 
