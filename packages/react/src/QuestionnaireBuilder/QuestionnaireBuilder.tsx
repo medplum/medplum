@@ -49,7 +49,7 @@ const useStyles = createStyles((theme) => ({
 
   topActions: {
     position: 'absolute',
-    right: 4,
+    right: 32,
     top: 1,
     padding: 4,
     color: theme.colors.gray[5],
@@ -68,12 +68,20 @@ const useStyles = createStyles((theme) => ({
   },
 
   movementActions: {
+    position: 'absolute',
+    right: 8,
+    top: 0,
     paddingTop: 8,
     fontSize: theme.fontSizes.xs,
 
     '& a': {
       marginLeft: 8,
     },
+  },
+
+  columnAlignment: {
+    display: 'flex',
+    flexDirection: 'column',
   },
 
   linkIdInput: {
@@ -296,45 +304,79 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
         </div>
       ))}
       {!isContainer && (
-        <div className={classes.topActions}>
-          {editing ? (
-            <>
-              <TextInput
-                size="xs"
-                className={classes.linkIdInput}
-                defaultValue={item.linkId}
-                onChange={(e) => changeProperty('linkId', e.currentTarget.value)}
-              />
-              {!isContainer && (
-                <NativeSelect
+        <>
+          <div className={classes.topActions}>
+            {editing ? (
+              <>
+                <TextInput
                   size="xs"
-                  className={classes.typeSelect}
-                  defaultValue={item.type}
-                  onChange={(e) => changeProperty('type', e.currentTarget.value)}
-                  data={[
-                    { value: 'display', label: 'Display' },
-                    { value: 'boolean', label: 'Boolean' },
-                    { value: 'decimal', label: 'Decimal' },
-                    { value: 'integer', label: 'Integer' },
-                    { value: 'date', label: 'Date' },
-                    { value: 'dateTime', label: 'Date/Time' },
-                    { value: 'time', label: 'Time' },
-                    { value: 'string', label: 'String' },
-                    { value: 'text', label: 'Text' },
-                    { value: 'url', label: 'URL' },
-                    { value: 'choice', label: 'Choice' },
-                    { value: 'open-choice', label: 'Open Choice' },
-                    { value: 'attachment', label: 'Attachment' },
-                    { value: 'reference', label: 'Reference' },
-                    { value: 'quantity', label: 'Quantity' },
-                  ]}
+                  className={classes.linkIdInput}
+                  defaultValue={item.linkId}
+                  onChange={(e) => changeProperty('linkId', e.currentTarget.value)}
                 />
-              )}
-            </>
-          ) : (
-            <div>{linkId}</div>
+                {!isContainer && (
+                  <NativeSelect
+                    size="xs"
+                    className={classes.typeSelect}
+                    defaultValue={item.type}
+                    onChange={(e) => changeProperty('type', e.currentTarget.value)}
+                    data={[
+                      { value: 'display', label: 'Display' },
+                      { value: 'boolean', label: 'Boolean' },
+                      { value: 'decimal', label: 'Decimal' },
+                      { value: 'integer', label: 'Integer' },
+                      { value: 'date', label: 'Date' },
+                      { value: 'dateTime', label: 'Date/Time' },
+                      { value: 'time', label: 'Time' },
+                      { value: 'string', label: 'String' },
+                      { value: 'text', label: 'Text' },
+                      { value: 'url', label: 'URL' },
+                      { value: 'choice', label: 'Choice' },
+                      { value: 'open-choice', label: 'Open Choice' },
+                      { value: 'attachment', label: 'Attachment' },
+                      { value: 'reference', label: 'Reference' },
+                      { value: 'quantity', label: 'Quantity' },
+                    ]}
+                  />
+                )}
+              </>
+            ) : (
+              <div>{linkId}</div>
+            )}
+          </div>
+          {!isResource && (
+            <Box className={classes.movementActions}>
+              <Box className={classes.columnAlignment}>
+                {!props.isFirst && (
+                  <Anchor
+                    href="#"
+                    onClick={(e: React.MouseEvent) => {
+                      e.preventDefault();
+                      if (props.onMove) {
+                        props.onMove(item, Direction.UP);
+                      }
+                    }}
+                  >
+                    <IconArrowUp data-testid="up-button" size={20} />
+                  </Anchor>
+                )}
+                {!props.isLast && (
+                  <Anchor
+                    href="#"
+                    onClick={(e: React.MouseEvent) => {
+                      e.preventDefault();
+                      if (props.onMove) {
+                        props.onMove(item, Direction.DOWN);
+                      }
+                    }}
+                  >
+                    <IconArrowDown data-testid="down-button" size={20} />
+                  </Anchor>
+                )}
+              </Box>
+            </Box>
           )}
-        </div>
+        </>
       )}
       <div className={classes.bottomActions}>
         {isContainer && (
@@ -407,36 +449,6 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           </>
         )}
       </div>
-      {!isResource && (
-        <Box display="flex" className={classes.movementActions}>
-          {!props.isFirst && (
-            <Anchor
-              href="#"
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault();
-                if (props.onMove) {
-                  props.onMove(item, Direction.UP);
-                }
-              }}
-            >
-              <IconArrowUp data-testid="up-button" size={20} />
-            </Anchor>
-          )}
-          {!props.isLast && (
-            <Anchor
-              href="#"
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault();
-                if (props.onMove) {
-                  props.onMove(item, Direction.DOWN);
-                }
-              }}
-            >
-              <IconArrowDown data-testid="down-button" size={20} />
-            </Anchor>
-          )}
-        </Box>
-      )}
     </div>
   );
 }
