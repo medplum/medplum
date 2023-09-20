@@ -23,7 +23,7 @@ export async function run(client: PoolClient): Promise<void> {
   ];
   for (const [table, column, lang] of fields) {
     await client.query(
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "${table}_idx_tsv" ON "${table}" USING gin (to_tsvector('${lang}', ${column}))`
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "${table}_idx_tsv" ON "${table}" USING gin (to_tsvector('${lang}', "${column}"))`
     );
   }
 }
