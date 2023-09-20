@@ -481,10 +481,7 @@ function getItemsByLinkId(allResponses: QuestionnaireResponseItem[], linkId: str
 }
 
 function getItemValue(answer: QuestionnaireResponseItemAnswer): any {
-  const itemValue = getTypedPropertyValue(
-    { type: 'QuestionnaireItemAnswerOption', value: answer },
-    'value'
-  ) as TypedValue;
+  const itemValue = getTypedPropertyValue({ type: 'QuestionnaireItemAnswer', value: answer }, 'value') as TypedValue;
   // formatCoding returns '' if nothing is there so we need to use ||
   return formatCoding(itemValue?.value) || itemValue?.value;
 }
