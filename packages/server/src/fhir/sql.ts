@@ -103,7 +103,9 @@ export class Condition implements Expression {
       sql.append(this.operator);
       sql.param((this.parameter as string).toLowerCase());
     } else if (this.operator === Operator.TSVECTOR_SIMPLE || this.operator === Operator.TSVECTOR_ENGLISH) {
+      sql.append(`to_tsvector('${this.operator === Operator.TSVECTOR_SIMPLE ? 'simple' : 'english'}',`);
       sql.appendColumn(this.column);
+      sql.append(')');
       sql.append(this.operator);
       sql.param(this.parameter);
       sql.append(')');

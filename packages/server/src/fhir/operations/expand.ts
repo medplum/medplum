@@ -73,7 +73,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
 
   if (filter) {
     query.where(
-      'display_tsv',
+      'display',
       Operator.TSVECTOR_ENGLISH,
       filter
         .replace(/[^\p{Letter}\p{Number}]/gu, ' ')
