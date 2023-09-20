@@ -347,7 +347,9 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
   }
 
   const defaultAnswer = getDefaultAnswer(props.allResponses, item, props.index, props.groupSequence);
-  const answerLinkId = options.find((option) => option[1].value === defaultAnswer)?.[0];
+  const answerLinkId = options.find(
+    (option) => (formatCoding(option[1].value) || option[1].value) === defaultAnswer
+  )?.[0];
 
   return (
     <Radio.Group
