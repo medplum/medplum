@@ -787,7 +787,7 @@ describe('QuestionnaireBuilder', () => {
     });
 
     await act(async () => {
-      const downButtons = screen.getAllByText('Down');
+      const downButtons = screen.getAllByTestId('down-button');
       fireEvent.click(downButtons[0]);
     });
 
@@ -853,7 +853,7 @@ describe('QuestionnaireBuilder', () => {
     });
 
     await act(async () => {
-      const upButtons = screen.getAllByText('Up');
+      const upButtons = screen.getAllByTestId('up-button');
       fireEvent.click(upButtons[1]);
     });
 

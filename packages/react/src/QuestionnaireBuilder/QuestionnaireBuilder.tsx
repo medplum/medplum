@@ -8,15 +8,16 @@ import {
   QuestionnaireItemAnswerOption,
   Reference,
 } from '@medplum/fhirtypes';
+import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { useResource } from '../useResource/useResource';
 import { killEvent } from '../utils/dom';
 import { isChoiceQuestion, QuestionnaireItemType } from '../utils/questionnaire';
-import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
 
 enum Direction {
   UP,
@@ -67,9 +68,7 @@ const useStyles = createStyles((theme) => ({
   },
 
   movementActions: {
-    position: 'absolute',
-    left: 4,
-    bottom: 0,
+    paddingTop: 8,
     fontSize: theme.fontSizes.xs,
 
     '& a': {
@@ -411,20 +410,17 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
       {!isResource && (
         <Box display="flex" className={classes.movementActions}>
           {!props.isFirst && (
-            <>
-              <Anchor
-                href="#"
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault();
-                  if (props.onMove) {
-                    props.onMove(item, Direction.UP);
-                  }
-                }}
-              >
-                Up
-              </Anchor>
-              <Space w="sm" />
-            </>
+            <Anchor
+              href="#"
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                if (props.onMove) {
+                  props.onMove(item, Direction.UP);
+                }
+              }}
+            >
+              <IconArrowUp data-testid="up-button" size={20} />
+            </Anchor>
           )}
           {!props.isLast && (
             <Anchor
@@ -436,7 +432,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                 }
               }}
             >
-              Down
+              <IconArrowDown data-testid="down-button" size={20} />
             </Anchor>
           )}
         </Box>
