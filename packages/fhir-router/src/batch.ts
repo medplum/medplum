@@ -172,7 +172,7 @@ class BatchProcessor {
       throw new OperationOutcomeError(badRequest('Missing entry.resource.data'));
     }
 
-    return JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
+    return this.rewriteIdsInArray(JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8')));
   }
 
   private addReplacementId(fullUrl: string, resource: Resource): void {
