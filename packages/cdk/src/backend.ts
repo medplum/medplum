@@ -27,17 +27,43 @@ import { awsManagedRules } from './waf';
  * RDS config: https://docs.aws.amazon.com/cdk/api/latest/docs/aws-rds-readme.html
  */
 export class BackEnd extends Construct {
+  vpc: ec2.IVpc;
+  botLambdaRole: iam.IRole;
+  rdsSecretsArn?: string;
+  rdsCluster?: rds.DatabaseCluster;
+  redisSubnetGroup: elasticache.CfnSubnetGroup;
+  redisSecurityGroup: ec2.SecurityGroup;
+  redisPassword: secretsmanager.ISecret;
+  redisCluster: elasticache.CfnReplicationGroup;
+  redisSecrets: secretsmanager.ISecret;
+  ecsCluster: ecs.Cluster;
+  taskRolePolicies: iam.PolicyDocument;
+  taskRole: iam.Role;
+  taskDefinition: ecs.FargateTaskDefinition;
+  logGroup: logs.ILogGroup;
+  logDriver: ecs.AwsLogDriver;
+  serviceContainer: ecs.ContainerDefinition;
+  fargateSecurityGroup: ec2.SecurityGroup;
+  fargateService: ecs.FargateService;
+  targetGroup: elbv2.ApplicationTargetGroup;
+  loadBalancer: elbv2.ApplicationLoadBalancer;
+  waf: wafv2.CfnWebACL;
+  wafAssociation: wafv2.CfnWebACLAssociation;
+  dnsRecord?: route53.ARecord;
+  regionParameter: ssm.StringParameter;
+  databaseSecretsParameter: ssm.StringParameter;
+  redisSecretsParameter: ssm.StringParameter;
+  botLambdaRoleParameter: ssm.StringParameter;
+
   constructor(scope: Construct, config: MedplumInfraConfig) {
     super(scope, 'BackEnd');
 
     const name = config.name;
 
     // VPC
-    let vpc: ec2.IVpc;
-
     if (config.vpcId) {
       // Lookup VPC by ARN
-      vpc = ec2.Vpc.fromLookup(this, 'VPC', { vpcId: config.vpcId });
+      this.vpc = ec2.Vpc.fromLookup(this, 'VPC', { vpcId: config.vpcId });
     } else {
       // VPC Flow Logs
       const vpcFlowLogs = new logs.LogGroup(this, 'VpcFlowLogs', {
@@ -46,7 +72,7 @@ export class BackEnd extends Construct {
       });
 
       // Create VPC
-      vpc = new ec2.Vpc(this, 'VPC', {
+      this.vpc = new ec2.Vpc(this, 'VPC', {
         maxAzs: config.maxAzs,
         flowLogs: {
           cloudwatch: {
@@ -58,14 +84,13 @@ export class BackEnd extends Construct {
     }
 
     // Bot Lambda Role
-    const botLambdaRole = new iam.Role(this, 'BotLambdaRole', {
+    this.botLambdaRole = new iam.Role(this, 'BotLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
     });
 
     // RDS
-    let rdsCluster = undefined;
-    let rdsSecretsArn = config.rdsSecretsArn;
-    if (!rdsSecretsArn) {
+    this.rdsSecretsArn = config.rdsSecretsArn;
+    if (!this.rdsSecretsArn) {
       // See: https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds-readme.html#migrating-from-instanceprops
       const instanceProps: rds.ProvisionedClusterInstanceProps = {
         instanceType: config.rdsInstanceType ? new ec2.InstanceType(config.rdsInstanceType) : undefined,
@@ -85,14 +110,14 @@ export class BackEnd extends Construct {
         }
       }
 
-      rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
+      this.rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
         engine: rds.DatabaseClusterEngine.auroraPostgres({
           version: rds.AuroraPostgresEngineVersion.VER_12_9,
         }),
         credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
         defaultDatabaseName: 'medplum',
         storageEncrypted: true,
-        vpc: vpc,
+        vpc: this.vpc,
         vpcSubnets: {
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
@@ -107,23 +132,23 @@ export class BackEnd extends Construct {
         instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
       });
 
-      rdsSecretsArn = (rdsCluster.secret as secretsmanager.ISecret).secretArn;
+      this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
     }
 
     // Redis
     // Important: For HIPAA compliance, you must specify TransitEncryptionEnabled as true, an AuthToken, and a CacheSubnetGroup.
-    const redisSubnetGroup = new elasticache.CfnSubnetGroup(this, 'RedisSubnetGroup', {
+    this.redisSubnetGroup = new elasticache.CfnSubnetGroup(this, 'RedisSubnetGroup', {
       description: 'Redis Subnet Group',
-      subnetIds: vpc.privateSubnets.map((subnet) => subnet.subnetId),
+      subnetIds: this.vpc.privateSubnets.map((subnet) => subnet.subnetId),
     });
 
-    const redisSecurityGroup = new ec2.SecurityGroup(this, 'RedisSecurityGroup', {
-      vpc,
+    this.redisSecurityGroup = new ec2.SecurityGroup(this, 'RedisSecurityGroup', {
+      vpc: this.vpc,
       description: 'Redis Security Group',
       allowAllOutbound: false,
     });
 
-    const redisPassword = new secretsmanager.Secret(this, 'RedisPassword', {
+    this.redisPassword = new secretsmanager.Secret(this, 'RedisPassword', {
       generateSecretString: {
         secretStringTemplate: '{}',
         generateStringKey: 'password',
@@ -131,43 +156,43 @@ export class BackEnd extends Construct {
       },
     });
 
-    const redisCluster = new elasticache.CfnReplicationGroup(this, 'RedisCluster', {
+    this.redisCluster = new elasticache.CfnReplicationGroup(this, 'RedisCluster', {
       engine: 'Redis',
       engineVersion: '6.x',
       cacheNodeType: config.cacheNodeType ?? 'cache.t2.medium',
       replicationGroupDescription: 'RedisReplicationGroup',
-      authToken: redisPassword.secretValueFromJson('password').toString(),
+      authToken: this.redisPassword.secretValueFromJson('password').toString(),
       transitEncryptionEnabled: true,
       atRestEncryptionEnabled: true,
       multiAzEnabled: true,
-      cacheSubnetGroupName: redisSubnetGroup.ref,
+      cacheSubnetGroupName: this.redisSubnetGroup.ref,
       numNodeGroups: 1,
       replicasPerNodeGroup: 1,
-      securityGroupIds: [redisSecurityGroup.securityGroupId],
+      securityGroupIds: [this.redisSecurityGroup.securityGroupId],
     });
-    redisCluster.node.addDependency(redisPassword);
+    this.redisCluster.node.addDependency(this.redisPassword);
 
-    const redisSecrets = new secretsmanager.Secret(this, 'RedisSecrets', {
+    this.redisSecrets = new secretsmanager.Secret(this, 'RedisSecrets', {
       generateSecretString: {
         secretStringTemplate: JSON.stringify({
-          host: redisCluster.attrPrimaryEndPointAddress,
-          port: redisCluster.attrPrimaryEndPointPort,
-          password: redisPassword.secretValueFromJson('password').toString(),
+          host: this.redisCluster.attrPrimaryEndPointAddress,
+          port: this.redisCluster.attrPrimaryEndPointPort,
+          password: this.redisPassword.secretValueFromJson('password').toString(),
           tls: {},
         }),
         generateStringKey: 'unused',
       },
     });
-    redisSecrets.node.addDependency(redisPassword);
-    redisSecrets.node.addDependency(redisCluster);
+    this.redisSecrets.node.addDependency(this.redisPassword);
+    this.redisSecrets.node.addDependency(this.redisCluster);
 
     // ECS Cluster
-    const cluster = new ecs.Cluster(this, 'Cluster', {
-      vpc: vpc,
+    this.ecsCluster = new ecs.Cluster(this, 'Cluster', {
+      vpc: this.vpc,
     });
 
     // Task Policies
-    const taskRolePolicies = new iam.PolicyDocument({
+    this.taskRolePolicies = new iam.PolicyDocument({
       statements: [
         // CloudWatch Logs: Create streams and put events
         new iam.PolicyStatement({
@@ -219,7 +244,7 @@ export class BackEnd extends Construct {
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: ['iam:ListRoles', 'iam:GetRole', 'iam:PassRole'],
-          resources: [botLambdaRole.roleArn],
+          resources: [this.botLambdaRole.roleArn],
         }),
 
         // Lambda: Create, read, update, delete, and invoke functions
@@ -242,85 +267,85 @@ export class BackEnd extends Construct {
     });
 
     // Task Role
-    const taskRole = new iam.Role(this, 'TaskExecutionRole', {
+    this.taskRole = new iam.Role(this, 'TaskExecutionRole', {
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
       description: 'Medplum Server Task Execution Role',
       inlinePolicies: {
-        TaskExecutionPolicies: taskRolePolicies,
+        TaskExecutionPolicies: this.taskRolePolicies,
       },
     });
 
     // Task Definitions
-    const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDefinition', {
+    this.taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDefinition', {
       memoryLimitMiB: config.serverMemory,
       cpu: config.serverCpu,
-      taskRole: taskRole,
+      taskRole: this.taskRole,
     });
 
     // Log Groups
-    const logGroup = new logs.LogGroup(this, 'LogGroup', {
+    this.logGroup = new logs.LogGroup(this, 'LogGroup', {
       logGroupName: '/ecs/medplum/' + name,
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
-    const logDriver = new ecs.AwsLogDriver({
-      logGroup: logGroup,
+    this.logDriver = new ecs.AwsLogDriver({
+      logGroup: this.logGroup,
       streamPrefix: 'Medplum',
     });
 
     // Task Containers
-    const serviceContainer = taskDefinition.addContainer('MedplumTaskDefinition', {
+    this.serviceContainer = this.taskDefinition.addContainer('MedplumTaskDefinition', {
       image: this.getContainerImage(config, config.serverImage),
       command: [config.region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${config.region}:/medplum/${name}/`],
-      logging: logDriver,
+      logging: this.logDriver,
     });
 
-    serviceContainer.addPortMappings({
+    this.serviceContainer.addPortMappings({
       containerPort: config.apiPort,
       hostPort: config.apiPort,
     });
 
     if (config.additionalContainers) {
       for (const container of config.additionalContainers) {
-        taskDefinition.addContainer('AdditionalContainer-' + container.name, {
+        this.taskDefinition.addContainer('AdditionalContainer-' + container.name, {
           containerName: container.name,
           image: this.getContainerImage(config, container.image),
           command: container.command,
           environment: container.environment,
-          logging: logDriver,
+          logging: this.logDriver,
         });
       }
     }
 
     // Security Groups
-    const fargateSecurityGroup = new ec2.SecurityGroup(this, 'ServiceSecurityGroup', {
+    this.fargateSecurityGroup = new ec2.SecurityGroup(this, 'ServiceSecurityGroup', {
       allowAllOutbound: true,
       securityGroupName: 'MedplumSecurityGroup',
-      vpc: vpc,
+      vpc: this.vpc,
     });
 
     // Fargate Services
-    const fargateService = new ecs.FargateService(this, 'FargateService', {
-      cluster: cluster,
-      taskDefinition: taskDefinition,
+    this.fargateService = new ecs.FargateService(this, 'FargateService', {
+      cluster: this.ecsCluster,
+      taskDefinition: this.taskDefinition,
       assignPublicIp: false,
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
       desiredCount: config.desiredServerCount,
-      securityGroups: [fargateSecurityGroup],
+      securityGroups: [this.fargateSecurityGroup],
       healthCheckGracePeriod: Duration.minutes(5),
     });
 
     // Add dependencies - make sure Fargate service is created after RDS and Redis
-    if (rdsCluster) {
-      fargateService.node.addDependency(rdsCluster);
+    if (this.rdsCluster) {
+      this.fargateService.node.addDependency(this.rdsCluster);
     }
-    fargateService.node.addDependency(redisCluster);
+    this.fargateService.node.addDependency(this.redisCluster);
 
     // Load Balancer Target Group
-    const targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
-      vpc: vpc,
+    this.targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
+      vpc: this.vpc,
       port: config.apiPort,
       protocol: elbv2.ApplicationProtocol.HTTP,
       healthCheck: {
@@ -330,19 +355,19 @@ export class BackEnd extends Construct {
         healthyThresholdCount: 2,
         unhealthyThresholdCount: 5,
       },
-      targets: [fargateService],
+      targets: [this.fargateService],
     });
 
     // Load Balancer
-    const loadBalancer = new elbv2.ApplicationLoadBalancer(this, 'LoadBalancer', {
-      vpc: vpc,
+    this.loadBalancer = new elbv2.ApplicationLoadBalancer(this, 'LoadBalancer', {
+      vpc: this.vpc,
       internetFacing: config.apiInternetFacing !== false, // default true
       http2Enabled: true,
     });
 
     if (config.loadBalancerLoggingBucket) {
       // Load Balancer logging
-      loadBalancer.logAccessLogs(
+      this.loadBalancer.logAccessLogs(
         s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket),
         config.loadBalancerLoggingPrefix
       );
@@ -350,7 +375,7 @@ export class BackEnd extends Construct {
 
     // HTTPS Listener
     // Forward to the target group
-    loadBalancer.addListener('HttpsListener', {
+    this.loadBalancer.addListener('HttpsListener', {
       port: 443,
       certificates: [
         {
@@ -358,11 +383,11 @@ export class BackEnd extends Construct {
         },
       ],
       sslPolicy: elbv2.SslPolicy.FORWARD_SECRECY_TLS12_RES_GCM,
-      defaultAction: elbv2.ListenerAction.forward([targetGroup]),
+      defaultAction: elbv2.ListenerAction.forward([this.targetGroup]),
     });
 
     // WAF
-    const waf = new wafv2.CfnWebACL(this, 'BackEndWAF', {
+    this.waf = new wafv2.CfnWebACL(this, 'BackEndWAF', {
       defaultAction: { allow: {} },
       scope: 'REGIONAL',
       name: `${config.stackName}-BackEndWAF`,
@@ -375,21 +400,20 @@ export class BackEnd extends Construct {
     });
 
     // Create an association between the load balancer and the WAF
-    const wafAssociation = new wafv2.CfnWebACLAssociation(this, 'LoadBalancerAssociation', {
-      resourceArn: loadBalancer.loadBalancerArn,
-      webAclArn: waf.attrArn,
+    this.wafAssociation = new wafv2.CfnWebACLAssociation(this, 'LoadBalancerAssociation', {
+      resourceArn: this.loadBalancer.loadBalancerArn,
+      webAclArn: this.waf.attrArn,
     });
 
     // Grant RDS access to the fargate group
-    if (rdsCluster) {
-      rdsCluster.connections.allowDefaultPortFrom(fargateSecurityGroup);
+    if (this.rdsCluster) {
+      this.rdsCluster.connections.allowDefaultPortFrom(this.fargateSecurityGroup);
     }
 
     // Grant Redis access to the fargate group
-    redisSecurityGroup.addIngressRule(fargateSecurityGroup, ec2.Port.tcp(6379));
+    this.redisSecurityGroup.addIngressRule(this.fargateSecurityGroup, ec2.Port.tcp(6379));
 
     // DNS
-    let record = undefined;
     if (!config.skipDns) {
       // Route 53
       const zone = route53.HostedZone.fromLookup(this, 'Zone', {
@@ -397,51 +421,41 @@ export class BackEnd extends Construct {
       });
 
       // Route53 alias record for the load balancer
-      record = new route53.ARecord(this, 'LoadBalancerAliasRecord', {
+      this.dnsRecord = new route53.ARecord(this, 'LoadBalancerAliasRecord', {
         recordName: config.apiDomainName,
-        target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(loadBalancer)),
+        target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(this.loadBalancer)),
         zone: zone,
       });
     }
 
     // SSM Parameters
-    const regionParameter = new ssm.StringParameter(this, 'RegionParameter', {
+    this.regionParameter = new ssm.StringParameter(this, 'RegionParameter', {
       tier: ssm.ParameterTier.STANDARD,
       parameterName: `/medplum/${name}/awsRegion`,
       description: 'AWS region',
       stringValue: config.region,
     });
 
-    const databaseSecrets = new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
+    this.databaseSecretsParameter = new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
       tier: ssm.ParameterTier.STANDARD,
       parameterName: `/medplum/${name}/DatabaseSecrets`,
       description: 'Database secrets ARN',
-      stringValue: rdsSecretsArn,
+      stringValue: this.rdsSecretsArn,
     });
 
-    const redisSecretsParameter = new ssm.StringParameter(this, 'RedisSecretsParameter', {
+    this.redisSecretsParameter = new ssm.StringParameter(this, 'RedisSecretsParameter', {
       tier: ssm.ParameterTier.STANDARD,
       parameterName: `/medplum/${name}/RedisSecrets`,
       description: 'Redis secrets ARN',
-      stringValue: redisSecrets.secretArn,
+      stringValue: this.redisSecrets.secretArn,
     });
 
-    const botLambdaRoleParameter = new ssm.StringParameter(this, 'BotLambdaRoleParameter', {
+    this.botLambdaRoleParameter = new ssm.StringParameter(this, 'BotLambdaRoleParameter', {
       tier: ssm.ParameterTier.STANDARD,
       parameterName: `/medplum/${name}/botLambdaRoleArn`,
       description: 'Bot lambda execution role ARN',
-      stringValue: botLambdaRole.roleArn,
+      stringValue: this.botLambdaRole.roleArn,
     });
-
-    // Debug
-    console.log('ARecord', record?.domainName);
-    console.log('RegionParameter', regionParameter.parameterArn);
-    console.log('DatabaseSecretsParameter', databaseSecrets.parameterArn);
-    console.log('RedisSecretsParameter', redisSecretsParameter.parameterArn);
-    console.log('RedisCluster', redisCluster.attrPrimaryEndPointAddress);
-    console.log('BotLambdaRole', botLambdaRoleParameter.stringValue);
-    console.log('WAF', waf.attrArn);
-    console.log('WAF Association', wafAssociation.node.id);
   }
 
   /**

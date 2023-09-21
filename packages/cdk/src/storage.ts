@@ -1,6 +1,7 @@
 import { MedplumInfraConfig } from '@medplum/core';
 import {
   aws_certificatemanager as acm,
+  CfnOutput,
   aws_cloudfront as cloudfront,
   Duration,
   aws_cloudfront_origins as origins,
@@ -18,14 +19,22 @@ import { awsManagedRules } from './waf';
  * Binary storage bucket and CloudFront distribution.
  */
 export class Storage extends Construct {
+  storageBucket: s3.IBucket;
+  keyGroup?: cloudfront.IKeyGroup;
+  responseHeadersPolicy?: cloudfront.IResponseHeadersPolicy;
+  waf?: wafv2.CfnWebACL;
+  originAccessIdentity?: cloudfront.IOriginAccessIdentity;
+  originAccessIdentityS3CanonicalUserId?: string;
+  originAccessIdentityS3CanonicalUserIdOutput?: CfnOutput;
+  distribution?: cloudfront.IDistribution;
+  dnsRecord?: route53.IRecordSet;
+
   constructor(parent: Construct, config: MedplumInfraConfig, region: string) {
     super(parent, 'Storage');
 
-    let storageBucket: s3.IBucket;
-
     if (region === config.region) {
       // S3 bucket
-      storageBucket = new s3.Bucket(this, 'StorageBucket', {
+      this.storageBucket = new s3.Bucket(this, 'StorageBucket', {
         bucketName: config.storageBucketName,
         publicReadAccess: false,
         blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -42,11 +51,11 @@ export class Storage extends Construct {
             logsPrefix: config.clamscanLoggingPrefix,
           },
         });
-        sc.addSourceBucket(storageBucket);
+        sc.addSourceBucket(this.storageBucket);
       }
     } else {
-      // Otherwise, reference the bucket by name
-      storageBucket = s3.Bucket.fromBucketAttributes(this, 'StorageBucket', {
+      // Otherwise, reference the bucket by name and region
+      this.storageBucket = s3.Bucket.fromBucketAttributes(this, 'StorageBucket', {
         bucketName: config.storageBucketName,
         region: config.region,
       });
@@ -64,12 +73,12 @@ export class Storage extends Construct {
       }
 
       // Authorized key group for presigned URLs
-      const keyGroup = new cloudfront.KeyGroup(this, 'StorageKeyGroup', {
+      this.keyGroup = new cloudfront.KeyGroup(this, 'StorageKeyGroup', {
         items: [publicKey],
       });
 
       // HTTP response headers policy
-      const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'ResponseHeadersPolicy', {
+      this.responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'ResponseHeadersPolicy', {
         securityHeadersBehavior: {
           contentSecurityPolicy: {
             contentSecurityPolicy:
@@ -93,7 +102,7 @@ export class Storage extends Construct {
       });
 
       // WAF
-      const waf = new wafv2.CfnWebACL(this, 'StorageWAF', {
+      this.waf = new wafv2.CfnWebACL(this, 'StorageWAF', {
         defaultAction: { allow: {} },
         scope: 'CLOUDFRONT',
         name: `${config.stackName}-StorageWAF`,
@@ -106,20 +115,37 @@ export class Storage extends Construct {
       });
 
       // Origin access identity
-      const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OriginAccessIdentity', {});
-      grantBucketAccessToOriginAccessIdentity(storageBucket, originAccessIdentity);
+      this.originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OriginAccessIdentity', {});
+      this.originAccessIdentityS3CanonicalUserId = (
+        this.originAccessIdentity as cloudfront.OriginAccessIdentity
+      ).cloudFrontOriginAccessIdentityS3CanonicalUserId;
+      if (config.region === 'us-east-1') {
+        // Only grant access if the bucket is in the same region
+        grantBucketAccessToOriginAccessIdentity(
+          this.storageBucket as s3.IBucket,
+          this.originAccessIdentityS3CanonicalUserId
+        );
+      } else {
+        // Otherwise export the OAI so it can be used in other regions
+        this.originAccessIdentityS3CanonicalUserIdOutput = new CfnOutput(this, 'OriginAccessIdentityCanonicalUserId', {
+          exportName: 'StorageOriginAccessIdentityCanonicalUserId',
+          value: this.originAccessIdentityS3CanonicalUserId,
+        });
+      }
 
       // CloudFront distribution
-      const distribution = new cloudfront.Distribution(this, 'StorageDistribution', {
+      this.distribution = new cloudfront.Distribution(this, 'StorageDistribution', {
         defaultBehavior: {
-          origin: new origins.S3Origin(storageBucket, { originAccessIdentity }),
-          responseHeadersPolicy,
+          origin: new origins.S3Origin(this.storageBucket as s3.IBucket, {
+            originAccessIdentity: this.originAccessIdentity,
+          }),
+          responseHeadersPolicy: this.responseHeadersPolicy,
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          trustedKeyGroups: [keyGroup],
+          trustedKeyGroups: [this.keyGroup],
         },
         certificate: acm.Certificate.fromCertificateArn(this, 'StorageCertificate', config.storageSslCertArn),
         domainNames: [config.storageDomainName],
-        webAclId: waf.attrArn,
+        webAclId: this.waf.attrArn,
         logBucket: config.storageLoggingBucket
           ? s3.Bucket.fromBucketName(this, 'LoggingBucket', config.storageLoggingBucket)
           : undefined,
@@ -127,22 +153,18 @@ export class Storage extends Construct {
       });
 
       // DNS
-      let record = undefined;
       if (!config.skipDns) {
         const zone = route53.HostedZone.fromLookup(this, 'Zone', {
           domainName: config.domainName.split('.').slice(-2).join('.'),
         });
 
         // Route53 alias record for the CloudFront distribution
-        record = new route53.ARecord(this, 'StorageAliasRecord', {
+        this.dnsRecord = new route53.ARecord(this, 'StorageAliasRecord', {
           recordName: config.storageDomainName,
-          target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
+          target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(this.distribution)),
           zone,
         });
       }
-
-      // Debug
-      console.log('ARecord', record?.domainName);
     }
   }
 }

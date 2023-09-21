@@ -1,4 +1,4 @@
-import { aws_cloudfront as cloudfront, aws_iam as iam, aws_s3 as s3 } from 'aws-cdk-lib';
+import { aws_iam as iam, aws_s3 as s3 } from 'aws-cdk-lib';
 
 /**
  * Grants S3 bucket read access to the CloudFront Origin Access Identity (OAI).
@@ -12,11 +12,11 @@ import { aws_cloudfront as cloudfront, aws_iam as iam, aws_s3 as s3 } from 'aws-
  *
  * See: https://stackoverflow.com/a/60917015
  * @param bucket The S3 bucket.
- * @param identity The CloudFront Origin Access Identity.
+ * @param cloudFrontOriginAccessIdentityS3CanonicalUserId The CloudFront Origin Access Identity Canonical User ID.
  */
 export function grantBucketAccessToOriginAccessIdentity(
   bucket: s3.IBucket,
-  identity: cloudfront.OriginAccessIdentity
+  cloudFrontOriginAccessIdentityS3CanonicalUserId: string
 ): void {
   const policyStatement = new iam.PolicyStatement();
   policyStatement.addActions('s3:GetObject*');
@@ -24,6 +24,6 @@ export function grantBucketAccessToOriginAccessIdentity(
   policyStatement.addActions('s3:List*');
   policyStatement.addResources(bucket.bucketArn);
   policyStatement.addResources(`${bucket.bucketArn}/*`);
-  policyStatement.addCanonicalUserPrincipal(identity.cloudFrontOriginAccessIdentityS3CanonicalUserId);
+  policyStatement.addCanonicalUserPrincipal(cloudFrontOriginAccessIdentityS3CanonicalUserId);
   bucket.addToResourcePolicy(policyStatement);
 }
