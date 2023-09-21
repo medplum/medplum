@@ -3,6 +3,7 @@ import {
   PropertyType,
   TypedValue,
   capitalize,
+  deepEquals,
   formatCoding,
   getTypedPropertyValue,
   globalSchema,
@@ -507,8 +508,5 @@ function getRetainedMultiSelectAnswer(
 }
 
 function getRetainedRadioAnswer(options: [string, TypedValue][], defaultAnswer: TypedValue): string | undefined {
-  return options.find(
-    (option) =>
-      option[1].value === defaultAnswer?.value || formatCoding(option[1].value) === formatCoding(defaultAnswer?.value)
-  )?.[0];
+  return options.find((option) => deepEquals(option[1].value, defaultAnswer?.value))?.[0];
 }
