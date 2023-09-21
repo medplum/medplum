@@ -1,17 +1,18 @@
-import { ContentType, normalizeErrorString } from '@medplum/core';
+import { ContentType, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Agent, Bot, ProjectMembership } from '@medplum/fhirtypes';
+import { AsyncLocalStorage } from 'async_hooks';
 import bytes from 'bytes';
 import { randomUUID } from 'crypto';
 import http, { IncomingMessage } from 'http';
+import { Redis } from 'ioredis';
 import ws from 'ws';
 import { getConfig } from './config';
+import { RequestContext, requestContextStore } from './context';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { executeBot } from './fhir/operations/execute';
 import { globalLogger } from './logger';
 import { getLoginForAccessToken } from './oauth/utils';
 import { getRedis } from './redis';
-import { RequestContext, requestContextStore } from './context';
-import { AsyncLocalStorage } from 'async_hooks';
 
 const handlerMap = new Map<string, (socket: ws.WebSocket, request: IncomingMessage) => Promise<void>>();
 handlerMap.set('/ws/echo', handleEchoConnection);
@@ -92,6 +93,12 @@ async function handleAgentConnection(socket: ws.WebSocket, request: IncomingMess
   let bot: Bot | undefined = undefined;
   let runAs: ProjectMembership | undefined = undefined;
 
+  // Create a redis client for this connection.
+  // According to Redis documentation: http://redis.io/commands/subscribe
+  // Once the client enters the subscribed state it is not supposed to issue any other commands,
+  // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
+  let redisSubscriber: Redis | undefined = undefined;
+
   socket.on(
     'message',
     AsyncLocalStorage.bind(async (data: ws.RawData) => {
@@ -112,6 +119,10 @@ async function handleAgentConnection(socket: ws.WebSocket, request: IncomingMess
     })
   );
 
+  socket.on('close', () => {
+    redisSubscriber?.disconnect();
+  });
+
   /**
    * Handles a connect command.
    * This command is sent by the agent to connect to the server.
@@ -125,6 +136,15 @@ async function handleAgentConnection(socket: ws.WebSocket, request: IncomingMess
     agent = await repo.readResource<Agent>('Agent', agentId);
     bot = await repo.readResource<Bot>('Bot', botId);
     runAs = membership;
+
+    // Connect to Redis
+    redisSubscriber = getRedis().duplicate();
+    await redisSubscriber.subscribe(getReferenceString(agent));
+    redisSubscriber.on('message', (_channel: string, message: string) => {
+      socket.send(JSON.stringify({ type: 'transmit', message }), { binary: false });
+    });
+
+    // Send connected message
     socket.send(JSON.stringify({ type: 'connected' }));
   }
 

@@ -4,10 +4,12 @@ import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
+import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
+import { agentPushHandler } from './operations/agentpush';
 import { csvHandler } from './operations/csv';
 import { deployHandler } from './operations/deploy';
 import { evaluateMeasureHandler } from './operations/evaluatemeasure';
@@ -23,7 +25,6 @@ import { resourceGraphHandler } from './operations/resourcegraph';
 import { sendOutcome } from './outcomes';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { getAuthenticatedContext } from '../context';
 
 export const fhirRouter = Router();
 
@@ -92,6 +93,10 @@ protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 
 // CSV Export
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
+
+// Agent $push operation
+protectedRoutes.post('/Agent/([$]|%24)push', agentPushHandler);
+protectedRoutes.post('/Agent/:id/([$]|%24)push', agentPushHandler);
 
 // Bot $execute operation
 // Allow extra path content after the "$execute" to support external callers who append path info
