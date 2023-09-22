@@ -17,19 +17,6 @@ describe('Agent Push', () => {
     await initApp(app, config);
     accessToken = await initTestAuth();
 
-    // const cody: Agent = {
-    //   resourceType: 'Agent',
-    //   identifier: [{ system: 'https://example.com/agent', value: randomUUID() }],
-    //   name: 'Test Agent',
-    //   status: 'active',
-    //   channel: [
-    //     {
-    //       endpoint: { reference: 'Endpoint/' + randomUUID() },
-    //       targetReference: { reference: 'Bot/' + randomUUID() },
-    //     },
-    //   ],
-    // };
-
     const res = await request(app)
       .post(`/fhir/R4/Agent`)
       .set('Content-Type', ContentType.FHIR_JSON)
