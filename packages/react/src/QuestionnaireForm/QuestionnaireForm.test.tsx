@@ -1,4 +1,4 @@
-import { getQuestionnaireAnswers, getAllQuestionnaireAnswers } from '@medplum/core';
+import { getQuestionnaireAnswers } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
