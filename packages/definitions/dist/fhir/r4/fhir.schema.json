@@ -62458,6 +62458,13 @@
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
         },
+        "identifier": {
+          "description": "An identifier for this agent.",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          },
+          "type": "array"
+        },
         "name": {
           "description": "The human readable friendly name of the agent.",
           "$ref": "#/definitions/string"

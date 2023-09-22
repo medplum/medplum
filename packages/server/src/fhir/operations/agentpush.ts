@@ -21,7 +21,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   }
 
   const channel = getReferenceString(agent);
-  const input = req.method === 'POST' ? req.body : req.query;
+  const input = req.body;
   const data = input instanceof Hl7Message ? input.toString() : input;
 
   // Publish the message to the agent channel

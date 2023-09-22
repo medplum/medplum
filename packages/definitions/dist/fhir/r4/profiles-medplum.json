@@ -13,6 +13,7 @@
       "name" : "Project",
       "url" : "https://medplum.com/fhir/StructureDefinition/Project",
       "status" : "active",
+      "description": "Encapsulation of resources for a specific project or organization.",
       "kind" : "resource",
       "abstract" : false,
       "type" : "Project",
@@ -393,6 +394,7 @@
       "name" : "ClientApplication",
       "url" : "https://medplum.com/fhir/StructureDefinition/ClientApplication",
       "status" : "active",
+      "description": "Medplum client application for automated access.",
       "kind" : "resource",
       "abstract" : false,
       "type" : "ClientApplication",
@@ -3961,6 +3963,22 @@
             "type" : [{
               "code" : "code"
             }]
+          },
+          {
+            "id" : "Agent.identifier",
+            "path" : "Agent.identifier",
+            "short" : "An identifier for this agent",
+            "definition" : "An identifier for this agent.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Identifier"
+            }],
+            "base" : {
+              "path" : "Agent.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "Agent.name",
