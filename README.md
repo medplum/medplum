@@ -25,7 +25,8 @@ Medplum is a developer platform that enables flexible and rapid development of h
 **We heartily welcome any and all contributions that match our engineering standards!**
 
 That being said, this codebase isn't your typical open source project because it's not a library or package with a
-limited scope -- it's our entire product.
+limited scope -- it's our entire product. Our [Contributing documentation](https://medplum.com/docs/contributing) has
+all the information you need to get started.
 
 ### Ground Rules
 
@@ -41,7 +42,7 @@ the other side of the screen!
 #### Reporting a bug or proposing a new feature
 
 If you found a technical bug on Medplum or have ideas for features we should implement, the issue tracker is the best
-place to . ([click here to open a new issue](https://github.com/medplum/medplum/issues/new))
+place to share with us. ([click here to open a new issue](https://github.com/medplum/medplum/issues/new))
 
 ### Writing documentation or blog content
 
