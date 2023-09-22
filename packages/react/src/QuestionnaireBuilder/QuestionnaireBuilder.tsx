@@ -19,11 +19,6 @@ import { useResource } from '../useResource/useResource';
 import { killEvent } from '../utils/dom';
 import { isChoiceQuestion, QuestionnaireItemType } from '../utils/questionnaire';
 
-enum Direction {
-  UP,
-  DOWN,
-}
-
 const useStyles = createStyles((theme) => ({
   section: {
     position: 'relative',
@@ -79,6 +74,10 @@ const useStyles = createStyles((theme) => ({
     },
   },
 
+  movementIcons: {
+    color: theme.colors.gray[5],
+  },
+
   columnAlignment: {
     display: 'flex',
     flexDirection: 'column',
@@ -129,18 +128,6 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
     };
   }, [defaultValue]);
 
-  function toggleItemOrder(itemToMove: QuestionnaireItem, direction: Direction): void {
-    if (!value) {
-      return;
-    }
-    const reorderedItems = reorderItems(value.item ?? [], itemToMove, direction);
-
-    setValue({
-      ...value,
-      item: reorderedItems,
-    });
-  }
-
   if (!schema || !value) {
     return null;
   }
@@ -155,7 +142,6 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
           hoverKey={hoverKey}
           setHoverKey={setHoverKey}
           onChange={setValue}
-          onMove={toggleItemOrder}
         />
         <Button type="submit">Save</Button>
       </Form>
@@ -174,7 +160,8 @@ interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
   onChange: (item: T) => void;
   onRemove?: () => void;
   onRepeatable?: (item: QuestionnaireItem) => void;
-  onMove?(item: QuestionnaireItem, direction: Direction): void;
+  onMoveUp?(): void;
+  onMoveDown?(): void;
 }
 
 function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBuilderProps<T>): JSX.Element {
@@ -243,6 +230,24 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     });
   }
 
+  function toggleItemOrder(itemToMove: QuestionnaireItem, delta: number): void {
+    const currentItems = props.item.item ?? [];
+
+    const index = currentItems.findIndex((item) => item.id === itemToMove.id);
+
+    if (index === -1 || index + delta < 0 || index + delta >= currentItems.length) {
+      return;
+    }
+
+    const newItems = [...currentItems];
+    [newItems[index], newItems[index + delta]] = [newItems[index + delta], newItems[index]];
+
+    props.onChange({
+      ...props.item,
+      item: newItems,
+    });
+  }
+
   const className = cx(classes.section, {
     [classes.editing]: editing,
     [classes.hovering]: hovering && !editing,
@@ -296,7 +301,8 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             onChange={changeItem}
             onRemove={() => removeItem(item)}
             onRepeatable={toggleRepeatable}
-            onMove={props.onMove}
+            onMoveUp={() => toggleItemOrder(item, -1)}
+            onMoveDown={() => toggleItemOrder(item, 1)}
           />
         </div>
       ))}
@@ -349,12 +355,12 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                 href="#"
                 onClick={(e: React.MouseEvent) => {
                   e.preventDefault();
-                  if (props.onMove) {
-                    props.onMove(item, Direction.UP);
+                  if (props.onMoveUp) {
+                    props.onMoveUp();
                   }
                 }}
               >
-                <IconArrowUp data-testid="up-button" size={20} />
+                <IconArrowUp data-testid="up-button" size={15} className={classes.movementIcons} />
               </Anchor>
             )}
             {!props.isLast && (
@@ -362,12 +368,12 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                 href="#"
                 onClick={(e: React.MouseEvent) => {
                   e.preventDefault();
-                  if (props.onMove) {
-                    props.onMove(item, Direction.DOWN);
+                  if (props.onMoveDown) {
+                    props.onMoveDown();
                   }
                 }}
               >
-                <IconArrowDown data-testid="down-button" size={20} />
+                <IconArrowDown data-testid="down-button" size={15} className={classes.movementIcons} />
               </Anchor>
             )}
           </Box>
@@ -738,64 +744,4 @@ function createPage(): QuestionnaireItem {
       } as Extension,
     ],
   } as QuestionnaireItem;
-}
-
-function reorderItems(
-  value: QuestionnaireItem[],
-  itemToMove: QuestionnaireItem,
-  direction: Direction
-): QuestionnaireItem[] {
-  const currentItems = value;
-  if (!currentItems.length) {
-    return [];
-  }
-
-  const index = currentItems.findIndex((i) => i.id === itemToMove.id);
-
-  // If found, reorder at this level. Otherwise, try nested levels.
-  if (index >= 0) {
-    return reorderCurrentLevelItems(currentItems, index, direction);
-  } else {
-    return reorderInNestedItems(currentItems, itemToMove, direction);
-  }
-}
-
-function reorderCurrentLevelItems(
-  items: QuestionnaireItem[],
-  index: number,
-  direction: Direction
-): QuestionnaireItem[] {
-  let updatedIndex = index;
-  // Calculate the new position for the item.
-  if (direction === Direction.UP && index > 0) {
-    updatedIndex = index - 1;
-  } else if (direction === Direction.DOWN && index < items.length - 1) {
-    updatedIndex = index + 1;
-  } else {
-    return items;
-  }
-  const newItems = [...items];
-  [newItems[index], newItems[updatedIndex]] = [newItems[updatedIndex], newItems[index]];
-  return newItems;
-}
-
-function reorderInNestedItems(
-  items: QuestionnaireItem[],
-  itemToMove: QuestionnaireItem,
-  direction: Direction
-): QuestionnaireItem[] {
-  const updatedItems = [...items];
-
-  for (let i = 0; i < updatedItems.length; i++) {
-    // Check if this item has nested items.
-    if (updatedItems[i].item) {
-      // Attempt reorder on the nested items.
-      const reorderedNestedItems = reorderItems(updatedItems[i].item ?? [], itemToMove, direction);
-      if (JSON.stringify(reorderedNestedItems) !== JSON.stringify(updatedItems[i].item)) {
-        updatedItems[i] = { ...updatedItems[i], item: reorderedNestedItems };
-      }
-    }
-  }
-
-  return updatedItems;
 }
