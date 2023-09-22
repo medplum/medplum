@@ -1,11 +1,11 @@
 import { MedplumInfraConfig } from '@medplum/core';
 import {
-  CfnOutput,
-  Duration,
-  RemovalPolicy,
   aws_certificatemanager as acm,
+  CfnOutput,
   aws_cloudfront as cloudfront,
+  Duration,
   aws_cloudfront_origins as origins,
+  RemovalPolicy,
   aws_route53 as route53,
   aws_s3 as s3,
   aws_route53_targets as targets,
@@ -130,10 +130,7 @@ export class FrontEnd extends Construct {
       ).cloudFrontOriginAccessIdentityS3CanonicalUserId;
       if (config.region === 'us-east-1') {
         // Only grant access if the bucket is in the same region
-        grantBucketAccessToOriginAccessIdentity(
-          this.appBucket as s3.IBucket,
-          this.originAccessIdentityS3CanonicalUserId
-        );
+        grantBucketAccessToOriginAccessIdentity(this.appBucket, this.originAccessIdentityS3CanonicalUserId);
       } else {
         // Otherwise export the OAI so it can be used in other regions
         this.originAccessIdentityS3CanonicalUserIdOutput = new CfnOutput(this, 'OriginAccessIdentityCanonicalUserId', {
@@ -146,7 +143,7 @@ export class FrontEnd extends Construct {
       this.distribution = new cloudfront.Distribution(this, 'AppDistribution', {
         defaultRootObject: 'index.html',
         defaultBehavior: {
-          origin: new origins.S3Origin(this.appBucket as s3.IBucket, {
+          origin: new origins.S3Origin(this.appBucket, {
             originAccessIdentity: this.originAccessIdentity,
           }),
           responseHeadersPolicy: this.responseHeadersPolicy,

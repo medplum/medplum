@@ -121,10 +121,7 @@ export class Storage extends Construct {
       ).cloudFrontOriginAccessIdentityS3CanonicalUserId;
       if (config.region === 'us-east-1') {
         // Only grant access if the bucket is in the same region
-        grantBucketAccessToOriginAccessIdentity(
-          this.storageBucket as s3.IBucket,
-          this.originAccessIdentityS3CanonicalUserId
-        );
+        grantBucketAccessToOriginAccessIdentity(this.storageBucket, this.originAccessIdentityS3CanonicalUserId);
       } else {
         // Otherwise export the OAI so it can be used in other regions
         this.originAccessIdentityS3CanonicalUserIdOutput = new CfnOutput(this, 'OriginAccessIdentityCanonicalUserId', {
@@ -136,7 +133,7 @@ export class Storage extends Construct {
       // CloudFront distribution
       this.distribution = new cloudfront.Distribution(this, 'StorageDistribution', {
         defaultBehavior: {
-          origin: new origins.S3Origin(this.storageBucket as s3.IBucket, {
+          origin: new origins.S3Origin(this.storageBucket, {
             originAccessIdentity: this.originAccessIdentity,
           }),
           responseHeadersPolicy: this.responseHeadersPolicy,
