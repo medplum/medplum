@@ -75,7 +75,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
 
   const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
   const defaultValue =
-    getRetainedAnswer(props.allResponses, item, props.index, props.groupSequence) ??
+    getCurrentAnswer(props.allResponses, item, props.index, props.groupSequence) ??
     getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value');
 
   switch (type) {
@@ -243,23 +243,25 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
   }
 
   const defaultValue =
-    getRetainedAnswer(props.allResponses, item, props.index, props.groupSequence) ??
+    getCurrentAnswer(props.allResponses, item, props.index, props.groupSequence) ??
     getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value');
 
   if (item.repeats) {
     const { propertyName, data } = formatSelectData(props.item);
-    const retainedAnswer = getRetainedMultiSelectAnswer(props.allResponses, item, props.groupSequence);
+    const currentAnswer = getCurrentMultiSelectAnswer(props.allResponses, item, props.groupSequence);
 
     return (
       <MultiSelect
         data={data}
         placeholder="Select items"
         searchable
-        defaultValue={retainedAnswer || [typedValueToString(initialValue)]}
+        defaultValue={currentAnswer || [typedValueToString(initialValue)]}
         onChange={(selected) => {
           const values = selected.map((o) => {
             const option = item.answerOption?.find(
-              (option) => option[propertyName as keyof QuestionnaireItemAnswerOption] === o
+              (option) =>
+                formatCoding(option.valueCoding) === o ||
+                option[propertyName as keyof QuestionnaireItemAnswerOption] === o
             );
             const optionValue = getTypedPropertyValue(
               { type: 'QuestionnaireItemAnswerOption', value: option },
@@ -343,8 +345,8 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
     }
   }
 
-  const defaultAnswer = getRetainedAnswer(props.allResponses, item, props.index, props.groupSequence);
-  const answerLinkId = getRetainedRadioAnswer(options, defaultAnswer);
+  const defaultAnswer = getCurrentAnswer(props.allResponses, item, props.index, props.groupSequence);
+  const answerLinkId = getCurrentRadioAnswer(options, defaultAnswer);
 
   return (
     <Radio.Group
@@ -438,13 +440,14 @@ function formatSelectData(item: QuestionnaireItem): FormattedData {
   const propertyName = 'value' + capitalize(optionValue.type);
 
   const data = (item.answerOption ?? []).map((a) => ({
-    value: a[propertyName as keyof QuestionnaireItemAnswerOption],
-    label:
-      propertyName === 'valueCoding'
-        ? formatCoding(a.valueCoding)
-        : a[propertyName as keyof QuestionnaireItemAnswerOption],
+    value: getValueAndLabel(a, propertyName),
+    label: getValueAndLabel(a, propertyName),
   }));
   return { propertyName, data };
+}
+
+function getValueAndLabel(option: QuestionnaireItemAnswerOption, propertyName: string): string | undefined {
+  return formatCoding(option.valueCoding) || option[propertyName as keyof QuestionnaireItemAnswerOption]?.toString();
 }
 
 function typedValueToString(typedValue: TypedValue | undefined): string | undefined {
@@ -482,7 +485,7 @@ function getItemValue(answer: QuestionnaireResponseItemAnswer): TypedValue {
   return itemValue;
 }
 
-function getRetainedAnswer(
+function getCurrentAnswer(
   allResponses: QuestionnaireResponseItem[],
   item: QuestionnaireItem,
   index: number = 0,
@@ -493,20 +496,20 @@ function getRetainedAnswer(
   return getItemValue(selectedItem?.[index] ?? {});
 }
 
-function getRetainedMultiSelectAnswer(
+function getCurrentMultiSelectAnswer(
   allResponses: QuestionnaireResponseItem[],
   item: QuestionnaireItem,
   groupSequence: number = 0
-): string[] | Coding[] {
+): string[] {
   const results = getItemsByLinkId(allResponses, item.linkId ?? '');
   const selectedItem = results[groupSequence]?.answer;
   if (!selectedItem) {
     return [];
   }
   const typedValues = selectedItem.map((a) => getItemValue(a));
-  return typedValues.map((type) => type.value);
+  return typedValues.map((type) => formatCoding(type?.value) || type?.value);
 }
 
-function getRetainedRadioAnswer(options: [string, TypedValue][], defaultAnswer: TypedValue): string | undefined {
+function getCurrentRadioAnswer(options: [string, TypedValue][], defaultAnswer: TypedValue): string | undefined {
   return options.find((option) => deepEquals(option[1].value, defaultAnswer?.value))?.[0];
 }
