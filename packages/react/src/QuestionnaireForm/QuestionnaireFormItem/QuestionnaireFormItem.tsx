@@ -10,7 +10,6 @@ import {
   stringify,
 } from '@medplum/core';
 import {
-  Coding,
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
   QuestionnaireItemInitial,
