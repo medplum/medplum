@@ -507,6 +507,23 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Agent-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Agent-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/Agent-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the agent",
+        "code": "identifier",
+        "base": ["Agent"],
+        "type": "token",
+        "expression": "Agent.identifier"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/Agent-name",
       "resource": {
         "resourceType": "SearchParameter",

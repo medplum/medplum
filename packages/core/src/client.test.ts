@@ -1924,6 +1924,25 @@ describe('Client', () => {
     );
   });
 
+  test('Push to agent', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.pushToAgent({ resourceType: 'Agent', id: '123' }, 'XYZ', ContentType.HL7_V2);
+    expect(result).toBeDefined();
+    expect(fetch).toBeCalledWith(
+      'https://api.medplum.com/fhir/R4/Agent/123/$push',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Accept: ContentType.FHIR_JSON,
+          'Content-Type': ContentType.HL7_V2,
+          'X-Medplum': 'extended',
+        },
+        body: expect.stringContaining('XYZ'),
+      })
+    );
+  });
+
   test('Storage events', async () => {
     // Make window.location writeable
     Object.defineProperty(window, 'location', {

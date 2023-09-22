@@ -6,6 +6,7 @@
 import { Bot } from './Bot';
 import { Device } from './Device';
 import { Endpoint } from './Endpoint';
+import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Reference } from './Reference';
 
@@ -45,6 +46,11 @@ export interface Agent {
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * An identifier for this agent.
+   */
+  identifier?: Identifier[];
 
   /**
    * The human readable friendly name of the agent.
