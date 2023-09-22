@@ -149,6 +149,8 @@ docker run --rm -it -p 8000:8000 eu.gcr.io/simhospital-images/simhospital:latest
 - [ ] Confirm that the logs on the agent host
 - [ ] Navigate to your [`Bot` on the Medplum App](https://app.medplum.com/Bot) and view the `Events` tab, confirm that you see the AuditEvents produced
 
+## Pushing messages
+
 ## Preparing for Scale
 
 HL7 Feeds can be extremely high volume, and before you go live with a high-volume feed you may want to modify your Bot to log only set the Bot `AuditEventDestination` to `log`.
