@@ -32,6 +32,21 @@ The FHIR `Communication` resource is a representation of any message sent in a h
 | `subject`         | A reference to the patient or group that this `Communication` is about.                          |                                                                                        | Patient/homer-simpson                                     |
 | `encounter`       | A reference to a medical encounter to which this `Communication` is tightly associated.          |                                                                                        | Encounter/example-appointment                             |
 | `sent`/`received` | The time that the message was either sent or received.                                           |                                                                                        | 2023-04-10T10:00:00Z                                      |
+| `status`          | The status of transmission                                                                       | [Event Status Codes](http://hl7.org/fhir/R4/valueset-event-status.html)                | in-progress                                               |
+
+:::tip The `Communication` lifecycle
+
+Most messaging based workflows track messages through three stages: **sent**, **received**, and **read**.
+
+While FHIR standard doesn't offer specific guidance on representing this lifecycle, Medplum recommends the following model:
+
+| Stage    | Representation                          |
+| -------- | --------------------------------------- |
+| sent     | `Communication.sent` is populated       |
+| received | `Communication.received` is populated   |
+| read     | `Communication.status` is `"completed"` |
+
+:::
 
 ## Building and Structuring Threads
 
