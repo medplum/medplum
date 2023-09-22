@@ -231,20 +231,11 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   }
 
   function toggleItemOrder(itemToMove: QuestionnaireItem, delta: number): void {
-    const currentItems = props.item.item ?? [];
-
-    const index = currentItems.findIndex((item) => item.id === itemToMove.id);
-
-    if (index === -1 || index + delta < 0 || index + delta >= currentItems.length) {
-      return;
-    }
-
-    const newItems = [...currentItems];
-    [newItems[index], newItems[index + delta]] = [newItems[index + delta], newItems[index]];
+    const updatedItems = reorderItems(props.item.item, itemToMove, delta);
 
     props.onChange({
       ...props.item,
-      item: newItems,
+      item: updatedItems,
     });
   }
 
@@ -744,4 +735,22 @@ function createPage(): QuestionnaireItem {
       } as Extension,
     ],
   } as QuestionnaireItem;
+}
+
+function reorderItems(
+  items: QuestionnaireItem[] | undefined,
+  itemToMove: QuestionnaireItem,
+  delta: number
+): QuestionnaireItem[] | null {
+  const currentItems = items ?? [];
+  const index = currentItems.findIndex((item) => item.id === itemToMove.id);
+
+  if (index === -1 || index + delta < 0 || index + delta >= currentItems.length) {
+    return null;
+  }
+
+  const updatedItems = [...currentItems];
+  [updatedItems[index], updatedItems[index + delta]] = [updatedItems[index + delta], updatedItems[index]];
+
+  return updatedItems;
 }
