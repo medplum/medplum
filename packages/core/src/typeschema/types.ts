@@ -12,7 +12,7 @@ export interface InternalTypeSchema {
   url?: string;
   kind?: string;
   description?: string;
-  fields: Record<string, ElementValidator>;
+  elements: Record<string, InternalSchemaElement>;
   constraints: Constraint[];
   parentType?: InternalTypeSchema;
   innerTypes: InternalTypeSchema[];
@@ -20,8 +20,8 @@ export interface InternalTypeSchema {
   mandatoryProperties?: Set<string>;
 }
 
-export interface ElementValidator {
-  elementDefinition: ElementDefinition;
+export interface InternalSchemaElement {
+  // elementDefinition: ElementDefinition;
   min: number;
   max: number;
   isArray: boolean;
@@ -55,7 +55,7 @@ export interface SlicingRules {
 export interface SliceDefinition {
   name: string;
   type?: ElementType[];
-  fields: Record<string, ElementValidator>;
+  elements: Record<string, InternalSchemaElement>;
   min: number;
   max: number;
 }
@@ -173,8 +173,8 @@ class StructureDefinitionParser {
       url: sd.url as string,
       kind: sd.kind,
       description: sd.description,
-      fields: {},
-      constraints: this.parseFieldDefinition(this.root).constraints,
+      elements: {},
+      constraints: this.parseElementDefinition(this.root).constraints,
       innerTypes: [],
       summaryProperties: new Set(),
       mandatoryProperties: new Set(),
@@ -192,18 +192,18 @@ class StructureDefinitionParser {
         // Slice element, part of some slice definition
         if (this.slicingContext?.current) {
           const path = elementPath(element, this.slicingContext.path);
-          this.slicingContext.current.fields[path] = this.parseFieldDefinition(element);
+          this.slicingContext.current.elements[path] = this.parseElementDefinition(element);
         }
       } else {
         // Normal field definition
-        const field = this.parseFieldDefinition(element);
+        const field = this.parseElementDefinition(element);
         this.checkFieldEnter(element, field);
 
         // Record field in schema
         let parentContext: BackboneContext | undefined = this.backboneContext;
         while (parentContext) {
           if (element.path?.startsWith(parentContext.path + '.')) {
-            parentContext.type.fields[elementPath(element, parentContext.path)] = field;
+            parentContext.type.elements[elementPath(element, parentContext.path)] = field;
             break;
           }
           parentContext = parentContext.parent;
@@ -220,7 +220,7 @@ class StructureDefinitionParser {
           if (field.min > 0) {
             this.resourceSchema.mandatoryProperties?.add(path.replace('[x]', ''));
           }
-          this.resourceSchema.fields[path] = field;
+          this.resourceSchema.elements[path] = field;
         }
 
         // Clean up contextual book-keeping
@@ -239,7 +239,7 @@ class StructureDefinitionParser {
     return this.resourceSchema;
   }
 
-  private checkFieldEnter(element: ElementDefinition, field: ElementValidator): void {
+  private checkFieldEnter(element: ElementDefinition, field: InternalSchemaElement): void {
     if (this.isInnerType(element)) {
       while (this.backboneContext && !pathsCompatible(this.backboneContext?.path, element.path)) {
         // Starting new inner type, unwind type stack to this property's parent
@@ -250,8 +250,8 @@ class StructureDefinitionParser {
         type: {
           name: getElementDefinitionTypeName(element),
           description: element.definition,
-          fields: {},
-          constraints: this.parseFieldDefinition(element).constraints,
+          elements: {},
+          constraints: this.parseElementDefinition(element).constraints,
           innerTypes: [],
         },
         path: element.path ?? '',
@@ -357,18 +357,18 @@ class StructureDefinitionParser {
     this.slicingContext.current = {
       name: element.sliceName ?? '',
       type: element.type?.map((t) => ({ code: t.code ?? '', targetProfile: t.targetProfile ?? [] })),
-      fields: {},
+      elements: {},
       min: element.min ?? 0,
       max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string, 10),
     };
   }
 
-  private parseFieldDefinition(ed: ElementDefinition): ElementValidator {
+  private parseElementDefinition(ed: ElementDefinition): InternalSchemaElement {
     const max = parseCardinality(ed.max as string);
     const baseMax = ed.base?.max ? parseCardinality(ed.base.max) : max;
     const typedElementDef = { type: 'ElementDefinition', value: ed };
     return {
-      elementDefinition: ed,
+      // elementDefinition: ed,
       min: ed.min ?? 0,
       max: max,
       isArray: baseMax > 1,
@@ -406,7 +406,7 @@ export function subsetResource<T extends Resource>(resource: T | undefined, prop
   const extraProperties = [];
   for (const property of properties) {
     extraProperties.push('_' + property);
-    const choiceTypeField = DATA_TYPES[resource.resourceType].fields[property + '[x]'];
+    const choiceTypeField = DATA_TYPES[resource.resourceType].elements[property + '[x]'];
     if (choiceTypeField) {
       extraProperties.push(...choiceTypeField.type.map((t) => property + capitalize(t.code)));
     }

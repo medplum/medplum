@@ -4,7 +4,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { TypedValue } from '../types';
 import {
-  ElementValidator,
+  InternalSchemaElement,
   InternalTypeSchema,
   SlicingRules,
   getDataType,
@@ -47,8 +47,8 @@ describe('FHIR resource and data type representations', () => {
       'obs-7',
       'vs-2',
     ]);
-    expect(profile.fields['status'].binding).toEqual('http://hl7.org/fhir/ValueSet/observation-status|4.0.1');
-    expect(profile.fields['code'].pattern).toMatchObject<TypedValue>({
+    expect(profile.elements['status'].binding).toEqual('http://hl7.org/fhir/ValueSet/observation-status|4.0.1');
+    expect(profile.elements['code'].pattern).toMatchObject<TypedValue>({
       type: 'CodeableConcept',
       value: {
         coding: [
@@ -59,7 +59,7 @@ describe('FHIR resource and data type representations', () => {
         ],
       },
     });
-    expect(profile.fields['category'].slicing).toMatchObject<SlicingRules>({
+    expect(profile.elements['category'].slicing).toMatchObject<SlicingRules>({
       discriminator: [
         { type: 'value', path: 'coding.code' },
         { type: 'value', path: 'coding.system' },
@@ -67,7 +67,7 @@ describe('FHIR resource and data type representations', () => {
       slices: [
         {
           name: 'VSCat',
-          fields: {
+          elements: {
             'coding.code': expect.objectContaining({
               fixed: {
                 type: 'code',
@@ -87,17 +87,17 @@ describe('FHIR resource and data type representations', () => {
       ],
       ordered: false,
     });
-    expect(profile.fields['component']).toMatchObject<Partial<ElementValidator>>({
+    expect(profile.elements['component']).toMatchObject<Partial<InternalSchemaElement>>({
       min: 2,
       max: Number.POSITIVE_INFINITY,
     });
-    expect(profile.fields['component'].constraints.map((c) => c.key).sort()).toEqual(['ele-1', 'vs-3']);
-    expect(profile.fields['component'].slicing).toMatchObject<SlicingRules>({
+    expect(profile.elements['component'].constraints.map((c) => c.key).sort()).toEqual(['ele-1', 'vs-3']);
+    expect(profile.elements['component'].slicing).toMatchObject<SlicingRules>({
       discriminator: [{ type: 'pattern', path: 'code' }],
       slices: [
         {
           name: 'systolic',
-          fields: {
+          elements: {
             code: expect.objectContaining({
               pattern: {
                 type: 'CodeableConcept',
@@ -117,7 +117,7 @@ describe('FHIR resource and data type representations', () => {
         },
         {
           name: 'diastolic',
-          fields: {
+          elements: {
             code: expect.objectContaining({
               pattern: {
                 type: 'CodeableConcept',
@@ -142,7 +142,7 @@ describe('FHIR resource and data type representations', () => {
     const [refRange, component] = profile.innerTypes;
     expect(refRange).toMatchObject<Partial<InternalTypeSchema>>({
       name: 'ObservationReferenceRange',
-      fields: {
+      elements: {
         id: expect.objectContaining({}),
         low: expect.objectContaining({}),
         high: expect.objectContaining({}),
@@ -150,7 +150,7 @@ describe('FHIR resource and data type representations', () => {
     });
     expect(component).toMatchObject<Partial<InternalTypeSchema>>({
       name: 'ObservationComponent',
-      fields: {
+      elements: {
         id: expect.objectContaining({}),
         code: expect.objectContaining({}),
         'value[x]': expect.objectContaining({}),
@@ -199,7 +199,7 @@ describe('FHIR resource and data type representations', () => {
     ]);
 
     const rest = profile.innerTypes.find((t) => t.name === 'CapabilityStatementRest');
-    const restProperties = Object.keys(rest?.fields ?? {});
+    const restProperties = Object.keys(rest?.elements ?? {});
     expect(restProperties.sort()).toEqual([
       'compartment',
       'documentation',
@@ -213,13 +213,13 @@ describe('FHIR resource and data type representations', () => {
       'searchParam',
       'security',
     ]);
-    expect(rest?.fields['interaction']).toMatchObject<Partial<ElementValidator>>({
+    expect(rest?.elements['interaction']).toMatchObject<Partial<InternalSchemaElement>>({
       type: [{ code: 'CapabilityStatementRestInteraction', targetProfile: [] }],
     });
-    expect(rest?.fields['searchParam']).toMatchObject<Partial<ElementValidator>>({
+    expect(rest?.elements['searchParam']).toMatchObject<Partial<InternalSchemaElement>>({
       type: [{ code: 'CapabilityStatementRestResourceSearchParam', targetProfile: [] }],
     });
-    expect(rest?.fields['operation']).toMatchObject<Partial<ElementValidator>>({
+    expect(rest?.elements['operation']).toMatchObject<Partial<InternalSchemaElement>>({
       type: [{ code: 'CapabilityStatementRestResourceOperation', targetProfile: [] }],
     });
   });
@@ -330,6 +330,6 @@ describe('FHIR resource and data type representations', () => {
     // Make sure we can handle contentReference more than 2 layers down
     const structureMapGroupRuleType = getDataType('StructureMapGroupRule');
     expect(structureMapGroupRuleType).toBeDefined();
-    expect(structureMapGroupRuleType.fields['rule']).toBeDefined();
+    expect(structureMapGroupRuleType.elements['rule']).toBeDefined();
   });
 });

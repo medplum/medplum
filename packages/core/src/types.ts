@@ -10,14 +10,10 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import baseSchema from './base-schema.json';
-import { SearchParameterDetails } from './search/details';
-<<<<<<< HEAD
-import { capitalize, createReference } from './utils';
 import { formatHumanName } from './format';
-=======
-import { getAllDataTypes, InternalTypeSchema, tryGetDataType } from './typeschema/types';
-import { capitalize } from './utils';
->>>>>>> d2ec1747e (Checkpoint with core)
+import { SearchParameterDetails } from './search/details';
+import { getAllDataTypes, InternalSchemaElement, InternalTypeSchema, tryGetDataType } from './typeschema/types';
+import { capitalize, createReference } from './utils';
 
 export interface TypedValue {
   readonly type: string;
@@ -314,29 +310,29 @@ function capitalizeDisplayWord(word: string): string {
  * @param propertyName The property name.
  * @returns The element definition if found.
  */
-export function getElementDefinition(typeName: string, propertyName: string): ElementDefinition | undefined {
+export function getElementDefinition(typeName: string, propertyName: string): InternalSchemaElement | undefined {
   const typeSchema = tryGetDataType(typeName);
   if (!typeSchema) {
     return undefined;
   }
 
-  const property = typeSchema.fields[propertyName] ?? typeSchema.fields[propertyName + '[x]'];
-  if (!property) {
-    return undefined;
-  }
+  return typeSchema.elements[propertyName] ?? typeSchema.elements[propertyName + '[x]'];
+  // if (!property) {
+  //   return undefined;
+  // }
 
-  const elementDefinition = property.elementDefinition;
+  // const elementDefinition = property.elementDefinition;
 
-  if (elementDefinition.contentReference) {
-    // Content references start with a "#"
-    // Remove the "#" character
-    const contentReference = elementDefinition.contentReference.substring(1).split('.');
-    const referencePropertyName = contentReference.pop() as string;
-    const referenceTypeName = buildTypeName(contentReference);
-    return getElementDefinition(referenceTypeName, referencePropertyName);
-  }
+  // if (elementDefinition.contentReference) {
+  //   // Content references start with a "#"
+  //   // Remove the "#" character
+  //   const contentReference = elementDefinition.contentReference.substring(1).split('.');
+  //   const referencePropertyName = contentReference.pop() as string;
+  //   const referenceTypeName = buildTypeName(contentReference);
+  //   return getElementDefinition(referenceTypeName, referencePropertyName);
+  // }
 
-  return elementDefinition;
+  // return elementDefinition;
 }
 
 /**

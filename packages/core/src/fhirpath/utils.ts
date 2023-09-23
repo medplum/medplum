@@ -1,6 +1,7 @@
-import { Coding, ElementDefinition, Period, Quantity } from '@medplum/fhirtypes';
-import { getElementDefinition, getElementDefinitionTypeName, isResource, PropertyType, TypedValue } from '../types';
+import { Coding, Period, Quantity } from '@medplum/fhirtypes';
+import { getElementDefinition, isResource, PropertyType, TypedValue } from '../types';
 import { capitalize, isEmpty } from '../utils';
+import { InternalSchemaElement } from '../typeschema/types';
 
 /**
  * Returns a single element array with a typed boolean value.
@@ -84,15 +85,15 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
  * Returns the value of the property and the property type using a type schema.
  * @param input The base context (FHIR resource or backbone element).
  * @param path The property path.
- * @param property The property element definition.
+ * @param element The property element definition.
  * @returns The value of the property and the property type.
  */
 function getTypedPropertyValueWithSchema(
   input: TypedValue,
   path: string,
-  property: ElementDefinition
+  element: InternalSchemaElement
 ): TypedValue[] | TypedValue | undefined {
-  const types = property.type;
+  const types = element.type;
   if (!types || types.length === 0) {
     return undefined;
   }
@@ -127,7 +128,8 @@ function getTypedPropertyValueWithSchema(
   }
 
   if (resultType === 'Element' || resultType === 'BackboneElement') {
-    resultType = getElementDefinitionTypeName(property);
+    resultType = element.type[0].code;
+    // resultType = getElementDefinitionTypeName(property);
   }
 
   if (Array.isArray(resultValue)) {
