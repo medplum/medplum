@@ -20,17 +20,55 @@ describe('CreateResourcePage', () => {
     });
   }
 
-  test('Renders new Practitioner page', async () => {
-    await setup('/Practitioner/new');
-    await waitFor(() => screen.getByText('New Practitioner'));
-    expect(screen.getByText('New Practitioner')).toBeInTheDocument();
+  function formViewTests(url: string): undefined {
+    test('Renders new Practitioner form page', async () => {
+      await setup(url);
+      await waitFor(() => screen.getByText('New Practitioner'));
+      expect(screen.getByText('New Practitioner')).toBeInTheDocument();
+      expect(screen.getByText('Resource Type')).toBeInTheDocument();
+      expect(screen.getByText('OK')).toBeInTheDocument();
+    });
+
+    test('Form submit new Practitioner', async () => {
+      await setup(url);
+      await waitFor(() => screen.getByText('OK'));
+      await act(async () => {
+        fireEvent.click(screen.getByText('OK'));
+      });
+    });
+  }
+
+  describe('Default view', () => {
+    formViewTests('/Practitioner/new');
   });
 
-  test('Submit new Practitioner', async () => {
-    await setup('/Practitioner/new');
-    await waitFor(() => screen.getByText('OK'));
-    await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+  describe('Form view', () => {
+    formViewTests('/Practitioner/new/form');
+  });
+
+  describe('JSON view', () => {
+    const JSON_INPUT_TEST_ID = 'create-resource-json';
+
+    test('JSON tab renders', async () => {
+      await setup('/Patient/new/json');
+      await waitFor(() => screen.getByTestId(JSON_INPUT_TEST_ID));
+      expect(screen.getByTestId(JSON_INPUT_TEST_ID)).toBeInTheDocument();
+      expect(screen.getByText('OK')).toBeInTheDocument();
+    });
+
+    test('JSON submit new Practitioner', async () => {
+      await setup('/Practitioner/new/json');
+      await waitFor(() => screen.getByTestId(JSON_INPUT_TEST_ID));
+
+      await act(async () => {
+        fireEvent.change(screen.getByTestId(JSON_INPUT_TEST_ID), {
+          target: { value: '{"resourceType":"Practitioner","id":"123"}' },
+        });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('OK'));
+      });
     });
   });
 });

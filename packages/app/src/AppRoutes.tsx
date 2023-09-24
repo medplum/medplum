@@ -51,6 +51,8 @@ import { ResourcePage } from './resource/ResourcePage';
 import { ResourceVersionPage } from './resource/ResourceVersionPage';
 import { SubscriptionsPage } from './resource/SubscriptionsPage';
 import { TimelinePage } from './resource/TimelinePage';
+import { FormCreatePage } from './resource/FormCreatePage';
+import { JsonCreatePage } from './resource/JsonCreatePage';
 
 export function AppRoutes(): JSX.Element {
   return (
@@ -87,7 +89,11 @@ export function AppRoutes(): JSX.Element {
         <Route path="/lab/panels" element={<PanelsPage />} />
         <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />
         <Route path="/:resourceType/:id/_history/:versionId" element={<ResourceVersionPage />} />
-        <Route path="/:resourceType/new" element={<CreateResourcePage />} />
+        <Route path="/:resourceType/new" element={<CreateResourcePage />}>
+          <Route index element={<FormCreatePage />} />
+          <Route path="form" element={<FormCreatePage />} />
+          <Route path="json" element={<JsonCreatePage />} />
+        </Route>
         <Route path="/:resourceType/:id" element={<ResourcePage />}>
           <Route index element={<TimelinePage />} />
           <Route path="apply" element={<ApplyPage />} />

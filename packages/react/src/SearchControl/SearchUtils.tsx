@@ -471,7 +471,7 @@ export function buildFieldNameString(key: string): string {
   }
 
   // Special case for ID
-  if (tmp === 'id') {
+  if (tmp === 'id' || tmp === 'Id') {
     return 'ID';
   }
 

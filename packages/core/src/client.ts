@@ -3,6 +3,7 @@
 
 import {
   AccessPolicy,
+  Agent,
   Attachment,
   Binary,
   BulkDataExport,
@@ -2157,7 +2158,6 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   *
    * Executes the $graph operation on this resource to fetch a Bundle of resources linked to the target resource
    * according to a graph definition
    * @category Read
@@ -2174,6 +2174,19 @@ export class MedplumClient extends EventTarget {
     options?: RequestInit
   ): ReadablePromise<Bundle> {
     return this.get<Bundle>(`${this.fhirUrl(resourceType, id)}/$graph?graph=${graphName}`, options);
+  }
+
+  /**
+   * Pushes a message to an agent.
+   *
+   * @param agent The agent to push to.
+   * @param body The message body.
+   * @param contentType Optional message content type.
+   * @param options Optional fetch options.
+   * @returns Promise to the operation outcome.
+   */
+  pushToAgent(agent: Agent, body: any, contentType?: string, options?: RequestInit): Promise<OperationOutcome> {
+    return this.post(this.fhirUrl('Agent', agent.id as string, '$push'), body, contentType, options);
   }
 
   /**

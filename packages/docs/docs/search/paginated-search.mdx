@@ -7,6 +7,12 @@ import TabItem from '@theme/TabItem';
 
 In this guide, we will explain how to perform paginated search queries using the FHIR specification. Specifically, we will discuss using the `_count` parameter to set the page size, the `_offset` parameter to set the page offset, and the `Bundle.link` field to retrieve subsequent pages.
 
+:::caution Reminder
+
+To get consistent output across pages, always remember to provide a `_sort` parameter to your paginated search. See ["Sorting the Results"](/docs/search/basic-search#sorting-the-results) for more info.
+
+:::
+
 ## Setting the page size with the `_count` parameter
 
 To set the number of items returned per page, use the `_count` query parameter. In the Medplum API, the default page size is 20, and the maximum allowed page size is 1000.
