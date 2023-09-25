@@ -1,7 +1,7 @@
 import { getQuestionnaireAnswers } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import each from 'jest-each';
 import React from 'react';
@@ -1093,6 +1093,101 @@ describe('QuestionnaireForm', () => {
 
     // Now the hidden text should be visible
     expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
+  });
+
+  test('Multi Select', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'multi-select',
+        title: 'Multi Select Example',
+        item: [
+          {
+            linkId: 'group1',
+            type: 'group',
+            text: 'Group 1',
+            item: [
+              {
+                linkId: 'q1',
+                type: QuestionnaireItemType.choice,
+                repeats: true,
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                    valueCodeableConcept: {
+                      coding: [
+                        {
+                          system: 'http://hl7.org/fhir/questionnaire-item-control',
+                          code: 'drop-down',
+                          display: 'Drop down',
+                        },
+                      ],
+                      text: 'Drop down',
+                    },
+                  },
+                ],
+                text: 'q1',
+                answerOption: [
+                  {
+                    valueString: 'a1',
+                  },
+                  {
+                    valueString: 'a2',
+                  },
+                ],
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'group2',
+            type: 'group',
+            text: 'Group 2',
+            item: [
+              {
+                linkId: 'string',
+                type: 'string',
+                text: 'string',
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByText('q1')).toBeInTheDocument();
+
+    const searchInput = screen.getByPlaceholderText('Select items');
+    expect(searchInput).toBeInTheDocument();
+    expect(searchInput).toBeInstanceOf(HTMLInputElement);
+
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'a1' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Back'));
+    });
+
+    const searchInput1 = screen.getByPlaceholderText('Select items');
+    expect(searchInput1).toBeInTheDocument()
   });
 
   test('Multi Select shows with no data', async () => {
