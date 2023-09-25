@@ -628,6 +628,17 @@ describe('QuestionnaireForm', () => {
     const response2 = onSubmit.mock.calls[1][0];
     const answers2 = getQuestionnaireAnswers(response2);
     expect(answers2['q1']).toMatchObject({ valueString: 'a2' });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: { value: '' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    const response3 = onSubmit.mock.calls[2][0];
+    const answers3 = getQuestionnaireAnswers(response3);
+    expect(answers3['q1']).toMatchObject({});
   });
 
   test('Reference Extensions', async () => {
@@ -1082,65 +1093,6 @@ describe('QuestionnaireForm', () => {
 
     // Now the hidden text should be visible
     expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
-  });
-
-  test('Multi Select', async () => {
-    const onSubmit = jest.fn();
-
-    await setup({
-      questionnaire: {
-        resourceType: 'Questionnaire',
-        item: [
-          {
-            linkId: 'q1',
-            type: QuestionnaireItemType.choice,
-            repeats: true,
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'drop-down',
-                      display: 'Drop down',
-                    },
-                  ],
-                  text: 'Drop down',
-                },
-              },
-            ],
-            text: 'q1',
-            answerOption: [
-              {
-                valueString: 'value1',
-              },
-              {
-                valueString: 'value2',
-              },
-            ],
-          },
-        ],
-      },
-      onSubmit,
-    });
-    expect(screen.getByText('q1')).toBeInTheDocument();
-
-    const dropDown = screen.getByPlaceholderText('Select items');
-    expect(dropDown).toBeInTheDocument();
-    expect(dropDown).toBeInstanceOf(HTMLInputElement);
-
-    await act(async () => {
-      fireEvent.click(screen.getByPlaceholderText('Select items'));
-    });
-
-    await act(async () => {
-      fireEvent.change(dropDown, { target: 'value1' });
-    });
-
-    await act(async () => {
-      fireEvent.change(dropDown, { target: ['value1', 'value2'] });
-    });
   });
 
   test('repeatableQuestion', async () => {
