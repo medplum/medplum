@@ -302,7 +302,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
 }
 
 function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { name, item, initial, onChangeAnswer, allResponses, groupSequence } = props;
+  const { name, item, initial, allResponses, groupSequence, onChangeAnswer } = props;
   if (item.answerValueSet) {
     return (
       <ValueSetAutocomplete
