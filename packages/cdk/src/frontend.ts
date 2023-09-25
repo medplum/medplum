@@ -1,9 +1,9 @@
 import { MedplumInfraConfig } from '@medplum/core';
 import {
   aws_certificatemanager as acm,
-  CfnOutput,
   aws_cloudfront as cloudfront,
   Duration,
+  aws_iam as iam,
   aws_cloudfront_origins as origins,
   RemovalPolicy,
   aws_route53 as route53,
@@ -26,9 +26,8 @@ export class FrontEnd extends Construct {
   responseHeadersPolicy?: cloudfront.IResponseHeadersPolicy;
   waf?: wafv2.CfnWebACL;
   apiOriginCachePolicy?: cloudfront.ICachePolicy;
-  originAccessIdentity?: cloudfront.IOriginAccessIdentity;
-  originAccessIdentityS3CanonicalUserId?: string;
-  originAccessIdentityS3CanonicalUserIdOutput?: CfnOutput;
+  originAccessIdentity?: cloudfront.OriginAccessIdentity;
+  originAccessPolicyStatement?: iam.PolicyStatement;
   distribution?: cloudfront.IDistribution;
   dnsRecord?: route53.IRecordSet;
 
@@ -125,19 +124,10 @@ export class FrontEnd extends Construct {
 
       // Origin access identity
       this.originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OriginAccessIdentity', {});
-      this.originAccessIdentityS3CanonicalUserId = (
-        this.originAccessIdentity as cloudfront.OriginAccessIdentity
-      ).cloudFrontOriginAccessIdentityS3CanonicalUserId;
-      if (config.region === 'us-east-1') {
-        // Only grant access if the bucket is in the same region
-        grantBucketAccessToOriginAccessIdentity(this.appBucket, this.originAccessIdentityS3CanonicalUserId);
-      } else {
-        // Otherwise export the OAI so it can be used in other regions
-        this.originAccessIdentityS3CanonicalUserIdOutput = new CfnOutput(this, 'OriginAccessIdentityCanonicalUserId', {
-          exportName: 'AppOriginAccessIdentityCanonicalUserId',
-          value: this.originAccessIdentityS3CanonicalUserId,
-        });
-      }
+      this.originAccessPolicyStatement = grantBucketAccessToOriginAccessIdentity(
+        this.appBucket,
+        this.originAccessIdentity
+      );
 
       // CloudFront distribution
       this.distribution = new cloudfront.Distribution(this, 'AppDistribution', {
