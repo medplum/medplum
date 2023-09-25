@@ -7,7 +7,7 @@ import {
   StackResource,
   StackSummary,
 } from '@aws-sdk/client-cloudformation';
-import { CloudFrontClient } from '@aws-sdk/client-cloudfront';
+import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { ECSClient } from '@aws-sdk/client-ecs';
 import { S3Client } from '@aws-sdk/client-s3';
 
@@ -18,11 +18,14 @@ export interface MedplumStackDetails {
   ecsService?: StackResource;
   appBucket?: StackResource;
   appDistribution?: StackResource;
+  appOriginAccessIdentity?: StackResource;
   storageBucket?: StackResource;
+  storageDistribution?: StackResource;
+  storageOriginAccessIdentity?: StackResource;
 }
 
 export const cloudFormationClient = new CloudFormationClient({});
-export const cloudFrontClient = new CloudFrontClient({});
+export const cloudFrontClient = new CloudFrontClient({ region: 'us-east-1' });
 export const ecsClient = new ECSClient({});
 export const s3Client = new S3Client({});
 export const tagKey = 'medplum:environment';
@@ -63,23 +66,42 @@ export async function getStackByTag(tag: string): Promise<MedplumStackDetails | 
  * @returns The Medplum stack details.
  */
 export async function getStackDetails(stackName: string): Promise<MedplumStackDetails | undefined> {
+  const result = {} as Partial<MedplumStackDetails>;
+  await buildStackDetails(cloudFormationClient, stackName, result);
+  if (cloudFormationClient.config.region !== 'us-east-1') {
+    await buildStackDetails(new CloudFormationClient({ region: 'us-east-1' }), stackName + '-us-east-1', result);
+  }
+  return result as MedplumStackDetails;
+}
+
+/**
+ * Builds the Medplum stack details for the given stack name and region.
+ * @param client The CloudFormation client.
+ * @param stackName The CloudFormation stack name.
+ * @param result The Medplum stack details builder.
+ */
+async function buildStackDetails(
+  client: CloudFormationClient,
+  stackName: string,
+  result: Partial<MedplumStackDetails>
+): Promise<void> {
   const describeStacksCommand = new DescribeStacksCommand({ StackName: stackName });
-  const stackDetails = await cloudFormationClient.send(describeStacksCommand);
+  const stackDetails = await client.send(describeStacksCommand);
   const stack = stackDetails?.Stacks?.[0];
   const medplumTag = stack?.Tags?.find((tag) => tag.Key === tagKey);
   if (!medplumTag) {
-    return undefined;
+    return;
   }
 
-  const stackResources = await cloudFormationClient.send(new DescribeStackResourcesCommand({ StackName: stackName }));
+  const stackResources = await client.send(new DescribeStackResourcesCommand({ StackName: stackName }));
   if (!stackResources.StackResources) {
-    return undefined;
+    return;
   }
 
-  const result: MedplumStackDetails = {
-    stack: stack as Stack,
-    tag: medplumTag.Value as string,
-  };
+  if (client === cloudFormationClient) {
+    result.stack = stack;
+    result.tag = medplumTag.Value as string;
+  }
 
   for (const resource of stackResources.StackResources) {
     if (resource.ResourceType === 'AWS::ECS::Cluster') {
@@ -92,19 +114,32 @@ export async function getStackDetails(stackName: string): Promise<MedplumStackDe
     ) {
       result.appBucket = resource;
     } else if (
+      resource.ResourceType === 'AWS::CloudFront::Distribution' &&
+      resource.LogicalResourceId?.startsWith('FrontEndAppDistribution')
+    ) {
+      result.appDistribution = resource;
+    } else if (
+      resource.ResourceType === 'AWS::CloudFront::CloudFrontOriginAccessIdentity' &&
+      resource.LogicalResourceId?.startsWith('FrontEndOriginAccessIdentity')
+    ) {
+      result.appOriginAccessIdentity = resource;
+    } else if (
       resource.ResourceType === 'AWS::S3::Bucket' &&
       resource.LogicalResourceId?.startsWith('StorageStorageBucket')
     ) {
       result.storageBucket = resource;
     } else if (
       resource.ResourceType === 'AWS::CloudFront::Distribution' &&
-      resource.LogicalResourceId?.startsWith('FrontEndAppDistribution')
+      resource.LogicalResourceId?.startsWith('StorageStorageDistribution')
     ) {
-      result.appDistribution = resource;
+      result.storageDistribution = resource;
+    } else if (
+      resource.ResourceType === 'AWS::CloudFront::CloudFrontOriginAccessIdentity' &&
+      resource.LogicalResourceId?.startsWith('StorageOriginAccessIdentity')
+    ) {
+      result.storageOriginAccessIdentity = resource;
     }
   }
-
-  return result;
 }
 
 /**
@@ -112,14 +147,18 @@ export async function getStackDetails(stackName: string): Promise<MedplumStackDe
  * @param details The Medplum stack details.
  */
 export function printStackDetails(details: MedplumStackDetails): void {
-  console.log(`Medplum Tag:     ${details.tag}`);
-  console.log(`Stack Name:      ${details.stack.StackName}`);
-  console.log(`Stack ID:        ${details.stack.StackId}`);
-  console.log(`Status:          ${details.stack.StackStatus}`);
-  console.log(`ECS Cluster:     ${details.ecsCluster?.PhysicalResourceId}`);
-  console.log(`ECS Service:     ${getEcsServiceName(details.ecsService)}`);
-  console.log(`App Bucket:      ${details.appBucket?.PhysicalResourceId}`);
-  console.log(`Storage Bucket:  ${details.storageBucket?.PhysicalResourceId}`);
+  console.log(`Medplum Tag:           ${details.tag}`);
+  console.log(`Stack Name:            ${details.stack?.StackName}`);
+  console.log(`Stack ID:              ${details.stack?.StackId}`);
+  console.log(`Status:                ${details.stack?.StackStatus}`);
+  console.log(`ECS Cluster:           ${details.ecsCluster?.PhysicalResourceId}`);
+  console.log(`ECS Service:           ${getEcsServiceName(details.ecsService)}`);
+  console.log(`App Bucket:            ${details.appBucket?.PhysicalResourceId}`);
+  console.log(`App Distribution:      ${details.appDistribution?.PhysicalResourceId}`);
+  console.log(`App OAI:               ${details.appOriginAccessIdentity?.PhysicalResourceId}`);
+  console.log(`Storage Bucket:        ${details.storageBucket?.PhysicalResourceId}`);
+  console.log(`Storage Distribution:  ${details.storageDistribution?.PhysicalResourceId}`);
+  console.log(`Storage OAI:           ${details.storageOriginAccessIdentity?.PhysicalResourceId}`);
 }
 
 /**
@@ -129,4 +168,28 @@ export function printStackDetails(details: MedplumStackDetails): void {
  */
 export function getEcsServiceName(resource: StackResource | undefined): string | undefined {
   return resource?.PhysicalResourceId?.split('/')?.pop() || '';
+}
+
+/**
+ * Creates a CloudFront invalidation to clear the cache for all files.
+ * This is not strictly necessary, but it helps to ensure that the latest version of the app is served.
+ * In a perfect world, every deploy is clean, and hashed resources should be cached forever.
+ * However, we do not recalculate hashes after variable replacements.
+ * So if variables change, we need to invalidate the cache.
+ * @param distributionId The CloudFront distribution ID.
+ */
+export async function createInvalidation(distributionId: string): Promise<void> {
+  const response = await cloudFrontClient.send(
+    new CreateInvalidationCommand({
+      DistributionId: distributionId,
+      InvalidationBatch: {
+        CallerReference: `invalidate-all-${Date.now()}`,
+        Paths: {
+          Quantity: 1,
+          Items: ['/*'],
+        },
+      },
+    })
+  );
+  console.log(`Created invalidation with ID: ${response.Invalidation?.Id}`);
 }
