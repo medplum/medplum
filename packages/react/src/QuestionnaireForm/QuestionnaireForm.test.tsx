@@ -1187,7 +1187,7 @@ describe('QuestionnaireForm', () => {
     });
 
     const searchInput1 = screen.getByPlaceholderText('Select items');
-    expect(searchInput1).toBeInTheDocument()
+    expect(searchInput1).toBeInTheDocument();
   });
 
   test('Multi Select shows with no data', async () => {
