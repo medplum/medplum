@@ -6,7 +6,7 @@ import ExampleCode from '!!raw-loader!@site/..//examples/src/medications/represe
 
 # Representing Prescriptions and Medication Orders
 
-Prescriptions and medication orders are very common in healthcare settings and accuracy is vitally important. This guide will go over how to represent all aspects of a medication order, from the request to the administration instructions. Note that this is an _operational counterpart_ to the [Modeling A Formulary](/docs/medications/formulary/formulary) documentation.
+Prescriptions and medication orders are very common in healthcare settings and accuracy is vitally important. This guide will go over how to represent all aspects of a medication order, from the request to the administration instructions. Note that this is an _operational counterpart_ to the [Modeling A Formulary](/docs/medications/formulary/formulary.md) documentation.
 
 ## The `MedicationRequest` Resource
 
@@ -17,35 +17,35 @@ Medical orders should be represented in FHIR using the [`MedicationRequest`](/do
 
 In addition, it can contain contextual information such as instructions on administration of the medication.
 
-| Element                              | Description                                                                                                                                            | Example                                          |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| _Dispense and Ingestion Information_ |
-| `medicationCodeableConcept`          | The medication being requested, coded as a concept. The details of the drug will be in the `MedicationKnowledge` resource with the same code.          | 42844 - Percocet                                 |
-| `dosageInstructions`                 | Instructions on how the medication should be used by the patient.                                                                                      | [See below](#representing-patient-instructions)  |
-| `dispenseRequest`                    | Provides details about how the medication should be dispensed or supplied, including quantity, refills, and more.                                      | [See below](#representing-dispense-instructions) |
-| `substitution`                       | A boolean value, indicating whether a substitution is allowed by the dispensing pharmacist. If it is blank, it implies that a substitution is allowed. | `false`                                          |
-| `priority`                           | How quickly the request should be addressed.                                                                                                           | urgent                                           |
-| _Tracking and Administration_        |
-| `subject`                            | The patient or group who the medication or prescription is for.                                                                                        | Patient/homer-simpson                            |
-| `requester`                          | The practitioner who created the request or wrote the prescription.                                                                                    | Practitioner/dr-alice-smith                      |
-| `reasonReference`                    | A reference to a `Condition` or `Observation` that indicates why the order was made.                                                                   | Condition/chronic-pain                           |
-| `encounter`                          | The medical appointment at which the request was created.                                                                                              | Encounter/homer-simpson-annual-physical          |
-| `priorPrescription`                  | A reference to a previous prescription or order that this one is replacing or updating.                                                                | MedicationRequest/homer-simpson-percocet-1       |
-| `status`                             | The current state of the order (i.e. completed, active, etc.)                                                                                          | completed                                        |
+| Element                                                         | Description                                                                                                                                            | Example                                          |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| <td colspan="3"> **_Dispense and Ingestion Information_** </td> |
+| `medicationCodeableConcept`                                     | The medication being requested, coded as a concept. The details of the drug will be in the `MedicationKnowledge` resource with the same code.          | 42844 - Percocet                                 |
+| `dosageInstructions`                                            | Instructions on how the medication should be used by the patient.                                                                                      | [See below](#representing-patient-instructions)  |
+| `dispenseRequest`                                               | Provides details about how the medication should be dispensed or supplied, including quantity, refills, and more.                                      | [See below](#representing-dispense-instructions) |
+| `substitution`                                                  | A boolean value, indicating whether a substitution is allowed by the dispensing pharmacist. If it is blank, it implies that a substitution is allowed. | `false`                                          |
+| `priority`                                                      | How quickly the request should be addressed.                                                                                                           | urgent                                           |
+| <td colspan="3"> **_Tracking and Administration_** </td>        |
+| `subject`                                                       | The patient or group who the medication or prescription is for.                                                                                        | Patient/homer-simpson                            |
+| `requester`                                                     | The practitioner who created the request or wrote the prescription.                                                                                    | Practitioner/dr-alice-smith                      |
+| `reasonReference`                                               | A reference to a `Condition` or `Observation` that indicates why the order was made.                                                                   | Condition/chronic-pain                           |
+| `encounter`                                                     | The medical appointment at which the request was created.                                                                                              | Encounter/homer-simpson-annual-physical          |
+| `priorPrescription`                                             | A reference to a previous prescription or order that this one is replacing or updating.                                                                | MedicationRequest/homer-simpson-percocet-1       |
+| `status`                                                        | The current state of the order (i.e. completed, active, etc.)                                                                                          | completed                                        |
 
 ### Detailed Medication Information
 
 It is important to note that a [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) resource does not have detailed information on the drug that is being prescribed or ordered. Instead, this information will be in the related [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resource with the same code. This code should be stored in the `medicationCodeableConcept` field of the `MedicationRequest`, establishing a link between the request and the details of the drug.
 
-The `MedicationKnowledge` resource represents a type of medication that can be ordered. It contains details such as:
+The [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resource represents a type of medication that can be ordered. It contains details such as:
 
 - Relationship to other medications
 - Physical characteristics of the drug (color, imprint, etc.)
-- Physical form of the drug (pill, powder, liquid, etc.)
+- Physical form of the drug (pill, powder, etc.)
 - Description of the medication package (bottle, blister pack, etc.)
 - Method of ingestion (oral, intravenous, etc.)
 
-For more details on the `MedicationKnowledge` resource and how to model medications, see the [Modeling a Formulary docs](/docs/medications/formulary/formulary).
+For more details on the `MedicationKnowledge` resource and how to model medications, see the [Modeling a Formulary docs](/docs/medications/formulary/formulary.md).
 
 ## Representing Dispense Instructions
 
@@ -96,7 +96,7 @@ Note that this field is stored as an array, so there can be multiple dosage inst
 
 ## Distinguishing Between Prescriptions and Medication Orders
 
-A `MedicationRequest` can represent both a prescription and a medication fulfillment order. A **prescription** is an order for medication in an outpatient context, while a **medication fulfillment order** represents medication that will be administered in an inpatient context.
+A [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) can represent both a prescription and a medication fulfillment order. A **prescription** is an order for medication in an outpatient context, while a **medication fulfillment order** represents medication that will be administered in an inpatient context.
 
 These types of requests should be differentiated as outpatient vs. inpatient using the `MedicationRequest.category` field, which represents the type of medical request. The [FHIR MedicationRequest Admin Location value set](https://www.hl7.org/fhir/valueset-medicationrequest-admin-location.html) can be used for this. Note that the `category` field is an array, so it is possible to have multiple values if you wish to categorize your requests in other ways as well.
 
