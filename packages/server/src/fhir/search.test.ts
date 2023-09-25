@@ -2934,7 +2934,7 @@ describe('FHIR Search', () => {
           {
             code: 'name',
             operator: Operator.CONTAINS,
-            value: `${seed}just`,
+            value: `${seed.slice(-3)}just`,
           },
         ],
       });

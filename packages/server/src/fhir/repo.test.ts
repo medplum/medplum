@@ -528,9 +528,10 @@ describe('FHIR Repo', () => {
     }
   });
 
-  test('Rebuild compartments success', async () => {
-    await systemRepo.rebuildCompartmentsForResourceType('Practitioner');
-  });
+  test('Rebuild compartments success', () =>
+    withTestContext(async () => {
+      await systemRepo.rebuildCompartmentsForResourceType('Practitioner');
+    }));
 
   test('Remove property', () =>
     withTestContext(async () => {

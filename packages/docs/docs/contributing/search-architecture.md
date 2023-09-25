@@ -206,7 +206,7 @@ SELECT "Practitioner"."id", "Practitioner"."content" FROM "Practitioner"
     "Practitioner"."id"="T1"."resourceId" AND
     -- Matching criteria are inserted into the JOIN ON
     -- tsv column is computed when resource is inserted into DB
-    "T1"."name_tsv" @@ to_tsquery('english','Dub:*')
+    "T1"."name_tsv" @@ to_tsquery('simple','Dub:*')
   )
 WHERE ("Practitioner"."deleted"=false AND
   -- Find rows that match the code
