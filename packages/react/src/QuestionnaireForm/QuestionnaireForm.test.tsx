@@ -1095,6 +1095,45 @@ describe('QuestionnaireForm', () => {
     expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
   });
 
+  test('Multi Select shows with no data', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            repeats: true,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+            text: 'q1',
+            answerOption: [],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByText('q1')).toBeInTheDocument();
+
+    const searchInput = screen.getByPlaceholderText('Select items');
+    expect(searchInput).toBeInTheDocument();
+    expect(searchInput).toBeInstanceOf(HTMLInputElement);
+  });
+
   test('repeatableQuestion', async () => {
     await setup({
       questionnaire: {
