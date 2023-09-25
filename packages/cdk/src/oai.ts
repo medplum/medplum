@@ -12,8 +12,6 @@ import { aws_cloudfront as cloudfront, aws_iam as iam, aws_s3 as s3 } from 'aws-
  *
  * See: https://stackoverflow.com/a/60917015
  *
- * param cloudFrontOriginAccessIdentityS3CanonicalUserId The CloudFront Origin Access Identity Canonical User ID.
- *
  * @param bucket The S3 bucket.
  * @param identity The CloudFront Origin Access Identity.
  * @returns The policy statement.
