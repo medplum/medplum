@@ -210,6 +210,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             item={item}
             initial={initial}
             allResponses={props.allResponses}
+            groupSequence={props.groupSequence}
             onChangeAnswer={(e) => onChangeAnswer(e, index)}
           />
         );
@@ -301,7 +302,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
 }
 
 function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { name, item, initial, onChangeAnswer, allResponses } = props;
+  const { name, item, initial, onChangeAnswer, allResponses, groupSequence } = props;
   if (item.answerValueSet) {
     return (
       <ValueSetAutocomplete
@@ -316,13 +317,14 @@ function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.
       item={item}
       initial={initial}
       allResponses={allResponses}
+      groupSequence={groupSequence}
       onChangeAnswer={onChangeAnswer}
     />
   );
 }
 
 function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { name, item, initial, onChangeAnswer } = props;
+  const { name, item, initial, groupSequence, onChangeAnswer } = props;
   const valueElementDefinition = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
   const initialValue = getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value') as
     | TypedValue
@@ -351,7 +353,7 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
 
   return (
     <Radio.Group
-      name={name}
+      name={`${name}-${groupSequence}`}
       value={answerLinkId ?? defaultValue}
       onChange={(newValue) => {
         const option = options.find((option) => option[0] === newValue);

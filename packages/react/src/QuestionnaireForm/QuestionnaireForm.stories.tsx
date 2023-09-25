@@ -597,6 +597,7 @@ export const PageSequence = (): JSX.Element => (
             linkId: 'group1',
             text: 'Page Sequence 1',
             type: 'group',
+            repeats: true,
             item: [
               {
                 linkId: 'question1',
