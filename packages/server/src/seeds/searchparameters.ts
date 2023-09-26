@@ -3,7 +3,7 @@ import { BundleEntry, SearchParameter } from '@medplum/fhirtypes';
 import { getClient } from '../database';
 import { systemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import { r4ProjectId } from '../seed';
+import { r4ProjectId } from '.';
 
 /**
  * Creates all SearchParameter resources.

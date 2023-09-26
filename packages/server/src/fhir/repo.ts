@@ -54,7 +54,7 @@ import { getConfig } from '../config';
 import { getRequestContext } from '../context';
 import { getClient } from '../database';
 import { getRedis } from '../redis';
-import { r4ProjectId } from '../seed';
+import { r4ProjectId } from '../seeds';
 import {
   AuditEventOutcome,
   AuditEventSubtype,
@@ -682,7 +682,10 @@ export class Repository extends BaseRepository implements FhirRepository {
       .where('id', Operator.EQUALS, id)
       .where('lastUpdated', Operator.GREATER_THAN, new Date(Date.now() - 1000 * seconds))
       .execute(client);
-    return (rows[0].count as number) >= maxVersions;
+    if (!rows[0]) {
+      console.trace(rows);
+    }
+    return ((rows[0]?.count as number) ?? 0) >= maxVersions;
   }
 
   /**

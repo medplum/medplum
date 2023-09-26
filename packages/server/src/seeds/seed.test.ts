@@ -1,10 +1,10 @@
 import { Project } from '@medplum/fhirtypes';
-import { initAppServices, shutdownApp } from './app';
-import { loadTestConfig } from './config';
-import { getClient } from './database';
-import { Operator, SelectQuery } from './fhir/sql';
-import { seedDatabase } from './seed';
-import { withTestContext } from './test.setup';
+import { initAppServices, shutdownApp } from '../app';
+import { loadTestConfig } from '../config';
+import { getClient } from '../database';
+import { Operator, SelectQuery } from '../fhir/sql';
+import { SEEDS } from '.';
+import { withTestContext } from '../test.setup';
 
 describe('Seed', () => {
   beforeAll(async () => {
@@ -20,7 +20,7 @@ describe('Seed', () => {
 
   test('Seeder completes successfully', async () => {
     // First time, seeder should run
-    await seedDatabase();
+    await SEEDS.systemBase.run();
 
     // Make sure the first project is a super admin
     const rows = await new SelectQuery('Project')
@@ -33,6 +33,6 @@ describe('Seed', () => {
     expect(project.superAdmin).toBe(true);
 
     // Second time, seeder should silently ignore
-    await seedDatabase();
+    await SEEDS.systemBase.run();
   }, 240000);
 });

@@ -61,6 +61,13 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }
 
+  function seedTestData(): void {
+    medplum
+      .post('admin/super/seed/testProject', {})
+      .then(() => showNotification({ color: 'green', message: 'Done' }))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+  }
+
   return (
     <Document width={600}>
       <Title order={1}>Super Admin</Title>
@@ -158,6 +165,15 @@ export function SuperAdminPage(): JSX.Element {
           <PasswordInput name="password" label="Password" required />
           <TextInput name="projectId" label="Project ID" />
           <Button type="submit">Force Set Password</Button>
+        </Stack>
+      </Form>
+
+      <Divider my="lg" />
+      <Title order={2}>Seed Test Data</Title>
+      <p>For development and testing, a demo project with fake data can be created.</p>
+      <Form onSubmit={seedTestData}>
+        <Stack>
+          <Button type="submit">Seed Test Data</Button>
         </Stack>
       </Form>
     </Document>

@@ -28,7 +28,7 @@ import { openApiHandler } from './openapi';
 import { closeRateLimiter } from './ratelimit';
 import { closeRedis, initRedis } from './redis';
 import { scimRouter } from './scim';
-import { seedDatabase } from './seed';
+import { SEEDS } from './seeds';
 import { storageRouter } from './storage';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
@@ -178,7 +178,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
     getStructureDefinitions();
     initRedis(config.redis);
     await initDatabase(config.database);
-    await seedDatabase();
+    await SEEDS.systemBase.run();
     await initKeys(config);
     initBinaryStorage(config.binaryStorage);
     initWorkers(config.redis);

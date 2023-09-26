@@ -4,7 +4,7 @@ import { closeDatabase, initDatabase } from '../database';
 import { initBinaryStorage } from '../fhir/storage';
 import { getStructureDefinitions } from '../fhir/structure';
 import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
+import { SEEDS } from '../seeds';
 
 describe('Workers', () => {
   beforeAll(() => {
@@ -15,7 +15,7 @@ describe('Workers', () => {
     const config = await loadTestConfig();
     initRedis(config.redis);
     await initDatabase(config.database);
-    await seedDatabase();
+    await SEEDS.systemBase.run();
     initBinaryStorage('file:binary');
     initWorkers(config.redis);
     await closeWorkers();

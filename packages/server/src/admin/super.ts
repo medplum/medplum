@@ -24,6 +24,7 @@ import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
 import { getAuthenticatedContext, getRequestContext } from '../context';
+import { SEEDS } from '../seeds';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
@@ -216,6 +217,15 @@ superAdminRouter.post(
         await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
       }
     });
+  })
+);
+
+superAdminRouter.post(
+  '/seed/testProject',
+  asyncWrap(async (_req: Request, res: Response) => {
+    requireSuperAdmin();
+    await SEEDS.testProject.run();
+    sendOutcome(res, allOk);
   })
 );
 
