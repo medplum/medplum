@@ -104,41 +104,45 @@ async function buildStackDetails(
   }
 
   for (const resource of stackResources.StackResources) {
-    if (resource.ResourceType === 'AWS::ECS::Cluster') {
-      result.ecsCluster = resource;
-    } else if (resource.ResourceType === 'AWS::ECS::Service') {
-      result.ecsService = resource;
-    } else if (
-      resource.ResourceType === 'AWS::S3::Bucket' &&
-      resource.LogicalResourceId?.startsWith('FrontEndAppBucket')
-    ) {
-      result.appBucket = resource;
-    } else if (
-      resource.ResourceType === 'AWS::CloudFront::Distribution' &&
-      resource.LogicalResourceId?.startsWith('FrontEndAppDistribution')
-    ) {
-      result.appDistribution = resource;
-    } else if (
-      resource.ResourceType === 'AWS::CloudFront::CloudFrontOriginAccessIdentity' &&
-      resource.LogicalResourceId?.startsWith('FrontEndOriginAccessIdentity')
-    ) {
-      result.appOriginAccessIdentity = resource;
-    } else if (
-      resource.ResourceType === 'AWS::S3::Bucket' &&
-      resource.LogicalResourceId?.startsWith('StorageStorageBucket')
-    ) {
-      result.storageBucket = resource;
-    } else if (
-      resource.ResourceType === 'AWS::CloudFront::Distribution' &&
-      resource.LogicalResourceId?.startsWith('StorageStorageDistribution')
-    ) {
-      result.storageDistribution = resource;
-    } else if (
-      resource.ResourceType === 'AWS::CloudFront::CloudFrontOriginAccessIdentity' &&
-      resource.LogicalResourceId?.startsWith('StorageOriginAccessIdentity')
-    ) {
-      result.storageOriginAccessIdentity = resource;
-    }
+    assignStackDetails(resource, result);
+  }
+}
+
+function assignStackDetails(resource: StackResource, result: Partial<MedplumStackDetails>): void {
+  if (resource.ResourceType === 'AWS::ECS::Cluster') {
+    result.ecsCluster = resource;
+  } else if (resource.ResourceType === 'AWS::ECS::Service') {
+    result.ecsService = resource;
+  } else if (
+    resource.ResourceType === 'AWS::S3::Bucket' &&
+    resource.LogicalResourceId?.startsWith('FrontEndAppBucket')
+  ) {
+    result.appBucket = resource;
+  } else if (
+    resource.ResourceType === 'AWS::CloudFront::Distribution' &&
+    resource.LogicalResourceId?.startsWith('FrontEndAppDistribution')
+  ) {
+    result.appDistribution = resource;
+  } else if (
+    resource.ResourceType === 'AWS::CloudFront::CloudFrontOriginAccessIdentity' &&
+    resource.LogicalResourceId?.startsWith('FrontEndOriginAccessIdentity')
+  ) {
+    result.appOriginAccessIdentity = resource;
+  } else if (
+    resource.ResourceType === 'AWS::S3::Bucket' &&
+    resource.LogicalResourceId?.startsWith('StorageStorageBucket')
+  ) {
+    result.storageBucket = resource;
+  } else if (
+    resource.ResourceType === 'AWS::CloudFront::Distribution' &&
+    resource.LogicalResourceId?.startsWith('StorageStorageDistribution')
+  ) {
+    result.storageDistribution = resource;
+  } else if (
+    resource.ResourceType === 'AWS::CloudFront::CloudFrontOriginAccessIdentity' &&
+    resource.LogicalResourceId?.startsWith('StorageOriginAccessIdentity')
+  ) {
+    result.storageOriginAccessIdentity = resource;
   }
 }
 
