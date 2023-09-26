@@ -10,7 +10,7 @@ This document describes how the Medplum team uses the [Node.js Profiler](https:/
 
 ## Prerequisites
 
-Make sure you first [Clone the repo](/docs/contributing/clone-the-repo) and [Run the stack](/docs/contributing/run-the-stack).
+Make sure you first [Clone the repo](/docs/contributing/local-dev-setup#clone-the-repo) and [Run the stack](/docs/contributing/run-the-stack).
 
 ## Start the Profiler
 
