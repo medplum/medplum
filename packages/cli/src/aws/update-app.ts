@@ -1,4 +1,3 @@
-import { CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { ContentType } from '@medplum/core';
 import fastGlob from 'fast-glob';
@@ -8,7 +7,7 @@ import { tmpdir } from 'os';
 import { join, sep } from 'path';
 import { pipeline } from 'stream/promises';
 import { readConfig, safeTarExtractor } from '../utils';
-import { cloudFrontClient, getStackByTag, s3Client } from './utils';
+import { createInvalidation, getStackByTag, s3Client } from './utils';
 
 export interface UpdateAppOptions {
   dryrun?: boolean;
@@ -223,28 +222,4 @@ async function uploadFileToS3(
   if (!options.dryrun) {
     await s3Client.send(new PutObjectCommand(putObjectParams));
   }
-}
-
-/**
- * Creates a CloudFront invalidation to clear the cache for all files.
- * This is not strictly necessary, but it helps to ensure that the latest version of the app is served.
- * In a perfect world, every deploy is clean, and hashed resources should be cached forever.
- * However, we do not recalculate hashes after variable replacements.
- * So if variables change, we need to invalidate the cache.
- * @param distributionId The CloudFront distribution ID.
- */
-async function createInvalidation(distributionId: string): Promise<void> {
-  const response = await cloudFrontClient.send(
-    new CreateInvalidationCommand({
-      DistributionId: distributionId,
-      InvalidationBatch: {
-        CallerReference: `invalidate-all-${Date.now()}`,
-        Paths: {
-          Quantity: 1,
-          Items: ['/*'],
-        },
-      },
-    })
-  );
-  console.log(`Created invalidation with ID: ${response.Invalidation?.Id}`);
 }

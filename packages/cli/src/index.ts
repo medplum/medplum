@@ -47,6 +47,7 @@ export async function main(argv: string[]): Promise<void> {
 
     await index.parseAsync(argv);
   } catch (err) {
+    console.error(err);
     console.error('Error: ' + normalizeErrorString(err));
   }
 }
