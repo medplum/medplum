@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, DiagnosticReport, Patient, Resource, Specimen } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, DiagnosticReport, Patient, RequestGroup, Resource, Specimen } from '@medplum/fhirtypes';
 import { convertContainedResourcesToBundle, convertToTransactionBundle } from './bundle';
 import { isUUID } from './utils';
 
@@ -289,5 +289,150 @@ describe('Bundle tests', () => {
         ],
       });
     });
+  });
+
+  test('Health Gorilla bundle', async () => {
+    const input: RequestGroup = {
+      resourceType: 'RequestGroup',
+      meta: {
+        versionId: '1695773966434',
+        lastUpdated: '2023-09-27T00:19:26.434+00:00',
+        profile: ['https://healthgorilla.com/fhir/StructureDefinition/hg-order'],
+      },
+      contained: [
+        {
+          resourceType: 'Account',
+          id: '1',
+          meta: {
+            profile: ['https://healthgorilla.com/fhir/StructureDefinition/hg-order-account'],
+          },
+          type: {
+            coding: [
+              {
+                system: 'https://www.healthgorilla.com/order-billto',
+                code: 'patient',
+                display: 'Patient',
+              },
+            ],
+            text: 'Patient',
+          },
+          guarantor: [
+            {
+              party: {
+                reference: 'Patient/df39fa64131a52bfae9848ae',
+                display: 'Homer Simpson',
+              },
+            },
+          ],
+        },
+        {
+          resourceType: 'Practitioner',
+          id: '2',
+          identifier: [
+            {
+              type: {
+                coding: [
+                  {
+                    system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                    code: 'AN',
+                    display: 'Account number',
+                  },
+                ],
+                text: 'Account number',
+              },
+              value: '56473621',
+            },
+          ],
+          name: [
+            {
+              text: 'Jay W Marks, MD',
+            },
+          ],
+        },
+      ],
+      extension: [
+        {
+          url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-authorizedBy',
+          valueReference: {
+            reference: 'Organization/tl-5ce92c6497ce182e63160939-5ce92c64c930354e6327a600',
+            display: 'Medplum',
+          },
+        },
+        {
+          url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-account',
+          valueReference: {
+            reference: '#1',
+          },
+        },
+        {
+          url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-performer',
+          valueReference: {
+            reference: 'Organization/f-4f0235627ac2d59b49e5575c',
+            display: 'TestingLab Facility',
+          },
+        },
+        {
+          url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-requester',
+          extension: [
+            {
+              url: 'agent',
+              valueReference: {
+                reference: '#2',
+              },
+            },
+          ],
+        },
+        {
+          url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-deliveryOptions',
+          extension: [
+            {
+              url: 'electronic',
+              valueBoolean: true,
+            },
+          ],
+        },
+      ],
+      identifier: [
+        {
+          system: 'https://www.healthgorilla.com',
+          value: '0e7513657ced8c0e49a4abe3',
+        },
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                code: 'ACSN',
+                display: 'Accession ID',
+              },
+            ],
+            text: 'Lab Reference ID',
+          },
+          value: '10106',
+        },
+      ],
+      status: 'active',
+      intent: 'order',
+      subject: {
+        reference: 'Patient/df39fa64131a52bfae9848ae',
+        display: 'Homer Simpson',
+      },
+      authoredOn: '2023-09-27T00:19:26+00:00',
+      author: {
+        reference: 'Practitioner/80ef2c64524ee10b76af5126',
+        display: 'Jay W Marks, MD',
+      },
+      action: [
+        {
+          resource: {
+            reference: 'ServiceRequest/0e7513657ced8c0e49a4abe3-2093-3',
+            display: 'Cholesterol, Total',
+          },
+        },
+      ],
+    };
+
+    const result = convertContainedResourcesToBundle(input);
+    console.log(JSON.stringify(result, null, 2));
   });
 });

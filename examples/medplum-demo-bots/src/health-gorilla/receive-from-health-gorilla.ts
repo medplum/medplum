@@ -1,7 +1,17 @@
-import { allOk, BotEvent, getIdentifier, getReferenceString, MedplumClient, normalizeErrorString } from '@medplum/core';
+import {
+  allOk,
+  BotEvent,
+  convertContainedResourcesToBundle,
+  getReferenceString,
+  MedplumClient,
+  normalizeErrorString,
+} from '@medplum/core';
 import {
   Account,
+  Bundle,
+  BundleEntry,
   DiagnosticReport,
+  Media,
   Observation,
   OperationOutcome,
   Patient,
@@ -31,19 +41,10 @@ export async function handler(
   medplum: MedplumClient,
   event: BotEvent<HealthGorillaResource>
 ): Promise<OperationOutcome> {
+  await createJsonMedia(medplum, event.input, 'original.json');
+
   try {
-    const resource = event.input;
-
-    if (resource.contained) {
-      for (const containedResource of resource.contained) {
-        await syncResource(medplum, containedResource as HealthGorillaResource, true);
-      }
-
-      // Remove contained resources before syncing the parent resource
-      resource.contained = undefined;
-    }
-
-    await syncResource(medplum, resource);
+    await syncBundle(medplum, convertContainedResourcesToBundle(event.input) as Bundle<HealthGorillaResource>);
   } catch (err) {
     console.log(normalizeErrorString(err));
   }
@@ -51,54 +52,48 @@ export async function handler(
   return allOk;
 }
 
-export async function syncResource<T extends HealthGorillaResource>(
+export async function syncBundle(
   medplum: MedplumClient,
-  healthGorillaResource: T,
-  contained = false
+  healthGorillaBundle: Bundle<HealthGorillaResource>
 ): Promise<void> {
-  if (healthGorillaResource.resourceType === 'Account' && !healthGorillaResource.status) {
-    // Health Gorilla drops Account.status which is a required field
-    healthGorillaResource.status = 'active';
+  for (const entry of healthGorillaBundle.entry ?? []) {
+    touchUpBundleEntry(entry);
   }
 
   // Rewrite references to other resources
   // For example, convert references to Patient and Organization resources
   // from Health Gorilla references to Medplum references
-  await rewriteReferences(medplum, healthGorillaResource);
+  await rewriteReferences(medplum, healthGorillaBundle);
 
-  let existingResource: HealthGorillaResource | undefined = undefined;
-  let healthGorillaId: string | undefined = undefined;
+  await createJsonMedia(medplum, healthGorillaBundle, 'batch.json');
 
-  const mergeResourceTypes: HealthGorillaResourceType[] = ['Account'];
-  if (mergeResourceTypes.includes(healthGorillaResource.resourceType)) {
-    // For some resource types, we attempt a "merge" operation with existing resources.
-    // For other resource types, we always create a new resource.
-    healthGorillaId = getHealthGorillaId(healthGorillaResource, contained) as string;
-    existingResource = await searchByHealthGorillaId(medplum, healthGorillaResource.resourceType, healthGorillaId);
+  // Execute the bundle
+  const result = await medplum.executeBatch(healthGorillaBundle);
+  for (const entry of result.entry ?? []) {
+    if (entry.response) {
+      console.log(entry.response.status, entry.response.location);
+    }
   }
+}
 
-  if (existingResource) {
-    // Update the existing resource
-    const updatedResource = await medplum.updateResource({
-      ...healthGorillaResource,
-      id: existingResource.id,
-      identifier: existingResource.identifier,
-    });
-    console.log('Updated', updatedResource.resourceType, updatedResource.id);
-    if (healthGorillaResource.id) {
-      referenceMap.set('#' + healthGorillaResource.id, getReferenceString(updatedResource));
-    }
-  } else {
-    // Create a new resource
-    const createdResource = await medplum.createResource({
-      ...healthGorillaResource,
-      id: undefined,
-      identifier: [{ system: HEALTH_GORILLA_SYSTEM, value: healthGorillaId }],
-    });
-    console.log('Created', createdResource.resourceType, createdResource.id);
-    if (healthGorillaResource.id) {
-      referenceMap.set('#' + healthGorillaResource.id, getReferenceString(createdResource));
-    }
+async function createJsonMedia(medplum: MedplumClient, json: any, filename: string): Promise<void> {
+  // Save the bundle as an Attachment on a Media resource
+  const bundleString = JSON.stringify(json, null, 2);
+  const attachment = await medplum.createAttachment(bundleString, filename, 'application/json');
+  const media = await medplum.createResource<Media>({
+    resourceType: 'Media',
+    status: 'completed',
+    issued: new Date().toISOString(),
+    content: attachment,
+  });
+  console.log('Created Media', media.id);
+}
+
+function touchUpBundleEntry(bundleEntry: BundleEntry<HealthGorillaResource>): void {
+  const resource = bundleEntry.resource;
+  if (resource?.resourceType === 'Account' && !resource.status) {
+    // Health Gorilla drops Account.status which is a required field
+    resource.status = 'active';
   }
 }
 
@@ -145,17 +140,10 @@ async function rewriteReferencesInObject(medplum: MedplumClient, obj: Record<str
   }
 }
 
-function getHealthGorillaId(resource: HealthGorillaResource, contained: boolean): string | undefined {
-  if (!contained && resource.id) {
-    return resource.id;
-  }
-  return getIdentifier(resource, HEALTH_GORILLA_SYSTEM);
-}
-
 async function searchByHealthGorillaId(
   medplum: MedplumClient,
   resourceType: HealthGorillaResourceType,
   id: string
 ): Promise<HealthGorillaResource | undefined> {
-  return medplum.searchOne(resourceType, { identifier: id });
+  return medplum.searchOne(resourceType, { identifier: `${HEALTH_GORILLA_SYSTEM}|${id}` });
 }
