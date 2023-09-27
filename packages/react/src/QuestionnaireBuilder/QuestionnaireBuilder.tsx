@@ -737,11 +737,7 @@ function createPage(): QuestionnaireItem {
   } as QuestionnaireItem;
 }
 
-function reorderItems(
-  items: QuestionnaireItem[] | undefined,
-  itemIndex: number,
-  delta: number
-): QuestionnaireItem[] {
+function reorderItems(items: QuestionnaireItem[] | undefined, itemIndex: number, delta: number): QuestionnaireItem[] {
   const currentItems = items ?? [];
   const newIndex = itemIndex + delta;
   if (newIndex < 0 || newIndex >= currentItems.length) {
