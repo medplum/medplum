@@ -236,5 +236,20 @@ describe('BackEnd', () => {
     expect(() => new BackEnd(stack, config)).not.toThrow();
   });
 
+  // Test for AWS Lambda function
+  it('should define a Lambda function with correct properties', () => {
+    const backend = new BackEnd(stack, config);
+    const lambdaFunction = backend.node.findChild('LambdaFunctionName') as lambda.Function; // Replace 'LambdaFunctionName' with the actual name of the Lambda function
+
+    expect(lambdaFunction).toBeDefined();
+    expect(lambdaFunction.runtime).toEqual(lambda.Runtime.NODEJS_14_X); // Replace with the actual runtime
+    expect(lambdaFunction.handler).toEqual('index.handler'); // Replace with the actual handler
+    expect(lambdaFunction.environment).toEqual({
+      // Replace with the actual environment variables
+      VAR1: 'value1',
+      VAR2: 'value2',
+    });
+  });
+
   // Additional tests go here
 });
