@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
 
 sync_repo_token=$1
-changed_paths=$2
-
-# This separates the strings with ; to turn it into an array
-IFS=';' read -ra changed_paths_array <<< "$changed_paths"
-echo "Changed paths array: ${changed_paths_array[@]}"
 
 # Configure Git
 git config --global user.name "github-actions[bot]"
@@ -18,7 +13,8 @@ commit_message=$(git log --format=%B -n 1 $latest_commit_sha)
 # Get the first line of the commit message
 formatted_title=$(echo "$commit_message" | head -n 1)
 
-for path in "${changed_paths_array[@]}"; do
+# Loop through all projects in examples
+for path in examples/*; do
   # Store the current working directory
   initial_working_directory=$(pwd)
 
