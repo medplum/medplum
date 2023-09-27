@@ -230,16 +230,37 @@ describe('CLI Bots', () => {
 
   test('Deploy bot multiple bot ending with bot name with no config', async () => {
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
+    (fs.existsSync as unknown as jest.Mock).mockReturnValue(false);
     (fs.readFileSync as unknown as jest.Mock).mockReturnValue(undefined);
 
     await main(['node', 'index.js', 'bot', 'deploy', '*-staging']);
     expect(console.log).toBeCalledWith(expect.stringMatching(/Number of bots deployed: 0/));
   });
 
-  test('Create bot command success', async () => {
+  test('Create bot command success with existing config file', async () => {
+    // Setup bot config
+    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+      JSON.stringify({
+        bots: [],
+      })
+    );
+
     await main(['node', 'index.js', 'bot', 'create', 'test-bot', '1', 'src/hello-world.ts', 'dist/src/hello-world.ts']);
     expect(console.log).toBeCalledWith(expect.stringMatching('Success! Bot created:'));
+    expect(fs.existsSync).toHaveBeenCalled();
+    expect(fs.readFileSync).toHaveBeenCalled();
+  });
+
+  test('Create bot command success without existing config file', async () => {
+    // No bot config
+    (fs.existsSync as unknown as jest.Mock).mockReturnValue(false);
+    (fs.readFileSync as unknown as jest.Mock).mockReturnValue('');
+
+    await main(['node', 'index.js', 'bot', 'create', 'test-bot', '1', 'src/hello-world.ts', 'dist/src/hello-world.ts']);
+    expect(console.log).toBeCalledWith(expect.stringMatching('Success! Bot created:'));
+    expect(fs.existsSync).toHaveBeenCalled();
+    expect(fs.readFileSync).not.toHaveBeenCalled();
   });
 
   test('Create bot error with lack of commands', async () => {
@@ -415,7 +436,7 @@ describe('CLI Bots', () => {
 
   test('Deprecate Deploy bot multiple bot ending with bot name with no config', async () => {
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
+    (fs.existsSync as unknown as jest.Mock).mockReturnValue(false);
     (fs.readFileSync as unknown as jest.Mock).mockReturnValue(undefined);
 
     await main(['node', 'index.js', 'deploy-bot', '*-staging']);

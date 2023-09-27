@@ -117,7 +117,7 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
   }
 
   try {
-    const filename = 'index.js';
+    const filename = req.body.filename ?? 'index.js';
     const contentType = ContentType.JAVASCRIPT;
 
     // Create a Binary for the executable code
