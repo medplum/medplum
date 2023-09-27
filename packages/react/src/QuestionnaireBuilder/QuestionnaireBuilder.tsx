@@ -230,8 +230,8 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     });
   }
 
-  function toggleItemOrder(itemToMove: QuestionnaireItem, delta: number): void {
-    const updatedItems = reorderItems(props.item.item, itemToMove, delta);
+  function moveItem(itemIndex: number, delta: number): void {
+    const updatedItems = reorderItems(props.item.item, itemIndex, delta);
 
     props.onChange({
       ...props.item,
@@ -292,8 +292,8 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             onChange={changeItem}
             onRemove={() => removeItem(item)}
             onRepeatable={toggleRepeatable}
-            onMoveUp={() => toggleItemOrder(item, -1)}
-            onMoveDown={() => toggleItemOrder(item, 1)}
+            onMoveUp={() => moveItem(i, -1)}
+            onMoveDown={() => moveItem(i, 1)}
           />
         </div>
       ))}
@@ -739,18 +739,17 @@ function createPage(): QuestionnaireItem {
 
 function reorderItems(
   items: QuestionnaireItem[] | undefined,
-  itemToMove: QuestionnaireItem,
+  itemIndex: number,
   delta: number
-): QuestionnaireItem[] | null {
+): QuestionnaireItem[] {
   const currentItems = items ?? [];
-  const index = currentItems.findIndex((item) => item.id === itemToMove.id);
-
-  if (index === -1 || index + delta < 0 || index + delta >= currentItems.length) {
-    return null;
+  const newIndex = itemIndex + delta;
+  if (newIndex < 0 || newIndex >= currentItems.length) {
+    return currentItems;
   }
 
   const updatedItems = [...currentItems];
-  [updatedItems[index], updatedItems[index + delta]] = [updatedItems[index + delta], updatedItems[index]];
+  [updatedItems[itemIndex], updatedItems[newIndex]] = [updatedItems[newIndex], updatedItems[itemIndex]];
 
   return updatedItems;
 }
