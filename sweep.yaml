@@ -9,6 +9,3 @@ sandbox:
   check:
     - npx prettier --write {file_path}
     - 'npx eslint --rule "@typescript-eslint/no-redundant-type-constituents: off" {file_path}'
-  
-rules:
-  - Every time a new component gets created, write a unit test for it. For example, if FileName.tsx is created, write a unit test titled FileName.test.tsx.
