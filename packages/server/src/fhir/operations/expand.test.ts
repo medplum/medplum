@@ -216,6 +216,17 @@ describe('Expand', () => {
     expect(res.body.expansion.contains[0].display).toMatch(/left/i);
   });
 
+  test('Handle empty string after punctuation', async () => {
+    const res = await request(app)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
+          'http://hl7.org/fhir/ValueSet/observation-codes'
+        )}&filter=${encodeURIComponent('[')}`
+      )
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+  });
+
   test('No null `display` field', async () => {
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/observation-codes')}`)
