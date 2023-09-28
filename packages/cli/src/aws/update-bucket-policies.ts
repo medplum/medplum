@@ -99,9 +99,9 @@ export async function updateBucketPolicy(
     console.log('Creating CloudFront invalidation...');
     await createInvalidation(distributionResource.PhysicalResourceId);
     console.log('CloudFront invalidation created');
-  }
 
-  console.log(`${friendlyName} bucket policy updated`);
+    console.log(`${friendlyName} bucket policy updated`);
+  }
 }
 
 async function getPolicy(bucketName: string): Promise<Policy> {
