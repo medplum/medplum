@@ -4,7 +4,7 @@ import { createServer } from 'http';
 import { platform } from 'os';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
-import { jwtAssertionLogin, jwtBearerLogin, loadProfile, Profile, saveProfile } from './utils';
+import { jwtAssertionLogin, jwtBearerLogin, Profile, saveProfile } from './utils';
 
 const clientId = 'medplum-cli';
 const redirectUri = 'http://localhost:9615';
@@ -16,15 +16,8 @@ login.action(async (options) => {
   const profileName = options.profile ?? 'default';
 
   // Always save the profile to update settings
-  saveProfile(profileName, options);
+  const profile = saveProfile(profileName, options);
 
-  if (options.authType === 'basic') {
-    console.log('Basic authentication does not require login');
-    return;
-  }
-
-  // Reload the profile to get merged settings
-  const profile = loadProfile(profileName);
   const medplum = await createMedplumClient(options, false);
   await startLogin(medplum, profile);
 });
@@ -35,30 +28,24 @@ whoami.action(async (options) => {
 });
 
 async function startLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
-  const authType = profile?.authType ?? 'authorization_code';
+  const authType = profile?.authType ?? 'authorization-code';
   switch (authType) {
     case 'authorization-code':
-    case 'authorization_code':
       await medplumAuthorizationCodeLogin(medplum);
       break;
     case 'basic':
       medplum.setBasicAuth(profile.clientId as string, profile.clientSecret as string);
       break;
     case 'client-credentials':
-    case 'client_credentials':
       medplum.setBasicAuth(profile.clientId as string, profile.clientSecret as string);
       await medplum.startClientLogin(profile.clientId as string, profile.clientSecret as string);
       break;
     case 'jwt-bearer':
-    case 'jwt_bearer':
       await jwtBearerLogin(medplum, profile);
       break;
     case 'jwt-assertion':
-    case 'jwt_assertion':
       await jwtAssertionLogin(medplum, profile);
       break;
-    default:
-      throw new Error(`Unsupported auth type: ${authType}`);
   }
 
   console.log('Login successful');

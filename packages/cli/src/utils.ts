@@ -216,11 +216,12 @@ export function getCodeContentType(filename: string): string {
   return ContentType.TEXT;
 }
 
-export function saveProfile(profileName: string, options: Profile): void {
+export function saveProfile(profileName: string, options: Profile): Profile {
   const storage = new FileSystemStorage(profileName);
   const optionsObject = { name: profileName, ...options };
   storage.setObject('options', optionsObject);
   console.log(`${profileName} profile created`);
+  return optionsObject;
 }
 
 export function loadProfile(profileName: string): Profile {
