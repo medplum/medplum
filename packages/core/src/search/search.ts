@@ -411,7 +411,7 @@ function addFilter(searchRequest: SearchRequest, filter: Filter): void {
   }
 }
 
-const subexpressionPattern = /{{([^}]+)}}/g;
+const subexpressionPattern = /{{([^{}]+)}}/g;
 
 /**
  * Parses an extended FHIR search criteria string (i.e. application/x-fhir-query), evaluating
