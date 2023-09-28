@@ -263,6 +263,32 @@ describe('CLI Bots', () => {
     expect(fs.readFileSync).not.toHaveBeenCalled();
   });
 
+  test('Create bot command with auth options', async () => {
+    // No bot config
+    (fs.existsSync as unknown as jest.Mock).mockReturnValue(false);
+    (fs.readFileSync as unknown as jest.Mock).mockReturnValue('');
+
+    await main([
+      'node',
+      'index.js',
+      'bot',
+      'create',
+      'test-bot',
+      '1',
+      'src/hello-world.ts',
+      'dist/src/hello-world.ts',
+      '--base-url',
+      'http://localhost:8000',
+      '--client-id',
+      'test-client-id',
+      '--client-secret',
+      'test-client-secret',
+    ]);
+    expect(console.log).toBeCalledWith(expect.stringMatching('Success! Bot created:'));
+    expect(fs.existsSync).toHaveBeenCalled();
+    expect(fs.readFileSync).not.toHaveBeenCalled();
+  });
+
   test('Create bot error with lack of commands', async () => {
     await main(['node', 'index.js', 'bot', 'create', 'test-bot']);
     expect(console.log).toBeCalledWith(expect.stringMatching('Error while creating new bot'));
