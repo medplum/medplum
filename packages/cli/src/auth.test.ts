@@ -12,6 +12,7 @@ jest.mock('http');
 jest.mock('./util/client');
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
+  mkdirSync: jest.fn(),
   readFileSync: jest.fn(),
   writeFileSync: jest.fn(),
   constants: {

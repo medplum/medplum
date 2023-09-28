@@ -39,7 +39,7 @@ botDeployCommand
 botCreateCommand
   .arguments('<botName> <projectId> <sourceFile> <distFile>')
   .description('Creating a bot')
-  .option('-runtime-version <runtimeVersion>', 'Runtime version (awslambda, vmcontext)')
+  .option('--runtime-version <runtimeVersion>', 'Runtime version (awslambda, vmcontext)')
   .action(async (botName, projectId, sourceFile, distFile, options) => {
     const medplum = await createMedplumClient(options);
 
