@@ -9,7 +9,7 @@ const send = createMedplumCommand('send')
   .argument('<host>', 'The destination host name or IP address')
   .argument('<port>', 'The destination port number')
   .argument('[body]', 'Optional HL7 message body')
-  .option('--generate', 'Generate a sample HL7 message')
+  .option('--generate-example', 'Generate a sample HL7 message')
   .option('--file <file>', 'Read the HL7 message from a file')
   .action(async (host, port, body, options) => {
     if (options.generate) {
@@ -27,9 +27,12 @@ const send = createMedplumCommand('send')
       port: parseInt(port, 10),
     });
 
-    const response = await client.sendAndWait(Hl7Message.parse(body));
-    console.log(response.toString().replaceAll('\r', '\n'));
-    client.close();
+    try {
+      const response = await client.sendAndWait(Hl7Message.parse(body));
+      console.log(response.toString().replaceAll('\r', '\n'));
+    } finally {
+      client.close();
+    }
   });
 
 const listen = createMedplumCommand('listen')
