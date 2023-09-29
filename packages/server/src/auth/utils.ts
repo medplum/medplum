@@ -1,13 +1,20 @@
-import { badRequest, createReference, OperationOutcomeError, ProfileResource, resolveId } from '@medplum/core';
+import {
+  badRequest,
+  createReference,
+  OperationOutcomeError,
+  Operator,
+  ProfileResource,
+  resolveId,
+} from '@medplum/core';
 import { ContactPoint, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Response } from 'express';
 import fetch from 'node-fetch';
 import { getConfig } from '../config';
+import { getRequestContext } from '../context';
 import { systemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getClient, getMembershipsForLogin } from '../oauth/utils';
-import { getRequestContext } from '../context';
 
 export async function createProfile(
   project: Project,
@@ -163,6 +170,35 @@ export async function getProjectIdByClientId(
   }
 
   return projectId;
+}
+
+/**
+ * Returns a project by recaptcha site key.
+ * @param recaptchaSiteKey reCAPTCHA site key from the client.
+ * @param projectId Optional project ID from the client.
+ * @returns Project if found, otherwise undefined.
+ */
+export function getProjectByRecaptchaSiteKey(
+  recaptchaSiteKey: string,
+  projectId: string | undefined
+): Promise<Project | undefined> {
+  const filters = [
+    {
+      code: 'recaptcha-site-key',
+      operator: Operator.EQUALS,
+      value: recaptchaSiteKey,
+    },
+  ];
+
+  if (projectId) {
+    filters.push({
+      code: '_id',
+      operator: Operator.EQUALS,
+      value: projectId,
+    });
+  }
+
+  return systemRepo.searchOne<Project>({ resourceType: 'Project', filters });
 }
 
 /**

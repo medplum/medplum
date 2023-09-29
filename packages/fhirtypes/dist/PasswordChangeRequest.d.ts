@@ -44,6 +44,11 @@ export interface PasswordChangeRequest {
   language?: string;
 
   /**
+   * The type of password change request (invite or reset).
+   */
+  type?: 'invite' | 'reset';
+
+  /**
    * The user requesting the password change.
    */
   user?: Reference<User>;
