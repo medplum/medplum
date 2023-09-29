@@ -1,6 +1,6 @@
 import { Box, Title, Text } from '@mantine/core';
 import { capitalize } from '@medplum/core';
-import { DiagnosticReport, Patient, Resource, ServiceRequest } from '@medplum/fhirtypes';
+import { DiagnosticReport, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -22,7 +22,6 @@ export function Chart(): JSX.Element {
   useEffect(() => {
     const query = `{
       patient: Patient(id: "${id}") {
-        resourceType,
         id,
         meta { lastUpdated },
         birthDate,
@@ -51,11 +50,12 @@ export function Chart(): JSX.Element {
         priority
       },
       allergyIntolerances: AllergyIntoleranceList(patient: "Patient/${id}") {
-        resourceType,
         id,
         meta { lastUpdated },
         code {
-          text
+          coding {
+            code,
+          }
         }
         note {
           text
@@ -66,7 +66,9 @@ export function Chart(): JSX.Element {
         id,
         meta { lastUpdated },
         code {
-          text
+          coding {
+            code,
+          }
         }
       },
       procedures: ProcedureList(subject: "Patient/${id}") {
@@ -74,55 +76,51 @@ export function Chart(): JSX.Element {
         id,
         meta { lastUpdated },
         code {
-          text
+          coding {
+            code,
+          }
         }
       },
       observations: ObservationList(subject: "Patient/${id}") {
-        resourceType,
         id,
         meta { lastUpdated },
         code {
-          text
-        },
-        valueString,
-        valueQuantity {
-          value,
-          unit
+          coding {
+            code,
+          }
         }
       },
       familyMembers: FamilyMemberHistoryList(patient: "Patient/${id}") {
-        resourceType,
         id,
         meta { lastUpdated },
         relationship {
-          text
+          coding {
+            code,
+            display
+          }
         }
       },  
       orders: ServiceRequestList(subject: "Patient/${id}") {
-        resourceType,
         id,
         meta { lastUpdated },
-        category {
-          text
-        },
-        code {
-          text
-        }
+        status,
+        intent
       },
       reports: DiagnosticReportList(subject: "Patient/${id}") {
-        resourceType,
         id,
         meta { lastUpdated },
+        status,
         code {
-          text
-        }
+          coding {
+            code
+          }
+        },
+        issued
       }
     }`;
 
     medplum.graphql(query).then(setResponse);
   }, [medplum, id]);
-
-  console.log(response);
 
   return <GraphQLResponseViewer responseData={response?.data ?? []} />;
 }
@@ -131,6 +129,8 @@ const RenderGraphQLResponse: React.FC<{ data: any }> = ({ data }) => {
   if (!data) {
     return <div />;
   }
+
+  const isIndex = (key: any) => !isNaN(parseInt(key));
 
   const renderData = (key: string, value: any) => {
     if (Array.isArray(value)) {
@@ -143,24 +143,22 @@ const RenderGraphQLResponse: React.FC<{ data: any }> = ({ data }) => {
       }
 
       return (
-        <Box p={isNumeric(key) ? 0 : 8}>
-          {' '}
+        <Box p={8}>
           {value.map((item, index) => (
             <RenderGraphQLResponse key={index} data={item} />
           ))}
         </Box>
       );
-    } else if (typeof value === 'object' && !!value) {
+    } else if (typeof value === 'object' && !!value ) {
       return (
         <Box p={8}>
-          <Text fw={700}>{capitalize(key)}:</Text>
+          {!isIndex(key) && <Text fw={700}>{capitalize(key)}:</Text>}
           <RenderGraphQLResponse data={value} />
         </Box>
       );
     } else {
       return (
-        <Box p={isNumeric(key) ? 0 : 8}>
-          {' '}
+        <Box p={8}>
           {isNumeric(key) ? '' : <Text fw={700}>{capitalize(key)}:</Text>} {value}
         </Box>
       );
@@ -180,7 +178,6 @@ const RenderGraphQLResponse: React.FC<{ data: any }> = ({ data }) => {
   );
 };
 
-// Usage
 const GraphQLResponseViewer: React.FC<{ responseData: any }> = ({ responseData }) => {
   if (!responseData) return <div>No Response Data</div>;
 
