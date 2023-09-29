@@ -11,4 +11,4 @@ sandbox:
     - 'npx eslint --rule "@typescript-eslint/no-redundant-type-constituents: off" {file_path}'
   
 rules:
-  - Every time a new component gets created, write a unit test for it. For example, if FileName.tsx is created, write a unit test titled FileName.test.tsx.
+  - Every time a new component gets created, write a unit test for it, but only for new components. For example, if FileName.tsx is created, write a unit test titled FileName.test.tsx. If FileName.ts is created, however, write a unit test titled FileName.test.ts.
