@@ -1,6 +1,6 @@
 {
   "name": "@medplum/fhir-router",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "Medplum FHIR Router",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
