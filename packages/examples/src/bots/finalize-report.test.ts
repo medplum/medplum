@@ -1,5 +1,11 @@
 import { beforeAll, describe, test, jest } from '@jest/globals';
-import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import {
+  LOINC,
+  UCUM,
+  createReference,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+} from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, DiagnosticReport, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -39,7 +45,7 @@ describe('Finalize Report', async () => {
       code: {
         coding: [
           {
-            system: 'http://loinc.org',
+            system: LOINC,
             code: '39156-5',
             display: 'Body Mass Index',
           },
@@ -49,7 +55,7 @@ describe('Finalize Report', async () => {
       valueQuantity: {
         value: 24.5,
         unit: 'kg/m2',
-        system: 'http://unitsofmeasure.org',
+        system: UCUM,
         code: 'kg/m2',
       },
     });
@@ -104,7 +110,7 @@ describe('Finalize Report', async () => {
       code: {
         coding: [
           {
-            system: 'http://loinc.org',
+            system: LOINC,
             code: '39156-5',
             display: 'Body Mass Index',
           },
@@ -114,7 +120,7 @@ describe('Finalize Report', async () => {
       valueQuantity: {
         value: 24.5,
         unit: 'kg/m2',
-        system: 'http://unitsofmeasure.org',
+        system: UCUM,
         code: 'kg/m2',
       },
     });

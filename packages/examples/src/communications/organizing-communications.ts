@@ -1,5 +1,5 @@
 // start-block imports
-import { MedplumClient } from '@medplum/core';
+import { MedplumClient, SNOMED } from '@medplum/core';
 import { Communication } from '@medplum/fhirtypes';
 
 // end-block imports
@@ -257,7 +257,7 @@ const categoryExampleCommunications: Communication =
         coding: [
           {
             code: '158965000',
-            system: 'http://snomed.info/sct',
+            system: SNOMED,
           },
         ],
       },
@@ -266,7 +266,7 @@ const categoryExampleCommunications: Communication =
         coding: [
           {
             code: '394583002',
-            system: 'http://snomed.info.sct',
+            system: SNOMED,
           },
         ],
       },
@@ -275,7 +275,7 @@ const categoryExampleCommunications: Communication =
         coding: [
           {
             code: '735985000',
-            system: 'http://snomed.info.sct',
+            system: SNOMED,
           },
         ],
       },

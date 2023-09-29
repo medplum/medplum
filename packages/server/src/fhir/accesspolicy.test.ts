@@ -1,6 +1,7 @@
 import {
   createReference,
   getReferenceString,
+  LOINC,
   normalizeErrorString,
   OperationOutcomeError,
   Operator,
@@ -1327,7 +1328,7 @@ describe('AccessPolicy', () => {
         code: {
           coding: [
             {
-              system: 'http://loinc.org',
+              system: LOINC,
               code: '11111-1',
             },
           ],

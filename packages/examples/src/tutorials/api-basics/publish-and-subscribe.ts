@@ -1,7 +1,7 @@
 /* eslint-disable no-duplicate-imports */
 
 // start-block core-imports
-import { createReference, getReferenceString, MedplumClient } from '@medplum/core';
+import { createReference, getReferenceString, MedplumClient, UCUM } from '@medplum/core';
 import fetch from 'node-fetch';
 
 // end-block core-imports
@@ -148,7 +148,7 @@ async function createReport(patientId: string, serviceRequestId: string): Promis
     valueQuantity: {
       value: 5.7,
       unit: 'mg/dL',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       code: 'mg/dL',
     },
   });

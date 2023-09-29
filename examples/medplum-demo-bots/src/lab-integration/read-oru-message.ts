@@ -5,9 +5,12 @@ import {
   getReferenceString,
   Hl7Message,
   Hl7Segment,
+  LOINC,
   MedplumClient,
   parseHl7DateTime,
+  SNOMED,
   streamToBuffer,
+  UCUM,
 } from '@medplum/core';
 import {
   Attachment,
@@ -402,7 +405,7 @@ function processObservation(
   const value = segment.getComponent(5, 1);
   const unit = segment.getComponent(6, 1);
   const refRange = segment.getComponent(7, 1);
-  let quantity: Quantity | undefined = { unit, system: 'http://unitsofmeasure.org' };
+  let quantity: Quantity | undefined = { unit, system: UCUM };
   let interpretation: CodeableConcept | undefined;
 
   if (valueType === 'NM') {
@@ -447,7 +450,7 @@ function createOrUpdateObservation(
   const existingObservation = findResourceByCode(
     existingObservations,
     updatedObservation.code as CodeableConcept,
-    'http://loinc.org'
+    LOINC
   );
   if (existingObservation) {
     return medplum.updateResource({
@@ -511,7 +514,7 @@ function parseValueWithComparator(value: string): Quantity | undefined {
 
 function parseReferenceRange(rangeString: string, unit: string): Range {
   rangeString = rangeString.trim();
-  const system = 'http://unitsofmeasure.org';
+  const system = UCUM;
   if (rangeString.includes('-')) {
     const [low, high, ..._] = rangeString.split('-');
     return {
@@ -619,7 +622,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   BUN: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'BUN',
         display: 'BUN',
       },
@@ -629,7 +632,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   CHOL: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'CHOL',
         display: 'CHOL',
       },
@@ -639,7 +642,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   CREA: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'CREAT',
         display: 'CREAT',
       },
@@ -649,7 +652,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   HDLC3: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'HDL',
         display: 'HDL',
       },
@@ -659,7 +662,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   TRIG: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'TRIG',
         display: 'TRIG',
       },
@@ -669,7 +672,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   TSH: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'TSH',
         display: 'TSH',
       },
@@ -679,7 +682,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   DLDL: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'LDL',
         display: 'LDL-direct',
       },
@@ -689,7 +692,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   HGBA1C: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'HBA1C',
         display: 'HBA1C',
       },
@@ -699,7 +702,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   LDL: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'LDL-CALCULATED',
         display: 'LDL-CALCULATED',
       },
@@ -718,8 +721,7 @@ export const CANCELLATION_REASONS: Record<string, CodeableConcept> = {
         display: 'Clotting',
       },
       {
-        // snomed
-        system: 'http://snomed.info/sct',
+        system: SNOMED,
         code: '281279002',
         display: 'Sample clotted',
       },
@@ -734,8 +736,7 @@ export const CANCELLATION_REASONS: Record<string, CodeableConcept> = {
         display: 'Quantity not sufficient',
       },
       {
-        // snomed
-        system: 'http://snomed.info/sct',
+        system: SNOMED,
         code: '281268007',
         display: 'Insufficient sample',
       },
@@ -750,8 +751,7 @@ export const CANCELLATION_REASONS: Record<string, CodeableConcept> = {
         display: 'Hemolysis',
       },
       {
-        // snomed
-        system: 'http://snomed.info/sct',
+        system: SNOMED,
         code: '281288006',
         display: 'Sample grossly hemolyzed',
       },
@@ -776,8 +776,7 @@ export const CANCELLATION_REASONS: Record<string, CodeableConcept> = {
         display: 'Labeling',
       },
       {
-        // snomed
-        system: 'http://snomed.info/sct',
+        system: SNOMED,
         code: '281265005',
         display: 'Sample incorrectly labeled',
       },

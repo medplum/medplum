@@ -1,4 +1,4 @@
-import { ContentType } from '@medplum/core';
+import { ContentType, LOINC } from '@medplum/core';
 import { Observation, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -81,7 +81,7 @@ describe('Expunge', () => {
       resourceType: 'Observation',
       meta: { project: project.id },
       status: 'final',
-      code: { coding: [{ system: 'http://loinc.org', code: '12345-6' }] },
+      code: { coding: [{ system: LOINC, code: '12345-6' }] },
       subject: { reference: 'Patient/' + patient.id },
     });
     expect(obs).toBeDefined();
@@ -131,7 +131,7 @@ describe('Expunge', () => {
       resourceType: 'Observation',
       meta: { project: project.id },
       status: 'final',
-      code: { coding: [{ system: 'http://loinc.org', code: '12345-6' }] },
+      code: { coding: [{ system: LOINC, code: '12345-6' }] },
       subject: { reference: 'Patient/' + patient.id },
     });
     expect(obs).toBeDefined();

@@ -1,7 +1,7 @@
 /* eslint-disable no-duplicate-imports */
 
 // start-block core-imports
-import { MedplumClient } from '@medplum/core';
+import { MedplumClient, UCUM } from '@medplum/core';
 import fetch from 'node-fetch';
 
 // end-block core-imports
@@ -98,7 +98,7 @@ const observationData: Observation[] = [
     valueQuantity: {
       value: 5.7,
       unit: 'mg/dL',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       code: 'mg/dL',
     },
   },
@@ -119,7 +119,7 @@ const observationData: Observation[] = [
     valueQuantity: {
       value: 100,
       unit: 'mg/dL',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       code: 'mg/dL',
     },
   },

@@ -2,6 +2,7 @@ import {
   Bundle,
   BundleEntry,
   CodeableConcept,
+  Coding,
   ElementDefinition,
   Reference,
   Resource,
@@ -475,7 +476,7 @@ export const globalSchema = baseSchema as unknown as IndexedStructureDefinition;
  * @param v The value to format as a string
  * @returns The stringified value
  */
-export function formatTypedValue(v: TypedValue): string {
+export function stringifyTypedValue(v: TypedValue): string {
   switch (v.type) {
     case PropertyType.uuid:
     case PropertyType.uri:
@@ -494,11 +495,11 @@ export function formatTypedValue(v: TypedValue): string {
       // many types are represented as string primitives
       return v.value as string;
     case PropertyType.Identifier:
-      return `${v.value.system}|${v.value.value}`;
+      return `${v.value.system ?? ''}|${v.value.value}`;
     case PropertyType.Coding:
-      return `${v.value.system}|${v.value.code}`;
+      return stringifyCoding(v.value);
     case PropertyType.CodeableConcept:
-      return (v.value as CodeableConcept).coding?.map((c) => `${c.system}|${c.code}`).join(',') ?? v.value.text;
+      return (v.value as CodeableConcept).coding?.map(stringifyCoding).join(',') ?? v.value.text;
     case PropertyType.HumanName:
       if (v.value.text) {
         return v.value.text;
@@ -519,7 +520,7 @@ export function formatTypedValue(v: TypedValue): string {
     case PropertyType.Age:
     case PropertyType.Count:
     case PropertyType.Duration:
-      return `${v.value.value}|${v.value.system}|${v.value.code || v.value.unit}`;
+      return `${v.value.value}|${v.value.system ?? ''}|${v.value.code ?? v.value.unit ?? ''}`;
     case PropertyType.Reference:
       return v.value.reference;
     default:
@@ -528,4 +529,11 @@ export function formatTypedValue(v: TypedValue): string {
       }
       return JSON.stringify(v);
   }
+}
+
+function stringifyCoding(coding: Coding | undefined): string {
+  if (!coding) {
+    return '';
+  }
+  return `${coding.system ?? ''}|${coding.code}`;
 }

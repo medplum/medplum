@@ -1,9 +1,12 @@
 import {
+  CPT,
   createReference,
   getReferenceString,
+  ICD10,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   MedplumClient,
+  SNOMED,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, Coverage, Encounter, Patient, SearchParameter } from '@medplum/fhirtypes';
@@ -87,12 +90,12 @@ describe('Candid Health Tests', () => {
         {
           coding: [
             {
-              system: 'http://snomed.info/sct',
+              system: SNOMED,
               code: '394701000',
               display: 'Asthma follow-up',
             },
             {
-              system: 'http://www.ama-assn.org/go/cpt',
+              system: CPT,
               code: '99213',
               display: 'Established patient office visit, 20-29 minutes',
             },
@@ -128,12 +131,12 @@ describe('Candid Health Tests', () => {
         {
           coding: [
             {
-              system: 'http://snomed.info/sct',
+              system: SNOMED,
               code: '195967001',
               display: 'Asthma',
             },
             {
-              system: 'http://hl7.org/fhir/sid/icd-10',
+              system: ICD10,
               code: 'J45.5',
               display: 'Severe persistent asthma',
             },

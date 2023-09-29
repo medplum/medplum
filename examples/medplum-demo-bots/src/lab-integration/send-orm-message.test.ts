@@ -1,4 +1,4 @@
-import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { SNOMED, createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, Patient, SearchParameter, ServiceRequest, Specimen } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -75,7 +75,7 @@ describe('Send to Partner Lab', () => {
       type: {
         coding: [
           {
-            system: 'http://snomed.info/sct',
+            system: SNOMED,
             code: '122554006',
             display: 'Capillary blood specimen',
           },

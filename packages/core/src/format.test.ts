@@ -15,6 +15,7 @@ import {
   formatTime,
   formatTiming,
 } from './format';
+import { UCUM } from './types';
 
 test('Format Address', () => {
   expect(formatAddress({})).toEqual('');
@@ -401,14 +402,14 @@ test('Format Observation value', () => {
           valueQuantity: {
             value: 110,
             unit: 'mmHg',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
           },
         },
         {
           valueQuantity: {
             value: 75,
             unit: 'mmHg',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
           },
         },
       ],

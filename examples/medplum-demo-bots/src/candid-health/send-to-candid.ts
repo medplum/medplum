@@ -1,4 +1,4 @@
-import { BotEvent, getCodeBySystem, getIdentifier, getReferenceString, MedplumClient } from '@medplum/core';
+import { BotEvent, CPT, getCodeBySystem, getIdentifier, getReferenceString, ICD10, MedplumClient } from '@medplum/core';
 import {
   Address,
   Coverage,
@@ -92,7 +92,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Encounter>
     place_of_service_code: '10',
     service_lines: [
       {
-        procedure_code: encounter.type?.[0] && getCodeBySystem(encounter.type?.[0], 'http://www.ama-assn.org/go/cpt'),
+        procedure_code: encounter.type?.[0] && getCodeBySystem(encounter.type?.[0], CPT),
         quantity: '1',
         units: 'MJ',
         charge_amount_cents: 10000,
@@ -304,7 +304,7 @@ function convertDiagnoses(encounter: Encounter): any[] {
   }
 
   for (const reason of encounter.reasonCode) {
-    const code = reason.coding?.find((c) => c.system === 'http://hl7.org/fhir/sid/icd-10');
+    const code = reason.coding?.find((c) => c.system === ICD10);
     if (code) {
       result.push({
         code_type: 'ABK',

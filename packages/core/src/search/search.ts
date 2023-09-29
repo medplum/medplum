@@ -1,6 +1,6 @@
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { badRequest, OperationOutcomeError } from '../outcomes';
-import { TypedValue, formatTypedValue, globalSchema } from '../types';
+import { TypedValue, stringifyTypedValue, globalSchema } from '../types';
 import { evalFhirPathTyped } from '../fhirpath';
 
 export const DEFAULT_SEARCH_COUNT = 20;
@@ -428,7 +428,7 @@ export function parseXFhirQuery(query: string, variables: Record<string, TypedVa
     if (replacement.length !== 1) {
       return '';
     }
-    return formatTypedValue(replacement[0]);
+    return stringifyTypedValue(replacement[0]);
   });
   return parseCriteriaAsSearchRequest(query);
 }

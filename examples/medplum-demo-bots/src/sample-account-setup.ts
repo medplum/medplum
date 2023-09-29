@@ -1,4 +1,4 @@
-import { BotEvent, createReference, getReferenceString, MedplumClient } from '@medplum/core';
+import { BotEvent, createReference, getReferenceString, LOINC, MedplumClient, SNOMED, UCUM } from '@medplum/core';
 import {
   AllergyIntolerance,
   BundleEntry,
@@ -522,7 +522,7 @@ function createMedicalCondition(patient: Patient, practitioner: Practitioner): C
     code: {
       coding: [
         {
-          system: 'http://snomed.info/sct',
+          system: SNOMED,
           code: '192127007',
           display: 'Child attention deficit disorder',
         },
@@ -582,7 +582,7 @@ function createBloodPressureObservation(patient: Patient, date: Date): Observati
         {
           code: '85354-9',
           display: 'Blood Pressure',
-          system: 'http://loinc.org',
+          system: LOINC,
         },
       ],
       text: 'Blood Pressure',
@@ -594,14 +594,14 @@ function createBloodPressureObservation(patient: Patient, date: Date): Observati
             {
               code: '8462-4',
               display: 'Diastolic Blood Pressure',
-              system: 'http://loinc.org',
+              system: LOINC,
             },
           ],
           text: 'Diastolic Blood Pressure',
         },
         valueQuantity: {
           code: 'mm[Hg]',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
           unit: 'mm[Hg]',
           value: 80 * observationRandomizer(),
         },
@@ -612,14 +612,14 @@ function createBloodPressureObservation(patient: Patient, date: Date): Observati
             {
               code: '8480-6',
               display: 'Systolic Blood Pressure',
-              system: 'http://loinc.org',
+              system: LOINC,
             },
           ],
           text: 'Systolic Blood Pressure',
         },
         valueQuantity: {
           code: 'mm[Hg]',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
           unit: 'mm[Hg]',
           value: 120 * observationRandomizer(),
         },
@@ -640,19 +640,19 @@ function createTemperatureObservation(patient: Patient, date: Date): Observation
         {
           code: '8310-5',
           display: 'Body temperature',
-          system: 'http://loinc.org',
+          system: LOINC,
         },
         {
           code: '8331-1',
           display: 'Oral temperature',
-          system: 'http://loinc.org',
+          system: LOINC,
         },
       ],
       text: 'Body temperature',
     },
     valueQuantity: {
       code: 'Cel',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       unit: 'Cel',
       value: 36.6 * observationRandomizer(),
     },
@@ -671,14 +671,14 @@ function createHeightObservation(patient: Patient, date: Date): Observation {
         {
           code: '8302-2',
           display: 'Body Height',
-          system: 'http://loinc.org',
+          system: LOINC,
         },
       ],
       text: 'Body Height',
     },
     valueQuantity: {
       code: 'cm',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       unit: 'cm',
       value: 175 * observationRandomizer(),
     },
@@ -697,14 +697,14 @@ function createWeightObservation(patient: Patient, date: Date): Observation {
         {
           code: '29463-7',
           display: 'Body Weight',
-          system: 'http://loinc.org',
+          system: LOINC,
         },
       ],
       text: 'Body Weight',
     },
     valueQuantity: {
       code: 'kg',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       unit: 'kg',
       value: 70 * observationRandomizer(),
     },
@@ -723,14 +723,14 @@ function createRespiratoryRateObservation(patient: Patient, date: Date): Observa
         {
           code: '9279-1',
           display: 'Respiratory rate',
-          system: 'http://loinc.org',
+          system: LOINC,
         },
       ],
       text: 'Respiratory rate',
     },
     valueQuantity: {
       code: '/min',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       unit: '/min',
       value: 15 * observationRandomizer(),
     },
@@ -749,14 +749,14 @@ function createHeartRateObservation(patient: Patient, date: Date): Observation {
         {
           code: '8867-4',
           display: 'Heart rate',
-          system: 'http://loinc.org',
+          system: LOINC,
         },
       ],
       text: 'Heart rate',
     },
     valueQuantity: {
       code: '/min',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       unit: '/min',
       value: 80 * observationRandomizer(),
     },

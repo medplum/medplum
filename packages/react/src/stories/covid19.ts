@@ -1,4 +1,4 @@
-import { createReference, getReferenceString } from '@medplum/core';
+import { LOINC, SNOMED, UCUM, createReference, getReferenceString } from '@medplum/core';
 import {
   ActivityDefinition,
   ObservationDefinition,
@@ -45,7 +45,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
   name: 'COVID-19 Assessment Questionnaire',
   code: [
     {
-      system: 'http://loinc.org',
+      system: LOINC,
       code: '84170-0',
       display: 'Infectious disease Risk assessment and screening note',
     },
@@ -65,7 +65,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
             {
               code: '21612-7',
               display: 'Age - Reported',
-              system: 'http://loinc.org',
+              system: LOINC,
             },
           ],
           text: 'Are you 65 years old or older?',
@@ -89,7 +89,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
             {
               code: '71802-3',
               display: 'Housing status',
-              system: 'http://loinc.org',
+              system: LOINC,
             },
           ],
           text: 'What is your current living situation?',
@@ -167,7 +167,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
             {
               code: '72166-2',
               display: 'Tobacco smoking status',
-              system: 'http://loinc.org',
+              system: LOINC,
             },
           ],
           text: 'Do you smoke?',
@@ -191,7 +191,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
             {
               code: '82810-3',
               display: 'Pregnancy status',
-              system: 'http://loinc.org',
+              system: LOINC,
             },
           ],
           text: 'Are you pregnant?',
@@ -227,7 +227,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
             {
               code: '840546002',
               display: 'Exposure to SARS-CoV-2',
-              system: 'http://snomed.info/sct',
+              system: SNOMED,
             },
           ],
           text: 'Have you had close contact with a confirmed case?',
@@ -258,7 +258,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
             {
               code: '94652-5',
               display: 'Known exposure date',
-              system: 'http://loinc.org',
+              system: LOINC,
             },
           ],
           text: 'What day was the last contact?',
@@ -267,7 +267,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
               question: 'C0',
               operator: '=',
               answerCoding: {
-                system: 'http://loinc.org',
+                system: LOINC,
                 code: 'LA33-6',
               },
             },
@@ -296,7 +296,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
             {
               code: '75325-1',
               display: 'Symptom',
-              system: 'http://loinc.org',
+              system: LOINC,
             },
           ],
           text: 'In the past 24 hours, which of the following symptoms have you had? (multiple selection possible)',
@@ -336,7 +336,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
             {
               code: '75325-1',
               display: 'Symptom',
-              system: 'http://loinc.org',
+              system: LOINC,
             },
           ],
           text: 'In the past 24 hours, which of the following symptoms have you had? (multiple selection possible)',
@@ -384,7 +384,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
             {
               code: '267036007',
               display: 'Dyspnea (finding)',
-              system: 'http://snomed.info/sct',
+              system: SNOMED,
             },
           ],
           text: 'In the past 24 hours, did you feel that you were more quickly out of breath than usual?',
@@ -415,7 +415,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
             {
               code: '85585-8',
               display: 'Date of condition onset',
-              system: 'http://loinc.org',
+              system: LOINC,
             },
           ],
           text: 'With regard to all questions about symptoms: since when have you had the symptoms you specified?',
@@ -434,7 +434,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
               question: 'SB',
               operator: '=',
               answerCoding: {
-                system: 'http://loinc.org',
+                system: LOINC,
                 code: 'LA33-6',
               },
             },
@@ -503,7 +503,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
           linkId: 'D6',
           code: [
             {
-              system: 'http://loinc.org',
+              system: LOINC,
               code: '8302-2',
               display: 'Body height',
             },
@@ -521,7 +521,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
             {
               url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-unit',
               valueCoding: {
-                system: 'http://unitsofmeasure.org',
+                system: UCUM,
                 code: 'cm',
                 display: '[cm]',
               },
@@ -541,7 +541,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
           linkId: 'D5',
           code: [
             {
-              system: 'http://loinc.org',
+              system: LOINC,
               code: '29463-7',
               display: 'Body Weight',
             },
@@ -559,7 +559,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
             {
               url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-unit',
               valueCoding: {
-                system: 'http://unitsofmeasure.org',
+                system: UCUM,
                 code: 'kg',
                 display: '[kg]',
               },
@@ -680,7 +680,7 @@ export const Covid19NasalSpecimen: SpecimenDefinition = {
   resourceType: 'SpecimenDefinition',
   id: 'covid19-nasal-specimen',
   typeCollected: {
-    coding: [{ system: 'http://snomed.info/sct', code: '871810001', display: 'Mid-turbinate nasal swab' }],
+    coding: [{ system: SNOMED, code: '871810001', display: 'Mid-turbinate nasal swab' }],
   },
 };
 
@@ -692,7 +692,7 @@ export const Covid19PCRObservationDefinition: ObservationDefinition = {
     coding: [
       {
         code: '94500-6',
-        system: 'http://loinc.org',
+        system: LOINC,
         display: 'SARS-CoV-2 (COVID-19) RNA [Presence] in Respiratory specimen by NAA with probe detection',
       },
     ],
@@ -712,7 +712,7 @@ export const Covid19PCRTest: ActivityDefinition = {
   code: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: '94531-1',
         display: 'SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection',
       },
@@ -839,7 +839,7 @@ export const Covid19PCRLabService: PlanDefinition = {
         {
           coding: [
             {
-              system: 'http://loinc.org',
+              system: LOINC,
               code: '94531-1',
               display: 'SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection',
             },
@@ -893,7 +893,7 @@ export const Covid19PCRServiceRequest: ServiceRequest = {
   code: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: '94531-1',
         display: 'SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection',
       },
