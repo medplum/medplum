@@ -1,7 +1,7 @@
 import { ContentType, encodeBase64, MedplumClient } from '@medplum/core';
 import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
 import { createHmac, createPrivateKey, randomBytes } from 'crypto';
-import { existsSync, readFileSync, writeFile } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { SignJWT } from 'jose';
 import { basename, extname, resolve } from 'path';
 import internal from 'stream';
@@ -9,12 +9,12 @@ import tar from 'tar';
 import { FileSystemStorage } from './storage';
 
 interface MedplumConfig {
-  readonly baseUrl?: string;
-  readonly clientId?: string;
-  readonly googleClientId?: string;
-  readonly recaptchaSiteKey?: string;
-  readonly registerEnabled?: boolean;
-  readonly bots?: MedplumBotConfig[];
+  baseUrl?: string;
+  clientId?: string;
+  googleClientId?: string;
+  recaptchaSiteKey?: string;
+  registerEnabled?: boolean;
+  bots?: MedplumBotConfig[];
 }
 
 interface MedplumBotConfig {
@@ -79,6 +79,7 @@ export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotCon
     console.log('Deploying bot...');
     const deployResult = (await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), {
       code,
+      filename: basename(codePath),
     })) as OperationOutcome;
     console.log('Deploy result: ' + deployResult.issue?.[0]?.details?.text);
   } catch (err) {
@@ -86,20 +87,19 @@ export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotCon
   }
 }
 
-export async function createBot(medplum: MedplumClient, argv: string[]): Promise<void> {
-  if (argv.length < 4) {
-    console.log(`Error: command needs to be npx medplum <new-bot-name> <project-id> <source-file> <dist-file>`);
-    return;
-  }
-  const botName = argv[0];
-  const projectId = argv[1];
-  const sourceFile = argv[2];
-  const distFile = argv[3];
-
+export async function createBot(
+  medplum: MedplumClient,
+  botName: string,
+  projectId: string,
+  sourceFile: string,
+  distFile: string,
+  runtimeVersion?: string
+): Promise<void> {
   try {
     const body = {
       name: botName,
       description: '',
+      runtimeVersion,
     };
     const newBot = await medplum.post('admin/projects/' + projectId + '/bot', body);
     const bot = await medplum.readResource('Bot', newBot.id);
@@ -111,6 +111,7 @@ export async function createBot(medplum: MedplumClient, argv: string[]): Promise
       dist: distFile,
     };
     await saveBot(medplum, botConfig as MedplumBotConfig, bot);
+    await deployBot(medplum, botConfig as MedplumBotConfig, bot);
     console.log(`Success! Bot created: ${bot.id}`);
 
     addBotToConfig(botConfig);
@@ -137,21 +138,22 @@ export function readConfig(tagName?: string): MedplumConfig | undefined {
   return JSON.parse(content);
 }
 
-function readFileContents(fileName: string): string | undefined {
+function readFileContents(fileName: string): string {
   const path = resolve(process.cwd(), fileName);
   if (!existsSync(path)) {
-    console.log('Error: File does not exist: ' + path);
     return '';
   }
   return readFileSync(path, 'utf8');
 }
 
 function addBotToConfig(botConfig: MedplumBotConfig): void {
-  const config = readConfig();
-  config?.bots?.push(botConfig);
-  writeFile('medplum.config.json', JSON.stringify(config), () => {
-    console.log(`Bot added to config: ${botConfig.id}`);
-  });
+  const config = readConfig() ?? {};
+  if (!config.bots) {
+    config.bots = [];
+  }
+  config.bots.push(botConfig);
+  writeFileSync('medplum.config.json', JSON.stringify(config, null, 2), 'utf8');
+  console.log(`Bot added to config: ${botConfig.id}`);
 }
 
 function escapeRegex(str: string): string {
@@ -214,11 +216,12 @@ export function getCodeContentType(filename: string): string {
   return ContentType.TEXT;
 }
 
-export function saveProfile(profileName: string, options: Profile): void {
+export function saveProfile(profileName: string, options: Profile): Profile {
   const storage = new FileSystemStorage(profileName);
   const optionsObject = { name: profileName, ...options };
   storage.setObject('options', optionsObject);
   console.log(`${profileName} profile created`);
+  return optionsObject;
 }
 
 export function loadProfile(profileName: string): Profile {

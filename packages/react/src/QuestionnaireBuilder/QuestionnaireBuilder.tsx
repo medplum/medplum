@@ -8,15 +8,16 @@ import {
   QuestionnaireItemAnswerOption,
   Reference,
 } from '@medplum/fhirtypes';
+import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { useResource } from '../useResource/useResource';
 import { killEvent } from '../utils/dom';
 import { isChoiceQuestion, QuestionnaireItemType } from '../utils/questionnaire';
-import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
 
 const useStyles = createStyles((theme) => ({
   section: {
@@ -43,7 +44,7 @@ const useStyles = createStyles((theme) => ({
 
   topActions: {
     position: 'absolute',
-    right: 4,
+    right: 32,
     top: 1,
     padding: 4,
     color: theme.colors.gray[5],
@@ -59,6 +60,27 @@ const useStyles = createStyles((theme) => ({
     '& a': {
       marginLeft: 8,
     },
+  },
+
+  movementActions: {
+    position: 'absolute',
+    right: 8,
+    top: 0,
+    paddingTop: 8,
+    fontSize: theme.fontSizes.xs,
+
+    '& a': {
+      marginLeft: 8,
+    },
+  },
+
+  movementIcons: {
+    color: theme.colors.gray[5],
+  },
+
+  columnAlignment: {
+    display: 'flex',
+    flexDirection: 'column',
   },
 
   linkIdInput: {
@@ -132,10 +154,14 @@ interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
   selectedKey: string | undefined;
   setSelectedKey: (key: string | undefined) => void;
   hoverKey: string | undefined;
+  isFirst?: boolean;
+  isLast?: boolean;
   setHoverKey: (key: string | undefined) => void;
   onChange: (item: T) => void;
   onRemove?: () => void;
   onRepeatable?: (item: QuestionnaireItem) => void;
+  onMoveUp?(): void;
+  onMoveDown?(): void;
 }
 
 function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBuilderProps<T>): JSX.Element {
@@ -204,6 +230,15 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     });
   }
 
+  function moveItem(itemIndex: number, delta: number): void {
+    const updatedItems = reorderItems(props.item.item, itemIndex, delta);
+
+    props.onChange({
+      ...props.item,
+      item: updatedItems,
+    });
+  }
+
   const className = cx(classes.section, {
     [classes.editing]: editing,
     [classes.hovering]: hovering && !editing,
@@ -244,17 +279,21 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           </>
         )}
       </div>
-      {item.item?.map((i) => (
-        <div key={i.id}>
+      {item.item?.map((item, i) => (
+        <div key={item.id}>
           <ItemBuilder
-            item={i}
+            item={item}
             selectedKey={props.selectedKey}
             setSelectedKey={props.setSelectedKey}
             hoverKey={props.hoverKey}
+            isFirst={i === 0}
+            isLast={i === (props.item.item ?? []).length - 1}
             setHoverKey={props.setHoverKey}
             onChange={changeItem}
-            onRemove={() => removeItem(i)}
+            onRemove={() => removeItem(item)}
             onRepeatable={toggleRepeatable}
+            onMoveUp={() => moveItem(i, -1)}
+            onMoveDown={() => moveItem(i, 1)}
           />
         </div>
       ))}
@@ -298,6 +337,38 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             <div>{linkId}</div>
           )}
         </div>
+      )}
+      {!isResource && (
+        <Box className={classes.movementActions}>
+          <Box className={classes.columnAlignment}>
+            {!props.isFirst && (
+              <Anchor
+                href="#"
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault();
+                  if (props.onMoveUp) {
+                    props.onMoveUp();
+                  }
+                }}
+              >
+                <IconArrowUp data-testid="up-button" size={15} className={classes.movementIcons} />
+              </Anchor>
+            )}
+            {!props.isLast && (
+              <Anchor
+                href="#"
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault();
+                  if (props.onMoveDown) {
+                    props.onMoveDown();
+                  }
+                }}
+              >
+                <IconArrowDown data-testid="down-button" size={15} className={classes.movementIcons} />
+              </Anchor>
+            )}
+          </Box>
+        </Box>
       )}
       <div className={classes.bottomActions}>
         {isContainer && (
@@ -664,4 +735,17 @@ function createPage(): QuestionnaireItem {
       } as Extension,
     ],
   } as QuestionnaireItem;
+}
+
+function reorderItems(items: QuestionnaireItem[] | undefined, itemIndex: number, delta: number): QuestionnaireItem[] {
+  const currentItems = items ?? [];
+  const newIndex = itemIndex + delta;
+  if (newIndex < 0 || newIndex >= currentItems.length) {
+    return currentItems;
+  }
+
+  const updatedItems = [...currentItems];
+  [updatedItems[itemIndex], updatedItems[newIndex]] = [updatedItems[newIndex], updatedItems[itemIndex]];
+
+  return updatedItems;
 }

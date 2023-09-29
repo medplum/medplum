@@ -54,7 +54,10 @@ function referenceReplacer(key: string, value: string, idToUuid: Record<string, 
       id = value.slice(1);
     }
     if (id) {
-      return 'urn:uuid:' + idToUuid[id];
+      const replacement = idToUuid[id];
+      if (replacement) {
+        return 'urn:uuid:' + replacement;
+      }
     }
   }
   return value;

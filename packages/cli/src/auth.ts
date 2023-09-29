@@ -2,10 +2,9 @@ import { ContentType, getDisplayString, MedplumClient, normalizeErrorString } fr
 import { exec } from 'child_process';
 import { createServer } from 'http';
 import { platform } from 'os';
-import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
-import { jwtAssertionLogin, jwtBearerLogin, loadProfile, Profile, profileExists, saveProfile } from './utils';
+import { jwtAssertionLogin, jwtBearerLogin, Profile, saveProfile } from './utils';
 
 const clientId = 'medplum-cli';
 const redirectUri = 'http://localhost:9615';
@@ -15,17 +14,11 @@ export const whoami = createMedplumCommand('whoami');
 
 login.action(async (options) => {
   const profileName = options.profile ?? 'default';
-  const storage = new FileSystemStorage(profileName);
-  if (!profileExists(storage, profileName)) {
-    console.log(`Creating new profile...`);
-    saveProfile(profileName, options);
-  }
-  if (options.authType === 'basic') {
-    console.log('Basic authentication does not require login');
-    return;
-  }
-  const profile = loadProfile(profileName);
-  const medplum = await createMedplumClient(options);
+
+  // Always save the profile to update settings
+  const profile = saveProfile(profileName, options);
+
+  const medplum = await createMedplumClient(options, false);
   await startLogin(medplum, profile);
 });
 
@@ -35,19 +28,26 @@ whoami.action(async (options) => {
 });
 
 async function startLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
-  if (!profile?.authType) {
-    await medplumAuthorizationCodeLogin(medplum);
-    return;
+  const authType = profile?.authType ?? 'authorization-code';
+  switch (authType) {
+    case 'authorization-code':
+      await medplumAuthorizationCodeLogin(medplum);
+      break;
+    case 'basic':
+      medplum.setBasicAuth(profile.clientId as string, profile.clientSecret as string);
+      break;
+    case 'client-credentials':
+      medplum.setBasicAuth(profile.clientId as string, profile.clientSecret as string);
+      await medplum.startClientLogin(profile.clientId as string, profile.clientSecret as string);
+      break;
+    case 'jwt-bearer':
+      await jwtBearerLogin(medplum, profile);
+      break;
+    case 'jwt-assertion':
+      await jwtAssertionLogin(medplum, profile);
+      break;
   }
-  if (profile.authType === 'jwt-bearer') {
-    if (!profile.clientId || !profile.clientSecret) {
-      throw new Error('Missing values, make sure to add --client-id, and --client-secret for JWT Bearer login');
-    }
-    console.log('Starting JWT login...');
-    await jwtBearerLogin(medplum, profile);
-  } else if (profile.authType === 'jwt-assertion') {
-    await jwtAssertionLogin(medplum, profile);
-  }
+
   console.log('Login successful');
 }
 
