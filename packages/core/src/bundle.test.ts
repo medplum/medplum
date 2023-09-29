@@ -184,6 +184,34 @@ describe('Bundle tests', () => {
       const specimen = transaction.entry?.find((e) => e.resource?.resourceType === 'Specimen')?.resource as Specimen;
       expect(isUUID(specimen?.subject?.reference?.split(':')[2] ?? '')).toBeTruthy();
     });
+
+    test('Ignore unrecognized references', () => {
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        entry: [
+          {
+            fullUrl: 'https://example.com/Specimen/xyz',
+            resource: {
+              resourceType: 'Specimen',
+              subject: { reference: 'Patient/xyz' },
+            },
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+      expect(result).toMatchObject({
+        resourceType: 'Bundle',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Specimen',
+              subject: { reference: 'Patient/xyz' },
+            },
+          },
+        ],
+      });
+    });
   });
 
   describe('convertContainedResourcesToBundle', () => {
