@@ -12,6 +12,7 @@ import {
 import baseSchema from './base-schema.json';
 import { SearchParameterDetails } from './search/details';
 import { capitalize, createReference } from './utils';
+import { formatHumanName } from './format';
 
 export interface TypedValue {
   readonly type: string;
@@ -487,6 +488,10 @@ export function formatTypedValue(v: TypedValue): string {
     case PropertyType.canonical:
     case PropertyType.base64Binary:
     case PropertyType.SystemString:
+    case PropertyType.date:
+    case PropertyType.dateTime:
+    case PropertyType.instant:
+      // many types are represented as string primitives
       return v.value as string;
     case PropertyType.Identifier:
       return `${v.value.system}|${v.value.value}`;
@@ -498,7 +503,7 @@ export function formatTypedValue(v: TypedValue): string {
       if (v.value.text) {
         return v.value.text;
       }
-      return `${v.value.given?.join(' ')} ${v.value.family}`;
+      return formatHumanName(v.value);
     case PropertyType.unsignedInt:
     case PropertyType.positiveInt:
     case PropertyType.integer:
@@ -515,10 +520,6 @@ export function formatTypedValue(v: TypedValue): string {
     case PropertyType.Count:
     case PropertyType.Duration:
       return `${v.value.value}|${v.value.system}|${v.value.code || v.value.unit}`;
-    case PropertyType.date:
-    case PropertyType.dateTime:
-    case PropertyType.instant:
-      return (v.value as Date).toISOString();
     case PropertyType.Reference:
       return v.value.reference;
     default:
