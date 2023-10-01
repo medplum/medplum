@@ -186,4 +186,4 @@ Returns the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) asso
 ## See Also
 
 - [Invite a new user](https://www.medplum.com/docs/app/invite)
-- [Custom Welcome Emails](https://www.medplum.com/docs/auth/custom-welcome-emails)
+- [Custom Emails](https://www.medplum.com/docs/auth/custom-emails)

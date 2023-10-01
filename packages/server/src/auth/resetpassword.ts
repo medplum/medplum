@@ -8,7 +8,7 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { isExternalAuth } from './method';
-import { verifyRecaptcha } from './utils';
+import { getProjectByRecaptchaSiteKey, verifyRecaptcha } from './utils';
 
 export const resetPasswordValidators = [body('email').isEmail().withMessage('Valid email address is required')];
 
@@ -25,15 +25,32 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
-  const recaptchaSecretKey = getConfig().recaptchaSecretKey;
+  const recaptchaSiteKey = req.body.recaptchaSiteKey;
+  let secretKey: string | undefined = getConfig().recaptchaSecretKey;
 
-  if (recaptchaSecretKey) {
+  if (recaptchaSiteKey && recaptchaSiteKey !== getConfig().recaptchaSiteKey) {
+    // If the recaptcha site key is not the main Medplum recaptcha site key,
+    // then it must be associated with a Project.
+    // The user can only authenticate with that project.
+    const project = await getProjectByRecaptchaSiteKey(recaptchaSiteKey, req.body.projectId);
+    if (!project) {
+      sendOutcome(res, badRequest('Invalid recaptchaSiteKey'));
+      return;
+    }
+    secretKey = project.site?.find((s) => s.recaptchaSiteKey === recaptchaSiteKey)?.recaptchaSecretKey;
+    if (!secretKey) {
+      sendOutcome(res, badRequest('Invalid recaptchaSecretKey'));
+      return;
+    }
+  }
+
+  if (secretKey) {
     if (!req.body.recaptchaToken) {
       sendOutcome(res, badRequest('Recaptcha token is required'));
       return;
     }
 
-    if (!(await verifyRecaptcha(recaptchaSecretKey, req.body.recaptchaToken))) {
+    if (!(await verifyRecaptcha(secretKey, req.body.recaptchaToken))) {
       sendOutcome(res, badRequest('Recaptcha failed'));
       return;
     }
@@ -57,25 +74,27 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
-  const url = await resetPassword(user);
+  const url = await resetPassword(user, 'reset');
 
-  await sendEmail(systemRepo, {
-    to: user.email,
-    subject: 'Medplum Password Reset',
-    text: [
-      'Someone requested to reset your Medplum password.',
-      '',
-      'Please click on the following link:',
-      '',
-      url,
-      '',
-      'If you received this in error, you can safely ignore it.',
-      '',
-      'Thank you,',
-      'Medplum',
-      '',
-    ].join('\n'),
-  });
+  if (req.body.sendEmail !== false) {
+    await sendEmail(systemRepo, {
+      to: user.email,
+      subject: 'Medplum Password Reset',
+      text: [
+        'Someone requested to reset your Medplum password.',
+        '',
+        'Please click on the following link:',
+        '',
+        url,
+        '',
+        'If you received this in error, you can safely ignore it.',
+        '',
+        'Thank you,',
+        'Medplum',
+        '',
+      ].join('\n'),
+    });
+  }
 
   sendOutcome(res, allOk);
 }
@@ -84,15 +103,17 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
  * Creates a "password change request" for the user.
  * Returns the URL to the password change request.
  * @param user The user to create the password change request for.
+ * @param type The type of password change request.
  * @returns The URL to reset the password.
  */
-export async function resetPassword(user: User): Promise<string> {
+export async function resetPassword(user: User, type: 'invite' | 'reset'): Promise<string> {
   // Create the password change request
   const pcr = await systemRepo.createResource<PasswordChangeRequest>({
     resourceType: 'PasswordChangeRequest',
     meta: {
       project: resolveId(user.project),
     },
+    type,
     user: createReference(user),
     secret: generateSecret(16),
   });

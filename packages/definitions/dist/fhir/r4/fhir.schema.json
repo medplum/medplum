@@ -61604,6 +61604,13 @@
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
         },
+        "type": {
+          "description": "The type of password change request (invite or reset).",
+          "enum": [
+            "invite",
+            "reset"
+          ]
+        },
         "user": {
           "description": "The user requesting the password change.",
           "$ref": "#/definitions/Reference"

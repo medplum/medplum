@@ -97,7 +97,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
     ctx.logger.info('User creation request received', { email });
     user = await createUser(request);
     ctx.logger.info('User created', { id: user.id, email });
-    passwordResetUrl = await resetPassword(user);
+    passwordResetUrl = await resetPassword(user, 'invite');
   }
 
   let profile = await searchForExistingProfile(request);

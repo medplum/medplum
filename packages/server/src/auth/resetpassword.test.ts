@@ -111,6 +111,29 @@ describe('Reset Password', () => {
     expect(parsed.subject).toBe('Medplum Password Reset');
   });
 
+  test('Success no send email', async () => {
+    const email = `george${randomUUID()}@example.com`;
+
+    await withTestContext(() =>
+      registerNew({
+        firstName: 'George',
+        lastName: 'Washington',
+        projectName: 'Washington Project',
+        email,
+        password: 'password!@#',
+      })
+    );
+
+    const res2 = await request(app).post('/auth/resetpassword').type('json').send({
+      email,
+      recaptchaToken: 'xyz',
+      sendEmail: false,
+    });
+    expect(res2.status).toBe(200);
+    expect(SESv2Client).toHaveBeenCalledTimes(0);
+    expect(SendEmailCommand).toHaveBeenCalledTimes(0);
+  });
+
   test('Success with no recaptcha secret key and missing recaptchaToken', async () => {
     getConfig().recaptchaSecretKey = '';
 
@@ -169,6 +192,124 @@ describe('Reset Password', () => {
     expect(res.body.issue[0].details.text).toBe(
       'Cannot reset password for external auth. Contact your system administrator.'
     );
+    expect(SESv2Client).not.toHaveBeenCalled();
+    expect(SendEmailCommand).not.toHaveBeenCalled();
+  });
+
+  test('Custom reCAPTCHA site key success', async () => {
+    const email = `recaptcha-client${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
+    const recaptchaSecretKey = 'recaptcha-secret-key-' + randomUUID();
+
+    const project = await withTestContext(async () => {
+      // Register and create a project
+      const { project } = await registerNew({
+        firstName: 'Reset',
+        lastName: 'Reset',
+        projectName: 'Reset Project',
+        email,
+        password,
+      });
+      // As a super admin, set the recaptcha site key
+      // and the default access policy
+      await systemRepo.updateResource({
+        ...project,
+        site: [
+          {
+            name: 'Test Site',
+            domain: ['example.com'],
+            recaptchaSiteKey,
+            recaptchaSecretKey,
+          },
+        ],
+      });
+      return project;
+    });
+
+    const res2 = await request(app).post('/auth/resetpassword').type('json').send({
+      email,
+      projectId: project.id,
+      recaptchaSiteKey,
+      recaptchaToken: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(SESv2Client).toHaveBeenCalledTimes(1);
+    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+
+    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
+    expect(args.Destination.ToAddresses[0]).toBe(email);
+
+    const parsed = await simpleParser(args.Content.Raw.Data);
+    expect(parsed.subject).toBe('Medplum Password Reset');
+  });
+
+  test('Custom reCAPTCHA site key not found', async () => {
+    const email = `recaptcha-client${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
+
+    const project = await withTestContext(async () => {
+      // Register and create a project
+      const { project } = await registerNew({
+        firstName: 'Reset',
+        lastName: 'Reset',
+        projectName: 'Reset Project',
+        email,
+        password,
+      });
+      // As a super admin, set the recaptcha site key
+      // and the default access policy
+      await systemRepo.updateResource({
+        ...project,
+        site: [
+          {
+            name: 'Test Site',
+            domain: ['example.com'],
+            recaptchaSiteKey,
+          },
+        ],
+      });
+      return project;
+    });
+
+    const res = await request(app).post('/auth/resetpassword').type('json').send({
+      email,
+      projectId: project.id,
+      recaptchaSiteKey,
+      recaptchaToken: 'xyz',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ issue: [{ code: 'invalid', details: { text: 'Invalid recaptchaSecretKey' } }] });
+    expect(SESv2Client).not.toHaveBeenCalled();
+    expect(SendEmailCommand).not.toHaveBeenCalled();
+  });
+
+  test('Custom reCAPTCHA site key not found', async () => {
+    const email = `recaptcha-client${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
+
+    const project = await withTestContext(async () => {
+      // Register and create a project
+      const { project } = await registerNew({
+        firstName: 'Reset',
+        lastName: 'Reset',
+        projectName: 'Reset Project',
+        email,
+        password,
+      });
+      return project;
+    });
+
+    const res = await request(app).post('/auth/resetpassword').type('json').send({
+      email,
+      projectId: project.id,
+      recaptchaSiteKey,
+      recaptchaToken: 'xyz',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ issue: [{ code: 'invalid', details: { text: 'Invalid recaptchaSiteKey' } }] });
     expect(SESv2Client).not.toHaveBeenCalled();
     expect(SendEmailCommand).not.toHaveBeenCalled();
   });

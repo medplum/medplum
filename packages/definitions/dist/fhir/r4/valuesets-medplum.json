@@ -568,6 +568,45 @@
           ]
         }
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/password-change-request-type",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "password-change-request-type",
+        "url": "https://medplum.com/fhir/CodeSystem/password-change-request-type",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/password-change-request-type",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "invite",
+            "display": "Invite",
+            "definition": "Initial user invite"
+          },
+          {
+            "code": "reset",
+            "display": "Reset",
+            "definition": "User requested password reset"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/password-change-request-type",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "password-change-request-type",
+        "url": "https://medplum.com/fhir/ValueSet/password-change-request-type",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/password-change-request-type"
+            }
+          ]
+        }
+      }
     }
   ]
 }
