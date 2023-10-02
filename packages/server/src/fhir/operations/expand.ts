@@ -71,17 +71,9 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     .offset(offset)
     .limit(count);
 
-  if (filter) {
-    query.where(
-      'display_tsv',
-      Operator.TSVECTOR_MATCH,
-      filter
-        .replace(/[^\p{Letter}\p{Number}]/gu, ' ')
-        .trim()
-        .split(/\s+/)
-        .map((token) => token + ':*')
-        .join(' & ')
-    );
+  const filterQuery = filterToTsvectorQuery(filter);
+  if (filterQuery) {
+    query.where('display', Operator.TSVECTOR_ENGLISH, filterQuery);
   }
 
   const rows = await query.execute(client);
@@ -100,6 +92,22 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     },
   } as ValueSet);
 });
+
+function filterToTsvectorQuery(filter: string | undefined): string | undefined {
+  if (!filter) {
+    return undefined;
+  }
+
+  const noPunctuation = filter.replace(/[^\p{Letter}\p{Number}]/gu, ' ').trim();
+  if (!noPunctuation) {
+    return undefined;
+  }
+
+  return noPunctuation
+    .split(/\s+/)
+    .map((token) => token + ':*')
+    .join(' & ');
+}
 
 function getValueSetByUrl(url: string): Promise<ValueSet | undefined> {
   return systemRepo.searchOne<ValueSet>({

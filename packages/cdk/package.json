@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cdk",
-  "version": "2.1.1",
+  "version": "2.1.3",
   "description": "Medplum CDK Infra as Code",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",

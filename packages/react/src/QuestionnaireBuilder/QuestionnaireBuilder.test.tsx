@@ -751,6 +751,224 @@ describe('QuestionnaireBuilder', () => {
     });
   });
 
+  test('Move down', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        title: 'My questionnaire',
+        item: [
+          {
+            id: 'question1',
+            linkId: 'question1',
+            text: 'Question 1',
+            type: 'string',
+          },
+          {
+            id: 'question2',
+            linkId: 'question2',
+            text: 'Question 2',
+            type: 'string',
+          },
+          {
+            id: 'question3',
+            linkId: 'question3',
+            text: 'Question 3',
+            type: 'string',
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Question 1'));
+    });
+
+    await act(async () => {
+      const downButtons = screen.getAllByTestId('down-button');
+      fireEvent.click(downButtons[0]);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toBeCalled();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      resourceType: 'Questionnaire',
+      item: [
+        {
+          id: 'question2',
+          linkId: 'question2',
+          text: 'Question 2',
+          type: 'string',
+        },
+        {
+          id: 'question1',
+          linkId: 'question1',
+          text: 'Question 1',
+          type: 'string',
+        },
+        {
+          id: 'question3',
+          linkId: 'question3',
+          text: 'Question 3',
+          type: 'string',
+        },
+      ],
+    });
+  });
+
+  test('Move Up', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        title: 'My questionnaire',
+        item: [
+          {
+            id: 'question1',
+            linkId: 'question1',
+            text: 'Question 1',
+            type: 'string',
+          },
+          {
+            id: 'question2',
+            linkId: 'question2',
+            text: 'Question 2',
+            type: 'string',
+          },
+          {
+            id: 'question3',
+            linkId: 'question3',
+            text: 'Question 3',
+            type: 'string',
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      const upButtons = screen.getAllByTestId('up-button');
+      fireEvent.click(upButtons[1]);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toBeCalled();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      resourceType: 'Questionnaire',
+      item: [
+        {
+          id: 'question1',
+          linkId: 'question1',
+          text: 'Question 1',
+          type: 'string',
+        },
+        {
+          id: 'question3',
+          linkId: 'question3',
+          text: 'Question 3',
+          type: 'string',
+        },
+        {
+          id: 'question2',
+          linkId: 'question2',
+          text: 'Question 2',
+          type: 'string',
+        },
+      ],
+    });
+  });
+
+  test('Move Up with nested items', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        title: 'My questionnaire',
+        item: [
+          {
+            id: 'group',
+            linkId: 'group',
+            text: 'Group',
+            type: 'group',
+            item: [
+              {
+                id: 'question1',
+                linkId: 'question1',
+                text: 'Question 1',
+                type: 'string',
+              },
+              {
+                id: 'question2',
+                linkId: 'question2',
+                text: 'Question 2',
+                type: 'string',
+              },
+              {
+                id: 'question3',
+                linkId: 'question3',
+                text: 'Question 3',
+                type: 'string',
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      const upButtons = screen.getAllByTestId('up-button');
+      fireEvent.click(upButtons[1]);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toBeCalled();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      resourceType: 'Questionnaire',
+      item: [
+        {
+          id: 'group',
+          linkId: 'group',
+          text: 'Group',
+          type: 'group',
+          item: [
+            {
+              id: 'question1',
+              linkId: 'question1',
+              text: 'Question 1',
+              type: 'string',
+            },
+            {
+              id: 'question3',
+              linkId: 'question3',
+              text: 'Question 3',
+              type: 'string',
+            },
+            {
+              id: 'question2',
+              linkId: 'question2',
+              text: 'Question 2',
+              type: 'string',
+            },
+          ],
+        },
+      ],
+    });
+  });
+
   test('Remove multiple choice', async () => {
     const onSubmit = jest.fn();
 

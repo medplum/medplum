@@ -3,6 +3,7 @@ import { describeStacksCommand } from './describe';
 import { initStackCommand } from './init';
 import { listStacksCommand } from './list';
 import { updateAppCommand } from './update-app';
+import { updateBucketPoliciesCommand } from './update-bucket-policies';
 import { updateServerCommand } from './update-server';
 
 export const aws = new Command('aws').description('Commands to manage AWS resources');
@@ -34,3 +35,13 @@ aws
     'Displays the operations that would be performed using the specified command without actually running them.'
   )
   .action(updateAppCommand);
+
+aws
+  .command('update-bucket-policies')
+  .description('Update S3 bucket policies')
+  .argument('<tag>')
+  .option(
+    '--dryrun',
+    'Displays the operations that would be performed using the specified command without actually running them.'
+  )
+  .action(updateBucketPoliciesCommand);

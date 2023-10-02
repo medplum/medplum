@@ -143,7 +143,7 @@ describe('Deploy', () => {
     });
     mockLambdaClient.resetHistory();
 
-    // Step 3: Update the bot
+    // Step 3: Deploy again to trigger the update path
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -155,6 +155,7 @@ describe('Deploy', () => {
           return input;
         }
         `,
+        filename: 'updated.js',
       });
     expect(res3.status).toBe(200);
 
