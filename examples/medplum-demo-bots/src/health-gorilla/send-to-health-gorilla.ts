@@ -4,6 +4,7 @@ import {
   encodeBase64,
   getIdentifier,
   getQuestionnaireAnswers,
+  getReferenceString,
   MedplumClient,
 } from '@medplum/core';
 import {
@@ -19,7 +20,7 @@ import {
   ServiceRequest,
   Subscription,
 } from '@medplum/fhirtypes';
-import { createHmac, randomUUID } from 'crypto';
+import { createHmac } from 'crypto';
 import fetch from 'node-fetch';
 
 const HEALTH_GORILLA_SYSTEM = 'https://www.healthgorilla.com';
@@ -34,7 +35,21 @@ interface HealthGorillaConfig {
   subtenantId: string;
   subtenantAccountNumber: string;
   scopes: string;
+  callbackBotId: string;
+  callbackClientId: string;
+  callbackClientSecret: string;
 }
+
+const billToPatient: CodeableConcept = {
+  coding: [
+    {
+      system: 'https://www.healthgorilla.com/order-billto',
+      code: 'patient',
+      display: 'Patient',
+    },
+  ],
+  text: 'Patient',
+};
 
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<void> {
   // Parse the secrets
@@ -57,7 +72,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const healthGorilla = await connectToHealthGorilla(config);
 
   // Ensure active subscriptions
-  await ensureSubscriptions(healthGorilla);
+  await ensureSubscriptions(config, healthGorilla);
 
   // Synchronize the patient
   const healthGorillaPatient = await syncPatient(medplum, healthGorilla, medplumPatient);
@@ -113,13 +128,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   };
 
   // Synchronize the account
-  const healthGorillaAccount = await syncAccount(medplum, healthGorilla, medplumPatient, healthGorillaPatient);
+  const healthGorillaAccount = await syncAccount(medplum, medplumPatient, healthGorillaPatient, billToPatient);
 
   // Create the service request
   // TODO: This should come from the QuestionnaireResponse
   const healthGorillaServiceRequest = await createServiceRequest(
-    medplum,
-    medplumPatient,
+    healthGorillaPatient,
     {
       coding: [
         {
@@ -165,6 +179,9 @@ function getHealthGorillaConfig(event: BotEvent): HealthGorillaConfig {
     subtenantId: requireStringSecret(secrets, 'HEALTH_GORILLA_SUBTENANT_ID'),
     subtenantAccountNumber: requireStringSecret(secrets, 'HEALTH_GORILLA_SUBTENANT_ACCOUNT_NUMBER'),
     scopes: requireStringSecret(secrets, 'HEALTH_GORILLA_SCOPES'),
+    callbackBotId: requireStringSecret(secrets, 'HEALTH_GORILLA_CALLBACK_BOT_ID'),
+    callbackClientId: requireStringSecret(secrets, 'HEALTH_GORILLA_CALLBACK_CLIENT_ID'),
+    callbackClientSecret: requireStringSecret(secrets, 'HEALTH_GORILLA_CALLBACK_CLIENT_SECRET'),
   };
 }
 
@@ -211,28 +228,31 @@ async function connectToHealthGorilla(config: HealthGorillaConfig): Promise<Medp
  * If there are no subscriptions, this method will create them.
  * If the subscriptions are in "error" status, this method will delete them and create new ones.
  * If the subscriptions are in "active" status, this method will do nothing.
+ *
+ * @param config The Health Gorilla config settings.
  * @param healthGorilla The Health Gorilla FHIR client.
  */
-export async function ensureSubscriptions(healthGorilla: MedplumClient): Promise<void> {
+export async function ensureSubscriptions(config: HealthGorillaConfig, healthGorilla: MedplumClient): Promise<void> {
   // Get all subscriptions
   const subscriptions = await healthGorilla.searchResources('Subscription');
-  await ensureSubscription(healthGorilla, subscriptions, 'RequestGroup', 'Monitor for Lab RequestGroup');
-  await ensureSubscription(healthGorilla, subscriptions, 'ServiceRequest', 'Monitor for Lab ServiceRequest');
-  await ensureSubscription(healthGorilla, subscriptions, 'DiagnosticReport', 'Monitor for Lab DiagnosticReport');
+  await ensureSubscription(config, healthGorilla, subscriptions, 'RequestGroup');
+  await ensureSubscription(config, healthGorilla, subscriptions, 'ServiceRequest');
+  await ensureSubscription(config, healthGorilla, subscriptions, 'DiagnosticReport');
 }
 
 /**
  * Ensures that there is an active subscription for the given criteria.
+ *
+ * @param config The Health Gorilla config settings.
  * @param healthGorilla The Health Gorilla FHIR client.
  * @param existingSubscriptions The existing subscriptions.
  * @param criteria The subscription criteria.
- * @param reason The subscription reason.
  */
 export async function ensureSubscription(
+  config: HealthGorillaConfig,
   healthGorilla: MedplumClient,
   existingSubscriptions: Subscription[],
-  criteria: string,
-  reason: string
+  criteria: string
 ): Promise<void> {
   const existingSubscription = existingSubscriptions.find((s) => s.criteria === criteria && s.status === 'active');
   if (existingSubscription) {
@@ -245,17 +265,13 @@ export async function ensureSubscription(
     resourceType: 'Subscription',
     status: 'active',
     end: '2030-01-01T00:00:00.000+00:00',
-    reason,
+    reason: `Send webhooks for ${criteria} resources`,
     criteria,
     channel: {
       type: 'rest-hook',
-      // TODO: load this from secrets
-      endpoint: 'https://api.medplum.com/fhir/R4/Bot/.../$execute',
+      endpoint: `https://api.medplum.com/fhir/R4/Bot/${config.callbackBotId}/$execute`,
       payload: 'application/fhir+json',
-      header: [
-        // TODO: load this from secrets
-        'Authorization: Basic ...',
-      ],
+      header: ['Authorization: Basic ' + encodeBase64(config.callbackClientId + ':' + config.callbackClientSecret)],
     },
   });
   console.log(`Created new subscription for "${criteria}": ${newSubscription.id}`);
@@ -352,21 +368,24 @@ export async function syncPatient(
  * Returns the Health Gorilla patient resource.
  *
  * @param medplum The Medplum FHIR client.
- * @param healthGorilla The Health Gorilla FHIR client.
  * @param medplumPatient The Medplum patient resource.
  * @param healthGorillaPatient The Health Gorilla patient resource.
+ * @param billingType The Health Gorilla billing type.
  * @returns The Health Gorilla account resource.
  */
 export async function syncAccount(
   medplum: MedplumClient,
-  healthGorilla: MedplumClient,
   medplumPatient: Patient,
-  healthGorillaPatient: Patient
+  healthGorillaPatient: Patient,
+  billingType: CodeableConcept
 ): Promise<Account> {
-  const healthGorillaId = getIdentifier(medplumPatient, HEALTH_GORILLA_SYSTEM);
+  // const healthGorillaId = getIdentifier(medplumPatient, HEALTH_GORILLA_SYSTEM);
+  // In Health Gorilla, Account connects a Patient and a payment method
+  // So we use the combination of those references as the Account identifier
+  const identifier = getReferenceString(healthGorillaPatient) + '-' + billingType.coding?.[0]?.code;
 
   // First, make sure there is an Account in Medplum
-  let medplumAccount = await medplum.searchOne('Account', { identifier: healthGorillaId });
+  let medplumAccount = await medplum.searchOne('Account', { identifier });
   if (medplumAccount) {
     console.log(`Found existing Medplum account: ${medplumAccount.id}`);
   } else {
@@ -380,24 +399,11 @@ export async function syncAccount(
       identifier: [
         {
           system: HEALTH_GORILLA_SYSTEM,
-          value: healthGorillaPatient.id as string,
+          value: identifier,
         },
       ],
-      type: {
-        coding: [
-          {
-            system: 'https://www.healthgorilla.com/order-billto',
-            code: 'patient',
-            display: 'Patient',
-          },
-        ],
-        text: 'Patient',
-      },
-      guarantor: [
-        {
-          party: createReference(medplumPatient),
-        },
-      ],
+      type: billingType,
+      guarantor: [{ party: createReference(medplumPatient) }],
     });
     console.log(`Created new Medplum account: ${medplumAccount.id}`);
   }
@@ -406,11 +412,7 @@ export async function syncAccount(
   // so we always use an in-memory `Account` which is linked to the `Patient` by identifier;
   return {
     ...medplumAccount,
-    guarantor: [
-      {
-        party: createReference(healthGorillaPatient),
-      },
-    ],
+    guarantor: [{ party: createReference(healthGorillaPatient) }],
   };
 }
 
@@ -436,22 +438,14 @@ export async function getPractitioner(healthGorilla: MedplumClient, practitioner
 }
 
 export async function createServiceRequest(
-  medplum: MedplumClient,
-  medplumPatient: Patient,
+  healthGorillaPatient: Patient,
   code: CodeableConcept,
   note: string,
   priority: 'routine' | 'urgent' | 'asap' | 'stat'
 ): Promise<ServiceRequest> {
-  // Create the Medplum ServiceRequest
-  const medplumServiceRequest = await medplum.createResource<ServiceRequest>({
+  return {
     resourceType: 'ServiceRequest',
-    identifier: [
-      {
-        system: 'https://medplum.com/healthgorilla/service-request-id',
-        value: randomUUID(),
-      },
-    ],
-    subject: createReference(medplumPatient),
+    subject: createReference(healthGorillaPatient),
     status: 'active',
     intent: 'order',
     category: [
@@ -468,14 +462,6 @@ export async function createServiceRequest(
     code,
     note: [{ text: note }],
     priority,
-  });
-  console.log(`Created new Medplum ServiceRequest: ${medplumServiceRequest.id}`);
-
-  return {
-    ...medplumServiceRequest,
-    id: undefined,
-    meta: undefined,
-    subject: undefined,
   };
 }
 
