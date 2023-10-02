@@ -12,6 +12,7 @@ import {
   SlicingRules,
   subsetResource,
 } from './types';
+import { LOINC } from '../constants';
 
 describe('FHIR resource and data type representations', () => {
   test('Base resource parsing', () => {
@@ -48,7 +49,7 @@ describe('FHIR resource and data type representations', () => {
         coding: [
           {
             code: '85354-9',
-            system: 'http://loinc.org',
+            system: LOINC,
           },
         ],
       },
@@ -99,7 +100,7 @@ describe('FHIR resource and data type representations', () => {
                   coding: [
                     {
                       code: '8480-6',
-                      system: 'http://loinc.org',
+                      system: LOINC,
                     },
                   ],
                 },
@@ -119,7 +120,7 @@ describe('FHIR resource and data type representations', () => {
                   coding: [
                     {
                       code: '8462-4',
-                      system: 'http://loinc.org',
+                      system: LOINC,
                     },
                   ],
                 },
@@ -247,7 +248,7 @@ describe('FHIR resource and data type representations', () => {
         coding: [
           {
             code: '85354-9',
-            system: 'http://loinc.org',
+            system: LOINC,
           },
         ],
       },
@@ -261,7 +262,7 @@ describe('FHIR resource and data type representations', () => {
             coding: [
               {
                 code: '8480-6',
-                system: 'http://loinc.org',
+                system: LOINC,
               },
             ],
           },
@@ -269,7 +270,7 @@ describe('FHIR resource and data type representations', () => {
             coding: [
               {
                 code: '8480-6',
-                system: 'http://loinc.org',
+                system: LOINC,
               },
             ],
           },
@@ -279,7 +280,7 @@ describe('FHIR resource and data type representations', () => {
             coding: [
               {
                 code: '8480-6',
-                system: 'http://loinc.org',
+                system: LOINC,
               },
             ],
           },
@@ -287,7 +288,7 @@ describe('FHIR resource and data type representations', () => {
             coding: [
               {
                 code: '8462-4',
-                system: 'http://loinc.org',
+                system: LOINC,
               },
             ],
           },

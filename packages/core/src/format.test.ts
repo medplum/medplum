@@ -1,3 +1,4 @@
+import { UCUM } from './constants';
 import {
   formatAddress,
   formatCodeableConcept,
@@ -401,14 +402,14 @@ test('Format Observation value', () => {
           valueQuantity: {
             value: 110,
             unit: 'mmHg',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
           },
         },
         {
           valueQuantity: {
             value: 75,
             unit: 'mmHg',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
           },
         },
       ],

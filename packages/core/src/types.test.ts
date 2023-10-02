@@ -1,5 +1,18 @@
-import { ResourceType } from '@medplum/fhirtypes';
 import {
+  Address,
+  CodeableConcept,
+  Coding,
+  ContactPoint,
+  Extension,
+  HumanName,
+  Identifier,
+  Patient,
+  Quantity,
+  Reference,
+  ResourceType,
+} from '@medplum/fhirtypes';
+import {
+  stringifyTypedValue,
   getElementDefinitionTypeName,
   getPropertyDisplayName,
   getResourceTypes,
@@ -11,8 +24,10 @@ import {
   isReference,
   isResource,
   isResourceTypeSchema,
+  TypedValue,
   TypeSchema,
 } from './types';
+import { LOINC, UCUM } from './constants';
 
 describe('Type Utils', () => {
   test('indexStructureDefinition', () => {
@@ -225,5 +240,53 @@ describe('Type Utils', () => {
     expect(isReference({})).toBe(false);
     expect(isReference({ resourceType: 'Patient' })).toBe(false);
     expect(isReference({ reference: 'Patient/123' })).toBe(true);
+  });
+
+  test.each<[TypedValue, string]>([
+    [{ type: 'string', value: 'foo' }, 'foo'],
+    [{ type: 'date', value: '2020-01-01' }, '2020-01-01'],
+    [{ type: 'Coding', value: { system: LOINC, code: '00000-0', display: 'unused' } as Coding }, `${LOINC}|00000-0`],
+    [
+      { type: 'Identifier', value: { system: 'urn:oid:2.16.840.1.113883.4.3.6', value: 'F9999999' } as Identifier },
+      'urn:oid:2.16.840.1.113883.4.3.6|F9999999',
+    ],
+    [
+      {
+        type: 'CodeableConcept',
+        value: {
+          coding: [
+            { system: LOINC, code: '00000-0' },
+            { system: LOINC, code: '11111-1' },
+          ],
+        } as CodeableConcept,
+      },
+      `${LOINC}|00000-0,${LOINC}|11111-1`,
+    ],
+    [
+      { type: 'HumanName', value: { text: 'Santa Claus', given: ['Kris'], family: 'Kringle' } as HumanName },
+      'Santa Claus',
+    ],
+    [{ type: 'HumanName', value: { given: ['Kris'], family: 'Kringle' } as HumanName }, 'Kris Kringle'],
+    [{ type: 'integer', value: 12345 }, '12345'],
+    [{ type: 'positiveInt', value: 12345 }, '12345'],
+    [{ type: 'decimal', value: 123.45 }, '123.45'],
+    [{ type: 'boolean', value: true }, 'true'],
+    [{ type: 'boolean', value: false }, 'false'],
+    [{ type: 'ContactPoint', value: { value: '555-555-5555' } as ContactPoint }, '555-555-5555'],
+    [
+      { type: 'Extension', value: { url: 'http://example.com/ext1', valueString: 'unused' } as Extension },
+      'http://example.com/ext1',
+    ],
+    [{ type: 'Reference', value: { reference: 'Patient/example' } as Reference }, 'Patient/example'],
+    [{ type: 'Patient', value: { resourceType: 'Patient', id: 'example' } as Patient }, 'Patient/example'],
+    [
+      { type: 'Address', value: { country: 'US', state: 'CA' } as Address },
+      `{"type":"Address","value":{"country":"US","state":"CA"}}`,
+    ],
+    [{ type: 'Quantity', value: { unit: 'mg', value: 100 } as Quantity }, '100||mg'],
+    [{ type: 'Age', value: { code: 'a', system: UCUM, value: 34.9 } as Quantity }, `34.9|${UCUM}|a`],
+  ])('formatTypedValue()', (value, expected) => {
+    const actual = stringifyTypedValue(value);
+    expect(actual).toEqual(expected);
   });
 });

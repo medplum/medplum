@@ -1,4 +1,4 @@
-import { BotEvent, createReference, MedplumClient } from '@medplum/core';
+import { BotEvent, createReference, MedplumClient, RXNORM } from '@medplum/core';
 import { Patient, QuestionnaireResponse, QuestionnaireResponseItem, Reference } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<any> {
@@ -17,7 +17,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
             {
               code: item.linkId,
               display: item.text,
-              system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+              system: RXNORM,
             },
           ],
         },

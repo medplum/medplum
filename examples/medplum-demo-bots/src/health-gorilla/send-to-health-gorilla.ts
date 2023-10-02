@@ -6,6 +6,7 @@ import {
   getQuestionnaireAnswers,
   getReferenceString,
   MedplumClient,
+  SNOMED,
 } from '@medplum/core';
 import {
   Account,
@@ -452,7 +453,7 @@ export async function createServiceRequest(
       {
         coding: [
           {
-            system: 'http://snomed.info/sct',
+            system: SNOMED,
             code: '103693007',
             display: 'Diagnostic procedure',
           },

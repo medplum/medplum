@@ -5,6 +5,7 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   isOk,
+  LOINC,
   OperationOutcomeError,
   resolveId,
 } from '@medplum/core';
@@ -497,7 +498,7 @@ describe('Batch', () => {
             status: 'active',
             intent: 'order',
             subject: createReference(patient),
-            code: { coding: [{ system: 'http://loinc.org', code: '12345-6' }] },
+            code: { coding: [{ system: LOINC, code: '12345-6' }] },
             requester: { reference: urnUuid },
           },
         },

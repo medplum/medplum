@@ -1,4 +1,4 @@
-import { MedplumClient } from '@medplum/core';
+import { LOINC, MedplumClient, SNOMED } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 
 const medplum = new MedplumClient();
@@ -26,10 +26,10 @@ let response: Resource[] =
       meta: { versionId: 'b267aa05-e134-4f01-817a-5d255a691880', lastUpdated: '2022-12-21T01:55:34.799Z' },
       status: 'final',
       code: {
-        coding: [{ system: 'http://loinc.org', code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
+        coding: [{ system: LOINC, code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
       },
       valueCodeableConcept: {
-        coding: [{ code: '260385009', display: 'Negative', system: 'http://snomed.info/sct' }],
+        coding: [{ code: '260385009', display: 'Negative', system: SNOMED }],
       },
       subject: { reference: 'Patient/1', display: 'Homer Simpson III' },
       effectiveDateTime: '2022-11-01T19:33:00.000Z',
@@ -57,10 +57,10 @@ let response: Resource[] =
       meta: { versionId: '7777208f-426f-41b1-ab4b-0eb6d3833f09', lastUpdated: '2023-05-01T00:00:00.000Z' },
       status: 'final',
       code: {
-        coding: [{ system: 'http://loinc.org', code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
+        coding: [{ system: LOINC, code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
       },
       valueCodeableConcept: {
-        coding: [{ code: '10828004', display: 'Positive', system: 'http://snomed.info/sct' }],
+        coding: [{ code: '10828004', display: 'Positive', system: SNOMED }],
       },
       subject: { reference: 'Patient/1', display: 'Homer Simpson III' },
       effectiveDateTime: '2023-02-04T11:45:00.000Z',
@@ -76,10 +76,10 @@ let response: Resource[] =
       id: '3',
       status: 'final',
       code: {
-        coding: [{ system: 'http://loinc.org', code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
+        coding: [{ system: LOINC, code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
       },
       valueCodeableConcept: {
-        coding: [{ code: '260385009', display: 'Negative', system: 'http://snomed.info/sct' }],
+        coding: [{ code: '260385009', display: 'Negative', system: SNOMED }],
       },
       subject: { reference: 'Patient/2', display: 'Lisa Simpson' },
       effectiveDateTime: '2022-06-12T16:03:00.000Z',
@@ -128,10 +128,10 @@ response =
       meta: { versionId: 'b267aa05-e134-4f01-817a-5d255a691880', lastUpdated: '2022-12-21T01:55:34.799Z' },
       status: 'final',
       code: {
-        coding: [{ system: 'http://loinc.org', code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
+        coding: [{ system: LOINC, code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
       },
       valueCodeableConcept: {
-        coding: [{ code: '260385009', display: 'Negative', system: 'http://snomed.info/sct' }],
+        coding: [{ code: '260385009', display: 'Negative', system: SNOMED }],
       },
       subject: { reference: 'Patient/1', display: 'Homer Simpson III' },
       effectiveDateTime: '2022-11-01T19:33:00.000Z',
@@ -157,10 +157,10 @@ response =
       meta: { versionId: '7777208f-426f-41b1-ab4b-0eb6d3833f09', lastUpdated: '2023-05-01T00:00:00.000Z' },
       status: 'final',
       code: {
-        coding: [{ system: 'http://loinc.org', code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
+        coding: [{ system: LOINC, code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
       },
       valueCodeableConcept: {
-        coding: [{ code: '10828004', display: 'Positive', system: 'http://snomed.info/sct' }],
+        coding: [{ code: '10828004', display: 'Positive', system: SNOMED }],
       },
       subject: { reference: 'Patient/1', display: 'Homer Simpson III' },
       effectiveDateTime: '2023-02-04T11:45:00.000Z',
@@ -170,10 +170,10 @@ response =
       id: '3',
       status: 'final',
       code: {
-        coding: [{ system: 'http://loinc.org', code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
+        coding: [{ system: LOINC, code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
       },
       valueCodeableConcept: {
-        coding: [{ code: '260385009', display: 'Negative', system: 'http://snomed.info/sct' }],
+        coding: [{ code: '260385009', display: 'Negative', system: SNOMED }],
       },
       subject: { reference: 'Patient/2', display: 'Lisa Simpson' },
       effectiveDateTime: '2022-06-12T16:03:00.000Z',

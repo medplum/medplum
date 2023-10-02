@@ -4,6 +4,7 @@ export * from './bundle';
 export * from './cache';
 export * from './client';
 export * from './config';
+export * from './constants';
 export * from './contenttype';
 export * from './crypto';
 export * from './eventtarget';

@@ -1,4 +1,4 @@
-import { ContentType, getReferenceString, isUUID, Operator, streamToBuffer } from '@medplum/core';
+import { ContentType, getReferenceString, isUUID, LOINC, Operator, streamToBuffer } from '@medplum/core';
 import {
   Binary,
   Bot,
@@ -75,7 +75,7 @@ describe('Project clone', () => {
       resourceType: 'Observation',
       meta: { project: project.id },
       status: 'final',
-      code: { coding: [{ system: 'http://loinc.org', code: '12345-6' }] },
+      code: { coding: [{ system: LOINC, code: '12345-6' }] },
       subject: { reference: 'Patient/' + patient.id },
     });
     expect(obs).toBeDefined();

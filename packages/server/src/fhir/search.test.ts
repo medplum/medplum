@@ -1,6 +1,7 @@
 import {
   createReference,
   getReferenceString,
+  LOINC,
   normalizeErrorString,
   OperationOutcomeError,
   Operator,
@@ -8,6 +9,7 @@ import {
   parseSearchRequest,
   parseSearchUrl,
   SearchRequest,
+  SNOMED,
 } from '@medplum/core';
 import {
   ActivityDefinition,
@@ -2163,7 +2165,7 @@ describe('FHIR Search', () => {
         code: {
           coding: [
             {
-              system: 'http://loinc.org',
+              system: LOINC,
               code: 'fake',
             },
           ],
@@ -2343,7 +2345,7 @@ describe('FHIR Search', () => {
         resourceType: 'DiagnosticReport',
         status: 'final',
         code: { coding: [{ code }] },
-        category: [{ coding: [{ system: 'http://loinc.org', code: 'LP217198-3' }] }],
+        category: [{ coding: [{ system: LOINC, code: 'LP217198-3' }] }],
       });
 
       const bundle = await systemRepo.search({
@@ -2357,7 +2359,7 @@ describe('FHIR Search', () => {
           {
             code: 'category',
             operator: Operator.EQUALS,
-            value: 'http://loinc.org|LP217198-3',
+            value: `${LOINC}|LP217198-3`,
           },
         ],
         count: 1,
@@ -2442,7 +2444,7 @@ describe('FHIR Search', () => {
       const c1 = await systemRepo.createResource<Condition>({
         resourceType: 'Condition',
         subject: createReference(p),
-        code: { coding: [{ system: 'http://snomed.info/sct', code: '165002' }] },
+        code: { coding: [{ system: SNOMED, code: '165002' }] },
       });
 
       const c2 = await systemRepo.createResource<Condition>({
@@ -2462,7 +2464,7 @@ describe('FHIR Search', () => {
           {
             code: 'code',
             operator: Operator.EQUALS,
-            value: 'http://snomed.info/sct|',
+            value: `${SNOMED}|`,
           },
         ],
       });
@@ -2482,7 +2484,7 @@ describe('FHIR Search', () => {
       await systemRepo.createResource<Condition>({
         resourceType: 'Condition',
         subject: createReference(p),
-        code: { coding: [{ system: 'http://snomed.info/sct', code: '165002' }] },
+        code: { coding: [{ system: SNOMED, code: '165002' }] },
       });
 
       await systemRepo.createResource<Condition>({
@@ -2517,7 +2519,7 @@ describe('FHIR Search', () => {
       const c1 = await systemRepo.createResource<Condition>({
         resourceType: 'Condition',
         subject: createReference(p),
-        code: { coding: [{ system: 'http://snomed.info/sct', code: '165002' }] },
+        code: { coding: [{ system: SNOMED, code: '165002' }] },
       });
 
       const c2 = await systemRepo.createResource<Condition>({
