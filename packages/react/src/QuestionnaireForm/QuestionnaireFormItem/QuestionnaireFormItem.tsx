@@ -256,18 +256,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
         searchable
         defaultValue={currentAnswer || [typedValueToString(initialValue)]}
         onChange={(selected) => {
-          const values = selected.map((o) => {
-            const option = item.answerOption?.find(
-              (option) =>
-                formatCoding(option.valueCoding) === o ||
-                option[propertyName as keyof QuestionnaireItemAnswerOption] === o
-            );
-            const optionValue = getTypedPropertyValue(
-              { type: 'QuestionnaireItemAnswerOption', value: option },
-              'value'
-            ) as TypedValue;
-            return { [propertyName]: optionValue.value };
-          });
+          const values = multiSelectOnChange(selected, propertyName, item);
           props.onChangeAnswer(values as QuestionnaireResponseItemAnswer[]);
         }}
       />
@@ -507,6 +496,24 @@ function getCurrentMultiSelectAnswer(
   }
   const typedValues = selectedItem.map((a) => getItemValue(a));
   return typedValues.map((type) => formatCoding(type?.value) || type?.value);
+}
+
+function multiSelectOnChange(
+  selected: string[],
+  propertyName: string,
+  item: QuestionnaireItem
+): QuestionnaireResponseItemAnswer[] {
+  return selected.map((o) => {
+    const option = item.answerOption?.find(
+      (option) =>
+        formatCoding(option.valueCoding) === o || option[propertyName as keyof QuestionnaireItemAnswerOption] === o
+    );
+    const optionValue = getTypedPropertyValue(
+      { type: 'QuestionnaireItemAnswerOption', value: option },
+      'value'
+    ) as TypedValue;
+    return { [propertyName]: optionValue.value };
+  });
 }
 
 function getCurrentRadioAnswer(options: [string, TypedValue][], defaultAnswer: TypedValue): string | undefined {
