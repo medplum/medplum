@@ -21,6 +21,7 @@ export interface InternalTypeSchema {
 }
 
 export interface InternalSchemaElement {
+  description: string;
   // elementDefinition: ElementDefinition;
   min: number;
   max: number;
@@ -368,6 +369,7 @@ class StructureDefinitionParser {
     const baseMax = ed.base?.max ? parseCardinality(ed.base.max) : max;
     const typedElementDef = { type: 'ElementDefinition', value: ed };
     return {
+      description: ed.definition || '',
       // elementDefinition: ed,
       min: ed.min ?? 0,
       max: max,

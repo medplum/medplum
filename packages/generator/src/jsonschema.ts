@@ -1,12 +1,12 @@
 import {
   capitalize,
   getAllDataTypes,
-  getElementDefinition,
   indexStructureDefinitionBundle,
+  InternalSchemaElement,
   InternalTypeSchema,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, ElementDefinition, ElementDefinitionType, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, ElementDefinitionType, StructureDefinition } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { JSONSchema6, JSONSchema6Definition } from 'json-schema';
 import { resolve } from 'path';
@@ -114,18 +114,18 @@ function buildProperties(typeSchema: InternalTypeSchema): {
     required = ['resourceType'];
   }
 
-  for (const elementName of Object.keys(typeSchema.fields)) {
-    const elementDefinition = getElementDefinition(typeSchema.name, elementName) as ElementDefinition;
-    for (const elementDefinitionType of elementDefinition.type ?? []) {
-      const propertyName = elementName.replace('[x]', capitalize(elementDefinitionType.code as string));
-      properties[propertyName] = buildPropertySchema(elementDefinition, elementDefinitionType);
+  for (const [path, elementDefinition] of Object.entries(typeSchema.elements)) {
+    // const elementDefinition = getElementDefinition(typeSchema.name, elementName);
+    for (const elementDefinitionType of elementDefinition?.type ?? []) {
+      const propertyName = path.replace('[x]', capitalize(elementDefinitionType.code as string));
+      properties[propertyName] = buildPropertySchema(elementDefinition, elementDefinitionType, path);
     }
 
-    if (!elementName.includes('[x]') && elementDefinition.min !== 0) {
+    if (!path.includes('[x]') && elementDefinition?.min) {
       if (!required) {
         required = [];
       }
-      required.push(elementName);
+      required.push(path);
     }
   }
 
@@ -133,40 +133,39 @@ function buildProperties(typeSchema: InternalTypeSchema): {
 }
 
 function buildPropertySchema(
-  elementDefinition: ElementDefinition,
-  elementDefinitionType: ElementDefinitionType
+  elementDefinition: InternalSchemaElement,
+  elementDefinitionType: ElementDefinitionType,
+  path: string
 ): JSONSchema6Definition {
   const result: JSONSchema6Definition = {
-    description: elementDefinition.definition,
+    description: elementDefinition.description,
   };
 
   const enumValues = getEnumValues(elementDefinition);
 
-  if (elementDefinition.max === '*') {
+  if (elementDefinition.max > 1) {
     result.items = {};
     if (enumValues) {
       result.items.enum = enumValues;
     } else {
-      result.items.$ref = `#/definitions/${getTypeName(elementDefinition, elementDefinitionType)}`;
+      result.items.$ref = `#/definitions/${getTypeName(path, elementDefinitionType)}`;
     }
     result.type = 'array';
   } else if (enumValues) {
     result.enum = enumValues;
   } else {
-    result.$ref = `#/definitions/${getTypeName(elementDefinition, elementDefinitionType)}`;
+    result.$ref = `#/definitions/${getTypeName(path, elementDefinitionType)}`;
   }
 
   return result;
 }
 
-function getTypeName(elementDefinition: ElementDefinition, elementDefinitionType: ElementDefinitionType): string {
-  if (elementDefinition.path?.endsWith('.id')) {
+function getTypeName(path: string, elementDefinitionType: ElementDefinitionType): string {
+  if (path.endsWith('.id')) {
     return 'id';
   }
   const code = elementDefinitionType.code as string;
-  return code === 'BackboneElement' || code === 'Element'
-    ? buildTypeName(elementDefinition.path?.split('.') as string[])
-    : code;
+  return code === 'BackboneElement' || code === 'Element' ? buildTypeName(path.split('.') as string[]) : code;
 }
 
 function buildTypeName(components: string[]): string {
@@ -176,14 +175,15 @@ function buildTypeName(components: string[]): string {
   return components.map(capitalize).join('_');
 }
 
-function getEnumValues(elementDefinition: ElementDefinition): string[] | undefined {
-  if (elementDefinition.binding?.valueSet && elementDefinition.binding.strength === 'required') {
-    if (
-      elementDefinition.binding.valueSet !== 'http://hl7.org/fhir/ValueSet/resource-types|4.0.1' &&
-      elementDefinition.binding.valueSet !== 'http://hl7.org/fhir/ValueSet/all-types|4.0.1' &&
-      elementDefinition.binding.valueSet !== 'http://hl7.org/fhir/ValueSet/defined-types|4.0.1'
-    ) {
-      const values = getValueSetValues(elementDefinition.binding.valueSet);
+const excludedValueSets = [
+  'http://hl7.org/fhir/ValueSet/resource-types|4.0.1',
+  'http://hl7.org/fhir/ValueSet/all-types|4.0.1',
+  'http://hl7.org/fhir/ValueSet/defined-types|4.0.1',
+];
+function getEnumValues(elementDefinition: InternalSchemaElement): string[] | undefined {
+  if (elementDefinition.binding) {
+    if (excludedValueSets.includes(elementDefinition.binding)) {
+      const values = getValueSetValues(elementDefinition.binding);
       if (values && values.length > 0) {
         return values;
       }
