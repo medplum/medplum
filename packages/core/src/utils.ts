@@ -3,6 +3,7 @@ import {
   CodeableConcept,
   Device,
   Extension,
+  Identifier,
   ObservationDefinition,
   ObservationDefinitionQualifiedInterval,
   Patient,
@@ -344,6 +345,36 @@ export function getIdentifier(resource: Resource, system: string): string | unde
     }
   }
   return undefined;
+}
+
+/**
+ * Sets a resource identifier for the given system.
+ *
+ * Note that this method is only available on resources that have an "identifier" property,
+ * and that property must be an array of Identifier objects,
+ * which is not true for all FHIR resources.
+ *
+ * If the identifier already exists, then the value is updated.
+ *
+ * Otherwise a new identifier is added.
+ *
+ * @param resource The resource to add the identifier to.
+ * @param system The identifier system.
+ * @param value The identifier value.
+ */
+export function setIdentifier(resource: Resource & { identifier?: Identifier[] }, system: string, value: string): void {
+  const identifiers = resource.identifier;
+  if (!identifiers) {
+    resource.identifier = [{ system, value }];
+    return;
+  }
+  for (const identifier of identifiers) {
+    if (identifier.system === system) {
+      identifier.value = value;
+      return;
+    }
+  }
+  identifiers.push({ system, value });
 }
 
 /**

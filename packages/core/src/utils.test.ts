@@ -35,6 +35,7 @@ import {
   resolveId,
   ResourceWithCode,
   setCodeBySystem,
+  setIdentifier,
   stringify,
 } from './utils';
 
@@ -347,6 +348,26 @@ describe('Core Utils', () => {
     expect(
       getIdentifier({ resourceType: 'SpecimenDefinition', identifier: { system: 'y', value: 'y' } }, 'x')
     ).toBeUndefined();
+  });
+
+  test('Set identifier', () => {
+    const r1: Patient = { resourceType: 'Patient' };
+    setIdentifier(r1, 'x', 'y');
+    expect(r1).toEqual({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y' }] });
+
+    const r2: Patient = { resourceType: 'Patient', identifier: [] };
+    setIdentifier(r2, 'x', 'y');
+    expect(r2).toEqual({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y' }] });
+
+    const r3: Patient = { resourceType: 'Patient', identifier: [{ system: 'a', value: 'b' }] };
+    setIdentifier(r3, 'x', 'y');
+    expect(r3).toEqual({
+      resourceType: 'Patient',
+      identifier: [
+        { system: 'a', value: 'b' },
+        { system: 'x', value: 'y' },
+      ],
+    });
   });
 
   test('Get extension value', () => {
