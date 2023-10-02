@@ -368,6 +368,13 @@ describe('Core Utils', () => {
         { system: 'x', value: 'y' },
       ],
     });
+
+    const r4: Patient = { resourceType: 'Patient', identifier: [{ system: 'x', value: 'b' }] };
+    setIdentifier(r4, 'x', 'y');
+    expect(r4).toEqual({
+      resourceType: 'Patient',
+      identifier: [{ system: 'x', value: 'y' }],
+    });
   });
 
   test('Get extension value', () => {
