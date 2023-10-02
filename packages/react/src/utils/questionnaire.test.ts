@@ -1,5 +1,5 @@
 import { QuestionnaireItemEnableWhen } from '@medplum/fhirtypes';
-import { isChoiceQuestion, isQuestionEnabled } from './questionnaire';
+import { isChoiceQuestion, isQuestionEnabled, onChangeMultiSelectValues } from './questionnaire';
 
 describe('QuestionnaireUtils', () => {
   test('isChoiceQuestion', () => {
@@ -888,5 +888,85 @@ describe('isQuestionEnabled', () => {
         ]
       )
     ).toBe(false);
+  });
+
+  test('multi-select map selected values', () => {
+    const selected = ['value1', 'value2'];
+    const propertyName = 'valueString';
+    const item = {
+      answerOption: [
+        {
+          valueString: 'value1',
+        },
+        {
+          valueString: 'value2',
+        },
+      ],
+    };
+
+    const result = onChangeMultiSelectValues(selected, propertyName, item);
+
+    expect(result).toEqual([{ valueString: 'value1' }, { valueString: 'value2' }]);
+  });
+
+  test('multi-select non selected values', () => {
+    const selected = ['nonMatchingValue'];
+    const propertyName = 'valueString';
+    const item = {
+      answerOption: [
+        {
+          valueString: 'value1',
+        },
+        {
+          valueString: 'value2',
+        },
+      ],
+    };
+
+    const result = onChangeMultiSelectValues(selected, propertyName, item);
+
+    expect(result).toEqual([{ valueString: undefined }]);
+  });
+
+  test('multi-select empty array', () => {
+    const selected: string[] = [];
+    const propertyName = 'valueString';
+    const item = {
+      answerOption: [{ valueString: 'value1' }, { valueString: 'value2' }],
+    };
+
+    const result = onChangeMultiSelectValues(selected, propertyName, item);
+
+    expect(result).toEqual([]);
+  });
+
+  test('multi-select with value coding', () => {
+    const selected = ['code1'];
+    const propertyName = 'valueCoding';
+    const item = {
+      answerOption: [
+        {
+          valueCoding: { code: 'code1' },
+        },
+        {
+          valueCoding: { code: 'code2' },
+        },
+      ],
+    };
+
+    const result = onChangeMultiSelectValues(selected, propertyName, item);
+    expect(result).toEqual([{ valueCoding: { code: 'code1' } }]);
+  });
+
+  test('multi-select with non existing values', () => {
+    const selected = ['value1'];
+    const propertyName = 'nonExistingProperty';
+    const item = {
+      answerOption: [{ valueString: 'value1' }],
+    };
+
+    const result = onChangeMultiSelectValues(selected, propertyName, item);
+
+    expect(result).toEqual([{ nonExistingProperty: undefined }]);
   });
 });

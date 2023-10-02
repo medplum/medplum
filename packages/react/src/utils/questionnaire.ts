@@ -1,6 +1,7 @@
-import { TypedValue, evalFhirPathTyped, getTypedPropertyValue } from '@medplum/core';
+import { TypedValue, evalFhirPathTyped, formatCoding, getTypedPropertyValue } from '@medplum/core';
 import {
   QuestionnaireItem,
+  QuestionnaireItemAnswerOption,
   QuestionnaireItemEnableWhen,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
@@ -58,6 +59,24 @@ export function isQuestionEnabled(item: QuestionnaireItem, responseItems: Questi
   }
 
   return enableBehavior !== 'any';
+}
+
+export function onChangeMultiSelectValues(
+  selected: string[],
+  propertyName: string,
+  item: QuestionnaireItem
+): QuestionnaireResponseItemAnswer[] {
+  return selected.map((o) => {
+    const option = item.answerOption?.find(
+      (option) =>
+        formatCoding(option.valueCoding) === o || option[propertyName as keyof QuestionnaireItemAnswerOption] === o
+    );
+    const optionValue = getTypedPropertyValue(
+      { type: 'QuestionnaireItemAnswerOption', value: option },
+      'value'
+    ) as TypedValue;
+    return { [propertyName]: optionValue?.value };
+  });
 }
 
 function getByLinkId(
