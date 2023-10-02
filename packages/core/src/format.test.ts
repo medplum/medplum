@@ -1,3 +1,4 @@
+import { UCUM } from './constants';
 import {
   formatAddress,
   formatCodeableConcept,
@@ -15,7 +16,6 @@ import {
   formatTime,
   formatTiming,
 } from './format';
-import { UCUM } from './types';
 
 test('Format Address', () => {
   expect(formatAddress({})).toEqual('');
