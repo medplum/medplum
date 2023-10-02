@@ -24,7 +24,7 @@ import { QuantityInput } from '../../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
 import { ResourcePropertyDisplay } from '../../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocomplete';
-import { QuestionnaireItemType, onChangeMultiSelectValues } from '../../utils/questionnaire';
+import { QuestionnaireItemType, getNewMultiSelectValues } from '../../utils/questionnaire';
 
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
@@ -256,7 +256,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
         searchable
         defaultValue={currentAnswer || [typedValueToString(initialValue)]}
         onChange={(selected) => {
-          const values = onChangeMultiSelectValues(selected, propertyName, item);
+          const values = getNewMultiSelectValues(selected, propertyName, item);
           props.onChangeAnswer(values as QuestionnaireResponseItemAnswer[]);
         }}
       />

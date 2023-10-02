@@ -61,7 +61,7 @@ export function isQuestionEnabled(item: QuestionnaireItem, responseItems: Questi
   return enableBehavior !== 'any';
 }
 
-export function onChangeMultiSelectValues(
+export function getNewMultiSelectValues(
   selected: string[],
   propertyName: string,
   item: QuestionnaireItem

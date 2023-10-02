@@ -1,5 +1,5 @@
 import { QuestionnaireItemEnableWhen } from '@medplum/fhirtypes';
-import { isChoiceQuestion, isQuestionEnabled, onChangeMultiSelectValues } from './questionnaire';
+import { isChoiceQuestion, isQuestionEnabled, getNewMultiSelectValues } from './questionnaire';
 
 describe('QuestionnaireUtils', () => {
   test('isChoiceQuestion', () => {
@@ -904,7 +904,7 @@ describe('isQuestionEnabled', () => {
       ],
     };
 
-    const result = onChangeMultiSelectValues(selected, propertyName, item);
+    const result = getNewMultiSelectValues(selected, propertyName, item);
 
     expect(result).toEqual([{ valueString: 'value1' }, { valueString: 'value2' }]);
   });
@@ -923,7 +923,7 @@ describe('isQuestionEnabled', () => {
       ],
     };
 
-    const result = onChangeMultiSelectValues(selected, propertyName, item);
+    const result = getNewMultiSelectValues(selected, propertyName, item);
 
     expect(result).toEqual([{ valueString: undefined }]);
   });
@@ -935,7 +935,7 @@ describe('isQuestionEnabled', () => {
       answerOption: [{ valueString: 'value1' }, { valueString: 'value2' }],
     };
 
-    const result = onChangeMultiSelectValues(selected, propertyName, item);
+    const result = getNewMultiSelectValues(selected, propertyName, item);
 
     expect(result).toEqual([]);
   });
@@ -954,7 +954,7 @@ describe('isQuestionEnabled', () => {
       ],
     };
 
-    const result = onChangeMultiSelectValues(selected, propertyName, item);
+    const result = getNewMultiSelectValues(selected, propertyName, item);
     expect(result).toEqual([{ valueCoding: { code: 'code1' } }]);
   });
 
@@ -965,7 +965,7 @@ describe('isQuestionEnabled', () => {
       answerOption: [{ valueString: 'value1' }],
     };
 
-    const result = onChangeMultiSelectValues(selected, propertyName, item);
+    const result = getNewMultiSelectValues(selected, propertyName, item);
 
     expect(result).toEqual([{ nonExistingProperty: undefined }]);
   });
