@@ -1,11 +1,5 @@
-import {
-  capitalize,
-  getDataType,
-  getElementDefinition,
-  getElementDefinitionTypeName,
-  isResourceType,
-} from '@medplum/core';
-import { ElementDefinition, ElementDefinitionType, ResourceType } from '@medplum/fhirtypes';
+import { InternalSchemaElement, capitalize, getDataType, isResourceType } from '@medplum/core';
+import { ElementDefinitionType, ResourceType } from '@medplum/fhirtypes';
 import {
   GraphQLInputFieldConfig,
   GraphQLInputFieldConfigMap,
@@ -58,8 +52,8 @@ function buildGraphQLInputFields(resourceType: ResourceType, nameSuffix: string)
 
 function buildInputPropertyFields(resourceType: string, fields: GraphQLInputFieldConfigMap, nameSuffix: string): void {
   const schema = getDataType(resourceType);
-  for (const key of Object.keys(schema.fields)) {
-    const elementDefinition = getElementDefinition(resourceType, key) as ElementDefinition;
+  for (const [key, elementDefinition] of Object.entries(schema.elements)) {
+    // const elementDefinition = getElementDefinition(resourceType, key) as ElementDefinition;
     for (const type of elementDefinition.type as ElementDefinitionType[]) {
       buildInputPropertyField(fields, key, elementDefinition, type, nameSuffix);
     }
@@ -69,24 +63,24 @@ function buildInputPropertyFields(resourceType: string, fields: GraphQLInputFiel
 function buildInputPropertyField(
   fields: GraphQLInputFieldConfigMap,
   key: string,
-  elementDefinition: ElementDefinition,
+  elementDefinition: InternalSchemaElement,
   elementDefinitionType: ElementDefinitionType,
   nameSuffix: string
 ): void {
   let typeName = elementDefinitionType.code as string;
   if (typeName === 'Element' || typeName === 'BackboneElement') {
-    typeName = getElementDefinitionTypeName(elementDefinition);
+    typeName = elementDefinition.type[0].code;
   }
 
   const fieldConfig: GraphQLInputFieldConfig = {
-    description: elementDefinition.short,
+    description: elementDefinition.description, // TODO: elementDefinition.short
     type: getGraphQLInputType(typeName, nameSuffix),
   };
 
-  if (elementDefinition.max === '*') {
+  if (elementDefinition.max > 1) {
     fieldConfig.type = new GraphQLList(new GraphQLNonNull(getGraphQLInputType(typeName, nameSuffix)));
   }
-  if (elementDefinition.min !== 0 && !elementDefinition.path?.endsWith('[x]')) {
+  if (elementDefinition.min > 0 && !key.endsWith('[x]')) {
     fieldConfig.type = new GraphQLNonNull(fieldConfig.type);
   }
 

@@ -2,10 +2,9 @@ import {
   capitalize,
   evalFhirPathTyped,
   getDataType,
-  getElementDefinition,
-  getElementDefinitionTypeName,
   getResourceTypes,
   getSearchParameters,
+  InternalSchemaElement,
   isLowerCase,
   isResourceTypeSchema,
   normalizeOperationOutcome,
@@ -13,7 +12,7 @@ import {
   toJsBoolean,
   toTypedValue,
 } from '@medplum/core';
-import { ElementDefinition, ElementDefinitionType, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import { ElementDefinitionType, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import {
   GraphQLEnumType,
   GraphQLEnumValueConfigMap,
@@ -89,8 +88,8 @@ function buildOutputPropertyFields(resourceType: string, fields: GraphQLFieldCon
     };
   }
 
-  for (const key of Object.keys(schema.fields)) {
-    const elementDefinition = getElementDefinition(resourceType, key) as ElementDefinition;
+  for (const [key, elementDefinition] of Object.entries(schema.elements)) {
+    // const elementDefinition = getElementDefinition(resourceType, key) as ElementDefinition;
     for (const type of elementDefinition.type as ElementDefinitionType[]) {
       buildOutputPropertyField(fields, key, elementDefinition, type);
     }
@@ -100,21 +99,21 @@ function buildOutputPropertyFields(resourceType: string, fields: GraphQLFieldCon
 function buildOutputPropertyField(
   fields: GraphQLFieldConfigMap<any, any>,
   key: string,
-  elementDefinition: ElementDefinition,
+  elementDefinition: InternalSchemaElement,
   elementDefinitionType: ElementDefinitionType
 ): void {
   let typeName = elementDefinitionType.code as string;
   if (typeName === 'Element' || typeName === 'BackboneElement') {
-    typeName = getElementDefinitionTypeName(elementDefinition);
+    typeName = elementDefinition.type[0].code;
   }
 
   const fieldConfig: GraphQLFieldConfig<any, any> = {
-    description: elementDefinition.short,
-    type: getOutputPropertyType(elementDefinition, typeName),
+    description: elementDefinition.description, // TODO: elementDefinition.short
+    type: getOutputPropertyType(elementDefinition, typeName, key),
     resolve: resolveField,
   };
 
-  if (elementDefinition.max === '*') {
+  if (elementDefinition.max > 1) {
     fieldConfig.args = buildListPropertyFieldArgs(typeName);
   }
 
@@ -159,10 +158,10 @@ function buildListPropertyFieldArgs(fieldTypeName: string): GraphQLFieldConfigAr
 
     // Add all "string" and "code" properties as arguments
     const fieldTypeSchema = getDataType(fieldTypeName);
-    if (fieldTypeSchema.fields) {
-      for (const fieldKey of Object.keys(fieldTypeSchema.fields)) {
-        const fieldElementDefinition = getElementDefinition(fieldTypeName, fieldKey) as ElementDefinition;
-        for (const type of fieldElementDefinition.type as ElementDefinitionType[]) {
+    if (fieldTypeSchema.elements) {
+      for (const [fieldKey, fieldElementDefinition] of Object.entries(fieldTypeSchema.elements)) {
+        // const fieldElementDefinition = getElementDefinition(fieldTypeName, fieldKey) as ElementDefinition;
+        for (const type of fieldElementDefinition.type) {
           buildListPropertyFieldArg(fieldArgs, fieldKey, fieldElementDefinition, type);
         }
       }
@@ -182,7 +181,7 @@ function buildListPropertyFieldArgs(fieldTypeName: string): GraphQLFieldConfigAr
 function buildListPropertyFieldArg(
   fieldArgs: GraphQLFieldConfigArgumentMap,
   fieldKey: string,
-  elementDefinition: ElementDefinition,
+  elementDefinition: InternalSchemaElement,
   elementDefinitionType: ElementDefinitionType
 ): void {
   const baseType = elementDefinitionType.code as string;
@@ -199,7 +198,7 @@ function buildListPropertyFieldArg(
     case 'http://hl7.org/fhirpath/System.String':
       fieldArgs[fieldName] = {
         type: GraphQLString,
-        description: elementDefinition.short,
+        description: elementDefinition.description, // TODO: elementDefinition.short
       };
       break;
   }
@@ -266,12 +265,16 @@ function buildReverseLookupFields(resourceType: ResourceType, fields: GraphQLFie
   }
 }
 
-function getOutputPropertyType(elementDefinition: ElementDefinition, typeName: string): GraphQLOutputType {
+function getOutputPropertyType(
+  elementDefinition: InternalSchemaElement,
+  typeName: string,
+  path: string
+): GraphQLOutputType {
   let graphqlType = getGraphQLOutputType(typeName);
-  if (elementDefinition.max === '*') {
+  if (elementDefinition.max > 1) {
     graphqlType = new GraphQLList(new GraphQLNonNull(graphqlType));
   }
-  if (elementDefinition.min !== 0 && !elementDefinition.path?.endsWith('[x]')) {
+  if (elementDefinition.min !== 0 && !path.endsWith('[x]')) {
     graphqlType = new GraphQLNonNull(graphqlType);
   }
   return graphqlType;

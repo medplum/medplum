@@ -1,7 +1,7 @@
 import {
-  ElementValidator,
   getAllDataTypes,
   indexStructureDefinitionBundle,
+  InternalSchemaElement,
   InternalTypeSchema,
   isLowerCase,
 } from '@medplum/core';
@@ -36,14 +36,14 @@ export function main(): void {
     outputTypes[typeName] = {
       name: typeSchema.name,
       description: typeSchema.description,
-      fields: typeSchema.fields,
+      elements: typeSchema.elements,
     } as InternalTypeSchema;
 
     // For each property, only keep "min", "max", and "type"
     // Only keep "min" if not 0
     // Only keep "max" if not 1
-    for (const [propertyName, propertySchema] of Object.entries(typeSchema.fields)) {
-      const outputPropertySchema: Partial<ElementValidator> = {};
+    for (const [propertyName, propertySchema] of Object.entries(typeSchema.elements)) {
+      const outputPropertySchema: Partial<InternalSchemaElement> = {};
 
       if (propertySchema.min !== 0) {
         outputPropertySchema.min = propertySchema.min;
@@ -59,7 +59,7 @@ export function main(): void {
         code: normalizedTypes[t.code as string] || t.code,
       }));
 
-      typeSchema.fields[propertyName] = outputPropertySchema as ElementValidator;
+      typeSchema.elements[propertyName] = outputPropertySchema as InternalSchemaElement;
     }
   }
 
