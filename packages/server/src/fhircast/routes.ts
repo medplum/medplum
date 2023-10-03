@@ -11,6 +11,23 @@ export const fhircastRouter = Router();
 // TODO: Enable authentication for fhircast
 // fhircastRouter.use(authenticateRequest);
 
+fhircastRouter.get('/.well-known/fhircast-configuration', (_req: Request, res: Response) => {
+  res.status(200).json({
+    eventsSupported: [
+      'syncerror',
+      'userlogout',
+      'userhibernate',
+      'patient-open',
+      'patient-close',
+      'imagingstudy-open',
+      'imagingstudy-close',
+    ],
+    websocketSupport: true,
+    webhookSupport: false,
+    fhircastVersion: 'STU2',
+  });
+});
+
 // Register a new subscription
 fhircastRouter.post(
   '/',
@@ -71,3 +88,9 @@ fhircastRouter.post(
     res.status(201).json({ success: true, event: body });
   })
 );
+
+// Get the current subscription status
+// Non-standard FHIRCast extension to support Nuance PowerCast Hub
+fhircastRouter.get('/:topic', (req: Request, res: Response) => {
+  res.status(200).json([]);
+});
