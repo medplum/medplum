@@ -569,7 +569,7 @@ describe('ResourcePropertyInput', () => {
     });
   });
 
-  test('Reference property', async () => {
+  test('Reference property single target type', async () => {
     const property: ElementDefinition = {
       type: [
         {
@@ -581,6 +581,26 @@ describe('ResourcePropertyInput', () => {
 
     await setup({
       name: 'managingOrganization',
+      property,
+    });
+
+    const comboboxes = screen.getAllByRole('combobox');
+    expect(comboboxes).toHaveLength(1);
+    expect(comboboxes[0]).toBeInstanceOf(HTMLDivElement);
+  });
+
+  test('Reference property multiple target types', async () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'Reference',
+          targetProfile: ['Patient', 'Practitioner'],
+        },
+      ],
+    };
+
+    await setup({
+      name: 'subject',
       property,
     });
 

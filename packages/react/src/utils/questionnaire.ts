@@ -1,10 +1,18 @@
-import { TypedValue, evalFhirPathTyped, formatCoding, getTypedPropertyValue } from '@medplum/core';
+import {
+  TypedValue,
+  deepClone,
+  evalFhirPathTyped,
+  formatCoding,
+  getExtension,
+  getTypedPropertyValue,
+} from '@medplum/core';
 import {
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
   QuestionnaireItemEnableWhen,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
+  ResourceType,
 } from '@medplum/fhirtypes';
 
 export enum QuestionnaireItemType {
@@ -165,4 +173,51 @@ function checkAnswers(
   }
 
   return { anyMatch, allMatch };
+}
+
+export function getQuestionnaireItemReferenceTargetTypes(item: QuestionnaireItem): ResourceType[] | undefined {
+  const extension = getExtension(item, 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource');
+  if (!extension) {
+    return undefined;
+  }
+  if (extension.valueCode !== undefined) {
+    return [extension.valueCode] as ResourceType[];
+  }
+  if (extension.valueCodeableConcept) {
+    return extension.valueCodeableConcept?.coding?.map((c) => c.code) as ResourceType[];
+  }
+  return undefined;
+}
+
+export function setQuestionnaireItemReferenceTargetTypes(
+  item: QuestionnaireItem,
+  targetTypes: ResourceType[] | undefined
+): QuestionnaireItem {
+  const result = deepClone(item);
+  let extension = getExtension(result, 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource');
+
+  if (!targetTypes || targetTypes.length === 0) {
+    if (extension) {
+      result.extension = result.extension?.filter((e) => e !== extension);
+    }
+    return result;
+  }
+
+  if (!extension) {
+    if (!result.extension) {
+      result.extension = [];
+    }
+    extension = { url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource' };
+    result.extension.push(extension);
+  }
+
+  if (targetTypes.length === 1) {
+    extension.valueCode = targetTypes[0];
+    delete extension.valueCodeableConcept;
+  } else {
+    extension.valueCodeableConcept = { coding: targetTypes.map((t) => ({ code: t })) };
+    delete extension.valueCode;
+  }
+
+  return result;
 }
