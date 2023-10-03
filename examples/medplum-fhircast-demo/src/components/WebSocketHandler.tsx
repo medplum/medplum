@@ -5,23 +5,24 @@ type WebSocketHandlerProps = {
   endpoint: string;
   clientId: string;
   setCurrentPatientId: Dispatch<SetStateAction<string | undefined>>;
-  setFhirCastMessages: Dispatch<SetStateAction<FhircastMessagePayload[]>>;
+  setFhircastMessages: Dispatch<SetStateAction<FhircastMessagePayload[]>>;
   setWebSocketStatus: (status: string) => void;
   incrementEventCount: () => void;
 };
 
 export default function WebSocketHandler(props: WebSocketHandlerProps): null {
-  const { endpoint, setCurrentPatientId, setFhirCastMessages, setWebSocketStatus, incrementEventCount } = props;
+  const { endpoint, setCurrentPatientId, setFhircastMessages, setWebSocketStatus, incrementEventCount } = props;
   const webSocketRef = useRef<WebSocket | undefined>();
 
   const handleFhircastMessage = useCallback(
     (fhircastMessage: FhircastMessagePayload) => {
+      // Get the patient ID from the first context of the event
       const patientId = fhircastMessage.event.context[0].resource.id as string;
       setCurrentPatientId(patientId);
-      setFhirCastMessages((s: FhircastMessagePayload[]) => [fhircastMessage, ...s]);
+      setFhircastMessages((s: FhircastMessagePayload[]) => [fhircastMessage, ...s]);
       incrementEventCount();
     },
-    [incrementEventCount, setCurrentPatientId, setFhirCastMessages]
+    [incrementEventCount, setCurrentPatientId, setFhircastMessages]
   );
 
   useEffect(() => {
@@ -53,8 +54,6 @@ export default function WebSocketHandler(props: WebSocketHandlerProps): null {
 
         const fhircastMessage = message as unknown as FhircastMessagePayload;
         handleFhircastMessage(fhircastMessage);
-
-        // Get the patient ID from the first context of the event
 
         ws.send(
           JSON.stringify({

@@ -38,7 +38,7 @@ export default function Subscriber(): JSX.Element {
   const [currentPatientId, setCurrentPatientId] = useState<string | undefined>();
   const [topic, setTopic] = useState<string | undefined>();
   const [endpoint, setEndpoint] = useState<string | undefined>();
-  const [fhirCastMessages, setFhirCastMessages] = useState<FhircastMessagePayload[]>([]);
+  const [fhirCastMessages, setFhircastMessages] = useState<FhircastMessagePayload[]>([]);
   const [eventCount, setEventCount] = useState(0);
 
   const clientId = useClientId();
@@ -84,7 +84,7 @@ export default function Subscriber(): JSX.Element {
           endpoint={endpoint}
           clientId={clientId}
           setCurrentPatientId={setCurrentPatientId}
-          setFhirCastMessages={setFhirCastMessages}
+          setFhircastMessages={setFhircastMessages}
           setWebSocketStatus={setStatus}
           incrementEventCount={() => setEventCount((s) => s + 1)}
         />
