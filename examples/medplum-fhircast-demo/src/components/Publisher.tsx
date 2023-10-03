@@ -61,15 +61,13 @@ export default function Publisher(): JSX.Element {
       return;
     }
     const patientId = crypto.randomUUID();
-    const stringifiedBody = JSON.stringify(createFHIRcastMessagePayload(topic, patientId));
     if (driving && topic) {
       fetch(`${baseUrl}/fhircast/STU2/${topic}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Content-Length': stringifiedBody.length.toString(),
         },
-        body: stringifiedBody,
+        body: JSON.stringify(createFHIRcastMessagePayload(topic, patientId)),
       })
         .then(() => {
           setCurrentPatientId(patientId);
