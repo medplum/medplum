@@ -13,8 +13,8 @@ function FhirCastMessageDisplay(props: FhirCastMessageDisplayProps): JSX.Element
   return (
     <div style={{ paddingBottom: 15 }}>
       <div
+        className="fhir-cast-message"
         style={{
-          backgroundColor: '#1b1b1b',
           paddingLeft: 30,
           paddingRight: 30,
           paddingTop: 20,

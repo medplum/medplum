@@ -55,6 +55,10 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+.fhir-cast-message {
+  background-color: #1b1b1b;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
@@ -64,6 +68,10 @@ button:focus-visible {
     color: #747bff;
   }
   button {
+    background-color: #f9f9f9;
+  }
+
+  .fhir-cast-message {
     background-color: #f9f9f9;
   }
 }
