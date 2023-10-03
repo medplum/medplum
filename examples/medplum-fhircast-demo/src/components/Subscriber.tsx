@@ -5,22 +5,27 @@ import { FHIRcastMessagePayload, isWebSocketMessage, serializeHubSubscriptionReq
 import TopicLoader from './TopicLoader';
 
 type FhirCastMessageDisplayProps = {
+  eventNo: number;
   message: object;
 };
 
 function FhirCastMessageDisplay(props: FhirCastMessageDisplayProps): JSX.Element {
   return (
     <div style={{ paddingBottom: 15 }}>
-      <pre
+      <div
         style={{
-          textAlign: 'left',
           backgroundColor: '#1b1b1b',
-          padding: 20,
+          paddingLeft: 30,
+          paddingRight: 30,
+          paddingTop: 20,
+          paddingBottom: 20,
           borderRadius: 10,
+          textAlign: 'left',
         }}
       >
-        {JSON.stringify(props.message, null, 2) ?? ''}
-      </pre>
+        <h3>Event No. {props.eventNo}</h3>
+        <pre>{JSON.stringify(props.message, null, 2) ?? ''}</pre>
+      </div>
     </div>
   );
 }
@@ -31,10 +36,11 @@ type WebSocketHandlerProps = {
   setCurrentPatientId: Dispatch<SetStateAction<string | null>>;
   setFhirCastMessages: Dispatch<SetStateAction<FHIRcastMessagePayload[]>>;
   setWebSocketStatus: (status: string) => void;
+  incrementEventCount: () => void;
 };
 
 function WebSocketHandler(props: WebSocketHandlerProps): null {
-  const { endpoint, setCurrentPatientId, setFhirCastMessages, setWebSocketStatus } = props;
+  const { endpoint, setCurrentPatientId, setFhirCastMessages, setWebSocketStatus, incrementEventCount } = props;
   const { websocket } = useHubWSConnection(endpoint, {
     onConnect: () => {
       console.log('here!');
@@ -59,6 +65,7 @@ function WebSocketHandler(props: WebSocketHandlerProps): null {
         const patientId = message.event.context[0].resource.id;
         setCurrentPatientId(patientId);
         setFhirCastMessages((s: FHIRcastMessagePayload[]) => [fhirCastMessage, ...s]);
+        incrementEventCount();
 
         websocket.sendMessage({
           // @ts-expect-error Exception for acks
@@ -82,6 +89,7 @@ export default function Subscriber(): JSX.Element {
   const [topic, setTopic] = useState<string | null>(null);
   const [endpoint, setEndpoint] = useState<string | null>(null);
   const [fhirCastMessages, setFhirCastMessages] = useState<FHIRcastMessagePayload[]>([]);
+  const [eventCount, setEventCount] = useState(0);
 
   const clientId = useClientId();
 
@@ -103,7 +111,6 @@ export default function Subscriber(): JSX.Element {
       })
         .then(async (res: Response) => {
           const body = (await res.json()) as { 'hub.channel.endpoint': string };
-          console.log(body);
           const endpoint = body?.['hub.channel.endpoint'];
           if (!endpoint) {
             throw new Error('Invalid response!');
@@ -129,6 +136,7 @@ export default function Subscriber(): JSX.Element {
           setCurrentPatientId={setCurrentPatientId}
           setFhirCastMessages={setFhirCastMessages}
           setWebSocketStatus={setStatus}
+          incrementEventCount={() => setEventCount((s) => s + 1)}
         />
       ) : null}
       <div style={{ paddingBottom: 30 }}>
@@ -161,8 +169,8 @@ export default function Subscriber(): JSX.Element {
         <div>Current Patient: {currentPatientId ?? 'No current patient'}</div>
         <div style={{ paddingTop: 30, height: 500 }}>
           <h2>Events</h2>
-          {fhirCastMessages.slice(0, 3).map((message) => {
-            return <FhirCastMessageDisplay key={message.id} message={message} />;
+          {fhirCastMessages.slice(0, 3).map((message, i) => {
+            return <FhirCastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
           })}
         </div>
       </div>
