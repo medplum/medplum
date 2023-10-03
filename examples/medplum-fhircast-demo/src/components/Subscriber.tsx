@@ -35,9 +35,9 @@ export default function Subscriber(): JSX.Element {
   const [baseUrl, setBaseUrl] = useState(BASE_URL);
   const [baseUrlInput, setBaseUrlInput] = useState(BASE_URL);
   const [status, setStatus] = useState('NOT CONNECTED');
-  const [currentPatientId, setCurrentPatientId] = useState<string | null>(null);
-  const [topic, setTopic] = useState<string | null>(null);
-  const [endpoint, setEndpoint] = useState<string | null>(null);
+  const [currentPatientId, setCurrentPatientId] = useState<string | undefined>();
+  const [topic, setTopic] = useState<string | undefined>();
+  const [endpoint, setEndpoint] = useState<string | undefined>();
   const [fhirCastMessages, setFhirCastMessages] = useState<FHIRcastMessagePayload[]>([]);
   const [eventCount, setEventCount] = useState(0);
 

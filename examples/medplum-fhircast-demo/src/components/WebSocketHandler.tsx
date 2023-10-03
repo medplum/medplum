@@ -4,7 +4,7 @@ import { FHIRcastMessagePayload } from '../utils';
 type WebSocketHandlerProps = {
   endpoint: string;
   clientId: string;
-  setCurrentPatientId: Dispatch<SetStateAction<string | null>>;
+  setCurrentPatientId: Dispatch<SetStateAction<string | undefined>>;
   setFhirCastMessages: Dispatch<SetStateAction<FHIRcastMessagePayload[]>>;
   setWebSocketStatus: (status: string) => void;
   incrementEventCount: () => void;
