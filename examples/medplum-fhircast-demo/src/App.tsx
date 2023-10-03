@@ -7,7 +7,7 @@ function App(): JSX.Element {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<div>Home</div>} />
-        <Route path="/pacs" element={<Publisher />} />
+        <Route path="/publisher" element={<Publisher />} />
         <Route path="/subscriber" element={<Subscriber />} />
       </Routes>
     </BrowserRouter>
