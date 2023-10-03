@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import './App.css';
-import PACS from './components/PACS';
+import Publisher from './components/Publisher';
 import Subscriber from './components/Subscriber';
 
 function App(): JSX.Element {
@@ -8,7 +8,7 @@ function App(): JSX.Element {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<div>Home</div>} />
-        <Route path="/pacs" element={<PACS />} />
+        <Route path="/pacs" element={<Publisher />} />
         <Route path="/subscriber" element={<Subscriber />} />
       </Routes>
     </BrowserRouter>

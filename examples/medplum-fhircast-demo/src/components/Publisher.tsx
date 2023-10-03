@@ -40,7 +40,7 @@ function createFHIRcastMessagePayload(topic: string, patientId: string): FHIRcas
   };
 }
 
-export default function PACS(): JSX.Element {
+export default function Publisher(): JSX.Element {
   const [baseUrl, setBaseUrl] = useState(BASE_URL);
   const [baseUrlInput, setBaseUrlInput] = useState(BASE_URL);
   const [driving, setDriving] = useState(false);
@@ -83,7 +83,7 @@ export default function PACS(): JSX.Element {
   return (
     <div>
       <div style={{ paddingBottom: 30 }}>
-        <h1>Driver</h1>
+        <h1>Publisher</h1>
       </div>
       <div
         style={{
