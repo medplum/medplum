@@ -41,8 +41,8 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
       )}
       {!targetTypes && (
         <ResourceTypeInput
-          data-autofocus={props.autoFocus}
-          data-testid="reference-input-resource-type-input"
+          autoFocus={props.autoFocus}
+          testId="reference-input-resource-type-input"
           defaultValue={resourceType}
           onChange={setResourceType}
           name={props.name + '-resourceType'}

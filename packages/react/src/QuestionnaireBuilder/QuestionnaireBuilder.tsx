@@ -592,9 +592,9 @@ function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
   const targetTypes = getQuestionnaireItemReferenceTargetTypes(props.item) ?? [];
   return (
     <>
-      {targetTypes.map((targetType: ResourceType) => {
+      {targetTypes.map((targetType: ResourceType, index: number) => {
         return (
-          <Group key={targetType}>
+          <Group key={`${targetType}-${index}`}>
             <ResourceTypeInput
               name="resourceType"
               placeholder="Resource Type"

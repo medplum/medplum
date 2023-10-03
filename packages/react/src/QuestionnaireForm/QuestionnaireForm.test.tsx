@@ -548,7 +548,7 @@ describe('QuestionnaireForm', () => {
       onSubmit,
     });
 
-    const input = screen.getByTestId('reference-input-resource-type-input');
+    const input = screen.getByPlaceholderText('Resource Type');
     expect(input).toBeInTheDocument();
 
     await act(async () => {
