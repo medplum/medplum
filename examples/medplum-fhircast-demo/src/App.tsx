@@ -1,5 +1,4 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import './App.css';
 import Publisher from './components/Publisher';
 import Subscriber from './components/Subscriber';
 
