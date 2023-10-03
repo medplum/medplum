@@ -1,43 +1,11 @@
 type EventName = string;
 
-export type WorkflowEvent = {
-  name: EventName;
-  topic: string;
-  payload: Record<string, any>;
-};
-
-export type PatientOpenEvent = {
-  name: 'patient-open';
-  topic: string;
-  patientId: string;
-};
-
-export type Subscription = {
-  subscriberId: string;
-  topic: string;
-  events: EventName[];
-};
-
 export type SubscriptionRequest = {
   channelType: 'websocket';
   mode: 'subscribe' | 'unsubscribe';
   events: EventName[];
   topic: string;
   endpoint?: URL;
-};
-
-export type SubscriptionConfirmation = {
-  mode: 'subscribe';
-  events: EventName[];
-  topic: string;
-  leaseSeconds: number;
-};
-
-export type SubscriptionConfirmationSerialized = {
-  'hub.mode': 'subscribe';
-  'hub.events': string;
-  'hub.topic': string;
-  'hub.lease_seconds': number;
 };
 
 export type FHIRResource = {
@@ -69,31 +37,6 @@ export type FHIRcastMessagePayload = {
   event: FHIRcastHubEvent;
 };
 
-export function serializeHubSubscription(subscription: Subscription): string {
-  return new URLSearchParams({
-    ...subscription,
-    events: subscription.events.join(','),
-  }).toString();
-}
-
-export function deserializeHubSubscription(urlEncodedSubscription: string): Subscription {
-  const searchParams = new URLSearchParams(urlEncodedSubscription);
-  if (!searchParams.has('subscriberId')) {
-    throw new Error('Must include `subscriberId` in hub subscription!');
-  }
-  if (!searchParams.has('topic')) {
-    throw new Error('Must include `topic` in hub subscription!');
-  }
-  if (!searchParams.has('events')) {
-    throw new Error('Must include `events` in hub subscription!');
-  }
-  return {
-    subscriberId: searchParams.get('subscriberId') as string,
-    topic: searchParams.get('topic') as string,
-    events: searchParams.get('events')?.split(',') as string[],
-  };
-}
-
 export function serializeHubSubscriptionRequest(subscriptionRequest: SubscriptionRequest): string {
   const formattedSubRequest = {
     'hub.channel.type': subscriptionRequest.channelType,
@@ -123,18 +66,6 @@ export function deserializeHubSubscriptionRequest(urlEncodedSubRequest: string):
     mode: searchParams.get('hub.mode') as 'subscribe' | 'unsubscribe',
     topic: searchParams.get('hub.topic') as string,
     events: searchParams.get('hub.events')?.split(',') as string[],
-  };
-}
-
-export function serializeHubSubscriptionConfirmation(
-  subscriptionConfirmation: SubscriptionConfirmation
-): SubscriptionConfirmationSerialized {
-  const { events, mode, topic, leaseSeconds } = subscriptionConfirmation;
-  return {
-    'hub.mode': mode,
-    'hub.topic': topic,
-    'hub.events': events.join(','),
-    'hub.lease_seconds': leaseSeconds,
   };
 }
 
