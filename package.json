@@ -1,6 +1,6 @@
 {
   "name": "root",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "engines": {
     "node": ">=18.0.0"
   },
