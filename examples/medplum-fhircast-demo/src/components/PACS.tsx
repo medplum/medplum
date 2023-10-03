@@ -44,7 +44,7 @@ export default function PACS(): JSX.Element {
   const [baseUrl, setBaseUrl] = useState(BASE_URL);
   const [baseUrlInput, setBaseUrlInput] = useState(BASE_URL);
   const [driving, setDriving] = useState(false);
-  const [topic, setTopic] = useState<string | null>(null);
+  const [topic, setTopic] = useState<string | undefined>(undefined);
   const [currentPatientId, setCurrentPatientId] = useState<string | null>(null);
   const prevTopic = usePrevious(topic);
 

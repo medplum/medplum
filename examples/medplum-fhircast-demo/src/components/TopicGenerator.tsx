@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import { usePrevious } from '../hooks';
 
 interface TopicGeneratorProps {
-  onTopicChange?: (topic: string | null) => void;
+  onTopicChange?: (topic: string | undefined) => void;
 }
 
 export default function TopicGenerator(props: TopicGeneratorProps): JSX.Element {
   const { onTopicChange } = props;
   const [syncing, setSyncing] = useState<boolean>(false);
-  const [topic, setTopic] = useState<string | null>(null);
+  const [topic, setTopic] = useState<string | undefined>(undefined);
   const prevTopic = usePrevious(topic);
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export default function TopicGenerator(props: TopicGeneratorProps): JSX.Element 
 
   useEffect(() => {
     if (!syncing) {
-      setTopic(null);
+      setTopic(undefined);
     } else {
       setTopic(crypto.randomUUID());
     }
