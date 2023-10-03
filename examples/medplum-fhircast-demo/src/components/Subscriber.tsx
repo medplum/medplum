@@ -1,11 +1,8 @@
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { BASE_URL } from '../config';
 import { useClientId, useHubWSConnection } from '../hooks';
 import { FHIRcastMessagePayload, isWebSocketMessage, serializeHubSubscriptionRequest } from '../utils';
 import TopicLoader from './TopicLoader';
-
-type Subscriber1Props = {
-  hubPort: number;
-};
 
 type FhirCastMessageDisplayProps = {
   message: object;
@@ -77,9 +74,9 @@ function WebSocketHandler(props: WebSocketHandlerProps): null {
   return null;
 }
 
-export default function Subscriber(props: Subscriber1Props): JSX.Element {
-  const { hubPort } = props;
-
+export default function Subscriber(): JSX.Element {
+  const [baseUrl, setBaseUrl] = useState(BASE_URL);
+  const [baseUrlInput, setBaseUrlInput] = useState(BASE_URL);
   const [status, setStatus] = useState('NOT CONNECTED');
   const [currentPatientId, setCurrentPatientId] = useState<string | null>(null);
   const [topic, setTopic] = useState<string | null>(null);
@@ -91,7 +88,7 @@ export default function Subscriber(props: Subscriber1Props): JSX.Element {
   useEffect(() => {
     if (topic) {
       // sub
-      fetch(`http://localhost:${hubPort}/hub`, {
+      fetch(`${baseUrl}/fhircast/STU2`, {
         method: 'POST',
         body: serializeHubSubscriptionRequest({
           channelType: 'websocket',
@@ -121,7 +118,7 @@ export default function Subscriber(props: Subscriber1Props): JSX.Element {
       };
     }
     return () => {};
-  }, [topic, clientId, hubPort]);
+  }, [topic, clientId, baseUrl]);
 
   return (
     <>
@@ -136,6 +133,24 @@ export default function Subscriber(props: Subscriber1Props): JSX.Element {
       ) : null}
       <div style={{ paddingBottom: 30 }}>
         <h1>Subscriber</h1>
+      </div>
+      <div
+        style={{
+          padding: 10,
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          maxWidth: 300,
+          justifyContent: 'center',
+          paddingBottom: 20,
+        }}
+      >
+        <input name="baseUrl" type="text" value={baseUrlInput} onChange={(e) => setBaseUrlInput(e.target.value)} />
+        <div style={{ padding: 10 }}>
+          <button type="button" onClick={() => setBaseUrl(baseUrlInput)}>
+            Set base URL
+          </button>
+        </div>
       </div>
       <div style={{ flex: 1 }}>
         <div>

@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react';
+import { BASE_URL } from '../config';
 import { usePrevious } from '../hooks';
 import { FHIRcastMessagePayload } from '../utils';
 import TopicGenerator from './TopicGenerator';
-
-type PACSProps = {
-  hubPort: number;
-};
 
 function createFHIRcastMessagePayload(topic: string, patientId: string): FHIRcastMessagePayload {
   if (!topic) {
@@ -43,9 +40,9 @@ function createFHIRcastMessagePayload(topic: string, patientId: string): FHIRcas
   };
 }
 
-export default function PACS(props: PACSProps): JSX.Element {
-  const { hubPort } = props;
-
+export default function PACS(): JSX.Element {
+  const [baseUrl, setBaseUrl] = useState(BASE_URL);
+  const [baseUrlInput, setBaseUrlInput] = useState(BASE_URL);
   const [driving, setDriving] = useState(false);
   const [topic, setTopic] = useState<string | null>(null);
   const [currentPatientId, setCurrentPatientId] = useState<string | null>(null);
@@ -66,7 +63,7 @@ export default function PACS(props: PACSProps): JSX.Element {
     const patientId = crypto.randomUUID();
     const stringifiedBody = JSON.stringify(createFHIRcastMessagePayload(topic, patientId));
     if (driving && topic) {
-      fetch(`http://localhost:${hubPort}/hub/${topic}`, {
+      fetch(`${baseUrl}/fhircast/STU2/${topic}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,17 +85,33 @@ export default function PACS(props: PACSProps): JSX.Element {
       <div style={{ paddingBottom: 30 }}>
         <h1>Driver</h1>
       </div>
+      <div
+        style={{
+          padding: 10,
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          maxWidth: 300,
+          justifyContent: 'center',
+          paddingBottom: 20,
+        }}
+      >
+        <input name="baseUrl" type="text" value={baseUrlInput} onChange={(e) => setBaseUrlInput(e.target.value)} />
+        <div style={{ padding: 10 }}>
+          <button type="button" onClick={() => setBaseUrl(baseUrlInput)}>
+            Set base URL
+          </button>
+        </div>
+      </div>
       <div style={{ padding: 5 }}>
         <TopicGenerator onTopicChange={(topic) => setTopic(topic)} />
       </div>
-      <>
-        <div style={{ padding: 5 }}>Patient ID: {currentPatientId ?? 'No current patient'}</div>
-        <div style={{ padding: 5 }}>
-          <button type="button" onClick={handleChangePatient}>
-            Change patient
-          </button>
-        </div>
-      </>
+      <div style={{ padding: 5 }}>Patient ID: {currentPatientId ?? 'No current patient'}</div>
+      <div style={{ padding: 5 }}>
+        <button type="button" onClick={handleChangePatient}>
+          Change patient
+        </button>
+      </div>
     </div>
   );
 }
