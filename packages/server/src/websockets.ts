@@ -10,13 +10,15 @@ import { getConfig } from './config';
 import { RequestContext, requestContextStore } from './context';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { executeBot } from './fhir/operations/execute';
+import { handleFhircastConnection } from './fhircast/websocket';
 import { globalLogger } from './logger';
 import { getLoginForAccessToken } from './oauth/utils';
 import { getRedis } from './redis';
 
 const handlerMap = new Map<string, (socket: ws.WebSocket, request: IncomingMessage) => Promise<void>>();
-handlerMap.set('/ws/echo', handleEchoConnection);
-handlerMap.set('/ws/agent', handleAgentConnection);
+handlerMap.set('echo', handleEchoConnection);
+handlerMap.set('agent', handleAgentConnection);
+handlerMap.set('fhircast', handleFhircastConnection);
 
 let wsServer: ws.Server | undefined = undefined;
 
@@ -35,14 +37,16 @@ export function initWebSockets(server: http.Server): void {
     // See: https://github.com/websockets/ws/blob/master/doc/ws.md#websocketbinarytype
     socket.binaryType = 'nodebuffer';
 
-    const handler = handlerMap.get(request.url as string);
+    const handler = handlerMap.get(getWebSocketPath(request.url as string));
     if (handler) {
       await requestContextStore.run(RequestContext.empty(), () => handler(socket, request));
+    } else {
+      socket.close();
     }
   });
 
   server.on('upgrade', (request, socket, head) => {
-    if (request.url && handlerMap.has(request.url)) {
+    if (handlerMap.has(getWebSocketPath(request.url as string))) {
       wsServer?.handleUpgrade(request, socket, head, (socket) => {
         wsServer?.emit('connection', socket, request);
       });
@@ -50,6 +54,10 @@ export function initWebSockets(server: http.Server): void {
       socket.destroy();
     }
   });
+}
+
+function getWebSocketPath(path: string): string {
+  return path.split('/').filter(Boolean)[1];
 }
 
 /**
