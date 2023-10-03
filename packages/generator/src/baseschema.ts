@@ -35,7 +35,7 @@ export function main(): void {
   for (const [typeName, typeSchema] of Object.entries(outputTypes)) {
     outputTypes[typeName] = {
       name: typeSchema.name,
-      description: typeSchema.description,
+      // description: typeSchema.description,
       elements: typeSchema.elements,
     } as InternalTypeSchema;
 
@@ -49,8 +49,10 @@ export function main(): void {
         outputPropertySchema.min = propertySchema.min;
       }
 
-      if (propertySchema.max !== 1) {
+      if (propertySchema.max !== 1 && Number.isFinite(propertySchema.max)) {
         outputPropertySchema.max = propertySchema.max;
+      } else if (propertySchema.max === Number.POSITIVE_INFINITY) {
+        outputPropertySchema.max = Number.MAX_SAFE_INTEGER;
       }
 
       outputPropertySchema.type = propertySchema.type?.map((t) => ({
