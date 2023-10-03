@@ -15,11 +15,6 @@ type HubHookConnection = {
   websocket: WrappedClientWebSocket;
 };
 
-const DEBUG = true;
-const debug = (...args: any[]): void => {
-  console.log(args);
-};
-
 const subscriberId = crypto.randomUUID();
 
 export function useClientId(): string {
@@ -57,9 +52,6 @@ export function useHubWSConnection(hubUrl: string, options?: HubWSConnectionOpti
       } else if (wsHandlersRef.current[message.type]) {
         // @ts-expect-error this is fine because FHIRcast is just an exception...
         wsHandlersRef.current[message.type](message);
-      } else {
-        // eslint-disable-next-line no-unused-expressions
-        DEBUG && debug(`Failed to handle event of type: ${message.type}`);
       }
     };
     wsClient.addEventListener('message', messageHandler);
