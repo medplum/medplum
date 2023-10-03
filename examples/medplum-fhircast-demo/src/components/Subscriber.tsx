@@ -1,12 +1,12 @@
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { BASE_URL } from '../config';
 import { useClientId, useHubWSConnection } from '../hooks';
-import { FHIRcastMessagePayload, isWebSocketMessage, serializeHubSubscriptionRequest } from '../utils';
+import { FHIRcastMessagePayload, serializeHubSubscriptionRequest } from '../utils';
 import TopicLoader from './TopicLoader';
 
 type FhirCastMessageDisplayProps = {
   eventNo: number;
-  message: object;
+  message: FHIRcastMessagePayload;
 };
 
 function FhirCastMessageDisplay(props: FhirCastMessageDisplayProps): JSX.Element {
@@ -24,7 +24,7 @@ function FhirCastMessageDisplay(props: FhirCastMessageDisplayProps): JSX.Element
         }}
       >
         <h3>Event No. {props.eventNo}</h3>
-        <pre>{JSON.stringify(props.message, null, 2) ?? ''}</pre>
+        <pre>{JSON.stringify(props.message, null, 2)}</pre>
       </div>
     </div>
   );
@@ -45,14 +45,6 @@ function WebSocketHandler(props: WebSocketHandlerProps): null {
     onConnect: () => {
       setWebSocketStatus('CONNECTED');
 
-      // expect pong
-      websocket.on('pong', (message: Record<string, any>) => {
-        if (!isWebSocketMessage(message)) {
-          throw new Error('Invalid payload for message type `PONG`!');
-        }
-        setWebSocketStatus(`GOT MESSAGE: ${message.type}`);
-      });
-
       // after pong, setup a listener for patient open
       websocket.on('FHIRcast', (message: Record<string, any>) => {
         if (message['hub.topic']) {
@@ -72,9 +64,6 @@ function WebSocketHandler(props: WebSocketHandlerProps): null {
           timestamp: new Date().toISOString(),
         });
       });
-
-      // send ping
-      websocket.sendMessage({ type: 'ping', payload: {} });
     },
   });
   return null;
