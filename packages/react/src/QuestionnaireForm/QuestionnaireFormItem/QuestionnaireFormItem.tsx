@@ -257,7 +257,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
         defaultValue={currentAnswer || [typedValueToString(initialValue)]}
         onChange={(selected) => {
           const values = getNewMultiSelectValues(selected, propertyName, item);
-          props.onChangeAnswer(values as QuestionnaireResponseItemAnswer[]);
+          props.onChangeAnswer(values);
         }}
       />
     );
