@@ -641,7 +641,7 @@ describe('QuestionnaireForm', () => {
     expect(answers3['q1']).toMatchObject({});
   });
 
-  test('Reference Extensions', async () => {
+  test('referenceResource extension with valueCodeableConcept', async () => {
     const onSubmit = jest.fn();
 
     await setup({
@@ -661,13 +661,6 @@ describe('QuestionnaireForm', () => {
                       display: 'Patient',
                       code: 'Patient',
                     },
-                  ],
-                },
-              },
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
-                valueCodeableConcept: {
-                  coding: [
                     {
                       system: 'http://hl7.org/fhir/fhir-types',
                       display: 'Organization',
@@ -688,6 +681,31 @@ describe('QuestionnaireForm', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Patient'));
     });
+  });
+
+  test('referenceResource extension with valueCode', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.reference,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                valueCode: 'Patient',
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.queryByText('Patient')).not.toBeInTheDocument();
   });
 
   test('Drop down choice input default value', async () => {

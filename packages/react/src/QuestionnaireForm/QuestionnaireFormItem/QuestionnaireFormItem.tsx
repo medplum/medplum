@@ -24,7 +24,11 @@ import { QuantityInput } from '../../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
 import { ResourcePropertyDisplay } from '../../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocomplete';
-import { QuestionnaireItemType, getNewMultiSelectValues } from '../../utils/questionnaire';
+import {
+  QuestionnaireItemType,
+  getNewMultiSelectValues,
+  getQuestionnaireItemReferenceTargetTypes,
+} from '../../utils/questionnaire';
 
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
@@ -170,7 +174,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <ReferenceInput
           name={name}
-          targetTypes={addTargetTypes(item)}
+          targetTypes={getQuestionnaireItemReferenceTargetTypes(item)}
           defaultValue={defaultValue?.value}
           onChange={(newValue) => onChangeAnswer({ valueReference: newValue }, index)}
         />
@@ -382,20 +386,6 @@ function updateAnswerArray(
     answers.push(newResponseAnswer);
     return answers;
   }
-}
-
-function addTargetTypes(item: QuestionnaireItem): string[] {
-  if (item.type !== QuestionnaireItemType.reference) {
-    return [];
-  }
-  const extensions = item.extension?.filter(
-    (e) => e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource'
-  );
-  if (!extensions || extensions.length === 0) {
-    return [];
-  }
-  const targets = extensions.map((e) => e.valueCodeableConcept?.coding?.[0]?.code) as string[];
-  return targets;
 }
 
 function isDropDownChoice(item: QuestionnaireItem): boolean {
