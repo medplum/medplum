@@ -1,7 +1,7 @@
 import { Button, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { deepClone, getElementDefinition } from '@medplum/core';
-import { ElementDefinition, ProjectSecret } from '@medplum/fhirtypes';
+import { InternalSchemaElement, deepClone, getElementDefinition } from '@medplum/core';
+import { ProjectSecret } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
@@ -46,7 +46,7 @@ export function SecretsPage(): JSX.Element {
       <Title>Project Secrets</Title>
       <p>Use project secrets to store sensitive information such as API keys or other access credentials.</p>
       <ResourcePropertyInput
-        property={getElementDefinition('Proejct', 'secret') as ElementDefinition}
+        property={getElementDefinition('Project', 'secret') as InternalSchemaElement}
         name="secret"
         defaultValue={secrets}
         onChange={setSecrets}

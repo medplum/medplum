@@ -1,7 +1,7 @@
 import { Button, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { deepClone, getElementDefinition, normalizeOperationOutcome } from '@medplum/core';
-import { ElementDefinition, ProjectSite } from '@medplum/fhirtypes';
+import { InternalSchemaElement, deepClone, getElementDefinition, normalizeOperationOutcome } from '@medplum/core';
+import { ProjectSite } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
@@ -53,7 +53,7 @@ export function SitesPage(): JSX.Element {
       <Title>Project Sites</Title>
       <p>Use project sites configure your project on a separate domain.</p>
       <ResourcePropertyInput
-        property={getElementDefinition('Proejct', 'site') as ElementDefinition}
+        property={getElementDefinition('Project', 'site') as InternalSchemaElement}
         name="site"
         defaultValue={sites}
         onChange={setSites}
