@@ -33,6 +33,10 @@ describe('FHIRCast WebSocket', () => {
 
     await request(server)
       .ws('/ws/fhircast/' + topic)
+      .expectJson((obj) => {
+        // Connection verification message
+        expect(obj['hub.topic']).toBe(topic);
+      })
       .exec(async () => {
         const res = await request(server)
           .post(`/fhircast/STU2/${topic}`)
@@ -59,6 +63,7 @@ describe('FHIRCast WebSocket', () => {
         expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
       })
       .expectJson((obj) => {
+        // Event message
         expect(obj.event['hub.topic']).toBe(topic);
         expect(obj.event['hub.event']).toBe('patient-open');
       })

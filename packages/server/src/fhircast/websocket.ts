@@ -38,4 +38,20 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   socket.on('close', () => {
     redisSubscriber.disconnect();
   });
+
+  // Send initial connection verification
+  // TODO: Fill in these properties
+  socket.send(
+    JSON.stringify({
+      'hub.callback': '',
+      'hub.channel': '',
+      'hub.events': '',
+      'hub.lease_seconds': 3600,
+      'hub.mode': 'subscribe',
+      'hub.secret': '',
+      'hub.subscriber': '',
+      'hub.topic': topic,
+    }),
+    { binary: false }
+  );
 }
