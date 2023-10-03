@@ -1,15 +1,16 @@
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BASE_URL } from '../config';
-import { useClientId, useHubWSConnection } from '../hooks';
+import { useClientId } from '../hooks';
 import { FHIRcastMessagePayload, serializeHubSubscriptionRequest } from '../utils';
 import TopicLoader from './TopicLoader';
+import WebSocketHandler from './WebSocketHandler';
 
-type FhirCastMessageDisplayProps = {
+type FHIRcastMessageDisplayProps = {
   eventNo: number;
   message: FHIRcastMessagePayload;
 };
 
-function FhirCastMessageDisplay(props: FhirCastMessageDisplayProps): JSX.Element {
+function FHIRcastMessageDisplay(props: FHIRcastMessageDisplayProps): JSX.Element {
   return (
     <div style={{ paddingBottom: 15 }}>
       <div
@@ -28,45 +29,6 @@ function FhirCastMessageDisplay(props: FhirCastMessageDisplayProps): JSX.Element
       </div>
     </div>
   );
-}
-
-type WebSocketHandlerProps = {
-  endpoint: string;
-  clientId: string;
-  setCurrentPatientId: Dispatch<SetStateAction<string | null>>;
-  setFhirCastMessages: Dispatch<SetStateAction<FHIRcastMessagePayload[]>>;
-  setWebSocketStatus: (status: string) => void;
-  incrementEventCount: () => void;
-};
-
-function WebSocketHandler(props: WebSocketHandlerProps): null {
-  const { endpoint, setCurrentPatientId, setFhirCastMessages, setWebSocketStatus, incrementEventCount } = props;
-  const { websocket } = useHubWSConnection(endpoint, {
-    onConnect: () => {
-      setWebSocketStatus('CONNECTED');
-
-      // after pong, setup a listener for patient open
-      websocket.on('FHIRcast', (message: Record<string, any>) => {
-        if (message['hub.topic']) {
-          return;
-        }
-        const fhirCastMessage = message as FHIRcastMessagePayload;
-
-        // Find event for
-        const patientId = message.event.context[0].resource.id;
-        setCurrentPatientId(patientId);
-        setFhirCastMessages((s: FHIRcastMessagePayload[]) => [fhirCastMessage, ...s]);
-        incrementEventCount();
-
-        websocket.sendMessage({
-          // @ts-expect-error Exception for acks
-          id: message?.id,
-          timestamp: new Date().toISOString(),
-        });
-      });
-    },
-  });
-  return null;
 }
 
 export default function Subscriber(): JSX.Element {
@@ -158,7 +120,7 @@ export default function Subscriber(): JSX.Element {
         <div style={{ paddingTop: 30, height: 500 }}>
           <h2>Events</h2>
           {fhirCastMessages.slice(0, 3).map((message, i) => {
-            return <FhirCastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
+            return <FHIRcastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
           })}
         </div>
       </div>

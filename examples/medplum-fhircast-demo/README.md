@@ -2,8 +2,10 @@
 
 ## Important Files
 
-- `client/src/hooks` (where WebSockets stuff for client lives mostly)
-- `client/src/components` (where the components for the `Publisher` and `Subscriber` apps live)
+- `src/components/Publisher.tsx`: The "driver" of the workflow events flow. This component creates `Patient-open` events and submits them to the hub.
+- `src/components/Subscriber.tsx`: The "listener" of workflow events. This components subscribes to the `FHIRcast` hub and consumes notifications for `Patient-open` events,
+  displaying them in a list in order of most recently received.
+- `src/components/WebSocketHandler.tsx`: The actual handler of the `WebSocket` messages coming in from the server for the `Subscriber` component.
 
 ## Running the demo
 
