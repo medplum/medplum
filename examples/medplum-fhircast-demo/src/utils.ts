@@ -1,3 +1,4 @@
+import type { Resource } from '@medplum/fhirtypes';
 type EventName = string;
 
 export type SubscriptionRequest = {
@@ -20,7 +21,7 @@ export type FHIRResource = {
 
 export type FHIRcastHubEventContext = {
   key: string;
-  resource: FHIRResource;
+  resource: Resource;
 };
 
 export type FHIRcastHubEvent = {

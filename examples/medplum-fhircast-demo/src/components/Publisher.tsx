@@ -26,7 +26,7 @@ function createFHIRcastMessagePayload(topic: string, patientId: string): FHIRcas
                   coding: [
                     {
                       system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                      value: 'MR',
+                      code: 'MR',
                       display: 'Medical Record Number',
                     },
                   ],
