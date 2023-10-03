@@ -43,7 +43,6 @@ function WebSocketHandler(props: WebSocketHandlerProps): null {
   const { endpoint, setCurrentPatientId, setFhirCastMessages, setWebSocketStatus, incrementEventCount } = props;
   const { websocket } = useHubWSConnection(endpoint, {
     onConnect: () => {
-      console.log('here!');
       setWebSocketStatus('CONNECTED');
 
       // expect pong
