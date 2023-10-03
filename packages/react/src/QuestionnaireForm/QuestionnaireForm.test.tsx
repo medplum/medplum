@@ -628,6 +628,17 @@ describe('QuestionnaireForm', () => {
     const response2 = onSubmit.mock.calls[1][0];
     const answers2 = getQuestionnaireAnswers(response2);
     expect(answers2['q1']).toMatchObject({ valueString: 'a2' });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: { value: '' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    const response3 = onSubmit.mock.calls[2][0];
+    const answers3 = getQuestionnaireAnswers(response3);
+    expect(answers3['q1']).toMatchObject({});
   });
 
   test('Reference Extensions', async () => {
@@ -1082,6 +1093,140 @@ describe('QuestionnaireForm', () => {
 
     // Now the hidden text should be visible
     expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
+  });
+
+  test('Multi Select', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'multi-select',
+        title: 'Multi Select Example',
+        item: [
+          {
+            linkId: 'group1',
+            type: 'group',
+            text: 'Group 1',
+            item: [
+              {
+                linkId: 'q1',
+                type: QuestionnaireItemType.choice,
+                repeats: true,
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                    valueCodeableConcept: {
+                      coding: [
+                        {
+                          system: 'http://hl7.org/fhir/questionnaire-item-control',
+                          code: 'drop-down',
+                          display: 'Drop down',
+                        },
+                      ],
+                      text: 'Drop down',
+                    },
+                  },
+                ],
+                text: 'q1',
+                answerOption: [
+                  {
+                    valueString: 'a1',
+                  },
+                  {
+                    valueString: 'a2',
+                  },
+                ],
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'group2',
+            type: 'group',
+            text: 'Group 2',
+            item: [
+              {
+                linkId: 'string',
+                type: 'string',
+                text: 'string',
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByText('q1')).toBeInTheDocument();
+
+    const searchInput = screen.getByPlaceholderText('Select items');
+    expect(searchInput).toBeInTheDocument();
+    expect(searchInput).toBeInstanceOf(HTMLInputElement);
+
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'a1' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Back'));
+    });
+
+    const searchInput1 = screen.getByPlaceholderText('Select items');
+    expect(searchInput1).toBeInTheDocument();
+  });
+
+  test('Multi Select shows with no data', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            repeats: true,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+            text: 'q1',
+            answerOption: [],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByText('q1')).toBeInTheDocument();
+
+    const searchInput = screen.getByPlaceholderText('Select items');
+    expect(searchInput).toBeInTheDocument();
+    expect(searchInput).toBeInstanceOf(HTMLInputElement);
   });
 
   test('repeatableQuestion', async () => {
