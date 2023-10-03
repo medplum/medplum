@@ -264,7 +264,7 @@ function getFieldsList(
   const names = new Set<string>();
 
   // Add properties first
-  for (const key of Object.keys(typeSchema.fields)) {
+  for (const key of Object.keys(typeSchema.elements)) {
     result.push(key);
     keys.add(key.toLowerCase());
     names.add(buildFieldNameString(key));

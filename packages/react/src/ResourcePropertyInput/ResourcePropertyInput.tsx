@@ -1,6 +1,6 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
-import { capitalize, getElementDefinitionTypeName, PropertyType } from '@medplum/core';
-import { ElementDefinition, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
+import { capitalize, InternalSchemaElement, PropertyType } from '@medplum/core';
+import { ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
 import { AnnotationInput } from '../AnnotationInput/AnnotationInput';
@@ -27,7 +27,7 @@ import { TimingInput } from '../TimingInput/TimingInput';
 import { getErrorsForInput } from '../utils/outcomes';
 
 export interface ResourcePropertyInputProps {
-  property: ElementDefinition;
+  property: InternalSchemaElement;
   name: string;
   defaultPropertyType?: PropertyType;
   defaultValue?: any;
@@ -42,7 +42,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
   const name = props.name;
   const value = props.defaultValue;
 
-  if (property.max === '*' && !props.arrayElement) {
+  if (property.max > 1 && !props.arrayElement) {
     if (propertyType === PropertyType.Attachment) {
       return <AttachmentArrayInput name={name} defaultValue={value} onChange={props.onChange} />;
     }
@@ -267,7 +267,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     default:
       return (
         <BackboneElementInput
-          typeName={getElementDefinitionTypeName(property)}
+          typeName={property.type[0].code}
           defaultValue={value}
           onChange={props.onChange}
           outcome={props.outcome}
@@ -276,6 +276,6 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
   }
 }
 
-function getTargetTypes(property?: ElementDefinition): string[] | undefined {
+function getTargetTypes(property?: InternalSchemaElement): string[] | undefined {
   return property?.type?.[0]?.targetProfile?.map((p) => p.split('/').pop() as string);
 }

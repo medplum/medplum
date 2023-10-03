@@ -1,6 +1,6 @@
 import { Button, Group, Stack, TextInput } from '@mantine/core';
-import { capitalize, deepClone } from '@medplum/core';
-import { ElementDefinition, ElementDefinitionType, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import { InternalSchemaElement, capitalize, deepClone } from '@medplum/core';
+import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
 import { FormSection } from '../FormSection/FormSection';
@@ -82,10 +82,10 @@ export function setPropertyValue(
   obj: any,
   key: string,
   propName: string,
-  elementDefinition: ElementDefinition,
+  elementDefinition: InternalSchemaElement,
   value: any
 ): any {
-  const types = elementDefinition.type as ElementDefinitionType[];
+  const types = elementDefinition.type;
   if (types.length > 1) {
     for (const type of types) {
       const compoundKey = key.replace('[x]', capitalize(type.code as string));

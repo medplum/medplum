@@ -1,9 +1,10 @@
-import { ElementDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { ValueSetExpansionContains } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
+import { InternalSchemaElement } from '@medplum/core';
 
 export interface CodeInputProps {
-  property: ElementDefinition;
+  property: InternalSchemaElement;
   name: string;
   placeholder?: string;
   defaultValue?: string;
@@ -28,7 +29,7 @@ export function CodeInput(props: CodeInputProps): JSX.Element {
 
   return (
     <ValueSetAutocomplete
-      elementDefinition={props.property}
+      binding={props.property.binding}
       name={props.name}
       placeholder={props.placeholder}
       defaultValue={codeToValueSetElement(value)}

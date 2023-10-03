@@ -214,13 +214,13 @@ describe('FHIR resource and data type representations', () => {
       'security',
     ]);
     expect(rest?.elements['interaction']).toMatchObject<Partial<InternalSchemaElement>>({
-      type: [{ code: 'CapabilityStatementRestInteraction', targetProfile: [] }],
+      type: [{ code: 'CapabilityStatementRestInteraction' }],
     });
     expect(rest?.elements['searchParam']).toMatchObject<Partial<InternalSchemaElement>>({
-      type: [{ code: 'CapabilityStatementRestResourceSearchParam', targetProfile: [] }],
+      type: [{ code: 'CapabilityStatementRestResourceSearchParam' }],
     });
     expect(rest?.elements['operation']).toMatchObject<Partial<InternalSchemaElement>>({
-      type: [{ code: 'CapabilityStatementRestResourceOperation', targetProfile: [] }],
+      type: [{ code: 'CapabilityStatementRestResourceOperation' }],
     });
   });
 

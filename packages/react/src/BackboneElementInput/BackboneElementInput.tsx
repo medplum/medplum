@@ -36,12 +36,10 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
 
   return (
     <Stack>
-      {Object.entries(typeSchema.fields).map((entry) => {
-        const key = entry[0];
+      {Object.entries(typeSchema.elements).map(([key, property]) => {
         if (key === 'id' || DEFAULT_IGNORED_PROPERTIES.includes(key)) {
           return null;
         }
-        const property = entry[1].elementDefinition;
         if (!property.type) {
           return null;
         }
@@ -54,7 +52,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
             <CheckboxFormSection
               key={key}
               title={getPropertyDisplayName(key)}
-              description={property.definition}
+              description={property.description}
               htmlFor={key}
             >
               <ResourcePropertyInput
@@ -75,7 +73,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
           <FormSection
             key={key}
             title={getPropertyDisplayName(key)}
-            description={property.definition}
+            description={property.description}
             withAsterisk={required}
             htmlFor={key}
             outcome={props.outcome}

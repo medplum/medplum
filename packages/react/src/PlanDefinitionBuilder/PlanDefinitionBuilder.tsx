@@ -1,6 +1,6 @@
 import { Anchor, Button, createStyles, NativeSelect, Stack, TextInput } from '@mantine/core';
-import { getReferenceString, PropertyType } from '@medplum/core';
-import { ElementDefinition, PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
+import { getReferenceString, InternalSchemaElement, PropertyType } from '@medplum/core';
+import { PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { FormSection } from '../FormSection/FormSection';
@@ -240,11 +240,14 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   );
 }
 
-const timingProperty: ElementDefinition = {
+const timingProperty: InternalSchemaElement = {
   path: 'PlanDefinition.action.timing[x]',
   min: 0,
-  max: '1',
-  type: [{ code: 'dateTime' }, { code: 'Period' }, { code: 'Range' }, { code: 'Timing' }],
+  max: 1,
+  description: '',
+  isArray: false,
+  constraints: [],
+  type: ['dateTime', 'Period', 'Range', 'Timing'].map((t) => ({ code: t })),
 };
 
 interface ActionDisplayProps {

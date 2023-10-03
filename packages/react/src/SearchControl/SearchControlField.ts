@@ -3,9 +3,10 @@ import {
   getSearchParameter,
   getSearchParameterDetails,
   getSearchParameters,
+  InternalSchemaElement,
   SearchRequest,
 } from '@medplum/core';
-import { ElementDefinition, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 
 /**
  * The SearchControlField type describes a field in the search control.
@@ -36,7 +37,7 @@ import { ElementDefinition, ResourceType, SearchParameter } from '@medplum/fhirt
  */
 export interface SearchControlField {
   readonly name: string;
-  readonly elementDefinition?: ElementDefinition;
+  readonly elementDefinition?: InternalSchemaElement;
   readonly searchParams?: SearchParameter[];
 }
 

@@ -38,15 +38,14 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
 
   return (
     <DescriptionList compact={props.compact}>
-      {Object.entries(typeSchema.fields).map((entry) => {
-        const key = entry[0];
+      {Object.entries(typeSchema.elements).map((entry) => {
+        const [key, property] = entry;
         if (DEFAULT_IGNORED_PROPERTIES.includes(key)) {
           return null;
         }
-        const property = entry[1].elementDefinition;
-        if (!property.path) {
-          property.path = typeName + '.' + key;
-        }
+        // if (!property.path) {
+        //   property.path = typeName + '.' + key;
+        // }
         const [propertyValue, propertyType] = getValueAndType(typedValue, key);
         if (
           props.ignoreMissingValues &&

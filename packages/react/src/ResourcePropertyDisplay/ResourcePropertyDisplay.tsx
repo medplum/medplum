@@ -3,12 +3,11 @@ import {
   formatDateTime,
   formatPeriod,
   formatTiming,
-  getElementDefinitionTypeName,
   getTypedPropertyValue,
+  InternalSchemaElement,
   PropertyType,
   TypedValue,
 } from '@medplum/core';
-import { ElementDefinition } from '@medplum/fhirtypes';
 import { IconCheck, IconCopy } from '@tabler/icons-react';
 import React from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
@@ -29,7 +28,7 @@ import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceArrayDisplay } from '../ResourceArrayDisplay/ResourceArrayDisplay';
 
 export interface ResourcePropertyDisplayProps {
-  property?: ElementDefinition;
+  property?: InternalSchemaElement;
   propertyType: PropertyType;
   value: any;
   arrayElement?: boolean;
@@ -64,7 +63,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     );
   }
 
-  if (property?.max === '*' && !props.arrayElement) {
+  if (property?.max && property.max > 1 && !props.arrayElement) {
     if (propertyType === PropertyType.Attachment) {
       return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />;
     }
@@ -143,12 +142,12 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
         />
       );
     default:
-      if (!property?.path) {
-        throw Error(`Displaying property of type ${props.propertyType} requires element definition path`);
+      if (!property) {
+        throw Error(`Displaying property of type ${props.propertyType} requires element schema`);
       }
       return (
         <BackboneElementDisplay
-          value={{ type: getElementDefinitionTypeName(property), value }}
+          value={{ type: property.type[0].code, value }}
           compact={true}
           ignoreMissingValues={props.ignoreMissingValues}
         />

@@ -22,6 +22,7 @@ export interface InternalTypeSchema {
 
 export interface InternalSchemaElement {
   description: string;
+  path: string;
   // elementDefinition: ElementDefinition;
   min: number;
   max: number;
@@ -36,7 +37,7 @@ export interface InternalSchemaElement {
 
 export interface ElementType {
   code: string;
-  targetProfile: string[];
+  targetProfile?: string[];
 }
 
 export interface Constraint {
@@ -357,7 +358,7 @@ class StructureDefinitionParser {
     }
     this.slicingContext.current = {
       name: element.sliceName ?? '',
-      type: element.type?.map((t) => ({ code: t.code ?? '', targetProfile: t.targetProfile ?? [] })),
+      type: element.type?.map((t) => ({ code: t.code ?? '', targetProfile: t.targetProfile })),
       elements: {},
       min: element.min ?? 0,
       max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string, 10),
@@ -370,6 +371,7 @@ class StructureDefinitionParser {
     const typedElementDef = { type: 'ElementDefinition', value: ed };
     return {
       description: ed.definition || '',
+      path: ed.path || ed.base?.path || '',
       // elementDefinition: ed,
       min: ed.min ?? 0,
       max: max,
@@ -384,7 +386,7 @@ class StructureDefinitionParser {
         code: ['BackboneElement', 'Element'].includes(t.code as string)
           ? getElementDefinitionTypeName(ed)
           : t.code ?? '',
-        targetProfile: t.targetProfile ?? [],
+        targetProfile: t.targetProfile,
       })),
       fixed: firstValue(getTypedPropertyValue(typedElementDef, 'fixed')),
       pattern: firstValue(getTypedPropertyValue(typedElementDef, 'pattern')),

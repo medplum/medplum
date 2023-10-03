@@ -4,11 +4,12 @@ import {
   evalFhirPathTyped,
   Filter,
   formatDateTime,
+  InternalSchemaElement,
   Operator,
   PropertyType,
   SearchRequest,
 } from '@medplum/core';
-import { ElementDefinition, Resource, SearchParameter } from '@medplum/fhirtypes';
+import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
 import { getValueAndType, ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { SearchControlField } from './SearchControlField';
@@ -539,7 +540,7 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
  * @param elementDefinition The property element definition.
  * @returns A React element or null.
  */
-function renderPropertyValue(resource: Resource, elementDefinition: ElementDefinition): JSX.Element | null {
+function renderPropertyValue(resource: Resource, elementDefinition: InternalSchemaElement): JSX.Element | null {
   const path = elementDefinition.path?.split('.')?.pop()?.replaceAll('[x]', '') ?? '';
   const [value, propertyType] = getValueAndType({ type: resource.resourceType, value: resource }, path);
   if (!value) {

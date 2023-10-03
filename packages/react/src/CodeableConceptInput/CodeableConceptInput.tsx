@@ -1,9 +1,10 @@
-import { CodeableConcept, ElementDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
+import { InternalSchemaElement } from '@medplum/core';
 
 export interface CodeableConceptInputProps {
-  property: ElementDefinition;
+  property: InternalSchemaElement;
   name: string;
   placeholder?: string;
   defaultValue?: CodeableConcept;
@@ -23,7 +24,7 @@ export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Elem
 
   return (
     <ValueSetAutocomplete
-      elementDefinition={props.property}
+      binding={props.property.binding}
       name={props.name}
       placeholder={props.placeholder}
       defaultValue={value && codeableConceptToValueSetElement(value)}

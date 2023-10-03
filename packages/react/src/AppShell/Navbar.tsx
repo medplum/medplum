@@ -103,6 +103,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
     <>
       <MantineNavbar width={{ sm: 250 }} p="xs">
         <ScrollArea>
+<<<<<<< HEAD
           {!props.resourceTypeSearchDisabled && (
             <MantineNavbar.Section mb="sm">
               <ResourceTypeInput
@@ -113,6 +114,21 @@ export function Navbar(props: NavbarProps): JSX.Element {
               />
             </MantineNavbar.Section>
           )}
+=======
+          <MantineNavbar.Section mb="sm">
+            <ValueSetAutocomplete
+              key={window.location.pathname}
+              name="resourceType"
+              placeholder="Resource Type"
+              binding="https://medplum.com/fhir/ValueSet/resource-types"
+              onChange={(newValue) => navigateResourceType(newValue[0].code)}
+              creatable={false}
+              maxSelectedValues={0}
+              clearSearchOnChange={true}
+              clearable={false}
+            />
+          </MantineNavbar.Section>
+>>>>>>> a16794dc5 (Convert React components)
           <MantineNavbar.Section grow>
             {props.menus?.map((menu) => (
               <React.Fragment key={`menu-${menu.title}`}>

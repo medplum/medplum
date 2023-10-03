@@ -68,13 +68,11 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
         </tr>
       </thead>
       <tbody>
-        {Object.entries(typeSchema.fields).map((entry) => {
-          const key = entry[0];
+        {Object.entries(typeSchema.elements).map(([key, property]) => {
           if (key === 'id' || key === 'meta') {
             return null;
           }
 
-          const property = entry[1].elementDefinition;
           const [originalPropertyValue, originalPropertyType] = getValueAndType(toTypedValue(props.original), key);
           const [revisedPropertyValue, revisedPropertyType] = getValueAndType(toTypedValue(props.revised), key);
           if (isEmpty(originalPropertyValue) && isEmpty(revisedPropertyValue)) {
