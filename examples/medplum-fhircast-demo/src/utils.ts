@@ -9,23 +9,23 @@ export type SubscriptionRequest = {
   endpoint?: URL;
 };
 
-export type FHIRcastHubEventContext = {
+export type FhircastHubEventContext = {
   key: string;
   resource: Resource;
 };
 
-export type FHIRcastHubEvent = {
+export type FhircastHubEvent = {
   'hub.topic': string;
   'hub.event': string;
-  context: FHIRcastHubEventContext[];
+  context: FhircastHubEventContext[];
 };
 
 export type ISOTimestamp = string;
 
-export type FHIRcastMessagePayload = {
+export type FhircastMessagePayload = {
   timestamp: ISOTimestamp;
   id: string;
-  event: FHIRcastHubEvent;
+  event: FhircastHubEvent;
 };
 
 export function serializeHubSubscriptionRequest(subscriptionRequest: SubscriptionRequest): string {

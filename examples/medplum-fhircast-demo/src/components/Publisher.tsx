@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { BASE_URL } from '../config';
-import { FHIRcastMessagePayload } from '../utils';
+import { FhircastMessagePayload } from '../utils';
 import TopicGenerator from './TopicGenerator';
 
-function createFHIRcastMessagePayload(topic: string, patientId: string): FHIRcastMessagePayload {
+function createFhircastMessagePayload(topic: string, patientId: string): FhircastMessagePayload {
   if (!topic) {
     throw new Error('Must provide a topic!');
   }
@@ -53,7 +53,7 @@ export default function Publisher(): JSX.Element {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(createFHIRcastMessagePayload(topic, patientId)),
+        body: JSON.stringify(createFhircastMessagePayload(topic, patientId)),
       })
         .then(() => {
           setCurrentPatientId(patientId);

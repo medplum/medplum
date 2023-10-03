@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 
 interface TopicLoaderProps {
-  onSetTopic: (topic: string | null) => void;
+  onSetTopic: (topic: string | undefined) => void;
 }
 export default function TopicLoader(props: TopicLoaderProps): JSX.Element {
   const [topicInput, setTopicInput] = useState<string>('');
-  const [topic, setTopic] = useState<string | null>(null);
+  const [topic, setTopic] = useState<string | undefined>();
   const { onSetTopic } = props;
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function TopicLoader(props: TopicLoaderProps): JSX.Element {
         type="button"
         onClick={() => {
           setTopicInput('');
-          setTopic(null);
+          setTopic(undefined);
         }}
       >
         Clear Topic

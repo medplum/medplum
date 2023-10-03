@@ -1,11 +1,11 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useRef } from 'react';
-import { FHIRcastMessagePayload } from '../utils';
+import { FhircastMessagePayload } from '../utils';
 
 type WebSocketHandlerProps = {
   endpoint: string;
   clientId: string;
   setCurrentPatientId: Dispatch<SetStateAction<string | undefined>>;
-  setFhirCastMessages: Dispatch<SetStateAction<FHIRcastMessagePayload[]>>;
+  setFhirCastMessages: Dispatch<SetStateAction<FhircastMessagePayload[]>>;
   setWebSocketStatus: (status: string) => void;
   incrementEventCount: () => void;
 };
@@ -14,11 +14,11 @@ export default function WebSocketHandler(props: WebSocketHandlerProps): null {
   const { endpoint, setCurrentPatientId, setFhirCastMessages, setWebSocketStatus, incrementEventCount } = props;
   const webSocketRef = useRef<WebSocket | undefined>();
 
-  const handleFHIRcastMessage = useCallback(
-    (fhircastMessage: FHIRcastMessagePayload) => {
+  const handleFhircastMessage = useCallback(
+    (fhircastMessage: FhircastMessagePayload) => {
       const patientId = fhircastMessage.event.context[0].resource.id as string;
       setCurrentPatientId(patientId);
-      setFhirCastMessages((s: FHIRcastMessagePayload[]) => [fhircastMessage, ...s]);
+      setFhirCastMessages((s: FhircastMessagePayload[]) => [fhircastMessage, ...s]);
       incrementEventCount();
     },
     [incrementEventCount, setCurrentPatientId, setFhirCastMessages]
@@ -51,8 +51,8 @@ export default function WebSocketHandler(props: WebSocketHandlerProps): null {
           return;
         }
 
-        const fhircastMessage = message as unknown as FHIRcastMessagePayload;
-        handleFHIRcastMessage(fhircastMessage);
+        const fhircastMessage = message as unknown as FhircastMessagePayload;
+        handleFhircastMessage(fhircastMessage);
 
         // Get the patient ID from the first context of the event
 
@@ -66,7 +66,7 @@ export default function WebSocketHandler(props: WebSocketHandlerProps): null {
     });
 
     webSocketRef.current = ws;
-  }, [endpoint, handleFHIRcastMessage, setWebSocketStatus]);
+  }, [endpoint, handleFhircastMessage, setWebSocketStatus]);
 
   return null;
 }

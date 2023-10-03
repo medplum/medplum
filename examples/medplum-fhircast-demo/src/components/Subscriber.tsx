@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import { BASE_URL } from '../config';
 import { useClientId } from '../hooks';
-import { FHIRcastMessagePayload, serializeHubSubscriptionRequest } from '../utils';
+import { FhircastMessagePayload, serializeHubSubscriptionRequest } from '../utils';
 import TopicLoader from './TopicLoader';
 import WebSocketHandler from './WebSocketHandler';
 
-type FHIRcastMessageDisplayProps = {
+type FhircastMessageDisplayProps = {
   eventNo: number;
-  message: FHIRcastMessagePayload;
+  message: FhircastMessagePayload;
 };
 
-function FHIRcastMessageDisplay(props: FHIRcastMessageDisplayProps): JSX.Element {
+function FhircastMessageDisplay(props: FhircastMessageDisplayProps): JSX.Element {
   return (
     <div style={{ paddingBottom: 15 }}>
       <div
@@ -38,7 +38,7 @@ export default function Subscriber(): JSX.Element {
   const [currentPatientId, setCurrentPatientId] = useState<string | undefined>();
   const [topic, setTopic] = useState<string | undefined>();
   const [endpoint, setEndpoint] = useState<string | undefined>();
-  const [fhirCastMessages, setFhirCastMessages] = useState<FHIRcastMessagePayload[]>([]);
+  const [fhirCastMessages, setFhirCastMessages] = useState<FhircastMessagePayload[]>([]);
   const [eventCount, setEventCount] = useState(0);
 
   const clientId = useClientId();
@@ -120,7 +120,7 @@ export default function Subscriber(): JSX.Element {
         <div style={{ paddingTop: 30, height: 500 }}>
           <h2>Events</h2>
           {fhirCastMessages.slice(0, 3).map((message, i) => {
-            return <FHIRcastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
+            return <FhircastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
           })}
         </div>
       </div>
