@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { BASE_URL } from '../config';
-import { usePrevious } from '../hooks';
 import { FHIRcastMessagePayload } from '../utils';
 import TopicGenerator from './TopicGenerator';
 
@@ -43,25 +42,12 @@ function createFHIRcastMessagePayload(topic: string, patientId: string): FHIRcas
 export default function Publisher(): JSX.Element {
   const [baseUrl, setBaseUrl] = useState(BASE_URL);
   const [baseUrlInput, setBaseUrlInput] = useState(BASE_URL);
-  const [driving, setDriving] = useState(false);
   const [topic, setTopic] = useState<string | undefined>(undefined);
   const [currentPatientId, setCurrentPatientId] = useState<string | null>(null);
-  const prevTopic = usePrevious(topic);
-
-  useEffect(() => {
-    // if had prev topic, and now we don't, setDriving false
-    // if didn't have and now we do, setDriving true
-    if (typeof prevTopic !== typeof topic) {
-      setDriving(!!topic);
-    }
-  }, [prevTopic, topic]);
 
   const handleChangePatient = (): void => {
-    if (!topic) {
-      return;
-    }
     const patientId = crypto.randomUUID();
-    if (driving && topic) {
+    if (topic) {
       fetch(`${baseUrl}/fhircast/STU2/${topic}`, {
         method: 'POST',
         headers: {
