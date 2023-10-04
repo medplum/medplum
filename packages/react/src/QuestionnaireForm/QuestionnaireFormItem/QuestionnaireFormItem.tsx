@@ -1,4 +1,4 @@
-import { Checkbox, MultiSelect, NativeSelect, Radio, TextInput, Textarea } from '@mantine/core';
+import { Checkbox, Group, MultiSelect, NativeSelect, Radio, TextInput, Textarea } from '@mantine/core';
 import {
   PropertyType,
   TypedValue,
@@ -164,11 +164,13 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       );
     case QuestionnaireItemType.attachment:
       return (
-        <AttachmentInput
-          name={name}
-          defaultValue={defaultValue?.value}
-          onChange={(newValue) => onChangeAnswer({ valueAttachment: newValue }, index)}
-        />
+        <Group py={4}>
+          <AttachmentInput
+            name={name}
+            defaultValue={defaultValue?.value}
+            onChange={(newValue) => onChangeAnswer({ valueAttachment: newValue }, index)}
+          />
+        </Group>
       );
     case QuestionnaireItemType.reference:
       return (
@@ -358,6 +360,7 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
           key={optionName}
           id={optionName}
           value={optionName}
+          py={4}
           label={
             <ResourcePropertyDisplay
               property={valueElementDefinition}
