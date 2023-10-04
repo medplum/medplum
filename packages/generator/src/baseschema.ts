@@ -35,7 +35,6 @@ export function main(): void {
   for (const [typeName, typeSchema] of Object.entries(outputTypes)) {
     outputTypes[typeName] = {
       name: typeSchema.name,
-      // description: typeSchema.description,
       elements: typeSchema.elements,
     } as InternalTypeSchema;
 

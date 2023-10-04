@@ -23,7 +23,6 @@ export interface InternalTypeSchema {
 export interface InternalSchemaElement {
   description: string;
   path: string;
-  // elementDefinition: ElementDefinition;
   min: number;
   max: number;
   isArray: boolean;
@@ -372,7 +371,6 @@ class StructureDefinitionParser {
     return {
       description: ed.definition || '',
       path: ed.path || ed.base?.path || '',
-      // elementDefinition: ed,
       min: ed.min ?? 0,
       max: max,
       isArray: baseMax > 1,

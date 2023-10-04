@@ -115,7 +115,6 @@ function buildProperties(typeSchema: InternalTypeSchema): {
   }
 
   for (const [path, elementDefinition] of Object.entries(typeSchema.elements)) {
-    // const elementDefinition = getElementDefinition(typeSchema.name, elementName);
     for (const elementDefinitionType of elementDefinition?.type ?? []) {
       const propertyName = path.replace('[x]', capitalize(elementDefinitionType.code as string));
       properties[propertyName] = buildPropertySchema(elementDefinition, elementDefinitionType, path);

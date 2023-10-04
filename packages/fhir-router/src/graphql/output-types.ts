@@ -89,7 +89,6 @@ function buildOutputPropertyFields(resourceType: string, fields: GraphQLFieldCon
   }
 
   for (const [key, elementDefinition] of Object.entries(schema.elements)) {
-    // const elementDefinition = getElementDefinition(resourceType, key) as ElementDefinition;
     for (const type of elementDefinition.type as ElementDefinitionType[]) {
       buildOutputPropertyField(fields, key, elementDefinition, type);
     }
@@ -160,7 +159,6 @@ function buildListPropertyFieldArgs(fieldTypeName: string): GraphQLFieldConfigAr
     const fieldTypeSchema = getDataType(fieldTypeName);
     if (fieldTypeSchema.elements) {
       for (const [fieldKey, fieldElementDefinition] of Object.entries(fieldTypeSchema.elements)) {
-        // const fieldElementDefinition = getElementDefinition(fieldTypeName, fieldKey) as ElementDefinition;
         for (const type of fieldElementDefinition.type) {
           buildListPropertyFieldArg(fieldArgs, fieldKey, fieldElementDefinition, type);
         }

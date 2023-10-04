@@ -129,7 +129,6 @@ function getTypedPropertyValueWithSchema(
 
   if (resultType === 'Element' || resultType === 'BackboneElement') {
     resultType = element.type[0].code;
-    // resultType = getElementDefinitionTypeName(property);
   }
 
   if (Array.isArray(resultValue)) {

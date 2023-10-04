@@ -315,24 +315,7 @@ export function getElementDefinition(typeName: string, propertyName: string): In
   if (!typeSchema) {
     return undefined;
   }
-
   return typeSchema.elements[propertyName] ?? typeSchema.elements[propertyName + '[x]'];
-  // if (!property) {
-  //   return undefined;
-  // }
-
-  // const elementDefinition = property.elementDefinition;
-
-  // if (elementDefinition.contentReference) {
-  //   // Content references start with a "#"
-  //   // Remove the "#" character
-  //   const contentReference = elementDefinition.contentReference.substring(1).split('.');
-  //   const referencePropertyName = contentReference.pop() as string;
-  //   const referenceTypeName = buildTypeName(contentReference);
-  //   return getElementDefinition(referenceTypeName, referencePropertyName);
-  // }
-
-  // return elementDefinition;
 }
 
 /**

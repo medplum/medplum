@@ -43,9 +43,6 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
         if (DEFAULT_IGNORED_PROPERTIES.includes(key)) {
           return null;
         }
-        // if (!property.path) {
-        //   property.path = typeName + '.' + key;
-        // }
         const [propertyValue, propertyType] = getValueAndType(typedValue, key);
         if (
           props.ignoreMissingValues &&

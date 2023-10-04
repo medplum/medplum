@@ -53,7 +53,6 @@ function buildGraphQLInputFields(resourceType: ResourceType, nameSuffix: string)
 function buildInputPropertyFields(resourceType: string, fields: GraphQLInputFieldConfigMap, nameSuffix: string): void {
   const schema = getDataType(resourceType);
   for (const [key, elementDefinition] of Object.entries(schema.elements)) {
-    // const elementDefinition = getElementDefinition(resourceType, key) as ElementDefinition;
     for (const type of elementDefinition.type as ElementDefinitionType[]) {
       buildInputPropertyField(fields, key, elementDefinition, type, nameSuffix);
     }
