@@ -93,7 +93,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
     <Stack>
       <Title>Diagnostic Report</Title>
       <DiagnosticReportHeader value={diagnosticReport} />
-      {!props.hideSpecimenInfo && SpecimenInfo(specimens)}
+      {specimens && !props.hideSpecimenInfo && SpecimenInfo(specimens)}
       {diagnosticReport.result && (
         <ObservationTable hideObservationNotes={props.hideObservationNotes} value={diagnosticReport.result} />
       )}
