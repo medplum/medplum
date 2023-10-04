@@ -203,8 +203,21 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
       />
     );
   }
+
+  if (props.item.type === QuestionnaireItemType.boolean) {
+    return (
+      <QuestionnaireRepeatWrapper
+        item={props.item}
+        allResponses={props.allResponses}
+        currentResponseItems={props.currentResponseItems}
+        groupSequence={props.groupSequence}
+        onChange={(newResponseItem) => props.setResponseItem(newResponseItem.id as string, newResponseItem)}
+      />
+    );
+  }
+
   return (
-    <FormSection key={props.item.linkId} htmlFor={props.item.linkId} title={props.item.text ?? ''}>
+    <FormSection key={props.item.linkId} htmlFor={props.item.linkId} title={props.item.text}>
       <QuestionnaireRepeatWrapper
         item={props.item}
         allResponses={props.allResponses}
