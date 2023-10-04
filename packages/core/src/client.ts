@@ -2329,7 +2329,7 @@ export class MedplumClient extends EventTarget {
    */
   async getProfileAsync(): Promise<ProfileResource | undefined> {
     if (this.profilePromise) {
-      await this.profilePromise;
+      return this.profilePromise;
     } else if (this.sessionDetails) {
       return this.sessionDetails.profile;
     }
