@@ -1,15 +1,14 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconUser } from '@tabler/icons-react';
 import React, { Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
+import { PatientHistory } from './components/PatientHistory';
+import { PatientOverview } from './components/PatientOverview';
+import { Timeline } from './components/Timeline';
 import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SignInPage } from './pages/SignInPage';
-import { PatientOverview } from './components/PatientOverview';
-import { Timeline } from './components/Timeline';
-import { PatientHistory } from './components/PatientHistory';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -26,7 +25,8 @@ export function App(): JSX.Element | null {
       menus={[
         {
           title: 'My Links',
-          links: [{ icon: <IconUser />, label: 'Patients', href: '/' }],
+          // links: [{ icon: <IconUser />, label: 'Patients', href: '/' }],
+          links: [{ label: 'Patients', href: '/' }],
         },
       ]}
     >

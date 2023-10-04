@@ -1,5 +1,6 @@
+import { useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { BASE_URL } from '../config';
+import { Outlet } from 'react-router-dom';
 import { useClientId } from '../hooks';
 import { FhircastMessagePayload, serializeHubSubscriptionRequest } from '../utils';
 import TopicLoader from './TopicLoader';
@@ -32,8 +33,7 @@ function FhircastMessageDisplay(props: FhircastMessageDisplayProps): JSX.Element
 }
 
 export default function Subscriber(): JSX.Element {
-  const [baseUrl, setBaseUrl] = useState(BASE_URL);
-  const [baseUrlInput, setBaseUrlInput] = useState(BASE_URL);
+  const medplum = useMedplum();
   const [status, setStatus] = useState('NOT CONNECTED');
   const [currentPatientId, setCurrentPatientId] = useState<string | undefined>();
   const [topic, setTopic] = useState<string | undefined>();
@@ -46,21 +46,18 @@ export default function Subscriber(): JSX.Element {
   useEffect(() => {
     if (topic) {
       // sub
-      fetch(`${baseUrl}/fhircast/STU2`, {
-        method: 'POST',
-        body: serializeHubSubscriptionRequest({
-          channelType: 'websocket',
-          mode: 'subscribe',
-          topic,
-          events: ['patient-open'],
-        }),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Bearer ${clientId}`,
-        },
-      })
-        .then(async (res: Response) => {
-          const body = (await res.json()) as { 'hub.channel.endpoint': string };
+      medplum
+        .post(
+          'fhircast/STU2',
+          serializeHubSubscriptionRequest({
+            channelType: 'websocket',
+            mode: 'subscribe',
+            topic,
+            events: ['patient-open'],
+          }),
+          'application/x-www-form-urlencoded'
+        )
+        .then(async (body: { 'hub.channel.endpoint': string }) => {
           const endpoint = body?.['hub.channel.endpoint'];
           if (!endpoint) {
             throw new Error('Invalid response!');
@@ -75,7 +72,7 @@ export default function Subscriber(): JSX.Element {
       };
     }
     return () => {};
-  }, [topic, clientId, baseUrl]);
+  }, [topic, clientId, medplum]);
 
   return (
     <>
@@ -92,24 +89,6 @@ export default function Subscriber(): JSX.Element {
       <div style={{ paddingBottom: 30 }}>
         <h1>Subscriber</h1>
       </div>
-      <div
-        style={{
-          padding: 10,
-          margin: '0 auto',
-          display: 'flex',
-          flexDirection: 'column',
-          maxWidth: 300,
-          justifyContent: 'center',
-          paddingBottom: 20,
-        }}
-      >
-        <input name="baseUrl" type="text" value={baseUrlInput} onChange={(e) => setBaseUrlInput(e.target.value)} />
-        <div style={{ padding: 10 }}>
-          <button type="button" onClick={() => setBaseUrl(baseUrlInput)}>
-            Set base URL
-          </button>
-        </div>
-      </div>
       <div style={{ flex: 1 }}>
         <div>
           <TopicLoader onSetTopic={(topic) => setTopic(topic)} />
@@ -124,6 +103,7 @@ export default function Subscriber(): JSX.Element {
           })}
         </div>
       </div>
+      <Outlet />
     </>
   );
 }
