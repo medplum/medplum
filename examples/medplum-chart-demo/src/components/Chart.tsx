@@ -1,7 +1,7 @@
 import { Box, Title, Text, Divider, Group } from '@mantine/core';
-import { capitalize, createReference } from '@medplum/core';
+import { capitalize } from '@medplum/core';
 import { DiagnosticReport, Patient, ServiceRequest } from '@medplum/fhirtypes';
-import { useMedplum, ResourceAvatar, DiagnosticReportDisplay } from '@medplum/react';
+import { useMedplum, ResourceAvatar } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { IconGenderMale, IconGenderFemale, IconReportMedical, IconUser } from '@tabler/icons-react';
@@ -44,14 +44,24 @@ export function Chart(): JSX.Element {
           title
         }
       },
-      procedures: ProcedureList(subject: "Patient/${id}") {
+      condition: ConditionList(category: "http://hl7.org/fhir/us/core/CodeSystem/condition-category|health-concern", subject: "Patient/${id}") {
         resourceType,
         meta { lastUpdated },
-        code {
+        category {
           coding {
             code,
           }
-        }
+        },
+        clinicalStatus {
+          coding {
+            display
+          }
+        },
+        code {
+          coding {
+            display
+          }
+        },
       },
       vitals: ObservationList(category: "http://terminology.hl7.org/CodeSystem/observation-category|vital-signs", subject: "Patient/${id}") {
         meta { lastUpdated },
@@ -74,6 +84,14 @@ export function Chart(): JSX.Element {
         valueInteger,
         effectiveDateTime,
         valueString
+      },
+      observations: ObservationList(_filter: "category ne http://terminology.hl7.org/CodeSystem/observation-category|vital-signs", subject: "Patient/${id}") {
+         id,
+         category {
+          coding {
+            code,
+          }
+        },
       },
       socialHistory: ObservationList(category: "http://terminology.hl7.org/CodeSystem/observation-category|social-history", subject: "Patient/${id}") {
         meta { lastUpdated },
@@ -99,12 +117,7 @@ export function Chart(): JSX.Element {
             display
           }
         }
-      },  
-      orders: ServiceRequestList(subject: "Patient/${id}") {
-        meta { lastUpdated },
-        status,
-        intent
-      },
+      }
     }`;
 
     medplum.graphql(query).then(setResponse);
@@ -249,15 +262,15 @@ function RenderVitals(props: any): JSX.Element {
   );
 }
 
-function RenderVital(props: any): JSX.Element | undefined {
-  const renderCoding = (coding: any[]) => {
-    return coding.map((codeItem, index) => (
-      <Box key={index}>
-        <Text>{codeItem.display}</Text>
-      </Box>
-    ));
-  };
+const renderCoding = (coding: any[]) => {
+  return coding.map((codeItem, index) => (
+    <Box key={index}>
+      <Text>{codeItem.display}</Text>
+    </Box>
+  ));
+};
 
+function RenderVital(props: any): JSX.Element | undefined {
   if (!props.vital.valueQuantity) {
     return undefined;
   }
@@ -275,7 +288,6 @@ function RenderVital(props: any): JSX.Element | undefined {
 
 function RenderSocialHistory(props: any): JSX.Element {
   const processedData = processData(props.data);
-  console.log(processedData);
   return (
     <Box>
       {processedData.map((item, index) => (
@@ -286,14 +298,6 @@ function RenderSocialHistory(props: any): JSX.Element {
 }
 
 function RenderSocialHistoryItem(props: any): JSX.Element | null {
-  const renderCodingDisplay = (coding: any[]) => {
-    return coding.map((codeItem, index) => (
-      <Box key={index} display="flex">
-        <Text>{codeItem.display}</Text>
-      </Box>
-    ));
-  };
-
   if (!props.item.valueCodeableConcept || !props.item.valueCodeableConcept.coding) {
     return null;
   }
@@ -301,7 +305,7 @@ function RenderSocialHistoryItem(props: any): JSX.Element | null {
   return (
     <>
       <Box display="flex" style={{ justifyContent: 'space-between' }}>
-        <>{renderCodingDisplay(props.item?.code?.coding)}</>
+        <>{renderCoding(props.item?.code?.coding)}</>
         <Text>{props.item.valueCodeableConcept.coding[0].display}</Text>
       </Box>
       <Divider my="sm" />
