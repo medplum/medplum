@@ -9,7 +9,6 @@ import {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
-import baseSchema from './base-schema.json';
 import { formatHumanName } from './format';
 import { SearchParameterDetails } from './search/details';
 import { getAllDataTypes, InternalSchemaElement, InternalTypeSchema, tryGetDataType } from './typeschema/types';
@@ -339,7 +338,7 @@ export function isReference(value: unknown): value is Reference & { reference: s
 /**
  * Global schema singleton.
  */
-export const globalSchema = baseSchema as unknown as IndexedStructureDefinition;
+export const globalSchema: IndexedStructureDefinition = { types: {} };
 
 /**
  * Output the string representation of a value, suitable for use as part of a search query.
