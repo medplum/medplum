@@ -6,7 +6,6 @@ import {
   FhirFilterConnective,
   FhirFilterExpression,
   FhirFilterNegation,
-  Operator,
   Filter,
   forbidden,
   formatSearchQuery,
@@ -16,6 +15,7 @@ import {
   IncludeTarget,
   isResource,
   OperationOutcomeError,
+  Operator,
   parseFilterParameter,
   PropertyType,
   SearchParameterDetails,
@@ -35,6 +35,7 @@ import {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
+import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
@@ -47,11 +48,10 @@ import {
   Disjunction,
   Expression,
   Negation,
-  Operator as SQL,
   SelectQuery,
+  Operator as SQL,
 } from './sql';
 import { getSearchParameter } from './structure';
-import validator from 'validator';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
@@ -675,7 +675,16 @@ function buildIdSearchFilter(
   values: string[]
 ): Expression {
   const column = new Column(resourceType, details.columnName);
-  values = values.map((v) => (v.includes('/') ? (v.split('/').pop() as string) : v)).filter((v) => validator.isUUID(v));
+
+  for (let i = 0; i < values.length; i++) {
+    if (values[i].includes('/')) {
+      values[i] = values[i].split('/').pop() as string;
+    }
+    if (!validator.isUUID(values[i])) {
+      values[i] = '00000000-0000-0000-0000-000000000000';
+    }
+  }
+
   const condition = buildEqualityCondition(details, values, column);
   if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
     return new Negation(condition);

@@ -187,7 +187,7 @@ describe('FHIR Search', () => {
       // _summary=text
       const textResults = await systemRepo.search({
         resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
         summary: 'text',
       });
       expect(textResults.entry).toHaveLength(1);
@@ -208,7 +208,7 @@ describe('FHIR Search', () => {
       // _summary=data
       const dataResults = await systemRepo.search({
         resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
         summary: 'data',
       });
       expect(dataResults.entry).toHaveLength(1);
@@ -220,7 +220,7 @@ describe('FHIR Search', () => {
       // _summary=true
       const summaryResults = await systemRepo.search({
         resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
         summary: 'true',
       });
       expect(summaryResults.entry).toHaveLength(1);
@@ -250,7 +250,7 @@ describe('FHIR Search', () => {
 
       const results = await systemRepo.search({
         resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
         fields: ['birthDate', 'deceased'],
       });
       expect(results.entry).toHaveLength(1);
@@ -801,6 +801,21 @@ describe('FHIR Search', () => {
 
       expect(searchResult2.entry?.length).toEqual(0);
     }));
+
+  test('Empty _id', async () => {
+    const searchResult1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_id',
+          operator: Operator.EQUALS,
+          value: '',
+        },
+      ],
+    });
+
+    expect(searchResult1.entry?.length).toEqual(0);
+  });
 
   test('Non UUID _id', async () => {
     const searchResult1 = await systemRepo.search({
