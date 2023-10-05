@@ -1,4 +1,4 @@
-import { Box, Title, Text, Divider, Group, createStyles } from '@mantine/core';
+import { Box, Button, Title, Text, Divider, Group, createStyles, NumberInput } from '@mantine/core';
 import { capitalize } from '@medplum/core';
 import {
   Patient,
@@ -10,10 +10,11 @@ import {
   Coding,
   Quantity,
 } from '@medplum/fhirtypes';
-import { useMedplum, ResourceAvatar } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { useMedplum, ResourceAvatar, useResource } from '@medplum/react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { IconGenderMale, IconGenderFemale, IconReportMedical, IconUser } from '@tabler/icons-react';
+import { TaskList } from './Task';
 
 interface PatientGraphQLResponse {
   data: {
@@ -35,10 +36,7 @@ type PanelData = Resource & {
 };
 
 const useStyles = createStyles((theme) => ({
-  ageText: {
-    color: theme.colors.gray[6],
-  },
-  iconColor: {
+  subColor: {
     color: theme.colors.gray[6],
   },
   group: {
@@ -69,10 +67,6 @@ export function Chart(): JSX.Element {
           given,
           family
         },
-        telecom {
-          system,
-          value
-        },
         address {
           line,
           city,
@@ -82,7 +76,27 @@ export function Chart(): JSX.Element {
           contentType,
           url,
           title
+        },
+        tasks: TaskList(_reference: patient) {
+          id,
+          status,
+          description,
+          focus {
+            reference
+          },
+          lastModified,
+          status
         }
+      },
+      allergies: AllergyIntoleranceList(patient: "Patient/${id}") {
+        meta { lastUpdated },
+        code {
+          coding {
+            code,
+            display
+          }
+        },
+        criticality
       },
       condition: ConditionList(category: "http://hl7.org/fhir/us/core/CodeSystem/condition-category|health-concern", subject: "Patient/${id}") {
         resourceType,
@@ -103,8 +117,25 @@ export function Chart(): JSX.Element {
           }
         },
       },
+      socialHistory: ObservationList(category: "http://terminology.hl7.org/CodeSystem/observation-category|social-history", subject: "Patient/${id}") {
+        meta { lastUpdated },
+        effectiveDateTime,
+        code {
+          coding {
+            code,
+            display
+          }
+        },
+        valueCodeableConcept {
+          coding {
+            code,
+            display
+          }
+        }
+      },
       vitals: ObservationList(category: "http://terminology.hl7.org/CodeSystem/observation-category|vital-signs", subject: "Patient/${id}") {
         meta { lastUpdated },
+        id,
         code {
           coding {
             code,
@@ -143,46 +174,32 @@ export function Chart(): JSX.Element {
           unit
         },
         effectiveDateTime
-      },
-      socialHistory: ObservationList(category: "http://terminology.hl7.org/CodeSystem/observation-category|social-history", subject: "Patient/${id}") {
-        meta { lastUpdated },
-        effectiveDateTime,
-        code {
-          coding {
-            code,
-            display
-          }
-        },
-        valueCodeableConcept {
-          coding {
-            code,
-            display
-          }
-        }
-      },
-      allergies: AllergyIntoleranceList(patient: "Patient/${id}") {
-        meta { lastUpdated },
-        code {
-          coding {
-            code,
-            display
-          }
-        },
-        criticality
       }
     }`;
 
     medplum.graphql(query).then(setResponse);
   }, [medplum, id]);
 
-  return <GraphQLResponseViewer response={response} />;
+  return <ChartView response={response} />;
 }
 
-interface GraphQLResponseViewerProps {
+interface ChartViewProps {
   response?: PatientGraphQLResponse;
 }
 
-function GraphQLResponseViewer(props: GraphQLResponseViewerProps): JSX.Element {
+function ChartView(props: ChartViewProps): JSX.Element {
+  if (!props.response) {
+    return <Box />;
+  }
+  return (
+    <Box display="flex">
+      <ClientPanel response={props.response} />
+      <TaskList tasks={props.response.data.patient.tasks} />
+    </Box>
+  );
+}
+
+function ClientPanel(props: ChartViewProps): JSX.Element {
   if (!props.response) {
     return <Box />;
   }
@@ -273,13 +290,28 @@ function RenderVital(props: { item: PanelData }): JSX.Element | undefined {
   if (!props.item.valueQuantity) {
     return undefined;
   }
+  const [item, setItem] = useState(props.item);
+  const medplum = useMedplum();
 
-  const values = [
-    renderCoding(props.item?.code?.coding),
-    `${props.item.valueQuantity.value}${props.item.valueQuantity.unit}`,
-  ];
+  const handleSubmit = async () => {
+    const resourceItem = (await medplum.readResource('Observation', item.id ?? '')) as Observation;
+    const { id, ...itemWithoutId } = resourceItem;
+    const mergedItem = {
+      ...itemWithoutId,
+      valueQuantity: {
+        ...resourceItem.valueQuantity,
+        ...item.valueQuantity,
+      },
+    } as Observation;
+    const a = await medplum.createResource<Observation>(mergedItem);
+    console.log(a);
+  };
+  const handleChange = (newValue: number) => {
+    console.log(newValue);
+    setItem({ ...item, valueQuantity: { ...item.valueQuantity, value: newValue } });
+  };
 
-  return <RenderItem items={values} />;
+  return <ValueQuantityDisplay item={item} onChange={handleChange} handleSubmit={handleSubmit} />;
 }
 
 function RenderObservationItem(props: { item: PanelData }): JSX.Element | undefined {
@@ -311,7 +343,57 @@ function RenderSocialHistoryItem(props: { item: PanelData }): JSX.Element | null
   return <RenderItem items={values} />;
 }
 
-function RenderItem(props: RenderItemProps): JSX.Element | undefined {
+export function ValueQuantityDisplay(props: {
+  item: PanelData;
+  onChange: any;
+  handleSubmit: any;
+}): JSX.Element | undefined {
+  const [isFocused, setIsFocused] = useState(false);
+  const buttonRef = useRef(null);
+  if (!props.item?.valueQuantity) {
+    return undefined;
+  }
+  const suffix = props.item.valueQuantity.unit ?? '';
+  const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
+    if (event.relatedTarget === buttonRef.current) {
+      return;
+    }
+    setIsFocused(false);
+  };
+  return (
+    <Box>
+      <Text>{renderCoding(props.item?.code?.coding)}</Text>
+      <Box display="flex">
+        <NumberInput
+          defaultValue={props.item.valueQuantity.value}
+          onChange={props.onChange}
+          onFocus={() => setIsFocused(true)}
+          onBlur={handleBlur}
+          formatter={(value) =>
+            !Number.isNaN(parseFloat(value))
+              ? `${value}${suffix}`.replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ',')
+              : ` ${suffix}`
+          }
+        />
+        {isFocused && (
+          <Button
+            ref={buttonRef}
+            onClick={() => {
+              console.log('Button clicked!');
+              props.handleSubmit();
+              setIsFocused(false);
+            }}
+            variant="subtle"
+          >
+            Save
+          </Button>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+export function RenderItem(props: { items: string[] }): JSX.Element | undefined {
   const items = props.items;
   if (!items || items.length === 0) {
     return;
@@ -355,11 +437,11 @@ function PatientPanel(props: { patient: Patient }): JSX.Element {
 }
 
 function BirthdateAndAge(props: { patient: Patient }): JSX.Element {
-  const { classes } = useStyles();
   const patient = props.patient;
+  const { classes } = useStyles();
   const { years, months } = calculateAge(patient.birthDate as string);
   return (
-    <Box display="flex" mb={16} className={classes.ageText}>
+    <Box display="flex" mb={16} className={classes.subColor}>
       <Text pr={5}>{patient.birthDate}</Text>
       <Text>{`(${years}yrs, ${months}mo)`}</Text>
     </Box>
@@ -373,7 +455,6 @@ function calculateAge(birthdate: string): { years: number; months: number } {
   let years = currentDate.getFullYear() - birthDate.getFullYear();
   let months = currentDate.getMonth() - birthDate.getMonth();
 
-  // If the current month is before the birth month, or it's the birth month but the day is before the birth day
   if (
     currentDate.getMonth() < birthDate.getMonth() ||
     (currentDate.getMonth() === birthDate.getMonth() && currentDate.getDate() < birthDate.getDate())
@@ -392,20 +473,20 @@ function DescriptionBox(props: { patient: Patient }): JSX.Element {
   return (
     <Group display="flex" grow spacing="md" w="75%" className={classes.group}>
       <Box display="flex" className={classes.descriptionCell}>
-        <IconUser className={classes.iconColor} />
+        <IconUser className={classes.subColor} />
         <Text fz="xs" align="center">
           {formatName(patient)}
         </Text>
       </Box>
       <Box display="flex" className={classes.descriptionCell}>
-        <IconReportMedical className={classes.iconColor} />
+        <IconReportMedical className={classes.subColor} />
         <Text fz="xs">Alice Smith</Text>
       </Box>
       <Box display="flex" className={classes.descriptionCell}>
         {patient.gender === 'male' ? (
-          <IconGenderMale className={classes.iconColor} />
+          <IconGenderMale className={classes.subColor} />
         ) : (
-          <IconGenderFemale className={classes.iconColor} />
+          <IconGenderFemale className={classes.subColor} />
         )}
         <Text fz="xs">{patient.gender}</Text>
       </Box>
@@ -426,8 +507,4 @@ function formatName(patient: Patient): string {
     return `${name.given?.[0]} ${name.family}`;
   }
   return `${name.given?.[0]} ${middleInitial} ${name.family}`;
-}
-
-interface RenderItemProps {
-  items: string[];
 }
