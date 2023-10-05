@@ -2,6 +2,7 @@ import {
   ContentType,
   createReference,
   getStatus,
+  isJwt,
   normalizeErrorString,
   normalizeOperationOutcome,
   OAuthClientAssertionType,
@@ -442,6 +443,10 @@ async function parseClientAssertion(
 ): Promise<ClientIdAndSecret> {
   if (clientAssertionType !== OAuthClientAssertionType.JwtBearer) {
     return { error: 'Unsupported client assertion type' };
+  }
+
+  if (!clientAssertion || !isJwt(clientAssertion)) {
+    return { error: 'Invalid client assertion' };
   }
 
   const { tokenUrl } = getConfig();
