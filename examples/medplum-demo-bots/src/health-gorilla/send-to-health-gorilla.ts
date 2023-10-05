@@ -18,6 +18,8 @@ import {
   QuestionnaireResponse,
   Reference,
   RequestGroup,
+  RequestGroupAction,
+  Resource,
   ServiceRequest,
   Subscription,
 } from '@medplum/fhirtypes';
@@ -40,6 +42,44 @@ interface HealthGorillaConfig {
   callbackClientId: string;
   callbackClientSecret: string;
 }
+
+// Available tests organized by Health Gorilla test code
+// These come from the Health Gorilla compendium CodeSystem
+// It can be difficult to find the correct codes -- it can even be difficult to find the compendium itself!
+// The trick is that the CodeSystem ID is the same as the Organization ID.
+// For this example, we're embedding a collection of commonly used tests.
+// You may want to embed this information into your own application or your own questionnaire.
+// There are many different ways to pass this information.
+// Ultimately, you just need to make sure you pass the correct code to Health Gorilla in the ServiceRequest resources.
+const availableTests: Record<string, CodeableConcept> = {
+  '001032': {
+    coding: [
+      {
+        code: '001032',
+        display: 'Glucose',
+      },
+    ],
+    text: '001032-GLUCOSE',
+  },
+  '001453': {
+    coding: [
+      {
+        code: '001453',
+        display: 'Hemoglobin A1c',
+      },
+    ],
+    text: '001453-HEMOGLOBIN_A1C',
+  },
+  '008847': {
+    coding: [
+      {
+        code: '008847',
+        display: 'Urine Culture, Routine',
+      },
+    ],
+    text: '008847-URINE_CULTURE_ROUTINE',
+  },
+};
 
 const billToPatient: CodeableConcept = {
   coding: [
@@ -131,26 +171,26 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // Synchronize the account
   const healthGorillaAccount = await syncAccount(medplum, medplumPatient, healthGorillaPatient, billToPatient);
 
-  // Create the service request
-  // TODO: This should come from the QuestionnaireResponse
-  const healthGorillaServiceRequest = await createServiceRequest(
-    healthGorillaPatient,
-    {
-      coding: [
-        {
-          code: '2093-3',
-          display: 'Cholesterol, Total',
-        },
-      ],
-      text: '2093-3-CHOLESTEROL',
-    },
-    'Test note',
-    'routine'
-  );
+  // Create the service requests
+  const healthGorillaServiceRequests: ServiceRequest[] = [];
+
+  // Parse the test answers and create the service requests.
+  // If the test is selected, create a service request with the given priority and note.
+  // This is another area where you can customize the experience for your users.
+  // In our example questionnaire, we use checkboxes for commonly available tests.
+  // You could also use a dropdown or a free text field.
+  // The important thing is that you pass the correct code to Health Gorilla.
+  for (const [testKey, testCode] of Object.entries(availableTests)) {
+    const answerKey = 'test-' + testKey;
+    if (answers[answerKey]?.valueBoolean) {
+      const priority = answers[answerKey + '-priority']?.valueCoding?.code ?? 'routine';
+      const noteText = answers[answerKey + '-note']?.valueString;
+      healthGorillaServiceRequests.push(await createServiceRequest(healthGorillaPatient, testCode, priority, noteText));
+    }
+  }
 
   // Place the order
   await createRequestGroup(
-    config,
     healthGorilla,
     healthGorillaTenantOrganization,
     healthGorillaSubtenantOrganization,
@@ -158,7 +198,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     healthGorillaAccount,
     healthGorillaPatient,
     healthGorillaPractitioner,
-    healthGorillaServiceRequest
+    healthGorillaServiceRequests
   );
 }
 
@@ -441,8 +481,8 @@ export async function getPractitioner(healthGorilla: MedplumClient, practitioner
 export async function createServiceRequest(
   healthGorillaPatient: Patient,
   code: CodeableConcept,
-  note: string,
-  priority: 'routine' | 'urgent' | 'asap' | 'stat'
+  priority: string,
+  noteText: string | undefined
 ): Promise<ServiceRequest> {
   return {
     resourceType: 'ServiceRequest',
@@ -461,8 +501,8 @@ export async function createServiceRequest(
       },
     ],
     code,
-    note: [{ text: note }],
-    priority,
+    note: noteText ? [{ text: noteText }] : undefined,
+    priority: priority as 'routine' | 'urgent' | 'stat' | 'asap',
   };
 }
 
@@ -471,7 +511,6 @@ export async function createServiceRequest(
  *
  * The FHIR RequestGroup is a combination of the following resources:
  *
- * @param config The Health Gorilla config settings.
  * @param healthGorilla The Health Gorilla FHIR client.
  * @param healthGorillaTenantOrganization The authorizing organization resource.
  * @param healthGorillaSubtenantOrganization The authorizing organization resource.
@@ -479,10 +518,9 @@ export async function createServiceRequest(
  * @param healthGorillaAccount The account resource.
  * @param healthGorillaPatient The patient resource.
  * @param healthGorillaPractitioner The practitioner resource.
- * @param healthGorillaServiceRequest The service request resource.
+ * @param healthGorillaServiceRequests The service request resources.
  */
 export async function createRequestGroup(
-  config: HealthGorillaConfig,
   healthGorilla: MedplumClient,
   healthGorillaTenantOrganization: Organization,
   healthGorillaSubtenantOrganization: Organization,
@@ -490,9 +528,9 @@ export async function createRequestGroup(
   healthGorillaAccount: Account,
   healthGorillaPatient: Patient,
   healthGorillaPractitioner: Practitioner,
-  healthGorillaServiceRequest: ServiceRequest
+  healthGorillaServiceRequests: ServiceRequest[]
 ): Promise<void> {
-  const inputJson: RequestGroup = {
+  const inputJson = {
     resourceType: 'RequestGroup',
     meta: {
       profile: ['https://healthgorilla.com/fhir/StructureDefinition/hg-order'],
@@ -510,11 +548,7 @@ export async function createRequestGroup(
         ...healthGorillaSubtenantOrganization,
         id: 'organization',
       },
-      {
-        ...healthGorillaServiceRequest,
-        id: 'labtest0',
-      },
-    ],
+    ] as Resource[],
     extension: [
       {
         url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-authorizedBy',
@@ -561,15 +595,21 @@ export async function createRequestGroup(
     intent: 'order',
     subject: createReference(healthGorillaPatient),
     author: createReference(healthGorillaPractitioner),
-    action: [
-      {
-        resource: {
-          reference: '#labtest0',
-          display: '2093-3-CHOLESTEROL',
-        },
+    action: [] as RequestGroupAction[],
+  } satisfies RequestGroup;
+
+  for (let i = 0; i < healthGorillaServiceRequests.length; i++) {
+    inputJson.contained.push({
+      ...healthGorillaServiceRequests[i],
+      id: 'labtest' + i,
+    });
+    inputJson.action.push({
+      resource: {
+        reference: '#labtest' + i,
+        display: healthGorillaServiceRequests[i].code?.text,
       },
-    ],
-  };
+    });
+  }
 
   await healthGorilla.startAsyncRequest(healthGorilla.fhirUrl('RequestGroup').toString(), {
     method: 'POST',
