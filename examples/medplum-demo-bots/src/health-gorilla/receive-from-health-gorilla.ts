@@ -139,10 +139,15 @@ function touchUpBundle(bundle: Bundle<HealthGorillaResource>): void {
     }
 
     if (resource.resourceType === 'ServiceRequest') {
+      // The ServiceRequest identifier is the requisition and the code
       const requisition = resource.requisition?.value;
-      if (requisition) {
-        request.ifNoneExist = 'requisition=' + requisition;
+      const code = resource.code?.coding?.[0]?.code;
+      const identifier = requisition + '-' + code;
+      if (!resource.identifier) {
+        resource.identifier = [];
       }
+      resource.identifier.push({ system: HEALTH_GORILLA_SYSTEM, value: identifier });
+      request.ifNoneExist = 'identifier=' + identifier;
     }
   }
 }
