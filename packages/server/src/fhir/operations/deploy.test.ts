@@ -68,6 +68,7 @@ describe('Deploy', () => {
         FunctionName,
         Runtime: 'node16.x',
         Handler: 'index.handler',
+        State: 'Active',
         Layers: [
           {
             Arn: 'arn:aws:lambda:us-east-1:123456789012:layer:test-layer:1',
@@ -161,7 +162,7 @@ describe('Deploy', () => {
 
     expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 2);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 1);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 1);
     expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, {

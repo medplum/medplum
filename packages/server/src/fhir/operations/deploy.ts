@@ -2,13 +2,14 @@ import {
   CreateFunctionCommand,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
+  GetFunctionConfigurationCommandOutput,
   LambdaClient,
   ListLayerVersionsCommand,
   PackageType,
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
-import { allOk, badRequest, ContentType, getReferenceString } from '@medplum/core';
+import { allOk, badRequest, ContentType, getReferenceString, sleep } from '@medplum/core';
 import { Binary, Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import { Request, Response } from 'express';
@@ -234,35 +235,66 @@ async function createLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
  * @param zipFile The zip file with the bot code.
  */
 async function updateLambda(client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
-  const layerVersion = await getLayerVersion(client);
+  // First, make sure the lambda configuration is up to date
+  await updateLambdaConfig(client, name);
 
-  const functionConfig = await client.send(
-    new GetFunctionConfigurationCommand({
-      FunctionName: name,
-    })
-  );
-
-  if (
-    functionConfig.Runtime !== LAMBDA_RUNTIME ||
-    functionConfig.Handler !== LAMBDA_HANDLER ||
-    functionConfig.Layers?.[0].Arn !== layerVersion
-  ) {
-    await client.send(
-      new UpdateFunctionConfigurationCommand({
-        FunctionName: name,
-        Role: getConfig().botLambdaRoleArn,
-        Runtime: LAMBDA_RUNTIME,
-        Handler: LAMBDA_HANDLER,
-        Layers: [layerVersion],
-      })
-    );
-  }
-
+  // Then update the code
   await client.send(
     new UpdateFunctionCodeCommand({
       FunctionName: name,
       ZipFile: zipFile,
       Publish: true,
+    })
+  );
+}
+
+/**
+ * Updates the lambda configuration.
+ * @param client The AWS Lambda client.
+ * @param name The lambda name.
+ */
+async function updateLambdaConfig(client: LambdaClient, name: string): Promise<void> {
+  const layerVersion = await getLayerVersion(client);
+  const functionConfig = await getLambdaConfig(client, name);
+  if (
+    functionConfig.Runtime === LAMBDA_RUNTIME &&
+    functionConfig.Handler === LAMBDA_HANDLER &&
+    functionConfig.Layers?.[0].Arn === layerVersion
+  ) {
+    // Everything is up-to-date
+    return;
+  }
+
+  // Need to update
+  await client.send(
+    new UpdateFunctionConfigurationCommand({
+      FunctionName: name,
+      Role: getConfig().botLambdaRoleArn,
+      Runtime: LAMBDA_RUNTIME,
+      Handler: LAMBDA_HANDLER,
+      Layers: [layerVersion],
+    })
+  );
+
+  // Wait for the update to complete before returning
+  // Wait up to 5 seconds
+  // See: https://github.com/aws/aws-toolkit-visual-studio/issues/197
+  // See: https://aws.amazon.com/blogs/compute/coming-soon-expansion-of-aws-lambda-states-to-all-functions/
+  for (let i = 0; i < 5; i++) {
+    const config = await getLambdaConfig(client, name);
+    // Valid Values: Pending | Active | Inactive | Failed
+    // See: https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunctionConfiguration.html
+    if (config.State === 'Active') {
+      return;
+    }
+    await sleep(1000);
+  }
+}
+
+async function getLambdaConfig(client: LambdaClient, name: string): Promise<GetFunctionConfigurationCommandOutput> {
+  return client.send(
+    new GetFunctionConfigurationCommand({
+      FunctionName: name,
     })
   );
 }
