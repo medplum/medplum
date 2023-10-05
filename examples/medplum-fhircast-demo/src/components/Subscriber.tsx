@@ -66,12 +66,10 @@ export default function Subscriber(): JSX.Element {
           setStatus('SUBSCRIBED');
         })
         .catch((err) => console.error(err));
-
-      return () => {
-        // unsub on `unmount`
-      };
+    } else {
+      // unset endpoint (closing WS connection) when the topic is unset (cannot reuse websocket anyways since endpoint contains a slug)
+      setEndpoint(undefined);
     }
-    return () => {};
   }, [topic, clientId, medplum]);
 
   return (
