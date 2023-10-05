@@ -1996,6 +1996,9 @@ describe('Client', () => {
 
     expect(client.getProfile()).toBeUndefined();
     await expect(client.getProfileAsync()).resolves.toMatchObject(patient);
+    const expectedCalls = fetch.mock.calls.length;
+    await expect(client.getProfileAsync()).resolves.toMatchObject(patient);
+    expect(fetch.mock.calls).toHaveLength(expectedCalls);
   });
 
   test('graphql', async () => {
