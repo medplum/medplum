@@ -34,7 +34,7 @@ export function main(): void {
   // For each type schema, only keep "display" and "properties"
   for (const [typeName, typeSchema] of Object.entries(outputTypes)) {
     outputTypes[typeName] = {
-      name: typeSchema.name,
+      // name: typeSchema.name,
       elements: typeSchema.elements,
     } as InternalTypeSchema;
 

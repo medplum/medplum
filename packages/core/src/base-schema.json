@@ -1,6 +1,5 @@
 {
   "Element": {
-    "name": "Element",
     "elements": {
       "id": {
         "type": [
@@ -20,7 +19,6 @@
     }
   },
   "BackboneElement": {
-    "name": "BackboneElement",
     "elements": {
       "id": {
         "type": [
@@ -48,7 +46,6 @@
     }
   },
   "Address": {
-    "name": "Address",
     "elements": {
       "id": {
         "type": [
@@ -139,7 +136,6 @@
     }
   },
   "Age": {
-    "name": "Age",
     "elements": {
       "id": {
         "type": [
@@ -194,7 +190,6 @@
     }
   },
   "Annotation": {
-    "name": "Annotation",
     "elements": {
       "id": {
         "type": [
@@ -245,7 +240,6 @@
     }
   },
   "Attachment": {
-    "name": "Attachment",
     "elements": {
       "id": {
         "type": [
@@ -321,7 +315,6 @@
     }
   },
   "CodeableConcept": {
-    "name": "CodeableConcept",
     "elements": {
       "id": {
         "type": [
@@ -356,7 +349,6 @@
     }
   },
   "Coding": {
-    "name": "Coding",
     "elements": {
       "id": {
         "type": [
@@ -411,7 +403,6 @@
     }
   },
   "ContactDetail": {
-    "name": "ContactDetail",
     "elements": {
       "id": {
         "type": [
@@ -446,7 +437,6 @@
     }
   },
   "ContactPoint": {
-    "name": "ContactPoint",
     "elements": {
       "id": {
         "type": [
@@ -501,7 +491,6 @@
     }
   },
   "Contributor": {
-    "name": "Contributor",
     "elements": {
       "id": {
         "type": [
@@ -545,7 +534,6 @@
     }
   },
   "Count": {
-    "name": "Count",
     "elements": {
       "id": {
         "type": [
@@ -600,7 +588,6 @@
     }
   },
   "DataRequirement": {
-    "name": "DataRequirement",
     "elements": {
       "id": {
         "type": [
@@ -691,7 +678,6 @@
     }
   },
   "DataRequirementCodeFilter": {
-    "name": "DataRequirementCodeFilter",
     "elements": {
       "id": {
         "type": [
@@ -743,7 +729,6 @@
     }
   },
   "DataRequirementDateFilter": {
-    "name": "DataRequirementDateFilter",
     "elements": {
       "id": {
         "type": [
@@ -790,7 +775,6 @@
     }
   },
   "DataRequirementSort": {
-    "name": "DataRequirementSort",
     "elements": {
       "id": {
         "type": [
@@ -826,7 +810,6 @@
     }
   },
   "Distance": {
-    "name": "Distance",
     "elements": {
       "id": {
         "type": [
@@ -881,7 +864,6 @@
     }
   },
   "Dosage": {
-    "name": "Dosage",
     "elements": {
       "id": {
         "type": [
@@ -1005,7 +987,6 @@
     }
   },
   "DosageDoseAndRate": {
-    "name": "DosageDoseAndRate",
     "elements": {
       "id": {
         "type": [
@@ -1055,7 +1036,6 @@
     }
   },
   "Duration": {
-    "name": "Duration",
     "elements": {
       "id": {
         "type": [
@@ -1110,7 +1090,6 @@
     }
   },
   "ElementDefinition": {
-    "name": "ElementDefinition",
     "elements": {
       "id": {
         "type": [
@@ -1874,7 +1853,6 @@
     }
   },
   "ElementDefinitionSlicingDiscriminator": {
-    "name": "ElementDefinitionSlicingDiscriminator",
     "elements": {
       "id": {
         "type": [
@@ -1910,7 +1888,6 @@
     }
   },
   "ElementDefinitionSlicing": {
-    "name": "ElementDefinitionSlicing",
     "elements": {
       "id": {
         "type": [
@@ -1960,7 +1937,6 @@
     }
   },
   "ElementDefinitionBase": {
-    "name": "ElementDefinitionBase",
     "elements": {
       "id": {
         "type": [
@@ -2004,7 +1980,6 @@
     }
   },
   "ElementDefinitionType": {
-    "name": "ElementDefinitionType",
     "elements": {
       "id": {
         "type": [
@@ -2071,7 +2046,6 @@
     }
   },
   "ElementDefinitionExample": {
-    "name": "ElementDefinitionExample",
     "elements": {
       "id": {
         "type": [
@@ -2254,7 +2228,6 @@
     }
   },
   "ElementDefinitionConstraint": {
-    "name": "ElementDefinitionConstraint",
     "elements": {
       "id": {
         "type": [
@@ -2329,7 +2302,6 @@
     }
   },
   "ElementDefinitionBinding": {
-    "name": "ElementDefinitionBinding",
     "elements": {
       "id": {
         "type": [
@@ -2374,7 +2346,6 @@
     }
   },
   "ElementDefinitionMapping": {
-    "name": "ElementDefinitionMapping",
     "elements": {
       "id": {
         "type": [
@@ -2424,7 +2395,6 @@
     }
   },
   "Expression": {
-    "name": "Expression",
     "elements": {
       "id": {
         "type": [
@@ -2480,7 +2450,6 @@
     }
   },
   "Extension": {
-    "name": "Extension",
     "elements": {
       "id": {
         "type": [
@@ -2662,7 +2631,6 @@
     }
   },
   "HumanName": {
-    "name": "HumanName",
     "elements": {
       "id": {
         "type": [
@@ -2734,7 +2702,6 @@
     }
   },
   "Identifier": {
-    "name": "Identifier",
     "elements": {
       "id": {
         "type": [
@@ -2799,7 +2766,6 @@
     }
   },
   "MarketingStatus": {
-    "name": "MarketingStatus",
     "elements": {
       "id": {
         "type": [
@@ -2865,7 +2831,6 @@
     }
   },
   "Meta": {
-    "name": "Meta",
     "elements": {
       "id": {
         "type": [
@@ -2962,7 +2927,6 @@
     }
   },
   "Money": {
-    "name": "Money",
     "elements": {
       "id": {
         "type": [
@@ -2996,7 +2960,6 @@
     }
   },
   "Narrative": {
-    "name": "Narrative",
     "elements": {
       "id": {
         "type": [
@@ -3032,7 +2995,6 @@
     }
   },
   "ParameterDefinition": {
-    "name": "ParameterDefinition",
     "elements": {
       "id": {
         "type": [
@@ -3106,7 +3068,6 @@
     }
   },
   "Period": {
-    "name": "Period",
     "elements": {
       "id": {
         "type": [
@@ -3140,7 +3101,6 @@
     }
   },
   "Population": {
-    "name": "Population",
     "elements": {
       "id": {
         "type": [
@@ -3199,7 +3159,6 @@
     }
   },
   "ProdCharacteristic": {
-    "name": "ProdCharacteristic",
     "elements": {
       "id": {
         "type": [
@@ -3307,7 +3266,6 @@
     }
   },
   "ProductShelfLife": {
-    "name": "ProductShelfLife",
     "elements": {
       "id": {
         "type": [
@@ -3366,7 +3324,6 @@
     }
   },
   "Quantity": {
-    "name": "Quantity",
     "elements": {
       "id": {
         "type": [
@@ -3421,7 +3378,6 @@
     }
   },
   "Range": {
-    "name": "Range",
     "elements": {
       "id": {
         "type": [
@@ -3455,7 +3411,6 @@
     }
   },
   "Ratio": {
-    "name": "Ratio",
     "elements": {
       "id": {
         "type": [
@@ -3489,7 +3444,6 @@
     }
   },
   "Reference": {
-    "name": "Reference",
     "elements": {
       "id": {
         "type": [
@@ -3537,7 +3491,6 @@
     }
   },
   "RelatedArtifact": {
-    "name": "RelatedArtifact",
     "elements": {
       "id": {
         "type": [
@@ -3610,7 +3563,6 @@
     }
   },
   "SampledData": {
-    "name": "SampledData",
     "elements": {
       "id": {
         "type": [
@@ -3682,7 +3634,6 @@
     }
   },
   "Signature": {
-    "name": "Signature",
     "elements": {
       "id": {
         "type": [
@@ -3771,7 +3722,6 @@
     }
   },
   "SubstanceAmount": {
-    "name": "SubstanceAmount",
     "elements": {
       "id": {
         "type": [
@@ -3833,7 +3783,6 @@
     }
   },
   "SubstanceAmountReferenceRange": {
-    "name": "SubstanceAmountReferenceRange",
     "elements": {
       "id": {
         "type": [
@@ -3867,7 +3816,6 @@
     }
   },
   "Timing": {
-    "name": "Timing",
     "elements": {
       "id": {
         "type": [
@@ -3917,7 +3865,6 @@
     }
   },
   "TimingRepeat": {
-    "name": "TimingRepeat",
     "elements": {
       "id": {
         "type": [
@@ -4051,7 +3998,6 @@
     }
   },
   "TriggerDefinition": {
-    "name": "TriggerDefinition",
     "elements": {
       "id": {
         "type": [
@@ -4120,7 +4066,6 @@
     }
   },
   "UsageContext": {
-    "name": "UsageContext",
     "elements": {
       "id": {
         "type": [
@@ -4174,7 +4119,6 @@
     }
   },
   "MoneyQuantity": {
-    "name": "MoneyQuantity",
     "elements": {
       "id": {
         "type": [
@@ -4229,7 +4173,6 @@
     }
   },
   "SimpleQuantity": {
-    "name": "SimpleQuantity",
     "elements": {
       "id": {
         "type": [
@@ -4285,7 +4228,6 @@
     }
   },
   "AccountCoverage": {
-    "name": "AccountCoverage",
     "elements": {
       "id": {
         "type": [
@@ -4331,7 +4273,6 @@
     }
   },
   "AccountGuarantor": {
-    "name": "AccountGuarantor",
     "elements": {
       "id": {
         "type": [
@@ -4386,7 +4327,6 @@
     }
   },
   "ActivityDefinitionParticipant": {
-    "name": "ActivityDefinitionParticipant",
     "elements": {
       "id": {
         "type": [
@@ -4429,7 +4369,6 @@
     }
   },
   "ActivityDefinitionDynamicValue": {
-    "name": "ActivityDefinitionDynamicValue",
     "elements": {
       "id": {
         "type": [
@@ -4473,7 +4412,6 @@
     }
   },
   "AdverseEventSuspectEntityCausality": {
-    "name": "AdverseEventSuspectEntityCausality",
     "elements": {
       "id": {
         "type": [
@@ -4533,7 +4471,6 @@
     }
   },
   "AdverseEventSuspectEntity": {
-    "name": "AdverseEventSuspectEntity",
     "elements": {
       "id": {
         "type": [
@@ -4586,7 +4523,6 @@
     }
   },
   "AllergyIntoleranceReaction": {
-    "name": "AllergyIntoleranceReaction",
     "elements": {
       "id": {
         "type": [
@@ -4666,7 +4602,6 @@
     }
   },
   "AppointmentParticipant": {
-    "name": "AppointmentParticipant",
     "elements": {
       "id": {
         "type": [
@@ -4740,7 +4675,6 @@
     }
   },
   "AuditEventAgentNetwork": {
-    "name": "AuditEventAgentNetwork",
     "elements": {
       "id": {
         "type": [
@@ -4782,7 +4716,6 @@
     }
   },
   "AuditEventAgent": {
-    "name": "AuditEventAgent",
     "elements": {
       "id": {
         "type": [
@@ -4902,7 +4835,6 @@
     }
   },
   "AuditEventSource": {
-    "name": "AuditEventSource",
     "elements": {
       "id": {
         "type": [
@@ -4961,7 +4893,6 @@
     }
   },
   "AuditEventEntityDetail": {
-    "name": "AuditEventEntityDetail",
     "elements": {
       "id": {
         "type": [
@@ -5008,7 +4939,6 @@
     }
   },
   "AuditEventEntity": {
-    "name": "AuditEventEntity",
     "elements": {
       "id": {
         "type": [
@@ -5104,7 +5034,6 @@
     }
   },
   "BiologicallyDerivedProductCollection": {
-    "name": "BiologicallyDerivedProductCollection",
     "elements": {
       "id": {
         "type": [
@@ -5164,7 +5093,6 @@
     }
   },
   "BiologicallyDerivedProductProcessing": {
-    "name": "BiologicallyDerivedProductProcessing",
     "elements": {
       "id": {
         "type": [
@@ -5226,7 +5154,6 @@
     }
   },
   "BiologicallyDerivedProductManipulation": {
-    "name": "BiologicallyDerivedProductManipulation",
     "elements": {
       "id": {
         "type": [
@@ -5271,7 +5198,6 @@
     }
   },
   "BiologicallyDerivedProductStorage": {
-    "name": "BiologicallyDerivedProductStorage",
     "elements": {
       "id": {
         "type": [
@@ -5327,7 +5253,6 @@
     }
   },
   "BundleLink": {
-    "name": "BundleLink",
     "elements": {
       "id": {
         "type": [
@@ -5371,7 +5296,6 @@
     }
   },
   "BundleEntrySearch": {
-    "name": "BundleEntrySearch",
     "elements": {
       "id": {
         "type": [
@@ -5413,7 +5337,6 @@
     }
   },
   "BundleEntryRequest": {
-    "name": "BundleEntryRequest",
     "elements": {
       "id": {
         "type": [
@@ -5485,7 +5408,6 @@
     }
   },
   "BundleEntryResponse": {
-    "name": "BundleEntryResponse",
     "elements": {
       "id": {
         "type": [
@@ -5549,7 +5471,6 @@
     }
   },
   "BundleEntry": {
-    "name": "BundleEntry",
     "elements": {
       "id": {
         "type": [
@@ -5620,7 +5541,6 @@
     }
   },
   "CapabilityStatementSoftware": {
-    "name": "CapabilityStatementSoftware",
     "elements": {
       "id": {
         "type": [
@@ -5670,7 +5590,6 @@
     }
   },
   "CapabilityStatementImplementation": {
-    "name": "CapabilityStatementImplementation",
     "elements": {
       "id": {
         "type": [
@@ -5723,7 +5642,6 @@
     }
   },
   "CapabilityStatementRestSecurity": {
-    "name": "CapabilityStatementRestSecurity",
     "elements": {
       "id": {
         "type": [
@@ -5773,7 +5691,6 @@
     }
   },
   "CapabilityStatementRestResourceInteraction": {
-    "name": "CapabilityStatementRestResourceInteraction",
     "elements": {
       "id": {
         "type": [
@@ -5816,7 +5733,6 @@
     }
   },
   "CapabilityStatementRestResourceSearchParam": {
-    "name": "CapabilityStatementRestResourceSearchParam",
     "elements": {
       "id": {
         "type": [
@@ -5877,7 +5793,6 @@
     }
   },
   "CapabilityStatementRestResourceOperation": {
-    "name": "CapabilityStatementRestResourceOperation",
     "elements": {
       "id": {
         "type": [
@@ -5931,7 +5846,6 @@
     }
   },
   "CapabilityStatementRestResource": {
-    "name": "CapabilityStatementRestResource",
     "elements": {
       "id": {
         "type": [
@@ -6092,7 +6006,6 @@
     }
   },
   "CapabilityStatementRestInteraction": {
-    "name": "CapabilityStatementRestInteraction",
     "elements": {
       "id": {
         "type": [
@@ -6135,7 +6048,6 @@
     }
   },
   "CapabilityStatementRest": {
-    "name": "CapabilityStatementRest",
     "elements": {
       "id": {
         "type": [
@@ -6228,7 +6140,6 @@
     }
   },
   "CapabilityStatementMessagingEndpoint": {
-    "name": "CapabilityStatementMessagingEndpoint",
     "elements": {
       "id": {
         "type": [
@@ -6272,7 +6183,6 @@
     }
   },
   "CapabilityStatementMessagingSupportedMessage": {
-    "name": "CapabilityStatementMessagingSupportedMessage",
     "elements": {
       "id": {
         "type": [
@@ -6319,7 +6229,6 @@
     }
   },
   "CapabilityStatementMessaging": {
-    "name": "CapabilityStatementMessaging",
     "elements": {
       "id": {
         "type": [
@@ -6377,7 +6286,6 @@
     }
   },
   "CapabilityStatementDocument": {
-    "name": "CapabilityStatementDocument",
     "elements": {
       "id": {
         "type": [
@@ -6431,7 +6339,6 @@
     }
   },
   "CarePlanActivityDetail": {
-    "name": "CarePlanActivityDetail",
     "elements": {
       "id": {
         "type": [
@@ -6627,7 +6534,6 @@
     }
   },
   "CarePlanActivity": {
-    "name": "CarePlanActivity",
     "elements": {
       "id": {
         "type": [
@@ -6707,7 +6613,6 @@
     }
   },
   "CareTeamParticipant": {
-    "name": "CareTeamParticipant",
     "elements": {
       "id": {
         "type": [
@@ -6775,7 +6680,6 @@
     }
   },
   "CatalogEntryRelatedEntry": {
-    "name": "CatalogEntryRelatedEntry",
     "elements": {
       "id": {
         "type": [
@@ -6822,7 +6726,6 @@
     }
   },
   "ChargeItemPerformer": {
-    "name": "ChargeItemPerformer",
     "elements": {
       "id": {
         "type": [
@@ -6874,7 +6777,6 @@
     }
   },
   "ChargeItemDefinitionApplicability": {
-    "name": "ChargeItemDefinitionApplicability",
     "elements": {
       "id": {
         "type": [
@@ -6923,7 +6825,6 @@
     }
   },
   "ChargeItemDefinitionPropertyGroupPriceComponent": {
-    "name": "ChargeItemDefinitionPropertyGroupPriceComponent",
     "elements": {
       "id": {
         "type": [
@@ -6980,7 +6881,6 @@
     }
   },
   "ChargeItemDefinitionPropertyGroup": {
-    "name": "ChargeItemDefinitionPropertyGroup",
     "elements": {
       "id": {
         "type": [
@@ -7024,7 +6924,6 @@
     }
   },
   "ClaimRelated": {
-    "name": "ClaimRelated",
     "elements": {
       "id": {
         "type": [
@@ -7076,7 +6975,6 @@
     }
   },
   "ClaimPayee": {
-    "name": "ClaimPayee",
     "elements": {
       "id": {
         "type": [
@@ -7126,7 +7024,6 @@
     }
   },
   "ClaimCareTeam": {
-    "name": "ClaimCareTeam",
     "elements": {
       "id": {
         "type": [
@@ -7196,7 +7093,6 @@
     }
   },
   "ClaimSupportingInfo": {
-    "name": "ClaimSupportingInfo",
     "elements": {
       "id": {
         "type": [
@@ -7286,7 +7182,6 @@
     }
   },
   "ClaimDiagnosis": {
-    "name": "ClaimDiagnosis",
     "elements": {
       "id": {
         "type": [
@@ -7358,7 +7253,6 @@
     }
   },
   "ClaimProcedure": {
-    "name": "ClaimProcedure",
     "elements": {
       "id": {
         "type": [
@@ -7434,7 +7328,6 @@
     }
   },
   "ClaimInsurance": {
-    "name": "ClaimInsurance",
     "elements": {
       "id": {
         "type": [
@@ -7521,7 +7414,6 @@
     }
   },
   "ClaimAccident": {
-    "name": "ClaimAccident",
     "elements": {
       "id": {
         "type": [
@@ -7577,7 +7469,6 @@
     }
   },
   "ClaimItemDetailSubDetail": {
-    "name": "ClaimItemDetailSubDetail",
     "elements": {
       "id": {
         "type": [
@@ -7690,7 +7581,6 @@
     }
   },
   "ClaimItemDetail": {
-    "name": "ClaimItemDetail",
     "elements": {
       "id": {
         "type": [
@@ -7811,7 +7701,6 @@
     }
   },
   "ClaimItem": {
-    "name": "ClaimItem",
     "elements": {
       "id": {
         "type": [
@@ -8016,7 +7905,6 @@
     }
   },
   "ClaimResponseItemAdjudication": {
-    "name": "ClaimResponseItemAdjudication",
     "elements": {
       "id": {
         "type": [
@@ -8073,7 +7961,6 @@
     }
   },
   "ClaimResponseItemDetailSubDetail": {
-    "name": "ClaimResponseItemDetailSubDetail",
     "elements": {
       "id": {
         "type": [
@@ -8125,7 +8012,6 @@
     }
   },
   "ClaimResponseItemDetail": {
-    "name": "ClaimResponseItemDetail",
     "elements": {
       "id": {
         "type": [
@@ -8186,7 +8072,6 @@
     }
   },
   "ClaimResponseItem": {
-    "name": "ClaimResponseItem",
     "elements": {
       "id": {
         "type": [
@@ -8247,7 +8132,6 @@
     }
   },
   "ClaimResponseAddItemDetailSubDetail": {
-    "name": "ClaimResponseAddItemDetailSubDetail",
     "elements": {
       "id": {
         "type": [
@@ -8336,7 +8220,6 @@
     }
   },
   "ClaimResponseAddItemDetail": {
-    "name": "ClaimResponseAddItemDetail",
     "elements": {
       "id": {
         "type": [
@@ -8433,7 +8316,6 @@
     }
   },
   "ClaimResponseAddItem": {
-    "name": "ClaimResponseAddItem",
     "elements": {
       "id": {
         "type": [
@@ -8616,7 +8498,6 @@
     }
   },
   "ClaimResponseTotal": {
-    "name": "ClaimResponseTotal",
     "elements": {
       "id": {
         "type": [
@@ -8660,7 +8541,6 @@
     }
   },
   "ClaimResponsePayment": {
-    "name": "ClaimResponsePayment",
     "elements": {
       "id": {
         "type": [
@@ -8732,7 +8612,6 @@
     }
   },
   "ClaimResponseProcessNote": {
-    "name": "ClaimResponseProcessNote",
     "elements": {
       "id": {
         "type": [
@@ -8789,7 +8668,6 @@
     }
   },
   "ClaimResponseInsurance": {
-    "name": "ClaimResponseInsurance",
     "elements": {
       "id": {
         "type": [
@@ -8861,7 +8739,6 @@
     }
   },
   "ClaimResponseError": {
-    "name": "ClaimResponseError",
     "elements": {
       "id": {
         "type": [
@@ -8918,7 +8795,6 @@
     }
   },
   "ClinicalImpressionInvestigation": {
-    "name": "ClinicalImpressionInvestigation",
     "elements": {
       "id": {
         "type": [
@@ -8971,7 +8847,6 @@
     }
   },
   "ClinicalImpressionFinding": {
-    "name": "ClinicalImpressionFinding",
     "elements": {
       "id": {
         "type": [
@@ -9025,7 +8900,6 @@
     }
   },
   "CodeSystemFilter": {
-    "name": "CodeSystemFilter",
     "elements": {
       "id": {
         "type": [
@@ -9085,7 +8959,6 @@
     }
   },
   "CodeSystemProperty": {
-    "name": "CodeSystemProperty",
     "elements": {
       "id": {
         "type": [
@@ -9143,7 +9016,6 @@
     }
   },
   "CodeSystemConceptDesignation": {
-    "name": "CodeSystemConceptDesignation",
     "elements": {
       "id": {
         "type": [
@@ -9193,7 +9065,6 @@
     }
   },
   "CodeSystemConceptProperty": {
-    "name": "CodeSystemConceptProperty",
     "elements": {
       "id": {
         "type": [
@@ -9255,7 +9126,6 @@
     }
   },
   "CodeSystemConcept": {
-    "name": "CodeSystemConcept",
     "elements": {
       "id": {
         "type": [
@@ -9329,7 +9199,6 @@
     }
   },
   "CommunicationPayload": {
-    "name": "CommunicationPayload",
     "elements": {
       "id": {
         "type": [
@@ -9374,7 +9243,6 @@
     }
   },
   "CommunicationRequestPayload": {
-    "name": "CommunicationRequestPayload",
     "elements": {
       "id": {
         "type": [
@@ -9419,7 +9287,6 @@
     }
   },
   "CompartmentDefinitionResource": {
-    "name": "CompartmentDefinitionResource",
     "elements": {
       "id": {
         "type": [
@@ -9470,7 +9337,6 @@
     }
   },
   "CompositionAttester": {
-    "name": "CompositionAttester",
     "elements": {
       "id": {
         "type": [
@@ -9527,7 +9393,6 @@
     }
   },
   "CompositionRelatesTo": {
-    "name": "CompositionRelatesTo",
     "elements": {
       "id": {
         "type": [
@@ -9577,7 +9442,6 @@
     }
   },
   "CompositionEvent": {
-    "name": "CompositionEvent",
     "elements": {
       "id": {
         "type": [
@@ -9631,7 +9495,6 @@
     }
   },
   "CompositionSection": {
-    "name": "CompositionSection",
     "elements": {
       "id": {
         "type": [
@@ -9746,7 +9609,6 @@
     }
   },
   "ConceptMapGroupElementTargetDependsOn": {
-    "name": "ConceptMapGroupElementTargetDependsOn",
     "elements": {
       "id": {
         "type": [
@@ -9807,7 +9669,6 @@
     }
   },
   "ConceptMapGroupElementTarget": {
-    "name": "ConceptMapGroupElementTarget",
     "elements": {
       "id": {
         "type": [
@@ -9880,7 +9741,6 @@
     }
   },
   "ConceptMapGroupElement": {
-    "name": "ConceptMapGroupElement",
     "elements": {
       "id": {
         "type": [
@@ -9930,7 +9790,6 @@
     }
   },
   "ConceptMapGroupUnmapped": {
-    "name": "ConceptMapGroupUnmapped",
     "elements": {
       "id": {
         "type": [
@@ -9990,7 +9849,6 @@
     }
   },
   "ConceptMapGroup": {
-    "name": "ConceptMapGroup",
     "elements": {
       "id": {
         "type": [
@@ -10062,7 +9920,6 @@
     }
   },
   "ConditionStage": {
-    "name": "ConditionStage",
     "elements": {
       "id": {
         "type": [
@@ -10117,7 +9974,6 @@
     }
   },
   "ConditionEvidence": {
-    "name": "ConditionEvidence",
     "elements": {
       "id": {
         "type": [
@@ -10164,7 +10020,6 @@
     }
   },
   "ConsentPolicy": {
-    "name": "ConsentPolicy",
     "elements": {
       "id": {
         "type": [
@@ -10206,7 +10061,6 @@
     }
   },
   "ConsentVerification": {
-    "name": "ConsentVerification",
     "elements": {
       "id": {
         "type": [
@@ -10260,7 +10114,6 @@
     }
   },
   "ConsentProvisionActor": {
-    "name": "ConsentProvisionActor",
     "elements": {
       "id": {
         "type": [
@@ -10314,7 +10167,6 @@
     }
   },
   "ConsentProvisionData": {
-    "name": "ConsentProvisionData",
     "elements": {
       "id": {
         "type": [
@@ -10361,7 +10213,6 @@
     }
   },
   "ConsentProvision": {
-    "name": "ConsentProvision",
     "elements": {
       "id": {
         "type": [
@@ -10474,7 +10325,6 @@
     }
   },
   "ContractContentDefinition": {
-    "name": "ContractContentDefinition",
     "elements": {
       "id": {
         "type": [
@@ -10551,7 +10401,6 @@
     }
   },
   "ContractTermSecurityLabel": {
-    "name": "ContractTermSecurityLabel",
     "elements": {
       "id": {
         "type": [
@@ -10611,7 +10460,6 @@
     }
   },
   "ContractTermOfferParty": {
-    "name": "ContractTermOfferParty",
     "elements": {
       "id": {
         "type": [
@@ -10665,7 +10513,6 @@
     }
   },
   "ContractTermOfferAnswer": {
-    "name": "ContractTermOfferAnswer",
     "elements": {
       "id": {
         "type": [
@@ -10737,7 +10584,6 @@
     }
   },
   "ContractTermOffer": {
-    "name": "ContractTermOffer",
     "elements": {
       "id": {
         "type": [
@@ -10844,7 +10690,6 @@
     }
   },
   "ContractTermAssetContext": {
-    "name": "ContractTermAssetContext",
     "elements": {
       "id": {
         "type": [
@@ -10897,7 +10742,6 @@
     }
   },
   "ContractTermAssetValuedItem": {
-    "name": "ContractTermAssetValuedItem",
     "elements": {
       "id": {
         "type": [
@@ -11045,7 +10889,6 @@
     }
   },
   "ContractTermAsset": {
-    "name": "ContractTermAsset",
     "elements": {
       "id": {
         "type": [
@@ -11192,7 +11035,6 @@
     }
   },
   "ContractTermActionSubject": {
-    "name": "ContractTermActionSubject",
     "elements": {
       "id": {
         "type": [
@@ -11245,7 +11087,6 @@
     }
   },
   "ContractTermAction": {
-    "name": "ContractTermAction",
     "elements": {
       "id": {
         "type": [
@@ -11474,7 +11315,6 @@
     }
   },
   "ContractTerm": {
-    "name": "ContractTerm",
     "elements": {
       "id": {
         "type": [
@@ -11597,7 +11437,6 @@
     }
   },
   "ContractSigner": {
-    "name": "ContractSigner",
     "elements": {
       "id": {
         "type": [
@@ -11657,7 +11496,6 @@
     }
   },
   "ContractFriendly": {
-    "name": "ContractFriendly",
     "elements": {
       "id": {
         "type": [
@@ -11701,7 +11539,6 @@
     }
   },
   "ContractLegal": {
-    "name": "ContractLegal",
     "elements": {
       "id": {
         "type": [
@@ -11745,7 +11582,6 @@
     }
   },
   "ContractRule": {
-    "name": "ContractRule",
     "elements": {
       "id": {
         "type": [
@@ -11787,7 +11623,6 @@
     }
   },
   "CoverageClass": {
-    "name": "CoverageClass",
     "elements": {
       "id": {
         "type": [
@@ -11838,7 +11673,6 @@
     }
   },
   "CoverageCostToBeneficiaryException": {
-    "name": "CoverageCostToBeneficiaryException",
     "elements": {
       "id": {
         "type": [
@@ -11881,7 +11715,6 @@
     }
   },
   "CoverageCostToBeneficiary": {
-    "name": "CoverageCostToBeneficiary",
     "elements": {
       "id": {
         "type": [
@@ -11935,7 +11768,6 @@
     }
   },
   "CoverageEligibilityRequestSupportingInfo": {
-    "name": "CoverageEligibilityRequestSupportingInfo",
     "elements": {
       "id": {
         "type": [
@@ -11989,7 +11821,6 @@
     }
   },
   "CoverageEligibilityRequestInsurance": {
-    "name": "CoverageEligibilityRequestInsurance",
     "elements": {
       "id": {
         "type": [
@@ -12042,7 +11873,6 @@
     }
   },
   "CoverageEligibilityRequestItemDiagnosis": {
-    "name": "CoverageEligibilityRequestItemDiagnosis",
     "elements": {
       "id": {
         "type": [
@@ -12083,7 +11913,6 @@
     }
   },
   "CoverageEligibilityRequestItem": {
-    "name": "CoverageEligibilityRequestItem",
     "elements": {
       "id": {
         "type": [
@@ -12196,7 +12025,6 @@
     }
   },
   "CoverageEligibilityResponseInsuranceItemBenefit": {
-    "name": "CoverageEligibilityResponseInsuranceItemBenefit",
     "elements": {
       "id": {
         "type": [
@@ -12258,7 +12086,6 @@
     }
   },
   "CoverageEligibilityResponseInsuranceItem": {
-    "name": "CoverageEligibilityResponseInsuranceItem",
     "elements": {
       "id": {
         "type": [
@@ -12391,7 +12218,6 @@
     }
   },
   "CoverageEligibilityResponseInsurance": {
-    "name": "CoverageEligibilityResponseInsurance",
     "elements": {
       "id": {
         "type": [
@@ -12452,7 +12278,6 @@
     }
   },
   "CoverageEligibilityResponseError": {
-    "name": "CoverageEligibilityResponseError",
     "elements": {
       "id": {
         "type": [
@@ -12488,7 +12313,6 @@
     }
   },
   "DetectedIssueEvidence": {
-    "name": "DetectedIssueEvidence",
     "elements": {
       "id": {
         "type": [
@@ -12535,7 +12359,6 @@
     }
   },
   "DetectedIssueMitigation": {
-    "name": "DetectedIssueMitigation",
     "elements": {
       "id": {
         "type": [
@@ -12589,7 +12412,6 @@
     }
   },
   "DeviceUdiCarrier": {
-    "name": "DeviceUdiCarrier",
     "elements": {
       "id": {
         "type": [
@@ -12659,7 +12481,6 @@
     }
   },
   "DeviceDeviceName": {
-    "name": "DeviceDeviceName",
     "elements": {
       "id": {
         "type": [
@@ -12703,7 +12524,6 @@
     }
   },
   "DeviceSpecialization": {
-    "name": "DeviceSpecialization",
     "elements": {
       "id": {
         "type": [
@@ -12746,7 +12566,6 @@
     }
   },
   "DeviceVersion": {
-    "name": "DeviceVersion",
     "elements": {
       "id": {
         "type": [
@@ -12796,7 +12615,6 @@
     }
   },
   "DeviceProperty": {
-    "name": "DeviceProperty",
     "elements": {
       "id": {
         "type": [
@@ -12848,7 +12666,6 @@
     }
   },
   "DeviceDefinitionUdiDeviceIdentifier": {
-    "name": "DeviceDefinitionUdiDeviceIdentifier",
     "elements": {
       "id": {
         "type": [
@@ -12900,7 +12717,6 @@
     }
   },
   "DeviceDefinitionDeviceName": {
-    "name": "DeviceDefinitionDeviceName",
     "elements": {
       "id": {
         "type": [
@@ -12944,7 +12760,6 @@
     }
   },
   "DeviceDefinitionSpecialization": {
-    "name": "DeviceDefinitionSpecialization",
     "elements": {
       "id": {
         "type": [
@@ -12987,7 +12802,6 @@
     }
   },
   "DeviceDefinitionCapability": {
-    "name": "DeviceDefinitionCapability",
     "elements": {
       "id": {
         "type": [
@@ -13031,7 +12845,6 @@
     }
   },
   "DeviceDefinitionProperty": {
-    "name": "DeviceDefinitionProperty",
     "elements": {
       "id": {
         "type": [
@@ -13083,7 +12896,6 @@
     }
   },
   "DeviceDefinitionMaterial": {
-    "name": "DeviceDefinitionMaterial",
     "elements": {
       "id": {
         "type": [
@@ -13133,7 +12945,6 @@
     }
   },
   "DeviceDefinitionClassification": {
-    "name": "DeviceDefinitionClassification",
     "elements": {
       "id": {
         "type": [
@@ -13177,7 +12988,6 @@
     }
   },
   "DeviceMetricCalibration": {
-    "name": "DeviceMetricCalibration",
     "elements": {
       "id": {
         "type": [
@@ -13226,7 +13036,6 @@
     }
   },
   "DeviceRequestParameter": {
-    "name": "DeviceRequestParameter",
     "elements": {
       "id": {
         "type": [
@@ -13277,7 +13086,6 @@
     }
   },
   "DiagnosticReportMedia": {
-    "name": "DiagnosticReportMedia",
     "elements": {
       "id": {
         "type": [
@@ -13323,7 +13131,6 @@
     }
   },
   "DocumentManifestRelated": {
-    "name": "DocumentManifestRelated",
     "elements": {
       "id": {
         "type": [
@@ -13368,7 +13175,6 @@
     }
   },
   "DocumentReferenceRelatesTo": {
-    "name": "DocumentReferenceRelatesTo",
     "elements": {
       "id": {
         "type": [
@@ -13415,7 +13221,6 @@
     }
   },
   "DocumentReferenceContent": {
-    "name": "DocumentReferenceContent",
     "elements": {
       "id": {
         "type": [
@@ -13458,7 +13263,6 @@
     }
   },
   "DocumentReferenceContext": {
-    "name": "DocumentReferenceContext",
     "elements": {
       "id": {
         "type": [
@@ -13548,7 +13352,6 @@
     }
   },
   "EffectEvidenceSynthesisSampleSize": {
-    "name": "EffectEvidenceSynthesisSampleSize",
     "elements": {
       "id": {
         "type": [
@@ -13597,7 +13400,6 @@
     }
   },
   "EffectEvidenceSynthesisResultsByExposure": {
-    "name": "EffectEvidenceSynthesisResultsByExposure",
     "elements": {
       "id": {
         "type": [
@@ -13657,7 +13459,6 @@
     }
   },
   "EffectEvidenceSynthesisEffectEstimatePrecisionEstimate": {
-    "name": "EffectEvidenceSynthesisEffectEstimatePrecisionEstimate",
     "elements": {
       "id": {
         "type": [
@@ -13713,7 +13514,6 @@
     }
   },
   "EffectEvidenceSynthesisEffectEstimate": {
-    "name": "EffectEvidenceSynthesisEffectEstimate",
     "elements": {
       "id": {
         "type": [
@@ -13784,7 +13584,6 @@
     }
   },
   "EffectEvidenceSynthesisCertaintyCertaintySubcomponent": {
-    "name": "EffectEvidenceSynthesisCertaintyCertaintySubcomponent",
     "elements": {
       "id": {
         "type": [
@@ -13835,7 +13634,6 @@
     }
   },
   "EffectEvidenceSynthesisCertainty": {
-    "name": "EffectEvidenceSynthesisCertainty",
     "elements": {
       "id": {
         "type": [
@@ -13887,7 +13685,6 @@
     }
   },
   "EncounterStatusHistory": {
-    "name": "EncounterStatusHistory",
     "elements": {
       "id": {
         "type": [
@@ -13931,7 +13728,6 @@
     }
   },
   "EncounterClassHistory": {
-    "name": "EncounterClassHistory",
     "elements": {
       "id": {
         "type": [
@@ -13975,7 +13771,6 @@
     }
   },
   "EncounterParticipant": {
-    "name": "EncounterParticipant",
     "elements": {
       "id": {
         "type": [
@@ -14030,7 +13825,6 @@
     }
   },
   "EncounterDiagnosis": {
-    "name": "EncounterDiagnosis",
     "elements": {
       "id": {
         "type": [
@@ -14084,7 +13878,6 @@
     }
   },
   "EncounterHospitalization": {
-    "name": "EncounterHospitalization",
     "elements": {
       "id": {
         "type": [
@@ -14186,7 +13979,6 @@
     }
   },
   "EncounterLocation": {
-    "name": "EncounterLocation",
     "elements": {
       "id": {
         "type": [
@@ -14246,7 +14038,6 @@
     }
   },
   "EpisodeOfCareStatusHistory": {
-    "name": "EpisodeOfCareStatusHistory",
     "elements": {
       "id": {
         "type": [
@@ -14290,7 +14081,6 @@
     }
   },
   "EpisodeOfCareDiagnosis": {
-    "name": "EpisodeOfCareDiagnosis",
     "elements": {
       "id": {
         "type": [
@@ -14343,7 +14133,6 @@
     }
   },
   "EvidenceVariableCharacteristic": {
-    "name": "EvidenceVariableCharacteristic",
     "elements": {
       "id": {
         "type": [
@@ -14452,7 +14241,6 @@
     }
   },
   "ExampleScenarioActor": {
-    "name": "ExampleScenarioActor",
     "elements": {
       "id": {
         "type": [
@@ -14510,7 +14298,6 @@
     }
   },
   "ExampleScenarioInstanceVersion": {
-    "name": "ExampleScenarioInstanceVersion",
     "elements": {
       "id": {
         "type": [
@@ -14554,7 +14341,6 @@
     }
   },
   "ExampleScenarioInstanceContainedInstance": {
-    "name": "ExampleScenarioInstanceContainedInstance",
     "elements": {
       "id": {
         "type": [
@@ -14597,7 +14383,6 @@
     }
   },
   "ExampleScenarioInstance": {
-    "name": "ExampleScenarioInstance",
     "elements": {
       "id": {
         "type": [
@@ -14671,7 +14456,6 @@
     }
   },
   "ExampleScenarioProcessStepOperation": {
-    "name": "ExampleScenarioProcessStepOperation",
     "elements": {
       "id": {
         "type": [
@@ -14770,7 +14554,6 @@
     }
   },
   "ExampleScenarioProcessStepAlternative": {
-    "name": "ExampleScenarioProcessStepAlternative",
     "elements": {
       "id": {
         "type": [
@@ -14821,7 +14604,6 @@
     }
   },
   "ExampleScenarioProcessStep": {
-    "name": "ExampleScenarioProcessStep",
     "elements": {
       "id": {
         "type": [
@@ -14879,7 +14661,6 @@
     }
   },
   "ExampleScenarioProcess": {
-    "name": "ExampleScenarioProcess",
     "elements": {
       "id": {
         "type": [
@@ -14944,7 +14725,6 @@
     }
   },
   "ExplanationOfBenefitRelated": {
-    "name": "ExplanationOfBenefitRelated",
     "elements": {
       "id": {
         "type": [
@@ -14996,7 +14776,6 @@
     }
   },
   "ExplanationOfBenefitPayee": {
-    "name": "ExplanationOfBenefitPayee",
     "elements": {
       "id": {
         "type": [
@@ -15045,7 +14824,6 @@
     }
   },
   "ExplanationOfBenefitCareTeam": {
-    "name": "ExplanationOfBenefitCareTeam",
     "elements": {
       "id": {
         "type": [
@@ -15115,7 +14893,6 @@
     }
   },
   "ExplanationOfBenefitSupportingInfo": {
-    "name": "ExplanationOfBenefitSupportingInfo",
     "elements": {
       "id": {
         "type": [
@@ -15205,7 +14982,6 @@
     }
   },
   "ExplanationOfBenefitDiagnosis": {
-    "name": "ExplanationOfBenefitDiagnosis",
     "elements": {
       "id": {
         "type": [
@@ -15277,7 +15053,6 @@
     }
   },
   "ExplanationOfBenefitProcedure": {
-    "name": "ExplanationOfBenefitProcedure",
     "elements": {
       "id": {
         "type": [
@@ -15353,7 +15128,6 @@
     }
   },
   "ExplanationOfBenefitInsurance": {
-    "name": "ExplanationOfBenefitInsurance",
     "elements": {
       "id": {
         "type": [
@@ -15408,7 +15182,6 @@
     }
   },
   "ExplanationOfBenefitAccident": {
-    "name": "ExplanationOfBenefitAccident",
     "elements": {
       "id": {
         "type": [
@@ -15463,7 +15236,6 @@
     }
   },
   "ExplanationOfBenefitItemAdjudication": {
-    "name": "ExplanationOfBenefitItemAdjudication",
     "elements": {
       "id": {
         "type": [
@@ -15520,7 +15292,6 @@
     }
   },
   "ExplanationOfBenefitItemDetailSubDetail": {
-    "name": "ExplanationOfBenefitItemDetailSubDetail",
     "elements": {
       "id": {
         "type": [
@@ -15649,7 +15420,6 @@
     }
   },
   "ExplanationOfBenefitItemDetail": {
-    "name": "ExplanationOfBenefitItemDetail",
     "elements": {
       "id": {
         "type": [
@@ -15786,7 +15556,6 @@
     }
   },
   "ExplanationOfBenefitItem": {
-    "name": "ExplanationOfBenefitItem",
     "elements": {
       "id": {
         "type": [
@@ -16007,7 +15776,6 @@
     }
   },
   "ExplanationOfBenefitAddItemDetailSubDetail": {
-    "name": "ExplanationOfBenefitAddItemDetailSubDetail",
     "elements": {
       "id": {
         "type": [
@@ -16095,7 +15863,6 @@
     }
   },
   "ExplanationOfBenefitAddItemDetail": {
-    "name": "ExplanationOfBenefitAddItemDetail",
     "elements": {
       "id": {
         "type": [
@@ -16191,7 +15958,6 @@
     }
   },
   "ExplanationOfBenefitAddItem": {
-    "name": "ExplanationOfBenefitAddItem",
     "elements": {
       "id": {
         "type": [
@@ -16373,7 +16139,6 @@
     }
   },
   "ExplanationOfBenefitTotal": {
-    "name": "ExplanationOfBenefitTotal",
     "elements": {
       "id": {
         "type": [
@@ -16417,7 +16182,6 @@
     }
   },
   "ExplanationOfBenefitPayment": {
-    "name": "ExplanationOfBenefitPayment",
     "elements": {
       "id": {
         "type": [
@@ -16487,7 +16251,6 @@
     }
   },
   "ExplanationOfBenefitProcessNote": {
-    "name": "ExplanationOfBenefitProcessNote",
     "elements": {
       "id": {
         "type": [
@@ -16543,7 +16306,6 @@
     }
   },
   "ExplanationOfBenefitBenefitBalanceFinancial": {
-    "name": "ExplanationOfBenefitBenefitBalanceFinancial",
     "elements": {
       "id": {
         "type": [
@@ -16602,7 +16364,6 @@
     }
   },
   "ExplanationOfBenefitBenefitBalance": {
-    "name": "ExplanationOfBenefitBenefitBalance",
     "elements": {
       "id": {
         "type": [
@@ -16688,7 +16449,6 @@
     }
   },
   "FamilyMemberHistoryCondition": {
-    "name": "FamilyMemberHistoryCondition",
     "elements": {
       "id": {
         "type": [
@@ -16762,7 +16522,6 @@
     }
   },
   "GoalTarget": {
-    "name": "GoalTarget",
     "elements": {
       "id": {
         "type": [
@@ -16832,7 +16591,6 @@
     }
   },
   "GraphDefinitionLinkTargetCompartment": {
-    "name": "GraphDefinitionLinkTargetCompartment",
     "elements": {
       "id": {
         "type": [
@@ -16898,7 +16656,6 @@
     }
   },
   "GraphDefinitionLinkTarget": {
-    "name": "GraphDefinitionLinkTarget",
     "elements": {
       "id": {
         "type": [
@@ -16967,7 +16724,6 @@
     }
   },
   "GraphDefinitionLink": {
-    "name": "GraphDefinitionLink",
     "elements": {
       "id": {
         "type": [
@@ -17038,7 +16794,6 @@
     }
   },
   "GroupCharacteristic": {
-    "name": "GroupCharacteristic",
     "elements": {
       "id": {
         "type": [
@@ -17109,7 +16864,6 @@
     }
   },
   "GroupMember": {
-    "name": "GroupMember",
     "elements": {
       "id": {
         "type": [
@@ -17168,7 +16922,6 @@
     }
   },
   "HealthcareServiceEligibility": {
-    "name": "HealthcareServiceEligibility",
     "elements": {
       "id": {
         "type": [
@@ -17210,7 +16963,6 @@
     }
   },
   "HealthcareServiceAvailableTime": {
-    "name": "HealthcareServiceAvailableTime",
     "elements": {
       "id": {
         "type": [
@@ -17267,7 +17019,6 @@
     }
   },
   "HealthcareServiceNotAvailable": {
-    "name": "HealthcareServiceNotAvailable",
     "elements": {
       "id": {
         "type": [
@@ -17310,7 +17061,6 @@
     }
   },
   "ImagingStudySeriesPerformer": {
-    "name": "ImagingStudySeriesPerformer",
     "elements": {
       "id": {
         "type": [
@@ -17362,7 +17112,6 @@
     }
   },
   "ImagingStudySeriesInstance": {
-    "name": "ImagingStudySeriesInstance",
     "elements": {
       "id": {
         "type": [
@@ -17420,7 +17169,6 @@
     }
   },
   "ImagingStudySeries": {
-    "name": "ImagingStudySeries",
     "elements": {
       "id": {
         "type": [
@@ -17544,7 +17292,6 @@
     }
   },
   "ImmunizationPerformer": {
-    "name": "ImmunizationPerformer",
     "elements": {
       "id": {
         "type": [
@@ -17592,7 +17339,6 @@
     }
   },
   "ImmunizationEducation": {
-    "name": "ImmunizationEducation",
     "elements": {
       "id": {
         "type": [
@@ -17648,7 +17394,6 @@
     }
   },
   "ImmunizationReaction": {
-    "name": "ImmunizationReaction",
     "elements": {
       "id": {
         "type": [
@@ -17700,7 +17445,6 @@
     }
   },
   "ImmunizationProtocolApplied": {
-    "name": "ImmunizationProtocolApplied",
     "elements": {
       "id": {
         "type": [
@@ -17774,7 +17518,6 @@
     }
   },
   "ImmunizationRecommendationRecommendationDateCriterion": {
-    "name": "ImmunizationRecommendationRecommendationDateCriterion",
     "elements": {
       "id": {
         "type": [
@@ -17818,7 +17561,6 @@
     }
   },
   "ImmunizationRecommendationRecommendation": {
-    "name": "ImmunizationRecommendationRecommendation",
     "elements": {
       "id": {
         "type": [
@@ -17950,7 +17692,6 @@
     }
   },
   "ImplementationGuideDependsOn": {
-    "name": "ImplementationGuideDependsOn",
     "elements": {
       "id": {
         "type": [
@@ -18003,7 +17744,6 @@
     }
   },
   "ImplementationGuideGlobal": {
-    "name": "ImplementationGuideGlobal",
     "elements": {
       "id": {
         "type": [
@@ -18050,7 +17790,6 @@
     }
   },
   "ImplementationGuideDefinitionGrouping": {
-    "name": "ImplementationGuideDefinitionGrouping",
     "elements": {
       "id": {
         "type": [
@@ -18093,7 +17832,6 @@
     }
   },
   "ImplementationGuideDefinitionResource": {
-    "name": "ImplementationGuideDefinitionResource",
     "elements": {
       "id": {
         "type": [
@@ -18174,7 +17912,6 @@
     }
   },
   "ImplementationGuideDefinitionPage": {
-    "name": "ImplementationGuideDefinitionPage",
     "elements": {
       "id": {
         "type": [
@@ -18240,7 +17977,6 @@
     }
   },
   "ImplementationGuideDefinitionParameter": {
-    "name": "ImplementationGuideDefinitionParameter",
     "elements": {
       "id": {
         "type": [
@@ -18284,7 +18020,6 @@
     }
   },
   "ImplementationGuideDefinitionTemplate": {
-    "name": "ImplementationGuideDefinitionTemplate",
     "elements": {
       "id": {
         "type": [
@@ -18335,7 +18070,6 @@
     }
   },
   "ImplementationGuideDefinition": {
-    "name": "ImplementationGuideDefinition",
     "elements": {
       "id": {
         "type": [
@@ -18403,7 +18137,6 @@
     }
   },
   "ImplementationGuideManifestResource": {
-    "name": "ImplementationGuideManifestResource",
     "elements": {
       "id": {
         "type": [
@@ -18462,7 +18195,6 @@
     }
   },
   "ImplementationGuideManifestPage": {
-    "name": "ImplementationGuideManifestPage",
     "elements": {
       "id": {
         "type": [
@@ -18513,7 +18245,6 @@
     }
   },
   "ImplementationGuideManifest": {
-    "name": "ImplementationGuideManifest",
     "elements": {
       "id": {
         "type": [
@@ -18581,7 +18312,6 @@
     }
   },
   "InsurancePlanContact": {
-    "name": "InsurancePlanContact",
     "elements": {
       "id": {
         "type": [
@@ -18638,7 +18368,6 @@
     }
   },
   "InsurancePlanCoverageBenefitLimit": {
-    "name": "InsurancePlanCoverageBenefitLimit",
     "elements": {
       "id": {
         "type": [
@@ -18680,7 +18409,6 @@
     }
   },
   "InsurancePlanCoverageBenefit": {
-    "name": "InsurancePlanCoverageBenefit",
     "elements": {
       "id": {
         "type": [
@@ -18731,7 +18459,6 @@
     }
   },
   "InsurancePlanCoverage": {
-    "name": "InsurancePlanCoverage",
     "elements": {
       "id": {
         "type": [
@@ -18787,7 +18514,6 @@
     }
   },
   "InsurancePlanPlanGeneralCost": {
-    "name": "InsurancePlanPlanGeneralCost",
     "elements": {
       "id": {
         "type": [
@@ -18843,7 +18569,6 @@
     }
   },
   "InsurancePlanPlanSpecificCostBenefitCost": {
-    "name": "InsurancePlanPlanSpecificCostBenefitCost",
     "elements": {
       "id": {
         "type": [
@@ -18901,7 +18626,6 @@
     }
   },
   "InsurancePlanPlanSpecificCostBenefit": {
-    "name": "InsurancePlanPlanSpecificCostBenefit",
     "elements": {
       "id": {
         "type": [
@@ -18945,7 +18669,6 @@
     }
   },
   "InsurancePlanPlanSpecificCost": {
-    "name": "InsurancePlanPlanSpecificCost",
     "elements": {
       "id": {
         "type": [
@@ -18989,7 +18712,6 @@
     }
   },
   "InsurancePlanPlan": {
-    "name": "InsurancePlanPlan",
     "elements": {
       "id": {
         "type": [
@@ -19070,7 +18792,6 @@
     }
   },
   "InvoiceParticipant": {
-    "name": "InvoiceParticipant",
     "elements": {
       "id": {
         "type": [
@@ -19121,7 +18842,6 @@
     }
   },
   "InvoiceLineItemPriceComponent": {
-    "name": "InvoiceLineItemPriceComponent",
     "elements": {
       "id": {
         "type": [
@@ -19178,7 +18898,6 @@
     }
   },
   "InvoiceLineItem": {
-    "name": "InvoiceLineItem",
     "elements": {
       "id": {
         "type": [
@@ -19235,7 +18954,6 @@
     }
   },
   "LinkageItem": {
-    "name": "LinkageItem",
     "elements": {
       "id": {
         "type": [
@@ -19282,7 +19000,6 @@
     }
   },
   "ListEntry": {
-    "name": "ListEntry",
     "elements": {
       "id": {
         "type": [
@@ -19342,7 +19059,6 @@
     }
   },
   "LocationPosition": {
-    "name": "LocationPosition",
     "elements": {
       "id": {
         "type": [
@@ -19393,7 +19109,6 @@
     }
   },
   "LocationHoursOfOperation": {
-    "name": "LocationHoursOfOperation",
     "elements": {
       "id": {
         "type": [
@@ -19450,7 +19165,6 @@
     }
   },
   "MeasureGroupPopulation": {
-    "name": "MeasureGroupPopulation",
     "elements": {
       "id": {
         "type": [
@@ -19500,7 +19214,6 @@
     }
   },
   "MeasureGroupStratifierComponent": {
-    "name": "MeasureGroupStratifierComponent",
     "elements": {
       "id": {
         "type": [
@@ -19550,7 +19263,6 @@
     }
   },
   "MeasureGroupStratifier": {
-    "name": "MeasureGroupStratifier",
     "elements": {
       "id": {
         "type": [
@@ -19607,7 +19319,6 @@
     }
   },
   "MeasureGroup": {
-    "name": "MeasureGroup",
     "elements": {
       "id": {
         "type": [
@@ -19665,7 +19376,6 @@
     }
   },
   "MeasureSupplementalData": {
-    "name": "MeasureSupplementalData",
     "elements": {
       "id": {
         "type": [
@@ -19723,7 +19433,6 @@
     }
   },
   "MeasureReportGroupPopulation": {
-    "name": "MeasureReportGroupPopulation",
     "elements": {
       "id": {
         "type": [
@@ -19775,7 +19484,6 @@
     }
   },
   "MeasureReportGroupStratifierStratumComponent": {
-    "name": "MeasureReportGroupStratifierStratumComponent",
     "elements": {
       "id": {
         "type": [
@@ -19819,7 +19527,6 @@
     }
   },
   "MeasureReportGroupStratifierStratumPopulation": {
-    "name": "MeasureReportGroupStratifierStratumPopulation",
     "elements": {
       "id": {
         "type": [
@@ -19871,7 +19578,6 @@
     }
   },
   "MeasureReportGroupStratifierStratum": {
-    "name": "MeasureReportGroupStratifierStratum",
     "elements": {
       "id": {
         "type": [
@@ -19929,7 +19635,6 @@
     }
   },
   "MeasureReportGroupStratifier": {
-    "name": "MeasureReportGroupStratifier",
     "elements": {
       "id": {
         "type": [
@@ -19973,7 +19678,6 @@
     }
   },
   "MeasureReportGroup": {
-    "name": "MeasureReportGroup",
     "elements": {
       "id": {
         "type": [
@@ -20031,7 +19735,6 @@
     }
   },
   "MedicationIngredient": {
-    "name": "MedicationIngredient",
     "elements": {
       "id": {
         "type": [
@@ -20088,7 +19791,6 @@
     }
   },
   "MedicationBatch": {
-    "name": "MedicationBatch",
     "elements": {
       "id": {
         "type": [
@@ -20130,7 +19832,6 @@
     }
   },
   "MedicationAdministrationPerformer": {
-    "name": "MedicationAdministrationPerformer",
     "elements": {
       "id": {
         "type": [
@@ -20180,7 +19881,6 @@
     }
   },
   "MedicationAdministrationDosage": {
-    "name": "MedicationAdministrationDosage",
     "elements": {
       "id": {
         "type": [
@@ -20253,7 +19953,6 @@
     }
   },
   "MedicationDispensePerformer": {
-    "name": "MedicationDispensePerformer",
     "elements": {
       "id": {
         "type": [
@@ -20304,7 +20003,6 @@
     }
   },
   "MedicationDispenseSubstitution": {
-    "name": "MedicationDispenseSubstitution",
     "elements": {
       "id": {
         "type": [
@@ -20367,7 +20065,6 @@
     }
   },
   "MedicationKnowledgeRelatedMedicationKnowledge": {
-    "name": "MedicationKnowledgeRelatedMedicationKnowledge",
     "elements": {
       "id": {
         "type": [
@@ -20415,7 +20112,6 @@
     }
   },
   "MedicationKnowledgeMonograph": {
-    "name": "MedicationKnowledgeMonograph",
     "elements": {
       "id": {
         "type": [
@@ -20461,7 +20157,6 @@
     }
   },
   "MedicationKnowledgeIngredient": {
-    "name": "MedicationKnowledgeIngredient",
     "elements": {
       "id": {
         "type": [
@@ -20517,7 +20212,6 @@
     }
   },
   "MedicationKnowledgeCost": {
-    "name": "MedicationKnowledgeCost",
     "elements": {
       "id": {
         "type": [
@@ -20568,7 +20262,6 @@
     }
   },
   "MedicationKnowledgeMonitoringProgram": {
-    "name": "MedicationKnowledgeMonitoringProgram",
     "elements": {
       "id": {
         "type": [
@@ -20610,7 +20303,6 @@
     }
   },
   "MedicationKnowledgeAdministrationGuidelinesDosage": {
-    "name": "MedicationKnowledgeAdministrationGuidelinesDosage",
     "elements": {
       "id": {
         "type": [
@@ -20655,7 +20347,6 @@
     }
   },
   "MedicationKnowledgeAdministrationGuidelinesPatientCharacteristics": {
-    "name": "MedicationKnowledgeAdministrationGuidelinesPatientCharacteristics",
     "elements": {
       "id": {
         "type": [
@@ -20702,7 +20393,6 @@
     }
   },
   "MedicationKnowledgeAdministrationGuidelines": {
-    "name": "MedicationKnowledgeAdministrationGuidelines",
     "elements": {
       "id": {
         "type": [
@@ -20759,7 +20449,6 @@
     }
   },
   "MedicationKnowledgeMedicineClassification": {
-    "name": "MedicationKnowledgeMedicineClassification",
     "elements": {
       "id": {
         "type": [
@@ -20803,7 +20492,6 @@
     }
   },
   "MedicationKnowledgePackaging": {
-    "name": "MedicationKnowledgePackaging",
     "elements": {
       "id": {
         "type": [
@@ -20845,7 +20533,6 @@
     }
   },
   "MedicationKnowledgeDrugCharacteristic": {
-    "name": "MedicationKnowledgeDrugCharacteristic",
     "elements": {
       "id": {
         "type": [
@@ -20896,7 +20583,6 @@
     }
   },
   "MedicationKnowledgeRegulatorySubstitution": {
-    "name": "MedicationKnowledgeRegulatorySubstitution",
     "elements": {
       "id": {
         "type": [
@@ -20940,7 +20626,6 @@
     }
   },
   "MedicationKnowledgeRegulatorySchedule": {
-    "name": "MedicationKnowledgeRegulatorySchedule",
     "elements": {
       "id": {
         "type": [
@@ -20976,7 +20661,6 @@
     }
   },
   "MedicationKnowledgeRegulatoryMaxDispense": {
-    "name": "MedicationKnowledgeRegulatoryMaxDispense",
     "elements": {
       "id": {
         "type": [
@@ -21019,7 +20703,6 @@
     }
   },
   "MedicationKnowledgeRegulatory": {
-    "name": "MedicationKnowledgeRegulatory",
     "elements": {
       "id": {
         "type": [
@@ -21081,7 +20764,6 @@
     }
   },
   "MedicationKnowledgeKinetics": {
-    "name": "MedicationKnowledgeKinetics",
     "elements": {
       "id": {
         "type": [
@@ -21132,7 +20814,6 @@
     }
   },
   "MedicationRequestDispenseRequestInitialFill": {
-    "name": "MedicationRequestDispenseRequestInitialFill",
     "elements": {
       "id": {
         "type": [
@@ -21174,7 +20855,6 @@
     }
   },
   "MedicationRequestDispenseRequest": {
-    "name": "MedicationRequestDispenseRequest",
     "elements": {
       "id": {
         "type": [
@@ -21254,7 +20934,6 @@
     }
   },
   "MedicationRequestSubstitution": {
-    "name": "MedicationRequestSubstitution",
     "elements": {
       "id": {
         "type": [
@@ -21300,7 +20979,6 @@
     }
   },
   "MedicinalProductNameNamePart": {
-    "name": "MedicinalProductNameNamePart",
     "elements": {
       "id": {
         "type": [
@@ -21344,7 +21022,6 @@
     }
   },
   "MedicinalProductNameCountryLanguage": {
-    "name": "MedicinalProductNameCountryLanguage",
     "elements": {
       "id": {
         "type": [
@@ -21395,7 +21072,6 @@
     }
   },
   "MedicinalProductName": {
-    "name": "MedicinalProductName",
     "elements": {
       "id": {
         "type": [
@@ -21447,7 +21123,6 @@
     }
   },
   "MedicinalProductManufacturingBusinessOperation": {
-    "name": "MedicinalProductManufacturingBusinessOperation",
     "elements": {
       "id": {
         "type": [
@@ -21524,7 +21199,6 @@
     }
   },
   "MedicinalProductSpecialDesignation": {
-    "name": "MedicinalProductSpecialDesignation",
     "elements": {
       "id": {
         "type": [
@@ -21608,7 +21282,6 @@
     }
   },
   "MedicinalProductAuthorizationJurisdictionalAuthorization": {
-    "name": "MedicinalProductAuthorizationJurisdictionalAuthorization",
     "elements": {
       "id": {
         "type": [
@@ -21673,7 +21346,6 @@
     }
   },
   "MedicinalProductAuthorizationProcedure": {
-    "name": "MedicinalProductAuthorizationProcedure",
     "elements": {
       "id": {
         "type": [
@@ -21734,7 +21406,6 @@
     }
   },
   "MedicinalProductContraindicationOtherTherapy": {
-    "name": "MedicinalProductContraindicationOtherTherapy",
     "elements": {
       "id": {
         "type": [
@@ -21787,7 +21458,6 @@
     }
   },
   "MedicinalProductIndicationOtherTherapy": {
-    "name": "MedicinalProductIndicationOtherTherapy",
     "elements": {
       "id": {
         "type": [
@@ -21840,7 +21510,6 @@
     }
   },
   "MedicinalProductIngredientSpecifiedSubstanceStrengthReferenceStrength": {
-    "name": "MedicinalProductIngredientSpecifiedSubstanceStrengthReferenceStrength",
     "elements": {
       "id": {
         "type": [
@@ -21905,7 +21574,6 @@
     }
   },
   "MedicinalProductIngredientSpecifiedSubstanceStrength": {
-    "name": "MedicinalProductIngredientSpecifiedSubstanceStrength",
     "elements": {
       "id": {
         "type": [
@@ -21985,7 +21653,6 @@
     }
   },
   "MedicinalProductIngredientSpecifiedSubstance": {
-    "name": "MedicinalProductIngredientSpecifiedSubstance",
     "elements": {
       "id": {
         "type": [
@@ -22044,7 +21711,6 @@
     }
   },
   "MedicinalProductIngredientSubstance": {
-    "name": "MedicinalProductIngredientSubstance",
     "elements": {
       "id": {
         "type": [
@@ -22088,7 +21754,6 @@
     }
   },
   "MedicinalProductInteractionInteractant": {
-    "name": "MedicinalProductInteractionInteractant",
     "elements": {
       "id": {
         "type": [
@@ -22133,7 +21798,6 @@
     }
   },
   "MedicinalProductPackagedBatchIdentifier": {
-    "name": "MedicinalProductPackagedBatchIdentifier",
     "elements": {
       "id": {
         "type": [
@@ -22176,7 +21840,6 @@
     }
   },
   "MedicinalProductPackagedPackageItem": {
-    "name": "MedicinalProductPackagedPackageItem",
     "elements": {
       "id": {
         "type": [
@@ -22308,7 +21971,6 @@
     }
   },
   "MedicinalProductPharmaceuticalCharacteristics": {
-    "name": "MedicinalProductPharmaceuticalCharacteristics",
     "elements": {
       "id": {
         "type": [
@@ -22351,7 +22013,6 @@
     }
   },
   "MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpeciesWithdrawalPeriod": {
-    "name": "MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpeciesWithdrawalPeriod",
     "elements": {
       "id": {
         "type": [
@@ -22402,7 +22063,6 @@
     }
   },
   "MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpecies": {
-    "name": "MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpecies",
     "elements": {
       "id": {
         "type": [
@@ -22446,7 +22106,6 @@
     }
   },
   "MedicinalProductPharmaceuticalRouteOfAdministration": {
-    "name": "MedicinalProductPharmaceuticalRouteOfAdministration",
     "elements": {
       "id": {
         "type": [
@@ -22525,7 +22184,6 @@
     }
   },
   "MessageDefinitionFocus": {
-    "name": "MessageDefinitionFocus",
     "elements": {
       "id": {
         "type": [
@@ -22586,7 +22244,6 @@
     }
   },
   "MessageDefinitionAllowedResponse": {
-    "name": "MessageDefinitionAllowedResponse",
     "elements": {
       "id": {
         "type": [
@@ -22632,7 +22289,6 @@
     }
   },
   "MessageHeaderDestination": {
-    "name": "MessageHeaderDestination",
     "elements": {
       "id": {
         "type": [
@@ -22697,7 +22353,6 @@
     }
   },
   "MessageHeaderSource": {
-    "name": "MessageHeaderSource",
     "elements": {
       "id": {
         "type": [
@@ -22761,7 +22416,6 @@
     }
   },
   "MessageHeaderResponse": {
-    "name": "MessageHeaderResponse",
     "elements": {
       "id": {
         "type": [
@@ -22815,7 +22469,6 @@
     }
   },
   "MolecularSequenceReferenceSeq": {
-    "name": "MolecularSequenceReferenceSeq",
     "elements": {
       "id": {
         "type": [
@@ -22909,7 +22562,6 @@
     }
   },
   "MolecularSequenceVariant": {
-    "name": "MolecularSequenceVariant",
     "elements": {
       "id": {
         "type": [
@@ -22982,7 +22634,6 @@
     }
   },
   "MolecularSequenceQualityRoc": {
-    "name": "MolecularSequenceQualityRoc",
     "elements": {
       "id": {
         "type": [
@@ -23066,7 +22717,6 @@
     }
   },
   "MolecularSequenceQuality": {
-    "name": "MolecularSequenceQuality",
     "elements": {
       "id": {
         "type": [
@@ -23200,7 +22850,6 @@
     }
   },
   "MolecularSequenceRepository": {
-    "name": "MolecularSequenceRepository",
     "elements": {
       "id": {
         "type": [
@@ -23271,7 +22920,6 @@
     }
   },
   "MolecularSequenceStructureVariantOuter": {
-    "name": "MolecularSequenceStructureVariantOuter",
     "elements": {
       "id": {
         "type": [
@@ -23313,7 +22961,6 @@
     }
   },
   "MolecularSequenceStructureVariantInner": {
-    "name": "MolecularSequenceStructureVariantInner",
     "elements": {
       "id": {
         "type": [
@@ -23355,7 +23002,6 @@
     }
   },
   "MolecularSequenceStructureVariant": {
-    "name": "MolecularSequenceStructureVariant",
     "elements": {
       "id": {
         "type": [
@@ -23418,7 +23064,6 @@
     }
   },
   "NamingSystemUniqueId": {
-    "name": "NamingSystemUniqueId",
     "elements": {
       "id": {
         "type": [
@@ -23483,7 +23128,6 @@
     }
   },
   "NutritionOrderOralDietNutrient": {
-    "name": "NutritionOrderOralDietNutrient",
     "elements": {
       "id": {
         "type": [
@@ -23525,7 +23169,6 @@
     }
   },
   "NutritionOrderOralDietTexture": {
-    "name": "NutritionOrderOralDietTexture",
     "elements": {
       "id": {
         "type": [
@@ -23567,7 +23210,6 @@
     }
   },
   "NutritionOrderOralDiet": {
-    "name": "NutritionOrderOralDiet",
     "elements": {
       "id": {
         "type": [
@@ -23642,7 +23284,6 @@
     }
   },
   "NutritionOrderSupplement": {
-    "name": "NutritionOrderSupplement",
     "elements": {
       "id": {
         "type": [
@@ -23706,7 +23347,6 @@
     }
   },
   "NutritionOrderEnteralFormulaAdministration": {
-    "name": "NutritionOrderEnteralFormulaAdministration",
     "elements": {
       "id": {
         "type": [
@@ -23758,7 +23398,6 @@
     }
   },
   "NutritionOrderEnteralFormula": {
-    "name": "NutritionOrderEnteralFormula",
     "elements": {
       "id": {
         "type": [
@@ -23850,7 +23489,6 @@
     }
   },
   "ObservationReferenceRange": {
-    "name": "ObservationReferenceRange",
     "elements": {
       "id": {
         "type": [
@@ -23921,7 +23559,6 @@
     }
   },
   "ObservationComponent": {
-    "name": "ObservationComponent",
     "elements": {
       "id": {
         "type": [
@@ -24017,7 +23654,6 @@
     }
   },
   "ObservationDefinitionQuantitativeDetails": {
-    "name": "ObservationDefinitionQuantitativeDetails",
     "elements": {
       "id": {
         "type": [
@@ -24073,7 +23709,6 @@
     }
   },
   "ObservationDefinitionQualifiedInterval": {
-    "name": "ObservationDefinitionQualifiedInterval",
     "elements": {
       "id": {
         "type": [
@@ -24158,7 +23793,6 @@
     }
   },
   "OperationDefinitionParameterBinding": {
-    "name": "OperationDefinitionParameterBinding",
     "elements": {
       "id": {
         "type": [
@@ -24205,7 +23839,6 @@
     }
   },
   "OperationDefinitionParameterReferencedFrom": {
-    "name": "OperationDefinitionParameterReferencedFrom",
     "elements": {
       "id": {
         "type": [
@@ -24248,7 +23881,6 @@
     }
   },
   "OperationDefinitionParameter": {
-    "name": "OperationDefinitionParameter",
     "elements": {
       "id": {
         "type": [
@@ -24363,7 +23995,6 @@
     }
   },
   "OperationDefinitionOverload": {
-    "name": "OperationDefinitionOverload",
     "elements": {
       "id": {
         "type": [
@@ -24406,7 +24037,6 @@
     }
   },
   "OperationOutcomeIssue": {
-    "name": "OperationOutcomeIssue",
     "elements": {
       "id": {
         "type": [
@@ -24480,7 +24110,6 @@
     }
   },
   "OrganizationContact": {
-    "name": "OrganizationContact",
     "elements": {
       "id": {
         "type": [
@@ -24537,7 +24166,6 @@
     }
   },
   "ParametersParameter": {
-    "name": "ParametersParameter",
     "elements": {
       "id": {
         "type": [
@@ -24742,7 +24370,6 @@
     }
   },
   "PatientContact": {
-    "name": "PatientContact",
     "elements": {
       "id": {
         "type": [
@@ -24824,7 +24451,6 @@
     }
   },
   "PatientCommunication": {
-    "name": "PatientCommunication",
     "elements": {
       "id": {
         "type": [
@@ -24867,7 +24493,6 @@
     }
   },
   "PatientLink": {
-    "name": "PatientLink",
     "elements": {
       "id": {
         "type": [
@@ -24915,7 +24540,6 @@
     }
   },
   "PaymentReconciliationDetail": {
-    "name": "PaymentReconciliationDetail",
     "elements": {
       "id": {
         "type": [
@@ -25033,7 +24657,6 @@
     }
   },
   "PaymentReconciliationProcessNote": {
-    "name": "PaymentReconciliationProcessNote",
     "elements": {
       "id": {
         "type": [
@@ -25075,7 +24698,6 @@
     }
   },
   "PersonLink": {
-    "name": "PersonLink",
     "elements": {
       "id": {
         "type": [
@@ -25124,7 +24746,6 @@
     }
   },
   "PlanDefinitionGoalTarget": {
-    "name": "PlanDefinitionGoalTarget",
     "elements": {
       "id": {
         "type": [
@@ -25179,7 +24800,6 @@
     }
   },
   "PlanDefinitionGoal": {
-    "name": "PlanDefinitionGoal",
     "elements": {
       "id": {
         "type": [
@@ -25260,7 +24880,6 @@
     }
   },
   "PlanDefinitionActionCondition": {
-    "name": "PlanDefinitionActionCondition",
     "elements": {
       "id": {
         "type": [
@@ -25303,7 +24922,6 @@
     }
   },
   "PlanDefinitionActionRelatedAction": {
-    "name": "PlanDefinitionActionRelatedAction",
     "elements": {
       "id": {
         "type": [
@@ -25357,7 +24975,6 @@
     }
   },
   "PlanDefinitionActionParticipant": {
-    "name": "PlanDefinitionActionParticipant",
     "elements": {
       "id": {
         "type": [
@@ -25400,7 +25017,6 @@
     }
   },
   "PlanDefinitionActionDynamicValue": {
-    "name": "PlanDefinitionActionDynamicValue",
     "elements": {
       "id": {
         "type": [
@@ -25442,7 +25058,6 @@
     }
   },
   "PlanDefinitionAction": {
-    "name": "PlanDefinitionAction",
     "elements": {
       "id": {
         "type": [
@@ -25703,7 +25318,6 @@
     }
   },
   "PractitionerQualification": {
-    "name": "PractitionerQualification",
     "elements": {
       "id": {
         "type": [
@@ -25764,7 +25378,6 @@
     }
   },
   "PractitionerRoleAvailableTime": {
-    "name": "PractitionerRoleAvailableTime",
     "elements": {
       "id": {
         "type": [
@@ -25821,7 +25434,6 @@
     }
   },
   "PractitionerRoleNotAvailable": {
-    "name": "PractitionerRoleNotAvailable",
     "elements": {
       "id": {
         "type": [
@@ -25864,7 +25476,6 @@
     }
   },
   "ProcedurePerformer": {
-    "name": "ProcedurePerformer",
     "elements": {
       "id": {
         "type": [
@@ -25925,7 +25536,6 @@
     }
   },
   "ProcedureFocalDevice": {
-    "name": "ProcedureFocalDevice",
     "elements": {
       "id": {
         "type": [
@@ -25971,7 +25581,6 @@
     }
   },
   "ProvenanceAgent": {
-    "name": "ProvenanceAgent",
     "elements": {
       "id": {
         "type": [
@@ -26045,7 +25654,6 @@
     }
   },
   "ProvenanceEntity": {
-    "name": "ProvenanceEntity",
     "elements": {
       "id": {
         "type": [
@@ -26100,7 +25708,6 @@
     }
   },
   "QuestionnaireItemEnableWhen": {
-    "name": "QuestionnaireItemEnableWhen",
     "elements": {
       "id": {
         "type": [
@@ -26182,7 +25789,6 @@
     }
   },
   "QuestionnaireItemAnswerOption": {
-    "name": "QuestionnaireItemAnswerOption",
     "elements": {
       "id": {
         "type": [
@@ -26243,7 +25849,6 @@
     }
   },
   "QuestionnaireItemInitial": {
-    "name": "QuestionnaireItemInitial",
     "elements": {
       "id": {
         "type": [
@@ -26315,7 +25920,6 @@
     }
   },
   "QuestionnaireItem": {
-    "name": "QuestionnaireItem",
     "elements": {
       "id": {
         "type": [
@@ -26465,7 +26069,6 @@
     }
   },
   "QuestionnaireResponseItemAnswer": {
-    "name": "QuestionnaireResponseItemAnswer",
     "elements": {
       "id": {
         "type": [
@@ -26544,7 +26147,6 @@
     }
   },
   "QuestionnaireResponseItem": {
-    "name": "QuestionnaireResponseItem",
     "elements": {
       "id": {
         "type": [
@@ -26610,7 +26212,6 @@
     }
   },
   "RelatedPersonCommunication": {
-    "name": "RelatedPersonCommunication",
     "elements": {
       "id": {
         "type": [
@@ -26653,7 +26254,6 @@
     }
   },
   "RequestGroupActionCondition": {
-    "name": "RequestGroupActionCondition",
     "elements": {
       "id": {
         "type": [
@@ -26696,7 +26296,6 @@
     }
   },
   "RequestGroupActionRelatedAction": {
-    "name": "RequestGroupActionRelatedAction",
     "elements": {
       "id": {
         "type": [
@@ -26750,7 +26349,6 @@
     }
   },
   "RequestGroupAction": {
-    "name": "RequestGroupAction",
     "elements": {
       "id": {
         "type": [
@@ -26942,7 +26540,6 @@
     }
   },
   "ResearchElementDefinitionCharacteristic": {
-    "name": "ResearchElementDefinitionCharacteristic",
     "elements": {
       "id": {
         "type": [
@@ -27086,7 +26683,6 @@
     }
   },
   "ResearchStudyArm": {
-    "name": "ResearchStudyArm",
     "elements": {
       "id": {
         "type": [
@@ -27136,7 +26732,6 @@
     }
   },
   "ResearchStudyObjective": {
-    "name": "ResearchStudyObjective",
     "elements": {
       "id": {
         "type": [
@@ -27178,7 +26773,6 @@
     }
   },
   "RiskAssessmentPrediction": {
-    "name": "RiskAssessmentPrediction",
     "elements": {
       "id": {
         "type": [
@@ -27254,7 +26848,6 @@
     }
   },
   "RiskEvidenceSynthesisSampleSize": {
-    "name": "RiskEvidenceSynthesisSampleSize",
     "elements": {
       "id": {
         "type": [
@@ -27303,7 +26896,6 @@
     }
   },
   "RiskEvidenceSynthesisRiskEstimatePrecisionEstimate": {
-    "name": "RiskEvidenceSynthesisRiskEstimatePrecisionEstimate",
     "elements": {
       "id": {
         "type": [
@@ -27359,7 +26951,6 @@
     }
   },
   "RiskEvidenceSynthesisRiskEstimate": {
-    "name": "RiskEvidenceSynthesisRiskEstimate",
     "elements": {
       "id": {
         "type": [
@@ -27437,7 +27028,6 @@
     }
   },
   "RiskEvidenceSynthesisCertaintyCertaintySubcomponent": {
-    "name": "RiskEvidenceSynthesisCertaintyCertaintySubcomponent",
     "elements": {
       "id": {
         "type": [
@@ -27488,7 +27078,6 @@
     }
   },
   "RiskEvidenceSynthesisCertainty": {
-    "name": "RiskEvidenceSynthesisCertainty",
     "elements": {
       "id": {
         "type": [
@@ -27540,7 +27129,6 @@
     }
   },
   "SearchParameterComponent": {
-    "name": "SearchParameterComponent",
     "elements": {
       "id": {
         "type": [
@@ -27587,7 +27175,6 @@
     }
   },
   "SpecimenCollection": {
-    "name": "SpecimenCollection",
     "elements": {
       "id": {
         "type": [
@@ -27674,7 +27261,6 @@
     }
   },
   "SpecimenProcessing": {
-    "name": "SpecimenProcessing",
     "elements": {
       "id": {
         "type": [
@@ -27737,7 +27323,6 @@
     }
   },
   "SpecimenContainer": {
-    "name": "SpecimenContainer",
     "elements": {
       "id": {
         "type": [
@@ -27814,7 +27399,6 @@
     }
   },
   "SpecimenDefinitionTypeTestedContainerAdditive": {
-    "name": "SpecimenDefinitionTypeTestedContainerAdditive",
     "elements": {
       "id": {
         "type": [
@@ -27856,7 +27440,6 @@
     }
   },
   "SpecimenDefinitionTypeTestedContainer": {
-    "name": "SpecimenDefinitionTypeTestedContainer",
     "elements": {
       "id": {
         "type": [
@@ -27944,7 +27527,6 @@
     }
   },
   "SpecimenDefinitionTypeTestedHandling": {
-    "name": "SpecimenDefinitionTypeTestedHandling",
     "elements": {
       "id": {
         "type": [
@@ -28000,7 +27582,6 @@
     }
   },
   "SpecimenDefinitionTypeTested": {
-    "name": "SpecimenDefinitionTypeTested",
     "elements": {
       "id": {
         "type": [
@@ -28087,7 +27668,6 @@
     }
   },
   "StructureDefinitionMapping": {
-    "name": "StructureDefinitionMapping",
     "elements": {
       "id": {
         "type": [
@@ -28144,7 +27724,6 @@
     }
   },
   "StructureDefinitionContext": {
-    "name": "StructureDefinitionContext",
     "elements": {
       "id": {
         "type": [
@@ -28188,7 +27767,6 @@
     }
   },
   "StructureDefinitionSnapshot": {
-    "name": "StructureDefinitionSnapshot",
     "elements": {
       "id": {
         "type": [
@@ -28225,7 +27803,6 @@
     }
   },
   "StructureDefinitionDifferential": {
-    "name": "StructureDefinitionDifferential",
     "elements": {
       "id": {
         "type": [
@@ -28262,7 +27839,6 @@
     }
   },
   "StructureMapStructure": {
-    "name": "StructureMapStructure",
     "elements": {
       "id": {
         "type": [
@@ -28323,7 +27899,6 @@
     }
   },
   "StructureMapGroupInput": {
-    "name": "StructureMapGroupInput",
     "elements": {
       "id": {
         "type": [
@@ -28381,7 +27956,6 @@
     }
   },
   "StructureMapGroupRuleSource": {
-    "name": "StructureMapGroupRuleSource",
     "elements": {
       "id": {
         "type": [
@@ -28634,7 +28208,6 @@
     }
   },
   "StructureMapGroupRuleTargetParameter": {
-    "name": "StructureMapGroupRuleTargetParameter",
     "elements": {
       "id": {
         "type": [
@@ -28682,7 +28255,6 @@
     }
   },
   "StructureMapGroupRuleTarget": {
-    "name": "StructureMapGroupRuleTarget",
     "elements": {
       "id": {
         "type": [
@@ -28768,7 +28340,6 @@
     }
   },
   "StructureMapGroupRuleDependent": {
-    "name": "StructureMapGroupRuleDependent",
     "elements": {
       "id": {
         "type": [
@@ -28813,7 +28384,6 @@
     }
   },
   "StructureMapGroupRule": {
-    "name": "StructureMapGroupRule",
     "elements": {
       "id": {
         "type": [
@@ -28889,7 +28459,6 @@
     }
   },
   "StructureMapGroup": {
-    "name": "StructureMapGroup",
     "elements": {
       "id": {
         "type": [
@@ -28965,7 +28534,6 @@
     }
   },
   "SubscriptionChannel": {
-    "name": "SubscriptionChannel",
     "elements": {
       "id": {
         "type": [
@@ -29023,7 +28591,6 @@
     }
   },
   "SubstanceInstance": {
-    "name": "SubstanceInstance",
     "elements": {
       "id": {
         "type": [
@@ -29072,7 +28639,6 @@
     }
   },
   "SubstanceIngredient": {
-    "name": "SubstanceIngredient",
     "elements": {
       "id": {
         "type": [
@@ -29121,7 +28687,6 @@
     }
   },
   "SubstanceNucleicAcidSubunitLinkage": {
-    "name": "SubstanceNucleicAcidSubunitLinkage",
     "elements": {
       "id": {
         "type": [
@@ -29177,7 +28742,6 @@
     }
   },
   "SubstanceNucleicAcidSubunitSugar": {
-    "name": "SubstanceNucleicAcidSubunitSugar",
     "elements": {
       "id": {
         "type": [
@@ -29226,7 +28790,6 @@
     }
   },
   "SubstanceNucleicAcidSubunit": {
-    "name": "SubstanceNucleicAcidSubunit",
     "elements": {
       "id": {
         "type": [
@@ -29312,7 +28875,6 @@
     }
   },
   "SubstancePolymerMonomerSetStartingMaterial": {
-    "name": "SubstancePolymerMonomerSetStartingMaterial",
     "elements": {
       "id": {
         "type": [
@@ -29368,7 +28930,6 @@
     }
   },
   "SubstancePolymerMonomerSet": {
-    "name": "SubstancePolymerMonomerSet",
     "elements": {
       "id": {
         "type": [
@@ -29411,7 +28972,6 @@
     }
   },
   "SubstancePolymerRepeatRepeatUnitDegreeOfPolymerisation": {
-    "name": "SubstancePolymerRepeatRepeatUnitDegreeOfPolymerisation",
     "elements": {
       "id": {
         "type": [
@@ -29453,7 +29013,6 @@
     }
   },
   "SubstancePolymerRepeatRepeatUnitStructuralRepresentation": {
-    "name": "SubstancePolymerRepeatRepeatUnitStructuralRepresentation",
     "elements": {
       "id": {
         "type": [
@@ -29502,7 +29061,6 @@
     }
   },
   "SubstancePolymerRepeatRepeatUnit": {
-    "name": "SubstancePolymerRepeatRepeatUnit",
     "elements": {
       "id": {
         "type": [
@@ -29567,7 +29125,6 @@
     }
   },
   "SubstancePolymerRepeat": {
-    "name": "SubstancePolymerRepeat",
     "elements": {
       "id": {
         "type": [
@@ -29624,7 +29181,6 @@
     }
   },
   "SubstanceProteinSubunit": {
-    "name": "SubstanceProteinSubunit",
     "elements": {
       "id": {
         "type": [
@@ -29708,7 +29264,6 @@
     }
   },
   "SubstanceReferenceInformationGene": {
-    "name": "SubstanceReferenceInformationGene",
     "elements": {
       "id": {
         "type": [
@@ -29761,7 +29316,6 @@
     }
   },
   "SubstanceReferenceInformationGeneElement": {
-    "name": "SubstanceReferenceInformationGeneElement",
     "elements": {
       "id": {
         "type": [
@@ -29814,7 +29368,6 @@
     }
   },
   "SubstanceReferenceInformationClassification": {
-    "name": "SubstanceReferenceInformationClassification",
     "elements": {
       "id": {
         "type": [
@@ -29875,7 +29428,6 @@
     }
   },
   "SubstanceReferenceInformationTarget": {
-    "name": "SubstanceReferenceInformationTarget",
     "elements": {
       "id": {
         "type": [
@@ -29969,7 +29521,6 @@
     }
   },
   "SubstanceSourceMaterialFractionDescription": {
-    "name": "SubstanceSourceMaterialFractionDescription",
     "elements": {
       "id": {
         "type": [
@@ -30011,7 +29562,6 @@
     }
   },
   "SubstanceSourceMaterialOrganismAuthor": {
-    "name": "SubstanceSourceMaterialOrganismAuthor",
     "elements": {
       "id": {
         "type": [
@@ -30053,7 +29603,6 @@
     }
   },
   "SubstanceSourceMaterialOrganismHybrid": {
-    "name": "SubstanceSourceMaterialOrganismHybrid",
     "elements": {
       "id": {
         "type": [
@@ -30116,7 +29665,6 @@
     }
   },
   "SubstanceSourceMaterialOrganismOrganismGeneral": {
-    "name": "SubstanceSourceMaterialOrganismOrganismGeneral",
     "elements": {
       "id": {
         "type": [
@@ -30172,7 +29720,6 @@
     }
   },
   "SubstanceSourceMaterialOrganism": {
-    "name": "SubstanceSourceMaterialOrganism",
     "elements": {
       "id": {
         "type": [
@@ -30257,7 +29804,6 @@
     }
   },
   "SubstanceSourceMaterialPartDescription": {
-    "name": "SubstanceSourceMaterialPartDescription",
     "elements": {
       "id": {
         "type": [
@@ -30299,7 +29845,6 @@
     }
   },
   "SubstanceSpecificationMoiety": {
-    "name": "SubstanceSpecificationMoiety",
     "elements": {
       "id": {
         "type": [
@@ -30379,7 +29924,6 @@
     }
   },
   "SubstanceSpecificationProperty": {
-    "name": "SubstanceSpecificationProperty",
     "elements": {
       "id": {
         "type": [
@@ -30452,7 +29996,6 @@
     }
   },
   "SubstanceSpecificationStructureIsotopeMolecularWeight": {
-    "name": "SubstanceSpecificationStructureIsotopeMolecularWeight",
     "elements": {
       "id": {
         "type": [
@@ -30501,7 +30044,6 @@
     }
   },
   "SubstanceSpecificationStructureIsotope": {
-    "name": "SubstanceSpecificationStructureIsotope",
     "elements": {
       "id": {
         "type": [
@@ -30564,7 +30106,6 @@
     }
   },
   "SubstanceSpecificationStructureRepresentation": {
-    "name": "SubstanceSpecificationStructureRepresentation",
     "elements": {
       "id": {
         "type": [
@@ -30613,7 +30154,6 @@
     }
   },
   "SubstanceSpecificationStructure": {
-    "name": "SubstanceSpecificationStructure",
     "elements": {
       "id": {
         "type": [
@@ -30703,7 +30243,6 @@
     }
   },
   "SubstanceSpecificationCode": {
-    "name": "SubstanceSpecificationCode",
     "elements": {
       "id": {
         "type": [
@@ -30770,7 +30309,6 @@
     }
   },
   "SubstanceSpecificationNameOfficial": {
-    "name": "SubstanceSpecificationNameOfficial",
     "elements": {
       "id": {
         "type": [
@@ -30819,7 +30357,6 @@
     }
   },
   "SubstanceSpecificationName": {
-    "name": "SubstanceSpecificationName",
     "elements": {
       "id": {
         "type": [
@@ -30935,7 +30472,6 @@
     }
   },
   "SubstanceSpecificationRelationship": {
-    "name": "SubstanceSpecificationRelationship",
     "elements": {
       "id": {
         "type": [
@@ -31031,7 +30567,6 @@
     }
   },
   "SupplyDeliverySuppliedItem": {
-    "name": "SupplyDeliverySuppliedItem",
     "elements": {
       "id": {
         "type": [
@@ -31081,7 +30616,6 @@
     }
   },
   "SupplyRequestParameter": {
-    "name": "SupplyRequestParameter",
     "elements": {
       "id": {
         "type": [
@@ -31132,7 +30666,6 @@
     }
   },
   "TaskRestriction": {
-    "name": "TaskRestriction",
     "elements": {
       "id": {
         "type": [
@@ -31190,7 +30723,6 @@
     }
   },
   "TaskInput": {
-    "name": "TaskInput",
     "elements": {
       "id": {
         "type": [
@@ -31381,7 +30913,6 @@
     }
   },
   "TaskOutput": {
-    "name": "TaskOutput",
     "elements": {
       "id": {
         "type": [
@@ -31572,7 +31103,6 @@
     }
   },
   "TerminologyCapabilitiesSoftware": {
-    "name": "TerminologyCapabilitiesSoftware",
     "elements": {
       "id": {
         "type": [
@@ -31615,7 +31145,6 @@
     }
   },
   "TerminologyCapabilitiesImplementation": {
-    "name": "TerminologyCapabilitiesImplementation",
     "elements": {
       "id": {
         "type": [
@@ -31658,7 +31187,6 @@
     }
   },
   "TerminologyCapabilitiesCodeSystemVersionFilter": {
-    "name": "TerminologyCapabilitiesCodeSystemVersionFilter",
     "elements": {
       "id": {
         "type": [
@@ -31703,7 +31231,6 @@
     }
   },
   "TerminologyCapabilitiesCodeSystemVersion": {
-    "name": "TerminologyCapabilitiesCodeSystemVersion",
     "elements": {
       "id": {
         "type": [
@@ -31776,7 +31303,6 @@
     }
   },
   "TerminologyCapabilitiesCodeSystem": {
-    "name": "TerminologyCapabilitiesCodeSystem",
     "elements": {
       "id": {
         "type": [
@@ -31829,7 +31355,6 @@
     }
   },
   "TerminologyCapabilitiesExpansionParameter": {
-    "name": "TerminologyCapabilitiesExpansionParameter",
     "elements": {
       "id": {
         "type": [
@@ -31872,7 +31397,6 @@
     }
   },
   "TerminologyCapabilitiesExpansion": {
-    "name": "TerminologyCapabilitiesExpansion",
     "elements": {
       "id": {
         "type": [
@@ -31936,7 +31460,6 @@
     }
   },
   "TerminologyCapabilitiesValidateCode": {
-    "name": "TerminologyCapabilitiesValidateCode",
     "elements": {
       "id": {
         "type": [
@@ -31972,7 +31495,6 @@
     }
   },
   "TerminologyCapabilitiesTranslation": {
-    "name": "TerminologyCapabilitiesTranslation",
     "elements": {
       "id": {
         "type": [
@@ -32008,7 +31530,6 @@
     }
   },
   "TerminologyCapabilitiesClosure": {
-    "name": "TerminologyCapabilitiesClosure",
     "elements": {
       "id": {
         "type": [
@@ -32043,7 +31564,6 @@
     }
   },
   "TestReportParticipant": {
-    "name": "TestReportParticipant",
     "elements": {
       "id": {
         "type": [
@@ -32094,7 +31614,6 @@
     }
   },
   "TestReportSetupActionOperation": {
-    "name": "TestReportSetupActionOperation",
     "elements": {
       "id": {
         "type": [
@@ -32144,7 +31663,6 @@
     }
   },
   "TestReportSetupActionAssert": {
-    "name": "TestReportSetupActionAssert",
     "elements": {
       "id": {
         "type": [
@@ -32194,7 +31712,6 @@
     }
   },
   "TestReportSetupAction": {
-    "name": "TestReportSetupAction",
     "elements": {
       "id": {
         "type": [
@@ -32236,7 +31753,6 @@
     }
   },
   "TestReportSetup": {
-    "name": "TestReportSetup",
     "elements": {
       "id": {
         "type": [
@@ -32273,7 +31789,6 @@
     }
   },
   "TestReportTestAction": {
-    "name": "TestReportTestAction",
     "elements": {
       "id": {
         "type": [
@@ -32315,7 +31830,6 @@
     }
   },
   "TestReportTest": {
-    "name": "TestReportTest",
     "elements": {
       "id": {
         "type": [
@@ -32366,7 +31880,6 @@
     }
   },
   "TestReportTeardownAction": {
-    "name": "TestReportTeardownAction",
     "elements": {
       "id": {
         "type": [
@@ -32402,7 +31915,6 @@
     }
   },
   "TestReportTeardown": {
-    "name": "TestReportTeardown",
     "elements": {
       "id": {
         "type": [
@@ -32439,7 +31951,6 @@
     }
   },
   "TestScriptOrigin": {
-    "name": "TestScriptOrigin",
     "elements": {
       "id": {
         "type": [
@@ -32483,7 +31994,6 @@
     }
   },
   "TestScriptDestination": {
-    "name": "TestScriptDestination",
     "elements": {
       "id": {
         "type": [
@@ -32527,7 +32037,6 @@
     }
   },
   "TestScriptMetadataLink": {
-    "name": "TestScriptMetadataLink",
     "elements": {
       "id": {
         "type": [
@@ -32570,7 +32079,6 @@
     }
   },
   "TestScriptMetadataCapability": {
-    "name": "TestScriptMetadataCapability",
     "elements": {
       "id": {
         "type": [
@@ -32655,7 +32163,6 @@
     }
   },
   "TestScriptMetadata": {
-    "name": "TestScriptMetadata",
     "elements": {
       "id": {
         "type": [
@@ -32700,7 +32207,6 @@
     }
   },
   "TestScriptFixture": {
-    "name": "TestScriptFixture",
     "elements": {
       "id": {
         "type": [
@@ -32754,7 +32260,6 @@
     }
   },
   "TestScriptVariable": {
-    "name": "TestScriptVariable",
     "elements": {
       "id": {
         "type": [
@@ -32839,7 +32344,6 @@
     }
   },
   "TestScriptSetupActionOperationRequestHeader": {
-    "name": "TestScriptSetupActionOperationRequestHeader",
     "elements": {
       "id": {
         "type": [
@@ -32883,7 +32387,6 @@
     }
   },
   "TestScriptSetupActionOperation": {
-    "name": "TestScriptSetupActionOperation",
     "elements": {
       "id": {
         "type": [
@@ -33032,7 +32535,6 @@
     }
   },
   "TestScriptSetupActionAssert": {
-    "name": "TestScriptSetupActionAssert",
     "elements": {
       "id": {
         "type": [
@@ -33215,7 +32717,6 @@
     }
   },
   "TestScriptSetupAction": {
-    "name": "TestScriptSetupAction",
     "elements": {
       "id": {
         "type": [
@@ -33257,7 +32758,6 @@
     }
   },
   "TestScriptSetup": {
-    "name": "TestScriptSetup",
     "elements": {
       "id": {
         "type": [
@@ -33294,7 +32794,6 @@
     }
   },
   "TestScriptTestAction": {
-    "name": "TestScriptTestAction",
     "elements": {
       "id": {
         "type": [
@@ -33336,7 +32835,6 @@
     }
   },
   "TestScriptTest": {
-    "name": "TestScriptTest",
     "elements": {
       "id": {
         "type": [
@@ -33387,7 +32885,6 @@
     }
   },
   "TestScriptTeardownAction": {
-    "name": "TestScriptTeardownAction",
     "elements": {
       "id": {
         "type": [
@@ -33423,7 +32920,6 @@
     }
   },
   "TestScriptTeardown": {
-    "name": "TestScriptTeardown",
     "elements": {
       "id": {
         "type": [
@@ -33460,7 +32956,6 @@
     }
   },
   "ValueSetComposeIncludeConceptDesignation": {
-    "name": "ValueSetComposeIncludeConceptDesignation",
     "elements": {
       "id": {
         "type": [
@@ -33510,7 +33005,6 @@
     }
   },
   "ValueSetComposeIncludeConcept": {
-    "name": "ValueSetComposeIncludeConcept",
     "elements": {
       "id": {
         "type": [
@@ -33561,7 +33055,6 @@
     }
   },
   "ValueSetComposeIncludeFilter": {
-    "name": "ValueSetComposeIncludeFilter",
     "elements": {
       "id": {
         "type": [
@@ -33613,7 +33106,6 @@
     }
   },
   "ValueSetComposeInclude": {
-    "name": "ValueSetComposeInclude",
     "elements": {
       "id": {
         "type": [
@@ -33682,7 +33174,6 @@
     }
   },
   "ValueSetCompose": {
-    "name": "ValueSetCompose",
     "elements": {
       "id": {
         "type": [
@@ -33741,7 +33232,6 @@
     }
   },
   "ValueSetExpansionParameter": {
-    "name": "ValueSetExpansionParameter",
     "elements": {
       "id": {
         "type": [
@@ -33802,7 +33292,6 @@
     }
   },
   "ValueSetExpansionContains": {
-    "name": "ValueSetExpansionContains",
     "elements": {
       "id": {
         "type": [
@@ -33888,7 +33377,6 @@
     }
   },
   "ValueSetExpansion": {
-    "name": "ValueSetExpansion",
     "elements": {
       "id": {
         "type": [
@@ -33961,7 +33449,6 @@
     }
   },
   "VerificationResultPrimarySource": {
-    "name": "VerificationResultPrimarySource",
     "elements": {
       "id": {
         "type": [
@@ -34046,7 +33533,6 @@
     }
   },
   "VerificationResultAttestation": {
-    "name": "VerificationResultAttestation",
     "elements": {
       "id": {
         "type": [
@@ -34140,7 +33626,6 @@
     }
   },
   "VerificationResultValidator": {
-    "name": "VerificationResultValidator",
     "elements": {
       "id": {
         "type": [
@@ -34193,7 +33678,6 @@
     }
   },
   "VisionPrescriptionLensSpecificationPrism": {
-    "name": "VisionPrescriptionLensSpecificationPrism",
     "elements": {
       "id": {
         "type": [
@@ -34237,7 +33721,6 @@
     }
   },
   "VisionPrescriptionLensSpecification": {
-    "name": "VisionPrescriptionLensSpecification",
     "elements": {
       "id": {
         "type": [
@@ -34367,7 +33850,6 @@
     }
   },
   "MetadataResource": {
-    "name": "MetadataResource",
     "elements": {
       "id": {
         "type": [
@@ -34519,7 +34001,6 @@
     }
   },
   "ProjectSecret": {
-    "name": "ProjectSecret",
     "elements": {
       "name": {
         "min": 1,
@@ -34549,7 +34030,6 @@
     }
   },
   "ProjectSite": {
-    "name": "ProjectSite",
     "elements": {
       "name": {
         "min": 1,
@@ -34599,7 +34079,6 @@
     }
   },
   "ProjectMembershipAccessParameter": {
-    "name": "ProjectMembershipAccessParameter",
     "elements": {
       "name": {
         "min": 1,
@@ -34623,7 +34102,6 @@
     }
   },
   "ProjectMembershipAccess": {
-    "name": "ProjectMembershipAccess",
     "elements": {
       "policy": {
         "min": 1,
@@ -34647,7 +34125,6 @@
     }
   },
   "AccessPolicyResource": {
-    "name": "AccessPolicyResource",
     "elements": {
       "resourceType": {
         "min": 1,
@@ -34705,7 +34182,6 @@
     }
   },
   "AccessPolicyIpAccessRule": {
-    "name": "AccessPolicyIpAccessRule",
     "elements": {
       "name": {
         "type": [
@@ -34733,7 +34209,6 @@
     }
   },
   "UserConfigurationMenuLink": {
-    "name": "UserConfigurationMenuLink",
     "elements": {
       "name": {
         "min": 1,
@@ -34754,7 +34229,6 @@
     }
   },
   "UserConfigurationMenu": {
-    "name": "UserConfigurationMenu",
     "elements": {
       "title": {
         "min": 1,
@@ -34775,7 +34249,6 @@
     }
   },
   "UserConfigurationSearch": {
-    "name": "UserConfigurationSearch",
     "elements": {
       "name": {
         "min": 1,
@@ -34796,7 +34269,6 @@
     }
   },
   "UserConfigurationOption": {
-    "name": "UserConfigurationOption",
     "elements": {
       "id": {
         "min": 1,
@@ -34829,7 +34301,6 @@
     }
   },
   "BulkDataExportOutput": {
-    "name": "BulkDataExportOutput",
     "elements": {
       "type": {
         "min": 1,
@@ -34850,7 +34321,6 @@
     }
   },
   "BulkDataExportDeleted": {
-    "name": "BulkDataExportDeleted",
     "elements": {
       "type": {
         "min": 1,
@@ -34871,7 +34341,6 @@
     }
   },
   "BulkDataExportError": {
-    "name": "BulkDataExportError",
     "elements": {
       "type": {
         "min": 1,
@@ -34892,7 +34361,6 @@
     }
   },
   "IdentityProvider": {
-    "name": "IdentityProvider",
     "elements": {
       "authorizeUrl": {
         "min": 1,
@@ -34944,7 +34412,6 @@
     }
   },
   "AgentSetting": {
-    "name": "AgentSetting",
     "elements": {
       "name": {
         "min": 1,
@@ -34974,7 +34441,6 @@
     }
   },
   "AgentChannel": {
-    "name": "AgentChannel",
     "elements": {
       "endpoint": {
         "min": 1,
