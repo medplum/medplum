@@ -44,8 +44,7 @@ export function parseJWTPayload(token: string): Record<string, number | string> 
 export function isMedplumAccessToken(accessToken: string): boolean {
   try {
     const payload = parseJWTPayload(accessToken);
-    const loginId = payload.login_id;
-    return typeof loginId === 'string';
+    return typeof payload.login_id === 'string';
   } catch (err) {
     return false;
   }
