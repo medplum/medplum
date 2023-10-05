@@ -10,16 +10,17 @@ import {
 } from '@aws-sdk/client-lambda';
 import { allOk, badRequest, ContentType, getReferenceString } from '@medplum/core';
 import { Binary, Bot } from '@medplum/fhirtypes';
+import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import { Request, Response } from 'express';
 import JSZip from 'jszip';
 import { Readable } from 'stream';
 import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
+import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { systemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
 import { isBotEnabled } from './execute';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
 
 const LAMBDA_RUNTIME = 'nodejs18.x';
 
@@ -150,7 +151,19 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
 
 async function deployLambda(bot: Bot, code: string): Promise<void> {
   const ctx = getRequestContext();
-  const client = new LambdaClient({ region: getConfig().awsRegion });
+
+  // Create a new AWS Lambda client
+  // Use a custom retry strategy to avoid throttling errors
+  // This is especially important when updating lambdas which also
+  // involve upgrading the layer version.
+  const client = new LambdaClient({
+    region: getConfig().awsRegion,
+    retryStrategy: new ConfiguredRetryStrategy(
+      5, // max attempts
+      (attempt: number) => 500 * 2 ** attempt // Exponential backoff
+    ),
+  });
+
   const name = `medplum-bot-lambda-${bot.id}`;
   ctx.logger.info('Deploying lambda function for bot', { name });
   const zipFile = await createZipFile(code);
