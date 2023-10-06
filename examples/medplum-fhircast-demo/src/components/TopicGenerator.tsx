@@ -1,3 +1,4 @@
+import { Button, Center, Input } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { usePrevious } from '../hooks';
 
@@ -34,18 +35,20 @@ export default function TopicGenerator(props: TopicGeneratorProps): JSX.Element 
   };
 
   return (
-    <>
-      <div>
-        <button type="button" onClick={toggleSyncing}>
+    <div>
+      <Center>
+        <Button onClick={toggleSyncing} radius="xl" mb={20}>
           {!syncing ? 'Sync subscribers' : 'Stop syncing subscribers'}
-        </button>
-      </div>
+        </Button>
+      </Center>
+
       {topic ? (
         <>
-          <div>Topic ID: </div>
-          <input type="text" value={topic ?? 'No topic'} onChange={() => {}} />
+          <Input.Wrapper label="Topic ID" w={350}>
+            <Input value={topic ?? 'No topic'} />
+          </Input.Wrapper>
         </>
       ) : null}
-    </>
+    </div>
   );
 }

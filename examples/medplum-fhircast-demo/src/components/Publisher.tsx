@@ -1,4 +1,5 @@
-import { useMedplum } from '@medplum/react';
+import { Button, Center, Input, Title } from '@mantine/core';
+import { Document, useMedplum } from '@medplum/react';
 import { useState } from 'react';
 import { FhircastMessagePayload } from '../utils';
 import TopicGenerator from './TopicGenerator';
@@ -59,19 +60,25 @@ export default function Publisher(): JSX.Element {
   };
 
   return (
-    <div>
-      <div style={{ paddingBottom: 30 }}>
-        <h1>Publisher</h1>
+    <Document>
+      <Center>
+        <Title fz={36}>Publisher</Title>
+      </Center>
+      <div style={{ height: 150 }}>
+        <Center>
+          <TopicGenerator onTopicChange={(topic) => setTopic(topic)} />
+        </Center>
       </div>
-      <div style={{ padding: 5 }}>
-        <TopicGenerator onTopicChange={(topic) => setTopic(topic)} />
-      </div>
-      <div style={{ padding: 5 }}>Patient ID: {currentPatientId ?? 'No current patient'}</div>
-      <div style={{ padding: 5 }}>
-        <button type="button" onClick={handleChangePatient}>
+      <Center>
+        <Input.Wrapper label="Patient ID" mb={20} w={350}>
+          <Input value={currentPatientId ?? 'No current patient'} />
+        </Input.Wrapper>
+      </Center>
+      <Center>
+        <Button onClick={handleChangePatient} size="sm" radius="xl">
           Change patient
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Center>
+    </Document>
   );
 }

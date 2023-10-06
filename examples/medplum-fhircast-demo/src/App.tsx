@@ -3,8 +3,8 @@ import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile }
 import { IconMessage2Down, IconMessage2Plus, IconSquareRoundedArrowRight } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
+import DemoInstructionsPage from './components/DemoInstructionsPage';
 import LandingPage from './components/LandingPage';
-import MainPage from './components/MainPage';
 import Publisher from './components/Publisher';
 import Redirect from './components/Redirect';
 import SignInPage from './components/SignInPage';
@@ -36,7 +36,7 @@ export function App(): JSX.Element | null {
           ? [
               {
                 title: 'Info',
-                links: [{ icon: <IconSquareRoundedArrowRight />, label: 'Next steps', href: '/' }],
+                links: [{ icon: <IconSquareRoundedArrowRight />, label: 'Running the demo', href: '/' }],
               },
               {
                 title: 'Apps',
@@ -55,7 +55,7 @@ export function App(): JSX.Element | null {
         <ErrorBoundary key={location.key}>
           <Suspense fallback={<Loading />}>
             <Routes>
-              <Route path="/" element={!profile ? <LandingPage /> : <MainPage />} />
+              <Route path="/" element={!profile ? <LandingPage /> : <DemoInstructionsPage />} />
               <Route path="/signin" element={!profile ? <SignInPage /> : <Redirect path="/" />} />
               <Route path="/publisher" element={<Publisher />} />
               <Route path="/subscriber" element={<Subscriber />} />
