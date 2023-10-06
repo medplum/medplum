@@ -1,4 +1,4 @@
-import { Button, Center, Input, Title } from '@mantine/core';
+import { Button, Input, Stack, Title } from '@mantine/core';
 import { Document, useMedplum } from '@medplum/react';
 import { useState } from 'react';
 import { FhircastMessagePayload } from '../utils';
@@ -61,24 +61,20 @@ export default function Publisher(): JSX.Element {
 
   return (
     <Document>
-      <Center>
-        <Title fz={36}>Publisher</Title>
-      </Center>
-      <div style={{ height: 150 }}>
-        <Center>
+      <Title align="center" fz={36}>
+        Publisher
+      </Title>
+      <Stack align="center">
+        <div style={{ height: 150 }}>
           <TopicGenerator onTopicChange={(topic) => setTopic(topic)} />
-        </Center>
-      </div>
-      <Center>
+        </div>
         <Input.Wrapper label="Patient ID" mb={20} w={350}>
-          <Input value={currentPatientId ?? 'No current patient'} />
+          <Input value={currentPatientId ?? 'No current patient'} disabled={!currentPatientId} />
         </Input.Wrapper>
-      </Center>
-      <Center>
         <Button onClick={handleChangePatient} size="sm" radius="xl">
           Change patient
         </Button>
-      </Center>
+      </Stack>
     </Document>
   );
 }

@@ -1,4 +1,4 @@
-import { Button, Center, Input } from '@mantine/core';
+import { Button, Input, Stack } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { usePrevious } from '../hooks';
 
@@ -35,12 +35,10 @@ export default function TopicGenerator(props: TopicGeneratorProps): JSX.Element 
   };
 
   return (
-    <div>
-      <Center>
-        <Button onClick={toggleSyncing} radius="xl" mb={20}>
-          {!syncing ? 'Sync subscribers' : 'Stop syncing subscribers'}
-        </Button>
-      </Center>
+    <Stack align="center">
+      <Button onClick={toggleSyncing} radius="xl" mb={20}>
+        {!syncing ? 'Sync subscribers' : 'Stop syncing subscribers'}
+      </Button>
 
       {topic ? (
         <>
@@ -49,6 +47,6 @@ export default function TopicGenerator(props: TopicGeneratorProps): JSX.Element 
           </Input.Wrapper>
         </>
       ) : null}
-    </div>
+    </Stack>
   );
 }

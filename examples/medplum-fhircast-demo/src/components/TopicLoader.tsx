@@ -17,7 +17,7 @@ export default function TopicLoader(props: TopicLoaderProps): JSX.Element {
   }, [onSetTopic, topic]);
 
   return (
-    <Stack>
+    <Stack align="center">
       <Input.Wrapper label="Topic">
         <Input type="text" onChange={(e) => setTopicInput(e.target.value)} value={topicInput} />
       </Input.Wrapper>
