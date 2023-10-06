@@ -1,4 +1,4 @@
-import { Accordion, Center, Divider, Group, Text, Title } from '@mantine/core';
+import { Accordion, Center, Divider, Group, Stack, Text, Title } from '@mantine/core';
 import { Document, useMedplum } from '@medplum/react';
 import { IconMessage2Exclamation } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
@@ -132,17 +132,12 @@ export default function Subscriber(): JSX.Element {
           </div>
         </Center>
       </div>
-      <div style={{ paddingTop: 20, paddingBottom: 20 }}>
-        <Center>
-          <Text>Status: {status}</Text>
-        </Center>
-        <Center>
-          <Text>Current topic: {topic ?? 'No topic'}</Text>
-        </Center>
-        <Center>
-          <Text>Current patient: {currentPatientId ?? 'No current patient'}</Text>
-        </Center>
-      </div>
+      <Stack align="center" p={25}>
+        <Text>Status: {status}</Text>
+        <Text>Current topic: {topic ?? 'No topic'}</Text>
+        <Text>Current patient: {currentPatientId ?? 'No current patient'}</Text>
+      </Stack>
+
       {fhirCastMessages.length ? (
         <>
           <Divider />
