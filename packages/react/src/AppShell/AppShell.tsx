@@ -15,6 +15,7 @@ export interface AppShellProps {
   menus?: NavbarMenu[];
   children: React.ReactNode;
   displayAddBookmark?: boolean;
+  resourceNavigatorDisabled?: boolean;
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
@@ -69,6 +70,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
             menus={props.menus}
             closeNavbar={closeNavbar}
             displayAddBookmark={props.displayAddBookmark}
+            resourceNavigatorDisabled={props.resourceNavigatorDisabled ?? false}
           />
         ) : undefined
       }
