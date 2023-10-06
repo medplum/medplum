@@ -122,9 +122,9 @@ export default function Subscriber(): JSX.Element {
           incrementEventCount={() => setEventCount((s) => s + 1)}
         />
       ) : null}
-      <Center>
-        <Title fz={36}>Subscriber</Title>
-      </Center>
+      <Title align="center" fz={36}>
+        Subscriber
+      </Title>
       <div>
         <Center>
           <div style={{ width: 300 }}>

@@ -29,7 +29,7 @@ export default function DemoInstructionsPage(): JSX.Element {
             Subscriber
           </Button>
         </Group>
-        <Text>Then put the tabs side by side. This will make it easier to watch what they each are doing.</Text>
+        <Text>Then put the tabs side by side. This will make it easier to watch what they are both doing.</Text>
       </Stack>
     </Document>
   );
