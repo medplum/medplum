@@ -1,8 +1,7 @@
-import { Accordion, Group, Text } from '@mantine/core';
-import { useMedplum } from '@medplum/react';
+import { Accordion, Center, Divider, Group, Text, Title } from '@mantine/core';
+import { Document, useMedplum } from '@medplum/react';
 import { IconMessage2Exclamation } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
 import { useClientId } from '../hooks';
 import { FhircastMessagePayload, serializeHubSubscriptionRequest } from '../utils';
 import TopicLoader from './TopicLoader';
@@ -112,7 +111,7 @@ export default function Subscriber(): JSX.Element {
   }, [topic, clientId, medplum]);
 
   return (
-    <>
+    <Document>
       {endpoint ? (
         <WebSocketHandler
           endpoint={endpoint}
@@ -123,25 +122,38 @@ export default function Subscriber(): JSX.Element {
           incrementEventCount={() => setEventCount((s) => s + 1)}
         />
       ) : null}
-      <div style={{ paddingBottom: 30 }}>
-        <h1>Subscriber</h1>
+      <Center>
+        <Title fz={36}>Subscriber</Title>
+      </Center>
+      <div>
+        <Center>
+          <div style={{ width: 300 }}>
+            <TopicLoader onSetTopic={(topic) => setTopic(topic)} />
+          </div>
+        </Center>
       </div>
-      <div style={{ flex: 1 }}>
-        <div>
-          <TopicLoader onSetTopic={(topic) => setTopic(topic)} />
-        </div>
-        <div>Status: {status}</div>
-        <div>Current topic: {topic ?? 'No topic'}</div>
-        <div>Current Patient: {currentPatientId ?? 'No current patient'}</div>
-        <div style={{ paddingTop: 30, height: 500 }}>
-          <Accordion title="Events">
-            {fhirCastMessages.slice(0, 3).map((message, i) => {
-              return <FhircastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
-            })}
-          </Accordion>
-        </div>
+      <div style={{ paddingTop: 20, paddingBottom: 20 }}>
+        <Center>
+          <Text>Status: {status}</Text>
+        </Center>
+        <Center>
+          <Text>Current topic: {topic ?? 'No topic'}</Text>
+        </Center>
+        <Center>
+          <Text>Current patient: {currentPatientId ?? 'No current patient'}</Text>
+        </Center>
       </div>
-      <Outlet />
-    </>
+      <Divider />
+      <div style={{ paddingTop: 20 }}>
+        <Center>
+          <Title order={2}>Events</Title>
+        </Center>
+        <Accordion title="Events">
+          {fhirCastMessages.slice(0, 5).map((message, i) => {
+            return <FhircastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
+          })}
+        </Accordion>
+      </div>
+    </Document>
   );
 }

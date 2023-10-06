@@ -1,3 +1,4 @@
+import { Button, Input, Stack } from '@mantine/core';
 import { useEffect, useState } from 'react';
 
 interface TopicLoaderProps {
@@ -16,42 +17,31 @@ export default function TopicLoader(props: TopicLoaderProps): JSX.Element {
   }, [onSetTopic, topic]);
 
   return (
-    <div
-      style={{
-        margin: '0 auto',
-        display: 'flex',
-        flexDirection: 'column',
-        maxWidth: 300,
-        justifyContent: 'center',
-        paddingBottom: 20,
-      }}
-    >
-      <input
-        type="text"
-        onChange={(e) => setTopicInput(e.target.value)}
-        value={topicInput}
-        style={{ marginBottom: 10 }}
-      />
-      <button
+    <Stack>
+      <Input.Wrapper label="Topic">
+        <Input type="text" onChange={(e) => setTopicInput(e.target.value)} value={topicInput} />
+      </Input.Wrapper>
+      <Button
         type="button"
         onClick={() => {
           if (topicInput !== '') {
             setTopic(topicInput);
           }
         }}
-        style={{ marginBottom: 10 }}
+        size="compact-sm"
       >
         Subscribe to Topic
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
         onClick={() => {
           setTopicInput('');
           setTopic(undefined);
         }}
+        size="compact-sm"
       >
         Clear Topic
-      </button>
-    </div>
+      </Button>
+    </Stack>
   );
 }

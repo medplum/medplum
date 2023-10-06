@@ -44,7 +44,7 @@ export default function TopicGenerator(props: TopicGeneratorProps): JSX.Element 
 
       {topic ? (
         <>
-          <Input.Wrapper label="Topic ID" w={350}>
+          <Input.Wrapper label="Topic" w={350}>
             <Input value={topic ?? 'No topic'} />
           </Input.Wrapper>
         </>
