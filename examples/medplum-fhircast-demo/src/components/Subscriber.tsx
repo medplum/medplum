@@ -25,19 +25,17 @@ function FhircastMessageLabel(props: FhircastMessageDisplayProps): JSX.Element {
         <Text size="sm" fw={400}>
           Event: <b>{message.event['hub.event']}</b>
         </Text>
-
-        <div style={{ paddingTop: 20 }}>
+        <Stack pt={20}>
           <Text>
             Notification ID: <b>{message.id}</b>
           </Text>
           <Text size="sm" fw={400}>
             Topic: <b>{message.event['hub.topic']}</b>
           </Text>
-
           <Text size="sm" fw={400}>
             Resource ID: <b>{message.event.context[0].resource.id}</b>
           </Text>
-        </div>
+        </Stack>
       </div>
     </Group>
   );
@@ -125,13 +123,11 @@ export default function Subscriber(): JSX.Element {
       <Title align="center" fz={36}>
         Subscriber
       </Title>
-      <div>
-        <Center>
-          <div style={{ width: 300 }}>
-            <TopicLoader onSetTopic={(topic) => setTopic(topic)} />
-          </div>
-        </Center>
-      </div>
+      <Center>
+        <div style={{ width: 350 }}>
+          <TopicLoader onSetTopic={(topic) => setTopic(topic)} />
+        </div>
+      </Center>
       <Stack align="center" p={25}>
         <Text>Status: {status}</Text>
         <Text>Current topic: {topic ?? 'No topic'}</Text>
@@ -140,7 +136,7 @@ export default function Subscriber(): JSX.Element {
       {fhirCastMessages.length ? (
         <>
           <Divider />
-          <div style={{ paddingTop: 20 }}>
+          <Stack pt={20}>
             <Title align="center" order={2}>
               Events
             </Title>
@@ -149,7 +145,7 @@ export default function Subscriber(): JSX.Element {
                 return <FhircastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
               })}
             </Accordion>
-          </div>
+          </Stack>
         </>
       ) : null}
     </Document>

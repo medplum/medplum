@@ -19,7 +19,7 @@ export default function TopicLoader(props: TopicLoaderProps): JSX.Element {
   return (
     <Stack align="center">
       <Input.Wrapper label="Topic">
-        <Input type="text" onChange={(e) => setTopicInput(e.target.value)} value={topicInput} />
+        <Input type="text" onChange={(e) => setTopicInput(e.target.value)} value={topicInput} w={350} />
       </Input.Wrapper>
       <Button
         type="button"
@@ -29,6 +29,7 @@ export default function TopicLoader(props: TopicLoaderProps): JSX.Element {
           }
         }}
         size="compact-sm"
+        fullWidth
       >
         Subscribe to Topic
       </Button>
@@ -39,6 +40,7 @@ export default function TopicLoader(props: TopicLoaderProps): JSX.Element {
           setTopic(undefined);
         }}
         size="compact-sm"
+        fullWidth
       >
         Clear Topic
       </Button>
