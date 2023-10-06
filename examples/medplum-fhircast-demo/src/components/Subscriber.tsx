@@ -143,17 +143,21 @@ export default function Subscriber(): JSX.Element {
           <Text>Current patient: {currentPatientId ?? 'No current patient'}</Text>
         </Center>
       </div>
-      <Divider />
-      <div style={{ paddingTop: 20 }}>
-        <Center>
-          <Title order={2}>Events</Title>
-        </Center>
-        <Accordion title="Events">
-          {fhirCastMessages.slice(0, 5).map((message, i) => {
-            return <FhircastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
-          })}
-        </Accordion>
-      </div>
+      {fhirCastMessages.length ? (
+        <>
+          <Divider />
+          <div style={{ paddingTop: 20 }}>
+            <Center>
+              <Title order={2}>Events</Title>
+            </Center>
+            <Accordion title="Events">
+              {fhirCastMessages.slice(0, 5).map((message, i) => {
+                return <FhircastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
+              })}
+            </Accordion>
+          </div>
+        </>
+      ) : null}
     </Document>
   );
 }
