@@ -1,24 +1,24 @@
-import { Box, Button, Title, Text, Divider, Group, createStyles, NumberInput } from '@mantine/core';
+import { Box, Button, Divider, Group, NumberInput, Text, Title, createStyles } from '@mantine/core';
 import { capitalize } from '@medplum/core';
 import {
-  Patient,
-  Observation,
-  CodeableConcept,
-  Resource,
-  Condition,
   AllergyIntolerance,
+  CodeableConcept,
   Coding,
+  Condition,
+  Observation,
+  Patient,
   Quantity,
+  Resource,
 } from '@medplum/fhirtypes';
-import { useMedplum, ResourceAvatar, useResource } from '@medplum/react';
+import { CodingInput, ResourceAvatar, useMedplum } from '@medplum/react';
+import { IconGenderFemale, IconGenderMale, IconReportMedical, IconUser } from '@tabler/icons-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { IconGenderMale, IconGenderFemale, IconReportMedical, IconUser } from '@tabler/icons-react';
-import { TaskList } from './Task';
+// import { TaskList } from './Task';
 
 interface PatientGraphQLResponse {
   data: {
-    patient: Patient;
+    patient: any;
     condition: Condition[];
     vitals: Observation[];
     observations: Observation[];
@@ -65,7 +65,7 @@ export function Chart(): JSX.Element {
         gender,
         name {
           given,
-          family
+          family,
         },
         address {
           line,
@@ -89,6 +89,7 @@ export function Chart(): JSX.Element {
         }
       },
       allergies: AllergyIntoleranceList(patient: "Patient/${id}") {
+        id,
         meta { lastUpdated },
         code {
           coding {
@@ -100,6 +101,7 @@ export function Chart(): JSX.Element {
       },
       condition: ConditionList(category: "http://hl7.org/fhir/us/core/CodeSystem/condition-category|health-concern", subject: "Patient/${id}") {
         resourceType,
+        id,
         meta { lastUpdated },
         category {
           coding {
@@ -119,6 +121,7 @@ export function Chart(): JSX.Element {
       },
       socialHistory: ObservationList(category: "http://terminology.hl7.org/CodeSystem/observation-category|social-history", subject: "Patient/${id}") {
         meta { lastUpdated },
+        id,
         effectiveDateTime,
         code {
           coding {
@@ -157,9 +160,11 @@ export function Chart(): JSX.Element {
         valueString
       },
       observations: ObservationList(_filter: "category ne http://terminology.hl7.org/CodeSystem/observation-category|vital-signs and category ne http://terminology.hl7.org/CodeSystem/observation-category|social-history", subject: "Patient/${id}") {
+        id,
         code {
           coding {
             code,
+            system,
             display
           }
         },
@@ -194,7 +199,7 @@ function ChartView(props: ChartViewProps): JSX.Element {
   return (
     <Box display="flex">
       <ClientPanel response={props.response} />
-      <TaskList tasks={props.response.data.patient.tasks} />
+      {/* <TaskList tasks={props.response.data.patient.tasks} /> */}
     </Box>
   );
 }
@@ -220,7 +225,7 @@ function ClientPanel(props: ChartViewProps): JSX.Element {
               </Box>
             );
           case 'vitals':
-            return renderProcessedData(key, data as PanelData[], RenderVital);
+            return renderProcessedData(key, data as PanelData[], RenderValueQuantity);
           case 'observations':
             return renderProcessedData(key, data as PanelData[], RenderObservationItem);
           case 'allergies':
@@ -254,12 +259,7 @@ function renderProcessedData(
 }
 
 function processData(data: PanelData[]): PanelData[] {
-  // Define the accumulator type for clarity and to solve the indexing problem
-  interface GroupedPanelData {
-    [key: string]: PanelData[];
-  }
-
-  const groupedObservation = data.reduce<GroupedPanelData>((acc, observation) => {
+  const groupedObservation = data.reduce<Record<string, PanelData[]>>((acc, observation) => {
     const code = observation?.code?.coding?.[0]?.code ?? '';
     if (!acc[code]) {
       acc[code] = [];
@@ -286,50 +286,46 @@ const renderCoding = (coding?: Coding[]): string => {
   return coding.map((codeItem) => codeItem.display).join(', ');
 };
 
-function RenderVital(props: { item: PanelData }): JSX.Element | undefined {
-  if (!props.item.valueQuantity) {
+function RenderObservationItem(props: { item: PanelData }): JSX.Element | undefined {
+  if (!props.item.valueQuantity && !props.item.valueCodeableConcept) {
     return undefined;
   }
-  const [item, setItem] = useState(props.item);
+  return props.item.valueQuantity ? (
+    <RenderValueQuantity item={props.item} />
+  ) : (
+    <CodingInput property={{ binding: { valueSet: props.item.code.coding?.[0].system } }} name="hoorah" />
+  );
+}
+
+function RenderValueQuantity(props: { item: PanelData }): JSX.Element | undefined {
   const medplum = useMedplum();
 
-  const handleSubmit = async () => {
-    const resourceItem = (await medplum.readResource('Observation', item.id ?? '')) as Observation;
+  const handleSubmit = async (modifiedItem: PanelData) => {
+    const resourceItem = (await medplum.readResource('Observation', modifiedItem.id ?? '')) as Observation;
     const { id, ...itemWithoutId } = resourceItem;
     const mergedItem = {
       ...itemWithoutId,
       valueQuantity: {
         ...resourceItem.valueQuantity,
-        ...item.valueQuantity,
+        ...modifiedItem.valueQuantity,
       },
     } as Observation;
-    const a = await medplum.createResource<Observation>(mergedItem);
-    console.log(a);
+
+    try {
+      await medplum.createResource<Observation>(mergedItem);
+    } catch (err) {
+      console.log(err);
+    }
   };
-  const handleChange = (newValue: number) => {
-    console.log(newValue);
-    setItem({ ...item, valueQuantity: { ...item.valueQuantity, value: newValue } });
-  };
 
-  return <ValueQuantityDisplay item={item} onChange={handleChange} handleSubmit={handleSubmit} />;
-}
-
-function RenderObservationItem(props: { item: PanelData }): JSX.Element | undefined {
-  if (!props.item.valueQuantity && !props.item.valueCodeableConcept) {
-    return undefined;
-  }
-  const measurement = props.item.valueQuantity
-    ? `${props.item.valueQuantity.value}${props.item.valueQuantity.unit}`
-    : props.item.valueCodeableConcept.coding?.[0].display;
-  const values = [renderCoding(props.item?.code?.coding), measurement ?? ''];
-
-  return <RenderItem items={values} />;
+  return <ValueQuantityDisplay item={props.item} handleSubmit={handleSubmit} />;
 }
 
 function RenderAllergyItem(props: { item: PanelData }): JSX.Element | undefined {
   if (!props.item.code?.coding) {
     return undefined;
   }
+  // Multiselect valuesetautocomplete
   const values = [renderCoding(props.item?.code?.coding), `Critically: ${props.item.criticality}`];
   return <RenderItem items={values} />;
 }
@@ -338,59 +334,9 @@ function RenderSocialHistoryItem(props: { item: PanelData }): JSX.Element | null
   if (!props.item.valueCodeableConcept || !props.item.valueCodeableConcept.coding) {
     return null;
   }
-
+  // multiselect valuesetautocomplete
   const values = [renderCoding(props.item?.code?.coding), props.item.valueCodeableConcept.coding[0].display ?? ''];
   return <RenderItem items={values} />;
-}
-
-export function ValueQuantityDisplay(props: {
-  item: PanelData;
-  onChange: any;
-  handleSubmit: any;
-}): JSX.Element | undefined {
-  const [isFocused, setIsFocused] = useState(false);
-  const buttonRef = useRef(null);
-  if (!props.item?.valueQuantity) {
-    return undefined;
-  }
-  const suffix = props.item.valueQuantity.unit ?? '';
-  const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
-    if (event.relatedTarget === buttonRef.current) {
-      return;
-    }
-    setIsFocused(false);
-  };
-  return (
-    <Box>
-      <Text>{renderCoding(props.item?.code?.coding)}</Text>
-      <Box display="flex">
-        <NumberInput
-          defaultValue={props.item.valueQuantity.value}
-          onChange={props.onChange}
-          onFocus={() => setIsFocused(true)}
-          onBlur={handleBlur}
-          formatter={(value) =>
-            !Number.isNaN(parseFloat(value))
-              ? `${value}${suffix}`.replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ',')
-              : ` ${suffix}`
-          }
-        />
-        {isFocused && (
-          <Button
-            ref={buttonRef}
-            onClick={() => {
-              console.log('Button clicked!');
-              props.handleSubmit();
-              setIsFocused(false);
-            }}
-            variant="subtle"
-          >
-            Save
-          </Button>
-        )}
-      </Box>
-    </Box>
-  );
 }
 
 export function RenderItem(props: { items: string[] }): JSX.Element | undefined {
@@ -448,25 +394,6 @@ function BirthdateAndAge(props: { patient: Patient }): JSX.Element {
   );
 }
 
-function calculateAge(birthdate: string): { years: number; months: number } {
-  const birthDate = new Date(birthdate);
-  const currentDate = new Date();
-
-  let years = currentDate.getFullYear() - birthDate.getFullYear();
-  let months = currentDate.getMonth() - birthDate.getMonth();
-
-  if (
-    currentDate.getMonth() < birthDate.getMonth() ||
-    (currentDate.getMonth() === birthDate.getMonth() && currentDate.getDate() < birthDate.getDate())
-  ) {
-    years--;
-    months += 12;
-  }
-
-  months = months < 0 ? 0 : months;
-  return { years, months };
-}
-
 function DescriptionBox(props: { patient: Patient }): JSX.Element {
   const patient = props.patient;
   const { classes } = useStyles();
@@ -494,14 +421,100 @@ function DescriptionBox(props: { patient: Patient }): JSX.Element {
   );
 }
 
+// Put into React Package
+export function ValueQuantityDisplay(props: {
+  item: PanelData;
+  handleSubmit: (modifiedItem: PanelData) => void;
+}): JSX.Element | undefined {
+  const [item, setItem] = useState(props.item);
+  const [isFocused, setIsFocused] = useState(false);
+  const buttonRef = useRef(null);
+
+  const handleChange = (newValue: number) => {
+    setItem((prevItem) => ({ ...prevItem, valueQuantity: { ...prevItem.valueQuantity, value: newValue } }));
+  };
+
+  const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
+    if (event.relatedTarget === buttonRef.current) {
+      return;
+    }
+    setIsFocused(false);
+  };
+
+  if (!props.item?.valueQuantity) {
+    return undefined;
+  }
+  const suffix = props.item.valueQuantity.unit ?? '';
+
+  return (
+    <Box>
+      <Text>{renderCoding(props.item?.code?.coding)}</Text>
+      <Box display="flex">
+        <NumberInput
+          w="75%"
+          defaultValue={props.item.valueQuantity.value}
+          onChange={(val) => handleChange(val as number)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={handleBlur}
+          formatter={(value) =>
+            !Number.isNaN(parseFloat(value))
+              ? `${value}${suffix}`.replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ',')
+              : ` ${suffix}`
+          }
+        />
+        {isFocused && (
+          <Button
+            ref={buttonRef}
+            onClick={() => {
+              console.log('Button clicked!');
+              props.handleSubmit(item);
+              setIsFocused(false);
+            }}
+            variant="subtle"
+          >
+            Save
+          </Button>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+// Put in Core
+
+function calculateAge(birthdate: string): { years: number; months: number } {
+  const birthDate = new Date(birthdate);
+  const currentDate = new Date();
+
+  let years = currentDate.getFullYear() - birthDate.getFullYear();
+  let months = currentDate.getMonth() - birthDate.getMonth();
+
+  if (
+    currentDate.getMonth() < birthDate.getMonth() ||
+    (currentDate.getMonth() === birthDate.getMonth() && currentDate.getDate() < birthDate.getDate())
+  ) {
+    years--;
+    months += 12;
+  }
+
+  months = months < 0 ? 0 : months;
+  return { years, months };
+}
+
 function formatName(patient: Patient): string {
   const name = patient.name?.[0];
   if (!name) {
     return '';
   }
+
+  if (name.text) {
+    return name.text;
+  }
+
   if (!name.family || !name.given?.[0]) {
     return '';
   }
+
   const middleInitial = name.given?.[1]?.charAt(0);
   if (!middleInitial) {
     return `${name.given?.[0]} ${name.family}`;
