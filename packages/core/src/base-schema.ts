@@ -7,13 +7,10 @@ const normalizedTypes: Record<string, string> = {
 };
 
 export function compressElement(element: InternalSchemaElement): Partial<InternalSchemaElement> {
-  const outputPropertySchema: Partial<InternalSchemaElement> = {
-    // isArray: element.isArray,
-  };
-
   // For each property, only keep "min", "max", and "type"
   // Only keep "min" if not 0
   // Only keep "max" if not 1
+  const outputPropertySchema: Partial<InternalSchemaElement> = {};
   if (element.min !== 0) {
     outputPropertySchema.min = element.min;
   }
@@ -36,12 +33,12 @@ function inflateElement(partial: Partial<InternalSchemaElement>): InternalSchema
   const max = partial.max && partial.max === Number.MAX_SAFE_INTEGER ? Number.POSITIVE_INFINITY : partial.max;
   return {
     path: '',
-    isArray: false,
-    constraints: [],
-    min: partial.min ?? 0,
-    max: max ?? 1,
     description: '',
     type: partial.type ?? [],
+    min: partial.min ?? 0,
+    max: max ?? 1,
+    isArray: !!max && max > 1,
+    constraints: [],
   };
 }
 

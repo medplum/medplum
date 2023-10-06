@@ -250,6 +250,7 @@ class StructureDefinitionParser {
       this.backboneContext = {
         type: {
           name: getElementDefinitionTypeName(element),
+          kind: 'resource',
           description: element.definition,
           elements: {},
           constraints: this.parseElementDefinition(element).constraints,
