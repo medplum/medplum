@@ -12,27 +12,27 @@ if (!root) {
 }
 
 const theme: MantineThemeOverride = {
-  primaryColor: 'teal',
-  primaryShade: 8,
+  headings: {
+    sizes: {
+      h1: {
+        fontSize: '1.125rem',
+        fontWeight: 500,
+        lineHeight: 2.0,
+      },
+    },
+  },
   fontSizes: {
     xs: '0.6875rem',
     sm: '0.875rem',
     md: '0.875rem',
-    lg: '1rem',
+    lg: '1.0rem',
     xl: '1.125rem',
-  },
-  components: {
-    Container: {
-      defaultProps: {
-        size: 1200,
-      },
-    },
   },
 };
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
-  // baseUrl: 'http://localhost:8103/', // Uncomment this to run against the server on your localhost
+  baseUrl: 'http://localhost:8103/', // Uncomment this to run against the server on your localhost
 });
 
 ReactDOM.createRoot(root).render(

@@ -1,6 +1,6 @@
 import { createStyles } from '@mantine/core';
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconUser } from '@tabler/icons-react';
+import { IconMessage2Down, IconMessage2Plus, IconSquareRoundedArrowRight } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
@@ -31,15 +31,25 @@ export function App(): JSX.Element | null {
   return (
     <AppShell
       logo={<Logo size={24} />}
-      menus={[
-        {
-          title: 'Apps',
-          links: [
-            { icon: <IconUser />, label: 'Publisher', href: '/publisher' },
-            { icon: <IconUser />, label: 'Subscriber', href: '/subscriber' },
-          ],
-        },
-      ]}
+      menus={
+        profile
+          ? [
+              {
+                title: 'Info',
+                links: [{ icon: <IconSquareRoundedArrowRight />, label: 'Next steps', href: '/' }],
+              },
+              {
+                title: 'Apps',
+                links: [
+                  { icon: <IconMessage2Plus />, label: 'Publisher', href: '/publisher' },
+                  { icon: <IconMessage2Down />, label: 'Subscriber', href: '/subscriber' },
+                ],
+              },
+            ]
+          : []
+      }
+      searchDisabled={true}
+      resourceNavigatorDisabled={true}
     >
       <div className={classes.root}>
         <ErrorBoundary key={location.key}>

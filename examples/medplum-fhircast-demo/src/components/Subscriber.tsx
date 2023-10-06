@@ -1,4 +1,6 @@
+import { Accordion, Group, Text } from '@mantine/core';
 import { useMedplum } from '@medplum/react';
+import { IconMessage2Exclamation } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useClientId } from '../hooks';
@@ -11,24 +13,61 @@ type FhircastMessageDisplayProps = {
   message: FhircastMessagePayload;
 };
 
-function FhircastMessageDisplay(props: FhircastMessageDisplayProps): JSX.Element {
+function FhircastMessageLabel(props: FhircastMessageDisplayProps): JSX.Element {
+  const { message, eventNo } = props;
   return (
-    <div style={{ paddingBottom: 15 }}>
-      <div
-        className="fhir-cast-message"
-        style={{
-          paddingLeft: 30,
-          paddingRight: 30,
-          paddingTop: 20,
-          paddingBottom: 20,
-          borderRadius: 10,
-          textAlign: 'left',
-        }}
-      >
-        <h3>Event No. {props.eventNo}</h3>
-        <pre>{JSON.stringify(props.message, null, 2)}</pre>
+    <Group noWrap={true}>
+      <IconMessage2Exclamation />
+      <div>
+        <Text fw={700} c="dimmed">
+          {message.timestamp}
+        </Text>
+        <Text>Event No. {eventNo}</Text>
+        <Text size="sm" fw={400}>
+          Event: <b>{message.event['hub.event']}</b>
+        </Text>
+
+        <div style={{ paddingTop: 20 }}>
+          <Text>
+            Notification ID: <b>{message.id}</b>
+          </Text>
+          <Text size="sm" fw={400}>
+            Topic: <b>{message.event['hub.topic']}</b>
+          </Text>
+
+          <Text size="sm" fw={400}>
+            Resource ID: <b>{message.event.context[0].resource.id}</b>
+          </Text>
+        </div>
       </div>
-    </div>
+    </Group>
+  );
+}
+
+function FhircastMessageDisplay(props: FhircastMessageDisplayProps): JSX.Element {
+  const { eventNo, message } = props;
+  return (
+    <Accordion.Item key={eventNo} value={`${message.timestamp} - Event No. ${eventNo}`}>
+      <Accordion.Control>
+        <FhircastMessageLabel {...props} />
+      </Accordion.Control>
+
+      <Accordion.Panel>
+        <div
+          className="fhir-cast-message"
+          style={{
+            paddingLeft: 30,
+            paddingRight: 30,
+            paddingTop: 20,
+            paddingBottom: 20,
+            borderRadius: 10,
+            textAlign: 'left',
+          }}
+        >
+          <pre>{JSON.stringify(message, null, 2)}</pre>
+        </div>
+      </Accordion.Panel>
+    </Accordion.Item>
   );
 }
 
@@ -95,10 +134,11 @@ export default function Subscriber(): JSX.Element {
         <div>Current topic: {topic ?? 'No topic'}</div>
         <div>Current Patient: {currentPatientId ?? 'No current patient'}</div>
         <div style={{ paddingTop: 30, height: 500 }}>
-          <h2>Events</h2>
-          {fhirCastMessages.slice(0, 3).map((message, i) => {
-            return <FhircastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
-          })}
+          <Accordion title="Events">
+            {fhirCastMessages.slice(0, 3).map((message, i) => {
+              return <FhircastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
+            })}
+          </Accordion>
         </div>
       </div>
       <Outlet />
