@@ -21,7 +21,10 @@ describe('FHIRCast routes', () => {
   });
 
   test('Get well known', async () => {
-    const res = await request(app).get('/fhircast/STU2/.well-known/fhircast-configuration');
+    const res = await request(app)
+      .get('/fhircast/STU2/.well-known/fhircast-configuration')
+      .set('Authorization', 'Bearer ' + accessToken);
+
     expect(res.status).toBe(200);
     expect(res.body.eventsSupported).toBeDefined();
     expect(res.body.websocketSupport).toBe(true);
@@ -105,7 +108,9 @@ describe('FHIRCast routes', () => {
   test('Get context', async () => {
     // Get the current subscription status
     // Non-standard FHIRCast extension to support Nuance PowerCast Hub
-    const res = await request(app).get('/fhircast/STU2/my-topic');
+    const res = await request(app)
+      .get('/fhircast/STU2/my-topic')
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });
