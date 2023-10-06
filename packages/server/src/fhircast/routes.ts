@@ -4,12 +4,12 @@ import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { authenticateRequest } from '../oauth/middleware';
 import { getRedis } from '../redis';
 
 export const fhircastRouter = Router();
 
-// TODO: Enable authentication for fhircast
-// fhircastRouter.use(authenticateRequest);
+fhircastRouter.use(authenticateRequest);
 
 fhircastRouter.get('/.well-known/fhircast-configuration', (_req: Request, res: Response) => {
   res.status(200).json({
