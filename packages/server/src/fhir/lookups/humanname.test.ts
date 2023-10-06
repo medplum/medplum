@@ -212,4 +212,28 @@ describe('HumanName Lookup Table', () => {
       expect(bundle6.entry?.length).toEqual(1);
       expect(bundle6.entry?.[0]?.resource?.id).toEqual(patient1.id);
     }));
+
+  test('Search on text', () =>
+    withTestContext(async () => {
+      const name1 = randomUUID();
+      const name2 = randomUUID();
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: name1, text: `${name1} ${name2}` }],
+      });
+
+      const searchResult = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: `${name2}`,
+          },
+        ],
+      });
+      expect(searchResult.entry?.length).toEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+    }));
 });

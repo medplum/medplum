@@ -215,6 +215,8 @@ test('Format HumanName', () => {
       }
     )
   ).toEqual('Ms. Alice Gelato Smith III [official]');
+
+  expect(formatHumanName({ text: 'foo bar' })).toEqual('foo bar');
 });
 
 test('Format given name', () => {
