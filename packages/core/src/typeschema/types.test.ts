@@ -47,7 +47,9 @@ describe('FHIR resource and data type representations', () => {
       'obs-7',
       'vs-2',
     ]);
-    expect(profile.elements['status'].binding).toEqual('http://hl7.org/fhir/ValueSet/observation-status|4.0.1');
+    expect(profile.elements['status'].binding?.valueSet).toEqual(
+      'http://hl7.org/fhir/ValueSet/observation-status|4.0.1'
+    );
     expect(profile.elements['code'].pattern).toMatchObject<TypedValue>({
       type: 'CodeableConcept',
       value: {
