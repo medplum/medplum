@@ -29,7 +29,7 @@ import { getErrorsForInput } from '../utils/outcomes';
 export interface ResourcePropertyInputProps {
   property: InternalSchemaElement;
   name: string;
-  defaultPropertyType?: PropertyType;
+  defaultPropertyType?: string;
   defaultValue?: any;
   arrayElement?: boolean;
   onChange?: (value: any, propName?: string) => void;
@@ -38,7 +38,7 @@ export interface ResourcePropertyInputProps {
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
   const property = props.property;
-  const propertyType = props.defaultPropertyType ?? (property.type?.[0]?.code as PropertyType);
+  const propertyType = props.defaultPropertyType ?? property.type[0].code;
   const name = props.name;
   const value = props.defaultValue;
 
@@ -107,7 +107,7 @@ export interface ElementDefinitionTypeInputProps extends ResourcePropertyInputPr
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
   const property = props.property;
-  const propertyType = props.elementDefinitionType.code as PropertyType;
+  const propertyType = props.elementDefinitionType.code;
   const name = props.name;
   const value = props.defaultValue;
   const required = property.min !== undefined && property.min > 0;

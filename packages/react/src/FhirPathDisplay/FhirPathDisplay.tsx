@@ -1,4 +1,4 @@
-import { evalFhirPath, PropertyType } from '@medplum/core';
+import { evalFhirPath } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
@@ -6,7 +6,7 @@ import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourceProp
 export interface FhirPathDisplayProps {
   resource: Resource;
   path: string;
-  propertyType: PropertyType;
+  propertyType: string;
 }
 
 export function FhirPathDisplay(props: FhirPathDisplayProps): JSX.Element | null {

@@ -270,6 +270,9 @@ class ResourceValidator implements ResourceVisitor {
 
   private constraintsCheck(value: TypedValue, field: InternalSchemaElement, path: string): void {
     const constraints = field.constraints;
+    if (!constraints) {
+      return;
+    }
     for (const constraint of constraints) {
       if (constraint.severity === 'error' && !(constraint.key in skippedConstraintKeys)) {
         const expression = this.isExpressionTrue(constraint, value, path);

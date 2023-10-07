@@ -1,4 +1,4 @@
-import { InternalSchemaElement, PropertyType } from '@medplum/core';
+import { InternalSchemaElement } from '@medplum/core';
 import React from 'react';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 
@@ -12,7 +12,7 @@ interface ResourceArrayDisplayProps {
 
 export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Element {
   const { property, values } = props;
-  const propertyType = property.type?.[0]?.code as PropertyType;
+  const propertyType = property.type[0].code;
   return props.values ? (
     <>
       {values.map((v: any, index: number) => (

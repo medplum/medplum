@@ -1,11 +1,20 @@
-import { ElementDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { CodeInput } from './CodeInput';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { InternalSchemaElement } from '@medplum/core';
 
-const statusProperty: ElementDefinition = {
+const statusProperty: InternalSchemaElement = {
+  path: 'Patient.maritalStatus',
+  description: "This field contains a patient's most recent marital (civil) status.",
+  min: 0,
+  max: 1,
+  type: [
+    {
+      code: 'CodeableConcept',
+    },
+  ],
   binding: {
     valueSet: 'https://example.com/test',
   },

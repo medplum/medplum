@@ -37,7 +37,7 @@ describe('FHIR resource and data type representations', () => {
     const profile = parseStructureDefinition(sd);
 
     expect(profile.name).toBe('USCoreBloodPressureProfile');
-    expect(profile.constraints.map((c) => c.key).sort()).toEqual([
+    expect(profile.constraints?.map((c) => c.key).sort()).toEqual([
       'dom-2',
       'dom-3',
       'dom-4',
@@ -91,7 +91,7 @@ describe('FHIR resource and data type representations', () => {
       min: 2,
       max: Number.POSITIVE_INFINITY,
     });
-    expect(profile.elements['component'].constraints.map((c) => c.key).sort()).toEqual(['ele-1', 'vs-3']);
+    expect(profile.elements['component'].constraints?.map((c) => c.key).sort()).toEqual(['ele-1', 'vs-3']);
     expect(profile.elements['component'].slicing).toMatchObject<SlicingRules>({
       discriminator: [{ type: 'pattern', path: 'code' }],
       slices: [

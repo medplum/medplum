@@ -6,7 +6,6 @@ import {
   formatDateTime,
   InternalSchemaElement,
   Operator,
-  PropertyType,
   SearchRequest,
 } from '@medplum/core';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
@@ -520,7 +519,7 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
     return formatDateTime(resource.meta?.lastUpdated);
   }
 
-  // Priority 1: ElementDefinition by exact match
+  // Priority 1: InternalSchemaElement by exact match
   if (field.elementDefinition && `${resource.resourceType}.${field.name}` === field.elementDefinition.path) {
     return renderPropertyValue(resource, field.elementDefinition);
   }
@@ -576,7 +575,7 @@ function renderSearchParameterValue(resource: Resource, searchParam: SearchParam
       {value.map((v, index) => (
         <ResourcePropertyDisplay
           key={`${index}-${value.length}`}
-          propertyType={v.type as PropertyType}
+          propertyType={v.type}
           value={v.value}
           maxWidth={200}
           ignoreMissingValues={true}

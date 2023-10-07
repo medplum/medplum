@@ -1,12 +1,12 @@
 import { Checkbox, Group, MultiSelect, NativeSelect, Radio, Textarea, TextInput } from '@mantine/core';
 import {
+  TypedValue,
   capitalize,
   deepEquals,
   formatCoding,
   getElementDefinition,
   getTypedPropertyValue,
   stringify,
-  TypedValue,
 } from '@medplum/core';
 import {
   QuestionnaireItem,
@@ -358,7 +358,7 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
           label={
             <ResourcePropertyDisplay
               property={valueElementDefinition}
-              propertyType={optionValue.type as PropertyType}
+              propertyType={optionValue.type}
               value={optionValue.value}
             />
           }

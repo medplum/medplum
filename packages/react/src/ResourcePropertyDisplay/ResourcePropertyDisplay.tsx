@@ -1,12 +1,12 @@
 import { ActionIcon, Box, CopyButton, Tooltip } from '@mantine/core';
 import {
+  InternalSchemaElement,
+  PropertyType,
+  TypedValue,
   formatDateTime,
   formatPeriod,
   formatTiming,
   getTypedPropertyValue,
-  InternalSchemaElement,
-  PropertyType,
-  TypedValue,
 } from '@medplum/core';
 import { IconCheck, IconCopy } from '@tabler/icons-react';
 import React from 'react';
@@ -29,7 +29,7 @@ import { ResourceArrayDisplay } from '../ResourceArrayDisplay/ResourceArrayDispl
 
 export interface ResourcePropertyDisplayProps {
   property?: InternalSchemaElement;
-  propertyType: PropertyType;
+  propertyType: string;
   value: any;
   arrayElement?: boolean;
   maxWidth?: number;
@@ -165,15 +165,15 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
  * @param path The property path.
  * @returns The value of the property and the property type.
  */
-export function getValueAndType(context: TypedValue, path: string): [any, PropertyType] {
+export function getValueAndType(context: TypedValue, path: string): [any, string] {
   const typedResult = getTypedPropertyValue(context, path);
   if (!typedResult) {
-    return [undefined, 'undefined' as PropertyType];
+    return [undefined, 'undefined'];
   }
 
   if (Array.isArray(typedResult)) {
-    return [typedResult.map((e) => e.value), typedResult[0].type as PropertyType];
+    return [typedResult.map((e) => e.value), typedResult[0].type];
   }
 
-  return [typedResult.value, typedResult.type as PropertyType];
+  return [typedResult.value, typedResult.type];
 }

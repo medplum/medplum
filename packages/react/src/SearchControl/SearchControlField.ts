@@ -12,7 +12,7 @@ import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
  * The SearchControlField type describes a field in the search control.
  *
  * In a SearchRequest, a field is a simple string. Strings can be one of the following:
- * 1) Simple property names, which refer to ElementDefinition objects
+ * 1) Simple property names, which refer to InternalSchemaElement objects
  * 2) Search parameter names, which refer to SearchParameter resources
  *
  * Consider a few examples of how this becomes complicated.

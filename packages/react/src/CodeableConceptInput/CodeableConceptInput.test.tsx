@@ -1,11 +1,21 @@
-import { CodeableConcept, ElementDefinition } from '@medplum/fhirtypes';
+import { CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { CodeableConceptInput } from './CodeableConceptInput';
+import { InternalSchemaElement } from '@medplum/core';
 
-const statusProperty: ElementDefinition = {
+const statusProperty: InternalSchemaElement = {
+  path: 'Patient.maritalStatus',
+  description: "This field contains a patient's most recent marital (civil) status.",
+  min: 0,
+  max: 1,
+  type: [
+    {
+      code: 'CodeableConcept',
+    },
+  ],
   binding: {
     valueSet: 'https://example.com/test',
   },
@@ -110,7 +120,11 @@ describe('CodeableConceptInput', () => {
   });
 
   test('Malformed value', async () => {
-    const elementDefinition: ElementDefinition = {
+    const elementDefinition: InternalSchemaElement = {
+      path: 'Patient.maritalStatus',
+      description: "This field contains a patient's most recent marital (civil) status.",
+      min: 0,
+      max: 1,
       type: [{ code: 'CodeableConcept' }],
     };
 

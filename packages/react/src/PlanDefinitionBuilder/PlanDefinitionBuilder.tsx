@@ -1,5 +1,5 @@
 import { Anchor, Button, createStyles, NativeSelect, Stack, TextInput } from '@mantine/core';
-import { getReferenceString, InternalSchemaElement, PropertyType } from '@medplum/core';
+import { getReferenceString, InternalSchemaElement } from '@medplum/core';
 import { PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
@@ -453,7 +453,7 @@ function getInitialActionType(action: PlanDefinitionAction): string | undefined 
   return undefined;
 }
 
-function getActionTiming(action: PlanDefinitionAction): [any, PropertyType] {
+function getActionTiming(action: PlanDefinitionAction): [any, string] {
   return getValueAndType({ type: 'PlanDefinitionAction', value: action }, 'timing');
 }
 

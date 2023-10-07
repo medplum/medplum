@@ -1,4 +1,12 @@
-import { Bundle, Coding, ElementDefinition, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  Coding,
+  ElementDefinition,
+  ElementDefinitionBinding,
+  Resource,
+  ResourceType,
+  StructureDefinition,
+} from '@medplum/fhirtypes';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, serverError } from '../outcomes';
 import { getElementDefinitionTypeName, isResourceTypeSchema, TypedValue } from '../types';
@@ -13,7 +21,7 @@ export interface InternalTypeSchema {
   kind?: string;
   description?: string;
   elements: Record<string, InternalSchemaElement>;
-  constraints: Constraint[];
+  constraints?: Constraint[];
   parentType?: InternalTypeSchema;
   innerTypes: InternalTypeSchema[];
   summaryProperties?: Set<string>;
@@ -25,13 +33,13 @@ export interface InternalSchemaElement {
   path: string;
   min: number;
   max: number;
-  isArray: boolean;
-  constraints: Constraint[];
+  isArray?: boolean;
+  constraints?: Constraint[];
   type: ElementType[];
   slicing?: SlicingRules;
   fixed?: TypedValue;
   pattern?: TypedValue;
-  binding?: string;
+  binding?: ElementDefinitionBinding;
 }
 
 export interface ElementType {
@@ -388,7 +396,7 @@ class StructureDefinitionParser {
       })),
       fixed: firstValue(getTypedPropertyValue(typedElementDef, 'fixed')),
       pattern: firstValue(getTypedPropertyValue(typedElementDef, 'pattern')),
-      binding: ed.binding?.strength === 'required' ? ed.binding.valueSet : undefined,
+      binding: ed.binding,
     };
   }
 }

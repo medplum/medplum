@@ -1,20 +1,20 @@
-import { ElementDefinition } from '@medplum/fhirtypes';
+import { InternalSchemaElement } from '@medplum/core';
 import { Meta } from '@storybook/react';
 import React from 'react';
-import { CodeInput } from './CodeInput';
 import { Document } from '../Document/Document';
+import { CodeInput } from './CodeInput';
 
 export default {
   title: 'Medplum/CodeInput',
   component: CodeInput,
 } as Meta;
 
-const projectFeaturesDefinition: ElementDefinition = {
-  id: 'Project.features',
+const projectFeaturesDefinition: InternalSchemaElement = {
   path: 'Project.features',
-  definition: 'A list of optional features that are enabled for the project.',
+  description: 'A list of optional features that are enabled for the project.',
   min: 0,
-  max: '*',
+  max: Infinity,
+  isArray: true,
   type: [
     {
       code: 'code',

@@ -1,5 +1,5 @@
 import { Button, Loader, Table } from '@mantine/core';
-import { normalizeOperationOutcome, PropertyType } from '@medplum/core';
+import { normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { FhirPathDisplay } from '../FhirPathDisplay/FhirPathDisplay';
@@ -8,7 +8,7 @@ import { SearchClickEvent } from '../SearchControl/SearchControl';
 import { isCheckboxCell, killEvent } from '../utils/dom';
 
 export interface FhirPathTableField {
-  readonly propertyType: PropertyType;
+  readonly propertyType: string;
   readonly name: string;
   readonly fhirPath: string;
 }

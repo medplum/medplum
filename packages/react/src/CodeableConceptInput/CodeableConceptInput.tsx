@@ -24,7 +24,7 @@ export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Elem
 
   return (
     <ValueSetAutocomplete
-      binding={props.property.binding}
+      binding={props.property.binding?.valueSet}
       name={props.name}
       placeholder={props.placeholder}
       defaultValue={value && codeableConceptToValueSetElement(value)}

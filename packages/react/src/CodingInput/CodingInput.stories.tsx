@@ -1,4 +1,4 @@
-import { ElementDefinition } from '@medplum/fhirtypes';
+import { InternalSchemaElement } from '@medplum/core';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document/Document';
@@ -17,7 +17,7 @@ export const Basic = (): JSX.Element => (
           binding: {
             valueSet: 'https://example.com/test',
           },
-        } as ElementDefinition
+        } as InternalSchemaElement
       }
       name="code"
     />

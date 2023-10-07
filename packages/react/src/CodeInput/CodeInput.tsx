@@ -29,7 +29,7 @@ export function CodeInput(props: CodeInputProps): JSX.Element {
 
   return (
     <ValueSetAutocomplete
-      binding={props.property.binding}
+      binding={props.property.binding?.valueSet}
       name={props.name}
       placeholder={props.placeholder}
       defaultValue={codeToValueSetElement(value)}
