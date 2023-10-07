@@ -29,7 +29,7 @@ export function compressElement(element: InternalSchemaElement): Partial<Interna
   return outputPropertySchema;
 }
 
-function inflateElement(partial: Partial<InternalSchemaElement>): InternalSchemaElement {
+export function inflateElement(partial: Partial<InternalSchemaElement>): InternalSchemaElement {
   const max = partial.max && partial.max === Number.MAX_SAFE_INTEGER ? Number.POSITIVE_INFINITY : partial.max;
   return {
     path: '',
