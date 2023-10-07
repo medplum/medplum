@@ -275,13 +275,15 @@ function getTypeScriptTypeForProperty(
     case 'xhtml':
     case 'http://hl7.org/fhirpath/System.String':
       baseType = 'string';
-      binding = property.binding;
+      binding = property.binding?.valueSet;
       if (binding) {
         if (binding === 'http://hl7.org/fhir/ValueSet/resource-types|4.0.1') {
           baseType = 'ResourceType';
         } else if (
           binding !== 'http://hl7.org/fhir/ValueSet/all-types|4.0.1' &&
-          binding !== 'http://hl7.org/fhir/ValueSet/defined-types|4.0.1'
+          binding !== 'http://hl7.org/fhir/ValueSet/defined-types|4.0.1' &&
+          binding !== 'http://hl7.org/fhir/ValueSet/languages' &&
+          binding !== 'http://hl7.org/fhir/ValueSet/defined-types'
         ) {
           const values = getValueSetValues(binding);
           if (values && values.length > 0) {
