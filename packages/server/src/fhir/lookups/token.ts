@@ -239,7 +239,7 @@ function buildTokensForSearchParameter(
  */
 function buildTokens(result: Token[], searchParam: SearchParameter, typedValue: TypedValue): void {
   const { type, value } = typedValue;
-  switch (type as PropertyType) {
+  switch (type) {
     case PropertyType.Identifier:
       buildIdentifierToken(result, searchParam, value as Identifier);
       break;

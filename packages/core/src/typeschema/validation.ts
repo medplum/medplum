@@ -320,9 +320,9 @@ class ResourceValidator implements ResourceVisitor {
       }
       // Then, perform additional checks for specialty types
       if (expectedType === 'string') {
-        this.validateString(value as string, type as PropertyType, path);
+        this.validateString(value as string, type, path);
       } else if (expectedType === 'number') {
-        this.validateNumber(value as number, type as PropertyType, path);
+        this.validateNumber(value as number, type, path);
       }
     }
     if (extensionElement) {
@@ -330,7 +330,7 @@ class ResourceValidator implements ResourceVisitor {
     }
   }
 
-  private validateString(str: string, type: PropertyType, path: string): void {
+  private validateString(str: string, type: string, path: string): void {
     if (!str.trim()) {
       this.issues.push(createStructureIssue(path, 'String must contain non-whitespace content'));
       return;
@@ -342,7 +342,7 @@ class ResourceValidator implements ResourceVisitor {
     }
   }
 
-  private validateNumber(n: number, type: PropertyType, path: string): void {
+  private validateNumber(n: number, type: string, path: string): void {
     if (isNaN(n) || !isFinite(n)) {
       this.issues.push(createStructureIssue(path, 'Invalid numeric value'));
     } else if (isIntegerType(type) && !Number.isInteger(n)) {
@@ -355,7 +355,7 @@ class ResourceValidator implements ResourceVisitor {
   }
 }
 
-function isIntegerType(propertyType: PropertyType): boolean {
+function isIntegerType(propertyType: string): boolean {
   return (
     propertyType === PropertyType.integer ||
     propertyType === PropertyType.positiveInt ||
