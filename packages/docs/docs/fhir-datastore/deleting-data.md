@@ -1,3 +1,9 @@
+---
+id: deleting-data
+toc_max_heading_level: 5
+sidebar_position: 5
+---
+
 # Deleting Data
 
 The management of healthcare information relies heavily on the effective and secure handling of data. A critical aspect of FHIR data store management is the "delete" operation, which ensures the removal of outdated or erroneous records as necessary. This article will provide an overview of the deleting data in Medplum, including the differences between "soft delete" and "hard delete" methods. Understanding these distinctions is essential for making informed decisions when dealing with sensitive healthcare data.

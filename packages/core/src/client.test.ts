@@ -1978,20 +1978,27 @@ describe('Client', () => {
   });
 
   test('setAccessToken', async () => {
-    const fetch = jest.fn(async () => ({
+    const patient: Patient = { resourceType: 'Patient', id: '123' };
+    const fetch = jest.fn(async (url: string) => ({
       status: 200,
       headers: { get: () => ContentType.FHIR_JSON },
-      json: async () => ({ resourceType: 'Patient' }),
+      json: async () => (url.endsWith('/auth/me') ? { profile: patient } : patient),
     }));
 
     const client = new MedplumClient({ fetch });
-    client.setAccessToken('foo');
-    expect(client.getAccessToken()).toEqual('foo');
+    const accessToken = createFakeJwt({ login_id: '123' });
+    client.setAccessToken(accessToken);
+    expect(client.getAccessToken()).toEqual(accessToken);
 
-    const patient = await client.readResource('Patient', '123');
-    expect(patient).toBeDefined();
+    await expect(client.readResource('Patient', '123')).resolves.toMatchObject(patient);
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect((fetch.mock.calls[0] as any[])[1].headers.Authorization).toBe('Bearer foo');
+    expect((fetch.mock.calls[0] as any[])[1].headers.Authorization).toBe(`Bearer ${accessToken}`);
+
+    expect(client.getProfile()).toBeUndefined();
+    await expect(client.getProfileAsync()).resolves.toMatchObject(patient);
+    const expectedCalls = fetch.mock.calls.length;
+    await expect(client.getProfileAsync()).resolves.toMatchObject(patient);
+    expect(fetch.mock.calls).toHaveLength(expectedCalls);
   });
 
   test('graphql', async () => {

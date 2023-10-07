@@ -26,6 +26,7 @@ import { indexStructureDefinitionBundle } from '../types';
 import { createReference } from '../utils';
 import { loadDataTypes } from './types';
 import { validate } from './validation';
+import { LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 
 describe('FHIR resource validation', () => {
   let observationProfile: StructureDefinition;
@@ -165,7 +166,7 @@ describe('FHIR resource validation', () => {
         coding: [
           {
             code: '85354-9',
-            system: 'http://loinc.org',
+            system: LOINC,
           },
         ],
       },
@@ -179,7 +180,7 @@ describe('FHIR resource validation', () => {
             coding: [
               {
                 code: '8480-6',
-                system: 'http://loinc.org',
+                system: LOINC,
               },
             ],
           },
@@ -187,7 +188,7 @@ describe('FHIR resource validation', () => {
             coding: [
               {
                 code: '8480-6',
-                system: 'http://loinc.org',
+                system: LOINC,
               },
             ],
           },
@@ -197,7 +198,7 @@ describe('FHIR resource validation', () => {
             coding: [
               {
                 code: '8480-6',
-                system: 'http://loinc.org',
+                system: LOINC,
               },
             ],
           },
@@ -205,7 +206,7 @@ describe('FHIR resource validation', () => {
             coding: [
               {
                 code: '8462-4',
-                system: 'http://loinc.org',
+                system: LOINC,
               },
             ],
           },
@@ -234,7 +235,7 @@ describe('FHIR resource validation', () => {
         coding: [
           {
             code: '85354-9',
-            system: 'http://loinc.org',
+            system: LOINC,
           },
         ],
       },
@@ -249,7 +250,7 @@ describe('FHIR resource validation', () => {
             coding: [
               {
                 code: '8480-6',
-                system: 'http://loinc.org',
+                system: LOINC,
               },
             ],
           },
@@ -294,7 +295,7 @@ describe('FHIR resource validation', () => {
             coding: [
               {
                 code: '8480-6',
-                system: 'http://loinc.org',
+                system: LOINC,
               },
             ],
           },
@@ -304,7 +305,7 @@ describe('FHIR resource validation', () => {
             coding: [
               {
                 code: '8462-4',
-                system: 'http://loinc.org',
+                system: LOINC,
               },
             ],
           },
@@ -333,7 +334,7 @@ describe('FHIR resource validation', () => {
         coding: [
           {
             code: '85354-9',
-            system: 'http://loinc.org',
+            system: LOINC,
           },
         ],
       },
@@ -347,7 +348,7 @@ describe('FHIR resource validation', () => {
             coding: [
               {
                 code: '8480-6',
-                system: 'http://loinc.org',
+                system: LOINC,
               },
             ],
           },
@@ -357,7 +358,7 @@ describe('FHIR resource validation', () => {
             coding: [
               {
                 code: 'wrong code',
-                system: 'http://loinc.org',
+                system: LOINC,
               },
             ],
           },
@@ -524,7 +525,7 @@ describe('FHIR resource validation', () => {
       medicationCodeableConcept: {
         coding: [
           {
-            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            system: RXNORM,
             code: '105078',
             display: 'Penicillin G 375 MG/ML Injectable Solution',
           },
@@ -550,7 +551,7 @@ describe('FHIR resource validation', () => {
             {
               coding: [
                 {
-                  system: 'http://snomed.info/sct',
+                  system: SNOMED,
                   code: '418577003',
                   display: 'Take at regular intervals. Complete the prescribed course unless otherwise directed.',
                 },
@@ -637,7 +638,7 @@ describe('FHIR resource validation', () => {
       code: {
         coding: [
           {
-            system: 'http://loinc.org',
+            system: LOINC,
             code: '29463-7',
           },
         ],
@@ -657,7 +658,7 @@ describe('FHIR resource validation', () => {
       },
       effectiveDateTime: '2023-08-04T12:34:56Z',
       valueQuantity: {
-        system: 'http://unitsofmeasure.org',
+        system: UCUM,
         code: '[lb_av]',
         unit: 'pounds',
         value: 130,

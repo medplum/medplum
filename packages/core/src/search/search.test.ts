@@ -1,4 +1,5 @@
-import { formatSearchQuery, Operator, parseSearchDefinition } from './search';
+import { Patient } from '@medplum/fhirtypes';
+import { formatSearchQuery, Operator, parseSearchDefinition, parseXFhirQuery, SearchRequest } from './search';
 
 describe('Search Utils', () => {
   test('Parse Patient search', () => {
@@ -260,6 +261,7 @@ describe('Search Utils', () => {
     ).toEqual('?code:not=x');
   });
 
+  const maritalStatus = 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus';
   test('Format _include', () => {
     expect(
       formatSearchQuery({
@@ -272,5 +274,53 @@ describe('Search Utils', () => {
         ],
       })
     ).toEqual('?_include=Patient:organization');
+  });
+
+  test.each<[string, SearchRequest]>([
+    [
+      'Patient?name:contains=Just',
+      { resourceType: 'Patient', filters: [{ code: 'name', operator: Operator.CONTAINS, value: 'Just' }] },
+    ],
+    [
+      'Observation?subject={{ %patient }}',
+      {
+        resourceType: 'Observation',
+        filters: [{ code: 'subject', operator: Operator.EQUALS, value: 'Patient/12345' }],
+      },
+    ],
+    [
+      'Observation?patient={{ %patient.id }}',
+      { resourceType: 'Observation', filters: [{ code: 'patient', operator: Operator.EQUALS, value: '12345' }] },
+    ],
+    [
+      'Observation?date=gt{{ %patient.birthDate }}&performer={{ %patient.generalPractitioner[0].reference }}',
+      {
+        resourceType: 'Observation',
+        filters: [
+          { code: 'date', operator: Operator.GREATER_THAN, value: '1955-10-02' },
+          { code: 'performer', operator: Operator.EQUALS, value: 'Practitioner/98765' },
+        ],
+      },
+    ],
+  ])('parseXFhirQuery(%s)', (query, expected) => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      id: '12345',
+      gender: 'unknown',
+      birthDate: '1955-10-02',
+      multipleBirthBoolean: true,
+      maritalStatus: {
+        coding: [
+          { system: maritalStatus, code: 'unmarried' },
+          { system: maritalStatus, code: 'A' },
+        ],
+      },
+      contact: [{ telecom: [{ system: 'url', value: 'http://example.com' }] }],
+      address: [{ country: 'US', state: 'DE' }],
+      name: [{ given: ['Jan', 'Wyatt'], family: 'Smith' }, { text: 'Green Lantern' }],
+      generalPractitioner: [{ reference: 'Practitioner/98765' }],
+    };
+    const actual = parseXFhirQuery(query, { patient: { type: 'Patient', value: patient } });
+    expect(actual).toEqual(expected);
   });
 });

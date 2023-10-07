@@ -1,4 +1,4 @@
-import { ContentType, createReference } from '@medplum/core';
+import { ContentType, LOINC, createReference } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -45,7 +45,7 @@ describe('Patient Everything Operation', () => {
       .send({
         resourceType: 'Observation',
         status: 'final',
-        code: { coding: [{ system: 'http://loinc.org', code: '12345-6' }] },
+        code: { coding: [{ system: LOINC, code: '12345-6' }] },
         subject: createReference(res1.body as Patient),
       });
     expect(res2.status).toBe(201);
@@ -59,7 +59,7 @@ describe('Patient Everything Operation', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Condition',
-        code: { coding: [{ system: 'http://loinc.org', code: '12345-6' }] },
+        code: { coding: [{ system: LOINC, code: '12345-6' }] },
         asserter: createReference(res1.body as Patient),
         subject: createReference(res1.body as Patient),
       });

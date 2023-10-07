@@ -1,5 +1,5 @@
 // start-block imports
-import { MedplumClient, createReference, findObservationInterval } from '@medplum/core';
+import { LOINC, MedplumClient, UCUM, createReference, findObservationInterval } from '@medplum/core';
 import { Observation, ObservationDefinition, Patient } from '@medplum/fhirtypes';
 
 // end-block imports
@@ -13,7 +13,7 @@ let resource = await medplum.createResource<ObservationDefinition>(
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '38483-4',
           display: 'Creatinine [Mass/volume] in Blood',
         },
@@ -26,7 +26,7 @@ let resource = await medplum.createResource<ObservationDefinition>(
           low: {
             value: 20,
             unit: 'mg/dL',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
           },
         },
       },
@@ -43,7 +43,7 @@ resource = await medplum.createResource<ObservationDefinition>(
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '38483-4',
           display: 'Creatinine [Mass/volume] in Blood',
         },
@@ -56,12 +56,12 @@ resource = await medplum.createResource<ObservationDefinition>(
           low: {
             value: 10,
             unit: 'mg/dL',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
           },
           high: {
             value: 100,
             unit: 'mg/dL',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
           },
         },
       },
@@ -77,7 +77,7 @@ resource = await medplum.createResource<ObservationDefinition>(
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '38483-4',
           display: 'Creatinine [Mass/volume] in Blood',
         },
@@ -90,7 +90,7 @@ resource = await medplum.createResource<ObservationDefinition>(
           high: {
             value: 5,
             unit: 'mg/dL',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
           },
         },
       },
@@ -106,7 +106,7 @@ resource = await medplum.createResource<ObservationDefinition>(
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '38483-4',
           display: 'Creatinine [Mass/volume] in Blood',
         },
@@ -121,7 +121,7 @@ resource = await medplum.createResource<ObservationDefinition>(
           high: {
             value: 9,
             unit: 'mg/dL',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
             code: 'mg/dL',
           },
         },
@@ -134,13 +134,13 @@ resource = await medplum.createResource<ObservationDefinition>(
           low: {
             value: 10,
             unit: 'mg/dL',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
             code: 'mg/dL',
           },
           high: {
             value: 99,
             unit: 'mg/dL',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
             code: 'mg/dL',
           },
         },
@@ -153,7 +153,7 @@ resource = await medplum.createResource<ObservationDefinition>(
           low: {
             value: 100,
             unit: 'mg/dL',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
             code: 'mg/dL',
           },
         },
@@ -170,7 +170,7 @@ const testosteroneDefinition = await medplum.createResource<ObservationDefinitio
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '2990-0',
           display: 'Testosterone.free+weakly bound [Mass/volume] in Serum or Plasma',
         },
@@ -292,7 +292,7 @@ const janeTestosterone: Observation = {
   code: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: '2990-0',
         display: 'Testosterone.free+weakly bound [Mass/volume] in Serum or Plasma',
       },
@@ -340,7 +340,7 @@ resource = await medplum.createResource<ObservationDefinition>(
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '2093-3',
           display: 'Cholesterol in HDL [Mass/volume] in Serum or Plasma',
         },

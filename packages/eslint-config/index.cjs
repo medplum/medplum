@@ -1,6 +1,6 @@
 module.exports = {
   parser: '@typescript-eslint/parser',
-  plugins: ['@typescript-eslint'],
+  plugins: ['@typescript-eslint', 'react-refresh'],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
@@ -119,6 +119,9 @@ module.exports = {
         varsIgnorePattern: '^_',
       },
     ],
+
+    // React Refresh
+    'react-refresh/only-export-components': 'warn',
 
     // Disable warnings from typescript-eslint:strict
     '@typescript-eslint/non-nullable-type-assertion-style': 'off',

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/eslint-config",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "description": "Shared ESLint configuration for Medplum projects",
   "main": "index.cjs",
   "repository": {
@@ -33,6 +33,7 @@
     "@typescript-eslint/parser": "6.7.0",
     "eslint": "8.49.0",
     "eslint-plugin-jsdoc": "46.8.1",
-    "eslint-plugin-react-hooks": "4.6.0"
+    "eslint-plugin-react-hooks": "4.6.0",
+    "eslint-plugin-react-refresh": "0.4.3"
   }
 }

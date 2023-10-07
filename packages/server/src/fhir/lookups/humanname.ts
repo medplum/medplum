@@ -85,7 +85,7 @@ export class HumanNameTable extends LookupTable<HumanName> {
           resourceId,
           index: i,
           content: stringify(name),
-          name: formatHumanName(name),
+          name: getNameString(name),
           given: formatGivenName(name),
           family: formatFamilyName(name),
         });
@@ -94,4 +94,47 @@ export class HumanNameTable extends LookupTable<HumanName> {
       await this.insertValuesForResource(client, resourceType, values);
     }
   }
+}
+
+/**
+ * Returns a string representation of the human name for indexing.
+ *
+ * In previous versions, we simply used `formatHumanName(name)`.
+ *
+ * However, the FHIR spec indicates that the `text` field should be used for indexing.
+ *
+ * Quote:
+ *
+ *   "The given name parts may contain whitespace, though generally they don't.
+ *    Initials may be used in place of the full name if that is all that is recorded.
+ *    Systems that operate across cultures should generally rely on the text form for
+ *    presentation and use the parts for index/search functionality. For this reason,
+ *    applications SHOULD populate the text element for future robustness."
+ *
+ * @param name The input human name.
+ * @returns A string representation of the human name.
+ */
+export function getNameString(name: HumanName): string {
+  let result = formatHumanName(name);
+
+  if (name.text) {
+    // Add unique tokens from the text field
+    const resultTokens = getTokens(result);
+    const textTokens = getTokens(name.text);
+    for (const token of textTokens) {
+      if (!resultTokens.has(token)) {
+        result += ' ' + token;
+        resultTokens.add(token);
+      }
+    }
+  }
+
+  return result;
+}
+
+function getTokens(input: string): Set<string> {
+  // Convert to lowercase
+  // Split on whitespace
+  // Remove empty strings
+  return new Set<string>(input.toLowerCase().split(/\s+/).filter(Boolean));
 }

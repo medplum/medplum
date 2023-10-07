@@ -2322,16 +2322,18 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * Returns the current user profile resource if available.
+   * Returns the current user profile resource, retrieving form the server if necessary.
    * This method waits for loading promises.
-   * @returns The current user profile resource if available.
+   * @returns The current user profile resource.
    * @category User Profile
    */
   async getProfileAsync(): Promise<ProfileResource | undefined> {
     if (this.profilePromise) {
-      await this.profilePromise;
+      return this.profilePromise;
+    } else if (this.sessionDetails) {
+      return this.sessionDetails.profile;
     }
-    return this.getProfile();
+    return this.refreshProfile();
   }
 
   /**

@@ -188,6 +188,7 @@ WHERE ("Organization"."deleted"=false AND
   EXISTS(SELECT 1 FROM unnest("name") AS "name"
     -- Strings use case-insensitive prefix matching
     WHERE LOWER("name") LIKE 'geneco%'
+    LIMIT 1
   )
 )
 ```

@@ -1,6 +1,8 @@
 import {
   Bundle,
   BundleEntry,
+  CodeableConcept,
+  Coding,
   ElementDefinition,
   Reference,
   Resource,
@@ -10,7 +12,8 @@ import {
 } from '@medplum/fhirtypes';
 import baseSchema from './base-schema.json';
 import { SearchParameterDetails } from './search/details';
-import { capitalize } from './utils';
+import { capitalize, createReference } from './utils';
+import { formatHumanName } from './format';
 
 export interface TypedValue {
   readonly type: string;
@@ -467,3 +470,70 @@ export function isReference(value: unknown): value is Reference & { reference: s
  * Global schema singleton.
  */
 export const globalSchema = baseSchema as unknown as IndexedStructureDefinition;
+
+/**
+ * Output the string representation of a value, suitable for use as part of a search query.
+ * @param v The value to format as a string
+ * @returns The stringified value
+ */
+export function stringifyTypedValue(v: TypedValue): string {
+  switch (v.type) {
+    case PropertyType.uuid:
+    case PropertyType.uri:
+    case PropertyType.url:
+    case PropertyType.string:
+    case PropertyType.oid:
+    case PropertyType.markdown:
+    case PropertyType.id:
+    case PropertyType.code:
+    case PropertyType.canonical:
+    case PropertyType.base64Binary:
+    case PropertyType.SystemString:
+    case PropertyType.date:
+    case PropertyType.dateTime:
+    case PropertyType.instant:
+      // many types are represented as string primitives
+      return v.value as string;
+    case PropertyType.Identifier:
+      return `${v.value.system ?? ''}|${v.value.value}`;
+    case PropertyType.Coding:
+      return stringifyCoding(v.value);
+    case PropertyType.CodeableConcept:
+      return (v.value as CodeableConcept).coding?.map(stringifyCoding).join(',') ?? v.value.text;
+    case PropertyType.HumanName:
+      if (v.value.text) {
+        return v.value.text;
+      }
+      return formatHumanName(v.value);
+    case PropertyType.unsignedInt:
+    case PropertyType.positiveInt:
+    case PropertyType.integer:
+    case PropertyType.decimal:
+      return (v.value as number).toString();
+    case PropertyType.boolean:
+      return v.value ? 'true' : 'false';
+    case PropertyType.Extension:
+      return v.value.url;
+    case PropertyType.ContactPoint:
+      return v.value.value;
+    case PropertyType.Quantity:
+    case PropertyType.Age:
+    case PropertyType.Count:
+    case PropertyType.Duration:
+      return `${v.value.value}|${v.value.system ?? ''}|${v.value.code ?? v.value.unit ?? ''}`;
+    case PropertyType.Reference:
+      return v.value.reference;
+    default:
+      if (isResource(v.value)) {
+        return createReference(v.value).reference as string;
+      }
+      return JSON.stringify(v);
+  }
+}
+
+function stringifyCoding(coding: Coding | undefined): string {
+  if (!coding) {
+    return '';
+  }
+  return `${coding.system ?? ''}|${coding.code}`;
+}

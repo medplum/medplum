@@ -1,4 +1,4 @@
-import { ContentType, createReference } from '@medplum/core';
+import { ContentType, SNOMED, UCUM, createReference } from '@medplum/core';
 import {
   Address,
   Communication,
@@ -478,14 +478,14 @@ export const HomerObservation6: Observation = {
       valueQuantity: {
         value: 110,
         unit: 'mmHg',
-        system: 'http://unitsofmeasure.org',
+        system: UCUM,
       },
     },
     {
       valueQuantity: {
         value: 75,
         unit: 'mmHg',
-        system: 'http://unitsofmeasure.org',
+        system: UCUM,
       },
     },
   ],
@@ -507,7 +507,7 @@ export const HomerObservation7: Observation = {
       valueQuantity: {
         value: 1000,
         unit: 'mg/dL',
-        system: 'http://unitsofmeasure.org',
+        system: UCUM,
       },
     },
   ],
@@ -590,7 +590,7 @@ export const HomerServiceRequest: ServiceRequest = {
   code: {
     coding: [
       {
-        system: 'http://snomed.info/sct',
+        system: SNOMED,
         code: 'SERVICE_REQUEST_CODE',
       },
     ],

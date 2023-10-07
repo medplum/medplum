@@ -214,7 +214,7 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 
@@ -239,7 +239,7 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 
@@ -259,7 +259,7 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 

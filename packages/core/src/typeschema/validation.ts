@@ -20,6 +20,7 @@ import {
   SliceDiscriminator,
   SlicingRules,
 } from './types';
+import { UCUM } from '../constants';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -285,7 +286,7 @@ class ResourceValidator implements ResourceVisitor {
         context: value,
         resource: toTypedValue(this.currentResource[this.currentResource.length - 1]),
         rootResource: toTypedValue(this.rootResource),
-        ucum: toTypedValue('http://unitsofmeasure.org'),
+        ucum: toTypedValue(UCUM),
       });
 
       return evalValues.length === 1 && evalValues[0].value === true;

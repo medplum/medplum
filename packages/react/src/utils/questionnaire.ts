@@ -1,9 +1,18 @@
-import { TypedValue, evalFhirPathTyped, getTypedPropertyValue } from '@medplum/core';
+import {
+  TypedValue,
+  deepClone,
+  evalFhirPathTyped,
+  formatCoding,
+  getExtension,
+  getTypedPropertyValue,
+} from '@medplum/core';
 import {
   QuestionnaireItem,
+  QuestionnaireItemAnswerOption,
   QuestionnaireItemEnableWhen,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
+  ResourceType,
 } from '@medplum/fhirtypes';
 
 export enum QuestionnaireItemType {
@@ -58,6 +67,24 @@ export function isQuestionEnabled(item: QuestionnaireItem, responseItems: Questi
   }
 
   return enableBehavior !== 'any';
+}
+
+export function getNewMultiSelectValues(
+  selected: string[],
+  propertyName: string,
+  item: QuestionnaireItem
+): QuestionnaireResponseItemAnswer[] {
+  return selected.map((o) => {
+    const option = item.answerOption?.find(
+      (option) =>
+        formatCoding(option.valueCoding) === o || option[propertyName as keyof QuestionnaireItemAnswerOption] === o
+    );
+    const optionValue = getTypedPropertyValue(
+      { type: 'QuestionnaireItemAnswerOption', value: option },
+      'value'
+    ) as TypedValue;
+    return { [propertyName]: optionValue?.value };
+  });
 }
 
 function getByLinkId(
@@ -146,4 +173,51 @@ function checkAnswers(
   }
 
   return { anyMatch, allMatch };
+}
+
+export function getQuestionnaireItemReferenceTargetTypes(item: QuestionnaireItem): ResourceType[] | undefined {
+  const extension = getExtension(item, 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource');
+  if (!extension) {
+    return undefined;
+  }
+  if (extension.valueCode !== undefined) {
+    return [extension.valueCode] as ResourceType[];
+  }
+  if (extension.valueCodeableConcept) {
+    return extension.valueCodeableConcept?.coding?.map((c) => c.code) as ResourceType[];
+  }
+  return undefined;
+}
+
+export function setQuestionnaireItemReferenceTargetTypes(
+  item: QuestionnaireItem,
+  targetTypes: ResourceType[] | undefined
+): QuestionnaireItem {
+  const result = deepClone(item);
+  let extension = getExtension(result, 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource');
+
+  if (!targetTypes || targetTypes.length === 0) {
+    if (extension) {
+      result.extension = result.extension?.filter((e) => e !== extension);
+    }
+    return result;
+  }
+
+  if (!extension) {
+    if (!result.extension) {
+      result.extension = [];
+    }
+    extension = { url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource' };
+    result.extension.push(extension);
+  }
+
+  if (targetTypes.length === 1) {
+    extension.valueCode = targetTypes[0];
+    delete extension.valueCodeableConcept;
+  } else {
+    extension.valueCodeableConcept = { coding: targetTypes.map((t) => ({ code: t })) };
+    delete extension.valueCode;
+  }
+
+  return result;
 }

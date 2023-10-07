@@ -527,6 +527,7 @@ export class ArraySubquery implements Expression {
     sql.appendIdentifier(this.columnName);
     sql.append(' WHERE ');
     this.filter.buildSql(sql);
+    sql.append('LIMIT 1');
     sql.append(')');
   }
 }

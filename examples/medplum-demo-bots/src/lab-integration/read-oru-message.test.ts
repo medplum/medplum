@@ -6,6 +6,7 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   MedplumClient,
+  UCUM,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
@@ -180,19 +181,19 @@ describe('Read from Partner Lab', () => {
       valueQuantity: {
         unit: 'MG/DL',
         value: 14,
-        system: 'http://unitsofmeasure.org',
+        system: UCUM,
       },
       referenceRange: [
         {
           low: {
             value: 5,
             unit: 'MG/DL',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
           },
           high: {
             value: 20,
             unit: 'MG/DL',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
           },
         },
       ],

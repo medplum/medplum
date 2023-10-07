@@ -1,6 +1,7 @@
 import {
   createReference,
   getReferenceString,
+  LOINC,
   normalizeErrorString,
   OperationOutcomeError,
   Operator,
@@ -8,6 +9,7 @@ import {
   parseSearchRequest,
   parseSearchUrl,
   SearchRequest,
+  SNOMED,
 } from '@medplum/core';
 import {
   ActivityDefinition,
@@ -185,7 +187,7 @@ describe('FHIR Search', () => {
       // _summary=text
       const textResults = await systemRepo.search({
         resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
         summary: 'text',
       });
       expect(textResults.entry).toHaveLength(1);
@@ -206,7 +208,7 @@ describe('FHIR Search', () => {
       // _summary=data
       const dataResults = await systemRepo.search({
         resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
         summary: 'data',
       });
       expect(dataResults.entry).toHaveLength(1);
@@ -218,7 +220,7 @@ describe('FHIR Search', () => {
       // _summary=true
       const summaryResults = await systemRepo.search({
         resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
         summary: 'true',
       });
       expect(summaryResults.entry).toHaveLength(1);
@@ -248,7 +250,7 @@ describe('FHIR Search', () => {
 
       const results = await systemRepo.search({
         resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
         fields: ['birthDate', 'deceased'],
       });
       expect(results.entry).toHaveLength(1);
@@ -799,6 +801,21 @@ describe('FHIR Search', () => {
 
       expect(searchResult2.entry?.length).toEqual(0);
     }));
+
+  test('Empty _id', async () => {
+    const searchResult1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_id',
+          operator: Operator.EQUALS,
+          value: '',
+        },
+      ],
+    });
+
+    expect(searchResult1.entry?.length).toEqual(0);
+  });
 
   test('Non UUID _id', async () => {
     const searchResult1 = await systemRepo.search({
@@ -2163,7 +2180,7 @@ describe('FHIR Search', () => {
         code: {
           coding: [
             {
-              system: 'http://loinc.org',
+              system: LOINC,
               code: 'fake',
             },
           ],
@@ -2343,7 +2360,7 @@ describe('FHIR Search', () => {
         resourceType: 'DiagnosticReport',
         status: 'final',
         code: { coding: [{ code }] },
-        category: [{ coding: [{ system: 'http://loinc.org', code: 'LP217198-3' }] }],
+        category: [{ coding: [{ system: LOINC, code: 'LP217198-3' }] }],
       });
 
       const bundle = await systemRepo.search({
@@ -2357,7 +2374,7 @@ describe('FHIR Search', () => {
           {
             code: 'category',
             operator: Operator.EQUALS,
-            value: 'http://loinc.org|LP217198-3',
+            value: `${LOINC}|LP217198-3`,
           },
         ],
         count: 1,
@@ -2442,7 +2459,7 @@ describe('FHIR Search', () => {
       const c1 = await systemRepo.createResource<Condition>({
         resourceType: 'Condition',
         subject: createReference(p),
-        code: { coding: [{ system: 'http://snomed.info/sct', code: '165002' }] },
+        code: { coding: [{ system: SNOMED, code: '165002' }] },
       });
 
       const c2 = await systemRepo.createResource<Condition>({
@@ -2462,7 +2479,7 @@ describe('FHIR Search', () => {
           {
             code: 'code',
             operator: Operator.EQUALS,
-            value: 'http://snomed.info/sct|',
+            value: `${SNOMED}|`,
           },
         ],
       });
@@ -2482,7 +2499,7 @@ describe('FHIR Search', () => {
       await systemRepo.createResource<Condition>({
         resourceType: 'Condition',
         subject: createReference(p),
-        code: { coding: [{ system: 'http://snomed.info/sct', code: '165002' }] },
+        code: { coding: [{ system: SNOMED, code: '165002' }] },
       });
 
       await systemRepo.createResource<Condition>({
@@ -2517,7 +2534,7 @@ describe('FHIR Search', () => {
       const c1 = await systemRepo.createResource<Condition>({
         resourceType: 'Condition',
         subject: createReference(p),
-        code: { coding: [{ system: 'http://snomed.info/sct', code: '165002' }] },
+        code: { coding: [{ system: SNOMED, code: '165002' }] },
       });
 
       const c2 = await systemRepo.createResource<Condition>({

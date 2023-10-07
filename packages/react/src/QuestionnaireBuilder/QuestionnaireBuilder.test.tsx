@@ -460,18 +460,18 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Reference 1'));
     });
     await act(async () => {
-      fireEvent.click(screen.getByText('Add Resource'));
+      fireEvent.click(screen.getByText('Add Resource Type'));
     });
     await act(async () => {
-      fireEvent.change(screen.getByDisplayValue(''), {
+      fireEvent.change(screen.getByPlaceholderText('Resource Type'), {
         target: { value: 'Patient' },
       });
     });
     await act(async () => {
-      fireEvent.click(screen.getByText('Add Resource'));
+      fireEvent.click(screen.getByText('Add Resource Type'));
     });
     await act(async () => {
-      fireEvent.change(screen.getByDisplayValue(''), {
+      fireEvent.change(screen.getAllByPlaceholderText('Resource Type')[1], {
         target: { value: 'Organization' },
       });
     });

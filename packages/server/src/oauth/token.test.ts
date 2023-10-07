@@ -1422,6 +1422,32 @@ describe('OAuth2 Token', () => {
     });
   });
 
+  test('Client assertion missing JWT', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.ClientCredentials,
+      client_assertion_type: OAuthClientAssertionType.JwtBearer,
+      client_assertion: '', // empty JWT
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Invalid client assertion',
+    });
+  });
+
+  test('Client assertion invalid JWT', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.ClientCredentials,
+      client_assertion_type: OAuthClientAssertionType.JwtBearer,
+      client_assertion: 'foo', // not a valid JWT
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Invalid client assertion',
+    });
+  });
+
   test('Smart App Launch tokens', async () => {
     // Create a SmartAppLaunch
     const launch = await withTestContext(() =>

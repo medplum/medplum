@@ -58,4 +58,8 @@ The following criteria are required for CHPL listing: [d12](#encrypt-authenticat
 | CMS Queries              | CMS reportable metrics                               | [Request Access](https://docs.google.com/spreadsheets/d/1OoEcFjiHXHfnZn0y3eQ5D7hjijpr0dop5ckEwnOnSmo/edit#gid=0)                                              |
 | EHR Definition           | Description of what defines an EHR                   | [www.ecfr.gov](https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-D/part-170/subpart-A/section-170.102)                                              |
 
+## Real World Testing
+
+Download [Real World Testing Plan](https://drive.google.com/file/d/1c46hKmItFaWE-2_JhlFWVG2hKvkSEy8z/view?usp=sharing) 2023
+
 ![ONC 2015 Edition Cures](/img/compliance/onc-2015-edition-cures.png)

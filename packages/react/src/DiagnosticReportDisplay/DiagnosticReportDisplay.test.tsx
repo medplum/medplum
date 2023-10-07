@@ -207,4 +207,13 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.getByText('Example Panel Day 2')).toBeInTheDocument();
     expect(screen.getByText('Normal')).toBeInTheDocument();
   });
+
+  test('No specimen header if no specimen', async () => {
+    await act(async () => {
+      setup({ value: { resourceType: 'DiagnosticReport' } });
+    });
+
+    expect(screen.getByText('Diagnostic Report')).toBeInTheDocument();
+    expect(screen.queryByText('Specimen')).toBeNull();
+  });
 });
