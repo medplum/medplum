@@ -180,9 +180,10 @@ const excludedValueSets = [
   'http://hl7.org/fhir/ValueSet/defined-types|4.0.1',
 ];
 function getEnumValues(elementDefinition: InternalSchemaElement): string[] | undefined {
-  if (elementDefinition.binding) {
-    if (excludedValueSets.includes(elementDefinition.binding)) {
-      const values = getValueSetValues(elementDefinition.binding);
+  const valueSet = elementDefinition.binding?.valueSet;
+  if (valueSet) {
+    if (excludedValueSets.includes(valueSet)) {
+      const values = getValueSetValues(valueSet);
       if (values && values.length > 0) {
         return values;
       }
