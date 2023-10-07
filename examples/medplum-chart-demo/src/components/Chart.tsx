@@ -1,5 +1,17 @@
-import { Box, Button, Divider, Group, NumberInput, Text, Title, createStyles } from '@mantine/core';
-import { capitalize } from '@medplum/core';
+import {
+  Box,
+  Button,
+  Divider,
+  Group,
+  NativeSelect,
+  NumberInput,
+  Text,
+  Stack,
+  createStyles,
+  Card,
+  Paper,
+} from '@mantine/core';
+import { capitalize, formatHumanName, calculateAgeString } from '@medplum/core';
 import {
   AllergyIntolerance,
   CodeableConcept,
@@ -12,7 +24,7 @@ import {
 } from '@medplum/fhirtypes';
 import { CodingInput, ResourceAvatar, useMedplum } from '@medplum/react';
 import { IconGenderFemale, IconGenderMale, IconReportMedical, IconUser } from '@tabler/icons-react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, ChangeEvent } from 'react';
 import { useParams } from 'react-router-dom';
 // import { TaskList } from './Task';
 
@@ -211,7 +223,7 @@ function ClientPanel(props: ChartViewProps): JSX.Element {
   const responseData = props.response.data;
 
   return (
-    <Box p={8} w="33%">
+    <Paper p={8} w="33%">
       {Object.entries(responseData).map(([key, data]) => {
         if (!data) {
           return undefined;
@@ -236,7 +248,7 @@ function ClientPanel(props: ChartViewProps): JSX.Element {
             return;
         }
       })}
-    </Box>
+    </Paper>
   );
 }
 
@@ -248,12 +260,14 @@ function renderProcessedData(
   const processedData = processData(data);
   return (
     <Box key={key} p={8}>
-      <Text mb={8} fz={'xl'}>
-        {capitalize(key)}
-      </Text>
-      {processedData.map((item, index) => (
-        <RenderComponent key={index} item={item} />
-      ))}
+      <Stack>
+        <Text mb={8} fz={'xl'}>
+          {capitalize(key)}
+        </Text>
+        {processedData.map((item, index) => (
+          <RenderComponent key={index} item={item} />
+        ))}
+      </Stack>
     </Box>
   );
 }
@@ -293,18 +307,21 @@ function RenderObservationItem(props: { item: PanelData }): JSX.Element | undefi
   return props.item.valueQuantity ? (
     <RenderValueQuantity item={props.item} />
   ) : (
-    <CodingInput property={{ binding: { valueSet: props.item.code.coding?.[0].system } }} name="hoorah" />
+    <Box>
+      <Text>{renderCoding(props.item?.code?.coding)}</Text>
+      <CodingInput property={{ binding: { valueSet: props.item.code.coding?.[0].system } }} name="hoorah" />
+    </Box>
   );
 }
 
 function RenderValueQuantity(props: { item: PanelData }): JSX.Element | undefined {
   const medplum = useMedplum();
-
   const handleSubmit = async (modifiedItem: PanelData) => {
     const resourceItem = (await medplum.readResource('Observation', modifiedItem.id ?? '')) as Observation;
     const { id, ...itemWithoutId } = resourceItem;
     const mergedItem = {
       ...itemWithoutId,
+      effectiveDateTime: new Date().toISOString(),
       valueQuantity: {
         ...resourceItem.valueQuantity,
         ...modifiedItem.valueQuantity,
@@ -321,22 +338,75 @@ function RenderValueQuantity(props: { item: PanelData }): JSX.Element | undefine
   return <ValueQuantityDisplay item={props.item} handleSubmit={handleSubmit} />;
 }
 
-function RenderAllergyItem(props: { item: PanelData }): JSX.Element | undefined {
-  if (!props.item.code?.coding) {
+function RenderAllergyItem(props: { item: AllergyIntolerance }): JSX.Element | undefined {
+  const [item, setItem] = useState(props.item);
+  const [isFocused, setIsFocused] = useState(false);
+  const buttonRef = useRef(null);
+  const medplum = useMedplum();
+
+  if (!item.code?.coding) {
     return undefined;
   }
-  // Multiselect valuesetautocomplete
-  const values = [renderCoding(props.item?.code?.coding), `Critically: ${props.item.criticality}`];
-  return <RenderItem items={values} />;
+
+  const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
+    if (event.relatedTarget === buttonRef.current) {
+      return;
+    }
+    setIsFocused(false);
+  };
+
+  const handleSubmit = async () => {
+    const resourceItem = (await medplum.readResource('AllergyIntolerance', item.id ?? '')) as AllergyIntolerance;
+    await medplum.updateResource<AllergyIntolerance>({
+      ...resourceItem,
+      criticality: item.criticality,
+    });
+  };
+
+  return (
+    <Box onBlur={handleBlur}>
+      <Text>{renderCoding(item?.code?.coding)}</Text>
+      <Box display="flex">
+        <NativeSelect
+          w={'75%'}
+          id={item.id}
+          name={item.id}
+          defaultValue={item.criticality}
+          onFocus={() => setIsFocused(true)}
+          data={['low', 'high', 'unable-to-assess']}
+          onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+            const value = e.currentTarget.value;
+            setItem((prevItem) => ({ ...prevItem, criticality: value as AllergyIntolerance['criticality'] }));
+          }}
+        />
+        {isFocused && (
+          <Button
+            ref={buttonRef}
+            onClick={() => {
+              console.log('Button clicked!');
+              handleSubmit();
+              setIsFocused(false);
+            }}
+            variant="subtle"
+          >
+            Save
+          </Button>
+        )}
+      </Box>
+    </Box>
+  );
 }
 
 function RenderSocialHistoryItem(props: { item: PanelData }): JSX.Element | null {
   if (!props.item.valueCodeableConcept || !props.item.valueCodeableConcept.coding) {
     return null;
   }
-  // multiselect valuesetautocomplete
-  const values = [renderCoding(props.item?.code?.coding), props.item.valueCodeableConcept.coding[0].display ?? ''];
-  return <RenderItem items={values} />;
+  return (
+    <Box>
+      <Text>{renderCoding(props.item?.code?.coding)}</Text>
+      <CodingInput property={{ binding: { valueSet: props.item.code.coding?.[0].system } }} name="hoorah" />
+    </Box>
+  );
 }
 
 export function RenderItem(props: { items: string[] }): JSX.Element | undefined {
@@ -371,25 +441,34 @@ function PatientPanel(props: { patient: Patient }): JSX.Element {
   const patient = props.patient;
   const { classes } = useStyles();
   return (
-    <Box display="flex" className={classes.descriptionCell}>
-      <ResourceAvatar value={patient} size="lg" mb={8} />
-      <Title mb={8} order={4}>
-        {formatName(patient)}
-      </Title>
+    <Card display="flex" className={classes.descriptionCell}>
+      <Card.Section
+        h={100}
+        style={{
+          backgroundColor: 'purple',
+        }}
+      />
+      <ResourceAvatar src={patient.photo?.[0].url} size={80} radius={80} mx="auto" mt={-30} />
+      {patient.name?.[0] ? (
+        <Text ta="center" fz="lg" fw={500} mt="sm">
+          {formatHumanName(patient.name[0])}
+        </Text>
+      ) : undefined}
       <BirthdateAndAge patient={patient} />
       <DescriptionBox patient={patient} />
-    </Box>
+    </Card>
   );
 }
 
 function BirthdateAndAge(props: { patient: Patient }): JSX.Element {
   const patient = props.patient;
-  const { classes } = useStyles();
-  const { years, months } = calculateAge(patient.birthDate as string);
+  const birthday = calculateAgeString(patient.birthDate as string);
   return (
-    <Box display="flex" mb={16} className={classes.subColor}>
-      <Text pr={5}>{patient.birthDate}</Text>
-      <Text>{`(${years}yrs, ${months}mo)`}</Text>
+    <Box display="flex">
+      <Text ta="center" fz="sm" c="dimmed" pr={5}>
+        {patient.birthDate}
+      </Text>
+      <Text ta="center" fz="sm" c="dimmed">{`(${birthday})`}</Text>
     </Box>
   );
 }
@@ -398,12 +477,14 @@ function DescriptionBox(props: { patient: Patient }): JSX.Element {
   const patient = props.patient;
   const { classes } = useStyles();
   return (
-    <Group display="flex" grow spacing="md" w="75%" className={classes.group}>
+    <Group display="flex" mt="md" grow spacing="md" w="75%" className={classes.group}>
       <Box display="flex" className={classes.descriptionCell}>
         <IconUser className={classes.subColor} />
-        <Text fz="xs" align="center">
-          {formatName(patient)}
-        </Text>
+        {patient.name?.[0] ? (
+          <Text fz="xs" align="center">
+            {formatHumanName(patient.name?.[0])}
+          </Text>
+        ) : undefined}
       </Box>
       <Box display="flex" className={classes.descriptionCell}>
         <IconReportMedical className={classes.subColor} />
@@ -482,42 +563,4 @@ export function ValueQuantityDisplay(props: {
 
 // Put in Core
 
-function calculateAge(birthdate: string): { years: number; months: number } {
-  const birthDate = new Date(birthdate);
-  const currentDate = new Date();
-
-  let years = currentDate.getFullYear() - birthDate.getFullYear();
-  let months = currentDate.getMonth() - birthDate.getMonth();
-
-  if (
-    currentDate.getMonth() < birthDate.getMonth() ||
-    (currentDate.getMonth() === birthDate.getMonth() && currentDate.getDate() < birthDate.getDate())
-  ) {
-    years--;
-    months += 12;
-  }
-
-  months = months < 0 ? 0 : months;
-  return { years, months };
-}
-
-function formatName(patient: Patient): string {
-  const name = patient.name?.[0];
-  if (!name) {
-    return '';
-  }
-
-  if (name.text) {
-    return name.text;
-  }
-
-  if (!name.family || !name.given?.[0]) {
-    return '';
-  }
-
-  const middleInitial = name.given?.[1]?.charAt(0);
-  if (!middleInitial) {
-    return `${name.given?.[0]} ${name.family}`;
-  }
-  return `${name.given?.[0]} ${middleInitial} ${name.family}`;
-}
+// use calculateAgeString
