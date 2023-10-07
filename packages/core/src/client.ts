@@ -1464,6 +1464,7 @@ export class MedplumClient extends EventTarget {
       (async () => {
         const query = `{
       StructureDefinitionList(name: "${resourceType}") {
+        resourceType,
         name,
         kind,
         description,

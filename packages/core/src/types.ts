@@ -111,7 +111,7 @@ export const PropertyType = {
  *   PropertySchema - one per property/field
  */
 export interface IndexedStructureDefinition {
-  types: { [resourceType: string]: TypeSchema };
+  types: { [resourceType: string]: TypeInfo };
 }
 
 /**
@@ -123,7 +123,7 @@ export interface IndexedStructureDefinition {
  *   3) Patient_Communication
  *   4) Patient_Link
  */
-export interface TypeSchema {
+export interface TypeInfo {
   searchParams?: { [code: string]: SearchParameter };
   searchParamsDetails?: { [code: string]: SearchParameterDetails };
 }
@@ -154,7 +154,7 @@ export function indexSearchParameter(searchParam: SearchParameter): void {
     if (!typeSchema) {
       typeSchema = {
         searchParamsDetails: {},
-      } as TypeSchema;
+      } as TypeInfo;
       globalSchema.types[resourceType] = typeSchema;
     }
 

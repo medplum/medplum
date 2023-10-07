@@ -7,6 +7,8 @@ import {
   ResourceType,
   StructureDefinition,
 } from '@medplum/fhirtypes';
+import { inflateBaseSchema } from '../base-schema';
+import baseSchema from '../base-schema.json';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, serverError } from '../outcomes';
 import { getElementDefinitionTypeName, isResourceTypeSchema, TypedValue } from '../types';
@@ -85,7 +87,7 @@ export function parseStructureDefinition(sd: StructureDefinition): InternalTypeS
   return new StructureDefinitionParser(sd).parse();
 }
 
-const DATA_TYPES: Record<string, InternalTypeSchema> = Object.create(null);
+const DATA_TYPES: Record<string, InternalTypeSchema> = inflateBaseSchema(baseSchema);
 
 export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | Bundle): void {
   const sds = Array.isArray(bundle) ? bundle : bundle.entry?.map((e) => e.resource as StructureDefinition) ?? [];
