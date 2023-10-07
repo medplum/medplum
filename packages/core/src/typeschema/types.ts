@@ -250,46 +250,54 @@ class StructureDefinitionParser {
 
   private checkFieldEnter(element: ElementDefinition, field: InternalSchemaElement): void {
     if (this.isInnerType(element)) {
-      while (this.backboneContext && !pathsCompatible(this.backboneContext?.path, element.path)) {
-        // Starting new inner type, unwind type stack to this property's parent
-        this.innerTypes.push(this.backboneContext.type);
-        this.backboneContext = this.backboneContext.parent;
-      }
-      this.backboneContext = {
-        type: {
-          name: getElementDefinitionTypeName(element),
-          description: element.definition,
-          elements: {},
-          constraints: this.parseElementDefinition(element).constraints,
-          innerTypes: [],
-        },
-        path: element.path ?? '',
-        parent: pathsCompatible(this.backboneContext?.path, element.path)
-          ? this.backboneContext
-          : this.backboneContext?.parent,
-      };
+      this.enterInnerType(element);
     }
     if (element.slicing && !this.slicingContext) {
-      if (hasDefaultExtensionSlice(element) && !this.peek()?.sliceName) {
-        // Extensions are always sliced by URL; don't start slicing context if no slices follow
-        return;
-      }
-      field.slicing = {
-        discriminator: (element.slicing?.discriminator ?? []).map((d) => {
-          if (d.type !== 'value' && d.type !== 'pattern' && d.type !== 'type') {
-            throw new Error(`Unsupported slicing discriminator type: ${d.type}`);
-          }
-          return {
-            path: d.path as string,
-            type: d.type as string,
-          };
-        }),
-        slices: [],
-        ordered: element.slicing?.ordered ?? false,
-        rule: element.slicing?.rules,
-      };
-      this.slicingContext = { field: field.slicing, path: element.path ?? '' };
+      this.enterSlice(element, field);
     }
+  }
+
+  private enterInnerType(element: ElementDefinition): void {
+    while (this.backboneContext && !pathsCompatible(this.backboneContext?.path, element.path)) {
+      // Starting new inner type, unwind type stack to this property's parent
+      this.innerTypes.push(this.backboneContext.type);
+      this.backboneContext = this.backboneContext.parent;
+    }
+    this.backboneContext = {
+      type: {
+        name: getElementDefinitionTypeName(element),
+        description: element.definition,
+        elements: {},
+        constraints: this.parseElementDefinition(element).constraints,
+        innerTypes: [],
+      },
+      path: element.path ?? '',
+      parent: pathsCompatible(this.backboneContext?.path, element.path)
+        ? this.backboneContext
+        : this.backboneContext?.parent,
+    };
+  }
+
+  private enterSlice(element: ElementDefinition, field: InternalSchemaElement): void {
+    if (hasDefaultExtensionSlice(element) && !this.peek()?.sliceName) {
+      // Extensions are always sliced by URL; don't start slicing context if no slices follow
+      return;
+    }
+    field.slicing = {
+      discriminator: (element.slicing?.discriminator ?? []).map((d) => {
+        if (d.type !== 'value' && d.type !== 'pattern' && d.type !== 'type') {
+          throw new Error(`Unsupported slicing discriminator type: ${d.type}`);
+        }
+        return {
+          path: d.path as string,
+          type: d.type as string,
+        };
+      }),
+      slices: [],
+      ordered: element.slicing?.ordered ?? false,
+      rule: element.slicing?.rules,
+    };
+    this.slicingContext = { field: field.slicing, path: element.path ?? '' };
   }
 
   private checkFieldExit(element: ElementDefinition | undefined = undefined): void {

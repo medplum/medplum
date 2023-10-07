@@ -24,7 +24,7 @@ export function compressElement(element: InternalSchemaElement): Partial<Interna
   outputPropertySchema.type = element.type?.map((t) => ({
     ...t,
     extension: undefined,
-    code: normalizedTypes[t.code as string] || t.code,
+    code: normalizedTypes[t.code] ?? t.code,
   }));
   return outputPropertySchema;
 }

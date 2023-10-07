@@ -1,7 +1,7 @@
 import { Coding, Period, Quantity } from '@medplum/fhirtypes';
 import { getElementDefinition, isResource, PropertyType, TypedValue } from '../types';
-import { capitalize, isEmpty } from '../utils';
 import { InternalSchemaElement } from '../typeschema/types';
+import { capitalize, isEmpty } from '../utils';
 
 /**
  * Returns a single element array with a typed boolean value.
@@ -103,13 +103,13 @@ function getTypedPropertyValueWithSchema(
 
   if (types.length === 1) {
     resultValue = input.value[path];
-    resultType = types[0].code as string;
+    resultType = types[0].code;
   } else {
     for (const type of types) {
-      const path2 = path.replace('[x]', '') + capitalize(type.code as string);
+      const path2 = path.replace('[x]', '') + capitalize(type.code);
       if (path2 in input.value) {
         resultValue = input.value[path2];
-        resultType = type.code as string;
+        resultType = type.code;
         break;
       }
     }
