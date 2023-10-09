@@ -1,10 +1,12 @@
-import { Loader, Tabs } from '@mantine/core';
-import { capitalize, getReferenceString } from '@medplum/core';
+import { Flex, Loader } from '@mantine/core';
+import { getReferenceString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
 import React from 'react';
-import { Link, Outlet, useParams } from 'react-router-dom';
-import { PatientHeader } from './PatientHeader';
+import { useParams } from 'react-router-dom';
+import { PatientChart } from '../components/PatientChart';
+import { SoapNote } from '../components/SoapNote';
+import { TaskList } from '../components/TaskList';
 
 export function PatientPage(): JSX.Element {
   const { id } = useParams();
@@ -15,24 +17,11 @@ export function PatientPage(): JSX.Element {
 
   return (
     <React.Fragment key={getReferenceString(patient)}>
-      <PatientHeader patient={patient} />
-      <Tabs>
-        <Tabs.List bg="white">
-          <TabLink value="overview" />
-          <TabLink value="timeline" />
-          <TabLink value="history" />
-          <TabLink value="chart" />
-        </Tabs.List>
-      </Tabs>
-      <Outlet />
+      <Flex gap="xs" justify="center" align="flex-start" direction="row">
+        <PatientChart />
+        <TaskList />
+        <SoapNote />
+      </Flex>
     </React.Fragment>
-  );
-}
-
-function TabLink(props: { value: string }): JSX.Element {
-  return (
-    <Link to={props.value} style={{ textDecoration: 'none' }}>
-      <Tabs.Tab value={props.value}>{capitalize(props.value)}</Tabs.Tab>
-    </Link>
   );
 }
