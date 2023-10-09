@@ -103,7 +103,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
     <>
       <MantineNavbar width={{ sm: 250 }} p="xs">
         <ScrollArea>
-          {!props.resourceTypeSearchDisabled ? (
+          {!props.resourceTypeSearchDisabled && (
             <MantineNavbar.Section mb="sm">
               <ResourceTypeInput
                 key={window.location.pathname}
@@ -112,7 +112,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 onChange={(newValue) => navigateResourceType(newValue)}
               />
             </MantineNavbar.Section>
-          ) : null}
+          )}
           <MantineNavbar.Section grow>
             {props.menus?.map((menu) => (
               <React.Fragment key={`menu-${menu.title}`}>

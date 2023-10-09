@@ -55,7 +55,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
           <Header
             pathname={props.pathname}
             searchParams={props.searchParams}
-            headerSearchDisabled={props.headerSearchDisabled ?? false}
+            headerSearchDisabled={props.headerSearchDisabled}
             logo={props.logo}
             version={props.version}
             navbarToggle={toggleNavbar}
@@ -70,7 +70,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
             menus={props.menus}
             closeNavbar={closeNavbar}
             displayAddBookmark={props.displayAddBookmark}
-            resourceTypeSearchDisabled={props.resourceTypeSearchDisabled ?? false}
+            resourceTypeSearchDisabled={props.resourceTypeSearchDisabled}
           />
         ) : undefined
       }

@@ -76,9 +76,9 @@ export function Header(props: HeaderProps): JSX.Element {
           <UnstyledButton className={classes.logoButton} onClick={props.navbarToggle}>
             {props.logo}
           </UnstyledButton>
-          {!props.headerSearchDisabled ? (
+          {!props.headerSearchDisabled && (
             <HeaderSearchInput pathname={props.pathname} searchParams={props.searchParams} />
-          ) : null}
+          )}
         </Group>
 
         <Menu
