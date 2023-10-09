@@ -1,20 +1,21 @@
 import { Resource } from '@medplum/fhirtypes';
-import { MedplumRedisConfig } from '../config';
+import { MedplumBullmqConfig, MedplumRedisConfig } from '../config';
 import { globalLogger } from '../logger';
 import { BackgroundJobContext } from './context';
-import { addDownloadJobs, closeDownloadWorker, initDownloadWorker } from './download';
 import { addCronJobs, closeCronWorker, initCronWorker } from './cron';
+import { addDownloadJobs, closeDownloadWorker, initDownloadWorker } from './download';
 import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } from './subscription';
 
 /**
  * Initializes all background workers.
- * @param config The Redis config.
+ * @param redisConfig The Redis config.
+ * @param bullmqConfig The BullMQ config.
  */
-export function initWorkers(config: MedplumRedisConfig): void {
+export function initWorkers(redisConfig: MedplumRedisConfig, bullmqConfig?: MedplumBullmqConfig): void {
   globalLogger.debug('Initializing workers...');
-  initSubscriptionWorker(config);
-  initDownloadWorker(config);
-  initCronWorker(config);
+  initSubscriptionWorker(redisConfig, bullmqConfig);
+  initDownloadWorker(redisConfig, bullmqConfig);
+  initCronWorker(redisConfig, bullmqConfig);
   globalLogger.debug('Workers initialized');
 }
 

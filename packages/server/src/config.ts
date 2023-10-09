@@ -1,5 +1,6 @@
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { KeepJobs } from 'bullmq';
 import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
@@ -25,6 +26,7 @@ export interface MedplumServerConfig {
   database: MedplumDatabaseConfig;
   redis: MedplumRedisConfig;
   smtp?: MedplumSmtpConfig;
+  bullmq?: MedplumBullmqConfig;
   googleClientId?: string;
   googleClientSecret?: string;
   recaptchaSiteKey?: string;
@@ -69,6 +71,11 @@ export interface MedplumSmtpConfig {
   port: number;
   username: string;
   password: string;
+}
+
+export interface MedplumBullmqConfig {
+  removeOnComplete: KeepJobs;
+  removeOnFail: KeepJobs;
 }
 
 let cachedConfig: MedplumServerConfig | undefined = undefined;
@@ -255,6 +262,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.awsRegion = config.awsRegion || DEFAULT_AWS_REGION;
   config.botLambdaLayerName = config.botLambdaLayerName || 'medplum-bot-layer';
   config.bcryptHashSalt = config.bcryptHashSalt || 10;
+  config.bullmq = { removeOnComplete: { count: 0 }, removeOnFail: { count: 0 }, ...config.bullmq };
   return config;
 }
 

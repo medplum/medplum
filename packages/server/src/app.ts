@@ -183,7 +183,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
     await seedDatabase();
     await initKeys(config);
     initBinaryStorage(config.binaryStorage);
-    initWorkers(config.redis);
+    initWorkers(config.redis, config.bullmq);
   });
 }
 
