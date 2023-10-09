@@ -75,7 +75,7 @@ export interface NavbarProps {
   menus?: NavbarMenu[];
   closeNavbar: () => void;
   displayAddBookmark?: boolean;
-  resourceNavigatorDisabled?: boolean;
+  resourceTypeSearchDisabled?: boolean;
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
@@ -103,7 +103,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
     <>
       <MantineNavbar width={{ sm: 250 }} p="xs">
         <ScrollArea>
-          {!props.resourceNavigatorDisabled ? (
+          {!props.resourceTypeSearchDisabled ? (
             <MantineNavbar.Section mb="sm">
               <ResourceTypeInput
                 key={window.location.pathname}

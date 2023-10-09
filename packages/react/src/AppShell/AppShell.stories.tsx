@@ -144,7 +144,7 @@ export function DisabledResourceNavigator(): JSX.Element {
           ],
         })}
         displayAddBookmark={true}
-        resourceNavigatorDisabled={true}
+        resourceTypeSearchDisabled={true}
       >
         Your application here
       </AppShell>

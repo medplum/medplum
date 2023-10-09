@@ -49,7 +49,7 @@ export function App(): JSX.Element | null {
           : []
       }
       headerSearchDisabled={true}
-      resourceNavigatorDisabled={true}
+      resourceTypeSearchDisabled={true}
     >
       <div className={classes.root}>
         <ErrorBoundary key={location.key}>
