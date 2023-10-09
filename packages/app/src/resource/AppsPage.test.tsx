@@ -51,19 +51,7 @@ describe('AppsPage', () => {
       writable: true,
     });
 
-    // Update the mock data to include the launchUri property
-    const medplum = new MockClient();
-    medplum.setResources('ClientApplication', [
-      {
-        id: '1',
-        resourceType: 'ClientApplication',
-        name: 'Inferno Client',
-        description: 'Client application used for Inferno ONC compliance testing',
-        launchUri: 'http://example.com',
-      },
-    ]);
-
-    await setup('/Patient/123/apps', medplum);
+    await setup('/Patient/123/apps');
     await waitFor(() => screen.getByText('Apps'));
 
     expect(screen.getByText('Inferno Client')).toBeInTheDocument();
@@ -85,19 +73,7 @@ describe('AppsPage', () => {
       writable: true,
     });
 
-    // Update the mock data to include the launchUri property
-    const medplum = new MockClient();
-    medplum.setResources('ClientApplication', [
-      {
-        id: '1',
-        resourceType: 'ClientApplication',
-        name: 'Inferno Client',
-        description: 'Client application used for Inferno ONC compliance testing',
-        launchUri: 'http://example.com',
-      },
-    ]);
-
-    await setup('/Encounter/123/apps', medplum);
+    await setup('/Encounter/123/apps');
     await waitFor(() => screen.getByText('Apps'));
 
     expect(screen.getByText('Inferno Client')).toBeInTheDocument();
