@@ -1,5 +1,6 @@
+import { Button, Input, Stack, Title } from '@mantine/core';
+import { Document, useMedplum } from '@medplum/react';
 import { useState } from 'react';
-import { BASE_URL } from '../config';
 import { FhircastMessagePayload } from '../utils';
 import TopicGenerator from './TopicGenerator';
 
@@ -40,21 +41,15 @@ function createFhircastMessagePayload(topic: string, patientId: string): Fhircas
 }
 
 export default function Publisher(): JSX.Element {
-  const [baseUrl, setBaseUrl] = useState(BASE_URL);
-  const [baseUrlInput, setBaseUrlInput] = useState(BASE_URL);
+  const medplum = useMedplum();
   const [topic, setTopic] = useState<string | undefined>(undefined);
   const [currentPatientId, setCurrentPatientId] = useState<string | null>(null);
 
   const handleChangePatient = (): void => {
     const patientId = crypto.randomUUID();
     if (topic) {
-      fetch(`${baseUrl}/fhircast/STU2/${topic}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(createFhircastMessagePayload(topic, patientId)),
-      })
+      medplum
+        .post(`/fhircast/STU2/${topic}`, createFhircastMessagePayload(topic, patientId))
         .then(() => {
           setCurrentPatientId(patientId);
         })
@@ -65,37 +60,21 @@ export default function Publisher(): JSX.Element {
   };
 
   return (
-    <div>
-      <div style={{ paddingBottom: 30 }}>
-        <h1>Publisher</h1>
-      </div>
-      <div
-        style={{
-          padding: 10,
-          margin: '0 auto',
-          display: 'flex',
-          flexDirection: 'column',
-          maxWidth: 300,
-          justifyContent: 'center',
-          paddingBottom: 20,
-        }}
-      >
-        <input name="baseUrl" type="text" value={baseUrlInput} onChange={(e) => setBaseUrlInput(e.target.value)} />
-        <div style={{ padding: 10 }}>
-          <button type="button" onClick={() => setBaseUrl(baseUrlInput)}>
-            Set base URL
-          </button>
+    <Document>
+      <Title align="center" fz={36}>
+        Publisher
+      </Title>
+      <Stack align="center">
+        <div style={{ height: 150 }}>
+          <TopicGenerator onTopicChange={(topic) => setTopic(topic)} />
         </div>
-      </div>
-      <div style={{ padding: 5 }}>
-        <TopicGenerator onTopicChange={(topic) => setTopic(topic)} />
-      </div>
-      <div style={{ padding: 5 }}>Patient ID: {currentPatientId ?? 'No current patient'}</div>
-      <div style={{ padding: 5 }}>
-        <button type="button" onClick={handleChangePatient}>
+        <Input.Wrapper label="Patient ID" mb={20} w={350}>
+          <Input value={currentPatientId ?? 'No current patient'} disabled={!currentPatientId} />
+        </Input.Wrapper>
+        <Button onClick={handleChangePatient} size="sm" radius="xl">
           Change patient
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Stack>
+    </Document>
   );
 }

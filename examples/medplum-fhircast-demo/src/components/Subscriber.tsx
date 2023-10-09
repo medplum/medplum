@@ -1,5 +1,7 @@
+import { Accordion, Center, Divider, Group, Stack, Text, Title } from '@mantine/core';
+import { Document, useMedplum } from '@medplum/react';
+import { IconMessage2Exclamation } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { BASE_URL } from '../config';
 import { useClientId } from '../hooks';
 import { FhircastMessagePayload, serializeHubSubscriptionRequest } from '../utils';
 import TopicLoader from './TopicLoader';
@@ -10,30 +12,64 @@ type FhircastMessageDisplayProps = {
   message: FhircastMessagePayload;
 };
 
-function FhircastMessageDisplay(props: FhircastMessageDisplayProps): JSX.Element {
+function FhircastMessageLabel(props: FhircastMessageDisplayProps): JSX.Element {
+  const { message, eventNo } = props;
   return (
-    <div style={{ paddingBottom: 15 }}>
-      <div
-        className="fhir-cast-message"
-        style={{
-          paddingLeft: 30,
-          paddingRight: 30,
-          paddingTop: 20,
-          paddingBottom: 20,
-          borderRadius: 10,
-          textAlign: 'left',
-        }}
-      >
-        <h3>Event No. {props.eventNo}</h3>
-        <pre>{JSON.stringify(props.message, null, 2)}</pre>
+    <Group noWrap={true}>
+      <IconMessage2Exclamation />
+      <div>
+        <Text fw={700} c="dimmed">
+          {message.timestamp}
+        </Text>
+        <Text>Event No. {eventNo}</Text>
+        <Text size="sm" fw={400}>
+          Event: <b>{message.event['hub.event']}</b>
+        </Text>
+        <Stack pt={20}>
+          <Text>
+            Notification ID: <b>{message.id}</b>
+          </Text>
+          <Text size="sm" fw={400}>
+            Topic: <b>{message.event['hub.topic']}</b>
+          </Text>
+          <Text size="sm" fw={400}>
+            Resource ID: <b>{message.event.context[0].resource.id}</b>
+          </Text>
+        </Stack>
       </div>
-    </div>
+    </Group>
+  );
+}
+
+function FhircastMessageDisplay(props: FhircastMessageDisplayProps): JSX.Element {
+  const { eventNo, message } = props;
+  return (
+    <Accordion.Item key={eventNo} value={`${message.timestamp} - Event No. ${eventNo}`}>
+      <Accordion.Control>
+        <FhircastMessageLabel {...props} />
+      </Accordion.Control>
+
+      <Accordion.Panel>
+        <div
+          className="fhir-cast-message"
+          style={{
+            paddingLeft: 30,
+            paddingRight: 30,
+            paddingTop: 20,
+            paddingBottom: 20,
+            borderRadius: 10,
+            textAlign: 'left',
+          }}
+        >
+          <pre>{JSON.stringify(message, null, 2)}</pre>
+        </div>
+      </Accordion.Panel>
+    </Accordion.Item>
   );
 }
 
 export default function Subscriber(): JSX.Element {
-  const [baseUrl, setBaseUrl] = useState(BASE_URL);
-  const [baseUrlInput, setBaseUrlInput] = useState(BASE_URL);
+  const medplum = useMedplum();
   const [status, setStatus] = useState('NOT CONNECTED');
   const [currentPatientId, setCurrentPatientId] = useState<string | undefined>();
   const [topic, setTopic] = useState<string | undefined>();
@@ -46,21 +82,18 @@ export default function Subscriber(): JSX.Element {
   useEffect(() => {
     if (topic) {
       // sub
-      fetch(`${baseUrl}/fhircast/STU2`, {
-        method: 'POST',
-        body: serializeHubSubscriptionRequest({
-          channelType: 'websocket',
-          mode: 'subscribe',
-          topic,
-          events: ['patient-open'],
-        }),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Bearer ${clientId}`,
-        },
-      })
-        .then(async (res: Response) => {
-          const body = (await res.json()) as { 'hub.channel.endpoint': string };
+      medplum
+        .post(
+          'fhircast/STU2',
+          serializeHubSubscriptionRequest({
+            channelType: 'websocket',
+            mode: 'subscribe',
+            topic,
+            events: ['patient-open'],
+          }),
+          'application/x-www-form-urlencoded'
+        )
+        .then(async (body: { 'hub.channel.endpoint': string }) => {
           const endpoint = body?.['hub.channel.endpoint'];
           if (!endpoint) {
             throw new Error('Invalid response!');
@@ -69,16 +102,14 @@ export default function Subscriber(): JSX.Element {
           setStatus('SUBSCRIBED');
         })
         .catch((err) => console.error(err));
-
-      return () => {
-        // unsub on `unmount`
-      };
+    } else {
+      // unset endpoint (closing WS connection) when the topic is unset (cannot reuse websocket anyways since endpoint contains a slug)
+      setEndpoint(undefined);
     }
-    return () => {};
-  }, [topic, clientId, baseUrl]);
+  }, [topic, clientId, medplum]);
 
   return (
-    <>
+    <Document>
       {endpoint ? (
         <WebSocketHandler
           endpoint={endpoint}
@@ -89,41 +120,34 @@ export default function Subscriber(): JSX.Element {
           incrementEventCount={() => setEventCount((s) => s + 1)}
         />
       ) : null}
-      <div style={{ paddingBottom: 30 }}>
-        <h1>Subscriber</h1>
-      </div>
-      <div
-        style={{
-          padding: 10,
-          margin: '0 auto',
-          display: 'flex',
-          flexDirection: 'column',
-          maxWidth: 300,
-          justifyContent: 'center',
-          paddingBottom: 20,
-        }}
-      >
-        <input name="baseUrl" type="text" value={baseUrlInput} onChange={(e) => setBaseUrlInput(e.target.value)} />
-        <div style={{ padding: 10 }}>
-          <button type="button" onClick={() => setBaseUrl(baseUrlInput)}>
-            Set base URL
-          </button>
-        </div>
-      </div>
-      <div style={{ flex: 1 }}>
-        <div>
+      <Title align="center" fz={36}>
+        Subscriber
+      </Title>
+      <Center>
+        <div style={{ width: 350 }}>
           <TopicLoader onSetTopic={(topic) => setTopic(topic)} />
         </div>
-        <div>Status: {status}</div>
-        <div>Current topic: {topic ?? 'No topic'}</div>
-        <div>Current Patient: {currentPatientId ?? 'No current patient'}</div>
-        <div style={{ paddingTop: 30, height: 500 }}>
-          <h2>Events</h2>
-          {fhirCastMessages.slice(0, 3).map((message, i) => {
-            return <FhircastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
-          })}
-        </div>
-      </div>
-    </>
+      </Center>
+      <Stack align="center" p={25}>
+        <Text>Status: {status}</Text>
+        <Text>Current topic: {topic ?? 'No topic'}</Text>
+        <Text>Current patient: {currentPatientId ?? 'No current patient'}</Text>
+      </Stack>
+      {fhirCastMessages.length ? (
+        <>
+          <Divider />
+          <Stack pt={20}>
+            <Title align="center" order={2}>
+              Events
+            </Title>
+            <Accordion title="Events">
+              {fhirCastMessages.slice(0, 5).map((message, i) => {
+                return <FhircastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
+              })}
+            </Accordion>
+          </Stack>
+        </>
+      ) : null}
+    </Document>
   );
 }
