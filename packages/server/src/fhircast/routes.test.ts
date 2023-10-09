@@ -21,9 +21,7 @@ describe('FHIRCast routes', () => {
   });
 
   test('Get well known', async () => {
-    const res = await request(app)
-      .get('/fhircast/STU2/.well-known/fhircast-configuration')
-      .set('Authorization', 'Bearer ' + accessToken);
+    const res = await request(app).get('/fhircast/STU2/.well-known/fhircast-configuration');
 
     expect(res.status).toBe(200);
     expect(res.body.eventsSupported).toBeDefined();
@@ -45,6 +43,17 @@ describe('FHIRCast routes', () => {
       });
     expect(res.status).toBe(202);
     expect(res.body['hub.channel.endpoint']).toBeDefined();
+  });
+
+  test('New subscription no auth', async () => {
+    const res = await request(app).post('/fhircast/STU2/').set('Content-Type', ContentType.JSON).send({
+      'hub.channel.type': 'websocket',
+      'hub.mode': 'subscribe',
+      'hub.topic': 'topic',
+      'hub.events': 'patient-open',
+    });
+    expect(res.status).toBe(401);
+    expect(res.body.issue[0].details.text).toEqual('Unauthorized');
   });
 
   test('New subscription missing channel type', async () => {
