@@ -48,7 +48,7 @@ export function App(): JSX.Element | null {
             ]
           : []
       }
-      searchDisabled={true}
+      headerSearchDisabled={true}
       resourceNavigatorDisabled={true}
     >
       <div className={classes.root}>

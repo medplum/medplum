@@ -10,7 +10,7 @@ export interface AppShellProps {
   logo: React.ReactNode;
   pathname?: string;
   searchParams?: URLSearchParams;
-  searchDisabled?: boolean;
+  headerSearchDisabled?: boolean;
   version?: string;
   menus?: NavbarMenu[];
   children: React.ReactNode;
@@ -55,7 +55,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
           <Header
             pathname={props.pathname}
             searchParams={props.searchParams}
-            searchDisabled={props.searchDisabled ?? false}
+            headerSearchDisabled={props.headerSearchDisabled ?? false}
             logo={props.logo}
             version={props.version}
             navbarToggle={toggleNavbar}

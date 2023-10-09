@@ -56,7 +56,7 @@ const useStyles = createStyles((theme) => ({
 interface HeaderProps {
   pathname?: string;
   searchParams?: URLSearchParams;
-  searchDisabled?: boolean;
+  headerSearchDisabled?: boolean;
   logo: React.ReactNode;
   version?: string;
   navbarToggle: () => void;
@@ -76,7 +76,7 @@ export function Header(props: HeaderProps): JSX.Element {
           <UnstyledButton className={classes.logoButton} onClick={props.navbarToggle}>
             {props.logo}
           </UnstyledButton>
-          {!props.searchDisabled ? (
+          {!props.headerSearchDisabled ? (
             <HeaderSearchInput pathname={props.pathname} searchParams={props.searchParams} />
           ) : null}
         </Group>

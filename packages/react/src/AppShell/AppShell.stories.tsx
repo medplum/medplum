@@ -116,7 +116,7 @@ export function DisabledSearch(): JSX.Element {
           ],
         })}
         displayAddBookmark={true}
-        searchDisabled={true}
+        headerSearchDisabled={true}
       >
         Your application here
       </AppShell>
