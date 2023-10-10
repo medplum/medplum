@@ -1472,16 +1472,23 @@ export class MedplumClient extends EventTarget {
           element {
             id,
             path,
+            definition,
             min,
             max,
+            base {
+              path,
+              min,
+              max
+            },
+            contentReference,
             type {
               code,
               targetProfile
             },
             binding {
+              strength,
               valueSet
-            },
-            definition
+            }
           }
         }
       }
