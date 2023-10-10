@@ -17,7 +17,7 @@ describe('Workers', () => {
     await initDatabase(config.database);
     await seedDatabase();
     initBinaryStorage('file:binary');
-    initWorkers(config.redis);
+    initWorkers(config);
     await closeWorkers();
     await closeDatabase();
     closeRedis();

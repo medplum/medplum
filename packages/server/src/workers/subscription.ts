@@ -15,7 +15,7 @@ import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
 import { URL } from 'url';
-import { MedplumBullmqConfig, MedplumRedisConfig } from '../config';
+import { MedplumServerConfig } from '../config';
 import { getRequestContext } from '../context';
 import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
@@ -56,12 +56,11 @@ let worker: Worker<SubscriptionJobData> | undefined = undefined;
  * Initializes the subscription worker.
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
- * @param redisConfig The Redis config.
- * @param bullmqConfig The BullMQ config.
+ * @param config The Medplum server config to use.
  */
-export function initSubscriptionWorker(redisConfig: MedplumRedisConfig, bullmqConfig?: MedplumBullmqConfig): void {
+export function initSubscriptionWorker(config: MedplumServerConfig): void {
   const defaultOptions: QueueBaseOptions = {
-    connection: redisConfig,
+    connection: config.redis,
   };
 
   queue = new Queue<SubscriptionJobData>(queueName, {
@@ -77,7 +76,7 @@ export function initSubscriptionWorker(redisConfig: MedplumRedisConfig, bullmqCo
 
   worker = new Worker<SubscriptionJobData>(queueName, execSubscriptionJob, {
     ...defaultOptions,
-    ...bullmqConfig,
+    ...config.bullmq,
   });
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));

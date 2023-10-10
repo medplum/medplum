@@ -3,7 +3,7 @@ import { Attachment, Binary, Meta, Resource } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
-import { getConfig, MedplumBullmqConfig, MedplumRedisConfig } from '../config';
+import { getConfig, MedplumServerConfig } from '../config';
 import { getRequestContext } from '../context';
 import { systemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
@@ -35,12 +35,11 @@ let worker: Worker<DownloadJobData> | undefined = undefined;
  * Initializes the download worker.
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
- * @param redisConfig The Redis config.
- * @param bullmqConfig The BullMQ config.
+ * @param config The Medplum server config to use.
  */
-export function initDownloadWorker(redisConfig: MedplumRedisConfig, bullmqConfig?: MedplumBullmqConfig): void {
+export function initDownloadWorker(config: MedplumServerConfig): void {
   const defaultOptions: QueueBaseOptions = {
-    connection: redisConfig,
+    connection: config.redis,
   };
 
   queue = new Queue<DownloadJobData>(queueName, {
@@ -56,7 +55,7 @@ export function initDownloadWorker(redisConfig: MedplumRedisConfig, bullmqConfig
 
   worker = new Worker<DownloadJobData>(queueName, execDownloadJob, {
     ...defaultOptions,
-    ...bullmqConfig,
+    ...config.bullmq,
   });
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
