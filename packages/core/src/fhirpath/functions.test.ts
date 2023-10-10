@@ -1,5 +1,5 @@
 import { Patient } from '@medplum/fhirtypes';
-import { Atom, AtomContext } from '../fhirlexer';
+import { Atom, AtomContext } from '../fhirlexer/parse';
 import { PropertyType, TypedValue } from '../types';
 import { createReference, getReferenceString } from '../utils';
 import { LiteralAtom } from './atoms';
