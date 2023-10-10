@@ -1,5 +1,6 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
-import { evalFhirPathTyped, getTypedPropertyValue, toTypedValue } from '../fhirpath';
+import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
+import { evalFhirPathTyped } from '../fhirpath/parse';
 import {
   createConstraintIssue,
   createProcessingIssue,
