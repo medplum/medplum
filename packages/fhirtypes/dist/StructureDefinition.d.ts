@@ -219,10 +219,11 @@ export interface StructureDefinition {
    * The version of the FHIR specification on which this
    * StructureDefinition is based - this is the formal version of the
    * specification, without the revision number, e.g.
-   * [publication].[major].[minor], which is 4.0.1. for this version.
+   * [publication].[major].[minor], which is 4.3.0 for this version.
    */
   fhirVersion?: '0.01' | '0.05' | '0.06' | '0.11' | '0.0.80' | '0.0.81' | '0.0.82' | '0.4.0' | '0.5.0' | '1.0.0' |
-      '1.0.1' | '1.0.2' | '1.1.0' | '1.4.0' | '1.6.0' | '1.8.0' | '3.0.0' | '3.0.1' | '3.3.0' | '3.5.0' | '4.0.0' | '4.0.1';
+      '1.0.1' | '1.0.2' | '1.1.0' | '1.4.0' | '1.6.0' | '1.8.0' | '3.0.0' | '3.0.1' | '3.0.2' | '3.3.0' | '3.5.0' | '4.0.0'
+      | '4.0.1' | '4.1.0' | '4.3.0-cibuild' | '4.3.0-snapshot1' | '4.3.0';
 
   /**
    * An external specification that the content is mapped to.

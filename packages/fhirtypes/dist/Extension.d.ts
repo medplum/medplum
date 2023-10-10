@@ -8,6 +8,7 @@ import { Age } from './Age';
 import { Annotation } from './Annotation';
 import { Attachment } from './Attachment';
 import { CodeableConcept } from './CodeableConcept';
+import { CodeableReference } from './CodeableReference';
 import { Coding } from './Coding';
 import { ContactDetail } from './ContactDetail';
 import { ContactPoint } from './ContactPoint';
@@ -20,13 +21,13 @@ import { Duration } from './Duration';
 import { Expression } from './Expression';
 import { HumanName } from './HumanName';
 import { Identifier } from './Identifier';
-import { Meta } from './Meta';
 import { Money } from './Money';
 import { ParameterDefinition } from './ParameterDefinition';
 import { Period } from './Period';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Ratio } from './Ratio';
+import { RatioRange } from './RatioRange';
 import { Reference } from './Reference';
 import { RelatedArtifact } from './RelatedArtifact';
 import { SampledData } from './SampledData';
@@ -210,6 +211,12 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
+  valueCodeableReference?: CodeableReference;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
   valueCoding?: Coding;
 
   /**
@@ -277,6 +284,12 @@ export interface Extension {
    * types (see [Extensibility](extensibility.html) for a list).
    */
   valueRatio?: Ratio;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
+  valueRatioRange?: RatioRange;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -355,10 +368,4 @@ export interface Extension {
    * types (see [Extensibility](extensibility.html) for a list).
    */
   valueDosage?: Dosage;
-
-  /**
-   * Value of extension - must be one of a constrained set of the data
-   * types (see [Extensibility](extensibility.html) for a list).
-   */
-  valueMeta?: Meta;
 }

@@ -253,7 +253,8 @@ export interface CapabilityStatement {
    * CapabilityStatement itself). There is no default value.
    */
   fhirVersion?: '0.01' | '0.05' | '0.06' | '0.11' | '0.0.80' | '0.0.81' | '0.0.82' | '0.4.0' | '0.5.0' | '1.0.0' |
-      '1.0.1' | '1.0.2' | '1.1.0' | '1.4.0' | '1.6.0' | '1.8.0' | '3.0.0' | '3.0.1' | '3.3.0' | '3.5.0' | '4.0.0' | '4.0.1';
+      '1.0.1' | '1.0.2' | '1.1.0' | '1.4.0' | '1.6.0' | '1.8.0' | '3.0.0' | '3.0.1' | '3.0.2' | '3.3.0' | '3.5.0' | '4.0.0'
+      | '4.0.1' | '4.1.0' | '4.3.0-cibuild' | '4.3.0-snapshot1' | '4.3.0';
 
   /**
    * A list of the formats supported by this implementation using their

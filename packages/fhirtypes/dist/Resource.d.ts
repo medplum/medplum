@@ -6,6 +6,7 @@
 import { AccessPolicy } from './AccessPolicy';
 import { Account } from './Account';
 import { ActivityDefinition } from './ActivityDefinition';
+import { AdministrableProductDefinition } from './AdministrableProductDefinition';
 import { AdverseEvent } from './AdverseEvent';
 import { Agent } from './Agent';
 import { AllergyIntolerance } from './AllergyIntolerance';
@@ -26,10 +27,12 @@ import { CareTeam } from './CareTeam';
 import { CatalogEntry } from './CatalogEntry';
 import { ChargeItem } from './ChargeItem';
 import { ChargeItemDefinition } from './ChargeItemDefinition';
+import { Citation } from './Citation';
 import { Claim } from './Claim';
 import { ClaimResponse } from './ClaimResponse';
 import { ClientApplication } from './ClientApplication';
 import { ClinicalImpression } from './ClinicalImpression';
+import { ClinicalUseDefinition } from './ClinicalUseDefinition';
 import { CodeSystem } from './CodeSystem';
 import { Communication } from './Communication';
 import { CommunicationRequest } from './CommunicationRequest';
@@ -52,7 +55,6 @@ import { DiagnosticReport } from './DiagnosticReport';
 import { DocumentManifest } from './DocumentManifest';
 import { DocumentReference } from './DocumentReference';
 import { DomainConfiguration } from './DomainConfiguration';
-import { EffectEvidenceSynthesis } from './EffectEvidenceSynthesis';
 import { Encounter } from './Encounter';
 import { Endpoint } from './Endpoint';
 import { EnrollmentRequest } from './EnrollmentRequest';
@@ -60,6 +62,7 @@ import { EnrollmentResponse } from './EnrollmentResponse';
 import { EpisodeOfCare } from './EpisodeOfCare';
 import { EventDefinition } from './EventDefinition';
 import { Evidence } from './Evidence';
+import { EvidenceReport } from './EvidenceReport';
 import { EvidenceVariable } from './EvidenceVariable';
 import { ExampleScenario } from './ExampleScenario';
 import { ExplanationOfBenefit } from './ExplanationOfBenefit';
@@ -75,6 +78,7 @@ import { Immunization } from './Immunization';
 import { ImmunizationEvaluation } from './ImmunizationEvaluation';
 import { ImmunizationRecommendation } from './ImmunizationRecommendation';
 import { ImplementationGuide } from './ImplementationGuide';
+import { Ingredient } from './Ingredient';
 import { InsurancePlan } from './InsurancePlan';
 import { Invoice } from './Invoice';
 import { JsonWebKey } from './JsonWebKey';
@@ -83,6 +87,7 @@ import { Linkage } from './Linkage';
 import { List } from './List';
 import { Location } from './Location';
 import { Login } from './Login';
+import { ManufacturedItemDefinition } from './ManufacturedItemDefinition';
 import { Measure } from './Measure';
 import { MeasureReport } from './MeasureReport';
 import { Media } from './Media';
@@ -92,27 +97,20 @@ import { MedicationDispense } from './MedicationDispense';
 import { MedicationKnowledge } from './MedicationKnowledge';
 import { MedicationRequest } from './MedicationRequest';
 import { MedicationStatement } from './MedicationStatement';
-import { MedicinalProduct } from './MedicinalProduct';
-import { MedicinalProductAuthorization } from './MedicinalProductAuthorization';
-import { MedicinalProductContraindication } from './MedicinalProductContraindication';
-import { MedicinalProductIndication } from './MedicinalProductIndication';
-import { MedicinalProductIngredient } from './MedicinalProductIngredient';
-import { MedicinalProductInteraction } from './MedicinalProductInteraction';
-import { MedicinalProductManufactured } from './MedicinalProductManufactured';
-import { MedicinalProductPackaged } from './MedicinalProductPackaged';
-import { MedicinalProductPharmaceutical } from './MedicinalProductPharmaceutical';
-import { MedicinalProductUndesirableEffect } from './MedicinalProductUndesirableEffect';
+import { MedicinalProductDefinition } from './MedicinalProductDefinition';
 import { MessageDefinition } from './MessageDefinition';
 import { MessageHeader } from './MessageHeader';
 import { MolecularSequence } from './MolecularSequence';
 import { NamingSystem } from './NamingSystem';
 import { NutritionOrder } from './NutritionOrder';
+import { NutritionProduct } from './NutritionProduct';
 import { Observation } from './Observation';
 import { ObservationDefinition } from './ObservationDefinition';
 import { OperationDefinition } from './OperationDefinition';
 import { OperationOutcome } from './OperationOutcome';
 import { Organization } from './Organization';
 import { OrganizationAffiliation } from './OrganizationAffiliation';
+import { PackagedProductDefinition } from './PackagedProductDefinition';
 import { Parameters } from './Parameters';
 import { PasswordChangeRequest } from './PasswordChangeRequest';
 import { Patient } from './Patient';
@@ -128,6 +126,7 @@ import { ProjectMembership } from './ProjectMembership';
 import { Provenance } from './Provenance';
 import { Questionnaire } from './Questionnaire';
 import { QuestionnaireResponse } from './QuestionnaireResponse';
+import { RegulatedAuthorization } from './RegulatedAuthorization';
 import { RelatedPerson } from './RelatedPerson';
 import { RequestGroup } from './RequestGroup';
 import { ResearchDefinition } from './ResearchDefinition';
@@ -135,7 +134,6 @@ import { ResearchElementDefinition } from './ResearchElementDefinition';
 import { ResearchStudy } from './ResearchStudy';
 import { ResearchSubject } from './ResearchSubject';
 import { RiskAssessment } from './RiskAssessment';
-import { RiskEvidenceSynthesis } from './RiskEvidenceSynthesis';
 import { Schedule } from './Schedule';
 import { SearchParameter } from './SearchParameter';
 import { ServiceRequest } from './ServiceRequest';
@@ -146,13 +144,10 @@ import { SpecimenDefinition } from './SpecimenDefinition';
 import { StructureDefinition } from './StructureDefinition';
 import { StructureMap } from './StructureMap';
 import { Subscription } from './Subscription';
+import { SubscriptionStatus } from './SubscriptionStatus';
+import { SubscriptionTopic } from './SubscriptionTopic';
 import { Substance } from './Substance';
-import { SubstanceNucleicAcid } from './SubstanceNucleicAcid';
-import { SubstancePolymer } from './SubstancePolymer';
-import { SubstanceProtein } from './SubstanceProtein';
-import { SubstanceReferenceInformation } from './SubstanceReferenceInformation';
-import { SubstanceSourceMaterial } from './SubstanceSourceMaterial';
-import { SubstanceSpecification } from './SubstanceSpecification';
+import { SubstanceDefinition } from './SubstanceDefinition';
 import { SupplyDelivery } from './SupplyDelivery';
 import { SupplyRequest } from './SupplyRequest';
 import { Task } from './Task';
@@ -168,6 +163,7 @@ import { VisionPrescription } from './VisionPrescription';
 export type Resource = AccessPolicy
   | Account
   | ActivityDefinition
+  | AdministrableProductDefinition
   | AdverseEvent
   | Agent
   | AllergyIntolerance
@@ -188,10 +184,12 @@ export type Resource = AccessPolicy
   | CatalogEntry
   | ChargeItem
   | ChargeItemDefinition
+  | Citation
   | Claim
   | ClaimResponse
   | ClientApplication
   | ClinicalImpression
+  | ClinicalUseDefinition
   | CodeSystem
   | Communication
   | CommunicationRequest
@@ -214,7 +212,6 @@ export type Resource = AccessPolicy
   | DocumentManifest
   | DocumentReference
   | DomainConfiguration
-  | EffectEvidenceSynthesis
   | Encounter
   | Endpoint
   | EnrollmentRequest
@@ -222,6 +219,7 @@ export type Resource = AccessPolicy
   | EpisodeOfCare
   | EventDefinition
   | Evidence
+  | EvidenceReport
   | EvidenceVariable
   | ExampleScenario
   | ExplanationOfBenefit
@@ -237,6 +235,7 @@ export type Resource = AccessPolicy
   | ImmunizationEvaluation
   | ImmunizationRecommendation
   | ImplementationGuide
+  | Ingredient
   | InsurancePlan
   | Invoice
   | JsonWebKey
@@ -245,6 +244,7 @@ export type Resource = AccessPolicy
   | List
   | Location
   | Login
+  | ManufacturedItemDefinition
   | Measure
   | MeasureReport
   | Media
@@ -254,27 +254,20 @@ export type Resource = AccessPolicy
   | MedicationKnowledge
   | MedicationRequest
   | MedicationStatement
-  | MedicinalProduct
-  | MedicinalProductAuthorization
-  | MedicinalProductContraindication
-  | MedicinalProductIndication
-  | MedicinalProductIngredient
-  | MedicinalProductInteraction
-  | MedicinalProductManufactured
-  | MedicinalProductPackaged
-  | MedicinalProductPharmaceutical
-  | MedicinalProductUndesirableEffect
+  | MedicinalProductDefinition
   | MessageDefinition
   | MessageHeader
   | MolecularSequence
   | NamingSystem
   | NutritionOrder
+  | NutritionProduct
   | Observation
   | ObservationDefinition
   | OperationDefinition
   | OperationOutcome
   | Organization
   | OrganizationAffiliation
+  | PackagedProductDefinition
   | Parameters
   | PasswordChangeRequest
   | Patient
@@ -290,6 +283,7 @@ export type Resource = AccessPolicy
   | Provenance
   | Questionnaire
   | QuestionnaireResponse
+  | RegulatedAuthorization
   | RelatedPerson
   | RequestGroup
   | ResearchDefinition
@@ -297,7 +291,6 @@ export type Resource = AccessPolicy
   | ResearchStudy
   | ResearchSubject
   | RiskAssessment
-  | RiskEvidenceSynthesis
   | Schedule
   | SearchParameter
   | ServiceRequest
@@ -308,13 +301,10 @@ export type Resource = AccessPolicy
   | StructureDefinition
   | StructureMap
   | Subscription
+  | SubscriptionStatus
+  | SubscriptionTopic
   | Substance
-  | SubstanceNucleicAcid
-  | SubstancePolymer
-  | SubstanceProtein
-  | SubstanceReferenceInformation
-  | SubstanceSourceMaterial
-  | SubstanceSpecification
+  | SubstanceDefinition
   | SupplyDelivery
   | SupplyRequest
   | Task

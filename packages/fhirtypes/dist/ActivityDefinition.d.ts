@@ -12,6 +12,7 @@ import { Expression } from './Expression';
 import { Extension } from './Extension';
 import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Ingredient } from './Ingredient';
 import { Location } from './Location';
 import { Medication } from './Medication';
 import { Meta } from './Meta';
@@ -176,16 +177,37 @@ export interface ActivityDefinition {
   experimental?: boolean;
 
   /**
-   * A code or group definition that describes the intended subject of the
-   * activity being defined.
+   * A code, group definition, or canonical reference that describes  or
+   * identifies the intended subject of the activity being defined.
+   * Canonical references are allowed to support the definition of
+   * protocols for drug and substance quality specifications, and is
+   * allowed to reference a MedicinalProductDefinition,
+   * SubstanceDefinition, AdministrableProductDefinition,
+   * ManufacturedItemDefinition, or PackagedProductDefinition resource.
    */
   subjectCodeableConcept?: CodeableConcept;
 
   /**
-   * A code or group definition that describes the intended subject of the
-   * activity being defined.
+   * A code, group definition, or canonical reference that describes  or
+   * identifies the intended subject of the activity being defined.
+   * Canonical references are allowed to support the definition of
+   * protocols for drug and substance quality specifications, and is
+   * allowed to reference a MedicinalProductDefinition,
+   * SubstanceDefinition, AdministrableProductDefinition,
+   * ManufacturedItemDefinition, or PackagedProductDefinition resource.
    */
   subjectReference?: Reference<Group>;
+
+  /**
+   * A code, group definition, or canonical reference that describes  or
+   * identifies the intended subject of the activity being defined.
+   * Canonical references are allowed to support the definition of
+   * protocols for drug and substance quality specifications, and is
+   * allowed to reference a MedicinalProductDefinition,
+   * SubstanceDefinition, AdministrableProductDefinition,
+   * ManufacturedItemDefinition, or PackagedProductDefinition resource.
+   */
+  subjectCanonical?: 'Patient' | 'Practitioner' | 'Organization' | 'Location' | 'Device';
 
   /**
    * The date  (and optionally time) when the activity definition was
@@ -405,7 +427,7 @@ export interface ActivityDefinition {
    * Identifies the food, drug or other product being consumed or supplied
    * in the activity.
    */
-  productReference?: Reference<Medication | Substance>;
+  productReference?: Reference<Medication | Substance | Ingredient>;
 
   /**
    * Identifies the food, drug or other product being consumed or supplied

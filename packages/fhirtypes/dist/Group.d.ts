@@ -300,7 +300,7 @@ export interface GroupMember {
    * consistent with Group.type. If the entity is another group, then the
    * type must be the same.
    */
-  entity?: Reference<Patient | Practitioner | PractitionerRole | Device | Medication | Substance | Group>;
+  entity?: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole | Device | Medication | Substance | Group>;
 
   /**
    * The period that the member was in the group, if known.

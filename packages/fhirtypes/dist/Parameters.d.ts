@@ -127,252 +127,252 @@ export interface ParametersParameter {
   name?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueBase64Binary?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueBoolean?: boolean;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueCanonical?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueCode?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueDate?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueDateTime?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueDecimal?: number;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueId?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueInstant?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueInteger?: number;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueMarkdown?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueOid?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valuePositiveInt?: number;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueString?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueTime?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueUnsignedInt?: number;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueUri?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueUrl?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueUuid?: string;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueAddress?: Address;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueAge?: Age;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueAnnotation?: Annotation;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueAttachment?: Attachment;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueCodeableConcept?: CodeableConcept;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueCoding?: Coding;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueContactPoint?: ContactPoint;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueCount?: Count;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueDistance?: Distance;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueDuration?: Duration;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueHumanName?: HumanName;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueIdentifier?: Identifier;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueMoney?: Money;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valuePeriod?: Period;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueQuantity?: Quantity;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueRange?: Range;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueRatio?: Ratio;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueReference?: Reference;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueSampledData?: SampledData;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueSignature?: Signature;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueTiming?: Timing;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueContactDetail?: ContactDetail;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueContributor?: Contributor;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueDataRequirement?: DataRequirement;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueExpression?: Expression;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueParameterDefinition?: ParameterDefinition;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueRelatedArtifact?: RelatedArtifact;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueTriggerDefinition?: TriggerDefinition;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueUsageContext?: UsageContext;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueDosage?: Dosage;
 
   /**
-   * If the parameter is a data type.
+   * Conveys the content if the parameter is a data type.
    */
   valueMeta?: Meta;
 

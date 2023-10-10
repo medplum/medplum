@@ -8,6 +8,7 @@ import { Age } from './Age';
 import { Annotation } from './Annotation';
 import { Attachment } from './Attachment';
 import { CodeableConcept } from './CodeableConcept';
+import { CodeableReference } from './CodeableReference';
 import { Coding } from './Coding';
 import { ContactDetail } from './ContactDetail';
 import { ContactPoint } from './ContactPoint';
@@ -21,13 +22,13 @@ import { Expression } from './Expression';
 import { Extension } from './Extension';
 import { HumanName } from './HumanName';
 import { Identifier } from './Identifier';
-import { Meta } from './Meta';
 import { Money } from './Money';
 import { ParameterDefinition } from './ParameterDefinition';
 import { Period } from './Period';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Ratio } from './Ratio';
+import { RatioRange } from './RatioRange';
 import { Reference } from './Reference';
 import { RelatedArtifact } from './RelatedArtifact';
 import { SampledData } from './SampledData';
@@ -355,6 +356,12 @@ export interface ElementDefinition {
    * The value that should be used if there is no value stated in the
    * instance (e.g. 'if not otherwise specified, the abstract is false').
    */
+  defaultValueCodeableReference?: CodeableReference;
+
+  /**
+   * The value that should be used if there is no value stated in the
+   * instance (e.g. 'if not otherwise specified, the abstract is false').
+   */
   defaultValueCoding?: Coding;
 
   /**
@@ -422,6 +429,12 @@ export interface ElementDefinition {
    * instance (e.g. 'if not otherwise specified, the abstract is false').
    */
   defaultValueRatio?: Ratio;
+
+  /**
+   * The value that should be used if there is no value stated in the
+   * instance (e.g. 'if not otherwise specified, the abstract is false').
+   */
+  defaultValueRatioRange?: RatioRange;
 
   /**
    * The value that should be used if there is no value stated in the
@@ -500,12 +513,6 @@ export interface ElementDefinition {
    * instance (e.g. 'if not otherwise specified, the abstract is false').
    */
   defaultValueDosage?: Dosage;
-
-  /**
-   * The value that should be used if there is no value stated in the
-   * instance (e.g. 'if not otherwise specified, the abstract is false').
-   */
-  defaultValueMeta?: Meta;
 
   /**
    * The Implicit meaning that is to be understood when this element is
@@ -718,6 +725,14 @@ export interface ElementDefinition {
    * is ignored, and all values must be an exact match (case and accent
    * sensitive). Missing elements/attributes must also be missing.
    */
+  fixedCodeableReference?: CodeableReference;
+
+  /**
+   * Specifies a value that SHALL be exactly the value  for this element in
+   * the instance. For purposes of comparison, non-significant whitespace
+   * is ignored, and all values must be an exact match (case and accent
+   * sensitive). Missing elements/attributes must also be missing.
+   */
   fixedCoding?: Coding;
 
   /**
@@ -807,6 +822,14 @@ export interface ElementDefinition {
    * sensitive). Missing elements/attributes must also be missing.
    */
   fixedRatio?: Ratio;
+
+  /**
+   * Specifies a value that SHALL be exactly the value  for this element in
+   * the instance. For purposes of comparison, non-significant whitespace
+   * is ignored, and all values must be an exact match (case and accent
+   * sensitive). Missing elements/attributes must also be missing.
+   */
+  fixedRatioRange?: RatioRange;
 
   /**
    * Specifies a value that SHALL be exactly the value  for this element in
@@ -911,14 +934,6 @@ export interface ElementDefinition {
    * sensitive). Missing elements/attributes must also be missing.
    */
   fixedDosage?: Dosage;
-
-  /**
-   * Specifies a value that SHALL be exactly the value  for this element in
-   * the instance. For purposes of comparison, non-significant whitespace
-   * is ignored, and all values must be an exact match (case and accent
-   * sensitive). Missing elements/attributes must also be missing.
-   */
-  fixedMeta?: Meta;
 
   /**
    * Specifies a value that the value in the instance SHALL follow - that
@@ -1518,6 +1533,30 @@ export interface ElementDefinition {
    * 2. If a complex object: it must match (recursively) the pattern value
    * 3. If an array: it must match (recursively) the pattern value.
    */
+  patternCodeableReference?: CodeableReference;
+
+  /**
+   * Specifies a value that the value in the instance SHALL follow - that
+   * is, any value in the pattern must be found in the instance. Other
+   * additional values may be found too. This is effectively constraint by
+   * example.
+   *
+   * When pattern[x] is used to constrain a primitive, it means that the
+   * value provided in the pattern[x] must match the instance value
+   * exactly.
+   *
+   * When pattern[x] is used to constrain an array, it means that each
+   * element provided in the pattern[x] array must (recursively) match at
+   * least one element from the instance array.
+   *
+   * When pattern[x] is used to constrain a complex object, it means that
+   * each property in the pattern must be present in the complex object,
+   * and its value must recursively match -- i.e.,
+   *
+   * 1. If primitive: it must match exactly the pattern value
+   * 2. If a complex object: it must match (recursively) the pattern value
+   * 3. If an array: it must match (recursively) the pattern value.
+   */
   patternCoding?: Coding;
 
   /**
@@ -1783,6 +1822,30 @@ export interface ElementDefinition {
    * 3. If an array: it must match (recursively) the pattern value.
    */
   patternRatio?: Ratio;
+
+  /**
+   * Specifies a value that the value in the instance SHALL follow - that
+   * is, any value in the pattern must be found in the instance. Other
+   * additional values may be found too. This is effectively constraint by
+   * example.
+   *
+   * When pattern[x] is used to constrain a primitive, it means that the
+   * value provided in the pattern[x] must match the instance value
+   * exactly.
+   *
+   * When pattern[x] is used to constrain an array, it means that each
+   * element provided in the pattern[x] array must (recursively) match at
+   * least one element from the instance array.
+   *
+   * When pattern[x] is used to constrain a complex object, it means that
+   * each property in the pattern must be present in the complex object,
+   * and its value must recursively match -- i.e.,
+   *
+   * 1. If primitive: it must match exactly the pattern value
+   * 2. If a complex object: it must match (recursively) the pattern value
+   * 3. If an array: it must match (recursively) the pattern value.
+   */
+  patternRatioRange?: RatioRange;
 
   /**
    * Specifies a value that the value in the instance SHALL follow - that
@@ -2095,30 +2158,6 @@ export interface ElementDefinition {
    * 3. If an array: it must match (recursively) the pattern value.
    */
   patternDosage?: Dosage;
-
-  /**
-   * Specifies a value that the value in the instance SHALL follow - that
-   * is, any value in the pattern must be found in the instance. Other
-   * additional values may be found too. This is effectively constraint by
-   * example.
-   *
-   * When pattern[x] is used to constrain a primitive, it means that the
-   * value provided in the pattern[x] must match the instance value
-   * exactly.
-   *
-   * When pattern[x] is used to constrain an array, it means that each
-   * element provided in the pattern[x] array must (recursively) match at
-   * least one element from the instance array.
-   *
-   * When pattern[x] is used to constrain a complex object, it means that
-   * each property in the pattern must be present in the complex object,
-   * and its value must recursively match -- i.e.,
-   *
-   * 1. If primitive: it must match exactly the pattern value
-   * 2. If a complex object: it must match (recursively) the pattern value
-   * 3. If an array: it must match (recursively) the pattern value.
-   */
-  patternMeta?: Meta;
 
   /**
    * A sample value for this element demonstrating the type of information
@@ -2645,6 +2684,12 @@ export interface ElementDefinitionExample {
    * The actual value for the element, which must be one of the types
    * allowed for this element.
    */
+  valueCodeableReference?: CodeableReference;
+
+  /**
+   * The actual value for the element, which must be one of the types
+   * allowed for this element.
+   */
   valueCoding?: Coding;
 
   /**
@@ -2712,6 +2757,12 @@ export interface ElementDefinitionExample {
    * allowed for this element.
    */
   valueRatio?: Ratio;
+
+  /**
+   * The actual value for the element, which must be one of the types
+   * allowed for this element.
+   */
+  valueRatioRange?: RatioRange;
 
   /**
    * The actual value for the element, which must be one of the types
@@ -2790,12 +2841,6 @@ export interface ElementDefinitionExample {
    * allowed for this element.
    */
   valueDosage?: Dosage;
-
-  /**
-   * The actual value for the element, which must be one of the types
-   * allowed for this element.
-   */
-  valueMeta?: Meta;
 }
 
 /**

@@ -4,24 +4,28 @@
  */
 
 import { Annotation } from './Annotation';
+import { Citation } from './Citation';
 import { CodeableConcept } from './CodeableConcept';
 import { ContactDetail } from './ContactDetail';
 import { EvidenceVariable } from './EvidenceVariable';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
-import { Period } from './Period';
+import { Quantity } from './Quantity';
+import { Range } from './Range';
 import { Reference } from './Reference';
 import { RelatedArtifact } from './RelatedArtifact';
 import { Resource } from './Resource';
 import { UsageContext } from './UsageContext';
 
 /**
- * The Evidence resource describes the conditional state (population and
- * any exposures being compared within the population) and outcome (if
- * specified) that the knowledge (evidence, assertion, recommendation) is
- * about.
+ * The Evidence Resource provides a machine-interpretable expression of
+ * an evidence concept including the evidence variables (eg population,
+ * exposures/interventions, comparators, outcomes, measured variables,
+ * confounding variables), the statistics, and the certainty of this
+ * evidence.
  */
 export interface Evidence {
 
@@ -106,95 +110,58 @@ export interface Evidence {
    * referenced in a specification, model, design or an instance; also
    * called its canonical identifier. This SHOULD be globally unique and
    * SHOULD be a literal address at which at which an authoritative
-   * instance of this evidence is (or will be) published. This URL can be
+   * instance of this summary is (or will be) published. This URL can be
    * the target of a canonical reference. It SHALL remain the same when the
-   * evidence is stored on different servers.
+   * summary is stored on different servers.
    */
   url?: string;
 
   /**
-   * A formal identifier that is used to identify this evidence when it is
+   * A formal identifier that is used to identify this summary when it is
    * represented in other formats, or referenced in a specification, model,
    * design or an instance.
    */
   identifier?: Identifier[];
 
   /**
-   * The identifier that is used to identify this version of the evidence
+   * The identifier that is used to identify this version of the summary
    * when it is referenced in a specification, model, design or instance.
-   * This is an arbitrary value managed by the evidence author and is not
+   * This is an arbitrary value managed by the summary author and is not
    * expected to be globally unique. For example, it might be a timestamp
    * (e.g. yyyymmdd) if a managed version is not available. There is also
    * no expectation that versions can be placed in a lexicographical
-   * sequence. To provide a version consistent with the Decision Support
-   * Service specification, use the format Major.Minor.Revision (e.g.
-   * 1.0.0). For more information on versioning knowledge assets, refer to
-   * the Decision Support Service specification. Note that a version is
-   * required for non-experimental active artifacts.
+   * sequence.
    */
   version?: string;
 
   /**
-   * A natural language name identifying the evidence. This name should be
-   * usable as an identifier for the module by machine processing
-   * applications such as code generation.
-   */
-  name?: string;
-
-  /**
-   * A short, descriptive, user-friendly title for the evidence.
+   * A short, descriptive, user-friendly title for the summary.
    */
   title?: string;
 
   /**
-   * The short title provides an alternate title for use in informal
-   * descriptive contexts where the full, formal title is not necessary.
+   * Citation Resource or display of suggested citation for this evidence.
    */
-  shortTitle?: string;
+  citeAsReference?: Reference<Citation>;
 
   /**
-   * An explanatory or alternate title for the Evidence giving additional
-   * information about its content.
+   * Citation Resource or display of suggested citation for this evidence.
    */
-  subtitle?: string;
+  citeAsMarkdown?: string;
 
   /**
-   * The status of this evidence. Enables tracking the life-cycle of the
+   * The status of this summary. Enables tracking the life-cycle of the
    * content.
    */
   status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
-   * The date  (and optionally time) when the evidence was published. The
+   * The date  (and optionally time) when the summary was published. The
    * date must change when the business version changes and it must change
    * if the status code changes. In addition, it should change when the
-   * substantive content of the evidence changes.
+   * substantive content of the summary changes.
    */
   date?: string;
-
-  /**
-   * The name of the organization or individual that published the
-   * evidence.
-   */
-  publisher?: string;
-
-  /**
-   * Contact details to assist a user in finding and communicating with the
-   * publisher.
-   */
-  contact?: ContactDetail[];
-
-  /**
-   * A free text natural language description of the evidence from a
-   * consumer's perspective.
-   */
-  description?: string;
-
-  /**
-   * A human-readable string to clarify or explain concepts about the
-   * resource.
-   */
-  note?: Annotation[];
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -204,19 +171,6 @@ export interface Evidence {
    * indexing and searching for appropriate evidence instances.
    */
   useContext?: UsageContext[];
-
-  /**
-   * A legal or geographic region in which the evidence is intended to be
-   * used.
-   */
-  jurisdiction?: CodeableConcept[];
-
-  /**
-   * A copyright statement relating to the evidence and/or its contents.
-   * Copyright statements are generally legal restrictions on the use and
-   * publishing of the evidence.
-   */
-  copyright?: string;
 
   /**
    * The date on which the resource content was approved by the publisher.
@@ -233,63 +187,601 @@ export interface Evidence {
   lastReviewDate?: string;
 
   /**
-   * The period during which the evidence content was or is planned to be
-   * in active use.
+   * The name of the organization or individual that published the
+   * evidence.
    */
-  effectivePeriod?: Period;
+  publisher?: string;
 
   /**
-   * Descriptive topics related to the content of the Evidence. Topics
-   * provide a high-level categorization grouping types of Evidences that
-   * can be useful for filtering and searching.
+   * Contact details to assist a user in finding and communicating with the
+   * publisher.
    */
-  topic?: CodeableConcept[];
+  contact?: ContactDetail[];
 
   /**
-   * An individiual or organization primarily involved in the creation and
-   * maintenance of the content.
+   * An individiual, organization, or device primarily involved in the
+   * creation and maintenance of the content.
    */
   author?: ContactDetail[];
 
   /**
-   * An individual or organization primarily responsible for internal
-   * coherence of the content.
+   * An individiual, organization, or device primarily responsible for
+   * internal coherence of the content.
    */
   editor?: ContactDetail[];
 
   /**
-   * An individual or organization primarily responsible for review of some
-   * aspect of the content.
+   * An individiual, organization, or device primarily responsible for
+   * review of some aspect of the content.
    */
   reviewer?: ContactDetail[];
 
   /**
-   * An individual or organization responsible for officially endorsing the
-   * content for use in some setting.
+   * An individiual, organization, or device responsible for officially
+   * endorsing the content for use in some setting.
    */
   endorser?: ContactDetail[];
 
   /**
-   * Related artifacts such as additional documentation, justification, or
-   * bibliographic references.
+   * Link or citation to artifact associated with the summary.
    */
   relatedArtifact?: RelatedArtifact[];
 
   /**
-   * A reference to a EvidenceVariable resource that defines the population
-   * for the research.
+   * A free text natural language description of the evidence from a
+   * consumer's perspective.
    */
-  exposureBackground?: Reference<EvidenceVariable>;
+  description?: string;
 
   /**
-   * A reference to a EvidenceVariable resource that defines the exposure
-   * for the research.
+   * Declarative description of the Evidence.
    */
-  exposureVariant?: Reference<EvidenceVariable>[];
+  assertion?: string;
 
   /**
-   * A reference to a EvidenceVariable resomece that defines the outcome
-   * for the research.
+   * Footnotes and/or explanatory notes.
    */
-  outcome?: Reference<EvidenceVariable>[];
+  note?: Annotation[];
+
+  /**
+   * Evidence variable such as population, exposure, or outcome.
+   */
+  variableDefinition?: EvidenceVariableDefinition[];
+
+  /**
+   * The method to combine studies.
+   */
+  synthesisType?: CodeableConcept;
+
+  /**
+   * The type of study that produced this evidence.
+   */
+  studyType?: CodeableConcept;
+
+  /**
+   * Values and parameters for a single statistic.
+   */
+  statistic?: EvidenceStatistic[];
+
+  /**
+   * Assessment of certainty, confidence in the estimates, or quality of
+   * the evidence.
+   */
+  certainty?: EvidenceCertainty[];
+}
+
+/**
+ * Assessment of certainty, confidence in the estimates, or quality of
+ * the evidence.
+ */
+export interface EvidenceCertainty {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  modifierExtension?: Extension[];
+
+  /**
+   * Textual description of certainty.
+   */
+  description?: string;
+
+  /**
+   * Footnotes and/or explanatory notes.
+   */
+  note?: Annotation[];
+
+  /**
+   * Aspect of certainty being rated.
+   */
+  type?: CodeableConcept;
+
+  /**
+   * Assessment or judgement of the aspect.
+   */
+  rating?: CodeableConcept;
+
+  /**
+   * Individual or group who did the rating.
+   */
+  rater?: string;
+
+  /**
+   * A domain or subdomain of certainty.
+   */
+  subcomponent?: EvidenceCertainty[];
+}
+
+/**
+ * Values and parameters for a single statistic.
+ */
+export interface EvidenceStatistic {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  modifierExtension?: Extension[];
+
+  /**
+   * A description of the content value of the statistic.
+   */
+  description?: string;
+
+  /**
+   * Footnotes and/or explanatory notes.
+   */
+  note?: Annotation[];
+
+  /**
+   * Type of statistic, eg relative risk.
+   */
+  statisticType?: CodeableConcept;
+
+  /**
+   * When the measured variable is handled categorically, the category
+   * element is used to define which category the statistic is reporting.
+   */
+  category?: CodeableConcept;
+
+  /**
+   * Statistic value.
+   */
+  quantity?: Quantity;
+
+  /**
+   * The number of events associated with the statistic, where the unit of
+   * analysis is different from numberAffected, sampleSize.knownDataCount
+   * and sampleSize.numberOfParticipants.
+   */
+  numberOfEvents?: number;
+
+  /**
+   * The number of participants affected where the unit of analysis is the
+   * same as sampleSize.knownDataCount and sampleSize.numberOfParticipants.
+   */
+  numberAffected?: number;
+
+  /**
+   * Number of samples in the statistic.
+   */
+  sampleSize?: EvidenceStatisticSampleSize;
+
+  /**
+   * A statistical attribute of the statistic such as a measure of
+   * heterogeneity.
+   */
+  attributeEstimate?: EvidenceStatisticAttributeEstimate[];
+
+  /**
+   * A component of the method to generate the statistic.
+   */
+  modelCharacteristic?: EvidenceStatisticModelCharacteristic[];
+}
+
+/**
+ * A statistical attribute of the statistic such as a measure of
+ * heterogeneity.
+ */
+export interface EvidenceStatisticAttributeEstimate {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  modifierExtension?: Extension[];
+
+  /**
+   * Human-readable summary of the estimate.
+   */
+  description?: string;
+
+  /**
+   * Footnote or explanatory note about the estimate.
+   */
+  note?: Annotation[];
+
+  /**
+   * The type of attribute estimate, eg confidence interval or p value.
+   */
+  type?: CodeableConcept;
+
+  /**
+   * The singular quantity of the attribute estimate, for attribute
+   * estimates represented as single values; also used to report unit of
+   * measure.
+   */
+  quantity?: Quantity;
+
+  /**
+   * Use 95 for a 95% confidence interval.
+   */
+  level?: number;
+
+  /**
+   * Lower bound of confidence interval.
+   */
+  range?: Range;
+
+  /**
+   * A nested attribute estimate; which is the attribute estimate of an
+   * attribute estimate.
+   */
+  attributeEstimate?: EvidenceStatisticAttributeEstimate[];
+}
+
+/**
+ * A component of the method to generate the statistic.
+ */
+export interface EvidenceStatisticModelCharacteristic {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  modifierExtension?: Extension[];
+
+  /**
+   * Description of a component of the method to generate the statistic.
+   */
+  code?: CodeableConcept;
+
+  /**
+   * Further specification of the quantified value of the component of the
+   * method to generate the statistic.
+   */
+  value?: Quantity;
+
+  /**
+   * A variable adjusted for in the adjusted analysis.
+   */
+  variable?: EvidenceStatisticModelCharacteristicVariable[];
+
+  /**
+   * An attribute of the statistic used as a model characteristic.
+   */
+  attributeEstimate?: EvidenceStatisticAttributeEstimate[];
+}
+
+/**
+ * A variable adjusted for in the adjusted analysis.
+ */
+export interface EvidenceStatisticModelCharacteristicVariable {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  modifierExtension?: Extension[];
+
+  /**
+   * Description of the variable.
+   */
+  variableDefinition?: Reference<Group | EvidenceVariable>;
+
+  /**
+   * How the variable is classified for use in adjusted analysis.
+   */
+  handling?: 'continuous' | 'dichotomous' | 'ordinal' | 'polychotomous';
+
+  /**
+   * Description for grouping of ordinal or polychotomous variables.
+   */
+  valueCategory?: CodeableConcept[];
+
+  /**
+   * Discrete value for grouping of ordinal or polychotomous variables.
+   */
+  valueQuantity?: Quantity[];
+
+  /**
+   * Range of values for grouping of ordinal or polychotomous variables.
+   */
+  valueRange?: Range[];
+}
+
+/**
+ * Number of samples in the statistic.
+ */
+export interface EvidenceStatisticSampleSize {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  modifierExtension?: Extension[];
+
+  /**
+   * Human-readable summary of population sample size.
+   */
+  description?: string;
+
+  /**
+   * Footnote or explanatory note about the sample size.
+   */
+  note?: Annotation[];
+
+  /**
+   * Number of participants in the population.
+   */
+  numberOfStudies?: number;
+
+  /**
+   * A human-readable string to clarify or explain concepts about the
+   * sample size.
+   */
+  numberOfParticipants?: number;
+
+  /**
+   * Number of participants with known results for measured variables.
+   */
+  knownDataCount?: number;
+}
+
+/**
+ * Evidence variable such as population, exposure, or outcome.
+ */
+export interface EvidenceVariableDefinition {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  modifierExtension?: Extension[];
+
+  /**
+   * A text description or summary of the variable.
+   */
+  description?: string;
+
+  /**
+   * Footnotes and/or explanatory notes.
+   */
+  note?: Annotation[];
+
+  /**
+   * population | subpopulation | exposure | referenceExposure |
+   * measuredVariable | confounder.
+   */
+  variableRole?: CodeableConcept;
+
+  /**
+   * Definition of the actual variable related to the statistic(s).
+   */
+  observed?: Reference<Group | EvidenceVariable>;
+
+  /**
+   * Definition of the intended variable related to the Evidence.
+   */
+  intended?: Reference<Group | EvidenceVariable>;
+
+  /**
+   * Indication of quality of match between intended variable to actual
+   * variable.
+   */
+  directnessMatch?: CodeableConcept;
 }

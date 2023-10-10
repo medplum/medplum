@@ -6,25 +6,24 @@
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
 import { ContactDetail } from './ContactDetail';
-import { DataRequirement } from './DataRequirement';
-import { Duration } from './Duration';
+import { Device } from './Device';
+import { DeviceMetric } from './DeviceMetric';
 import { Expression } from './Expression';
 import { Extension } from './Extension';
 import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
-import { Period } from './Period';
+import { Quantity } from './Quantity';
+import { Range } from './Range';
 import { Reference } from './Reference';
 import { RelatedArtifact } from './RelatedArtifact';
 import { Resource } from './Resource';
-import { Timing } from './Timing';
-import { TriggerDefinition } from './TriggerDefinition';
 import { UsageContext } from './UsageContext';
 
 /**
- * The EvidenceVariable resource describes a &quot;PICO&quot; element that
- * knowledge (evidence, assertion, recommendation) is about.
+ * The EvidenceVariable resource describes an element that knowledge
+ * (Evidence) is about.
  */
 export interface EvidenceVariable {
 
@@ -176,18 +175,6 @@ export interface EvidenceVariable {
   date?: string;
 
   /**
-   * The name of the organization or individual that published the evidence
-   * variable.
-   */
-  publisher?: string;
-
-  /**
-   * Contact details to assist a user in finding and communicating with the
-   * publisher.
-   */
-  contact?: ContactDetail[];
-
-  /**
    * A free text natural language description of the evidence variable from
    * a consumer's perspective.
    */
@@ -209,44 +196,16 @@ export interface EvidenceVariable {
   useContext?: UsageContext[];
 
   /**
-   * A legal or geographic region in which the evidence variable is
-   * intended to be used.
+   * The name of the organization or individual that published the evidence
+   * variable.
    */
-  jurisdiction?: CodeableConcept[];
+  publisher?: string;
 
   /**
-   * A copyright statement relating to the evidence variable and/or its
-   * contents. Copyright statements are generally legal restrictions on the
-   * use and publishing of the evidence variable.
+   * Contact details to assist a user in finding and communicating with the
+   * publisher.
    */
-  copyright?: string;
-
-  /**
-   * The date on which the resource content was approved by the publisher.
-   * Approval happens once when the content is officially approved for
-   * usage.
-   */
-  approvalDate?: string;
-
-  /**
-   * The date on which the resource content was last reviewed. Review
-   * happens periodically after approval but does not change the original
-   * approval date.
-   */
-  lastReviewDate?: string;
-
-  /**
-   * The period during which the evidence variable content was or is
-   * planned to be in active use.
-   */
-  effectivePeriod?: Period;
-
-  /**
-   * Descriptive topics related to the content of the EvidenceVariable.
-   * Topics provide a high-level categorization grouping types of
-   * EvidenceVariables that can be useful for filtering and searching.
-   */
-  topic?: CodeableConcept[];
+  contact?: ContactDetail[];
 
   /**
    * An individiual or organization primarily involved in the creation and
@@ -279,16 +238,95 @@ export interface EvidenceVariable {
   relatedArtifact?: RelatedArtifact[];
 
   /**
-   * The type of evidence element, a population, an exposure, or an
-   * outcome.
+   * True if the actual variable measured, false if a conceptual
+   * representation of the intended variable.
    */
-  type?: 'dichotomous' | 'continuous' | 'descriptive';
+  actual?: boolean;
+
+  /**
+   * Used to specify if two or more characteristics are combined with OR or
+   * AND.
+   */
+  characteristicCombination?: 'intersection' | 'union';
 
   /**
    * A characteristic that defines the members of the evidence element.
    * Multiple characteristics are applied with &quot;and&quot; semantics.
    */
   characteristic?: EvidenceVariableCharacteristic[];
+
+  /**
+   * Used for an outcome to classify.
+   */
+  handling?: 'continuous' | 'dichotomous' | 'ordinal' | 'polychotomous';
+
+  /**
+   * A grouping (or set of values) described along with other groupings to
+   * specify the set of groupings allowed for the variable.
+   */
+  category?: EvidenceVariableCategory[];
+}
+
+/**
+ * A grouping (or set of values) described along with other groupings to
+ * specify the set of groupings allowed for the variable.
+ */
+export interface EvidenceVariableCategory {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  modifierExtension?: Extension[];
+
+  /**
+   * A human-readable title or representation of the grouping.
+   */
+  name?: string;
+
+  /**
+   * Value or set of values that define the grouping.
+   */
+  valueCodeableConcept?: CodeableConcept;
+
+  /**
+   * Value or set of values that define the grouping.
+   */
+  valueQuantity?: Quantity;
+
+  /**
+   * Value or set of values that define the grouping.
+   */
+  valueRange?: Range;
 }
 
 /**
@@ -344,7 +382,7 @@ export interface EvidenceVariableCharacteristic {
    * language such as FHIRPath or CQL) or DataRequirements (such as
    * Diabetes diagnosis onset in the last year).
    */
-  definitionReference?: Reference<Group>;
+  definitionReference?: Reference<Group | EvidenceVariable>;
 
   /**
    * Define members of the evidence element using Codes (such as condition,
@@ -371,26 +409,14 @@ export interface EvidenceVariableCharacteristic {
   definitionExpression?: Expression;
 
   /**
-   * Define members of the evidence element using Codes (such as condition,
-   * medication, or observation), Expressions ( using an expression
-   * language such as FHIRPath or CQL) or DataRequirements (such as
-   * Diabetes diagnosis onset in the last year).
+   * Method used for describing characteristic.
    */
-  definitionDataRequirement?: DataRequirement;
+  method?: CodeableConcept;
 
   /**
-   * Define members of the evidence element using Codes (such as condition,
-   * medication, or observation), Expressions ( using an expression
-   * language such as FHIRPath or CQL) or DataRequirements (such as
-   * Diabetes diagnosis onset in the last year).
+   * Device used for determining characteristic.
    */
-  definitionTriggerDefinition?: TriggerDefinition;
-
-  /**
-   * Use UsageContext to define the members of the population, such as Age
-   * Ranges, Genders, Settings.
-   */
-  usageContext?: UsageContext[];
+  device?: Reference<Device | DeviceMetric>;
 
   /**
    * When true, members with this characteristic are excluded from the
@@ -399,33 +425,78 @@ export interface EvidenceVariableCharacteristic {
   exclude?: boolean;
 
   /**
-   * Indicates what effective period the study covers.
+   * Indicates duration, period, or point of observation from the
+   * participant's study entry.
    */
-  participantEffectiveDateTime?: string;
-
-  /**
-   * Indicates what effective period the study covers.
-   */
-  participantEffectivePeriod?: Period;
-
-  /**
-   * Indicates what effective period the study covers.
-   */
-  participantEffectiveDuration?: Duration;
-
-  /**
-   * Indicates what effective period the study covers.
-   */
-  participantEffectiveTiming?: Timing;
-
-  /**
-   * Indicates duration from the participant's study entry.
-   */
-  timeFromStart?: Duration;
+  timeFromStart?: EvidenceVariableCharacteristicTimeFromStart;
 
   /**
    * Indicates how elements are aggregated within the study effective
    * period.
    */
   groupMeasure?: 'mean' | 'median' | 'mean-of-mean' | 'mean-of-median' | 'median-of-mean' | 'median-of-median';
+}
+
+/**
+ * Indicates duration, period, or point of observation from the
+ * participant's study entry.
+ */
+export interface EvidenceVariableCharacteristicTimeFromStart {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  modifierExtension?: Extension[];
+
+  /**
+   * A short, natural language description.
+   */
+  description?: string;
+
+  /**
+   * Used to express the observation at a defined amount of time after the
+   * study start.
+   */
+  quantity?: Quantity;
+
+  /**
+   * Used to express the observation within a period after the study start.
+   */
+  range?: Range;
+
+  /**
+   * A human-readable string to clarify or explain concepts about the
+   * resource.
+   */
+  note?: Annotation[];
 }

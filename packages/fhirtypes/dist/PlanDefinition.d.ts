@@ -27,9 +27,9 @@ import { UsageContext } from './UsageContext';
 /**
  * This resource allows for the definition of various types of plans as a
  * sharable, consumable, and executable artifact. The resource is general
- * enough to support the description of a broad range of clinical
- * artifacts such as clinical decision support rules, order sets and
- * protocols.
+ * enough to support the description of a broad range of clinical and
+ * non-clinical artifacts such as clinical decision support rules, order
+ * sets, protocols, and drug quality specifications.
  */
 export interface PlanDefinition {
 
@@ -180,16 +180,37 @@ export interface PlanDefinition {
   experimental?: boolean;
 
   /**
-   * A code or group definition that describes the intended subject of the
-   * plan definition.
+   * A code, group definition, or canonical reference that describes  or
+   * identifies the intended subject of the plan definition. Canonical
+   * references are allowed to support the definition of protocols for drug
+   * and substance quality specifications, and is allowed to reference a
+   * MedicinalProductDefinition, SubstanceDefinition,
+   * AdministrableProductDefinition, ManufacturedItemDefinition, or
+   * PackagedProductDefinition resource.
    */
   subjectCodeableConcept?: CodeableConcept;
 
   /**
-   * A code or group definition that describes the intended subject of the
-   * plan definition.
+   * A code, group definition, or canonical reference that describes  or
+   * identifies the intended subject of the plan definition. Canonical
+   * references are allowed to support the definition of protocols for drug
+   * and substance quality specifications, and is allowed to reference a
+   * MedicinalProductDefinition, SubstanceDefinition,
+   * AdministrableProductDefinition, ManufacturedItemDefinition, or
+   * PackagedProductDefinition resource.
    */
   subjectReference?: Reference<Group>;
+
+  /**
+   * A code, group definition, or canonical reference that describes  or
+   * identifies the intended subject of the plan definition. Canonical
+   * references are allowed to support the definition of protocols for drug
+   * and substance quality specifications, and is allowed to reference a
+   * MedicinalProductDefinition, SubstanceDefinition,
+   * AdministrableProductDefinition, ManufacturedItemDefinition, or
+   * PackagedProductDefinition resource.
+   */
+  subjectCanonical?: 'Patient' | 'Practitioner' | 'Organization' | 'Location' | 'Device';
 
   /**
    * The date  (and optionally time) when the plan definition was
@@ -315,21 +336,32 @@ export interface PlanDefinition {
   library?: string[];
 
   /**
-   * Goals that describe what the activities within the plan are intended
-   * to achieve. For example, weight loss, restoring an activity of daily
-   * living, obtaining herd immunity via immunization, meeting a process
-   * improvement objective, etc.
+   * A goal describes an expected outcome that activities within the plan
+   * are intended to achieve. For example, weight loss, restoring an
+   * activity of daily living, obtaining herd immunity via immunization,
+   * meeting a process improvement objective, meeting the acceptance
+   * criteria for a test as specified by a quality specification, etc.
    */
   goal?: PlanDefinitionGoal[];
 
   /**
-   * An action or group of actions to be taken as part of the plan.
+   * An action or group of actions to be taken as part of the plan. For
+   * example, in clinical care, an action would be to prescribe a
+   * particular indicated medication, or perform a particular test as
+   * appropriate. In pharmaceutical quality, an action would be the test
+   * that needs to be performed on a drug product as defined in the quality
+   * specification.
    */
   action?: PlanDefinitionAction[];
 }
 
 /**
- * An action or group of actions to be taken as part of the plan.
+ * An action or group of actions to be taken as part of the plan. For
+ * example, in clinical care, an action would be to prescribe a
+ * particular indicated medication, or perform a particular test as
+ * appropriate. In pharmaceutical quality, an action would be the test
+ * that needs to be performed on a drug product as defined in the quality
+ * specification.
  */
 export interface PlanDefinitionAction {
 
@@ -374,7 +406,9 @@ export interface PlanDefinitionAction {
   prefix?: string;
 
   /**
-   * The title of the action displayed to a user.
+   * The textual description of the action displayed to a user. For
+   * example, when the action is a test to be performed, the title would be
+   * the title of the test such as Assay by HPLC.
    */
   title?: string;
 
@@ -399,9 +433,11 @@ export interface PlanDefinitionAction {
   priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 
   /**
-   * A code that provides meaning for the action or action group. For
-   * example, a section may have a LOINC code for the section of a
-   * documentation template.
+   * A code that provides a meaning, grouping, or classification for the
+   * action or action group. For example, a section may have a LOINC code
+   * for the section of a documentation template. In pharmaceutical
+   * quality, an action (Test) such as pH could be classified as a physical
+   * property.
    */
   code?: CodeableConcept[];
 
@@ -419,21 +455,45 @@ export interface PlanDefinitionAction {
 
   /**
    * Identifies goals that this action supports. The reference must be to a
-   * goal element defined within this plan definition.
+   * goal element defined within this plan definition. In pharmaceutical
+   * quality, a goal represents acceptance criteria (Goal) for a given
+   * action (Test), so the goalId would be the unique id of a defined goal
+   * element establishing the acceptance criteria for the action.
    */
   goalId?: string[];
 
   /**
-   * A code or group definition that describes the intended subject of the
-   * action and its children, if any.
+   * A code, group definition, or canonical reference that describes the
+   * intended subject of the action and its children, if any. Canonical
+   * references are allowed to support the definition of protocols for drug
+   * and substance quality specifications, and is allowed to reference a
+   * MedicinalProductDefinition, SubstanceDefinition,
+   * AdministrableProductDefinition, ManufacturedItemDefinition, or
+   * PackagedProductDefinition resource.
    */
   subjectCodeableConcept?: CodeableConcept;
 
   /**
-   * A code or group definition that describes the intended subject of the
-   * action and its children, if any.
+   * A code, group definition, or canonical reference that describes the
+   * intended subject of the action and its children, if any. Canonical
+   * references are allowed to support the definition of protocols for drug
+   * and substance quality specifications, and is allowed to reference a
+   * MedicinalProductDefinition, SubstanceDefinition,
+   * AdministrableProductDefinition, ManufacturedItemDefinition, or
+   * PackagedProductDefinition resource.
    */
   subjectReference?: Reference<Group>;
+
+  /**
+   * A code, group definition, or canonical reference that describes the
+   * intended subject of the action and its children, if any. Canonical
+   * references are allowed to support the definition of protocols for drug
+   * and substance quality specifications, and is allowed to reference a
+   * MedicinalProductDefinition, SubstanceDefinition,
+   * AdministrableProductDefinition, ManufacturedItemDefinition, or
+   * PackagedProductDefinition resource.
+   */
+  subjectCanonical?: 'Patient' | 'Practitioner' | 'Organization' | 'Location' | 'Device';
 
   /**
    * A description of when the action should be triggered.
@@ -800,10 +860,11 @@ export interface PlanDefinitionActionRelatedAction {
 }
 
 /**
- * Goals that describe what the activities within the plan are intended
- * to achieve. For example, weight loss, restoring an activity of daily
- * living, obtaining herd immunity via immunization, meeting a process
- * improvement objective, etc.
+ * A goal describes an expected outcome that activities within the plan
+ * are intended to achieve. For example, weight loss, restoring an
+ * activity of daily living, obtaining herd immunity via immunization,
+ * meeting a process improvement objective, meeting the acceptance
+ * criteria for a test as specified by a quality specification, etc.
  */
 export interface PlanDefinitionGoal {
 
@@ -933,31 +994,37 @@ export interface PlanDefinitionGoalTarget {
 
   /**
    * The target value of the measure to be achieved to signify fulfillment
-   * of the goal, e.g. 150 pounds or 7.0%. Either the high or low or both
-   * values of the range can be specified. When a low value is missing, it
-   * indicates that the goal is achieved at any value at or below the high
-   * value. Similarly, if the high value is missing, it indicates that the
-   * goal is achieved at any value at or above the low value.
+   * of the goal, e.g. 150 pounds or 7.0%, or in the case of pharmaceutical
+   * quality - NMT 0.6%, Clear solution, etc. Either the high or low or
+   * both values of the range can be specified. When a low value is
+   * missing, it indicates that the goal is achieved at any value at or
+   * below the high value. Similarly, if the high value is missing, it
+   * indicates that the goal is achieved at any value at or above the low
+   * value.
    */
   detailQuantity?: Quantity;
 
   /**
    * The target value of the measure to be achieved to signify fulfillment
-   * of the goal, e.g. 150 pounds or 7.0%. Either the high or low or both
-   * values of the range can be specified. When a low value is missing, it
-   * indicates that the goal is achieved at any value at or below the high
-   * value. Similarly, if the high value is missing, it indicates that the
-   * goal is achieved at any value at or above the low value.
+   * of the goal, e.g. 150 pounds or 7.0%, or in the case of pharmaceutical
+   * quality - NMT 0.6%, Clear solution, etc. Either the high or low or
+   * both values of the range can be specified. When a low value is
+   * missing, it indicates that the goal is achieved at any value at or
+   * below the high value. Similarly, if the high value is missing, it
+   * indicates that the goal is achieved at any value at or above the low
+   * value.
    */
   detailRange?: Range;
 
   /**
    * The target value of the measure to be achieved to signify fulfillment
-   * of the goal, e.g. 150 pounds or 7.0%. Either the high or low or both
-   * values of the range can be specified. When a low value is missing, it
-   * indicates that the goal is achieved at any value at or below the high
-   * value. Similarly, if the high value is missing, it indicates that the
-   * goal is achieved at any value at or above the low value.
+   * of the goal, e.g. 150 pounds or 7.0%, or in the case of pharmaceutical
+   * quality - NMT 0.6%, Clear solution, etc. Either the high or low or
+   * both values of the range can be specified. When a low value is
+   * missing, it indicates that the goal is achieved at any value at or
+   * below the high value. Similarly, if the high value is missing, it
+   * indicates that the goal is achieved at any value at or above the low
+   * value.
    */
   detailCodeableConcept?: CodeableConcept;
 

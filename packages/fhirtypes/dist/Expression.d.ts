@@ -44,7 +44,7 @@ export interface Expression {
   /**
    * The media type of the language for the expression.
    */
-  language?: 'text/cql' | 'text/fhirpath' | 'application/x-fhir-query';
+  language?: 'text/cql' | 'text/fhirpath' | 'application/x-fhir-query' | 'text/cql-identifier' | 'text/cql-expression';
 
   /**
    * An expression in the specified language that returns a value.

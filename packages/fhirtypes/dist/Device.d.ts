@@ -173,12 +173,12 @@ export interface Device {
   deviceName?: DeviceDeviceName[];
 
   /**
-   * The model number for the device.
+   * The manufacturer's model number for the device.
    */
   modelNumber?: string;
 
   /**
-   * The part number of the device.
+   * The part number or catalog number of the device.
    */
   partNumber?: string;
 
@@ -246,7 +246,7 @@ export interface Device {
   safety?: CodeableConcept[];
 
   /**
-   * The parent device.
+   * The device that this device is attached to or is part of.
    */
   parent?: Reference<Device>;
 }
@@ -296,7 +296,7 @@ export interface DeviceDeviceName {
   modifierExtension?: Extension[];
 
   /**
-   * The name of the device.
+   * The name that identifies the device.
    */
   name?: string;
 
@@ -554,7 +554,7 @@ export interface DeviceVersion {
   modifierExtension?: Extension[];
 
   /**
-   * The type of the device version.
+   * The type of the device version, e.g. manufacturer, approved, internal.
    */
   type?: CodeableConcept;
 

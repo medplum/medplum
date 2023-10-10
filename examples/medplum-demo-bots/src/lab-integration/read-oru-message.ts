@@ -19,6 +19,7 @@ import {
   Media,
   Observation,
   Organization,
+  Patient,
   Quantity,
   Range,
   Reference,
@@ -483,7 +484,7 @@ async function uploadEmbeddedPdfs(
       const encodedData = segment.getComponent(5, 5);
       const decodedData = Buffer.from(encodedData, 'base64');
       return medplum.uploadMedia(decodedData, 'application/pdf', fileName, {
-        subject: report.subject,
+        subject: report.subject as Reference<Patient>,
         basedOn: report.basedOn as Reference<ServiceRequest>[],
       });
     })

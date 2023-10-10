@@ -16,6 +16,7 @@ import { ImagingStudy } from './ImagingStudy';
 import { ImmunizationRecommendation } from './ImmunizationRecommendation';
 import { Location } from './Location';
 import { Media } from './Media';
+import { Medication } from './Medication';
 import { MedicationRequest } from './MedicationRequest';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
@@ -26,10 +27,12 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { Procedure } from './Procedure';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 import { ServiceRequest } from './ServiceRequest';
 import { Specimen } from './Specimen';
+import { Substance } from './Substance';
 
 /**
  * The findings and interpretation of diagnostic  tests performed on
@@ -150,7 +153,7 @@ export interface DiagnosticReport {
    * However, diagnostic services also perform analyses on specimens
    * collected from a variety of other sources.
    */
-  subject?: Reference<Patient | Group | Device | Location>;
+  subject?: Reference<Patient | Group | Device | Location | Organization | Procedure | Practitioner | Medication | Substance>;
 
   /**
    * The healthcare event  (e.g. a patient and healthcare provider

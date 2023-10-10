@@ -20,6 +20,7 @@ import { Immunization } from './Immunization';
 import { ImmunizationRecommendation } from './ImmunizationRecommendation';
 import { Location } from './Location';
 import { Media } from './Media';
+import { Medication } from './Medication';
 import { MedicationAdministration } from './MedicationAdministration';
 import { MedicationDispense } from './MedicationDispense';
 import { MedicationRequest } from './MedicationRequest';
@@ -44,6 +45,7 @@ import { Resource } from './Resource';
 import { SampledData } from './SampledData';
 import { ServiceRequest } from './ServiceRequest';
 import { Specimen } from './Specimen';
+import { Substance } from './Substance';
 import { Timing } from './Timing';
 
 /**
@@ -169,7 +171,7 @@ export interface Observation {
    * (or a sample of, part, or region of the subject), the `focus` element
    * or the `code` itself specifies the actual focus of the observation.
    */
-  subject?: Reference<Patient | Group | Device | Location>;
+  subject?: Reference<Patient | Group | Device | Location | Organization | Procedure | Practitioner | Medication | Substance>;
 
   /**
    * The actual focus of an observation when it is not the patient of

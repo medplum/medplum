@@ -280,10 +280,10 @@ function getTypeScriptTypeForProperty(
         if (binding.startsWith('http://hl7.org/fhir/ValueSet/resource-types')) {
           baseType = 'ResourceType';
         } else if (
-          binding !== 'http://hl7.org/fhir/ValueSet/all-types|4.0.1' &&
-          binding !== 'http://hl7.org/fhir/ValueSet/defined-types|4.0.1' &&
-          binding !== 'http://hl7.org/fhir/ValueSet/languages' &&
-          binding !== 'http://hl7.org/fhir/ValueSet/defined-types'
+          !binding.startsWith('http://hl7.org/fhir/ValueSet/all-types') &&
+          !binding.startsWith('http://hl7.org/fhir/ValueSet/defined-types') &&
+          !binding.startsWith('http://hl7.org/fhir/ValueSet/fhir-element-types') &&
+          !binding.startsWith('http://hl7.org/fhir/ValueSet/languages')
         ) {
           const values = getValueSetValues(binding);
           if (values && values.length > 0) {
