@@ -7,6 +7,7 @@ import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SignInPage } from './pages/SignInPage';
+import { SearchPage } from './pages/SearchPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -35,6 +36,7 @@ export function App(): JSX.Element | null {
             <Route path="/Patient/:id" element={<PatientPage />} />
             <Route path="/:resourceType/:id" element={<ResourcePage />} />
             <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
+            <Route path="/:resourceType" element={<SearchPage />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>

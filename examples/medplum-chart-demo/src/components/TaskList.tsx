@@ -1,17 +1,17 @@
-import { Box, Text, Group, Card, Divider, Title } from '@mantine/core';
+import { Box, Card, Divider, Group, Text, Title } from '@mantine/core';
 import { formatDateTime } from '@medplum/core';
-import { Task, Resource } from '@medplum/fhirtypes';
+import { Resource, Task } from '@medplum/fhirtypes';
 import {
+  AttachmentDisplay,
   CodeableConceptDisplay,
-  Timeline,
-  useResource,
-  useMedplum,
+  ErrorBoundary,
   MedplumLink,
   ResourceAvatar,
   ResourceName,
   StatusBadge,
-  ErrorBoundary,
-  AttachmentDisplay,
+  Timeline,
+  useMedplum,
+  useResource,
 } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -42,10 +42,10 @@ export function TaskList(): JSX.Element | null {
       <Box>
         <Timeline>
           {tasks.map((task, idx) => (
-            <>
+            <React.Fragment key={idx}>
               <FocusTimeline key={task.id} task={task} />
               {idx !== tasks.length - 1 ? <Divider w="100%" /> : null}
-            </>
+            </React.Fragment>
           ))}
         </Timeline>
       </Box>
@@ -56,20 +56,20 @@ export function TaskList(): JSX.Element | null {
 function FocusTimeline(props: { task: Task }): JSX.Element | undefined {
   const task = props.task;
 
-  const focusedResource = useResource(task.focus);
-  if (!focusedResource) {
+  const focused = useResource(task.focus);
+  if (!focused) {
     return;
   }
   return (
-    <TaskItem key={task.id} profile={task.owner} resource={focusedResource} task={task}>
+    <TaskItem key={task.id} profile={task.owner} resource={focused} task={task}>
       <Box pt="sm" px="xl" pb="xl">
-        <TaskType resource={focusedResource} task={task} />
+        <ResourceFocus resource={focused} task={task} />
       </Box>
     </TaskItem>
   );
 }
 
-function TaskType(props: { resource: Resource; task: Task }): JSX.Element {
+function ResourceFocus(props: { resource: Resource; task: Task }): JSX.Element {
   const resource = props.resource;
   function renderResourceContent(resource: Resource) {
     switch (resource.resourceType) {
@@ -126,7 +126,7 @@ function TaskItem(props: any): JSX.Element {
             </Text>
             <MedplumLink
               color="dimmed"
-              to={`/Task?_count=20&_fields=id,_lastUpdated,code,owner&_offset=0&_sort=-_lastUpdated&code=${task.code?.coding?.[0]?.code}`}
+              to={`/Task?_count=20&_fields=_lastUpdated,code,priority,assignment,owner,focus,period,note&_offset=0&_sort=-_lastUpdated&code=${task.code?.coding?.[0]?.code}`}
             >
               <CodeableConceptDisplay value={task.code} />
             </MedplumLink>

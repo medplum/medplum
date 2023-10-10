@@ -102,7 +102,7 @@ export function PatientChart(): JSX.Element | null {
       </Text>
       <Paper withBorder p="md" my="md">
         <Group grow>
-          <Flex justify="center" align="center" direction="column" gap={0}>
+          <Flex justify="center" align="center" direction="column" gap={0} maw="33%">
             <IconUserSquare size={24} color="gray" />
             <Text fz="xs" align="center" sx={{ whiteSpace: 'nowrap' }}>
               {formatHumanName(patient.name?.[0] as HumanName)}
