@@ -55,7 +55,7 @@ interface SearchParameterDetailsBuilder {
  */
 export function getSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   let result: SearchParameterDetails | undefined =
-    globalSchema.types[resourceType].searchParamsDetails?.[searchParam.code as string];
+    globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code as string];
   if (!result) {
     result = buildSearchParameterDetails(resourceType, searchParam);
   }
