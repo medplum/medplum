@@ -65,7 +65,7 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
             <React.Fragment key={problem.id}>
               <Grid.Col span={2}>{problem.onsetDateTime?.substring(0, 4)}</Grid.Col>
               <Grid.Col span={10}>
-                <Badge key={problem.id}>
+                <Badge key={problem.id} maw='100%'>
                   <CodeableConceptDisplay value={problem.code} />
                 </Badge>
               </Grid.Col>

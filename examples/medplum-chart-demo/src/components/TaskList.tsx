@@ -22,23 +22,29 @@ export function TaskList(): JSX.Element | null {
   const medplum = useMedplum();
   const patient = useResource({ reference: `Patient/${id}` });
   useEffect(() => {
-    medplum.searchResources('Task', `patient=${id}`).then((response) => {
-      setTasks(response);
-    });
+    medplum
+      .searchResources(
+        'Task',
+        `patient=${id}&status:not=completed&status:not=failed&status:not=rejected&focus:missing=false`
+      )
+      .then((response) => {
+        setTasks(response);
+      });
   });
 
   if (!patient) {
     return null;
   }
+
   return (
-    <Card sx={{ width: 600 }} withBorder padding="sm" radius="md" mx="md" my="xl" shadow="xs">
-      <Title>Required Action</Title>
+    <Card sx={{ width: 700 }} withBorder p="sm" radius="md" mx="md" my="xl" shadow="xs">
+      <Title>{`Required Action (${tasks.length})`}</Title>
       <Box>
         <Timeline>
           {tasks.map((task, idx) => (
             <>
               <FocusTimeline key={task.id} task={task} />
-              {idx !== tasks.length - 1 ? <Divider /> : null}
+              {idx !== tasks.length - 1 ? <Divider w="100%" /> : null}
             </>
           ))}
         </Timeline>
@@ -97,13 +103,12 @@ function TaskItem(props: any): JSX.Element {
   const { task, resource, profile, padding } = props;
   const author = profile ?? resource.meta?.author;
   const dateTime = props.dateTime ?? resource.meta?.lastUpdated;
-  console.log(props.task.status);
-  console.log(task.input[0].type)
+
   return (
     <>
       <Group position="apart" spacing={8} my="sm">
         <ResourceAvatar value={author} link={true} size="md" />
-        <div style={{ flex: 1 }}>
+        <Box style={{ flex: 1 }}>
           <Text size="sm">
             <ResourceName color="dark" weight={500} value={author} link={true} />
           </Text>
@@ -112,18 +117,21 @@ function TaskItem(props: any): JSX.Element {
               <StatusBadge status={task.status as string} />
             </Box>
           )}
-          <Text size="xs">
+          <Text size="xs" style={{ whiteSpace: 'nowrap', textOverflow: 'ellipses' }}>
             <MedplumLink color="dimmed" to={props.task}>
               {formatDateTime(dateTime)}
             </MedplumLink>
             <Text component="span" color="dimmed" mx={8}>
               &middot;
             </Text>
-            <MedplumLink color="dimmed" to={props.resource}>
-              <CodeableConceptDisplay value={task.input[0].type} />
+            <MedplumLink
+              color="dimmed"
+              to={`/Task?_count=20&_fields=id,_lastUpdated,code,owner&_offset=0&_sort=-_lastUpdated&code=${task.code?.coding?.[0]?.code}`}
+            >
+              <CodeableConceptDisplay value={task.code} />
             </MedplumLink>
           </Text>
-        </div>
+        </Box>
       </Group>
       <ErrorBoundary>
         {padding && <div style={{ padding: '0 16px 16px 16px' }}>{props.children}</div>}

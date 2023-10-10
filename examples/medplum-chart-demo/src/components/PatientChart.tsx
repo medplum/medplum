@@ -78,7 +78,7 @@ export function PatientChart(): JSX.Element | null {
   }
 
   return (
-    <Card sx={{ width: 400 }} withBorder padding="lg" radius="md" mx="md" my="xl" shadow="xs">
+    <Card sx={{ width: 600 }} withBorder padding="lg" radius="md" mx="md" my="xl" shadow="xs">
       <Card.Section
         h={100}
         style={{
@@ -104,7 +104,7 @@ export function PatientChart(): JSX.Element | null {
         <Group grow>
           <Flex justify="center" align="center" direction="column" gap={0}>
             <IconUserSquare size={24} color="gray" />
-            <Text fz="xs" sx={{ whiteSpace: 'nowrap' }}>
+            <Text fz="xs" align="center" sx={{ whiteSpace: 'nowrap' }}>
               {formatHumanName(patient.name?.[0] as HumanName)}
             </Text>
           </Flex>
