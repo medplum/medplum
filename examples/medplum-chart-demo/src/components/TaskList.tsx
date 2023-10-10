@@ -29,7 +29,8 @@ export function TaskList(): JSX.Element | null {
       )
       .then((response) => {
         setTasks(response);
-      });
+      })
+      .catch(console.error);
   });
 
   if (!patient) {
@@ -53,12 +54,12 @@ export function TaskList(): JSX.Element | null {
   );
 }
 
-function FocusTimeline(props: { task: Task }): JSX.Element | undefined {
+function FocusTimeline(props: { task: Task }): JSX.Element | null {
   const task = props.task;
 
   const focused = useResource(task.focus);
   if (!focused) {
-    return;
+    return null;
   }
   return (
     <TaskItem key={task.id} profile={task.owner} resource={focused} task={task}>
@@ -71,7 +72,8 @@ function FocusTimeline(props: { task: Task }): JSX.Element | undefined {
 
 function ResourceFocus(props: { resource: Resource; task: Task }): JSX.Element {
   const resource = props.resource;
-  function renderResourceContent(resource: Resource) {
+
+  function renderResourceContent(resource: Resource): JSX.Element {
     switch (resource.resourceType) {
       case 'Communication':
         if (resource.topic) {
