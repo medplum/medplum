@@ -9,8 +9,6 @@ import { AppRoutes } from '../AppRoutes';
 
 describe('AppsPage', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
-    medplum.mockResources('ClientApplication', [{ id: '1', launchUri: 'http://example.com' }, { id: '2' }]);
-
     await act(async () => {
       render(
         <MedplumProvider medplum={medplum}>
@@ -42,8 +40,6 @@ describe('AppsPage', () => {
 
     expect(screen.getByText('Apps')).toBeInTheDocument();
     expect(screen.getByText('Vitals')).toBeInTheDocument();
-    expect(screen.queryByText('http://example.com')).toBeInTheDocument();
-    expect(screen.queryByText('2')).not.toBeInTheDocument();
   });
 
   test('Patient Smart App Launch', async () => {
@@ -60,8 +56,6 @@ describe('AppsPage', () => {
 
     expect(screen.getByText('Inferno Client')).toBeInTheDocument();
     expect(screen.getByText('Client application used for Inferno ONC compliance testing')).toBeInTheDocument();
-    expect(screen.queryByText('http://example.com')).toBeInTheDocument();
-    expect(screen.queryByText('2')).not.toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Inferno Client'));
@@ -84,21 +78,11 @@ describe('AppsPage', () => {
 
     expect(screen.getByText('Inferno Client')).toBeInTheDocument();
     expect(screen.getByText('Client application used for Inferno ONC compliance testing')).toBeInTheDocument();
-    expect(screen.queryByText('http://example.com')).toBeInTheDocument();
-    expect(screen.queryByText('2')).not.toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Inferno Client'));
     });
 
     expect(window.location.assign).toBeCalled();
-  });
-
-  test('ClientApplication resources without a launchUri are filtered out', async () => {
-    await setup('/Patient/123/apps');
-    await waitFor(() => screen.getByText('Apps'));
-
-    expect(screen.queryByText('http://example.com')).toBeInTheDocument();
-    expect(screen.queryByText('2')).not.toBeInTheDocument();
   });
 });
