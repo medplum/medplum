@@ -39,30 +39,32 @@ export class EventTarget {
   dispatchEvent(event: Event): boolean {
     const array = this.listeners[event.type];
     if (array) {
-      array.forEach((listener) => listener.call(this, event));
+      for (const listener of array) {
+        listener.call(this, event);
+      }
     }
     return !event.defaultPrevented;
   }
 }
 
-export class TypedEventTarget<TEvents extends Record<string, any>> {
+export class TypedEventTarget<TEvents extends Record<string, Event>> {
   private emitter = new EventTarget();
 
-  dispatchEvent<TEventName extends keyof TEvents & string>(event: TEvents[TEventName]): void {
+  dispatchEvent<TEventType extends keyof TEvents & string>(event: TEvents[TEventType]): void {
     this.emitter.dispatchEvent(event);
   }
 
-  addEventListener<TEventName extends keyof TEvents & string>(
-    eventName: TEventName,
-    handler: (event: TEvents[TEventName]) => void
+  addEventListener<TEventType extends keyof TEvents & string>(
+    type: TEventType,
+    handler: (event: TEvents[TEventType]) => void
   ): void {
-    this.emitter.addEventListener(eventName, handler as any);
+    this.emitter.addEventListener(type, handler as any);
   }
 
-  removeEventListener<TEventName extends keyof TEvents & string>(
-    eventName: TEventName,
-    handler: (event: TEvents[TEventName]) => void
+  removeEventListener<TEventType extends keyof TEvents & string>(
+    type: TEventType,
+    handler: (event: TEvents[TEventType]) => void
   ): void {
-    this.emitter.removeEventListener(eventName, handler as any);
+    this.emitter.removeEventListener(type, handler as any);
   }
 }

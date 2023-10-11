@@ -6,7 +6,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 export function MfaPage(): JSX.Element | null {
   const medplum = useMedplum();
-  const [qrCodeUrl, setQrCodeUrl] = useState<string | undefined>(undefined);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>(undefined);
   const [enrolled, setEnrolled] = useState<boolean | undefined>(undefined);
 
   useEffect(() => {

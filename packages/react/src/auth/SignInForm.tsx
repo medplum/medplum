@@ -45,7 +45,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
     ...baseLoginRequest
   } = props;
   const medplum = useMedplum();
-  const [login, setLogin] = useState<string | undefined>(undefined);
+  const [login, setLogin] = useState<string>(undefined);
   const [mfaRequired, setAuthenticatorRequired] = useState(false);
   const [memberships, setMemberships] = useState<ProjectMembership[] | undefined>(undefined);
 

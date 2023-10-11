@@ -290,7 +290,7 @@ interface ActionEditorProps {
 
 function ActionEditor(props: ActionEditorProps): JSX.Element {
   const { action } = props;
-  const [actionType, setActionType] = useState<string | undefined>(props.actionType);
+  const [actionType, setActionType] = useState<string>(props.actionType);
 
   function changeProperty(property: string, value: any): void {
     props.onChange({

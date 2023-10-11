@@ -3055,8 +3055,13 @@ export class MedplumClient extends EventTarget {
    * @param context The updated context containing resources relevant to this event.
    * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
    */
-  async fhircastPublish(topic: string, event: FhircastEventName, context: FhircastEventContext[]): Promise<void> {
-    return this.post(`/fhircast/STU2/${topic}`, createFhircastMessagePayload(topic, event, context));
+  async fhircastPublish(
+    topic: string,
+    event: FhircastEventName,
+    context: FhircastEventContext | FhircastEventContext[]
+  ): Promise<void> {
+    const normalizedContext = Array.isArray(context) ? context : [context];
+    return this.post(`/fhircast/STU2/${topic}`, createFhircastMessagePayload(topic, event, normalizedContext));
   }
 
   /**

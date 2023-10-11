@@ -102,9 +102,9 @@ export function createFhircastMessagePayload(
   };
 }
 
-export type FhircastConnectEvent = { name: 'connect' };
-export type FhircastMessageEvent = { name: 'message'; payload: FhircastMessagePayload };
-export type FhircastDisconnectEvent = { name: 'disconnect' };
+export type FhircastConnectEvent = { type: 'connect' };
+export type FhircastMessageEvent = { type: 'message'; payload: FhircastMessagePayload };
+export type FhircastDisconnectEvent = { type: 'disconnect' };
 
 export type FhircastSubscriptionEventMap = {
   connect: FhircastConnectEvent;
@@ -138,7 +138,8 @@ export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEve
     }
     const websocket = new WebSocket(subRequest.endpoint);
     websocket.addEventListener('open', () => {
-      this.dispatchEvent({ name: 'connect' });
+      this.dispatchEvent({ type: 'connect' });
+      console.log('connected!');
 
       websocket.addEventListener('message', (event: MessageEvent) => {
         const message = JSON.parse(event.data) as Record<string, string | object>;
@@ -149,7 +150,7 @@ export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEve
         }
 
         const fhircastMessage = message as unknown as FhircastMessagePayload;
-        this.dispatchEvent({ name: 'message', payload: fhircastMessage });
+        this.dispatchEvent({ type: 'message', payload: fhircastMessage });
 
         websocket.send(
           JSON.stringify({
@@ -160,7 +161,7 @@ export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEve
       });
 
       websocket.addEventListener('close', () => {
-        this.dispatchEvent({ name: 'disconnect' });
+        this.dispatchEvent({ type: 'disconnect' });
       });
     });
     this.websocket = websocket;
