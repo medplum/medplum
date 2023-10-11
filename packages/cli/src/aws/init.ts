@@ -10,9 +10,10 @@ import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/cl
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { MedplumInfraConfig, normalizeErrorString } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'crypto';
-import { existsSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { existsSync } from 'fs';
 import readline from 'readline';
+import { getServerVersions } from './utils';
+import { writeConfig } from '../utils';
 
 type MedplumDomainType = 'api' | 'app' | 'storage';
 type MedplumDomainSetting = `${MedplumDomainType}DomainName`;
@@ -72,12 +73,12 @@ export async function initStackCommand(): Promise<void> {
     await checkOk('Do you want to overwrite the config file?');
   }
   print('Using config file "' + configFileName + '"...');
-  writeConfig(configFileName, config);
+  writeConfig(config, config.name);
 
   header('AWS REGION');
   print('Most Medplum resources will be created in a single AWS region.');
   config.region = await ask('Enter your AWS region:', 'us-east-1');
-  writeConfig(configFileName, config);
+  writeConfig(config, config.name);
 
   header('AWS ACCOUNT NUMBER');
   print('Medplum Infrastructure will use your AWS account number to create AWS resources.');
@@ -85,14 +86,14 @@ export async function initStackCommand(): Promise<void> {
     print('Using the AWS CLI, your current account ID is: ' + currentAccountId);
   }
   config.accountNumber = await ask('What is your AWS account number?', currentAccountId);
-  writeConfig(configFileName, config);
+  writeConfig(config, config.name);
 
   header('STACK NAME');
   print('Medplum will create a CloudFormation stack to manage AWS resources.');
   print('AWS CloudFormation stack names ');
   const defaultStackName = 'Medplum' + config.name.charAt(0).toUpperCase() + config.name.slice(1);
   config.stackName = await ask('Enter your CloudFormation stack name?', defaultStackName);
-  writeConfig(configFileName, config);
+  writeConfig(config, config.name);
 
   header('BASE DOMAIN NAME');
   print('Please enter the base domain name for your Medplum deployment.');
@@ -111,7 +112,7 @@ export async function initStackCommand(): Promise<void> {
   while (!config.domainName) {
     config.domainName = await ask('Enter your base domain name:');
   }
-  writeConfig(configFileName, config);
+  writeConfig(config, config.name);
 
   header('SUPPORT EMAIL');
   print('Medplum sends transactional emails to users.');
@@ -124,23 +125,23 @@ export async function initStackCommand(): Promise<void> {
   print('Medplum deploys a REST API for the backend services.');
   config.apiDomainName = await ask('Enter your REST API domain name:', 'api.' + config.domainName);
   config.baseUrl = `https://${config.apiDomainName}/`;
-  writeConfig(configFileName, config);
+  writeConfig(config, config.name);
 
   header('APP DOMAIN NAME');
   print('Medplum deploys a web application for the user interface.');
   config.appDomainName = await ask('Enter your web application domain name:', 'app.' + config.domainName);
-  writeConfig(configFileName, config);
+  writeConfig(config, config.name);
 
   header('STORAGE DOMAIN NAME');
   print('Medplum deploys a storage service for file uploads.');
   config.storageDomainName = await ask('Enter your storage domain name:', 'storage.' + config.domainName);
-  writeConfig(configFileName, config);
+  writeConfig(config, config.name);
 
   header('STORAGE BUCKET');
   print('Medplum uses an S3 bucket to store binary content such as file uploads.');
   print('Medplum will create a the S3 bucket as part of the CloudFormation stack.');
   config.storageBucketName = await ask('Enter your storage bucket name:', config.storageDomainName);
-  writeConfig(configFileName, config);
+  writeConfig(config, config.name);
 
   header('MAX AVAILABILITY ZONES');
   print('Medplum API servers can be deployed in multiple availability zones.');
@@ -167,7 +168,7 @@ export async function initStackCommand(): Promise<void> {
     print('Set the AWS Secrets Manager secret ARN in the config file in the "rdsSecretsArn" setting.');
     config.rdsSecretsArn = 'TODO';
   }
-  writeConfig(configFileName, config);
+  writeConfig(config, config.name);
 
   header('SERVER INSTANCES');
   print('Medplum uses AWS Fargate to run the API servers.');
@@ -175,7 +176,7 @@ export async function initStackCommand(): Promise<void> {
   print('Fargate will automatically scale the number of servers up and down.');
   print('If you need high availability, you can choose multiple instances.');
   config.desiredServerCount = await chooseInt('Enter the number of server instances:', [1, 2, 3, 4, 6, 8], 1);
-  writeConfig(configFileName, config);
+  writeConfig(config, config.name);
 
   header('SERVER MEMORY');
   print('You can choose the amount of memory for each server instance.');
@@ -183,7 +184,7 @@ export async function initStackCommand(): Promise<void> {
   print('Note that only certain CPU units are compatible with memory units.');
   print('Consult AWS Fargate "Task Definition Parameters" for more information.');
   config.serverMemory = await chooseInt('Enter the server memory (MB):', [512, 1024, 2048, 4096, 8192, 16384], 512);
-  writeConfig(configFileName, config);
+  writeConfig(config, config.name);
 
   header('SERVER CPU');
   print('You can choose the amount of CPU for each server instance.');
@@ -192,15 +193,16 @@ export async function initStackCommand(): Promise<void> {
   print('Note that only certain CPU units are compatible with memory units.');
   print('Consult AWS Fargate "Task Definition Parameters" for more information.');
   config.serverCpu = await chooseInt('Enter the server CPU:', [256, 512, 1024, 2048, 4096, 8192, 16384], 256);
-  writeConfig(configFileName, config);
+  writeConfig(config, config.name);
 
   header('SERVER IMAGE');
   print('Medplum uses Docker images for the API servers.');
   print('You can choose the image to use for the servers.');
   print('Docker images can be loaded from either Docker Hub or AWS ECR.');
   print('The default is the latest Medplum release.');
-  config.serverImage = await ask('Enter the server image:', 'medplum/medplum-server:latest');
-  writeConfig(configFileName, config);
+  const latestVersion = (await getServerVersions())[0] ?? 'latest';
+  config.serverImage = await ask('Enter the server image:', `medplum/medplum-server:${latestVersion}`);
+  writeConfig(config, config.name);
 
   header('SIGNING KEY');
   print('Medplum uses AWS CloudFront Presigned URLs for binary content such as file uploads.');
@@ -208,7 +210,7 @@ export async function initStackCommand(): Promise<void> {
   if (signingKey) {
     config.signingKeyId = signingKey.keyId;
     config.storagePublicKey = signingKey.publicKey;
-    writeConfig(configFileName, config);
+    writeConfig(config, config.name);
   } else {
     print('Unable to generate signing key.');
     print('Please manually create a signing key and enter the key ID and public key in the config file.');
@@ -231,7 +233,7 @@ export async function initStackCommand(): Promise<void> {
     print('');
     const arn = await processCert(config, allCerts, region, certName);
     config[getDomainCertSetting(certName)] = arn;
-    writeConfig(configFileName, config);
+    writeConfig(config, config.name);
   }
 
   header('AWS PARAMETER STORE');
@@ -270,7 +272,7 @@ export async function initStackCommand(): Promise<void> {
     await writeParameters(config.region, `/medplum/${config.name}/`, serverParams);
   } else {
     const serverConfigFileName = configFileName.replace('.json', '.server.json');
-    writeConfig(serverConfigFileName, serverParams);
+    writeConfig(config, config.name + '.server');
     print('Skipping AWS Parameter Store.');
     print('Writing values to local config file: ' + serverConfigFileName);
     print('Please add these values to AWS Parameter Store manually.');
@@ -381,15 +383,6 @@ async function checkOk(text: string): Promise<void> {
     print('Exiting...');
     throw new Error('User cancelled');
   }
-}
-
-/**
- * Writes a config file to disk.
- * @param configFileName - The config file name.
- * @param config - The config file contents.
- */
-function writeConfig(configFileName: string, config: Record<string, any>): void {
-  writeFileSync(resolve(configFileName), JSON.stringify(config, undefined, 2), 'utf-8');
 }
 
 /**

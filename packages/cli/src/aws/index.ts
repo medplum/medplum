@@ -5,8 +5,15 @@ import { listStacksCommand } from './list';
 import { updateAppCommand } from './update-app';
 import { updateBucketPoliciesCommand } from './update-bucket-policies';
 import { updateServerCommand } from './update-server';
+import { createMedplumCommand } from '../util/command';
 
 export const aws = new Command('aws').description('Commands to manage AWS resources');
+
+const updateCmd = createMedplumCommand('update-server')
+  .alias('deploy-server')
+  .description('Update the server image')
+  .argument('<tag>')
+  .action(updateServerCommand);
 
 aws.command('init').description('Initialize a new Medplum AWS CloudFormation stacks').action(initStackCommand);
 
@@ -18,12 +25,7 @@ aws
   .argument('<tag>')
   .action(describeStacksCommand);
 
-aws
-  .command('update-server')
-  .alias('deploy-server')
-  .description('Update the server image')
-  .argument('<tag>')
-  .action(updateServerCommand);
+aws.addCommand(updateCmd);
 
 aws
   .command('update-app')
