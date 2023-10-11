@@ -2,8 +2,7 @@ import { Button, Flex, Modal } from '@mantine/core';
 import { DiagnosticReport, Task } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, DiagnosticReportDisplay, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import React from 'react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { TaskCellProps } from './TaskList';
 
 export function DiagnosticReportModal(props: TaskCellProps) {
@@ -11,11 +10,11 @@ export function DiagnosticReportModal(props: TaskCellProps) {
   const [reviewed, setReviewed] = useState(false);
   const medplum = useMedplum();
   const report = props.resource as DiagnosticReport;
-  
-  const handleClick = async () => {
+
+  async function handleClick(): Promise<void> {
     await medplum.updateResource<Task>({ ...props.task, status: 'completed' });
     setReviewed(true);
-  };
+  }
   if (reviewed) {
     return <IconCircleCheck color="#79d290" size={48} />;
   }

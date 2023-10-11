@@ -10,14 +10,31 @@ import { TaskCellProps } from './TaskList';
 export function QuestionnaireTask(props: TaskCellProps): JSX.Element {
   const [submitted, setSubmitted] = useState(false);
   const questionnaire = props.resource as Questionnaire;
+  const medplum = useMedplum();
 
   if (submitted) {
     return <IconCircleCheck color="#79d290" size={48} />;
   }
+
+  async function handleSubmit(questionnaireResponse: QuestionnaireResponse): Promise<void> {
+    await medplum.createResource(questionnaireResponse);
+    await medplum.updateResource<Task>({ ...props.task, status: 'completed' });
+    setSubmitted(true);
+  }
   return (questionnaire.item ?? []).length <= 2 ? (
-    <QuestionnaireQuickAction task={props.task} questionnaire={questionnaire} setSubmitted={setSubmitted} />
+    <QuestionnaireQuickAction
+      task={props.task}
+      questionnaire={questionnaire}
+      setSubmitted={setSubmitted}
+      handleSubmit={handleSubmit}
+    />
   ) : (
-    <QuestionnaireModal task={props.task} questionnaire={questionnaire} setSubmitted={setSubmitted} />
+    <QuestionnaireModal
+      task={props.task}
+      questionnaire={questionnaire}
+      setSubmitted={setSubmitted}
+      handleSubmit={handleSubmit}
+    />
   );
 }
 
@@ -25,16 +42,14 @@ function QuestionnaireModal(props: {
   task: Task;
   questionnaire: Questionnaire;
   setSubmitted: (submit: boolean) => void;
+  handleSubmit: (questionnaireResponse: QuestionnaireResponse) => Promise<void>;
 }): JSX.Element {
   const [open, setOpen] = useState(false);
-  const medplum = useMedplum();
 
-  const handleSubmit = async (questionnaireResponse: QuestionnaireResponse) => {
-    await medplum.createResource(questionnaireResponse);
-    await medplum.updateResource<Task>({ ...props.task, status: 'completed' });
-    props.setSubmitted(true);
+  async function handleModalSubmit(questionnaireResponse: QuestionnaireResponse): Promise<void> {
+    props.handleSubmit(questionnaireResponse);
     setOpen(false);
-  };
+  }
 
   return (
     <>
@@ -42,7 +57,7 @@ function QuestionnaireModal(props: {
         Fill out {props.questionnaire.title}
       </Button>
       <Modal opened={open} onClose={() => setOpen(false)} size="xl">
-        <QuestionnaireForm questionnaire={props.questionnaire} onSubmit={handleSubmit} />
+        <QuestionnaireForm questionnaire={props.questionnaire} onSubmit={handleModalSubmit} />
       </Modal>
     </>
   );
@@ -52,15 +67,9 @@ function QuestionnaireQuickAction(props: {
   task: Task;
   questionnaire: Questionnaire;
   setSubmitted: (submit: boolean) => void;
+  handleSubmit: (questionnaireResponse: QuestionnaireResponse) => Promise<void>;
 }): JSX.Element {
-  const medplum = useMedplum();
-  const handleSubmit = async (questionnaireResponse: QuestionnaireResponse) => {
-    await medplum.createResource(questionnaireResponse);
-    await medplum.updateResource<Task>({ ...props.task, status: 'completed' });
-    props.setSubmitted(true);
-  };
-
-  return <QuestionnaireForm questionnaire={props.questionnaire} onSubmit={handleSubmit} />;
+  return <QuestionnaireForm questionnaire={props.questionnaire} onSubmit={props.handleSubmit} />;
 }
 
 export function ResponseDisplay(props: TaskCellProps): JSX.Element {
@@ -69,10 +78,11 @@ export function ResponseDisplay(props: TaskCellProps): JSX.Element {
   const [reviewed, setReviewed] = useState(false);
   const [opened, { toggle }] = useDisclosure(false);
   const medplum = useMedplum();
-  const handleClick = async () => {
+
+  async function handleClick(): Promise<void> {
     await medplum.updateResource<Task>({ ...props.task, status: 'completed' });
     setReviewed(true);
-  };
+  }
   const visibleItems = items.slice(0, 3);
   const collapsedItems = items.slice(3, items.length);
   return (

@@ -153,7 +153,7 @@ function TaskTitle(props: TaskCellProps): JSX.Element {
   const medplum = useMedplum();
 
   useEffect(() => {
-    const fetchQuestionnaireTitle = async () => {
+    async function fetchQuestionnaireTitle(): Promise<void> {
       if (props.resource.resourceType === 'QuestionnaireResponse') {
         const questionnaireId = props.resource.questionnaire?.split('/')[1];
         const questionnaire = await medplum.readResource('Questionnaire', questionnaireId as string);
@@ -166,7 +166,7 @@ function TaskTitle(props: TaskCellProps): JSX.Element {
     } else if (props.resource.resourceType === 'Questionnaire') {
       setTitle(<>{props.resource.title}</>);
     } else if (props.resource.resourceType === 'QuestionnaireResponse') {
-      fetchQuestionnaireTitle();
+      fetchQuestionnaireTitle().catch(console.error);
     } else {
       setTitle(<>{props.task.code}</>);
     }
