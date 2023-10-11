@@ -44,3 +44,25 @@ export class EventTarget {
     return !event.defaultPrevented;
   }
 }
+
+export class TypedEventTarget<TEvents extends Record<string, any>> {
+  private emitter = new EventTarget();
+
+  dispatchEvent<TEventName extends keyof TEvents & string>(event: TEvents[TEventName]): void {
+    this.emitter.dispatchEvent(event);
+  }
+
+  addEventListener<TEventName extends keyof TEvents & string>(
+    eventName: TEventName,
+    handler: (event: TEvents[TEventName]) => void
+  ): void {
+    this.emitter.addEventListener(eventName, handler as any);
+  }
+
+  removeEventListener<TEventName extends keyof TEvents & string>(
+    eventName: TEventName,
+    handler: (event: TEvents[TEventName]) => void
+  ): void {
+    this.emitter.removeEventListener(eventName, handler as any);
+  }
+}
