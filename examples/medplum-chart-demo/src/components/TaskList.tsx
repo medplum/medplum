@@ -1,44 +1,38 @@
-import { Anchor, Box, Button, Card, Collapse, Divider, Flex, Group, Modal, Text, Title } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
-import { PropertyType, TypedValue, formatDate, getTypedPropertyValue } from '@medplum/core';
-import {
-  CodeableConcept,
-  DiagnosticReport,
-  Questionnaire,
-  QuestionnaireResponse,
-  Resource,
-  Task,
-} from '@medplum/fhirtypes';
+import { Box, Card, Divider, Flex, Group, Text, Title } from '@mantine/core';
+import { formatDate } from '@medplum/core';
+import { CodeableConcept, Questionnaire, Reference, Resource, Task } from '@medplum/fhirtypes';
 import {
   CodeableConceptDisplay,
-  DiagnosticReportDisplay,
   ErrorBoundary,
-  QuestionnaireForm,
   ResourceName,
-  ResourcePropertyDisplay,
   StatusBadge,
   Timeline,
   useMedplum,
   useResource,
 } from '@medplum/react';
-import {
-  IconCircleCheck,
-  IconFilePencil,
-  IconListCheck,
-  IconReportMedical,
-  IconStethoscope,
-  IconUserSquare,
-} from '@tabler/icons-react';
+import { IconFilePencil, IconListCheck, IconReportMedical } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { QuestionnaireTask, ResponseDisplay } from './QuestionnaireTask';
+import { DiagnosticReportModal } from './DiagnosticReportTask';
 
 const focusIcons: Record<string, JSX.Element> = {
-  Observation: <IconStethoscope />,
-  MedicationRequest: <IconUserSquare />,
   Questionnaire: <IconFilePencil color="#D33E2C" size={24} />,
   QuestionnaireResponse: <IconListCheck color="#207EDF" size={24} />,
   DiagnosticReport: <IconReportMedical color="#4EB180" size={24} />,
 };
+
+export interface TaskCellProps {
+  task: Task;
+  resource: Resource;
+}
+
+interface TaskItemProps {
+  task: Task;
+  resource: Resource;
+  profile?: Reference;
+  children?: React.ReactNode;
+}
 
 export function TaskList(): JSX.Element | null {
   const { id } = useParams();
@@ -94,28 +88,17 @@ function FocusTimeline(props: { task: Task }): JSX.Element | null {
   );
 }
 
-function ResourceFocus(props: { resource: Resource; task: Task }): JSX.Element {
+function ResourceFocus(props: TaskCellProps): JSX.Element {
   const resource = props.resource;
-  const [submitted, setSubmitted] = useState(false);
 
   function renderResourceContent(resource: Resource): JSX.Element {
     switch (resource.resourceType) {
       case 'Questionnaire':
-        return submitted ? (
-          <IconCircleCheck color="#79d290" size={48} />
-        ) : (resource.item ?? []).length <= 2 ? (
-          <QuestionnaireQuickAction questionnaire={resource} task={props.task} setSubmitted={setSubmitted} />
-        ) : (
-          <QuestionnaireModal questionnaire={resource} task={props.task} setSubmitted={setSubmitted} />
-        );
+        return <QuestionnaireTask task={props.task} resource={props.resource as Questionnaire} />;
       case 'QuestionnaireResponse':
         return <ResponseDisplay task={props.task} resource={resource} />;
       case 'DiagnosticReport':
-        return submitted ? (
-          <IconCircleCheck color="#79d290" size={48} />
-        ) : (
-          <DiagnosticReportModal task={props.task} report={resource} setReviewed={setSubmitted} />
-        );
+        return <DiagnosticReportModal task={props.task} resource={resource} />;
       default:
         return <div />;
     }
@@ -127,10 +110,10 @@ function ResourceFocus(props: { resource: Resource; task: Task }): JSX.Element {
   return <Box ml={16}>{renderResourceContent(resource)}</Box>;
 }
 
-function TaskItem(props: any): JSX.Element {
-  const { task, resource, profile, padding } = props;
+function TaskItem(props: TaskItemProps): JSX.Element {
+  const { task, resource, profile } = props;
   const author = profile ?? resource.meta?.author;
-  const dateTime = props.dateTime ?? resource.meta?.lastUpdated;
+  const dateTime = resource.meta?.lastUpdated;
   console.log(resource);
   return (
     <>
@@ -159,131 +142,13 @@ function TaskItem(props: any): JSX.Element {
         </Box>
       </Group>
       <ErrorBoundary>
-        {padding && <div style={{ padding: '0 16px 16px 16px' }}>{props.children}</div>}
-        {!padding && <>{props.children}</>}
+        <>{props.children}</>
       </ErrorBoundary>
     </>
   );
 }
 
-function ResponseDisplay(props: { task: Task; resource: QuestionnaireResponse }): JSX.Element {
-  const { resource } = props;
-  const items = resource.item ?? [];
-  const [reviewed, setReviewed] = useState(false);
-  const [opened, { toggle }] = useDisclosure(false);
-  const medplum = useMedplum();
-  const handleClick = async () => {
-    await medplum.updateResource<Task>({ ...props.task, status: 'completed' });
-    setReviewed(true);
-  };
-  const visibleItems = items.slice(0, 3);
-  const collapsedItems = items.slice(3, items.length);
-  return (
-    <>
-      {visibleItems.map((item) => (
-        <ItemRow item={item} />
-      ))}
-      <Collapse in={opened}>
-        {collapsedItems.map((item) => (
-          <ItemRow item={item} />
-        ))}
-      </Collapse>
-      {collapsedItems.length > 0 && <Anchor onClick={toggle}>{opened ? 'Show less' : 'Show more'}</Anchor>}
-      <Flex justify="right" mt={16}>
-        {reviewed ? (
-          <IconCircleCheck color="#79d290" size={48} />
-        ) : (
-          <Button mt={8} onClick={handleClick}>
-            Ok
-          </Button>
-        )}
-      </Flex>
-    </>
-  );
-}
-
-function ItemRow(props: any): JSX.Element {
-  const item = props.item;
-  const itemValue = getTypedPropertyValue(
-    { type: 'QuestionnaireItemAnswer', value: item?.answer?.[0] },
-    'value'
-  ) as TypedValue;
-  const propertyName = itemValue.type;
-  return (
-    <Flex justify="space-between">
-      <Text>{item.text}</Text>
-      <ResourcePropertyDisplay value={itemValue.value} propertyType={propertyName as PropertyType} />
-    </Flex>
-  );
-}
-
-function DiagnosticReportModal(props: {
-  task: Task;
-  report: DiagnosticReport;
-  setReviewed: (reviewed: boolean) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const medplum = useMedplum();
-  const handleClick = async () => {
-    await medplum.updateResource<Task>({ ...props.task, status: 'completed' });
-    props.setReviewed(true);
-  };
-  return (
-    <>
-      <Button variant="outline" onClick={() => setOpen(true)} sx={{ color: '#4EB180', borderColor: '#4EB180' }}>
-        Review {<CodeableConceptDisplay value={props.report.code} />}
-      </Button>
-      <Modal opened={open} onClose={() => setOpen(false)} size="xl">
-        <DiagnosticReportDisplay value={props.report} />
-        <Flex justify={'flex-end'}>
-          <Button mt={8} onClick={handleClick}>
-            Ok
-          </Button>
-        </Flex>
-      </Modal>
-    </>
-  );
-}
-
-function QuestionnaireModal(props: {
-  task: Task;
-  questionnaire: Questionnaire;
-  setSubmitted: (submit: boolean) => void;
-}): JSX.Element {
-  const [open, setOpen] = useState(false);
-  const medplum = useMedplum();
-
-  const handleSubmit = async (questionnaireResponse: QuestionnaireResponse) => {
-    await medplum.createResource(questionnaireResponse);
-    await medplum.updateResource<Task>({ ...props.task, status: 'completed' });
-    props.setSubmitted(true);
-    setOpen(false);
-  };
-
-  return (
-    <>
-      <Button variant="outline" onClick={() => setOpen(true)}>
-        Fill out {props.questionnaire.title}
-      </Button>
-      <Modal opened={open} onClose={() => setOpen(false)} size="xl">
-        <QuestionnaireForm questionnaire={props.questionnaire} onSubmit={handleSubmit} />
-      </Modal>
-    </>
-  );
-}
-
-function QuestionnaireQuickAction(props: any): JSX.Element {
-  const medplum = useMedplum();
-  const handleSubmit = async (questionnaireResponse: QuestionnaireResponse) => {
-    await medplum.createResource(questionnaireResponse);
-    await medplum.updateResource<Task>({ ...props.task, status: 'completed' });
-    props.setSubmitted(true);
-  };
-
-  return <QuestionnaireForm questionnaire={props.questionnaire} onSubmit={handleSubmit} />;
-}
-
-function TaskTitle(props: { resource: Resource; task: Task }): JSX.Element {
+function TaskTitle(props: TaskCellProps): JSX.Element {
   const [title, setTitle] = useState<JSX.Element>();
   const medplum = useMedplum();
 
