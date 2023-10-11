@@ -178,7 +178,9 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         />
       );
     case PropertyType.code:
-      return <CodeInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
+      return (
+        <CodeInput binding={property.binding?.valueSet} name={name} defaultValue={value} onChange={props.onChange} />
+      );
     case PropertyType.boolean:
       return (
         <Checkbox
@@ -219,9 +221,18 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.Attachment:
       return <AttachmentInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.CodeableConcept:
-      return <CodeableConceptInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
+      return (
+        <CodeableConceptInput
+          binding={property.binding?.valueSet}
+          name={name}
+          defaultValue={value}
+          onChange={props.onChange}
+        />
+      );
     case PropertyType.Coding:
-      return <CodingInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
+      return (
+        <CodingInput binding={property.binding?.valueSet} name={name} defaultValue={value} onChange={props.onChange} />
+      );
     case PropertyType.ContactDetail:
       return <ContactDetailInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.ContactPoint:
