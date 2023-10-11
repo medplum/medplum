@@ -1,4 +1,4 @@
-import { indexStructureDefinitionBundle, loadDataTypes, validate, validateResource } from '@medplum/core';
+import { indexStructureDefinitionBundle, validate } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { AuditEvent, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { Bench } from 'tinybench';
@@ -17,9 +17,6 @@ async function runBenchmarks(...benchmarks: Benchmark[]): Promise<void> {
   indexStructureDefinitionBundle(typesData);
   indexStructureDefinitionBundle(resourcesData);
   indexStructureDefinitionBundle(medplumResourcesData);
-  loadDataTypes(typesData);
-  loadDataTypes(resourcesData);
-  loadDataTypes(medplumResourcesData);
 
   for (const bench of benchmarks) {
     const b = new Bench({
@@ -226,8 +223,6 @@ async function validatePatient(b: Bench): Promise<void> {
   } as unknown as Patient;
   b.add('New validator', () => {
     validate(patient);
-  }).add('Legacy validator', () => {
-    validateResource(patient);
   });
   await b.run();
 }
@@ -235,8 +230,6 @@ async function validatePatient(b: Bench): Promise<void> {
 async function validateBundle(b: Bench): Promise<void> {
   b.add('New validator', () => {
     validate(resourcesData);
-  }).add('Legacy validator', () => {
-    validateResource(resourcesData);
   });
   await b.run();
 }
@@ -279,8 +272,6 @@ async function validateAuditEvent(b: Bench): Promise<void> {
   };
   b.add('New validator', () => {
     validate(auditEvent);
-  }).add('Legacy validator', () => {
-    validateResource(auditEvent);
   });
   await b.run();
 }

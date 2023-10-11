@@ -11,6 +11,7 @@ import {
   forbidden,
   formatSearchQuery,
   getSearchParameterDetails,
+  getSearchParameters,
   getStatus,
   gone,
   isGone,
@@ -81,7 +82,6 @@ import { validateReferences } from './references';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, Operator, SelectQuery } from './sql';
-import { getSearchParameters } from './structure';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.

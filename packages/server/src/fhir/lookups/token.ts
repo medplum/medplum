@@ -1,8 +1,9 @@
 import {
   evalFhirPathTyped,
+  Operator as FhirOperator,
   Filter,
   getSearchParameterDetails,
-  Operator as FhirOperator,
+  getSearchParameters,
   PropertyType,
   SortRule,
   toTypedValue,
@@ -19,7 +20,6 @@ import {
 } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
 import { Column, Condition, Conjunction, Disjunction, Expression, Operator, SelectQuery } from '../sql';
-import { getSearchParameters } from '../structure';
 import { LookupTable } from './lookuptable';
 import { compareArrays, deriveIdentifierSearchParameter } from './util';
 
@@ -239,7 +239,7 @@ function buildTokensForSearchParameter(
  */
 function buildTokens(result: Token[], searchParam: SearchParameter, typedValue: TypedValue): void {
   const { type, value } = typedValue;
-  switch (type as PropertyType) {
+  switch (type) {
     case PropertyType.Identifier:
       buildIdentifierToken(result, searchParam, value as Identifier);
       break;

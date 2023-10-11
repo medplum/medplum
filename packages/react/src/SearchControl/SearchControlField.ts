@@ -1,11 +1,18 @@
-import { getSearchParameterDetails, globalSchema, SearchRequest } from '@medplum/core';
-import { ElementDefinition, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import {
+  getElementDefinition,
+  getSearchParameter,
+  getSearchParameterDetails,
+  getSearchParameters,
+  InternalSchemaElement,
+  SearchRequest,
+} from '@medplum/core';
+import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 
 /**
  * The SearchControlField type describes a field in the search control.
  *
  * In a SearchRequest, a field is a simple string. Strings can be one of the following:
- * 1) Simple property names, which refer to ElementDefinition objects
+ * 1) Simple property names, which refer to InternalSchemaElement objects
  * 2) Search parameter names, which refer to SearchParameter resources
  *
  * Consider a few examples of how this becomes complicated.
@@ -30,7 +37,7 @@ import { ElementDefinition, ResourceType, SearchParameter } from '@medplum/fhirt
  */
 export interface SearchControlField {
   readonly name: string;
-  readonly elementDefinition?: ElementDefinition;
+  readonly elementDefinition?: InternalSchemaElement;
   readonly searchParams?: SearchParameter[];
 }
 
@@ -89,9 +96,8 @@ function getFieldDefinition(resourceType: string, name: string): SearchControlFi
     };
   }
 
-  const typeSchema = globalSchema.types[resourceType];
-  const exactElementDefinition: ElementDefinition | undefined = typeSchema.properties[name];
-  const exactSearchParam: SearchParameter | undefined = typeSchema.searchParams?.[name.toLowerCase()];
+  const exactElementDefinition = getElementDefinition(resourceType, name);
+  const exactSearchParam = getSearchParameter(resourceType, name.toLowerCase());
 
   // Best case: Exact match of element definition or search parameter.
   // Examples: ServiceRequest.subject, Patient.name, Patient.birthDate
@@ -105,10 +111,11 @@ function getFieldDefinition(resourceType: string, name: string): SearchControlFi
   // In this case, there could be zero or more search parameters that are a function of the element definition.
   // So search for those search parameters.
   if (exactElementDefinition) {
+    const allSearchParams = getSearchParameters(resourceType);
     let searchParams: SearchParameter[] | undefined = undefined;
-    if (typeSchema.searchParams) {
+    if (allSearchParams) {
       const path = `${resourceType}.${name.replaceAll('[x]', '')}`;
-      searchParams = Object.values(typeSchema.searchParams).filter((p) => p.expression?.includes(path));
+      searchParams = Object.values(allSearchParams).filter((p) => p.expression?.includes(path));
       if (searchParams.length === 0) {
         searchParams = undefined;
       }

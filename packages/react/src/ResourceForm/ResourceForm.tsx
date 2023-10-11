@@ -1,6 +1,6 @@
 import { Button, Group, Stack, TextInput } from '@mantine/core';
-import { capitalize, deepClone, IndexedStructureDefinition } from '@medplum/core';
-import { ElementDefinition, ElementDefinitionType, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import { InternalSchemaElement, capitalize, deepClone } from '@medplum/core';
+import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
 import { FormSection } from '../FormSection/FormSection';
@@ -17,17 +17,20 @@ export interface ResourceFormProps {
 export function ResourceForm(props: ResourceFormProps): JSX.Element {
   const medplum = useMedplum();
   const defaultValue = useResource(props.defaultValue);
-  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
   const [value, setValue] = useState<Resource | undefined>();
 
   useEffect(() => {
     if (defaultValue) {
       setValue(deepClone(defaultValue));
-      medplum.requestSchema(defaultValue.resourceType).then(setSchema).catch(console.log);
+      medplum
+        .requestSchema(defaultValue.resourceType)
+        .then(() => setSchemaLoaded(true))
+        .catch(console.log);
     }
   }, [medplum, defaultValue]);
 
-  if (!schema || !value) {
+  if (!schemaLoaded || !value) {
     return <div>Loading...</div>;
   }
 
@@ -79,10 +82,10 @@ export function setPropertyValue(
   obj: any,
   key: string,
   propName: string,
-  elementDefinition: ElementDefinition,
+  elementDefinition: InternalSchemaElement,
   value: any
 ): any {
-  const types = elementDefinition.type as ElementDefinitionType[];
+  const types = elementDefinition.type;
   if (types.length > 1) {
     for (const type of types) {
       const compoundKey = key.replace('[x]', capitalize(type.code as string));

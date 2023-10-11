@@ -1,10 +1,11 @@
 import {
-  OperationOutcomeError,
   badRequest,
   evalFhirPath,
   formatAddress,
   formatHumanName,
+  getSearchParameter,
   isResourceType,
+  OperationOutcomeError,
   parseSearchRequest,
 } from '@medplum/core';
 import {
@@ -17,9 +18,8 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { sendOutcome } from '../outcomes';
-import { getSearchParameter } from '../structure';
 import { getAuthenticatedContext } from '../../context';
+import { sendOutcome } from '../outcomes';
 
 /**
  * Handles a CSV export request.

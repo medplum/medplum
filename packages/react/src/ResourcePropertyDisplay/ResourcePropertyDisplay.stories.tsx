@@ -15,7 +15,14 @@ export const Name = (): JSX.Element => (
   <Document>
     <ResourcePropertyDisplay
       value={HomerSimpson.name?.[0]}
-      property={{ type: [{ code: 'Name' }] }}
+      property={{
+        path: 'Patient.name',
+        description: '',
+        min: 0,
+        max: Infinity,
+        isArray: true,
+        type: [{ code: 'Name' }],
+      }}
       propertyType={PropertyType.HumanName}
     />
   </Document>
@@ -25,7 +32,14 @@ export const Address = (): JSX.Element => (
   <Document>
     <ResourcePropertyDisplay
       value={HomerSimpson.address?.[0]}
-      property={{ type: [{ code: 'Address' }] }}
+      property={{
+        path: 'Patient.address',
+        description: '',
+        min: 0,
+        max: Infinity,
+        isArray: true,
+        type: [{ code: 'Address' }],
+      }}
       propertyType={PropertyType.Address}
     />
   </Document>
@@ -39,7 +53,14 @@ export const AttachmentProperty = (): JSX.Element => (
           url: 'http://example.com/foo.txt',
         } as Attachment
       }
-      property={{ type: [{ code: 'Attachement' }] }}
+      property={{
+        path: 'Patient.photo',
+        description: '',
+        min: 0,
+        max: Infinity,
+        isArray: true,
+        type: [{ code: 'Attachment' }],
+      }}
       propertyType={PropertyType.Attachment}
     />
   </Document>

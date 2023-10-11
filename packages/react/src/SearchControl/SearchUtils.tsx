@@ -4,11 +4,11 @@ import {
   evalFhirPathTyped,
   Filter,
   formatDateTime,
+  InternalSchemaElement,
   Operator,
-  PropertyType,
   SearchRequest,
 } from '@medplum/core';
-import { ElementDefinition, Resource, SearchParameter } from '@medplum/fhirtypes';
+import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
 import { getValueAndType, ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { SearchControlField } from './SearchControlField';
@@ -519,7 +519,7 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
     return formatDateTime(resource.meta?.lastUpdated);
   }
 
-  // Priority 1: ElementDefinition by exact match
+  // Priority 1: InternalSchemaElement by exact match
   if (field.elementDefinition && `${resource.resourceType}.${field.name}` === field.elementDefinition.path) {
     return renderPropertyValue(resource, field.elementDefinition);
   }
@@ -539,7 +539,7 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
  * @param elementDefinition The property element definition.
  * @returns A React element or null.
  */
-function renderPropertyValue(resource: Resource, elementDefinition: ElementDefinition): JSX.Element | null {
+function renderPropertyValue(resource: Resource, elementDefinition: InternalSchemaElement): JSX.Element | null {
   const path = elementDefinition.path?.split('.')?.pop()?.replaceAll('[x]', '') ?? '';
   const [value, propertyType] = getValueAndType({ type: resource.resourceType, value: resource }, path);
   if (!value) {
@@ -575,7 +575,7 @@ function renderSearchParameterValue(resource: Resource, searchParam: SearchParam
       {value.map((v, index) => (
         <ResourcePropertyDisplay
           key={`${index}-${value.length}`}
-          propertyType={v.type as PropertyType}
+          propertyType={v.type}
           value={v.value}
           maxWidth={200}
           ignoreMissingValues={true}

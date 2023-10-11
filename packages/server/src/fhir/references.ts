@@ -60,10 +60,10 @@ export class FhirReferenceValidator<T extends Resource> {
   }
 
   private async checkPropertyValue(path: string, typedValue: TypedValue): Promise<void> {
-    if ((typedValue.type as PropertyType) === PropertyType.Meta) {
+    if (typedValue.type === PropertyType.Meta) {
       return;
     }
-    if ((typedValue.type as PropertyType) === PropertyType.Reference) {
+    if (typedValue.type === PropertyType.Reference) {
       await this.checkReference(path, typedValue.value as Reference);
     }
     if (typeof typedValue.value === 'object') {

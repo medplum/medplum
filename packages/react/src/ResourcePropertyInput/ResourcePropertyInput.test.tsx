@@ -1,11 +1,10 @@
-import { PropertyType } from '@medplum/core';
+import { InternalSchemaElement, PropertyType } from '@medplum/core';
 import {
   Address,
   Annotation,
   Attachment,
   CodeableConcept,
   ContactPoint,
-  ElementDefinition,
   Extension,
   HumanName,
   Identifier,
@@ -23,6 +22,15 @@ import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePro
 
 const medplum = new MockClient();
 
+const baseProperty: Omit<InternalSchemaElement, 'type'> = {
+  min: 0,
+  max: 1,
+  description: '',
+  isArray: false,
+  constraints: [],
+  path: '',
+};
+
 describe('ResourcePropertyInput', () => {
   async function setup(props: ResourcePropertyInputProps): Promise<void> {
     await act(async () => {
@@ -38,19 +46,11 @@ describe('ResourcePropertyInput', () => {
   // https://www.hl7.org/fhir/datatypes.html#primitive
 
   test('boolean property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'boolean',
-        },
-      ],
-    };
-
     const onChange = jest.fn();
 
     await setup({
       name: 'active',
-      property,
+      property: { ...baseProperty, type: [{ code: 'boolean' }] },
       onChange,
     });
     expect(screen.getByTestId('active')).toBeDefined();
@@ -63,19 +63,11 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Date property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'date',
-        },
-      ],
-    };
-
     const onChange = jest.fn();
 
     await setup({
       name: 'date',
-      property,
+      property: { ...baseProperty, type: [{ code: 'date' }] },
       onChange,
     });
     expect(screen.getByTestId('date')).toBeDefined();
@@ -88,21 +80,13 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Date/Time property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'dateTime',
-        },
-      ],
-    };
-
     const onChange = jest.fn();
     const localString = convertIsoToLocal('2021-01-01T12:00:00Z');
     const isoString = convertLocalToIso(localString);
 
     await setup({
       name: 'dateTime',
-      property,
+      property: { ...baseProperty, type: [{ code: 'dateTime' }] },
       onChange,
     });
     expect(screen.getByTestId('dateTime')).toBeDefined();
@@ -115,19 +99,11 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Markdown property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'markdown',
-        },
-      ],
-    };
-
     const onChange = jest.fn();
 
     await setup({
       name: 'markdown',
-      property,
+      property: { ...baseProperty, type: [{ code: 'markdown' }] },
       onChange,
     });
     expect(screen.getByTestId('markdown')).toBeDefined();
@@ -143,15 +119,6 @@ describe('ResourcePropertyInput', () => {
   // https://www.hl7.org/fhir/datatypes.html#complex
 
   test('Address property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'Address',
-        },
-      ],
-      max: '*',
-    };
-
     const defaultValue: Address[] = [
       {
         city: 'San Francisco',
@@ -160,22 +127,13 @@ describe('ResourcePropertyInput', () => {
 
     await setup({
       name: 'address',
-      property,
+      property: { ...baseProperty, type: [{ code: 'Address' }], max: Number.POSITIVE_INFINITY },
       defaultValue,
     });
     expect(screen.getByDisplayValue('San Francisco')).toBeDefined();
   });
 
   test('Annotation property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'Annotation',
-        },
-      ],
-      max: '*',
-    };
-
     const defaultValue: Annotation[] = [
       {
         text: 'This is a note',
@@ -184,21 +142,13 @@ describe('ResourcePropertyInput', () => {
 
     await setup({
       name: 'note',
-      property,
+      property: { ...baseProperty, type: [{ code: 'Annotation' }], max: Number.POSITIVE_INFINITY },
       defaultValue,
     });
     expect(screen.getByDisplayValue('This is a note')).toBeDefined();
   });
 
   test('Attachment property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'Attachment',
-        },
-      ],
-    };
-
     const defaultValue: Attachment = {
       contentType: 'text/plain',
       url: 'https://example.com/hello.txt',
@@ -209,7 +159,7 @@ describe('ResourcePropertyInput', () => {
 
     await setup({
       name: 'content',
-      property,
+      property: { ...baseProperty, type: [{ code: 'Attachment' }] },
       defaultValue,
       onChange,
     });
@@ -232,15 +182,6 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Attachment array property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'Attachment',
-        },
-      ],
-      max: '*',
-    };
-
     const defaultValue: Attachment[] = [
       {
         contentType: 'text/plain',
@@ -253,7 +194,7 @@ describe('ResourcePropertyInput', () => {
 
     await setup({
       name: 'photo',
-      property,
+      property: { ...baseProperty, type: [{ code: 'Attachment' }], max: Number.POSITIVE_INFINITY },
       defaultValue,
       onChange,
     });
@@ -275,14 +216,6 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('CodeableConcept property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'CodeableConcept',
-        },
-      ],
-    };
-
     const defaultValue: CodeableConcept = {
       coding: [
         {
@@ -294,22 +227,13 @@ describe('ResourcePropertyInput', () => {
 
     await setup({
       name: 'maritalStatus',
-      property,
+      property: { ...baseProperty, type: [{ code: 'CodeableConcept' }] },
       defaultValue,
     });
     expect(screen.getByText('Married')).toBeDefined();
   });
 
   test('ContactPoint property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'ContactPoint',
-        },
-      ],
-      max: '*',
-    };
-
     const defaultValue: ContactPoint[] = [
       {
         system: 'email',
@@ -319,7 +243,7 @@ describe('ResourcePropertyInput', () => {
 
     await setup({
       name: 'telecom',
-      property,
+      property: { ...baseProperty, type: [{ code: 'ContactPoint' }], max: Number.POSITIVE_INFINITY },
       defaultValue,
     });
     expect(screen.getByDisplayValue('email')).toBeDefined();
@@ -327,15 +251,6 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Extension property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'Extension',
-        },
-      ],
-      max: '*',
-    };
-
     const defaultValue: Extension[] = [
       {
         url: 'https://example.com',
@@ -347,7 +262,7 @@ describe('ResourcePropertyInput', () => {
 
     await setup({
       name: 'extension',
-      property,
+      property: { ...baseProperty, type: [{ code: 'Extension' }], max: Number.POSITIVE_INFINITY },
       defaultValue,
       onChange,
     });
@@ -363,15 +278,6 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('HumanName property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'HumanName',
-        },
-      ],
-      max: '*',
-    };
-
     const defaultValue: HumanName[] = [
       {
         family: 'Smith',
@@ -380,22 +286,13 @@ describe('ResourcePropertyInput', () => {
 
     await setup({
       name: 'name',
-      property,
+      property: { ...baseProperty, type: [{ code: 'HumanName' }], max: Number.POSITIVE_INFINITY },
       defaultValue,
     });
     expect(screen.getByDisplayValue('Smith')).toBeDefined();
   });
 
   test('Identifier property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'Identifier',
-        },
-      ],
-      max: '*',
-    };
-
     const defaultValue: Identifier[] = [
       {
         system: 'https://example.com',
@@ -407,7 +304,7 @@ describe('ResourcePropertyInput', () => {
 
     await setup({
       name: 'identifier',
-      property,
+      property: { ...baseProperty, type: [{ code: 'Identifier' }], max: Number.POSITIVE_INFINITY },
       defaultValue,
       onChange,
     });
@@ -424,14 +321,6 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Period property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'Period',
-        },
-      ],
-    };
-
     const defaultValue: Period = {
       start: '2020-01-01T12:00:00.000Z',
       end: '2021-01-02T12:00:00.000Z',
@@ -441,7 +330,7 @@ describe('ResourcePropertyInput', () => {
 
     await setup({
       name: 'period',
-      property,
+      property: { ...baseProperty, type: [{ code: 'Period' }] },
       defaultValue,
       onChange,
     });
@@ -459,14 +348,6 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Quantity property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'Quantity',
-        },
-      ],
-    };
-
     const defaultValue: Quantity = {
       value: 1,
       unit: 'mg',
@@ -476,7 +357,7 @@ describe('ResourcePropertyInput', () => {
 
     await setup({
       name: 'test',
-      property,
+      property: { ...baseProperty, type: [{ code: 'Quantity' }] },
       defaultValue,
       onChange,
     });
@@ -494,14 +375,6 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Range property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'Range',
-        },
-      ],
-    };
-
     const defaultValue: Range = {
       low: { value: 5, unit: 'mg' },
       high: { value: 10, unit: 'mg' },
@@ -511,7 +384,7 @@ describe('ResourcePropertyInput', () => {
 
     await setup({
       name: 'test',
-      property,
+      property: { ...baseProperty, type: [{ code: 'Range' }] },
       defaultValue,
       onChange,
     });
@@ -532,14 +405,6 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Ratio property', async () => {
-    const property: ElementDefinition = {
-      type: [
-        {
-          code: 'Ratio',
-        },
-      ],
-    };
-
     const defaultValue: Ratio = {
       numerator: { value: 5, unit: 'mg' },
       denominator: { value: 10, unit: 'ml' },
@@ -549,7 +414,7 @@ describe('ResourcePropertyInput', () => {
 
     await setup({
       name: 'test',
-      property,
+      property: { ...baseProperty, type: [{ code: 'Ratio' }] },
       defaultValue,
       onChange,
     });
@@ -570,7 +435,8 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Reference property single target type', async () => {
-    const property: ElementDefinition = {
+    const property: InternalSchemaElement = {
+      ...baseProperty,
       type: [
         {
           code: 'Reference',
@@ -590,7 +456,8 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Reference property multiple target types', async () => {
-    const property: ElementDefinition = {
+    const property: InternalSchemaElement = {
+      ...baseProperty,
       type: [
         {
           code: 'Reference',
@@ -611,7 +478,8 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Type selector', async () => {
-    const property: ElementDefinition = {
+    const property: InternalSchemaElement = {
+      ...baseProperty,
       type: [{ code: 'Quantity' }, { code: 'string' }, { code: 'integer' }],
     };
 
@@ -685,7 +553,8 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Type selector default value', async () => {
-    const property: ElementDefinition = {
+    const property: InternalSchemaElement = {
+      ...baseProperty,
       type: [{ code: 'Quantity' }, { code: 'string' }, { code: 'integer' }],
     };
 

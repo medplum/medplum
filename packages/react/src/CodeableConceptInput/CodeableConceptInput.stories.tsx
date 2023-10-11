@@ -1,27 +1,19 @@
-import { ElementDefinition } from '@medplum/fhirtypes';
+import { InternalSchemaElement } from '@medplum/core';
 import { Meta } from '@storybook/react';
 import React from 'react';
-import { CodeableConceptInput } from './CodeableConceptInput';
 import { Document } from '../Document/Document';
+import { CodeableConceptInput } from './CodeableConceptInput';
 
 export default {
   title: 'Medplum/CodeableConceptInput',
   component: CodeableConceptInput,
 } as Meta;
 
-const maritalStatusDefinition: ElementDefinition = {
-  id: 'Patient.maritalStatus',
+const maritalStatusDefinition: InternalSchemaElement = {
   path: 'Patient.maritalStatus',
-  short: 'Marital (civil) status of a patient',
-  definition: "This field contains a patient's most recent marital (civil) status.",
-  requirements: 'Most, if not all systems capture it.',
+  description: "This field contains a patient's most recent marital (civil) status.",
   min: 0,
-  max: '1',
-  base: {
-    path: 'Patient.maritalStatus',
-    min: 0,
-    max: '1',
-  },
+  max: 1,
   type: [
     {
       code: 'CodeableConcept',

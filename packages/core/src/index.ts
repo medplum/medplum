@@ -1,5 +1,6 @@
 export * from './access';
 export * from './base64';
+export * from './base-schema';
 export * from './bundle';
 export * from './cache';
 export * from './client';

@@ -154,18 +154,18 @@ async function followFhirPathLink(
 
   // The only kinds of links we can follow are 'reference search parameters'. This includes elements of type
   // Reference and type canonical
-  if (!elements.every((elem) => [PropertyType.Reference, PropertyType.canonical].includes(elem.type as PropertyType))) {
+  if (!elements.every((elem) => [PropertyType.Reference, PropertyType.canonical].includes(elem.type))) {
     throw new OperationOutcomeError(badRequest('Invalid link path. Must return a path to a Reference type'));
   }
 
   // For each of the elements we found on the current resource, follow their various targets
 
-  const referenceElements = elements.filter((elem) => (elem.type as PropertyType) === PropertyType.Reference);
+  const referenceElements = elements.filter((elem) => elem.type === PropertyType.Reference);
   if (referenceElements.length > 0) {
     results.push(...(await followReferenceElements(repo, referenceElements, target, resourceCache)));
   }
 
-  const canonicalElements = elements.filter((elem) => (elem.type as PropertyType) === PropertyType.canonical);
+  const canonicalElements = elements.filter((elem) => elem.type === PropertyType.canonical);
   if (canonicalElements.length > 0) {
     results.push(...(await followCanonicalElements(repo, canonicalElements, target, resourceCache)));
   }

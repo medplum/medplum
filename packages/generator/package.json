@@ -17,6 +17,7 @@
     "clean": "rimraf dist",
     "build": "npm run clean && tsc",
     "generate": "ts-node src/index.ts && ts-node src/jsonschema.ts",
+    "baseschema": "ts-node src/baseschema.ts",
     "migrate": "ts-node src/migrate.ts",
     "docs": "ts-node src/docs.ts",
     "benchmark": "ts-node src/benchmarks.ts",

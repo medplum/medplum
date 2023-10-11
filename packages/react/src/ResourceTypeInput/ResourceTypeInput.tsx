@@ -34,11 +34,7 @@ export function ResourceTypeInput(props: ResourceTypeInputProps): JSX.Element {
       onChange={setResourceTypeWrapper}
       name={props.name}
       placeholder={props.placeholder}
-      property={{
-        binding: {
-          valueSet: 'https://medplum.com/fhir/ValueSet/resource-types',
-        },
-      }}
+      binding={'https://medplum.com/fhir/ValueSet/resource-types'}
       creatable={false}
       maxSelectedValues={0}
       clearSearchOnChange={true}

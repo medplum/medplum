@@ -11,6 +11,7 @@ import {
   formatSearchQuery,
   getDataType,
   getReferenceString,
+  getSearchParameter,
   getSearchParameterDetails,
   IncludeTarget,
   isResource,
@@ -51,7 +52,6 @@ import {
   SelectQuery,
   Operator as SQL,
 } from './sql';
-import { getSearchParameter } from './structure';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
@@ -255,13 +255,13 @@ async function getSearchIncludeEntries(
   const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, resources.map(toTypedValue));
 
   const references = fhirPathResult
-    .filter((typedValue) => (typedValue.type as PropertyType) === PropertyType.Reference)
+    .filter((typedValue) => typedValue.type === PropertyType.Reference)
     .map((typedValue) => typedValue.value as Reference);
   const readResult = await repo.readReferences(references);
   const includedResources = readResult.filter(isResource);
 
   const canonicalReferences = fhirPathResult
-    .filter((typedValue) => [PropertyType.canonical, PropertyType.uri].includes(typedValue.type as PropertyType))
+    .filter((typedValue) => [PropertyType.canonical, PropertyType.uri].includes(typedValue.type))
     .map((typedValue) => typedValue.value as string);
   if (canonicalReferences.length > 0) {
     const canonicalSearches = (searchParam.target || []).map((resourceType) =>

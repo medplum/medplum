@@ -13,7 +13,7 @@ import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../uti
 import { crawlResource, getNestedProperty, ResourceVisitor } from './crawler';
 import {
   Constraint,
-  ElementValidator,
+  InternalSchemaElement,
   getDataType,
   InternalTypeSchema,
   parseStructureDefinition,
@@ -128,7 +128,7 @@ class ResourceValidator implements ResourceVisitor {
   onExitObject(path: string, obj: TypedValue, schema: InternalTypeSchema): void {
     //@TODO(mattwiller 2023-06-05): Detect extraneous properties in a single pass by keeping track of all keys that
     // were correctly matched to resource properties as elements are validated above
-    this.checkAdditionalProperties(obj, schema.fields, path);
+    this.checkAdditionalProperties(obj, schema.elements, path);
   }
 
   onEnterResource(_path: string, obj: TypedValue): void {
@@ -146,7 +146,7 @@ class ResourceValidator implements ResourceVisitor {
     propertyValues: (TypedValue | TypedValue[] | undefined)[],
     schema: InternalTypeSchema
   ): void {
-    const element = schema.fields[key];
+    const element = schema.elements[key];
     if (!element) {
       throw new Error(`Missing element validation schema for ${key}`);
     }
@@ -201,11 +201,11 @@ class ResourceValidator implements ResourceVisitor {
 
   private checkPresence(
     value: TypedValue | TypedValue[] | undefined,
-    element: ElementValidator,
+    field: InternalSchemaElement,
     path: string
   ): value is TypedValue | TypedValue[] {
     if (value === undefined) {
-      if (element.min > 0) {
+      if (field.min > 0) {
         this.issues.push(createStructureIssue(path, 'Missing required property'));
       }
       return false;
@@ -247,7 +247,7 @@ class ResourceValidator implements ResourceVisitor {
 
   private checkAdditionalProperties(
     parent: TypedValue,
-    properties: Record<string, ElementValidator>,
+    properties: Record<string, InternalSchemaElement>,
     path: string
   ): void {
     const object = parent.value as Record<string, unknown> | undefined;
@@ -268,8 +268,11 @@ class ResourceValidator implements ResourceVisitor {
     }
   }
 
-  private constraintsCheck(value: TypedValue, element: ElementValidator, path: string): void {
-    const constraints = element.constraints;
+  private constraintsCheck(value: TypedValue, field: InternalSchemaElement, path: string): void {
+    const constraints = field.constraints;
+    if (!constraints) {
+      return;
+    }
     for (const constraint of constraints) {
       if (constraint.severity === 'error' && !(constraint.key in skippedConstraintKeys)) {
         const expression = this.isExpressionTrue(constraint, value, path);
@@ -320,9 +323,9 @@ class ResourceValidator implements ResourceVisitor {
       }
       // Then, perform additional checks for specialty types
       if (expectedType === 'string') {
-        this.validateString(value as string, type as PropertyType, path);
+        this.validateString(value as string, type, path);
       } else if (expectedType === 'number') {
-        this.validateNumber(value as number, type as PropertyType, path);
+        this.validateNumber(value as number, type, path);
       }
     }
     if (extensionElement) {
@@ -330,7 +333,7 @@ class ResourceValidator implements ResourceVisitor {
     }
   }
 
-  private validateString(str: string, type: PropertyType, path: string): void {
+  private validateString(str: string, type: string, path: string): void {
     if (!str.trim()) {
       this.issues.push(createStructureIssue(path, 'String must contain non-whitespace content'));
       return;
@@ -342,7 +345,7 @@ class ResourceValidator implements ResourceVisitor {
     }
   }
 
-  private validateNumber(n: number, type: PropertyType, path: string): void {
+  private validateNumber(n: number, type: string, path: string): void {
     if (isNaN(n) || !isFinite(n)) {
       this.issues.push(createStructureIssue(path, 'Invalid numeric value'));
     } else if (isIntegerType(type) && !Number.isInteger(n)) {
@@ -355,7 +358,7 @@ class ResourceValidator implements ResourceVisitor {
   }
 }
 
-function isIntegerType(propertyType: PropertyType): boolean {
+function isIntegerType(propertyType: string): boolean {
   return (
     propertyType === PropertyType.integer ||
     propertyType === PropertyType.positiveInt ||
@@ -366,7 +369,7 @@ function isIntegerType(propertyType: PropertyType): boolean {
 function isChoiceOfType(
   typedValue: TypedValue,
   key: string,
-  propertyDefinitions: Record<string, ElementValidator>
+  propertyDefinitions: Record<string, InternalSchemaElement>
 ): boolean {
   const parts = key.split(/(?=[A-Z])/g); // Split before capital letters
   let testProperty = '';
@@ -405,7 +408,7 @@ function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: 
   }
 }
 
-function matchesSpecifiedValue(value: TypedValue | TypedValue[], element: ElementValidator): boolean {
+function matchesSpecifiedValue(value: TypedValue | TypedValue[], element: InternalSchemaElement): boolean {
   if (element.pattern && !deepIncludes(value, element.pattern)) {
     return false;
   } else if (element.fixed && !deepEquals(value, element.fixed)) {
@@ -423,7 +426,7 @@ function matchDiscriminant(
     // Only single values can match
     return false;
   }
-  const sliceElement = slice.fields[discriminator.path];
+  const sliceElement = slice.elements[discriminator.path];
   const sliceType = slice.type;
   switch (discriminator.type) {
     case 'value':

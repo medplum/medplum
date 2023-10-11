@@ -8,7 +8,8 @@ import {
   matchesAccessPolicy,
   satisfiedAccessPolicy,
 } from './access';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from './types';
+import { indexSearchParameterBundle } from './types';
+import { indexStructureDefinitionBundle } from './typeschema/types';
 
 const nullPolicy: AccessPolicy = {
   resourceType: 'AccessPolicy',

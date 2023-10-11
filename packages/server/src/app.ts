@@ -7,7 +7,6 @@ import { rmSync } from 'fs';
 import http from 'http';
 import { tmpdir } from 'os';
 import { join } from 'path';
-
 import { adminRouter } from './admin/routes';
 import { asyncWrap } from './async';
 import { authRouter } from './auth/routes';
@@ -21,7 +20,7 @@ import { binaryRouter } from './fhir/binary';
 import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
 import { initBinaryStorage } from './fhir/storage';
-import { getStructureDefinitions } from './fhir/structure';
+import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastRouter } from './fhircast/routes';
 import { healthcheckHandler } from './healthcheck';
 import { hl7BodyParser } from './hl7/parser';
@@ -178,7 +177,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 
 export function initAppServices(config: MedplumServerConfig): Promise<void> {
   return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
-    getStructureDefinitions();
+    loadStructureDefinitions();
     initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();

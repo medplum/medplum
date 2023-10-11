@@ -1,7 +1,17 @@
-import { Bundle, Coding, ElementDefinition, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  Coding,
+  ElementDefinition,
+  ElementDefinitionBinding,
+  Resource,
+  ResourceType,
+  StructureDefinition,
+} from '@medplum/fhirtypes';
+import { inflateBaseSchema } from '../base-schema';
+import baseSchema from '../base-schema.json';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, serverError } from '../outcomes';
-import { getElementDefinitionTypeName, TypedValue } from '../types';
+import { getElementDefinitionTypeName, isResourceTypeSchema, TypedValue } from '../types';
 import { capitalize, isEmpty } from '../utils';
 
 /**
@@ -9,28 +19,34 @@ import { capitalize, isEmpty } from '../utils';
  */
 export interface InternalTypeSchema {
   name: string;
-  fields: Record<string, ElementValidator>;
-  constraints: Constraint[];
+  url?: string;
+  kind?: string;
+  description?: string;
+  elements: Record<string, InternalSchemaElement>;
+  constraints?: Constraint[];
+  parentType?: InternalTypeSchema;
   innerTypes: InternalTypeSchema[];
   summaryProperties?: Set<string>;
   mandatoryProperties?: Set<string>;
 }
 
-export interface ElementValidator {
+export interface InternalSchemaElement {
+  description: string;
+  path: string;
   min: number;
   max: number;
-  isArray: boolean;
-  constraints: Constraint[];
+  isArray?: boolean;
+  constraints?: Constraint[];
   type: ElementType[];
   slicing?: SlicingRules;
   fixed?: TypedValue;
   pattern?: TypedValue;
-  binding?: string;
+  binding?: ElementDefinitionBinding;
 }
 
 export interface ElementType {
   code: string;
-  targetProfile: string[];
+  targetProfile?: string[];
 }
 
 export interface Constraint {
@@ -50,7 +66,7 @@ export interface SlicingRules {
 export interface SliceDefinition {
   name: string;
   type?: ElementType[];
-  fields: Record<string, ElementValidator>;
+  elements: Record<string, InternalSchemaElement>;
   min: number;
   max: number;
 }
@@ -71,22 +87,40 @@ export function parseStructureDefinition(sd: StructureDefinition): InternalTypeS
   return new StructureDefinitionParser(sd).parse();
 }
 
-const DATA_TYPES: Record<string, InternalTypeSchema> = Object.create(null);
+const DATA_TYPES: Record<string, InternalTypeSchema> = inflateBaseSchema(baseSchema);
 
-export function loadDataTypes(bundle: Bundle<StructureDefinition>): void {
-  for (const { resource: sd } of bundle.entry ?? []) {
-    if (!sd?.name) {
-      throw new Error(`Failed loading StructureDefinition from bundle`);
-    }
-    if (sd.resourceType !== 'StructureDefinition') {
-      continue;
-    }
-    const schema = parseStructureDefinition(sd);
-    DATA_TYPES[sd.name] = schema;
-    for (const inner of schema.innerTypes) {
-      DATA_TYPES[inner.name] = inner;
-    }
+export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | Bundle): void {
+  const sds = Array.isArray(bundle) ? bundle : bundle.entry?.map((e) => e.resource as StructureDefinition) ?? [];
+  for (const sd of sds) {
+    loadDataType(sd);
   }
+}
+
+export function loadDataType(sd: StructureDefinition): void {
+  if (!sd?.name) {
+    throw new Error(`Failed loading StructureDefinition from bundle`);
+  }
+  if (sd.resourceType !== 'StructureDefinition') {
+    return;
+  }
+  const schema = parseStructureDefinition(sd);
+  DATA_TYPES[sd.name] = schema;
+  for (const inner of schema.innerTypes) {
+    inner.parentType = schema;
+    DATA_TYPES[inner.name] = inner;
+  }
+}
+
+export function getAllDataTypes(): Record<string, InternalTypeSchema> {
+  return DATA_TYPES;
+}
+
+export function isDataTypeLoaded(type: string): boolean {
+  return !!DATA_TYPES[type];
+}
+
+export function tryGetDataType(type: string): InternalTypeSchema | undefined {
+  return DATA_TYPES[type];
 }
 
 export function getDataType(type: string): InternalTypeSchema {
@@ -95,6 +129,22 @@ export function getDataType(type: string): InternalTypeSchema {
     throw new OperationOutcomeError(serverError(Error('Unknown data type: ' + type)));
   }
   return schema;
+}
+
+/**
+ * Returns true if the given string is a valid FHIR resource type.
+ *
+ * ```ts
+ * isResourceType('Patient'); // true
+ * isResourceType('XYZ'); // false
+ * ```
+ *
+ * @param resourceType The candidate resource type string.
+ * @returns True if the resource type is a valid FHIR resource type.
+ */
+export function isResourceType(resourceType: string): boolean {
+  const typeSchema = DATA_TYPES[resourceType];
+  return typeSchema && isResourceTypeSchema(typeSchema);
 }
 
 interface BackboneContext {
@@ -130,9 +180,12 @@ class StructureDefinitionParser {
     this.elementIndex = Object.create(null);
     this.index = 0;
     this.resourceSchema = {
-      name: sd.type as ResourceType,
-      fields: {},
-      constraints: this.parseFieldDefinition(this.root).constraints,
+      name: sd.name as ResourceType,
+      url: sd.url as string,
+      kind: sd.kind,
+      description: sd.description,
+      elements: {},
+      constraints: this.parseElementDefinition(this.root).constraints,
       innerTypes: [],
       summaryProperties: new Set(),
       mandatoryProperties: new Set(),
@@ -150,18 +203,18 @@ class StructureDefinitionParser {
         // Slice element, part of some slice definition
         if (this.slicingContext?.current) {
           const path = elementPath(element, this.slicingContext.path);
-          this.slicingContext.current.fields[path] = this.parseFieldDefinition(element);
+          this.slicingContext.current.elements[path] = this.parseElementDefinition(element);
         }
       } else {
         // Normal field definition
-        const field = this.parseFieldDefinition(element);
+        const field = this.parseElementDefinition(element);
         this.checkFieldEnter(element, field);
 
         // Record field in schema
         let parentContext: BackboneContext | undefined = this.backboneContext;
         while (parentContext) {
           if (element.path?.startsWith(parentContext.path + '.')) {
-            parentContext.type.fields[elementPath(element, parentContext.path)] = field;
+            parentContext.type.elements[elementPath(element, parentContext.path)] = field;
             break;
           }
           parentContext = parentContext.parent;
@@ -178,7 +231,7 @@ class StructureDefinitionParser {
           if (field.min > 0) {
             this.resourceSchema.mandatoryProperties?.add(path.replace('[x]', ''));
           }
-          this.resourceSchema.fields[path] = field;
+          this.resourceSchema.elements[path] = field;
         }
 
         // Clean up contextual book-keeping
@@ -197,47 +250,56 @@ class StructureDefinitionParser {
     return this.resourceSchema;
   }
 
-  private checkFieldEnter(element: ElementDefinition, field: ElementValidator): void {
+  private checkFieldEnter(element: ElementDefinition, field: InternalSchemaElement): void {
     if (this.isInnerType(element)) {
-      while (this.backboneContext && !pathsCompatible(this.backboneContext?.path, element.path)) {
-        // Starting new inner type, unwind type stack to this property's parent
-        this.innerTypes.push(this.backboneContext.type);
-        this.backboneContext = this.backboneContext.parent;
-      }
-      this.backboneContext = {
-        type: {
-          name: getElementDefinitionTypeName(element),
-          fields: {},
-          constraints: this.parseFieldDefinition(element).constraints,
-          innerTypes: [],
-        },
-        path: element.path ?? '',
-        parent: pathsCompatible(this.backboneContext?.path, element.path)
-          ? this.backboneContext
-          : this.backboneContext?.parent,
-      };
+      this.enterInnerType(element);
     }
     if (element.slicing && !this.slicingContext) {
-      if (hasDefaultExtensionSlice(element) && !this.peek()?.sliceName) {
-        // Extensions are always sliced by URL; don't start slicing context if no slices follow
-        return;
-      }
-      field.slicing = {
-        discriminator: (element.slicing?.discriminator ?? []).map((d) => {
-          if (d.type !== 'value' && d.type !== 'pattern' && d.type !== 'type') {
-            throw new Error(`Unsupported slicing discriminator type: ${d.type}`);
-          }
-          return {
-            path: d.path as string,
-            type: d.type as string,
-          };
-        }),
-        slices: [],
-        ordered: element.slicing?.ordered ?? false,
-        rule: element.slicing?.rules,
-      };
-      this.slicingContext = { field: field.slicing, path: element.path ?? '' };
+      this.enterSlice(element, field);
     }
+  }
+
+  private enterInnerType(element: ElementDefinition): void {
+    while (this.backboneContext && !pathsCompatible(this.backboneContext?.path, element.path)) {
+      // Starting new inner type, unwind type stack to this property's parent
+      this.innerTypes.push(this.backboneContext.type);
+      this.backboneContext = this.backboneContext.parent;
+    }
+    this.backboneContext = {
+      type: {
+        name: getElementDefinitionTypeName(element),
+        description: element.definition,
+        elements: {},
+        constraints: this.parseElementDefinition(element).constraints,
+        innerTypes: [],
+      },
+      path: element.path ?? '',
+      parent: pathsCompatible(this.backboneContext?.path, element.path)
+        ? this.backboneContext
+        : this.backboneContext?.parent,
+    };
+  }
+
+  private enterSlice(element: ElementDefinition, field: InternalSchemaElement): void {
+    if (hasDefaultExtensionSlice(element) && !this.peek()?.sliceName) {
+      // Extensions are always sliced by URL; don't start slicing context if no slices follow
+      return;
+    }
+    field.slicing = {
+      discriminator: (element.slicing?.discriminator ?? []).map((d) => {
+        if (d.type !== 'value' && d.type !== 'pattern' && d.type !== 'type') {
+          throw new Error(`Unsupported slicing discriminator type: ${d.type}`);
+        }
+        return {
+          path: d.path as string,
+          type: d.type as string,
+        };
+      }),
+      slices: [],
+      ordered: element.slicing?.ordered ?? false,
+      rule: element.slicing?.rules,
+    };
+    this.slicingContext = { field: field.slicing, path: element.path ?? '' };
   }
 
   private checkFieldExit(element: ElementDefinition | undefined = undefined): void {
@@ -287,6 +349,8 @@ class StructureDefinitionParser {
           path: element.path,
           min: element.min ?? ref.min,
           max: element.max ?? ref.max,
+          contentReference: element.contentReference,
+          definition: element.definition,
         };
       }
       return element;
@@ -311,18 +375,20 @@ class StructureDefinitionParser {
     }
     this.slicingContext.current = {
       name: element.sliceName ?? '',
-      type: element.type?.map((t) => ({ code: t.code ?? '', targetProfile: t.targetProfile ?? [] })),
-      fields: {},
+      type: element.type?.map((t) => ({ code: t.code ?? '', targetProfile: t.targetProfile })),
+      elements: {},
       min: element.min ?? 0,
       max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string, 10),
     };
   }
 
-  private parseFieldDefinition(ed: ElementDefinition): ElementValidator {
+  private parseElementDefinition(ed: ElementDefinition): InternalSchemaElement {
     const max = parseCardinality(ed.max as string);
     const baseMax = ed.base?.max ? parseCardinality(ed.base.max) : max;
     const typedElementDef = { type: 'ElementDefinition', value: ed };
     return {
+      description: ed.definition || '',
+      path: ed.path || ed.base?.path || '',
       min: ed.min ?? 0,
       max: max,
       isArray: baseMax > 1,
@@ -336,11 +402,11 @@ class StructureDefinitionParser {
         code: ['BackboneElement', 'Element'].includes(t.code as string)
           ? getElementDefinitionTypeName(ed)
           : t.code ?? '',
-        targetProfile: t.targetProfile ?? [],
+        targetProfile: t.targetProfile,
       })),
       fixed: firstValue(getTypedPropertyValue(typedElementDef, 'fixed')),
       pattern: firstValue(getTypedPropertyValue(typedElementDef, 'pattern')),
-      binding: ed.binding?.strength === 'required' ? ed.binding.valueSet : undefined,
+      binding: ed.binding,
     };
   }
 }
@@ -360,7 +426,7 @@ export function subsetResource<T extends Resource>(resource: T | undefined, prop
   const extraProperties = [];
   for (const property of properties) {
     extraProperties.push('_' + property);
-    const choiceTypeField = DATA_TYPES[resource.resourceType].fields[property + '[x]'];
+    const choiceTypeField = DATA_TYPES[resource.resourceType].elements[property + '[x]'];
     if (choiceTypeField) {
       extraProperties.push(...choiceTypeField.type.map((t) => property + capitalize(t.code)));
     }

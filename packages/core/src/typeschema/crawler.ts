@@ -65,7 +65,7 @@ class ResourceCrawler {
       this.visitor.onEnterObject(path, obj, schema);
     }
 
-    for (const [key, _propSchema] of Object.entries(schema.fields)) {
+    for (const key of Object.keys(schema.elements)) {
       this.crawlProperty(obj, key, schema, `${path}.${key}`);
     }
 
