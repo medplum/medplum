@@ -5,9 +5,9 @@ import { useEffect, useRef, useState } from 'react';
 type ConnectionStatus = 'IDLE' | 'CONNECTING' | 'CONNECTED' | 'DISCONNECTING' | 'DISCONNECTED' | 'UNSUBSCRIBED';
 
 type WebSocketHandlerProps = {
-  subRequest: SubscriptionRequest;
   clientId: string;
   onMessage: (message: FhircastMessagePayload) => void;
+  subRequest?: SubscriptionRequest;
   onStatusChange?: (status: ConnectionStatus) => void;
 };
 
@@ -30,7 +30,7 @@ export default function ConnectionHandler(props: WebSocketHandlerProps): null {
   }, [onStatusChange, connectionStatus]);
 
   useEffect(() => {
-    if (connectionRef.current?.subRequest.endpoint === subRequest.endpoint) {
+    if (connectionRef.current?.subRequest.endpoint === subRequest?.endpoint) {
       return;
     }
 
@@ -39,7 +39,7 @@ export default function ConnectionHandler(props: WebSocketHandlerProps): null {
       connectionRef.current.disconnect();
       medplum
         .fhircastUnsubscribe(connectionRef.current.subRequest)
-        .then(() => setConnectionStatus('UNSUBSCRIBED'))
+        .then(() => setConnectionStatus((s) => (s === 'CONNECTED' ? s : 'UNSUBSCRIBED')))
         .catch((err) => console.error(err));
       connectionRef.current = undefined;
     }

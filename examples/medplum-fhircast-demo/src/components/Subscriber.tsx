@@ -104,14 +104,12 @@ export default function Subscriber(): JSX.Element {
 
   return (
     <Document>
-      {subRequest && (
-        <ConnectionHandler
-          subRequest={subRequest}
-          clientId={clientId}
-          onMessage={handleFhircastMessage}
-          onStatusChange={(status) => setStatus(status)}
-        />
-      )}
+      <ConnectionHandler
+        subRequest={subRequest}
+        clientId={clientId}
+        onMessage={handleFhircastMessage}
+        onStatusChange={(status) => setStatus(status)}
+      />
       <Title align="center" fz={36}>
         Subscriber
       </Title>
