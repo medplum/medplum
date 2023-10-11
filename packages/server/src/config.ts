@@ -262,7 +262,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.awsRegion = config.awsRegion || DEFAULT_AWS_REGION;
   config.botLambdaLayerName = config.botLambdaLayerName || 'medplum-bot-layer';
   config.bcryptHashSalt = config.bcryptHashSalt || 10;
-  config.bullmq = { removeOnComplete: { count: 0 }, removeOnFail: { count: 0 }, ...config.bullmq };
+  config.bullmq = { removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
   return config;
 }
 

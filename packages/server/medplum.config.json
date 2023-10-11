@@ -37,7 +37,7 @@
     "password": "medplum"
   },
   "bullmq": {
-    "removeOnFail": { "count": 0 },
-    "removeOnComplete": { "count": 0 }
+    "removeOnFail": { "count": 1 },
+    "removeOnComplete": { "count": 1 }
   }
 }
