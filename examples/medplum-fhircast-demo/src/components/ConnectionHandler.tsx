@@ -34,6 +34,7 @@ export default function ConnectionHandler(props: WebSocketHandlerProps): null {
       return;
     }
 
+    // If there's an existing subscription at a different endpoint, disconnect and unsub...
     if (connectionRef.current) {
       connectionRef.current.disconnect();
       medplum
