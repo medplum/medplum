@@ -1,5 +1,5 @@
-import { Token, Tokenizer } from '../fhirlexer';
-import { FHIRPATH_KEYWORDS, FHIRPATH_OPERATORS } from '../fhirpath';
+import { Token, Tokenizer } from '../fhirlexer/tokenize';
+import { FHIRPATH_KEYWORDS, FHIRPATH_OPERATORS } from '../fhirpath/tokenize';
 
 const MAPPING_LANGUAGE_OPERATORS = [...FHIRPATH_OPERATORS, 'eq', 'ne', 'co'];
 

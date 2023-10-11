@@ -1,5 +1,5 @@
-import { Parser } from '../fhirlexer';
-import { initFhirPathParserBuilder } from '../fhirpath';
+import { Parser } from '../fhirlexer/parse';
+import { initFhirPathParserBuilder } from '../fhirpath/parse';
 import { OperationOutcomeError, badRequest } from '../outcomes';
 import { Operator } from '../search/search';
 import { tokenize } from './tokenize';

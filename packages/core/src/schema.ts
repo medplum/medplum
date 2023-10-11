@@ -1,5 +1,5 @@
 import { ElementDefinition, OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
-import { getTypedPropertyValue, toTypedValue } from './fhirpath';
+import { getTypedPropertyValue, toTypedValue } from './fhirpath/utils';
 import { OperationOutcomeError, createStructureIssue, validationError } from './outcomes';
 import { PropertyType, TypedValue, globalSchema } from './types';
 import { fhirTypeToJsType } from './typeschema/validation';

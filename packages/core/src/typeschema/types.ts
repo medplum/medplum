@@ -1,5 +1,5 @@
 import { Bundle, Coding, ElementDefinition, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
-import { getTypedPropertyValue } from '../fhirpath';
+import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, serverError } from '../outcomes';
 import { getElementDefinitionTypeName, TypedValue } from '../types';
 import { capitalize, isEmpty } from '../utils';

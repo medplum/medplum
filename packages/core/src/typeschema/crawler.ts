@@ -1,5 +1,5 @@
 import { Resource } from '@medplum/fhirtypes';
-import { getTypedPropertyValue, toTypedValue } from '../fhirpath';
+import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import { isResource, TypedValue } from '../types';
 import { arrayify, isLowerCase } from '../utils';
 import { getDataType, InternalTypeSchema } from './types';

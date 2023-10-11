@@ -1,5 +1,5 @@
 import { ElementDefinition, ElementDefinitionType, SearchParameter } from '@medplum/fhirtypes';
-import { Atom } from '../fhirlexer';
+import { Atom } from '../fhirlexer/parse';
 import {
   AsAtom,
   BooleanInfixOperatorAtom,
@@ -7,9 +7,9 @@ import {
   FunctionAtom,
   IndexerAtom,
   IsAtom,
-  parseFhirPath,
   UnionAtom,
-} from '../fhirpath';
+} from '../fhirpath/atoms';
+import { parseFhirPath } from '../fhirpath/parse';
 import { getElementDefinition, getElementDefinitionTypeName, globalSchema, PropertyType } from '../types';
 import { capitalize } from '../utils';
 

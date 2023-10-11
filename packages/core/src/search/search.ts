@@ -1,7 +1,7 @@
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { badRequest, OperationOutcomeError } from '../outcomes';
 import { TypedValue, stringifyTypedValue, globalSchema } from '../types';
-import { evalFhirPathTyped } from '../fhirpath';
+import { evalFhirPathTyped } from '../fhirpath/parse';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 

@@ -1,4 +1,4 @@
-import { Atom, AtomContext, InfixOperatorAtom, PrefixOperatorAtom } from '../fhirlexer';
+import { Atom, AtomContext, InfixOperatorAtom, PrefixOperatorAtom } from '../fhirlexer/parse';
 import { isResource, PropertyType, TypedValue } from '../types';
 import { functions } from './functions';
 import {
