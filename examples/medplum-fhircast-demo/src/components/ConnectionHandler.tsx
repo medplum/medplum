@@ -45,10 +45,7 @@ export default function ConnectionHandler(props: WebSocketHandlerProps): null {
 
     const connection = medplum.fhircastConnect(subRequest);
 
-    const connectHandler = (): void => {
-      console.log('here');
-      setConnectionStatus('CONNECTED');
-    };
+    const connectHandler = (): void => setConnectionStatus('CONNECTED');
     const messageHandler = (event: FhircastMessageEvent): void => onMessageRef.current(event.payload);
     const disconnectHandler = (): void => {
       setConnectionStatus('DISCONNECTED');
