@@ -367,15 +367,17 @@ function isChoiceOfType(
   key: string,
   propertyDefinitions: Record<string, ElementValidator>
 ): boolean {
+  if (key.startsWith('_')) {
+    key = key.slice(1);
+  }
   const parts = key.split(/(?=[A-Z])/g); // Split before capital letters
   let testProperty = '';
   for (const part of parts) {
     testProperty += part;
-    if (!propertyDefinitions[testProperty + '[x]']) {
-      continue;
+    if (propertyDefinitions[testProperty + '[x]']) {
+      const typedPropertyValue = getTypedPropertyValue(typedValue, testProperty);
+      return !!typedPropertyValue;
     }
-    const typedPropertyValue = getTypedPropertyValue(typedValue, testProperty);
-    return !!typedPropertyValue;
   }
   return false;
 }

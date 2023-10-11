@@ -129,8 +129,16 @@ describe('FHIR resource validation', () => {
       resourceType: 'Patient',
       deceasedBoolean: false,
     };
+    const choiceTypeExtension: Patient = {
+      resourceType: 'Patient',
+      deceasedBoolean: false,
+      _deceasedBoolean: {
+        id: '1',
+      },
+    } as unknown as Patient;
     expect(() => validate(primitiveExtension)).not.toThrow();
     expect(() => validate(choiceType)).not.toThrow();
+    expect(() => validate(choiceTypeExtension)).not.toThrow();
   });
 
   test('Valid resource with extension', () => {
