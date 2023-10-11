@@ -1,6 +1,4 @@
-import { validateFhircastSubscriptionRequest } from '.';
-
-// TODO: Test serializeFhircastSubscriptionRequest
+import { SubscriptionRequest, serializeFhircastSubscriptionRequest, validateFhircastSubscriptionRequest } from '.';
 
 describe('validateFhircastSubscriptionRequest', () => {
   test('Valid subscription requests', () => {
@@ -120,6 +118,50 @@ describe('validateFhircastSubscriptionRequest', () => {
         endpoint: 'http://abc.com/hub',
       })
     ).toBe(false);
+  });
+});
+
+describe('serializeFhircastSubscriptionRequest', () => {
+  test('Valid subscription request', () => {
+    expect(
+      serializeFhircastSubscriptionRequest({
+        mode: 'subscribe',
+        channelType: 'websocket',
+        topic: 'abc123',
+        events: ['patient-open'],
+      })
+    ).toEqual('hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=patient-open');
+  });
+
+  test('Valid subscription request with multiple events', () => {
+    expect(
+      serializeFhircastSubscriptionRequest({
+        mode: 'subscribe',
+        channelType: 'websocket',
+        topic: 'abc123',
+        events: ['patient-open', 'patient-close'],
+      })
+    ).toEqual('hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=patient-open%2Cpatient-close');
+  });
+
+  test('Valid subscription request with endpoint', () => {
+    expect(
+      serializeFhircastSubscriptionRequest({
+        mode: 'subscribe',
+        channelType: 'websocket',
+        topic: 'abc123',
+        events: ['patient-open'],
+        endpoint: 'wss://abc.com/hub',
+      })
+    ).toEqual(
+      'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=patient-open&endpoint=wss%3A%2F%2Fabc.com%2Fhub'
+    );
+  });
+
+  test('Invalid subscription request', () => {
+    expect(() =>
+      serializeFhircastSubscriptionRequest({ mode: 'unsubscribe' } as unknown as SubscriptionRequest)
+    ).toThrow(TypeError);
   });
 });
 
