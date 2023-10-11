@@ -1,8 +1,20 @@
 import type { Resource } from '@medplum/fhirtypes';
 import { TypedEventTarget } from '../eventtarget';
 
-export type FhircastEventName = 'patient-open' | 'patient-close' | 'imagingstudy-open' | 'imagingstudy-close';
+const FHIRCAST_EVENT_NAMES = {
+  'patient-open': 'patient-open',
+  'patient-close': 'patient-close',
+  'imagingstudy-open': 'imagingstudy-open',
+  'imagingstudy-close': 'imagingstudy-close',
+};
 
+export type FhircastEventName = keyof typeof FHIRCAST_EVENT_NAMES;
+
+/**
+ * A `FHIRcast` subscription request.
+ *
+ * Can be passed to `MedplumClient.fhircastConnect` or `MedplumClient.fhircastUnsubscribe` to either open a `FHIRcast` connection, or unsubscribe from the subscription.
+ */
 export type SubscriptionRequest = {
   channelType: 'websocket';
   mode: 'subscribe' | 'unsubscribe';
@@ -37,39 +49,58 @@ export type FhircastMessagePayload = {
  * @returns A serialized subscription in url-encoded form.
  */
 export function serializeFhircastSubscriptionRequest(subscriptionRequest: SubscriptionRequest): string {
+  if (!validateFhircastSubscriptionRequest(subscriptionRequest)) {
+    throw new TypeError('subscriptionRequest must be an object conforming to SubscriptionRequest type');
+  }
+
+  const { channelType, mode, topic, events, endpoint } = subscriptionRequest;
+
   const formattedSubRequest = {
-    'hub.channel.type': subscriptionRequest.channelType,
-    'hub.mode': subscriptionRequest.mode,
-    'hub.topic': subscriptionRequest.topic,
-    'hub.events': subscriptionRequest.events.join(','),
+    'hub.channel.type': channelType,
+    'hub.mode': mode,
+    'hub.topic': topic,
+    'hub.events': events.join(','),
   } as Record<string, string>;
 
-  if (subscriptionRequest.endpoint) {
-    formattedSubRequest.endpoint = subscriptionRequest.endpoint;
+  if (endpoint) {
+    formattedSubRequest.endpoint = endpoint;
   }
   return new URLSearchParams(formattedSubRequest).toString();
 }
 
 // TODO: Make this more accurate
+/**
+ * Validates that a `SubscriptionRequest`.
+ *
+ * @param subscriptionRequest The `SubscriptionRequest` to validate.
+ * @returns A `boolean` indicating whether or not the `SubscriptionRequest` is valid.
+ */
 export function validateFhircastSubscriptionRequest(subscriptionRequest: SubscriptionRequest): boolean {
   if (typeof subscriptionRequest !== 'object') {
     return false;
   }
-  if (
-    !(
-      subscriptionRequest.channelType &&
-      subscriptionRequest.mode &&
-      subscriptionRequest.topic &&
-      subscriptionRequest.events
-    )
-  ) {
+  const { channelType, mode, topic, events, endpoint } = subscriptionRequest;
+  if (!(channelType && mode && topic && events)) {
     return false;
   }
-  if (
-    typeof subscriptionRequest.events !== 'object' ||
-    !Array.isArray(subscriptionRequest.events) ||
-    subscriptionRequest.events.length < 1
-  ) {
+  if (typeof topic !== 'string') {
+    return false;
+  }
+  if (typeof events !== 'object' || !Array.isArray(events) || events.length < 1) {
+    return false;
+  }
+  if (channelType !== 'websocket') {
+    return false;
+  }
+  if (mode !== 'subscribe' && mode !== 'unsubscribe') {
+    return false;
+  }
+  for (const event of events) {
+    if (!FHIRCAST_EVENT_NAMES[event]) {
+      return false;
+    }
+  }
+  if (endpoint && !(typeof endpoint === 'string' && endpoint.startsWith('ws'))) {
     return false;
   }
   return true;
