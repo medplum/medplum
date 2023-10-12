@@ -7,7 +7,7 @@ tags: [auth]
 
 Medplum supports multiple authentication and authorization configurations, with the intent to **enable required compliance and integration scenarios**. Implementations commonly use multiple authentication and authorization methods.
 
-Authentication (_are you who you say you are?_) and authorization (_what can you do?_) are distinct in Medplum. Several authentication methods (e.g. Google Authentication) are supported. Authorization can be determined by [Access Policies](./access-control.md) or SMART-on-FHIR scopes.
+Authentication (_are you who you say you are?_) and authorization (_what can you do?_) are distinct in Medplum. Several authentication methods (e.g. Google Authentication) are supported. Authorization can be determined by [Access Policies](/docs/access-control) or SMART-on-FHIR scopes.
 
 ## Patients, Practitioners and Bots
 
