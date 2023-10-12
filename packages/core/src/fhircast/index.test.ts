@@ -211,7 +211,6 @@ describe('serializeFhircastSubscriptionRequest', () => {
 
 // TODO: Test `createFhircastMessagePayload`
 
-// TODO: Test `FhircastConnection`
 describe('FhircastConnection', () => {
   let wsServer: WS;
   let connection: FhircastConnection;
