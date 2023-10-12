@@ -159,7 +159,7 @@ function TaskTitle(props: TaskCellProps): JSX.Element {
         const questionnaire = await medplum.readResource('Questionnaire', questionnaireId as string);
         setTitle(<>{questionnaire?.title} Response</>);
       }
-    };
+    }
 
     if ('code' in props.resource && props.resource.code) {
       setTitle(<CodeableConceptDisplay value={props.resource.code as CodeableConcept} />);
