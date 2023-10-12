@@ -5,7 +5,7 @@ import { IconCircleCheck } from '@tabler/icons-react';
 import React, { useState } from 'react';
 import { TaskCellProps } from './TaskList';
 
-export function DiagnosticReportModal(props: TaskCellProps) {
+export function DiagnosticReportModal(props: TaskCellProps): JSX.Element {
   const [open, setOpen] = useState(false);
   const [reviewed, setReviewed] = useState(false);
   const medplum = useMedplum();
