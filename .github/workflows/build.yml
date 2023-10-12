@@ -19,6 +19,7 @@ jobs:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: 'medplum'
       TURBO_REMOTE_ONLY: true
+      do-deploy: ${{ github.repository == 'medplum/medplum' && github.ref == 'refs/heads/main' && matrix.node-version == '18.x' && matrix.pg-version == '12'}}
     strategy:
       matrix:
         node-version: [18.x, 20.5.1]
@@ -70,23 +71,23 @@ jobs:
           name: medplum-code-coverage
           path: coverage/lcov.info
       - name: Configure AWS Credentials
-        if: github.repository == 'medplum/medplum' && github.ref == 'refs/heads/main' && matrix.node-version == '18.x'
+        if: env.do-deploy
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Login to Docker Hub
-        if: github.repository == 'medplum/medplum' && github.ref == 'refs/heads/main' && matrix.node-version == '18.x'
+        if: env.do-deploy
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Setup Docker Buildx
-        if: github.repository == 'medplum/medplum' && github.ref == 'refs/heads/main' && matrix.node-version == '18.x'
+        if: env.do-deploy
         uses: docker/setup-buildx-action@v2
       - name: Deploy
-        if: github.repository == 'medplum/medplum' && github.ref == 'refs/heads/main' && matrix.node-version == '18.x'
+        if: env.do-deploy
         run: ./scripts/cicd-deploy.sh
         env:
           APP_BUCKET: ${{ secrets.APP_BUCKET }}
