@@ -17,21 +17,74 @@ Medical orders should be represented in FHIR using the [`MedicationRequest`](/do
 
 In addition, it can contain contextual information such as instructions on administration of the medication.
 
-| Element                                                         | Description                                                                                                                                            | Example                                          |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| <td colspan="3"> **_Dispense and Ingestion Information_** </td> |
-| `medicationCodeableConcept`                                     | The medication being requested, coded as a concept. The details of the drug will be in the `MedicationKnowledge` resource with the same code.          | 42844 - Percocet                                 |
-| `dosageInstructions`                                            | Instructions on how the medication should be used by the patient.                                                                                      | [See below](#representing-patient-instructions)  |
-| `dispenseRequest`                                               | Provides details about how the medication should be dispensed or supplied, including quantity, refills, and more.                                      | [See below](#representing-dispense-instructions) |
-| `substitution`                                                  | A boolean value, indicating whether a substitution is allowed by the dispensing pharmacist. If it is blank, it implies that a substitution is allowed. | `false`                                          |
-| `priority`                                                      | How quickly the request should be addressed.                                                                                                           | urgent                                           |
-| <td colspan="3"> **_Tracking and Administration_** </td>        |
-| `subject`                                                       | The patient or group who the medication or prescription is for.                                                                                        | Patient/homer-simpson                            |
-| `requester`                                                     | The practitioner who created the request or wrote the prescription.                                                                                    | Practitioner/dr-alice-smith                      |
-| `reasonReference`                                               | A reference to a `Condition` or `Observation` that indicates why the order was made.                                                                   | Condition/chronic-pain                           |
-| `encounter`                                                     | The medical appointment at which the request was created.                                                                                              | Encounter/homer-simpson-annual-physical          |
-| `priorPrescription`                                             | A reference to a previous prescription or order that this one is replacing or updating.                                                                | MedicationRequest/homer-simpson-percocet-1       |
-| `status`                                                        | The current state of the order (i.e. completed, active, etc.)                                                                                          | completed                                        |
+<table>
+  <tr>
+    <td><strong>Element</strong></td>
+    <td><strong>Description</strong></td>
+    <td><strong>Example</strong></td>
+  </tr>
+  <tr>
+    <td colspan="3"><strong>Dispense and Ingestion Information</strong></td>
+  </tr>
+  <tr>
+    <td>medicationCodeableConcept</td>
+    <td>The medication being requested, coded as a concept. The details of the drug will be in the MedicationKnowledge resource with the same code.</td>
+    <td>42844 - Percocet</td>
+  </tr>
+  <tr>
+    <td>dosageInstructions</td>
+    <td>Instructions on how the medication should be used by the patient.</td>
+    <td><a href="#representing-patient-instructions">See below</a></td>
+  </tr>
+  <tr>
+    <td>dispenseRequest</td>
+    <td>Provides details about how the medication should be dispensed or supplied, including quantity, refills, and more.</td>
+    <td><a href="#representing-dispense-instructions">See below</a></td>
+  </tr>
+  <tr>
+    <td>substitution</td>
+    <td>A boolean value, indicating whether a substitution is allowed by the dispensing pharmacist. If it is blank, it implies that a substitution is allowed.</td>
+    <td>false</td>
+  </tr>
+  <tr>
+    <td>priority</td>
+    <td>How quickly the request should be addressed.</td>
+    <td>urgent</td>
+  </tr>
+  <tr>
+    <td colspan="3"><strong>Tracking and Administration</strong></td>
+  </tr>
+  <tr>
+    <td>subject</td>
+    <td>The patient or group who the medication or prescription is for.</td>
+    <td>Patient/homer-simpson</td>
+  </tr>
+  <tr>
+    <td>requester</td>
+    <td>The practitioner who created the request or wrote the prescription.</td>
+    <td>Practitioner/dr-alice-smith</td>
+  </tr>
+  <tr>
+    <td>reasonReference</td>
+    <td>A reference to a Condition or Observation that indicates why the order was made.</td>
+    <td>Condition/chronic-pain</td>
+  </tr>
+  <tr>
+    <td>encounter</td>
+    <td>The medical appointment at which the request was created.</td>
+    <td>Encounter/homer-simpson-annual-physical</td>
+  </tr>
+  <tr>
+    <td>priorPrescription</td>
+    <td>A reference to a previous prescription or order that this one is replacing or updating.</td>
+    <td>MedicationRequest/homer-simpson-percocet-1</td>
+  </tr>
+  <tr>
+      <td>status</td>
+      <td>The current state of the order (i.e. completed, active, etc.)</td>
+      <td>completed</td>
+  </tr>
+</table>
 
 ### Detailed Medication Information
 
