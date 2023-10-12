@@ -205,7 +205,10 @@ export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEve
     super();
     this.subRequest = subRequest;
     if (!subRequest.endpoint) {
-      throw new Error('Subscription request should contain an endpoint!');
+      throw new TypeError('Subscription request should contain an endpoint!');
+    }
+    if (!validateFhircastSubscriptionRequest(subRequest)) {
+      throw new TypeError('Subscription request failed validation!');
     }
     const websocket = new WebSocket(subRequest.endpoint);
     websocket.addEventListener('open', () => {

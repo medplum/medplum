@@ -21,9 +21,10 @@ import {
   NewUserRequest,
 } from './client';
 import { ContentType } from './contenttype';
-import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
+import { FhircastEventName, SubscriptionRequest, serializeFhircastSubscriptionRequest } from './fhircast';
+import { OperationOutcomeError, getStatus, isOperationOutcome, notFound, unauthorized } from './outcomes';
 import { isDataTypeLoaded } from './typeschema/types';
-import { createReference, ProfileResource } from './utils';
+import { ProfileResource, createReference } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -1129,6 +1130,68 @@ describe('Client', () => {
       id: 'system',
       deviceName: [{ name: 'System' }],
     });
+  });
+
+  describe('FHIRcast', () => {
+    describe('fhircastSubscribe', () => {
+      test('Valid subscription request', async () => {
+        const fetch = mockFetch(200, { 'hub.channel.endpoint': 'wss://api.medplum.com/fhircast/STU2/def456' });
+        const client = new MedplumClient({ fetch });
+
+        const topic = 'abc123';
+        const events = ['patient-open'] as FhircastEventName[];
+        const expectedSubRequest = {
+          mode: 'subscribe',
+          channelType: 'websocket',
+          topic,
+          events,
+        } satisfies SubscriptionRequest;
+        const serializedSubRequest = serializeFhircastSubscriptionRequest(expectedSubRequest);
+
+        const subRequest = await client.fhircastSubscribe(topic, events);
+        expect(fetch).toBeCalledWith(
+          'https://api.medplum.com/fhircast/STU2',
+          expect.objectContaining<RequestInit>({
+            method: 'POST',
+            body: serializedSubRequest,
+            headers: expect.objectContaining({ 'Content-Type': ContentType.FORM_URL_ENCODED }),
+          })
+        );
+        expect(subRequest).toEqual(expect.objectContaining<SubscriptionRequest>(expectedSubRequest));
+        expect(subRequest.endpoint).toBeDefined();
+        expect(subRequest.endpoint?.startsWith('ws')).toBeTruthy();
+      });
+
+      test('Invalid subscription request', async () => {
+        const fetch = mockFetch(500, { error: 'how did we make it here?' });
+        const client = new MedplumClient({ fetch });
+
+        await expect(client.fhircastSubscribe('', ['patient-open'])).rejects.toBeInstanceOf(TypeError);
+        // @ts-expect-error Topic must be a string
+        await expect(client.fhircastSubscribe(123, ['patient-open'])).rejects.toBeInstanceOf(TypeError);
+        // @ts-expect-error Events must be an array of events
+        await expect(client.fhircastSubscribe('abc123', 'patient-open')).rejects.toBeInstanceOf(TypeError);
+        // @ts-expect-error Events must be an array of valid events
+        await expect(client.fhircastSubscribe('abc123', ['random-event'])).rejects.toBeInstanceOf(TypeError);
+      });
+
+      test('Server returns invalid response', async () => {
+        const fetch = mockFetch(500, { error: 'how did we make it here?' });
+        const client = new MedplumClient({ fetch });
+
+        await expect(client.fhircastSubscribe('abc123', ['patient-open'])).rejects.toBeInstanceOf(Error);
+      });
+    });
+
+    // describe('fhircastUnsubscribe', () => {
+    //   test('Valid unsubscription request', () => {
+    //     const fetch = mockFetch(200, { 'hub.channel.endpoint': 'wss://api.medplum.com/fhircast/STU2/def456' });
+    //     const client = new MedplumClient({ fetch });
+    //     client.fhircastUnsubscribe({} as SubscriptionRequest);
+    //   });
+    // });
+
+    // describe('fhircastPublish', () => {});
   });
 
   test('Disabled cache read cached resource', async () => {

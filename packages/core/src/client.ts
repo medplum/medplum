@@ -2987,6 +2987,15 @@ export class MedplumClient extends EventTarget {
    * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
    */
   async fhircastSubscribe(topic: string, events: FhircastEventName[]): Promise<SubscriptionRequest> {
+    if (!(typeof topic === 'string' && topic !== '')) {
+      throw new TypeError('Invalid topic provided. Topic must be a valid string!');
+    }
+    if (!(typeof events === 'object' && Array.isArray(events) && events.length > 0)) {
+      throw new TypeError(
+        'Invalid events provided! Events must be an array of event names containing at least one event!'
+      );
+    }
+
     const subRequest = {
       channelType: 'websocket',
       mode: 'subscribe',
