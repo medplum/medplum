@@ -552,11 +552,7 @@ function buildNormalSearchFilterExpression(resourceType: string, param: SearchPa
   } else if (param.type === 'quantity') {
     return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
   } else {
-    const values = filter.value
-      .split(',')
-      .map((v) => new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), v));
-    const expr = new Disjunction(values);
-    return details.array ? new ArraySubquery(details.columnName, expr) : expr;
+    return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
   }
 }
 
