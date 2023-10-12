@@ -43,7 +43,7 @@ export function BotEditor(): JSX.Element | null {
   const medplum = useMedplum();
   const { id } = useParams() as { id: string };
   const [bot, setBot] = useState<Bot>();
-  const [defaultCode, setDefaultCode] = useState<string>(undefined);
+  const [defaultCode, setDefaultCode] = useState<string>();
   const [fhirInput, setFhirInput] = useState(DEFAULT_FHIR_INPUT);
   const [hl7Input, setHl7Input] = useState(DEFAULT_HL7_INPUT);
   const [contentType, setContentType] = useState(ContentType.FHIR_JSON);

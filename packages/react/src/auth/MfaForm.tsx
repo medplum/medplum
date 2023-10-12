@@ -13,7 +13,7 @@ export interface MfaFormProps {
 
 export function MfaForm(props: MfaFormProps): JSX.Element {
   const medplum = useMedplum();
-  const [errorMessage, setErrorMessage] = useState<string>(undefined);
+  const [errorMessage, setErrorMessage] = useState<string>();
   return (
     <Form
       style={{ maxWidth: 400 }}

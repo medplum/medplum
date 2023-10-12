@@ -15,7 +15,7 @@ export interface CodeInputProps {
 }
 
 export function CodeInput(props: CodeInputProps): JSX.Element {
-  const [value, setValue] = useState<string>(props.defaultValue);
+  const [value, setValue] = useState<string | undefined>(props.defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
     const newValue = newValues[0];
