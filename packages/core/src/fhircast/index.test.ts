@@ -251,7 +251,7 @@ describe('FhircastConnection', () => {
       createFhircastMessageContext('patient-123')
     ) satisfies FhircastMessagePayload;
 
-    const handler = (event: FhircastMessageEvent) => {
+    const handler = (event: FhircastMessageEvent): void => {
       expect(event).toBeDefined();
       expect(event.type).toBe('message');
       expect(event.payload).toEqual(message);
@@ -263,7 +263,7 @@ describe('FhircastConnection', () => {
   });
 
   test('.disconnect() / .addEventListener("disconnect")', (done) => {
-    const handler = (event: FhircastDisconnectEvent) => {
+    const handler = (event: FhircastDisconnectEvent): void => {
       expect(event).toBeDefined();
       expect(event.type).toBe('disconnect');
       connection.removeEventListener('disconnect', handler);
