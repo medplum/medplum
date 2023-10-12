@@ -46,8 +46,8 @@ function QuestionnaireModal(props: {
 }): JSX.Element {
   const [open, setOpen] = useState(false);
 
-  function handleModalSubmit(questionnaireResponse: QuestionnaireResponse): void {
-    props.handleSubmit(questionnaireResponse);
+  async function handleModalSubmit(questionnaireResponse: QuestionnaireResponse): Promise<void> {
+    await props.handleSubmit(questionnaireResponse);
     setOpen(false);
   }
 
