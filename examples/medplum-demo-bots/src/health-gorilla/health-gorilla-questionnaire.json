@@ -1,0 +1,1178 @@
+{
+  "resourceType": "Questionnaire",
+  "name": "Health Gorilla Order Form",
+  "title": "Health Gorilla Order Form",
+  "status": "active",
+  "item": [
+    {
+      "id": "patient",
+      "linkId": "patient",
+      "type": "reference",
+      "text": "Patient",
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource",
+          "valueCode": "Patient"
+        }
+      ]
+    },
+    {
+      "id": "practitioner",
+      "linkId": "practitioner",
+      "type": "reference",
+      "text": "Ordering Provider",
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource",
+          "valueCode": "Practitioner"
+        }
+      ]
+    },
+    {
+      "id": "performer",
+      "linkId": "performer",
+      "type": "choice",
+      "text": "Performing Lab",
+      "answerOption": [
+        {
+          "id": "test",
+          "valueString": "Testing"
+        },
+        {
+          "id": "labcorp",
+          "valueString": "Labcorp"
+        },
+        {
+          "id": "quest",
+          "valueString": "Quest"
+        }
+      ]
+    },
+    {
+      "id": "test-tests",
+      "linkId": "test-tests",
+      "type": "group",
+      "text": "Testing Tests",
+      "enableWhen": [
+        {
+          "question": "performer",
+          "operator": "=",
+          "answerString": "Testing"
+        }
+      ],
+      "item": [
+        {
+          "id": "test-1234-5",
+          "linkId": "test-1234-5",
+          "type": "boolean",
+          "text": "Test 1 (1234-5)"
+        },
+        {
+          "id": "test-1234-5-details",
+          "linkId": "test-1234-5-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "test-1234-5",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "test-1234-5-priority",
+              "linkId": "test-1234-5-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "test-1234-5-note",
+              "linkId": "test-1234-5-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "labcorp-tests",
+      "linkId": "labcorp-tests",
+      "type": "group",
+      "text": "Labcorp Tests",
+      "enableWhen": [
+        {
+          "question": "performer",
+          "operator": "=",
+          "answerString": "Labcorp"
+        }
+      ],
+      "item": [
+        {
+          "id": "labcorp-001453",
+          "linkId": "labcorp-001453",
+          "type": "boolean",
+          "text": "Hemoglobin A1c (001453)"
+        },
+        {
+          "id": "labcorp-001453-details",
+          "linkId": "labcorp-001453-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "labcorp-001453",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "labcorp-001453-priority",
+              "linkId": "labcorp-001453-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-001453-note",
+              "linkId": "labcorp-001453-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "labcorp-010322",
+          "linkId": "labcorp-010322",
+          "type": "boolean",
+          "text": "Prostate-Specific Ag (010322)"
+        },
+        {
+          "id": "labcorp-010322-details",
+          "linkId": "labcorp-010322-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "labcorp-010322",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "labcorp-010322-priority",
+              "linkId": "labcorp-010322-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-010322-note",
+              "linkId": "labcorp-010322-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "labcorp-322000",
+          "linkId": "labcorp-322000",
+          "type": "boolean",
+          "text": "Comp. Metabolic Panel (14) (322000)"
+        },
+        {
+          "id": "labcorp-322000-details",
+          "linkId": "labcorp-322000-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "labcorp-322000",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "labcorp-322000-priority",
+              "linkId": "labcorp-322000-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-322000-note",
+              "linkId": "labcorp-322000-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "labcorp-008649",
+          "linkId": "labcorp-008649",
+          "type": "boolean",
+          "text": "Aerobic Bacterial Culture (008649)"
+        },
+        {
+          "id": "labcorp-008649-details",
+          "linkId": "labcorp-008649-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "labcorp-008649",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "labcorp-008649-priority",
+              "linkId": "labcorp-008649-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-008649-note",
+              "linkId": "labcorp-008649-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "labcorp-005009",
+          "linkId": "labcorp-005009",
+          "type": "boolean",
+          "text": "CBC With Differential/Platelet (005009)"
+        },
+        {
+          "id": "labcorp-005009-details",
+          "linkId": "labcorp-005009-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "labcorp-005009",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "labcorp-005009-priority",
+              "linkId": "labcorp-005009-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-005009-note",
+              "linkId": "labcorp-005009-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "labcorp-008847",
+          "linkId": "labcorp-008847",
+          "type": "boolean",
+          "text": "Urine Culture, Routine (008847)"
+        },
+        {
+          "id": "labcorp-008847-details",
+          "linkId": "labcorp-008847-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "labcorp-008847",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "labcorp-008847-priority",
+              "linkId": "labcorp-008847-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-008847-note",
+              "linkId": "labcorp-008847-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "labcorp-008144",
+          "linkId": "labcorp-008144",
+          "type": "boolean",
+          "text": "Stool Culture (008144)"
+        },
+        {
+          "id": "labcorp-008144-details",
+          "linkId": "labcorp-008144-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "labcorp-008144",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "labcorp-008144-priority",
+              "linkId": "labcorp-008144-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-008144-note",
+              "linkId": "labcorp-008144-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "labcorp-083935",
+          "linkId": "labcorp-083935",
+          "type": "boolean",
+          "text": "HIV Ab/p24 Ag with Reflex (083935)"
+        },
+        {
+          "id": "labcorp-083935-details",
+          "linkId": "labcorp-083935-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "labcorp-083935",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "labcorp-083935-priority",
+              "linkId": "labcorp-083935-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-083935-note",
+              "linkId": "labcorp-083935-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "labcorp-322758",
+          "linkId": "labcorp-322758",
+          "type": "boolean",
+          "text": "Basic Metabolic Panel (8) (322758)"
+        },
+        {
+          "id": "labcorp-322758-details",
+          "linkId": "labcorp-322758-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "labcorp-322758",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "labcorp-322758-priority",
+              "linkId": "labcorp-322758-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-322758-note",
+              "linkId": "labcorp-322758-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "labcorp-164922",
+          "linkId": "labcorp-164922",
+          "type": "boolean",
+          "text": "HSV 1 and 2-Spec Ab, IgG w/Rfx (164922)"
+        },
+        {
+          "id": "labcorp-164922-details",
+          "linkId": "labcorp-164922-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "labcorp-164922",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "labcorp-164922-priority",
+              "linkId": "labcorp-164922-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-164922-note",
+              "linkId": "labcorp-164922-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quest-tests",
+      "linkId": "quest-tests",
+      "type": "group",
+      "text": "Quest Tests",
+      "enableWhen": [
+        {
+          "question": "performer",
+          "operator": "=",
+          "answerString": "Quest"
+        }
+      ],
+      "item": [
+        {
+          "id": "quest-866",
+          "linkId": "quest-866",
+          "type": "boolean",
+          "text": "Free T4 (866)"
+        },
+        {
+          "id": "quest-866-details",
+          "linkId": "quest-866-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "quest-866",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "quest-866-priority",
+              "linkId": "quest-866-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "quest-866-note",
+              "linkId": "quest-866-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "quest-899",
+          "linkId": "quest-899",
+          "type": "boolean",
+          "text": "TSH (899)"
+        },
+        {
+          "id": "quest-899-details",
+          "linkId": "quest-899-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "quest-899",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "quest-899-priority",
+              "linkId": "quest-899-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "quest-899-note",
+              "linkId": "quest-899-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "quest-10306",
+          "linkId": "quest-10306",
+          "type": "boolean",
+          "text": "Hepatitis Panel, Acute w/reflex to confirmation (10306)"
+        },
+        {
+          "id": "quest-10306-details",
+          "linkId": "quest-10306-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "quest-10306",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "quest-10306-priority",
+              "linkId": "quest-10306-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "quest-10306-note",
+              "linkId": "quest-10306-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "quest-10231",
+          "linkId": "quest-10231",
+          "type": "boolean",
+          "text": "Comprehensive Metabolic Panel (10231)"
+        },
+        {
+          "id": "quest-10231-details",
+          "linkId": "quest-10231-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "quest-10231",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "quest-10231-priority",
+              "linkId": "quest-10231-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "quest-10231-note",
+              "linkId": "quest-10231-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "quest-496",
+          "linkId": "quest-496",
+          "type": "boolean",
+          "text": "Hemoglobin A1C (496)"
+        },
+        {
+          "id": "quest-496-details",
+          "linkId": "quest-496-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "quest-496",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "quest-496-priority",
+              "linkId": "quest-496-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "quest-496-note",
+              "linkId": "quest-496-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "quest-2605",
+          "linkId": "quest-2605",
+          "type": "boolean",
+          "text": "Allergen Specific IGE Dog dander, Serum (2605)"
+        },
+        {
+          "id": "quest-2605-details",
+          "linkId": "quest-2605-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "quest-2605",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "quest-2605-priority",
+              "linkId": "quest-2605-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "quest-2605-note",
+              "linkId": "quest-2605-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "quest-7600",
+          "linkId": "quest-7600",
+          "type": "boolean",
+          "text": "Lipid Panel (Diagnosis E04.2, Z00.00) (7600)"
+        },
+        {
+          "id": "quest-7600-details",
+          "linkId": "quest-7600-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "quest-7600",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "quest-7600-priority",
+              "linkId": "quest-7600-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "quest-7600-note",
+              "linkId": "quest-7600-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "quest-229",
+          "linkId": "quest-229",
+          "type": "boolean",
+          "text": "Aldosterone, 24hr (U) (Diagnosis E04.2, Z00.00) Total Volume - 1200 (229)"
+        },
+        {
+          "id": "quest-229-details",
+          "linkId": "quest-229-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "quest-229",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "quest-229-priority",
+              "linkId": "quest-229-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "quest-229-note",
+              "linkId": "quest-229-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "quest-4112",
+          "linkId": "quest-4112",
+          "type": "boolean",
+          "text": "FTA (4112)"
+        },
+        {
+          "id": "quest-4112-details",
+          "linkId": "quest-4112-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "quest-4112",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "quest-4112-priority",
+              "linkId": "quest-4112-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "quest-4112-note",
+              "linkId": "quest-4112-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "quest-6399",
+          "linkId": "quest-6399",
+          "type": "boolean",
+          "text": "CBC w/Diff (6399)"
+        },
+        {
+          "id": "quest-6399-details",
+          "linkId": "quest-6399-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "quest-6399",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "quest-6399-priority",
+              "linkId": "quest-6399-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "quest-6399-note",
+              "linkId": "quest-6399-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "quest-16814",
+          "linkId": "quest-16814",
+          "type": "boolean",
+          "text": "ANA Scr, IFA w/Reflex Titer / Pattern / MPX AB Cascade (16814)"
+        },
+        {
+          "id": "quest-16814-details",
+          "linkId": "quest-16814-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "quest-16814",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "quest-16814-priority",
+              "linkId": "quest-16814-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "quest-16814-note",
+              "linkId": "quest-16814-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        },
+        {
+          "id": "quest-7573",
+          "linkId": "quest-7573",
+          "type": "boolean",
+          "text": "Iron Total/IBC Diagnosis code D64.9 (7573)"
+        },
+        {
+          "id": "quest-7573-details",
+          "linkId": "quest-7573-details",
+          "type": "group",
+          "enableWhen": [
+            {
+              "question": "quest-7573",
+              "operator": "=",
+              "answerBoolean": true
+            }
+          ],
+          "item": [
+            {
+              "id": "quest-7573-priority",
+              "linkId": "quest-7573-priority",
+              "type": "choice",
+              "text": "Priority",
+              "answerOption": [
+                {
+                  "valueString": "routine",
+                  "initialSelected": true
+                },
+                {
+                  "valueString": "urgent"
+                },
+                {
+                  "valueString": "asap"
+                },
+                {
+                  "valueString": "stat"
+                }
+              ]
+            },
+            {
+              "id": "quest-7573-note",
+              "linkId": "quest-7573-note",
+              "type": "string",
+              "text": "Notes"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

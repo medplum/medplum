@@ -1,5 +1,5 @@
 import { Anchor, Button, Group, Stack, Stepper, Title } from '@mantine/core';
-import { ProfileResource, createReference, getExtension, getReferenceString } from '@medplum/core';
+import { createReference, getExtension, getReferenceString, ProfileResource } from '@medplum/core';
 import {
   Questionnaire,
   QuestionnaireItem,
@@ -14,7 +14,7 @@ import { Form } from '../Form/Form';
 import { FormSection } from '../FormSection/FormSection';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { useResource } from '../useResource/useResource';
-import { QuestionnaireItemType, isQuestionEnabled } from '../utils/questionnaire';
+import { isQuestionEnabled, QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireFormItem } from './QuestionnaireFormItem/QuestionnaireFormItem';
 
 export interface QuestionnaireFormProps {
@@ -356,7 +356,7 @@ function RepeatableGroup(props: RepeatableGroupProps): JSX.Element | null {
       {[...Array(number)].map((_, i) => {
         return (
           <div key={i}>
-            <h3>{props.text}</h3>
+            {props.text && <Title order={3}>{props.text}</Title>}
             <QuestionnaireFormItemArray
               items={item.item ?? []}
               allResponses={props.allResponses}

@@ -1,10 +1,10 @@
 import {
-  TypedValue,
   deepClone,
   evalFhirPathTyped,
   formatCoding,
   getExtension,
   getTypedPropertyValue,
+  TypedValue,
 } from '@medplum/core';
 import {
   QuestionnaireItem,
@@ -91,20 +91,16 @@ function getByLinkId(
   responseItems: QuestionnaireResponseItem[] | undefined,
   linkId: string
 ): QuestionnaireResponseItemAnswer[] | undefined {
-  if (!Array.isArray(responseItems)) {
+  if (!responseItems) {
     return undefined;
   }
 
-  const response = responseItems.find((response) => response.linkId === linkId);
-
-  if (response) {
-    return response.answer;
-  }
-
-  // If not found at the current level, search in nested items
-  for (const nestedResponse of responseItems) {
-    if (nestedResponse.item) {
-      const nestedAnswer = getByLinkId(nestedResponse.item, linkId);
+  for (const response of responseItems) {
+    if (response.linkId === linkId) {
+      return response.answer;
+    }
+    if (response.item) {
+      const nestedAnswer = getByLinkId(response.item, linkId);
       if (nestedAnswer) {
         return nestedAnswer;
       }
