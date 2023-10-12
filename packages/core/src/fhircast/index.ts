@@ -117,10 +117,13 @@ export function validateFhircastSubscriptionRequest(subscriptionRequest: Subscri
 export function createFhircastMessagePayload(
   topic: string,
   event: FhircastEventName,
-  context: FhircastEventContext[]
+  context: FhircastEventContext | FhircastEventContext[]
 ): FhircastMessagePayload {
   if (!topic) {
-    throw new Error('Must provide a topic!');
+    throw new TypeError('Must provide a topic!');
+  }
+  if (typeof context !== 'object') {
+    throw new TypeError('context must be a context object or array of context objects!');
   }
   return {
     timestamp: new Date().toISOString(),
@@ -128,7 +131,7 @@ export function createFhircastMessagePayload(
     event: {
       'hub.topic': topic,
       'hub.event': event,
-      context,
+      context: Array.isArray(context) ? context : [context],
     },
   };
 }

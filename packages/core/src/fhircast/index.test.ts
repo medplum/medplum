@@ -1,4 +1,48 @@
-import { SubscriptionRequest, serializeFhircastSubscriptionRequest, validateFhircastSubscriptionRequest } from '.';
+import WS from 'jest-websocket-mock';
+import { webcrypto } from 'node:crypto';
+import {
+  FhircastConnectEvent,
+  FhircastConnection,
+  FhircastDisconnectEvent,
+  FhircastEventContext,
+  FhircastMessageEvent,
+  FhircastMessagePayload,
+  SubscriptionRequest,
+  createFhircastMessagePayload,
+  serializeFhircastSubscriptionRequest,
+  validateFhircastSubscriptionRequest,
+} from '.';
+
+// TODO: Remove this hack
+Object.defineProperty(globalThis, 'crypto', {
+  value: webcrypto,
+});
+
+function createFhircastMessageContext(patientId: string): FhircastEventContext {
+  if (!patientId) {
+    throw new Error('Must provide a patientId!');
+  }
+  return {
+    key: 'patient',
+    resource: {
+      resourceType: 'Patient',
+      id: patientId,
+      identifier: [
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                code: 'MR',
+                display: 'Medical Record Number',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  };
+}
 
 describe('validateFhircastSubscriptionRequest', () => {
   test('Valid subscription requests', () => {
@@ -165,4 +209,68 @@ describe('serializeFhircastSubscriptionRequest', () => {
   });
 });
 
+// TODO: Test `createFhircastMessagePayload`
+
 // TODO: Test `FhircastConnection`
+describe('FhircastConnection', () => {
+  let wsServer: WS;
+  let connection: FhircastConnection;
+
+  beforeAll(() => {
+    wsServer = new WS('ws://localhost:1234', { jsonProtocol: true });
+  });
+
+  afterAll(() => {
+    WS.clean();
+  });
+
+  test('Constructor / .addEventListener("connect")', (done) => {
+    const subRequest = {
+      topic: 'abc123',
+      mode: 'subscribe',
+      channelType: 'websocket',
+      events: ['patient-open'],
+      endpoint: 'ws://localhost:1234',
+    } satisfies SubscriptionRequest;
+
+    connection = new FhircastConnection(subRequest);
+    expect(connection).toBeDefined();
+
+    const handler = (event: FhircastConnectEvent): void => {
+      expect(event).toBeDefined();
+      expect(event.type).toBe('connect');
+      connection.removeEventListener('connect', handler);
+      done();
+    };
+    connection.addEventListener('connect', handler);
+  });
+
+  test('.addEventListener("message")', (done) => {
+    const message = createFhircastMessagePayload(
+      'abc123',
+      'patient-open',
+      createFhircastMessageContext('patient-123')
+    ) satisfies FhircastMessagePayload;
+
+    const handler = (event: FhircastMessageEvent) => {
+      expect(event).toBeDefined();
+      expect(event.type).toBe('message');
+      expect(event.payload).toEqual(message);
+      connection.removeEventListener('message', handler);
+      done();
+    };
+    connection.addEventListener('message', handler);
+    wsServer.send(message);
+  });
+
+  test('.disconnect() / .addEventListener("disconnect")', (done) => {
+    const handler = (event: FhircastDisconnectEvent) => {
+      expect(event).toBeDefined();
+      expect(event.type).toBe('disconnect');
+      connection.removeEventListener('disconnect', handler);
+      done();
+    };
+    connection.addEventListener('disconnect', handler);
+    connection.disconnect();
+  });
+});

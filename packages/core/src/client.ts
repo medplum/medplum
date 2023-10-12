@@ -3060,8 +3060,7 @@ export class MedplumClient extends EventTarget {
     event: FhircastEventName,
     context: FhircastEventContext | FhircastEventContext[]
   ): Promise<void> {
-    const normalizedContext = Array.isArray(context) ? context : [context];
-    return this.post(`/fhircast/STU2/${topic}`, createFhircastMessagePayload(topic, event, normalizedContext));
+    return this.post(`/fhircast/STU2/${topic}`, createFhircastMessagePayload(topic, event, context));
   }
 
   /**
