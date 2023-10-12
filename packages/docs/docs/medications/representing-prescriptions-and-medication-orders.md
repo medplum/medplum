@@ -24,7 +24,7 @@ In addition, it can contain contextual information such as instructions on admin
     <td><strong>Example</strong></td>
   </tr>
   <tr>
-    <td colspan="3"><strong>Dispense and Ingestion Information</strong></td>
+    <td colspan="3"><strong><em>Dispense and Ingestion Information</em></strong></td>
   </tr>
   <tr>
     <td>medicationCodeableConcept</td>
@@ -52,7 +52,7 @@ In addition, it can contain contextual information such as instructions on admin
     <td>urgent</td>
   </tr>
   <tr>
-    <td colspan="3"><strong>Tracking and Administration</strong></td>
+    <td colspan="3"><strong><em>Tracking and Administration</em></strong></td>
   </tr>
   <tr>
     <td>subject</td>
