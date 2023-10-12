@@ -22,9 +22,10 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x, 20.5.1]
+        pg-version: [12, 14]
     services:
       postgres:
-        image: postgres
+        image: postgres:${{ matrix.pg-version }}
         env:
           POSTGRES_DB: medplum_test
           POSTGRES_USER: medplum
