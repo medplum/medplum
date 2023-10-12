@@ -7,6 +7,7 @@ import {
   FhircastEventContext,
   FhircastMessageEvent,
   FhircastMessagePayload,
+  FhircastResourceType,
   SubscriptionRequest,
   createFhircastMessagePayload,
   serializeFhircastSubscriptionRequest,
@@ -18,28 +19,26 @@ Object.defineProperty(globalThis, 'crypto', {
   value: webcrypto,
 });
 
-function createFhircastMessageContext(patientId: string): FhircastEventContext {
-  if (!patientId) {
-    throw new Error('Must provide a patientId!');
+const FHIRCAST_RESOURCE_TYPES = {
+  patient: 'Patient',
+  imagingstudy: 'ImagingStudy',
+} as const;
+
+function createFhircastMessageContext(
+  resourceType: Lowercase<FhircastResourceType>,
+  resourceId: string
+): FhircastEventContext {
+  if (!FHIRCAST_RESOURCE_TYPES[resourceType]) {
+    throw new TypeError(`resourceType must be one of: ${Object.keys(FHIRCAST_RESOURCE_TYPES).join(', ')}`);
+  }
+  if (!resourceId) {
+    throw new TypeError('Must provide a resourceId!');
   }
   return {
-    key: 'patient',
+    key: resourceType,
     resource: {
-      resourceType: 'Patient',
-      id: patientId,
-      identifier: [
-        {
-          type: {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                code: 'MR',
-                display: 'Medical Record Number',
-              },
-            ],
-          },
-        },
-      ],
+      resourceType: FHIRCAST_RESOURCE_TYPES[resourceType],
+      id: resourceId,
     },
   };
 }
@@ -209,7 +208,95 @@ describe('serializeFhircastSubscriptionRequest', () => {
   });
 });
 
-// TODO: Test `createFhircastMessagePayload`
+describe('createFhircastMessagePayload', () => {
+  test('Valid message creation with single context', () => {
+    const topic = 'abc123';
+    const event = 'patient-open';
+    const resourceId = 'patient-123';
+    const context = createFhircastMessageContext('patient', resourceId);
+
+    const messagePayload = createFhircastMessagePayload(topic, event, context);
+
+    expect(messagePayload).toBeDefined();
+    expect(messagePayload).toEqual<FhircastMessagePayload>({
+      id: expect.any(String),
+      timestamp: expect.any(String),
+      event: { 'hub.topic': topic, 'hub.event': event, context: expect.any(Object) },
+    });
+    expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
+    expect(messagePayload.event.context[0]).toEqual(context);
+  });
+
+  test('Valid message with array of contexts', () => {
+    const topic = 'abc123';
+    const event = 'imagingstudy-open';
+    const resourceId1 = 'imagingstudy-123';
+    const context1 = createFhircastMessageContext('imagingstudy', resourceId1);
+    const resourceId2 = 'patient-456';
+    const context2 = createFhircastMessageContext('patient', resourceId2);
+
+    const messagePayload = createFhircastMessagePayload(topic, event, [context1, context2]);
+
+    expect(messagePayload).toBeDefined();
+    expect(messagePayload).toEqual<FhircastMessagePayload>({
+      id: expect.any(String),
+      timestamp: expect.any(String),
+      event: { 'hub.topic': topic, 'hub.event': event, context: expect.any(Object) },
+    });
+    expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
+    expect(messagePayload.event.context[0]).toEqual(context1);
+    expect(messagePayload.event.context[1]).toEqual(context2);
+  });
+
+  test('Invalid topic', () => {
+    expect(() =>
+      createFhircastMessagePayload(
+        // @ts-expect-error Invalid topic, must be a string
+        123,
+        'imagingstudy-open',
+        createFhircastMessageContext('imagingstudy', 'imagingstudy-123')
+      )
+    ).toThrowError(TypeError);
+  });
+
+  test('Invalid event name', () => {
+    expect(() =>
+      createFhircastMessagePayload(
+        'abc-123',
+        // @ts-expect-error Invalid event, must be one of the enumerated FHIRcast events
+        'imagingstudy-create',
+        createFhircastMessageContext('imagingstudy', 'imagingstudy-123')
+      )
+    ).toThrowError(TypeError);
+  });
+
+  test('Invalid context', () => {
+    expect(() =>
+      createFhircastMessagePayload(
+        'abc-123',
+        'imagingstudy-open',
+        // @ts-expect-error Invalid context, must be of type FhircastEventContext | FhircastEventContext[]
+        { id: 'imagingstudy-123' }
+      )
+    ).toThrowError(TypeError);
+    expect(() =>
+      createFhircastMessagePayload(
+        'abc-123',
+        'imagingstudy-open',
+        // @ts-expect-error Invalid context, resource must have an ID
+        { key: 'patient', resource: { resourceType: 'Patient' } }
+      )
+    ).toThrowError(TypeError);
+    expect(() =>
+      createFhircastMessagePayload(
+        'abc-123',
+        'imagingstudy-open',
+        // @ts-expect-error Invalid context, must have a valid resource AND a key
+        { resource: { resourceType: 'Patient', id: 'patient-123' } }
+      )
+    ).toThrowError(TypeError);
+  });
+});
 
 describe('FhircastConnection', () => {
   let wsServer: WS;
@@ -248,7 +335,7 @@ describe('FhircastConnection', () => {
     const message = createFhircastMessagePayload(
       'abc123',
       'patient-open',
-      createFhircastMessageContext('patient-123')
+      createFhircastMessageContext('patient', 'patient-123')
     ) satisfies FhircastMessagePayload;
 
     const handler = (event: FhircastMessageEvent): void => {

@@ -6,9 +6,16 @@ const FHIRCAST_EVENT_NAMES = {
   'patient-close': 'patient-close',
   'imagingstudy-open': 'imagingstudy-open',
   'imagingstudy-close': 'imagingstudy-close',
-};
+} as const;
+
+const FHIRCAST_RESOURCE_TYPES = ['Patient', 'ImagingStudy'] as const;
 
 export type FhircastEventName = keyof typeof FHIRCAST_EVENT_NAMES;
+export type FhircastResourceType = (typeof FHIRCAST_RESOURCE_TYPES)[number];
+
+export function isFhircastResourceType(resourceType: FhircastResourceType): boolean {
+  return FHIRCAST_RESOURCE_TYPES.includes(resourceType);
+}
 
 /**
  * A `FHIRcast` subscription request.
@@ -25,7 +32,7 @@ export type SubscriptionRequest = {
 
 export type FhircastEventContext = {
   key: string;
-  resource: Resource;
+  resource: Resource & { resourceType: FhircastResourceType; id: string };
 };
 
 export type FhircastEventPayload = {
@@ -119,19 +126,49 @@ export function createFhircastMessagePayload(
   event: FhircastEventName,
   context: FhircastEventContext | FhircastEventContext[]
 ): FhircastMessagePayload {
-  if (!topic) {
+  if (!(topic && typeof topic === 'string')) {
     throw new TypeError('Must provide a topic!');
+  }
+  if (!FHIRCAST_EVENT_NAMES[event]) {
+    throw new TypeError(
+      `Must provide a valid FHIRcast event name! Supported events: ${Object.keys(FHIRCAST_EVENT_NAMES).join(', ')}`
+    );
   }
   if (typeof context !== 'object') {
     throw new TypeError('context must be a context object or array of context objects!');
   }
+
+  const normalizedContexts = Array.isArray(context) ? context : [context];
+  for (let i = 0; i < normalizedContexts.length; i++) {
+    const context = normalizedContexts[i];
+    if (!(context.key && typeof context.key === 'string')) {
+      throw new TypeError(`context[${i}] is invalid! Context must contain a key!`);
+    }
+    if (typeof context.resource !== 'object') {
+      throw new TypeError(
+        `context[${i}] is invalid! Context must contain a single valid FHIR resource! Resource is not an object.`
+      );
+    }
+    if (!(context.resource.id && typeof context.resource.id === 'string')) {
+      throw new TypeError(`context[${i}] is invalid! Resource must contain a valid string ID.`);
+    }
+    if (!context.resource.resourceType) {
+      throw new TypeError(`context[${i}] is invalid! Resource must contain a resource type. No resource type found.`);
+    }
+    if (!isFhircastResourceType(context.resource.resourceType)) {
+      throw new TypeError(
+        `context[${i}] is invalid! Resource must contain a valid resource type. Resource type is not a known resource type.`
+      );
+    }
+  }
+
   return {
     timestamp: new Date().toISOString(),
     id: crypto.randomUUID(),
     event: {
       'hub.topic': topic,
       'hub.event': event,
-      context: Array.isArray(context) ? context : [context],
+      context: normalizedContexts,
     },
   };
 }
@@ -173,7 +210,6 @@ export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEve
     const websocket = new WebSocket(subRequest.endpoint);
     websocket.addEventListener('open', () => {
       this.dispatchEvent({ type: 'connect' });
-      console.log('connected!');
 
       websocket.addEventListener('message', (event: MessageEvent) => {
         const message = JSON.parse(event.data) as Record<string, string | object>;
