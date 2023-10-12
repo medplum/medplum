@@ -114,6 +114,36 @@ export function validateFhircastSubscriptionRequest(subscriptionRequest: Subscri
 }
 
 /**
+ * Throws if any context in the given array of contexts is invalid.
+ *
+ * @param contexts The FHIRcast event contexts to validate.
+ */
+function validateFhircastContexts(contexts: FhircastEventContext[]): void {
+  for (let i = 0; i < contexts.length; i++) {
+    const context = contexts[i];
+    if (!(context.key && typeof context.key === 'string')) {
+      throw new TypeError(`context[${i}] is invalid! Context must contain a key!`);
+    }
+    if (typeof context.resource !== 'object') {
+      throw new TypeError(
+        `context[${i}] is invalid! Context must contain a single valid FHIR resource! Resource is not an object.`
+      );
+    }
+    if (!(context.resource.id && typeof context.resource.id === 'string')) {
+      throw new TypeError(`context[${i}] is invalid! Resource must contain a valid string ID.`);
+    }
+    if (!context.resource.resourceType) {
+      throw new TypeError(`context[${i}] is invalid! Resource must contain a resource type. No resource type found.`);
+    }
+    if (!isFhircastResourceType(context.resource.resourceType)) {
+      throw new TypeError(
+        `context[${i}] is invalid! Resource must contain a valid resource type. Resource type is not a known resource type.`
+      );
+    }
+  }
+}
+
+/**
  * Creates a serializable JSON payload for the `FHIRcast` protocol
  *
  * @param topic The topic that this message will be published on. Usually a UUID.
@@ -139,29 +169,8 @@ export function createFhircastMessagePayload(
   }
 
   const normalizedContexts = Array.isArray(context) ? context : [context];
-  for (let i = 0; i < normalizedContexts.length; i++) {
-    const context = normalizedContexts[i];
-    if (!(context.key && typeof context.key === 'string')) {
-      throw new TypeError(`context[${i}] is invalid! Context must contain a key!`);
-    }
-    if (typeof context.resource !== 'object') {
-      throw new TypeError(
-        `context[${i}] is invalid! Context must contain a single valid FHIR resource! Resource is not an object.`
-      );
-    }
-    if (!(context.resource.id && typeof context.resource.id === 'string')) {
-      throw new TypeError(`context[${i}] is invalid! Resource must contain a valid string ID.`);
-    }
-    if (!context.resource.resourceType) {
-      throw new TypeError(`context[${i}] is invalid! Resource must contain a resource type. No resource type found.`);
-    }
-    if (!isFhircastResourceType(context.resource.resourceType)) {
-      throw new TypeError(
-        `context[${i}] is invalid! Resource must contain a valid resource type. Resource type is not a known resource type.`
-      );
-    }
-  }
-
+  // This will throw if any context in the array is invalid
+  validateFhircastContexts(normalizedContexts);
   return {
     timestamp: new Date().toISOString(),
     id: crypto.randomUUID(),
