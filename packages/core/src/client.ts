@@ -2003,15 +2003,15 @@ export class MedplumClient extends EventTarget {
     if (!resource.id) {
       throw new Error('Missing id');
     }
-    this.invalidateSearches(resource.resourceType);
     let result = await this.put(this.fhirUrl(resource.resourceType, resource.id), resource, undefined, options);
     if (!result) {
       // On 304 not modified, result will be undefined
       // Return the user input instead
-      // return result ?? resource;
       result = resource;
     }
     this.cacheResource(result);
+    this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id, '_history'));
+    this.invalidateSearches(resource.resourceType);
     return result;
   }
 
