@@ -8,6 +8,7 @@ import {
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'crypto';
+import WS from 'jest-websocket-mock';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
@@ -1254,7 +1255,12 @@ describe('Client', () => {
 
       beforeAll(() => {
         const fetch = mockFetch(500, { error: 'How did we get here?' });
+        const _wsServer = new WS('wss://api.medplum.com/fhircast/STU2/abc123', { jsonProtocol: true });
         client = new MedplumClient({ fetch });
+      });
+
+      afterAll(() => {
+        WS.clean();
       });
 
       test('Valid subscription request', async () => {
