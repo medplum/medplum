@@ -12,7 +12,7 @@ describe('FHIRcast Test Utils', () => {
         },
       });
       expect(createFhircastMessageContext('imagingstudy', 'imagingstudy-456')).toEqual<FhircastEventContext>({
-        key: 'imagingstudy',
+        key: 'study',
         resource: {
           resourceType: 'ImagingStudy',
           id: 'imagingstudy-456',

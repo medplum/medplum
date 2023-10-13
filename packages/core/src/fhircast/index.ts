@@ -8,11 +8,17 @@ const FHIRCAST_EVENT_NAMES = {
   'imagingstudy-close': 'imagingstudy-close',
 } as const;
 
-const FHIRCAST_RESOURCE_TYPES = ['Patient', 'ImagingStudy'] as const;
+const FHIRCAST_RESOURCE_TYPES = ['Patient', 'Encounter', 'ImagingStudy'] as const;
 
 export type FhircastEventName = keyof typeof FHIRCAST_EVENT_NAMES;
 export type FhircastResourceType = (typeof FHIRCAST_RESOURCE_TYPES)[number];
 
+/**
+ * Checks if a `ResourceType` can be used in a `FHIRcast` context.
+ *
+ * @param resourceType A `ResourceType` to test.
+ * @returns `true` if this is a resource type associated with `FHIRcast` contexts, otherwise returns `false`.
+ */
 export function isFhircastResourceType(resourceType: FhircastResourceType): boolean {
   return FHIRCAST_RESOURCE_TYPES.includes(resourceType);
 }
@@ -32,9 +38,24 @@ export type SubscriptionRequest = {
 
 export type PendingSubscriptionRequest = Omit<SubscriptionRequest, 'endpoint'>;
 
-export type FhircastEventContext = {
-  key: string;
-  resource: Resource & { resourceType: FhircastResourceType; id: string };
+const FHIRCAST_EVENT_CONTEXT_LOOKUP = {
+  study: 'ImagingStudy',
+  patient: 'Patient',
+  encounter: 'Encounter',
+} as const;
+
+const FHIRCAST_EVENT_CONTEXT_REVERSE_LOOKUP = {
+  ImagingStudy: 'study',
+  Patient: 'patient',
+  Encounter: 'encounter',
+} as const;
+
+type FhircastEventContextMap = typeof FHIRCAST_EVENT_CONTEXT_LOOKUP;
+type FhircastEventContextKey = keyof FhircastEventContextMap;
+
+export type FhircastEventContext<K extends FhircastEventContextKey = FhircastEventContextKey> = {
+  key: K;
+  resource: Resource & { resourceType: FhircastEventContextMap[K]; id: string };
 };
 
 export type FhircastEventPayload = {
@@ -149,10 +170,15 @@ function validateFhircastContexts(contexts: FhircastEventContext[]): void {
     if (!context.resource.resourceType) {
       throw new TypeError(`context[${i}] is invalid! Resource must contain a resource type. No resource type found.`);
     }
-    if (!isFhircastResourceType(context.resource.resourceType)) {
+    const resourceType = context.resource.resourceType;
+    if (!isFhircastResourceType(resourceType)) {
       throw new TypeError(
-        `context[${i}] is invalid! Resource must contain a valid resource type. Resource type is not a known resource type.`
+        `context[${i}] is invalid! Resource must contain a valid FHIRcast resource type. Resource type is not a known resource type.`
       );
+    }
+    const expectedKey = FHIRCAST_EVENT_CONTEXT_REVERSE_LOOKUP[resourceType];
+    if (expectedKey !== context.key) {
+      throw new TypeError(`context[${i}] is invalid! Context key for type ${resourceType} must be ${expectedKey}`);
     }
   }
 }

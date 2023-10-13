@@ -3,6 +3,7 @@ import { FhircastEventContext, FhircastResourceType } from '.';
 const FHIRCAST_RESOURCE_TYPES = {
   patient: 'Patient',
   imagingstudy: 'ImagingStudy',
+  encounter: 'Encounter',
 } as const;
 
 export function createFhircastMessageContext(
@@ -16,7 +17,7 @@ export function createFhircastMessageContext(
     throw new TypeError('Must provide a resourceId!');
   }
   return {
-    key: resourceType,
+    key: resourceType === 'imagingstudy' ? 'study' : resourceType,
     resource: {
       resourceType: FHIRCAST_RESOURCE_TYPES[resourceType],
       id: resourceId,
