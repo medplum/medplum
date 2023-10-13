@@ -21,7 +21,13 @@ import {
   NewUserRequest,
 } from './client';
 import { ContentType } from './contenttype';
-import { FhircastEventName, SubscriptionRequest, serializeFhircastSubscriptionRequest } from './fhircast';
+import {
+  FhircastConnection,
+  FhircastEventName,
+  SubscriptionRequest,
+  serializeFhircastSubscriptionRequest,
+} from './fhircast';
+import { createFhircastMessageContext } from './fhircast/test-utils';
 import { OperationOutcomeError, getStatus, isOperationOutcome, notFound, unauthorized } from './outcomes';
 import { isDataTypeLoaded } from './typeschema/types';
 import { ProfileResource, createReference } from './utils';
@@ -1183,15 +1189,147 @@ describe('Client', () => {
       });
     });
 
-    // describe('fhircastUnsubscribe', () => {
-    //   test('Valid unsubscription request', () => {
-    //     const fetch = mockFetch(200, { 'hub.channel.endpoint': 'wss://api.medplum.com/fhircast/STU2/def456' });
-    //     const client = new MedplumClient({ fetch });
-    //     client.fhircastUnsubscribe({} as SubscriptionRequest);
-    //   });
-    // });
+    describe('fhircastUnsubscribe', () => {
+      test('Valid unsubscription request', async () => {
+        const fetch = mockFetch(201, { response: 'Hello from Medplum!' });
+        const client = new MedplumClient({ fetch });
 
-    // describe('fhircastPublish', () => {});
+        const subRequest = {
+          mode: 'subscribe', // you should be able to pass a sub request with mode still set to `subscribe`
+          channelType: 'websocket',
+          topic: 'abc123',
+          events: ['patient-open'],
+          endpoint: 'wss://api.medplum.com/fhircast/STU2/def456',
+        } satisfies SubscriptionRequest;
+        const serializedSubRequest = serializeFhircastSubscriptionRequest({ ...subRequest, mode: 'unsubscribe' });
+
+        await client.fhircastUnsubscribe(subRequest);
+        expect(fetch).toHaveBeenCalledWith(
+          'https://api.medplum.com/fhircast/STU2',
+          expect.objectContaining<RequestInit>({
+            method: 'POST',
+            body: serializedSubRequest,
+            headers: expect.objectContaining({ 'Content-Type': ContentType.FORM_URL_ENCODED }),
+          })
+        );
+      });
+
+      test('Invalid unsubscription request', async () => {
+        const fetch = mockFetch(500, { error: 'How did we get here?' });
+        const client = new MedplumClient({ fetch });
+
+        await expect(
+          // @ts-expect-error Sub request requires mode
+          client.fhircastUnsubscribe({
+            channelType: 'websocket',
+            topic: 'abc123',
+            events: ['patient-open'],
+            endpoint: 'wss://api.medplum.com/fhircast/STU2/def456',
+          })
+        ).rejects.toBeInstanceOf(TypeError);
+        await expect(
+          // @ts-expect-error Sub request requires channelType
+          client.fhircastUnsubscribe({
+            mode: 'subscribe',
+            topic: 'abc123',
+            events: ['patient-open'],
+            endpoint: 'wss://api.medplum.com/fhircast/STU2/def456',
+          })
+        ).rejects.toBeInstanceOf(TypeError);
+        await expect(
+          // @ts-expect-error This is a valid SubscriptionRequest but it lacks an endpoint
+          client.fhircastUnsubscribe({
+            channelType: 'websocket',
+            mode: 'subscribe',
+            topic: 'abc123',
+            events: ['patient-open'],
+          })
+        ).rejects.toBeInstanceOf(TypeError);
+      });
+    });
+
+    describe('fhircastConnect', () => {
+      let client: MedplumClient;
+
+      beforeAll(() => {
+        const fetch = mockFetch(500, { error: 'How did we get here?' });
+        client = new MedplumClient({ fetch });
+      });
+
+      test('Valid subscription request', async () => {
+        const connection = client.fhircastConnect({
+          channelType: 'websocket',
+          mode: 'subscribe',
+          topic: 'abc123',
+          events: ['patient-open'],
+          endpoint: 'wss://api.medplum.com/fhircast/STU2/abc123',
+        });
+        expect(connection).toBeInstanceOf(FhircastConnection);
+      });
+
+      test('Invalid subscription request', () => {
+        expect(() =>
+          // @ts-expect-error Invalid subscription request, requires endpoint
+          client.fhircastConnect({
+            channelType: 'websocket',
+            mode: 'subscribe',
+            topic: 'abc123',
+            events: ['patient-open'],
+          })
+        ).toThrowError(TypeError);
+      });
+    });
+
+    describe('fhircastPublish', () => {
+      test('Valid context published', async () => {
+        const fetch = mockFetch(201, { message: 'Welcome to Medplum!' });
+        const client = new MedplumClient({ fetch });
+        await expect(
+          client.fhircastPublish('abc123', 'patient-open', createFhircastMessageContext('patient', 'patient-123'))
+        ).resolves;
+        expect(fetch).toBeCalledWith(
+          'https://api.medplum.com/fhircast/STU2/abc123',
+          expect.objectContaining<RequestInit>({
+            method: 'POST',
+            headers: expect.objectContaining({ 'Content-Type': ContentType.JSON }),
+            body: expect.any(String),
+          })
+        );
+
+        // Multiple contexts
+        await expect(
+          client.fhircastPublish('def456', 'imagingstudy-open', [
+            createFhircastMessageContext('imagingstudy', 'imagingstudy-123'),
+            createFhircastMessageContext('patient', 'patient-456'),
+          ])
+        ).resolves;
+        expect(fetch).toBeCalledWith(
+          'https://api.medplum.com/fhircast/STU2/def456',
+          expect.objectContaining<RequestInit>({
+            method: 'POST',
+            headers: expect.objectContaining({ 'Content-Type': ContentType.JSON }),
+            body: expect.any(String),
+          })
+        );
+      });
+
+      test('Invalid context published', async () => {
+        const fetch = mockFetch(500, { error: 'How did we make it here?' });
+        const client = new MedplumClient({ fetch });
+        await expect(
+          // Topic needs to be a string with a length
+          client.fhircastPublish('', 'patient-open', createFhircastMessageContext('patient', 'patient-123'))
+        ).rejects.toBeInstanceOf(TypeError);
+        await expect(
+          // @ts-expect-error Invalid context object
+          client.fhircastPublish('abc123', 'patient-open', {})
+        ).rejects.toBeInstanceOf(TypeError);
+        await expect(
+          // @ts-expect-error Invalid event
+          client.fhircastPublish('abc123', 'random-event', createFhircastMessageContext('patient', 'patient-123'))
+        ).rejects.toBeInstanceOf(TypeError);
+      });
+    });
   });
 
   test('Disabled cache read cached resource', async () => {

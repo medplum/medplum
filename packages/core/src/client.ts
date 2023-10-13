@@ -3023,12 +3023,15 @@ export class MedplumClient extends EventTarget {
    * Unsubscribes from the specified topic.
    *
    * @category FHIRcast
-   * @param subRequest A `SubscriptionRequest` representing a subscription to cancel. Mode will be set to `unsubscribe` automatically.
+   * @param subRequest A `SubscriptionRequest` representing a subscription to cancel. Mode will be set to `unsubscribe` automatically. Must contain an `endpoint`.
    * @returns A `Promise` that resolves a `boolean` of whether or not unsubscribing was successful when the request to cancel the given subscription is completed.
    */
-  async fhircastUnsubscribe(subRequest: SubscriptionRequest): Promise<boolean> {
+  async fhircastUnsubscribe(subRequest: SubscriptionRequest & { endpoint: string }): Promise<boolean> {
     if (!validateFhircastSubscriptionRequest(subRequest)) {
-      throw new Error('Invalid topic or subscriptionRequest! SubscriptionRequest must be an object.');
+      throw new TypeError('Invalid topic or subscriptionRequest! SubscriptionRequest must be an object.');
+    }
+    if (!(subRequest.endpoint && typeof subRequest.endpoint === 'string' && subRequest.endpoint.startsWith('ws'))) {
+      throw new TypeError('Provided subscription request must have an endpoint in order to unsubscribe!');
     }
 
     // Turn subRequest -> unsubRequest
@@ -3048,10 +3051,10 @@ export class MedplumClient extends EventTarget {
    * Connects to a `FHIRcast` session.
    *
    * @category FHIRcast
-   * @param subRequest The `SubscriptionRequest` to use for connecting.
+   * @param subRequest The `SubscriptionRequest` to use for connecting. Must contain an `endpoint`.
    * @returns A `FhircastConnection` which emits lifecycle events for the `FHIRcast` WebSocket connection.
    */
-  fhircastConnect(subRequest: SubscriptionRequest): FhircastConnection {
+  fhircastConnect(subRequest: SubscriptionRequest & { endpoint: string }): FhircastConnection {
     return new FhircastConnection(subRequest);
   }
 
@@ -3069,7 +3072,7 @@ export class MedplumClient extends EventTarget {
     event: FhircastEventName,
     context: FhircastEventContext | FhircastEventContext[]
   ): Promise<void> {
-    return this.post(`/fhircast/STU2/${topic}`, createFhircastMessagePayload(topic, event, context));
+    return this.post(`/fhircast/STU2/${topic}`, createFhircastMessagePayload(topic, event, context), ContentType.JSON);
   }
 
   /**
