@@ -4,44 +4,19 @@ import {
   FhircastConnectEvent,
   FhircastConnection,
   FhircastDisconnectEvent,
-  FhircastEventContext,
   FhircastMessageEvent,
   FhircastMessagePayload,
-  FhircastResourceType,
   SubscriptionRequest,
   createFhircastMessagePayload,
   serializeFhircastSubscriptionRequest,
   validateFhircastSubscriptionRequest,
 } from '.';
+import { createFhircastMessageContext } from './test-utils';
 
 // TODO: Remove this hack
 Object.defineProperty(globalThis, 'crypto', {
   value: webcrypto,
 });
-
-const FHIRCAST_RESOURCE_TYPES = {
-  patient: 'Patient',
-  imagingstudy: 'ImagingStudy',
-} as const;
-
-function createFhircastMessageContext(
-  resourceType: Lowercase<FhircastResourceType>,
-  resourceId: string
-): FhircastEventContext {
-  if (!FHIRCAST_RESOURCE_TYPES[resourceType]) {
-    throw new TypeError(`resourceType must be one of: ${Object.keys(FHIRCAST_RESOURCE_TYPES).join(', ')}`);
-  }
-  if (!resourceId) {
-    throw new TypeError('Must provide a resourceId!');
-  }
-  return {
-    key: resourceType,
-    resource: {
-      resourceType: FHIRCAST_RESOURCE_TYPES[resourceType],
-      id: resourceId,
-    },
-  };
-}
 
 describe('validateFhircastSubscriptionRequest', () => {
   test('Valid subscription requests', () => {
