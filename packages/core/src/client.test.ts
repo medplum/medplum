@@ -24,6 +24,7 @@ import { ContentType } from './contenttype';
 import {
   FhircastConnection,
   FhircastEventName,
+  PendingSubscriptionRequest,
   SubscriptionRequest,
   serializeFhircastSubscriptionRequest,
 } from './fhircast';
@@ -1151,7 +1152,7 @@ describe('Client', () => {
           channelType: 'websocket',
           topic,
           events,
-        } satisfies SubscriptionRequest;
+        } satisfies PendingSubscriptionRequest;
         const serializedSubRequest = serializeFhircastSubscriptionRequest(expectedSubRequest);
 
         const subRequest = await client.fhircastSubscribe(topic, events);
@@ -1163,7 +1164,7 @@ describe('Client', () => {
             headers: expect.objectContaining({ 'Content-Type': ContentType.FORM_URL_ENCODED }),
           })
         );
-        expect(subRequest).toEqual(expect.objectContaining<SubscriptionRequest>(expectedSubRequest));
+        expect(subRequest).toEqual(expect.objectContaining<PendingSubscriptionRequest>(expectedSubRequest));
         expect(subRequest.endpoint).toBeDefined();
         expect(subRequest.endpoint?.startsWith('ws')).toBeTruthy();
       });

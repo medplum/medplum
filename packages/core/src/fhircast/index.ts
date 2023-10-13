@@ -27,8 +27,10 @@ export type SubscriptionRequest = {
   mode: 'subscribe' | 'unsubscribe';
   events: FhircastEventName[];
   topic: string;
-  endpoint?: string;
+  endpoint: string;
 };
+
+export type PendingSubscriptionRequest = Omit<SubscriptionRequest, 'endpoint'>;
 
 export type FhircastEventContext = {
   key: string;
@@ -49,18 +51,26 @@ export type FhircastMessagePayload = {
   event: FhircastEventPayload;
 };
 
+export function isCompletedSubscriptionRequest(
+  subscriptionRequest: SubscriptionRequest | PendingSubscriptionRequest
+): subscriptionRequest is SubscriptionRequest {
+  return !!(subscriptionRequest as SubscriptionRequest).endpoint;
+}
+
 /**
  * Creates a serialized url-encoded payload for a `FHIRcast` subscription from a `SubscriptionRequest` object that can be directly used in an HTTP request to the Hub.
  *
  * @param subscriptionRequest An object representing a subscription request.
  * @returns A serialized subscription in url-encoded form.
  */
-export function serializeFhircastSubscriptionRequest(subscriptionRequest: SubscriptionRequest): string {
+export function serializeFhircastSubscriptionRequest(
+  subscriptionRequest: SubscriptionRequest | PendingSubscriptionRequest
+): string {
   if (!validateFhircastSubscriptionRequest(subscriptionRequest)) {
     throw new TypeError('subscriptionRequest must be an object conforming to SubscriptionRequest type');
   }
 
-  const { channelType, mode, topic, events, endpoint } = subscriptionRequest;
+  const { channelType, mode, topic, events } = subscriptionRequest;
 
   const formattedSubRequest = {
     'hub.channel.type': channelType,
@@ -69,8 +79,8 @@ export function serializeFhircastSubscriptionRequest(subscriptionRequest: Subscr
     'hub.events': events.join(','),
   } as Record<string, string>;
 
-  if (endpoint) {
-    formattedSubRequest.endpoint = endpoint;
+  if (isCompletedSubscriptionRequest(subscriptionRequest)) {
+    formattedSubRequest.endpoint = subscriptionRequest.endpoint;
   }
   return new URLSearchParams(formattedSubRequest).toString();
 }
@@ -81,11 +91,13 @@ export function serializeFhircastSubscriptionRequest(subscriptionRequest: Subscr
  * @param subscriptionRequest The `SubscriptionRequest` to validate.
  * @returns A `boolean` indicating whether or not the `SubscriptionRequest` is valid.
  */
-export function validateFhircastSubscriptionRequest(subscriptionRequest: SubscriptionRequest): boolean {
+export function validateFhircastSubscriptionRequest(
+  subscriptionRequest: SubscriptionRequest | PendingSubscriptionRequest
+): boolean {
   if (typeof subscriptionRequest !== 'object') {
     return false;
   }
-  const { channelType, mode, topic, events, endpoint } = subscriptionRequest;
+  const { channelType, mode, topic, events } = subscriptionRequest;
   if (!(channelType && mode && topic && events)) {
     return false;
   }
@@ -106,7 +118,10 @@ export function validateFhircastSubscriptionRequest(subscriptionRequest: Subscri
       return false;
     }
   }
-  if (endpoint && !(typeof endpoint === 'string' && endpoint.startsWith('ws'))) {
+  if (
+    isCompletedSubscriptionRequest(subscriptionRequest) &&
+    !(typeof subscriptionRequest.endpoint === 'string' && subscriptionRequest.endpoint.startsWith('ws'))
+  ) {
     return false;
   }
   return true;

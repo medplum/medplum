@@ -42,6 +42,7 @@ import {
   FhircastConnection,
   FhircastEventContext,
   FhircastEventName,
+  PendingSubscriptionRequest,
   SubscriptionRequest,
   createFhircastMessagePayload,
   serializeFhircastSubscriptionRequest,
@@ -3001,7 +3002,7 @@ export class MedplumClient extends EventTarget {
       mode: 'subscribe',
       topic,
       events,
-    } satisfies SubscriptionRequest as SubscriptionRequest;
+    } satisfies PendingSubscriptionRequest as PendingSubscriptionRequest;
 
     const body = (await this.post(
       '/fhircast/STU2',
@@ -3015,18 +3016,18 @@ export class MedplumClient extends EventTarget {
     }
 
     // Add endpoint to subscription request before returning
-    subRequest.endpoint = endpoint;
-    return subRequest;
+    (subRequest as SubscriptionRequest).endpoint = endpoint;
+    return subRequest as SubscriptionRequest;
   }
 
   /**
    * Unsubscribes from the specified topic.
    *
    * @category FHIRcast
-   * @param subRequest A `SubscriptionRequest` representing a subscription to cancel. Mode will be set to `unsubscribe` automatically. Must contain an `endpoint`.
+   * @param subRequest A `SubscriptionRequest` representing a subscription to cancel. Mode will be set to `unsubscribe` automatically.
    * @returns A `Promise` that resolves a `boolean` of whether or not unsubscribing was successful when the request to cancel the given subscription is completed.
    */
-  async fhircastUnsubscribe(subRequest: SubscriptionRequest & { endpoint: string }): Promise<boolean> {
+  async fhircastUnsubscribe(subRequest: SubscriptionRequest): Promise<boolean> {
     if (!validateFhircastSubscriptionRequest(subRequest)) {
       throw new TypeError('Invalid topic or subscriptionRequest! SubscriptionRequest must be an object.');
     }
@@ -3051,10 +3052,10 @@ export class MedplumClient extends EventTarget {
    * Connects to a `FHIRcast` session.
    *
    * @category FHIRcast
-   * @param subRequest The `SubscriptionRequest` to use for connecting. Must contain an `endpoint`.
+   * @param subRequest The `SubscriptionRequest` to use for connecting.
    * @returns A `FhircastConnection` which emits lifecycle events for the `FHIRcast` WebSocket connection.
    */
-  fhircastConnect(subRequest: SubscriptionRequest & { endpoint: string }): FhircastConnection {
+  fhircastConnect(subRequest: SubscriptionRequest): FhircastConnection {
     return new FhircastConnection(subRequest);
   }
 
