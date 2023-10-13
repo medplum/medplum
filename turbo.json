@@ -1,5 +1,6 @@
 {
   "$schema": "https://turborepo.org/schema.json",
+  "globalEnv": ["NODE_VERSION"],
   "pipeline": {
     "clean": {
       "outputs": ["build/**", "dist/**", "coverage/**"]
