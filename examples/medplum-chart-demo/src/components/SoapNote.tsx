@@ -7,6 +7,7 @@ import { useParams } from 'react-router-dom';
 
 const questionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
+  id: 'phq-9-example',
   meta: {
     profile: ['http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire'],
   },
