@@ -3025,9 +3025,9 @@ export class MedplumClient extends EventTarget {
    *
    * @category FHIRcast
    * @param subRequest A `SubscriptionRequest` representing a subscription to cancel. Mode will be set to `unsubscribe` automatically.
-   * @returns A `Promise` that resolves a `boolean` of whether or not unsubscribing was successful when the request to cancel the given subscription is completed.
+   * @returns A `Promise` that resolves when request to unsubscribe is completed.
    */
-  async fhircastUnsubscribe(subRequest: SubscriptionRequest): Promise<boolean> {
+  async fhircastUnsubscribe(subRequest: SubscriptionRequest): Promise<void> {
     if (!validateFhircastSubscriptionRequest(subRequest)) {
       throw new TypeError('Invalid topic or subscriptionRequest! SubscriptionRequest must be an object.');
     }
@@ -3037,15 +3037,8 @@ export class MedplumClient extends EventTarget {
 
     // Turn subRequest -> unsubRequest
     subRequest.mode = 'unsubscribe';
-
     // Send unsub request
-    try {
-      await this.post('/fhircast/STU2', serializeFhircastSubscriptionRequest(subRequest), ContentType.FORM_URL_ENCODED);
-    } catch (err) {
-      console.error(err);
-      return false;
-    }
-    return true;
+    await this.post('/fhircast/STU2', serializeFhircastSubscriptionRequest(subRequest), ContentType.FORM_URL_ENCODED);
   }
 
   /**
