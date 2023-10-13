@@ -85,17 +85,18 @@ export function ResponseDisplay(props: TaskCellProps): JSX.Element {
   }
   const visibleItems = items.slice(0, 3);
   const collapsedItems = items.slice(3, items.length);
+
   return (
     <>
       {visibleItems.map((item) => (
-        <ItemRow item={item} />
+        <ItemRow key={item.id} item={item} />
       ))}
       <Collapse in={opened}>
         {collapsedItems.map((item) => (
-          <ItemRow item={item} />
+          <ItemRow key={item.id} item={item} />
         ))}
       </Collapse>
-      {collapsedItems.length > 0 && <Anchor onClick={toggle}>{opened ? 'Show less' : 'Show more'}</Anchor>}
+      {showCollapsibleButton(collapsedItems) && <Anchor onClick={toggle}>{opened ? 'Show less' : 'Show more'}</Anchor>}
       <Flex justify="right" mt={16}>
         {reviewed ? (
           <IconCircleCheck color="#79d290" size={48} />
@@ -109,17 +110,29 @@ export function ResponseDisplay(props: TaskCellProps): JSX.Element {
   );
 }
 
-function ItemRow(props: { item: QuestionnaireResponseItem }): JSX.Element {
+function ItemRow(props: { item: QuestionnaireResponseItem }): JSX.Element | null {
   const item = props.item;
   const itemValue = getTypedPropertyValue(
-    { type: 'QuestionnaireItemAnswer', value: item?.answer?.[0] },
+    { type: 'QuestionnaireItemAnswerOption', value: item?.answer?.[0] },
     'value'
   ) as TypedValue;
-  const propertyName = itemValue.type;
+  if (!itemValue) {
+    return null;
+  }
+  const propertyName = itemValue?.type;
   return (
-    <Flex justify="space-between">
-      <Text>{item.text}</Text>
-      <ResourcePropertyDisplay value={itemValue.value} propertyType={propertyName as PropertyType} />
+    <Flex justify="space-between" mb={12}>
+      <Text w={'50%'}>{item.text}</Text>
+      <Text align="right">
+        <ResourcePropertyDisplay value={itemValue.value} propertyType={propertyName as PropertyType} />
+      </Text>
     </Flex>
   );
+}
+
+function showCollapsibleButton(items: QuestionnaireResponseItem[]): boolean {
+  if (items.length === 0) {
+    return false;
+  }
+  return items.some((item) => item.answer?.length);
 }

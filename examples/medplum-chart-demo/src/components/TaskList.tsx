@@ -114,7 +114,6 @@ function TaskItem(props: TaskItemProps): JSX.Element {
   const { task, resource, profile } = props;
   const author = profile ?? resource.meta?.author;
   const dateTime = resource.meta?.lastUpdated;
-  console.log(resource);
   return (
     <>
       <Group position="apart" spacing={8} my="sm" align="flex-start">
@@ -156,8 +155,12 @@ function TaskTitle(props: TaskCellProps): JSX.Element {
     async function fetchQuestionnaireTitle(): Promise<void> {
       if (props.resource.resourceType === 'QuestionnaireResponse') {
         const questionnaireId = props.resource.questionnaire?.split('/')[1];
-        const questionnaire = await medplum.readResource('Questionnaire', questionnaireId as string);
-        setTitle(<>{questionnaire?.title} Response</>);
+        try {
+          const questionnaire = await medplum.readResource('Questionnaire', questionnaireId as string);
+          setTitle(<>{questionnaire?.title} Response</>);
+        } catch (err) {
+          setTitle(<>Response</>);
+        }
       }
     }
 

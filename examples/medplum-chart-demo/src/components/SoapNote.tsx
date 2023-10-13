@@ -1,10 +1,12 @@
-import { Questionnaire } from '@medplum/fhirtypes';
-import { Document, QuestionnaireForm } from '@medplum/react';
-import React from 'react';
+import { Flex, Text } from '@mantine/core';
+import { Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import { Document, QuestionnaireForm, useMedplum } from '@medplum/react';
+import { IconCircleCheck } from '@tabler/icons-react';
+import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 const questionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
-  id: 'phq-9-example',
   meta: {
     profile: ['http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire'],
   },
@@ -860,14 +862,48 @@ const questionnaire: Questionnaire = {
 };
 
 export function SoapNote(): JSX.Element {
+  const { id } = useParams();
+  const medplum = useMedplum();
+
+  const [submitted, setSubmitted] = useState(false);
+
+  async function handleSubmit(questionnaireResponse: QuestionnaireResponse): Promise<void> {
+    const response = await medplum.createResource(questionnaireResponse);
+
+    const newTask: Task = {
+      resourceType: 'Task',
+      status: 'ready',
+      intent: 'order',
+      code: {
+        coding: [
+          {
+            system: 'http://loinc.org',
+            code: '44249-1',
+            display: 'PHQ-9 quick depression assessment panel [Reported.PHQ]',
+          },
+        ],
+      },
+      focus: {
+        reference: `QuestionnaireResponse/${response.id}`,
+      },
+      for: {
+        reference: `Patient/${id}`,
+      },
+    };
+    await medplum.createResource(newTask);
+    setSubmitted(true);
+  }
+
   return (
     <Document>
-      <QuestionnaireForm
-        questionnaire={questionnaire}
-        onSubmit={(formData: any) => {
-          console.log('submit', formData);
-        }}
-      />
+      <QuestionnaireForm questionnaire={questionnaire} onSubmit={!submitted ? handleSubmit : console.log} />
+
+      {submitted ? (
+        <Flex justify={'flex-end'} mt={8}>
+          <Text mr={8}>Submitted</Text>
+          <IconCircleCheck color="#79d290" size={24} />
+        </Flex>
+      ) : null}
     </Document>
   );
 }

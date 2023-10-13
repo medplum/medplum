@@ -12,9 +12,7 @@ export function getCompoundObservationValue(
   innerCode: string
 ): Quantity | undefined {
   const observation = observations.find((o) => o.code?.coding?.[0].code === code);
-  console.log('CODY', code, observation);
   const component = observation?.component?.find((c) => c.code?.coding?.[0].code === innerCode);
-  console.log('CODY', code, innerCode, component);
   return component?.valueQuantity;
 }
 

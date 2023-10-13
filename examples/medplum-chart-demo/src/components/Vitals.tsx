@@ -84,21 +84,11 @@ export function Vitals(props: VitalsProps): JSX.Element {
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      console.log('handleSubmit', formData);
-
       const newAllergy: Observation = {
         resourceType: 'Observation',
         id: generateId(),
         code: { coding: [{ code: formData.allergy, display: formData.allergy }] },
       };
-
-      // For each form input, create a new observation
-
-      // const promises: Promise<Observation>[] = LOINC.map((code) =>
-      //   medplum.createResource<Observation>(
-      //     createObservation(patient, encounter, code, 'foo', createQuantity(1, 'foo'))
-      //   )
-      // );
 
       Promise.allSettled(
         Object.entries(LOINC).map(([name, meta]) => {
@@ -132,12 +122,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
         })
         .catch(console.error);
 
-      // LOINC.forEach((code) => {
-      // return medplum.createResource<Observation>(createObservation(patient, code, 'foo', createQuantity(1, 'foo')));
-      // });
-
       setVitals([...vitals, newAllergy]);
-      // medplum.getProfileAsync().then(console.log).catch(console.error);
       close();
     },
     [medplum, vitals, close]
