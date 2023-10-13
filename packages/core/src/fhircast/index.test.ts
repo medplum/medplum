@@ -199,10 +199,10 @@ describe('createFhircastMessagePayload', () => {
   test('Valid message with array of contexts', () => {
     const topic = 'abc123';
     const event = 'imagingstudy-open';
-    const resourceId1 = 'imagingstudy-123';
-    const context1 = createFhircastMessageContext('imagingstudy', resourceId1);
-    const resourceId2 = 'patient-456';
-    const context2 = createFhircastMessageContext('patient', resourceId2);
+    const resourceId1 = 'patient-123';
+    const context1 = createFhircastMessageContext('patient', resourceId1);
+    const resourceId2 = 'imagingstudy-456';
+    const context2 = createFhircastMessageContext('imagingstudy', resourceId2);
 
     const messagePayload = createFhircastMessagePayload(topic, event, [context1, context2]);
 
@@ -223,7 +223,10 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid topic, must be a string
         123,
         'imagingstudy-open',
-        createFhircastMessageContext('imagingstudy', 'imagingstudy-123')
+        [
+          createFhircastMessageContext('patient', 'patient-123'),
+          createFhircastMessageContext('imagingstudy', 'imagingstudy-123'),
+        ]
       )
     ).toThrowError(TypeError);
   });
@@ -234,7 +237,10 @@ describe('createFhircastMessagePayload', () => {
         'abc-123',
         // @ts-expect-error Invalid event, must be one of the enumerated FHIRcast events
         'imagingstudy-create',
-        createFhircastMessageContext('imagingstudy', 'imagingstudy-123')
+        [
+          createFhircastMessageContext('patient', 'patient-123'),
+          createFhircastMessageContext('imagingstudy', 'imagingstudy-123'),
+        ]
       )
     ).toThrowError(TypeError);
   });

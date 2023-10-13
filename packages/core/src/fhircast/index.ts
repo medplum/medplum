@@ -14,6 +14,22 @@ const FHIRCAST_RESOURCE_TYPES = ['Patient', 'Encounter', 'ImagingStudy'] as cons
 export type FhircastEventName = keyof typeof FHIRCAST_EVENT_NAMES;
 export type FhircastResourceType = (typeof FHIRCAST_RESOURCE_TYPES)[number];
 
+// Key value pairs of { [FhircastEventName]: [required_resource1, required_resource2] }
+const FHIRCAST_EVENT_REQUIRED_RESOURCES = {
+  'patient-open': ['Patient'],
+  'patient-close': ['Patient'],
+  'imagingstudy-open': ['Patient', 'ImagingStudy'],
+  'imagingstudy-close': ['Patient', 'ImagingStudy'],
+} as const;
+
+// Key
+const FHIRCAST_EVENT_OPTIONAL_RESOURCES = {
+  'patient-open': ['Encounter'],
+  'patient-close': ['Encounter'],
+  'imagingstudy-open': [],
+  'imagingstudy-close': [],
+} as const;
+
 /**
  * Checks if a `ResourceType` can be used in a `FHIRcast` context.
  *
@@ -150,37 +166,62 @@ export function validateFhircastSubscriptionRequest(
 }
 
 /**
+ * Throws if the context is invalid. Intended as a helper for `validateFhircastContexts` only.
+ *
+ * @param event The `FHIRcast` event name associated with the provided contexts.
+ * @param context The `FHIRcast` event contexts to validate.
+ * @param i The index of the current context in the context list.
+ */
+function validateFhircastContext(event: FhircastEventName, context: FhircastEventContext, i: number): void {
+  if (!(context.key && typeof context.key === 'string')) {
+    throw new TypeError(`context[${i}] is invalid! Context must contain a key!`);
+  }
+  if (typeof context.resource !== 'object') {
+    throw new TypeError(
+      `context[${i}] is invalid! Context must contain a single valid FHIR resource! Resource is not an object.`
+    );
+  }
+  if (!(context.resource.id && typeof context.resource.id === 'string')) {
+    throw new TypeError(`context[${i}] is invalid! Resource must contain a valid string ID.`);
+  }
+  if (!context.resource.resourceType) {
+    throw new TypeError(`context[${i}] is invalid! Resource must contain a resource type. No resource type found.`);
+  }
+  const resourceType = context.resource.resourceType;
+  if (!isFhircastResourceType(resourceType)) {
+    throw new TypeError(
+      `context[${i}] is invalid! Resource must contain a valid FHIRcast resource type. Resource type is not a known resource type.`
+    );
+  }
+
+  const requiredResources = FHIRCAST_EVENT_REQUIRED_RESOURCES[event];
+  const optionalResources = FHIRCAST_EVENT_OPTIONAL_RESOURCES[event];
+  let expectedResourceType: FhircastResourceType | undefined;
+  if (i < requiredResources.length) {
+    expectedResourceType = requiredResources[i];
+  } else if (i - requiredResources.length < optionalResources.length) {
+    expectedResourceType = optionalResources[i - requiredResources.length];
+  }
+  if (expectedResourceType && resourceType !== expectedResourceType) {
+    throw new TypeError(
+      `context[${i}] is invalid! context[${i}] for the '${event}' event should contain resource of type ${expectedResourceType}`
+    );
+  }
+  const expectedKey = FHIRCAST_EVENT_CONTEXT_REVERSE_LOOKUP[resourceType];
+  if (expectedKey !== context.key) {
+    throw new TypeError(`context[${i}] is invalid! Context key for type ${resourceType} must be ${expectedKey}`);
+  }
+}
+
+/**
  * Throws if any context in the given array of contexts is invalid.
  *
- * @param contexts The FHIRcast event contexts to validate.
+ * @param event The `FHIRcast` event name associated with the provided contexts.
+ * @param contexts The `FHIRcast` event contexts to validate.
  */
-function validateFhircastContexts(contexts: FhircastEventContext[]): void {
+function validateFhircastContexts(event: FhircastEventName, contexts: FhircastEventContext[]): void {
   for (let i = 0; i < contexts.length; i++) {
-    const context = contexts[i];
-    if (!(context.key && typeof context.key === 'string')) {
-      throw new TypeError(`context[${i}] is invalid! Context must contain a key!`);
-    }
-    if (typeof context.resource !== 'object') {
-      throw new TypeError(
-        `context[${i}] is invalid! Context must contain a single valid FHIR resource! Resource is not an object.`
-      );
-    }
-    if (!(context.resource.id && typeof context.resource.id === 'string')) {
-      throw new TypeError(`context[${i}] is invalid! Resource must contain a valid string ID.`);
-    }
-    if (!context.resource.resourceType) {
-      throw new TypeError(`context[${i}] is invalid! Resource must contain a resource type. No resource type found.`);
-    }
-    const resourceType = context.resource.resourceType;
-    if (!isFhircastResourceType(resourceType)) {
-      throw new TypeError(
-        `context[${i}] is invalid! Resource must contain a valid FHIRcast resource type. Resource type is not a known resource type.`
-      );
-    }
-    const expectedKey = FHIRCAST_EVENT_CONTEXT_REVERSE_LOOKUP[resourceType];
-    if (expectedKey !== context.key) {
-      throw new TypeError(`context[${i}] is invalid! Context key for type ${resourceType} must be ${expectedKey}`);
-    }
+    validateFhircastContext(event, contexts[i], i);
   }
 }
 
@@ -211,7 +252,7 @@ export function createFhircastMessagePayload(
 
   const normalizedContexts = Array.isArray(context) ? context : [context];
   // This will throw if any context in the array is invalid
-  validateFhircastContexts(normalizedContexts);
+  validateFhircastContexts(event, normalizedContexts);
   return {
     timestamp: new Date().toISOString(),
     id: generateId(),

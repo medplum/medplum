@@ -1300,8 +1300,8 @@ describe('Client', () => {
         // Multiple contexts
         await expect(
           client.fhircastPublish('def456', 'imagingstudy-open', [
-            createFhircastMessageContext('imagingstudy', 'imagingstudy-123'),
-            createFhircastMessageContext('patient', 'patient-456'),
+            createFhircastMessageContext('patient', 'patient-123'),
+            createFhircastMessageContext('imagingstudy', 'imagingstudy-456'),
           ])
         ).resolves;
         expect(fetch).toBeCalledWith(
