@@ -270,6 +270,22 @@ describe('createFhircastMessagePayload', () => {
         { resource: { resourceType: 'Patient', id: 'patient-123' } }
       )
     ).toThrowError(TypeError);
+    expect(() =>
+      createFhircastMessagePayload(
+        'abc-123',
+        'patient-open',
+        // @ts-expect-error Invalid context, must have a valid resource AND a key
+        { key: 'subject', resource: { resourceType: 'Patient', id: 'patient-123' } }
+      )
+    ).toThrowError(TypeError);
+    expect(() =>
+      createFhircastMessagePayload(
+        'abc-123',
+        'patient-open',
+        // @ts-expect-error Invalid context, must have a valid resource AND a key
+        { key: 'imagingstudy', resource: { resourceType: 'ImagingStudy', id: 'patient-123' } }
+      )
+    ).toThrowError(TypeError);
   });
 });
 
