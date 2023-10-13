@@ -311,6 +311,22 @@ describe('createFhircastMessagePayload', () => {
       createFhircastMessagePayload(
         'abc-123',
         'imagingstudy-open',
+        // @ts-expect-error Invalid resource, resourceType required
+        { key: 'patient', resource: { id: 'patient-123' } }
+      )
+    ).toThrowError(TypeError);
+    expect(() =>
+      createFhircastMessagePayload(
+        'abc-123',
+        'imagingstudy-open',
+        // @ts-expect-error Invalid resourceType, must be a FHIRcast-related resource
+        { key: 'patient', resource: { resourceType: 'Observation', id: 'observation-123' } }
+      )
+    ).toThrowError(TypeError);
+    expect(() =>
+      createFhircastMessagePayload(
+        'abc-123',
+        'imagingstudy-open',
         // @ts-expect-error Invalid context, must have a valid resource AND a key
         { resource: { resourceType: 'Patient', id: 'patient-123' } }
       )
