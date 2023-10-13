@@ -1,5 +1,4 @@
 import WS from 'jest-websocket-mock';
-import { webcrypto } from 'node:crypto';
 import {
   FhircastConnectEvent,
   FhircastConnection,
@@ -12,11 +11,6 @@ import {
   validateFhircastSubscriptionRequest,
 } from '.';
 import { createFhircastMessageContext } from './test-utils';
-
-// TODO: Remove this hack
-Object.defineProperty(globalThis, 'crypto', {
-  value: webcrypto,
-});
 
 describe('validateFhircastSubscriptionRequest', () => {
   test('Valid subscription requests', () => {

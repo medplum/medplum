@@ -1,4 +1,5 @@
 import type { Resource } from '@medplum/fhirtypes';
+import { generateId } from '../crypto';
 import { TypedEventTarget } from '../eventtarget';
 
 const FHIRCAST_EVENT_NAMES = {
@@ -213,7 +214,7 @@ export function createFhircastMessagePayload(
   validateFhircastContexts(normalizedContexts);
   return {
     timestamp: new Date().toISOString(),
-    id: crypto.randomUUID(),
+    id: generateId(),
     event: {
       'hub.topic': topic,
       'hub.event': event,
