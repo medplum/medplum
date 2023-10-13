@@ -286,6 +286,14 @@ describe('createFhircastMessagePayload', () => {
         { key: 'imagingstudy', resource: { resourceType: 'ImagingStudy', id: 'patient-123' } }
       )
     ).toThrowError(TypeError);
+    expect(() =>
+      // Should throw because keys must be unique
+      createFhircastMessagePayload('abc-123', 'imagingstudy-open', [
+        { key: 'patient', resource: { resourceType: 'Patient', id: 'patient-123' } },
+        { key: 'study', resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-456' } },
+        { key: 'study', resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-789' } },
+      ])
+    ).toThrowError(TypeError);
   });
 });
 

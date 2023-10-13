@@ -22,7 +22,7 @@ const FHIRCAST_EVENT_REQUIRED_RESOURCES = {
   'imagingstudy-close': ['Patient', 'ImagingStudy'],
 } as const;
 
-// Key
+// Key value pairs of { [FhircastEventName]: [optional_resource1, ...] }
 const FHIRCAST_EVENT_OPTIONAL_RESOURCES = {
   'patient-open': ['Encounter'],
   'patient-close': ['Encounter'],
@@ -55,19 +55,19 @@ export type SubscriptionRequest = {
 
 export type PendingSubscriptionRequest = Omit<SubscriptionRequest, 'endpoint'>;
 
-const FHIRCAST_EVENT_CONTEXT_LOOKUP = {
+const FHIRCAST_CONTEXT_KEY_LOOKUP = {
   study: 'ImagingStudy',
   patient: 'Patient',
   encounter: 'Encounter',
 } as const;
 
-const FHIRCAST_EVENT_CONTEXT_REVERSE_LOOKUP = {
+const FHIRCAST_CONTEXT_KEY_REVERSE_LOOKUP = {
   ImagingStudy: 'study',
   Patient: 'patient',
   Encounter: 'encounter',
 } as const;
 
-type FhircastEventContextMap = typeof FHIRCAST_EVENT_CONTEXT_LOOKUP;
+type FhircastEventContextMap = typeof FHIRCAST_CONTEXT_KEY_LOOKUP;
 type FhircastEventContextKey = keyof FhircastEventContextMap;
 
 export type FhircastEventContext<K extends FhircastEventContextKey = FhircastEventContextKey> = {
@@ -171,11 +171,21 @@ export function validateFhircastSubscriptionRequest(
  * @param event The `FHIRcast` event name associated with the provided contexts.
  * @param context The `FHIRcast` event contexts to validate.
  * @param i The index of the current context in the context list.
+ * @param keysSeen Set of keys seen so far. Used to prevent duplicate keys.
  */
-function validateFhircastContext(event: FhircastEventName, context: FhircastEventContext, i: number): void {
+function validateFhircastContext(
+  event: FhircastEventName,
+  context: FhircastEventContext,
+  i: number,
+  keysSeen: Set<FhircastEventContextKey>
+): void {
   if (!(context.key && typeof context.key === 'string')) {
     throw new TypeError(`context[${i}] is invalid! Context must contain a key!`);
   }
+  if (keysSeen.has(context.key)) {
+    throw new TypeError(`context[${i}] is invalid! Key ${context.key} has already been used in a previous context!`);
+  }
+  keysSeen.add(context.key);
   if (typeof context.resource !== 'object') {
     throw new TypeError(
       `context[${i}] is invalid! Context must contain a single valid FHIR resource! Resource is not an object.`
@@ -207,7 +217,7 @@ function validateFhircastContext(event: FhircastEventName, context: FhircastEven
       `context[${i}] is invalid! context[${i}] for the '${event}' event should contain resource of type ${expectedResourceType}`
     );
   }
-  const expectedKey = FHIRCAST_EVENT_CONTEXT_REVERSE_LOOKUP[resourceType];
+  const expectedKey = FHIRCAST_CONTEXT_KEY_REVERSE_LOOKUP[resourceType];
   if (expectedKey !== context.key) {
     throw new TypeError(`context[${i}] is invalid! Context key for type ${resourceType} must be ${expectedKey}`);
   }
@@ -220,8 +230,9 @@ function validateFhircastContext(event: FhircastEventName, context: FhircastEven
  * @param contexts The `FHIRcast` event contexts to validate.
  */
 function validateFhircastContexts(event: FhircastEventName, contexts: FhircastEventContext[]): void {
+  const keysSeen = new Set<FhircastEventContextKey>();
   for (let i = 0; i < contexts.length; i++) {
-    validateFhircastContext(event, contexts[i], i);
+    validateFhircastContext(event, contexts[i], i, keysSeen);
   }
 }
 
