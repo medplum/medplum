@@ -75,7 +75,6 @@ export function serializeFhircastSubscriptionRequest(subscriptionRequest: Subscr
   return new URLSearchParams(formattedSubRequest).toString();
 }
 
-// TODO: Make this more accurate
 /**
  * Validates that a `SubscriptionRequest`.
  *
