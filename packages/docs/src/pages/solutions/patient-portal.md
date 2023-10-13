@@ -34,7 +34,7 @@ Allow patients to message their provider or care team in a chat-like interface. 
 
 ## Access and Controls
 
-Giving patients access to only their data can be enabled via [access controls](/docs/auth/access-control).
+Giving patients access to only their data can be enabled via [access controls](/docs/access/access-policies).
 
 ## Case Studies
 

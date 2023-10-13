@@ -46,7 +46,7 @@ Create an Access Policy that allows read only access to the Bot, like below.
 }
 ```
 
-[Create a ClientApplication](/docs/auth/client-credentials) and assign the AccessPolicy above to that application and save.
+[Create a ClientApplication](/docs/auth/authentication-methods/client-credentials) and assign the AccessPolicy above to that application and save.
 
 Create another (optional) one for the bot, that enables only the resources that bot touches and assign it to the bot in your [Admin settings](https://app.medplum.com/admin/project).
 

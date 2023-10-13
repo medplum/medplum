@@ -8,7 +8,7 @@ toc_max_heading_level: 2
 Bots are an advanced Medplum feature that enable complex workflows. A **Medplum Bot** is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to a [**Medplum client**](../sdk) , which itself can invoke FHIR operations.
 
 **Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
-You can apply an [AccessPolicy](../auth/access-control#access-policies) to the Bot if you want to further reduce the data it can read and write.
+You can apply an [AccessPolicy](/docs/access/access-policies#access-policies) to the Bot if you want to further reduce the data it can read and write.
 
 Bots are disabled by default for accounts. Contact info@medplum.com if you'd like to learn more.
 
@@ -44,7 +44,7 @@ To create a Bot, navigate to the [Project Admin panel](https://app.medplum.com/a
 
 ![Create a Bot](/img/app/bots/create_bot.png)
 
-On the next page you can enter a bot **name** and **description** (optional). You can also optionally set an [**access policy**](../auth/access-control#access-policies) on the Bot, which can restrict the read/write privileges of the bot's code. By default, Bots have read/write access to all resources.
+On the next page you can enter a bot **name** and **description** (optional). You can also optionally set an [**access policy**](/docs/access/access-policies#access-policies) on the Bot, which can restrict the read/write privileges of the bot's code. By default, Bots have read/write access to all resources.
 
 ![Enter Bot Properties](/img/app/bots/enter_bot_properties.png)
 
@@ -129,7 +129,7 @@ To deploy your bot, click the "Deploy" button.
 This works well for initial prototyping, but as you get closer to a production implementation [deploying from the command line](/docs/bots/bots-in-production#deploying-your-bot) potentially as part of a CI/CD can be preferred.
 
 **Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
-You can apply an [AccessPolicy](../auth/access-control) to the Bot if you want to further reduce the data it can read and write.
+You can apply an [AccessPolicy](/docs/access/access-policies) to the Bot if you want to further reduce the data it can read and write.
 
 ## Executing a Bot
 
@@ -174,12 +174,12 @@ You can find the `id` of your Bot by clicking on the **Details** tab of the Bot 
 | `text/plain`                         | `string`                                  | `<INPUT_DATA>` is parsed as plaintext string                                                                                                                        |
 | `application/json`                   | `Record<string, any>`                     | `<INPUT_DATA>` is parsed as JSON-encoded object                                                                                                                     |
 | `application/x-www-form-urlencoded ` | `Record<string, string>`                  | `<INPUT_DATA>` is parsed as URL-encoded string, resulting in a key/value map                                                                                        |
-| `application/fhir+json`              | [`Resource`](../api/fhir/resources)       | `<INPUT_DATA>` is parsed as a [FHIR Resource](../fhir-basics#resources) encoded as JSON                                                                             |
+| `application/fhir+json`              | [`Resource`](/docs/api/fhir/resources)    | `<INPUT_DATA>` is parsed as a [FHIR Resource](../fhir-basics#resources) encoded as JSON                                                                             |
 | `x-application/hl7-v2+er7`           | [`HL7Message`](../sdk/classes/Hl7Message) | `<INPUT_DATA>` is a string that should be parsed as a pipe-delimited HL7v2 message. HL7v2 is a common text-based message protocol used in legacy healthcare systems |
 
 #### `ACCESS_TOKEN`
 
-This is the `access_token` you receive after completing the OAuth authentication flow. See [this how-to](../auth/client-credentials#connecting-to-the-service) for more information.
+This is the `access_token` you receive after completing the OAuth authentication flow. See [this how-to](/docs/auth/authentication-methods/client-credentials#connecting-to-the-service) for more information.
 
 #### `INPUT_DATA`
 
@@ -191,7 +191,7 @@ Read more in the [Bot `$execute`](/docs/api/fhir/operations/bot-execute) documen
 
 While using the `$execute` endpoint allows developers to trigger Bots from 3rd party applications, the most common way to execute a bot is to use a [FHIR subscription](../fhir-basics#subscriptions-listening-for-changes) to trigger the Bot whenever a resource has been updated.
 
-Let's connect our bot to [`Patient`](../api/fhir/resources/patient) resources. That means that the Bot code will run on any "create" or "update" operation to any [`Patient`](../api/fhir/resources/patient).
+Let's connect our bot to [`Patient`](/docs/api/fhir/resources/patient) resources. That means that the Bot code will run on any "create" or "update" operation to any [`Patient`](/docs/api/fhir/resources/patient).
 
 :::note
 Bots can be run as a cron job. [Click Here](/docs/bots/bot-cron-job) to learn more.

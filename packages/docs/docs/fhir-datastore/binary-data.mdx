@@ -33,7 +33,7 @@ curl -X POST \
 
 This is a short snippet, but each line has significant meaning.
 
-First, the `Authorization` header is required to authenticate the request. See the [**Client Credentials tutorial**](../auth/client-credentials) guide for how to obtain an access token.
+First, the `Authorization` header is required to authenticate the request. See the [**Client Credentials tutorial**](/docs/auth/authentication-methods/client-credentials) guide for how to obtain an access token.
 
 Next, the `Content-Type` header is required to specify the MIME type of the file being uploaded. You can always use the generic `application/octet-stream` type if you don't know the exact type, but beware that this may cause issues when consuming the `Binary` in an application. It is always recommended to use the correct MIME type if possible. See [Common MIME types](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types).
 
@@ -234,4 +234,4 @@ requests.post(f'{API_URL}/Media', json=media, headers={
   </TabItem>
 </BrowserOnlyTabs>
 
-See the [**Client Credentials tutorial**](../auth/client-credentials) guide for how to obtain an access token
+See the [**Client Credentials tutorial**](/docs/auth/authentication-methods/client-credentials) guide for how to obtain an access token

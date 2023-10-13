@@ -29,7 +29,7 @@ Vanya requires authentication as an HTTP header. For my testing, I used a "Basic
 
 You can use a tool such as [DebugBear](https://www.debugbear.com/basic-auth-header-generator) to generate a Basic auth header from a client ID and client secret.
 
-Or, if you prefer, you can use the OAuth2 client_credentials flow with the client ID and client secret to get an access token. See our [guide on Client Credentials](/docs/auth/client-credentials) for step-by-step instructions.
+Or, if you prefer, you can use the OAuth2 client_credentials flow with the client ID and client secret to get an access token. See our [guide on Client Credentials](/docs/auth/authentication-methods/client-credentials) for step-by-step instructions.
 
 Once you have a Basic auth token or a Bearer token, add it to the Vanya HTTP headers:
 
