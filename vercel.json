@@ -25,6 +25,24 @@
           "key": "X-XSS-Protection",
           "value": "1; mode=block"
         }
+      ],
+      "redirects": [
+        {
+          "source": "/docs/auth/ip-access-rules",
+          "destination": "/docs/access/ip-access-rules"
+        },
+        {
+          "source": "/docs/auth/smart-scopes",
+          "destination": "/docs/access/smart-scopes"
+        },
+        {
+          "source": "/docs/auth/access-control",
+          "destination": "/docs/access/access-policies"
+        },
+        {
+          "source": "/docs/auth/:page(oauth-auth-code|client-credentials|google-auth|okta-auth|external-identity-providers|external-ids|token-exchange)",
+          "destination": "/docs/access/:page*"
+        }
       ]
     }
   ]
