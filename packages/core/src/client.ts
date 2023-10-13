@@ -3010,7 +3010,7 @@ export class MedplumClient extends EventTarget {
       ContentType.FORM_URL_ENCODED
     )) as { 'hub.channel.endpoint': string };
 
-    const endpoint = body?.['hub.channel.endpoint'];
+    const endpoint = body['hub.channel.endpoint'];
     if (!endpoint) {
       throw new Error('Invalid response!');
     }
