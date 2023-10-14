@@ -11,8 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_VERSION: '18'
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: 'medplum'
       TURBO_REMOTE_ONLY: true
@@ -38,11 +36,6 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
-      - name: Slack start message
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            {"text": "Starting deploy: ${{ github.sha }}"}
       - name: Configure AWS Credentials
         if: github.repository == 'medplum/medplum'
         uses: aws-actions/configure-aws-credentials@v2
@@ -72,3 +65,4 @@ jobs:
           MEDPLUM_BASE_URL: ${{ secrets.MEDPLUM_BASE_URL }}
           MEDPLUM_INTROSPECTION_URL: ${{ secrets.MEDPLUM_INTROSPECTION_URL }}
           RECAPTCHA_SITE_KEY: ${{ secrets.RECAPTCHA_SITE_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
