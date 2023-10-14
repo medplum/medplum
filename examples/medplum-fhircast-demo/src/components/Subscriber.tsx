@@ -1,11 +1,11 @@
 import { Accordion, Center, Divider, Group, Stack, Text, Title } from '@mantine/core';
+import { FhircastMessagePayload, SubscriptionRequest } from '@medplum/core';
 import { Document, useMedplum } from '@medplum/react';
 import { IconMessage2Exclamation } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useClientId } from '../hooks';
-import { FhircastMessagePayload, serializeHubSubscriptionRequest } from '../utils';
+import ConnectionHandler from './ConnectionHandler';
 import TopicLoader from './TopicLoader';
-import WebSocketHandler from './WebSocketHandler';
 
 type FhircastMessageDisplayProps = {
   eventNo: number;
@@ -71,9 +71,9 @@ function FhircastMessageDisplay(props: FhircastMessageDisplayProps): JSX.Element
 export default function Subscriber(): JSX.Element {
   const medplum = useMedplum();
   const [status, setStatus] = useState('NOT CONNECTED');
-  const [currentPatientId, setCurrentPatientId] = useState<string | undefined>();
-  const [topic, setTopic] = useState<string | undefined>();
-  const [endpoint, setEndpoint] = useState<string | undefined>();
+  const [currentPatientId, setCurrentPatientId] = useState<string>();
+  const [topic, setTopic] = useState<string>();
+  const [subRequest, setSubRequest] = useState<SubscriptionRequest>();
   const [fhirCastMessages, setFhircastMessages] = useState<FhircastMessagePayload[]>([]);
   const [eventCount, setEventCount] = useState(0);
 
@@ -83,43 +83,33 @@ export default function Subscriber(): JSX.Element {
     if (topic) {
       // sub
       medplum
-        .post(
-          'fhircast/STU2',
-          serializeHubSubscriptionRequest({
-            channelType: 'websocket',
-            mode: 'subscribe',
-            topic,
-            events: ['patient-open'],
-          }),
-          'application/x-www-form-urlencoded'
-        )
-        .then(async (body: { 'hub.channel.endpoint': string }) => {
-          const endpoint = body?.['hub.channel.endpoint'];
-          if (!endpoint) {
-            throw new Error('Invalid response!');
-          }
-          setEndpoint(endpoint);
-          setStatus('SUBSCRIBED');
+        .fhircastSubscribe(topic, ['patient-open'])
+        .then((subRequest) => {
+          setSubRequest(subRequest);
         })
         .catch((err) => console.error(err));
     } else {
-      // unset endpoint (closing WS connection) when the topic is unset (cannot reuse websocket anyways since endpoint contains a slug)
-      setEndpoint(undefined);
+      // unset subRequest (closing WS connection) when the topic is unset (cannot reuse websocket anyways since endpoint contains a slug)
+      setSubRequest(undefined);
     }
   }, [topic, clientId, medplum]);
 
+  const handleFhircastMessage = useCallback((fhircastMessage: FhircastMessagePayload) => {
+    // Get the patient ID from the first context of the event
+    const patientId = fhircastMessage.event.context[0].resource.id as string;
+    setCurrentPatientId(patientId);
+    setFhircastMessages((s: FhircastMessagePayload[]) => [fhircastMessage, ...s]);
+    setEventCount((s) => s + 1);
+  }, []);
+
   return (
     <Document>
-      {endpoint ? (
-        <WebSocketHandler
-          endpoint={endpoint}
-          clientId={clientId}
-          setCurrentPatientId={setCurrentPatientId}
-          setFhircastMessages={setFhircastMessages}
-          setWebSocketStatus={setStatus}
-          incrementEventCount={() => setEventCount((s) => s + 1)}
-        />
-      ) : null}
+      <ConnectionHandler
+        subRequest={subRequest}
+        clientId={clientId}
+        onMessage={handleFhircastMessage}
+        onStatusChange={(status) => setStatus(status)}
+      />
       <Title align="center" fz={36}>
         Subscriber
       </Title>

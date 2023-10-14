@@ -19,7 +19,7 @@ export interface RegisterFormProps {
 export function RegisterForm(props: RegisterFormProps): JSX.Element {
   const { type, projectId, clientId, googleClientId, recaptchaSiteKey, onSuccess } = props;
   const medplum = useMedplum();
-  const [login, setLogin] = useState<string | undefined>(undefined);
+  const [login, setLogin] = useState<string>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
 
   useEffect(() => {

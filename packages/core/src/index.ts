@@ -9,6 +9,7 @@ export * from './constants';
 export * from './contenttype';
 export * from './crypto';
 export * from './eventtarget';
+export * from './fhircast';
 export * from './fhirlexer/parse';
 export * from './fhirmapper/parse';
 export * from './fhirpath/parse';

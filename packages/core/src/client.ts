@@ -38,21 +38,32 @@ import { LRUCache } from './cache';
 import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
+import {
+  FhircastConnection,
+  FhircastEventContext,
+  FhircastEventName,
+  PendingSubscriptionRequest,
+  SubscriptionRequest,
+  createFhircastMessagePayload,
+  serializeFhircastSubscriptionRequest,
+  validateFhircastSubscriptionRequest,
+} from './fhircast';
 import { Hl7Message } from './hl7';
 import { isJwt, isMedplumAccessToken, parseJWTPayload } from './jwt';
 import {
+  OperationOutcomeError,
   badRequest,
   isOk,
   isOperationOutcome,
   normalizeOperationOutcome,
   notFound,
-  OperationOutcomeError,
+  validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded } from './typeschema/types';
-import { arrayBufferToBase64, CodeChallengeMethod, createReference, ProfileResource, sleep } from './utils';
+import { CodeChallengeMethod, ProfileResource, arrayBufferToBase64, createReference, sleep } from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 
@@ -2965,6 +2976,104 @@ export class MedplumClient extends EventTarget {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.basicAuth = encodeBase64(clientId + ':' + clientSecret);
+  }
+
+  /**
+   * Subscribes to a specified topic, listening for a list of specified events.
+   *
+   * Once you have the `SubscriptionRequest` returned from this method, you can call `fhircastConnect(subscriptionRequest)` to connect to the subscription stream.
+   *
+   * @category FHIRcast
+   * @param topic The topic to publish to. Usually a UUID.
+   * @param events An array of event names to listen for.
+   * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
+   */
+  async fhircastSubscribe(topic: string, events: FhircastEventName[]): Promise<SubscriptionRequest> {
+    if (!(typeof topic === 'string' && topic !== '')) {
+      throw new OperationOutcomeError(validationError('Invalid topic provided. Topic must be a valid string.'));
+    }
+    if (!(typeof events === 'object' && Array.isArray(events) && events.length > 0)) {
+      throw new OperationOutcomeError(
+        validationError(
+          'Invalid events provided. Events must be an array of event names containing at least one event.'
+        )
+      );
+    }
+
+    const subRequest = {
+      channelType: 'websocket',
+      mode: 'subscribe',
+      topic,
+      events,
+    } as PendingSubscriptionRequest;
+
+    const body = (await this.post(
+      '/fhircast/STU2',
+      serializeFhircastSubscriptionRequest(subRequest),
+      ContentType.FORM_URL_ENCODED
+    )) as { 'hub.channel.endpoint': string };
+
+    const endpoint = body['hub.channel.endpoint'];
+    if (!endpoint) {
+      throw new Error('Invalid response!');
+    }
+
+    // Add endpoint to subscription request before returning
+    (subRequest as SubscriptionRequest).endpoint = endpoint;
+    return subRequest as SubscriptionRequest;
+  }
+
+  /**
+   * Unsubscribes from the specified topic.
+   *
+   * @category FHIRcast
+   * @param subRequest A `SubscriptionRequest` representing a subscription to cancel. Mode will be set to `unsubscribe` automatically.
+   * @returns A `Promise` that resolves when request to unsubscribe is completed.
+   */
+  async fhircastUnsubscribe(subRequest: SubscriptionRequest): Promise<void> {
+    if (!validateFhircastSubscriptionRequest(subRequest)) {
+      throw new OperationOutcomeError(
+        validationError('Invalid topic or subscriptionRequest. SubscriptionRequest must be an object.')
+      );
+    }
+    if (!(subRequest.endpoint && typeof subRequest.endpoint === 'string' && subRequest.endpoint.startsWith('ws'))) {
+      throw new OperationOutcomeError(
+        validationError('Provided subscription request must have an endpoint in order to unsubscribe.')
+      );
+    }
+
+    // Turn subRequest -> unsubRequest
+    subRequest.mode = 'unsubscribe';
+    // Send unsub request
+    await this.post('/fhircast/STU2', serializeFhircastSubscriptionRequest(subRequest), ContentType.FORM_URL_ENCODED);
+  }
+
+  /**
+   * Connects to a `FHIRcast` session.
+   *
+   * @category FHIRcast
+   * @param subRequest The `SubscriptionRequest` to use for connecting.
+   * @returns A `FhircastConnection` which emits lifecycle events for the `FHIRcast` WebSocket connection.
+   */
+  fhircastConnect(subRequest: SubscriptionRequest): FhircastConnection {
+    return new FhircastConnection(subRequest);
+  }
+
+  /**
+   * Publishes a new context to a given topic for a specified event type.
+   *
+   * @category FHIRcast
+   * @param topic The topic to publish to. Usually a UUID.
+   * @param event The name of the event to publish an updated context for, ie. `patient-open`.
+   * @param context The updated context containing resources relevant to this event.
+   * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
+   */
+  async fhircastPublish(
+    topic: string,
+    event: FhircastEventName,
+    context: FhircastEventContext | FhircastEventContext[]
+  ): Promise<void> {
+    return this.post(`/fhircast/STU2/${topic}`, createFhircastMessagePayload(topic, event, context), ContentType.JSON);
   }
 
   /**

@@ -6,7 +6,7 @@ interface TopicLoaderProps {
 }
 export default function TopicLoader(props: TopicLoaderProps): JSX.Element {
   const [topicInput, setTopicInput] = useState<string>('');
-  const [topic, setTopic] = useState<string | undefined>();
+  const [topic, setTopic] = useState<string>();
   const { onSetTopic } = props;
 
   useEffect(() => {
