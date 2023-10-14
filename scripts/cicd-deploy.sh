@@ -6,11 +6,13 @@
 # Inspects files changed in the most recent commit
 # and deploys the appropriate service
 
+COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+echo "$COMMIT_MESSAGE"
+
 FILES_CHANGED=$(git diff --name-only HEAD HEAD~1)
 echo "$FILES_CHANGED"
 
 DEPLOY_APP=false
-DEPLOY_BOT_LAYER=false
 DEPLOY_GRAPHIQL=false
 DEPLOY_SERVER=false
 
@@ -46,10 +48,6 @@ if [[ "$FILES_CHANGED" =~ packages/app ]]; then
   DEPLOY_APP=true
 fi
 
-if [[ "$FILES_CHANGED" =~ packages/bot-layer ]]; then
-  DEPLOY_BOT_LAYER=true
-fi
-
 if [[ "$FILES_CHANGED" =~ packages/core ]]; then
   DEPLOY_APP=true
   DEPLOY_SERVER=true
@@ -80,6 +78,27 @@ fi
 if [[ "$FILES_CHANGED" =~ packages/react ]]; then
   DEPLOY_APP=true
 fi
+
+#
+# Send a slack message
+#
+
+read -r -d '' PAYLOAD <<- EOM
+{
+  "text": "Deploying ${COMMIT_MESSAGE}",
+  "blocks": [
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "Deploying ${COMMIT_MESSAGE}\\n\\n* Deploy app: ${DEPLOY_APP}\\n* Deploy graphiql: ${DEPLOY_GRAPHIQL}\\n* Deploy server: ${DEPLOY_SERVER}"
+      }
+    }
+  ]
+}
+EOM
+
+curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$SLACK_WEBHOOK"
 
 #
 # Run the appropriate deploy scripts
