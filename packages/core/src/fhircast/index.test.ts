@@ -10,6 +10,7 @@ import {
   serializeFhircastSubscriptionRequest,
   validateFhircastSubscriptionRequest,
 } from '.';
+import { OperationOutcomeError } from '../outcomes';
 import { createFhircastMessageContext } from './test-utils';
 
 describe('validateFhircastSubscriptionRequest', () => {
@@ -173,7 +174,7 @@ describe('serializeFhircastSubscriptionRequest', () => {
   test('Invalid subscription request', () => {
     expect(() =>
       serializeFhircastSubscriptionRequest({ mode: 'unsubscribe' } as unknown as SubscriptionRequest)
-    ).toThrow(TypeError);
+    ).toThrow(OperationOutcomeError);
   });
 });
 
@@ -273,7 +274,7 @@ describe('createFhircastMessagePayload', () => {
           createFhircastMessageContext('imagingstudy', 'imagingstudy-123'),
         ]
       )
-    ).toThrowError(TypeError);
+    ).toThrowError(OperationOutcomeError);
   });
 
   test('Invalid event name', () => {
@@ -287,7 +288,7 @@ describe('createFhircastMessagePayload', () => {
           createFhircastMessageContext('imagingstudy', 'imagingstudy-123'),
         ]
       )
-    ).toThrowError(TypeError);
+    ).toThrowError(OperationOutcomeError);
   });
 
   test('Invalid context', () => {
@@ -298,7 +299,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid context, must be of type FhircastEventContext | FhircastEventContext[]
         { id: 'imagingstudy-123' }
       )
-    ).toThrowError(TypeError);
+    ).toThrowError(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
@@ -306,7 +307,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid context, resource must have an ID
         { key: 'patient', resource: { resourceType: 'Patient' } }
       )
-    ).toThrowError(TypeError);
+    ).toThrowError(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
@@ -314,7 +315,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid resource, resourceType required
         { key: 'patient', resource: { id: 'patient-123' } }
       )
-    ).toThrowError(TypeError);
+    ).toThrowError(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
@@ -322,7 +323,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid resourceType, must be a FHIRcast-related resource
         { key: 'patient', resource: { resourceType: 'Observation', id: 'observation-123' } }
       )
-    ).toThrowError(TypeError);
+    ).toThrowError(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
@@ -330,7 +331,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid context, must have a valid resource AND a key
         { resource: { resourceType: 'Patient', id: 'patient-123' } }
       )
-    ).toThrowError(TypeError);
+    ).toThrowError(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
@@ -338,7 +339,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid context, must have a valid resource AND a key
         { key: 'subject', resource: { resourceType: 'Patient', id: 'patient-123' } }
       )
-    ).toThrowError(TypeError);
+    ).toThrowError(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
@@ -346,7 +347,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid context, must have a valid resource AND a key
         { key: 'imagingstudy', resource: { resourceType: 'ImagingStudy', id: 'patient-123' } }
       )
-    ).toThrowError(TypeError);
+    ).toThrowError(OperationOutcomeError);
     expect(() =>
       // Should throw because keys must be unique
       createFhircastMessagePayload('abc-123', 'imagingstudy-open', [
@@ -354,14 +355,14 @@ describe('createFhircastMessagePayload', () => {
         { key: 'study', resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-456' } },
         { key: 'study', resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-789' } },
       ])
-    ).toThrowError(TypeError);
+    ).toThrowError(OperationOutcomeError);
     expect(() =>
       // Should throw because patient-open has an optional 2nd context of `Encounter`
       createFhircastMessagePayload('abc-123', 'patient-open', [
         { key: 'patient', resource: { resourceType: 'Patient', id: 'patient-123' } },
         { key: 'study', resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-456' } },
       ])
-    ).toThrowError(TypeError);
+    ).toThrowError(OperationOutcomeError);
   });
 });
 

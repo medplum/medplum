@@ -1,4 +1,5 @@
 import { FhircastEventContext, FhircastResourceType } from '.';
+import { OperationOutcomeError, validationError } from '../outcomes';
 
 const FHIRCAST_RESOURCE_TYPES = {
   patient: 'Patient',
@@ -11,10 +12,12 @@ export function createFhircastMessageContext(
   resourceId: string
 ): FhircastEventContext {
   if (!FHIRCAST_RESOURCE_TYPES[resourceType]) {
-    throw new TypeError(`resourceType must be one of: ${Object.keys(FHIRCAST_RESOURCE_TYPES).join(', ')}`);
+    throw new OperationOutcomeError(
+      validationError(`resourceType must be one of: ${Object.keys(FHIRCAST_RESOURCE_TYPES).join(', ')}`)
+    );
   }
   if (!(resourceId && typeof resourceId === 'string')) {
-    throw new TypeError('Must provide a resourceId!');
+    throw new OperationOutcomeError(validationError('Must provide a resourceId.'));
   }
   return {
     key: resourceType === 'imagingstudy' ? 'study' : resourceType,

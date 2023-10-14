@@ -1,4 +1,5 @@
 import { FhircastEventContext } from '.';
+import { OperationOutcomeError } from '../outcomes';
 import { createFhircastMessageContext } from './test-utils';
 
 describe('FHIRcast Test Utils', () => {
@@ -22,13 +23,13 @@ describe('FHIRcast Test Utils', () => {
 
     test('Invalid inputs', () => {
       // @ts-expect-error Invalid resource type, must be one a FHIRcast resource type
-      expect(() => createFhircastMessageContext('', 'patient-123')).toThrowError(TypeError);
+      expect(() => createFhircastMessageContext('', 'patient-123')).toThrowError(OperationOutcomeError);
       // @ts-expect-error Invalid resource type, must be one a FHIRcast resource type, eg. Patient, ImagingStudy
-      expect(() => createFhircastMessageContext('observation', 'observation-123')).toThrowError(TypeError);
+      expect(() => createFhircastMessageContext('observation', 'observation-123')).toThrowError(OperationOutcomeError);
       // @ts-expect-error Resource ID needs to be a string
-      expect(() => createFhircastMessageContext('patient', 123)).toThrowError(TypeError);
+      expect(() => createFhircastMessageContext('patient', 123)).toThrowError(OperationOutcomeError);
       // Resource ID needs a length
-      expect(() => createFhircastMessageContext('patient', '')).toThrowError(TypeError);
+      expect(() => createFhircastMessageContext('patient', '')).toThrowError(OperationOutcomeError);
     });
   });
 });

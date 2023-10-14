@@ -1174,13 +1174,15 @@ describe('Client', () => {
         const fetch = mockFetch(500, { error: 'how did we make it here?' });
         const client = new MedplumClient({ fetch });
 
-        await expect(client.fhircastSubscribe('', ['patient-open'])).rejects.toBeInstanceOf(TypeError);
+        await expect(client.fhircastSubscribe('', ['patient-open'])).rejects.toBeInstanceOf(OperationOutcomeError);
         // @ts-expect-error Topic must be a string
-        await expect(client.fhircastSubscribe(123, ['patient-open'])).rejects.toBeInstanceOf(TypeError);
+        await expect(client.fhircastSubscribe(123, ['patient-open'])).rejects.toBeInstanceOf(OperationOutcomeError);
         // @ts-expect-error Events must be an array of events
-        await expect(client.fhircastSubscribe('abc123', 'patient-open')).rejects.toBeInstanceOf(TypeError);
+        await expect(client.fhircastSubscribe('abc123', 'patient-open')).rejects.toBeInstanceOf(OperationOutcomeError);
         // @ts-expect-error Events must be an array of valid events
-        await expect(client.fhircastSubscribe('abc123', ['random-event'])).rejects.toBeInstanceOf(TypeError);
+        await expect(client.fhircastSubscribe('abc123', ['random-event'])).rejects.toBeInstanceOf(
+          OperationOutcomeError
+        );
       });
 
       test('Server returns invalid response', async () => {
@@ -1228,7 +1230,7 @@ describe('Client', () => {
             events: ['patient-open'],
             endpoint: 'wss://api.medplum.com/fhircast/STU2/def456',
           })
-        ).rejects.toBeInstanceOf(TypeError);
+        ).rejects.toBeInstanceOf(OperationOutcomeError);
         await expect(
           // @ts-expect-error Sub request requires channelType
           client.fhircastUnsubscribe({
@@ -1237,7 +1239,7 @@ describe('Client', () => {
             events: ['patient-open'],
             endpoint: 'wss://api.medplum.com/fhircast/STU2/def456',
           })
-        ).rejects.toBeInstanceOf(TypeError);
+        ).rejects.toBeInstanceOf(OperationOutcomeError);
         await expect(
           // @ts-expect-error This is a valid SubscriptionRequest but it lacks an endpoint
           client.fhircastUnsubscribe({
@@ -1246,7 +1248,7 @@ describe('Client', () => {
             topic: 'abc123',
             events: ['patient-open'],
           })
-        ).rejects.toBeInstanceOf(TypeError);
+        ).rejects.toBeInstanceOf(OperationOutcomeError);
       });
     });
 
@@ -1284,7 +1286,7 @@ describe('Client', () => {
             topic: 'abc123',
             events: ['patient-open'],
           })
-        ).toThrowError(TypeError);
+        ).toThrowError(OperationOutcomeError);
       });
     });
 
@@ -1327,15 +1329,15 @@ describe('Client', () => {
         await expect(
           // Topic needs to be a string with a length
           client.fhircastPublish('', 'patient-open', createFhircastMessageContext('patient', 'patient-123'))
-        ).rejects.toBeInstanceOf(TypeError);
+        ).rejects.toBeInstanceOf(OperationOutcomeError);
         await expect(
           // @ts-expect-error Invalid context object
           client.fhircastPublish('abc123', 'patient-open', {})
-        ).rejects.toBeInstanceOf(TypeError);
+        ).rejects.toBeInstanceOf(OperationOutcomeError);
         await expect(
           // @ts-expect-error Invalid event
           client.fhircastPublish('abc123', 'random-event', createFhircastMessageContext('patient', 'patient-123'))
-        ).rejects.toBeInstanceOf(TypeError);
+        ).rejects.toBeInstanceOf(OperationOutcomeError);
       });
     });
   });

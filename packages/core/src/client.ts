@@ -57,6 +57,7 @@ import {
   isOperationOutcome,
   normalizeOperationOutcome,
   notFound,
+  validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
@@ -2989,11 +2990,13 @@ export class MedplumClient extends EventTarget {
    */
   async fhircastSubscribe(topic: string, events: FhircastEventName[]): Promise<SubscriptionRequest> {
     if (!(typeof topic === 'string' && topic !== '')) {
-      throw new TypeError('Invalid topic provided. Topic must be a valid string!');
+      throw new OperationOutcomeError(validationError('Invalid topic provided. Topic must be a valid string.'));
     }
     if (!(typeof events === 'object' && Array.isArray(events) && events.length > 0)) {
-      throw new TypeError(
-        'Invalid events provided! Events must be an array of event names containing at least one event!'
+      throw new OperationOutcomeError(
+        validationError(
+          'Invalid events provided. Events must be an array of event names containing at least one event.'
+        )
       );
     }
 
@@ -3029,10 +3032,14 @@ export class MedplumClient extends EventTarget {
    */
   async fhircastUnsubscribe(subRequest: SubscriptionRequest): Promise<void> {
     if (!validateFhircastSubscriptionRequest(subRequest)) {
-      throw new TypeError('Invalid topic or subscriptionRequest! SubscriptionRequest must be an object.');
+      throw new OperationOutcomeError(
+        validationError('Invalid topic or subscriptionRequest. SubscriptionRequest must be an object.')
+      );
     }
     if (!(subRequest.endpoint && typeof subRequest.endpoint === 'string' && subRequest.endpoint.startsWith('ws'))) {
-      throw new TypeError('Provided subscription request must have an endpoint in order to unsubscribe!');
+      throw new OperationOutcomeError(
+        validationError('Provided subscription request must have an endpoint in order to unsubscribe.')
+      );
     }
 
     // Turn subRequest -> unsubRequest

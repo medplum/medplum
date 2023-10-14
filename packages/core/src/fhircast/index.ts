@@ -1,6 +1,7 @@
 import type { Resource } from '@medplum/fhirtypes';
 import { generateId } from '../crypto';
 import { TypedEventTarget } from '../eventtarget';
+import { OperationOutcomeError, validationError } from '../outcomes';
 
 const FHIRCAST_EVENT_NAMES = {
   'patient-open': 'patient-open',
@@ -105,7 +106,9 @@ export function serializeFhircastSubscriptionRequest(
   subscriptionRequest: SubscriptionRequest | PendingSubscriptionRequest
 ): string {
   if (!validateFhircastSubscriptionRequest(subscriptionRequest)) {
-    throw new TypeError('subscriptionRequest must be an object conforming to SubscriptionRequest type');
+    throw new OperationOutcomeError(
+      validationError('subscriptionRequest must be an object conforming to SubscriptionRequest type.')
+    );
   }
 
   const { channelType, mode, topic, events } = subscriptionRequest;
@@ -180,27 +183,37 @@ function validateFhircastContext(
   keysSeen: Set<FhircastEventContextKey>
 ): void {
   if (!(context.key && typeof context.key === 'string')) {
-    throw new TypeError(`context[${i}] is invalid! Context must contain a key!`);
+    throw new OperationOutcomeError(validationError(`context[${i}] is invalid. Context must contain a key.`));
   }
   if (keysSeen.has(context.key)) {
-    throw new TypeError(`context[${i}] is invalid! Key ${context.key} has already been used in a previous context!`);
+    throw new OperationOutcomeError(
+      validationError(`context[${i}] is invalid. Key ${context.key} has already been used in a previous context.`)
+    );
   }
   keysSeen.add(context.key);
   if (typeof context.resource !== 'object') {
-    throw new TypeError(
-      `context[${i}] is invalid! Context must contain a single valid FHIR resource! Resource is not an object.`
+    throw new OperationOutcomeError(
+      validationError(
+        `context[${i}] is invalid. Context must contain a single valid FHIR resource! Resource is not an object.`
+      )
     );
   }
   if (!(context.resource.id && typeof context.resource.id === 'string')) {
-    throw new TypeError(`context[${i}] is invalid! Resource must contain a valid string ID.`);
+    throw new OperationOutcomeError(
+      validationError(`context[${i}] is invalid. Resource must contain a valid string ID.`)
+    );
   }
   if (!context.resource.resourceType) {
-    throw new TypeError(`context[${i}] is invalid! Resource must contain a resource type. No resource type found.`);
+    throw new OperationOutcomeError(
+      validationError(`context[${i}] is invalid. Resource must contain a resource type. No resource type found.`)
+    );
   }
   const resourceType = context.resource.resourceType;
   if (!isFhircastResourceType(resourceType)) {
-    throw new TypeError(
-      `context[${i}] is invalid! Resource must contain a valid FHIRcast resource type. Resource type is not a known resource type.`
+    throw new OperationOutcomeError(
+      validationError(
+        `context[${i}] is invalid. Resource must contain a valid FHIRcast resource type. Resource type is not a known resource type.`
+      )
     );
   }
 
@@ -213,13 +226,17 @@ function validateFhircastContext(
     expectedResourceType = optionalResources[i - requiredResources.length];
   }
   if (expectedResourceType && resourceType !== expectedResourceType) {
-    throw new TypeError(
-      `context[${i}] is invalid! context[${i}] for the '${event}' event should contain resource of type ${expectedResourceType}`
+    throw new OperationOutcomeError(
+      validationError(
+        `context[${i}] is invalid. context[${i}] for the '${event}' event should contain resource of type ${expectedResourceType}.`
+      )
     );
   }
   const expectedKey = FHIRCAST_CONTEXT_KEY_REVERSE_LOOKUP[resourceType];
   if (expectedKey !== context.key) {
-    throw new TypeError(`context[${i}] is invalid! Context key for type ${resourceType} must be ${expectedKey}`);
+    throw new OperationOutcomeError(
+      validationError(`context[${i}] is invalid. Context key for type ${resourceType} must be ${expectedKey}.`)
+    );
   }
 }
 
@@ -250,15 +267,17 @@ export function createFhircastMessagePayload(
   context: FhircastEventContext | FhircastEventContext[]
 ): FhircastMessagePayload {
   if (!(topic && typeof topic === 'string')) {
-    throw new TypeError('Must provide a topic!');
+    throw new OperationOutcomeError(validationError('Must provide a topic.'));
   }
   if (!FHIRCAST_EVENT_NAMES[event]) {
-    throw new TypeError(
-      `Must provide a valid FHIRcast event name! Supported events: ${Object.keys(FHIRCAST_EVENT_NAMES).join(', ')}`
+    throw new OperationOutcomeError(
+      validationError(
+        `Must provide a valid FHIRcast event name. Supported events: ${Object.keys(FHIRCAST_EVENT_NAMES).join(', ')}`
+      )
     );
   }
   if (typeof context !== 'object') {
-    throw new TypeError('context must be a context object or array of context objects!');
+    throw new OperationOutcomeError(validationError('context must be a context object or array of context objects.'));
   }
 
   const normalizedContexts = Array.isArray(context) ? context : [context];
@@ -307,10 +326,10 @@ export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEve
     super();
     this.subRequest = subRequest;
     if (!subRequest.endpoint) {
-      throw new TypeError('Subscription request should contain an endpoint!');
+      throw new OperationOutcomeError(validationError('Subscription request should contain an endpoint.'));
     }
     if (!validateFhircastSubscriptionRequest(subRequest)) {
-      throw new TypeError('Subscription request failed validation!');
+      throw new OperationOutcomeError(validationError('Subscription request failed validation.'));
     }
     const websocket = new WebSocket(subRequest.endpoint);
     websocket.addEventListener('open', () => {
