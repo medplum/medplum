@@ -1258,7 +1258,7 @@ describe('Client', () => {
       beforeAll(() => {
         const fetch = mockFetch(500, { error: 'How did we get here?' });
         // @ts-expect-error not used directly but needed for mocking WS
-        const _wsServer = new WS('wss://api.medplum.com/fhircast/STU2/abc123', { jsonProtocol: true });
+        const _wsServer = new WS('wss://api.medplum.com/ws/fhircast/abc123', { jsonProtocol: true });
         client = new MedplumClient({ fetch });
       });
 
@@ -1272,7 +1272,7 @@ describe('Client', () => {
           mode: 'subscribe',
           topic: 'abc123',
           events: ['patient-open'],
-          endpoint: 'wss://api.medplum.com/fhircast/STU2/abc123',
+          endpoint: 'wss://api.medplum.com/ws/fhircast/abc123',
         });
         expect(connection).toBeInstanceOf(FhircastConnection);
       });
