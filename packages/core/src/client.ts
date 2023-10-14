@@ -42,6 +42,7 @@ import {
   FhircastConnection,
   FhircastEventContext,
   FhircastEventName,
+  PendingSubscriptionRequest,
   SubscriptionRequest,
   createFhircastMessagePayload,
   serializeFhircastSubscriptionRequest,
@@ -3004,7 +3005,7 @@ export class MedplumClient extends EventTarget {
       mode: 'subscribe',
       topic,
       events,
-    } as SubscriptionRequest;
+    } as PendingSubscriptionRequest;
 
     const body = (await this.post(
       '/fhircast/STU2',
