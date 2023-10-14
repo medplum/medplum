@@ -82,10 +82,8 @@ export type FhircastEventPayload = {
   context: FhircastEventContext[];
 };
 
-export type ISOTimestamp = string;
-
 export type FhircastMessagePayload = {
-  timestamp: ISOTimestamp;
+  timestamp: string;
   id: string;
   event: FhircastEventPayload;
 };
