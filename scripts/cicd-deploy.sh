@@ -98,7 +98,7 @@ read -r -d '' PAYLOAD <<- EOM
 }
 EOM
 
-curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$SLACK_WEBHOOK"
+curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$SLACK_WEBHOOK_URL"
 
 #
 # Run the appropriate deploy scripts
