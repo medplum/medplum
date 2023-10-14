@@ -24,7 +24,7 @@ Medplum is a developer platform that enables flexible and rapid development of h
 
 **We heartily welcome any and all contributions that match our engineering standards!**
 
-That being said, this codebase isn't your typical open source project because it's not a library or package with a
+That being said, this codebase isn't your typical open-source project because it's not a library or package with a
 limited scope -- it's our entire product. Our [Contributing documentation](https://medplum.com/docs/contributing) has
 all the information you need to get started.
 
@@ -47,7 +47,7 @@ place to share with us. ([click here to open a new issue](https://github.com/med
 ### Writing documentation or blog content
 
 Did you learn how to do something using Medplum that wasn't obvious on your first try? By contributing your new knowledge
-to our documentation, you cna help others who might have a similar use case!
+to our documentation, you can help others who might have a similar use case!
 
 Our documentation is hosted on [medplum.com/docs](/docs), but it is built from [Markdown](https://www.markdownguide.org/)
 files in our [`docs` package](https://github.com/medplum/medplum/tree/main/packages/docs/docs).
