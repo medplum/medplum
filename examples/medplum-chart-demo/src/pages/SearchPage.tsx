@@ -5,7 +5,7 @@ import {
   formatSearchQuery,
   parseSearchDefinition,
   SearchRequest,
-  SortRule
+  SortRule,
 } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';

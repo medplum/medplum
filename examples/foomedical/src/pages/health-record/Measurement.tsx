@@ -9,7 +9,6 @@ import { useParams } from 'react-router-dom';
 import { LineChart } from '../../components/LineChart';
 import { measurementsMeta } from './Measurement.data';
 
-
 export function Measurement(): JSX.Element | null {
   const { measurementId } = useParams();
   const { code, title, description, chartDatasets } = measurementsMeta[measurementId as string];

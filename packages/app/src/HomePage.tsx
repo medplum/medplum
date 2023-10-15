@@ -1,11 +1,6 @@
 import { createStyles, Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
-  formatSearchQuery,
-  normalizeErrorString,
-  parseSearchDefinition,
-  SearchRequest
-} from '@medplum/core';
+import { formatSearchQuery, normalizeErrorString, parseSearchDefinition, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
