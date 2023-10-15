@@ -848,7 +848,9 @@ describe('Legacy tests for parity checking', () => {
     const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
 
     binary.data = 123 as unknown as string;
-    expect(() => validateResource(binary)).toThrowError('Invalid JSON type: expected string, but got number (Binary.data)');
+    expect(() => validateResource(binary)).toThrowError(
+      'Invalid JSON type: expected string, but got number (Binary.data)'
+    );
 
     binary.data = '===';
     expect(() => validateResource(binary)).toThrowError('Invalid base64Binary format');
@@ -912,7 +914,9 @@ describe('Legacy tests for parity checking', () => {
     const media: Media = { resourceType: 'Media', status: 'completed', content: { title: 'x' } };
 
     media.duration = 'x' as unknown as number;
-    expect(() => validateResource(media)).toThrowError('Invalid JSON type: expected number, but got string (Media.duration)');
+    expect(() => validateResource(media)).toThrowError(
+      'Invalid JSON type: expected number, but got string (Media.duration)'
+    );
 
     media.duration = NaN;
     expect(() => validateResource(media)).toThrowError('Invalid numeric value (Media.duration)');
@@ -949,7 +953,9 @@ describe('Legacy tests for parity checking', () => {
     const obs: Observation = { resourceType: 'Observation', status: 'final', code: { text: 'x' } };
 
     obs.issued = 123 as unknown as string;
-    expect(() => validateResource(obs)).toThrowError('Invalid JSON type: expected string, but got number (Observation.issued)');
+    expect(() => validateResource(obs)).toThrowError(
+      'Invalid JSON type: expected string, but got number (Observation.issued)'
+    );
 
     obs.issued = 'x';
     expect(() => validateResource(obs)).toThrowError('Invalid instant format');
@@ -979,7 +985,9 @@ describe('Legacy tests for parity checking', () => {
     expect(() => validateResource(sp)).toThrowError('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
 
     sp.numberOfSubunits = 123.5;
-    expect(() => validateResource(sp)).toThrowError('Expected number to be an integer (SubstanceProtein.numberOfSubunits)');
+    expect(() => validateResource(sp)).toThrowError(
+      'Expected number to be an integer (SubstanceProtein.numberOfSubunits)'
+    );
 
     sp.numberOfSubunits = 10;
     expect(() => validateResource(sp)).not.toThrow();
@@ -989,7 +997,9 @@ describe('Legacy tests for parity checking', () => {
     const acct: Account = { resourceType: 'Account', status: 'active' };
 
     acct.name = 123 as unknown as string;
-    expect(() => validateResource(acct)).toThrowError('Invalid JSON type: expected string, but got number (Account.name)');
+    expect(() => validateResource(acct)).toThrowError(
+      'Invalid JSON type: expected string, but got number (Account.name)'
+    );
 
     acct.name = '    ';
     expect(() => validateResource(acct)).toThrowError('String must contain non-whitespace content (Account.name)');
@@ -1116,7 +1126,9 @@ describe('Legacy tests for parity checking', () => {
     // Patient.multipleBirth[x] is a choice of boolean or integer
     expect(() => validateResource({ resourceType: 'Patient', multipleBirthBoolean: true })).not.toThrow();
     expect(() => validateResource({ resourceType: 'Patient', multipleBirthInteger: 2 })).not.toThrow();
-    expect(() => validateResource({ resourceType: 'Patient', multipleBirthXyz: 'xyz' } as unknown as Patient)).toThrow();
+    expect(() =>
+      validateResource({ resourceType: 'Patient', multipleBirthXyz: 'xyz' } as unknown as Patient)
+    ).toThrow();
   });
 
   test('Primitive element', () => {
@@ -1155,9 +1167,9 @@ describe('Legacy tests for parity checking', () => {
     );
 
     // Send a single value for an array property
-    expect(() => validateResource({ resourceType: 'Patient', name: { family: 'foo' } as unknown as HumanName[] })).toThrow(
-      'Expected array of values for property (Patient.name)'
-    );
+    expect(() =>
+      validateResource({ resourceType: 'Patient', name: { family: 'foo' } as unknown as HumanName[] })
+    ).toThrow('Expected array of values for property (Patient.name)');
   });
 });
 
