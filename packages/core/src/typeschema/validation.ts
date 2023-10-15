@@ -1,6 +1,7 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
-import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
+import { UCUM } from '../constants';
 import { evalFhirPathTyped } from '../fhirpath/parse';
+import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import {
   createConstraintIssue,
   createProcessingIssue,
@@ -13,15 +14,14 @@ import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../uti
 import { crawlResource, getNestedProperty, ResourceVisitor } from './crawler';
 import {
   Constraint,
-  InternalSchemaElement,
   getDataType,
+  InternalSchemaElement,
   InternalTypeSchema,
   parseStructureDefinition,
   SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
 } from './types';
-import { UCUM } from '../constants';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -84,7 +84,7 @@ const validationRegexes: Record<string, RegExp> = {
  */
 const skippedConstraintKeys: Record<string, boolean> = { 'ele-1': true };
 
-export function validate(resource: Resource, profile?: StructureDefinition): void {
+export function validateResource(resource: Resource, profile?: StructureDefinition): void {
   new ResourceValidator(resource.resourceType, resource, profile).validate();
 }
 
