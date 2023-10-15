@@ -30,7 +30,7 @@ import {
   SearchRequest,
   stringify,
   tooManyRequests,
-  validate,
+  validateResource,
   validateResourceType,
 } from '@medplum/core';
 import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
@@ -452,7 +452,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     } else if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
-    await this.validate(resource);
+    await this.validateResource(resource);
 
     if (this.context.checkReferencesOnWrite) {
       await validateReferences(this, resource);
@@ -516,11 +516,11 @@ export class Repository extends BaseRepository implements FhirRepository {
     return result;
   }
 
-  private async validate(resource: Resource): Promise<void> {
+  private async validateResource(resource: Resource): Promise<void> {
     if (this.context.strictMode) {
       const start = process.hrtime.bigint();
       const profileUrls = resource.meta?.profile;
-      validate(resource);
+      validateResource(resource);
       if (profileUrls) {
         await this.validateProfiles(resource, profileUrls);
       }
@@ -554,7 +554,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         continue;
       }
       const validateStart = process.hrtime.bigint();
-      validate(resource, profile);
+      validateResource(resource, profile);
       const validateTime = Number(process.hrtime.bigint() - validateStart);
       ctx.logger.debug('Profile loaded', {
         url,
