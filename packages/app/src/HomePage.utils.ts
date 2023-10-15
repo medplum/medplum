@@ -5,7 +5,7 @@ import {
   formatSearchQuery,
   MedplumClient,
   SearchRequest,
-  SortRule
+  SortRule,
 } from '@medplum/core';
 import { Bundle, ResourceType, UserConfiguration } from '@medplum/fhirtypes';
 
