@@ -3,9 +3,9 @@ import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Loading } from '../../components/Loading';
 import { SideMenu } from '../../components/SideMenu';
-import { measurementsMeta } from './Measurement';
+import { measurementsMeta } from './Measurement.data';
 
-export const sideMenu = {
+const sideMenu = {
   title: 'Health Record',
   menu: [
     { name: 'Lab Results', href: '/health-record/lab-results' },

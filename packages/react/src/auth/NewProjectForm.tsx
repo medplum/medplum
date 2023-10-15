@@ -4,7 +4,7 @@ import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { Form } from '../Form/Form';
 import { Logo } from '../Logo/Logo';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { getErrorsForInput } from '../utils/outcomes';
 
 export interface NewProjectFormProps {

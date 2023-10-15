@@ -3,7 +3,7 @@ import { BaseLoginRequest, LoginAuthenticationResponse, normalizeErrorString } f
 import { ProjectMembership } from '@medplum/fhirtypes';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
 import { ChooseScopeForm } from './ChooseScopeForm';

@@ -3,7 +3,7 @@ import { LoginAuthenticationResponse } from '@medplum/core';
 import React from 'react';
 import { Form } from '../Form/Form';
 import { Logo } from '../Logo/Logo';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 export interface ChooseScopeFormProps {
   login: string;

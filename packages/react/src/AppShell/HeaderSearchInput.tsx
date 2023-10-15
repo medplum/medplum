@@ -4,7 +4,7 @@ import { Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { IconSearch } from '@tabler/icons-react';
 import React, { forwardRef, useCallback } from 'react';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
-import { useMedplum, useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
+import { useMedplum, useMedplumNavigate } from '../MedplumProvider/MedplumProvider.context';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 
 export type HeaderSearchTypes = Patient | ServiceRequest;

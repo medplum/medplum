@@ -2,7 +2,7 @@ import { TextInput } from '@mantine/core';
 import { createReference } from '@medplum/core';
 import { Annotation } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
-import { useMedplumProfile } from '../MedplumProvider/MedplumProvider';
+import { useMedplumProfile } from '../MedplumProvider/MedplumProvider.context';
 
 export interface AnnotationInputProps {
   name: string;

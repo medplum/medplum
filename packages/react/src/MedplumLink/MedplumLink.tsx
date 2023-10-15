@@ -2,7 +2,7 @@ import { Anchor, TextProps } from '@mantine/core';
 import { isReference, isResource } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import React from 'react';
-import { useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
+import { useMedplumNavigate } from '../MedplumProvider/MedplumProvider.context';
 import { killEvent } from '../utils/dom';
 
 export interface MedplumLinkProps extends TextProps {

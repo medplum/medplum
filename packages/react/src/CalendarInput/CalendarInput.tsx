@@ -1,6 +1,7 @@
 import { Button, createStyles, Group } from '@mantine/core';
 import { Slot } from '@medplum/fhirtypes';
 import React, { useMemo, useState } from 'react';
+import { getMonthString, getStartMonth } from './CalendarInput.utils';
 
 const useStyles = createStyles((theme) => ({
   table: {
@@ -48,15 +49,6 @@ export interface CalendarInputProps {
   slots: Slot[];
   onChangeMonth: (date: Date) => void;
   onClick: (date: Date) => void;
-}
-
-/**
- * Returns a month display string (e.g. "January 2020").
- * @param date Any date within the month.
- * @returns The month display string (e.g. "January 2020")
- */
-export function getMonthString(date: Date): string {
-  return date.toLocaleString('default', { month: 'long' }) + ' ' + date.getFullYear();
 }
 
 interface CalendarCell {
@@ -125,13 +117,6 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
       </table>
     </div>
   );
-}
-
-export function getStartMonth(): Date {
-  const result = new Date();
-  result.setDate(1);
-  result.setHours(0, 0, 0, 0);
-  return result;
 }
 
 function buildGrid(startDate: Date, slots: Slot[]): OptionalCalendarCell[][] {

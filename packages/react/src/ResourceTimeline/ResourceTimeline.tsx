@@ -29,7 +29,7 @@ import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { Form } from '../Form/Form';
-import { useMedplum, useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
+import { useMedplum, useMedplumNavigate } from '../MedplumProvider/MedplumProvider.context';
 import { Panel } from '../Panel/Panel';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceDiffTable } from '../ResourceDiffTable/ResourceDiffTable';

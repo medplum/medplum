@@ -2,8 +2,9 @@ import { createStyles } from '@mantine/core';
 import { getDataType, getPropertyDisplayName, stringify, toTypedValue } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
-import { getValueAndType, ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 
 const useStyles = createStyles((theme) => ({
   root: {

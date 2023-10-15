@@ -1,4 +1,3 @@
-import { InternalSchemaElement } from '@medplum/core';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document/Document';
@@ -9,17 +8,10 @@ export default {
   component: CodingInput,
 } as Meta;
 
+const valueSet = 'http://hl7.org/fhir/ValueSet/marital-status';
+
 export const Basic = (): JSX.Element => (
   <Document>
-    <CodingInput
-      property={
-        {
-          binding: {
-            valueSet: 'https://example.com/test',
-          },
-        } as InternalSchemaElement
-      }
-      name="code"
-    />
+    <CodingInput binding={valueSet} name="code" />
   </Document>
 );
