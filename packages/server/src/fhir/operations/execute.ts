@@ -400,8 +400,6 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
       contentType,
       secrets,
     },
-    // requestContextStore,
-    // ctx: getRequestContext(),
   };
 
   const options: vm.RunningScriptOptions = {
