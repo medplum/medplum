@@ -32,6 +32,8 @@ import vm from 'node:vm';
 import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
+import { getAuthenticatedContext, getRequestContext } from '../../context';
+import { globalLogger } from '../../logger';
 import { generateAccessToken } from '../../oauth/keys';
 import { AuditEventOutcome } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
@@ -39,8 +41,6 @@ import { createAuditEventEntities } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
 import { systemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
-import { globalLogger } from '../../logger';
-import { getAuthenticatedContext, getRequestContext, requestContextStore } from '../../context';
 
 export const EXECUTE_CONTENT_TYPES = [ContentType.JSON, ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
 
@@ -387,6 +387,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
   const botConsole = new MockConsole();
 
   const sandbox = {
+    require,
     ContentType,
     Hl7Message,
     MedplumClient,
@@ -399,8 +400,8 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
       contentType,
       secrets,
     },
-    requestContextStore,
-    ctx: getRequestContext(),
+    // requestContextStore,
+    // ctx: getRequestContext(),
   };
 
   const options: vm.RunningScriptOptions = {
@@ -415,7 +416,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
   ${code}
   // End user code
 
-  requestContextStore.run(ctx, async () => {
+  (async () => {
     const { baseUrl, accessToken, contentType, secrets } = event;
     const medplum = new MedplumClient({
       baseUrl,
@@ -442,7 +443,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
       }
       throw err;
     }
-  });
+  })();
   `;
 
   // Return the result of the code execution
