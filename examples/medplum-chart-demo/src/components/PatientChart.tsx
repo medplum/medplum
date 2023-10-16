@@ -79,11 +79,12 @@ export function PatientChart(): JSX.Element | null {
   }
 
   return (
-    <Card sx={{ width: 600 }} withBorder padding="lg" radius="md" mx="md" my="xl" shadow="xs">
+    <Card w="25%" withBorder padding="lg" radius="md" mx="md" my="xl" shadow="xs">
       <Card.Section
         h={100}
         style={{
-          backgroundColor: '#3994e8',
+          backgroundImage:
+            'url(https://images.unsplash.com/photo-1535961652354-923cb08225a7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8bmF0dXJlJTIwc21hbGx8ZW58MHwwfDB8fHww&auto=format&fit=crop&w=800&q=60)',
         }}
       />
       <ResourceAvatar value={patient} size={80} radius={80} mx="auto" mt={-50} sx={{ border: '2px solid white' }} />
