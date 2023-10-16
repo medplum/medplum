@@ -27,11 +27,11 @@
   - Lab results
   - Medications
   - Vaccines
-  - Vitals
+  - Vital
 - Patient-provider messaging
 - Care plans
 - Patient scheduling
-- All data represented in [FHIR](https://hl7.org/FHIR/)
+- All data is represented in [FHIR](https://hl7.org/FHIR/)
 
 Foo Medical is designed to be forked and customized for your business' needs. Register on [foomedical.com](https://foomedical.com/) to see it in action.
 
@@ -88,8 +88,8 @@ Medplum backend is HIPAA compliant and SOC 2 certified. Getting an account set u
 
 [Medplum](https://www.medplum.com/) is an open-source, API-first EHR. Medplum makes it easy to build healthcare apps quickly with less code.
 
-Medplum supports self-hosting, and provides a [hosted service](https://app.medplum.com/). [Foo Medical](https://foomedical.com/) uses the hosted service as a backend.
+Medplum supports self-hosting and provides a [hosted service](https://app.medplum.com/). [Foo Medical](https://foomedical.com/) uses the hosted service as a backend.
 
 - Read our [documentation](https://docs.medplum.com/)
-- Browse our [react component library](https://docs.medplum.com/storybook/index.html?)
+- Browse our [React component library](https://docs.medplum.com/storybook/index.html?)
 - Join our [Discord](https://discord.gg/medplum)
