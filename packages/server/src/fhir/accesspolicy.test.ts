@@ -17,13 +17,15 @@ import {
   Questionnaire,
   ServiceRequest,
   Task,
+  User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
+import { withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { Repository, systemRepo } from './repo';
-import { withTestContext } from '../test.setup';
 
 describe('AccessPolicy', () => {
   beforeAll(async () => {
@@ -1560,6 +1562,16 @@ describe('AccessPolicy', () => {
         admin: true,
       });
 
+      // Create a project-scoped user
+      const inviteResult = await inviteUser({
+        resourceType: 'Patient',
+        project,
+        externalId: randomUUID(),
+        firstName: 'X',
+        lastName: 'Y',
+        sendEmail: false,
+      });
+
       const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership);
 
       const check1 = await repo2.readResource<Task>('Patient', patient.id as string);
@@ -1570,6 +1582,10 @@ describe('AccessPolicy', () => {
 
       const check3 = await repo2.readResource<ProjectMembership>('ProjectMembership', membership.id as string);
       expect(check3.id).toEqual(membership.id);
+
+      const check4 = await repo2.searchResources<User>({ resourceType: 'User' });
+      expect(check4).toBeDefined();
+      expect(check4.find((u) => u.id === inviteResult.user.id)).toBeDefined();
 
       try {
         await repo2.readResource<Task>('Task', task.id as string);

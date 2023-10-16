@@ -202,6 +202,13 @@ function applyProjectAdminAccessPolicy(
       resourceType: 'PasswordChangeRequest',
       readonly: true,
     });
+
+    accessPolicy.resource.push({
+      resourceType: 'User',
+      criteria: `User?project=${membership.project?.reference}`,
+      hiddenFields: ['passwordHash', 'mfaSecret'],
+      readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
+    });
   }
 
   return accessPolicy;
