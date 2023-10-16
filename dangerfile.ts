@@ -1,9 +1,5 @@
 import { danger, message, warn } from 'danger';
-
-// Print modified files
-// See: https://danger.systems/js/guides/getting_started#creating-a-dangerfile
-const modifiedMarkdown = danger.git.modified_files.join('- ');
-message('Changed Files in this PR: \n - ' + modifiedMarkdown);
+import { statSync } from 'fs';
 
 // Keep package-lock.json up to date
 // See: https://danger.systems/js/
@@ -14,3 +10,7 @@ if (packageChanged && !lockfileChanged) {
   const idea = 'Perhaps you need to run `npm install`?';
   warn(`${message} - <i>${idea}</i>`);
 }
+
+// Show the size of minified JS output
+message(`@medplum/core: ${(statSync('packages/core/dist/cjs/index.cjs').size / 1024).toFixed(1)} bytes`);
+message(`@medplum/react: ${(statSync('packages/react/dist/cjs/index.cjs').size / 1024).toFixed(1)} bytes`);
