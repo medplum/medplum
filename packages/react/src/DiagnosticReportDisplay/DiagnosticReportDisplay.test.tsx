@@ -1,6 +1,6 @@
 import { createReference } from '@medplum/core';
 import { DiagnosticReport } from '@medplum/fhirtypes';
-import { HomerDiagnosticReport, MockClient } from '@medplum/mock';
+import { HomerDiagnosticReport, HomerSimpson, MockClient } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -215,5 +215,27 @@ describe('DiagnosticReportDisplay', () => {
 
     expect(screen.getByText('Diagnostic Report')).toBeInTheDocument();
     expect(screen.queryByText('Specimen')).toBeNull();
+  });
+
+  test('Handles observation cycles', async () => {
+    // This is a technically valid Observation resource,
+    // although it doesn't really make sense.
+    // It uses "Observation Grouping" to create a cycle.
+    let obs = await medplum.createResource({ resourceType: 'Observation', valueString: 'XYZ' });
+    obs = await medplum.updateResource({ ...obs, hasMember: [createReference(obs)] });
+
+    const report: DiagnosticReport = {
+      resourceType: 'DiagnosticReport',
+      status: 'final',
+      subject: createReference(HomerSimpson),
+      result: [createReference(obs)],
+    };
+
+    await act(async () => {
+      setup({ value: report });
+    });
+
+    expect(screen.getByText('Diagnostic Report')).toBeDefined();
+    expect(screen.getByText('XYZ')).toBeDefined();
   });
 });

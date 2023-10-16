@@ -13,6 +13,7 @@ import {
   TimingRepeat,
 } from '@medplum/fhirtypes';
 import { capitalize } from './utils';
+import { getTypedPropertyValue, toTypedValue } from './fhirpath/utils';
 
 export interface AddressFormatOptions {
   all?: boolean;
