@@ -1,4 +1,4 @@
-import { Flex, Text, Box } from '@mantine/core';
+import { Box, Flex, Text } from '@mantine/core';
 import { Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';

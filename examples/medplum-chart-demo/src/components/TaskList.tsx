@@ -13,8 +13,8 @@ import {
 import { IconFilePencil, IconListCheck, IconReportMedical } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { QuestionnaireTask, ResponseDisplay } from './QuestionnaireTask';
 import { DiagnosticReportModal } from './DiagnosticReportTask';
+import { QuestionnaireTask, ResponseDisplay } from './QuestionnaireTask';
 
 const focusIcons: Record<string, JSX.Element> = {
   Questionnaire: <IconFilePencil color="#D33E2C" size={24} />,

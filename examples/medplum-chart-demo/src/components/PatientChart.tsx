@@ -1,7 +1,7 @@
 import { Anchor, Card, Divider, Flex, Group, Paper, Stack, Text } from '@mantine/core';
-import { calculateAgeString, formatHumanName } from '@medplum/core';
+import { calculateAgeString, formatHumanName, getDisplayString } from '@medplum/core';
 import { AllergyIntolerance, Condition, HumanName, Observation, Patient } from '@medplum/fhirtypes';
-import { useMedplum, ResourceAvatar, useResource } from '@medplum/react';
+import { ResourceAvatar, useMedplum, useResource } from '@medplum/react';
 import { IconGenderFemale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -132,14 +132,11 @@ export function PatientChart(): JSX.Element | null {
   );
 }
 
-function ProviderName(props: { patient: Patient }): JSX.Element {
+function ProviderName(props: { patient: Patient }): JSX.Element | null {
   const patient = props.patient;
   const provider = useResource(patient?.generalPractitioner?.[0]);
-  if (provider?.resourceType === 'Practitioner') {
-    return <>{formatHumanName(provider.name?.[0] as HumanName)}</>;
+  if (provider) {
+    return <>{getDisplayString(provider)}</>;
   }
-  if (provider?.resourceType === 'Organization') {
-    return <>{provider.name as string}</>;
-  }
-  return <></>;
+  return null;
 }
