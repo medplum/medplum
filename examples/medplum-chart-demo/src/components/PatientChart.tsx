@@ -86,7 +86,7 @@ export function PatientChart(): JSX.Element | null {
           backgroundColor: '#3994e8',
         }}
       />
-      <ResourceAvatar value={patient} size={80} radius={80} mx="auto" mt={-50} />
+      <ResourceAvatar value={patient} size={80} radius={80} mx="auto" mt={-50} sx={{ border: '2px solid white' }} />
       <Text ta="center" fz="lg" fw={500}>
         {formatHumanName(patient.name?.[0] as HumanName)}
       </Text>
