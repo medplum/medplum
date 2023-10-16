@@ -101,7 +101,7 @@ You'll need the above to successfully install and connect the agent.
 
 ### Install on Host
 
-This guide walks through how to install the agent onto the host. The agent connects to Medplum using [device authentication](/docs/auth/authentication-methods),
+This guide walks through how to install the agent onto the host. The agent connects to Medplum using [device authentication](/docs/auth/methods),
 
 #### Windows Install
 

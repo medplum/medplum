@@ -43,7 +43,7 @@
     },
     {
       "source": "/docs/auth/:page(oauth-auth-code|client-credentials|google-auth|okta-auth|external-identity-providers|external-ids|token-exchange)",
-      "destination": "/docs/auth/authentication-methods/:page*"
+      "destination": "/docs/auth/methods/:page*"
     }
   ]
 }

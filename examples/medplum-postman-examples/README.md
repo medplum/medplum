@@ -4,7 +4,7 @@
    https://app.medplum.com/signin?project=new
 
 2. Follow the instructions here to create a new client application:
-   https://www.medplum.com/docs/auth/authentication-methods/oauth-auth-code
+   https://www.medplum.com/docs/auth/methods/oauth-auth-code
 
 3. Import the `medplum.postman_environment.json` file into Postman
 

@@ -254,7 +254,7 @@ This access policy grants read-only access to all Patients that are within that 
 }
 ```
 
-When a [user](/docs/auth/user-management-guide#background-user-model) or [client application](/docs/auth/authentication-methods/client-credentials#obtaining-credentials) has such an Access Policy like the one above that specifies an `Organization` in the compartment, the following happens:
+When a [user](/docs/auth/user-management-guide#background-user-model) or [client application](/docs/auth/methods/client-credentials#obtaining-credentials) has such an Access Policy like the one above that specifies an `Organization` in the compartment, the following happens:
 
 - Any resource created or updated will be tagged with `meta.account` set to `Organization/a23a2966-d58a-4098-b41b-e8f18bcda339`
 - Any read or search operation will filter on `meta.account` equals `Organization/a23a2966-d58a-4098-b41b-e8f18bcda339`

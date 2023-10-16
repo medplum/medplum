@@ -103,7 +103,7 @@ So there's really no DevOps from the perspective of the developer. They're just 
 
 So that's part of the customer experience. We also have [access policies](/docs/access/access-policies) and [identity](/docs/auth/user-management-guide), literacy in general on FHIR and [SMART-on-FHIR](/docs/access/smart-scopes) is growing, and we're part of the message there helping people understand how to use these tools and the scopes and the auth part of what we provide as well.
 
-And we just have a built-in implementation as well as allowing people to [bring their own auth](/docs/auth/authentication-methods/external-identity-providers) if that's what they want as a developer. And then [subscriptions](/docs/subscriptions), you can think of these as webhooks, you know allow event driven applications to be built, and I'll show some examples of those in the demo.
+And we just have a built-in implementation as well as allowing people to [bring their own auth](/docs/auth/methods/external-identity-providers) if that's what they want as a developer. And then [subscriptions](/docs/subscriptions), you can think of these as webhooks, you know allow event driven applications to be built, and I'll show some examples of those in the demo.
 
 ## Traditional Healthcare Applications
 

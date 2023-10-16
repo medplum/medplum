@@ -49,7 +49,7 @@ The team completed their initial build in 16 weeks.
 The following Medplum features were used to build this product.
 
 - [Integrations](/products/integration) - notably Medplum's integration framework and tools made it easy to integrate [BigQuery](https://cloud.google.com/architecture/analyzing-fhir-data-in-bigquery) and LLMs.
-- [Google Authentication](/docs/auth/authentication-methods/google-auth) and [External authentication](/docs/auth/authentication-methods/external-identity-providers) - Summer Health uses multiple identity providers for practitioners and patients respectively.
+- [Google Authentication](/docs/auth/methods/google-auth) and [External authentication](/docs/auth/methods/external-identity-providers) - Summer Health uses multiple identity providers for practitioners and patients respectively.
 - [Access policies](/docs/access/access-policies) - Patients are children, so parametrized access policies support parent and caregiver access.
 - [Subscriptions](/docs/subscriptions) - integrations to data warehousing and other applications are powered by event driven notifications
 - [FHIR Datastore](/docs/fhir-datastore), specifically family relationships and GraphQL allow for medical records that incorporate sibling and family member context

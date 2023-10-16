@@ -34,7 +34,7 @@ They completed their initial build in 16 weeks.
 
 ## Why Medplum?
 
-Medplum stood out due to its [out-of-the-box auth service](/docs/auth/authentication-methods/external-identity-providers) that supports cross-organization access. Its ability to build high-fidelity custom integrations quickly also proved invaluable in overcoming the challenges of collecting and synchronizing data from multiple sources.
+Medplum stood out due to its [out-of-the-box auth service](/docs/auth/methods/external-identity-providers) that supports cross-organization access. Its ability to build high-fidelity custom integrations quickly also proved invaluable in overcoming the challenges of collecting and synchronizing data from multiple sources.
 
 The [FHIR data model](/docs/api/fhir/resources) also proved valuable, as a well documented data model supported by EHRs aligned stakeholders quickly.
 
@@ -45,7 +45,7 @@ These factors allowed EnSage to focus on what was most important: their risk sco
 EnSage leveraged a suite of Medplum features to create a comprehensive and efficient solution:
 
 1. [Authorization](/docs/access/access-policies): by leveraging Medplum sophisticated [access control](/docs/access/access-policies#healthcare-partnerships) system, the EnSage team was able to expose the Medplum FHIR API directly to client applications and external partners, without the need to encapsulate it behind a gateway / proxy.
-2. [Authentication](/docs/auth): Multiple authentication providers were utilized, with the EnSage team using [Google Authentication](/docs/auth/authentication-methods/google-auth), while referring physician identities were managed in an [Auth0 tenant](/docs/auth/authentication-methods/external-identity-providers).
+2. [Authentication](/docs/auth): Multiple authentication providers were utilized, with the EnSage team using [Google Authentication](/docs/auth/methods/google-auth), while referring physician identities were managed in an [Auth0 tenant](/docs/auth/methods/external-identity-providers).
 3. [FHIR Datastore](/docs/fhir-datastore): All data is stored in FHIR format and is accessible via the FHIR API. This provides a standardized approach to storing and accessing health information.
 4. [Subscriptions](/docs/subscriptions): In this implementation, in response to [questionnaires](/docs/questionnaires/basic-tutorial), subscriptions are triggered, setting off automated workflows like notifications, data synchronization and more.
 5. [Scheduling](/docs/scheduling): Integration between [Acuity](https://www.acuityscheduling.com/) and [FHIR Schedule](/docs/api/fhir/resources/schedule) provided a robust solution for managing appointments and optimizing healthcare service delivery.
