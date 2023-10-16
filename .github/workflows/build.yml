@@ -72,5 +72,6 @@ jobs:
           name: medplum-code-coverage
           path: coverage/lcov.info
       - name: Danger
-        run: npm run danger ci
-        env: GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx danger ci
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
