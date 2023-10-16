@@ -3,7 +3,7 @@ sidebar_position: 1
 tags: [auth]
 ---
 
-# Auth Integration Patterns
+# Authentication Methods
 
 Medplum supports **three primary authentication integration patterns**, summarized by the following diagram. Each has its own use case. An implementation can use multiple or all patterns for different use cases.
 
