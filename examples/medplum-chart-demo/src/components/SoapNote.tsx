@@ -896,7 +896,7 @@ export function SoapNote(): JSX.Element {
   }
 
   return (
-    <Box w='37.5%'>
+    <Box w="37.5%">
       <Document>
         <QuestionnaireForm questionnaire={questionnaire} onSubmit={!submitted ? handleSubmit : console.log} />
 
