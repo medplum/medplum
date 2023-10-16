@@ -1,6 +1,6 @@
-import { Anchor, Avatar, Card, Divider, Flex, Group, Paper, Stack, Text } from '@mantine/core';
+import { Anchor, Card, Divider, Flex, Group, Paper, Stack, Text } from '@mantine/core';
 import { calculateAgeString, formatHumanName } from '@medplum/core';
-import { AllergyIntolerance, Condition, HumanName, Observation, Patient, Resource } from '@medplum/fhirtypes';
+import { AllergyIntolerance, Condition, HumanName, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum, ResourceAvatar, useResource } from '@medplum/react';
 import { IconGenderFemale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
