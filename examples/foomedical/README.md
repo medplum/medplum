@@ -31,7 +31,7 @@
 - Patient-provider messaging
 - Care plans
 - Patient scheduling
-- All data is represented in [FHIR](https://hl7.org/FHIR/)
+- All data represented in [FHIR](https://hl7.org/FHIR/)
 
 Foo Medical is designed to be forked and customized for your business' needs. Register on [foomedical.com](https://foomedical.com/) to see it in action.
 
