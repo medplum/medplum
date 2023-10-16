@@ -55,7 +55,7 @@
       "@medplum/eslint-config"
     ],
     "parserOptions": {
-      "project": "./tsconfig.base.json"
+      "project": "./tsconfig.json"
     }
   },
   "prettier": {
