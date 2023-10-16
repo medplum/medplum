@@ -3,7 +3,8 @@ import { act, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-import { getTimeString, ResourceBlame, ResourceBlameProps } from './ResourceBlame';
+import { ResourceBlame, ResourceBlameProps } from './ResourceBlame';
+import { getTimeString } from './ResourceBlame.utils';
 
 const medplum = new MockClient();
 

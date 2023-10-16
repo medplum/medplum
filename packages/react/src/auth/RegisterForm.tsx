@@ -2,7 +2,7 @@ import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { NewProjectForm } from './NewProjectForm';
 import { NewUserForm } from './NewUserForm';
 

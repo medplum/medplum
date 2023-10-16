@@ -3,11 +3,11 @@ import { getPropertyDisplayName, tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
-import { FormSection } from '../FormSection/FormSection';
-import { setPropertyValue } from '../ResourceForm/ResourceForm';
-import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
-import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { DEFAULT_IGNORED_PROPERTIES } from '../constants';
+import { FormSection } from '../FormSection/FormSection';
+import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
+import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
+import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 
 export interface BackboneElementInputProps {
   typeName: string;

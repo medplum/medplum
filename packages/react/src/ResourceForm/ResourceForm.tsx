@@ -1,10 +1,10 @@
 import { Button, Group, Stack, TextInput } from '@mantine/core';
-import { InternalSchemaElement, capitalize, deepClone } from '@medplum/core';
+import { deepClone } from '@medplum/core';
 import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
 import { FormSection } from '../FormSection/FormSection';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { useResource } from '../useResource/useResource';
 
 export interface ResourceFormProps {
@@ -76,24 +76,4 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
       </Group>
     </form>
   );
-}
-
-export function setPropertyValue(
-  obj: any,
-  key: string,
-  propName: string,
-  elementDefinition: InternalSchemaElement,
-  value: any
-): any {
-  const types = elementDefinition.type;
-  if (types.length > 1) {
-    for (const type of types) {
-      const compoundKey = key.replace('[x]', capitalize(type.code as string));
-      if (compoundKey in obj) {
-        delete obj[compoundKey];
-      }
-    }
-  }
-  obj[propName] = value;
-  return obj;
 }

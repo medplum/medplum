@@ -3,7 +3,7 @@ import { SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { convertIsoToLocal } from '../DateTimeInput/DateTimeInput';
+import { convertIsoToLocal } from '../DateTimeInput/DateTimeInput.utils';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
 

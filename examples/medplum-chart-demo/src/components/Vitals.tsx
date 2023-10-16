@@ -125,7 +125,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
       setVitals([...vitals, newAllergy]);
       close();
     },
-    [medplum, vitals, close]
+    [medplum, patient, encounter, vitals, close]
   );
 
   return (

@@ -3,7 +3,7 @@ import { normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { FhirPathDisplay } from '../FhirPathDisplay/FhirPathDisplay';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { SearchClickEvent } from '../SearchControl/SearchControl';
 import { isCheckboxCell, killEvent } from '../utils/dom';
 
