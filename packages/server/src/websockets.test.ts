@@ -2,7 +2,9 @@ import { allOk, ContentType, Hl7Message } from '@medplum/core';
 import { Agent, Bot } from '@medplum/fhirtypes';
 import express from 'express';
 import { Server } from 'http';
+import { AddressInfo } from 'net';
 import request from 'superwstest';
+import WebSocket from 'ws';
 import { initApp, shutdownApp } from './app';
 import { getConfig, loadTestConfig, MedplumServerConfig } from './config';
 import { initTestAuth } from './test.setup';
@@ -217,5 +219,15 @@ describe('WebSockets', () => {
 
   test('Invalid endpoint', async () => {
     await request(server).ws('/foo').expectConnectionError();
+    const serverUrl = `localhost:${(server.address() as AddressInfo).port}`;
+
+    // Make sure even when we error, we are getting back a response from server to prevent hanging socket connection
+    const ws = new WebSocket(`ws://${serverUrl}/fhircast/STU2`);
+    await new Promise<void>((done) => {
+      ws.on('error', (err) => {
+        expect(err.message).toContain('404');
+        done();
+      });
+    });
   });
 });
