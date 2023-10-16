@@ -27,7 +27,7 @@
   - Lab results
   - Medications
   - Vaccines
-  - Vital
+  - Vitals
 - Patient-provider messaging
 - Care plans
 - Patient scheduling
