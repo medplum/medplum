@@ -1,4 +1,4 @@
-import { Anchor, Badge, Box, Button, Group, Modal, Stack, Text, Radio } from '@mantine/core';
+import { Anchor, Badge, Box, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { getDisplayString } from '@medplum/core';
 import { CodeableConcept, MedicationRequest, Patient } from '@medplum/fhirtypes';
@@ -19,7 +19,7 @@ export function MedicationRequests(props: MedicationRequestsProps): JSX.Element 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
       console.log('handleSubmit', formData);
-      const status = formData.status as 'active' | 'stopped'
+      const status = formData.status as 'active' | 'stopped';
       medplum
         .createResource<MedicationRequest>({
           resourceType: 'MedicationRequest',
