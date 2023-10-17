@@ -12,5 +12,5 @@ if (packageChanged && !lockfileChanged) {
 }
 
 // Show the size of minified JS output
-message(`@medplum/core: ${(statSync('packages/core/dist/cjs/index.cjs').size / 1024).toFixed(1)} bytes`);
-message(`@medplum/react: ${(statSync('packages/react/dist/cjs/index.cjs').size / 1024).toFixed(1)} bytes`);
+message(`@medplum/core: ${(statSync('packages/core/dist/cjs/index.cjs').size / 1024).toFixed(1)} kB`);
+message(`@medplum/react: ${(statSync('packages/react/dist/cjs/index.cjs').size / 1024).toFixed(1)} kB`);
