@@ -197,6 +197,10 @@ export function isOk(outcome: OperationOutcome): boolean {
   );
 }
 
+export function isCreated(outcome: OperationOutcome): boolean {
+  return outcome.id === CREATED_ID;
+}
+
 export function isAccepted(outcome: OperationOutcome): boolean {
   return outcome.id === ACCEPTED_ID;
 }

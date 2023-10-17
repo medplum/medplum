@@ -8,6 +8,7 @@ import {
   getStatus,
   gone,
   isAccepted,
+  isCreated,
   isGone,
   isNotFound,
   isOk,
@@ -27,6 +28,11 @@ describe('Outcomes', () => {
     expect(isAccepted(created)).toBe(false);
     expect(isNotFound(allOk)).toBe(false);
     expect(isGone(allOk)).toBe(false);
+  });
+
+  test('Created', () => {
+    expect(isCreated(allOk)).toBe(false);
+    expect(isCreated(created)).toBe(true);
   });
 
   test('Not Found', () => {
