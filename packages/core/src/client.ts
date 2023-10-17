@@ -667,7 +667,7 @@ export class MedplumClient extends EventTarget {
     }
 
     if (options?.accessToken) {
-      this.accessToken = options.accessToken;
+      this.setAccessToken(options.accessToken);
     }
 
     this.setupStorageListener();
