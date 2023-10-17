@@ -11,7 +11,7 @@ This example app demonstrates the following:
 - Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to display a chart that provides visibility on a patient
 - Using [Medplum GraphQL](https://graphiql.medplum.com/) queries to fetch linked resources
 
-### What This Chart Shows 
+### Components of the Patient Chart
 
 The Patient Chart has 3 distinct panels
 
@@ -28,7 +28,7 @@ The Patient Chart has 3 distinct panels
 
 2. Tasks
   The center panel shows list of the Task resource with a different focus resource. 
-    - Each focus has is interactive to either review or fill out
+    - Each focus is interactive to either review or fill out
     - This example project demonstrates interactions of the following resources:
       - Questionnaire
       - QuestionnaireResponse
@@ -36,7 +36,7 @@ The Patient Chart has 3 distinct panels
       - CarePlan
 
 3. SOAP Note
-  The right most panel documents an enounter with the patient through a questionnaire. When the questionnaire is filled out and submitted, a task is automatically created with the response as the focus to be reviewed.
+  The right most panel documents an enounter with the patient through a questionnaire. Filling out and submitting the questionnaire automatically creates a task, with the response as the focus to be reviewed.
 
 ### Getting Started
 
