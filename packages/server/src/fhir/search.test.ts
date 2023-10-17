@@ -2794,6 +2794,33 @@ describe('FHIR Search', () => {
       expect(result.entry).toHaveLength(2);
     }));
 
+  test('_filter ne', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Eve'] }],
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const result = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'organization',
+            operator: Operator.EQUALS,
+            value: patient.managingOrganization?.reference as string,
+          },
+          {
+            code: '_filter',
+            operator: Operator.EQUALS,
+            value: 'given ne Eve',
+          },
+        ],
+      });
+
+      expect(result.entry).toHaveLength(0);
+    }));
+
   test('Lookup table exact match with comma disjunction', () =>
     withTestContext(async () => {
       const family = randomUUID();
