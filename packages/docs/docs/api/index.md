@@ -41,11 +41,11 @@ Related material:
 - [Patient](/docs/api/fhir/resources/patient) FHIR resource
 - [User](/docs/api/fhir/medplum/user)
 - [Project Membership](/docs/api/fhir/medplum/projectmembership)
-- [Access Control](/docs/auth/access-control) documentation
+- [Access Control](/docs/access/access-policies) documentation
 
 ### Clinician User Access
 
-Clinician users of Medplum can also use approved SMART-on-FHIR applications to access patient data in the system. Clinicians need to be explicitly granted Practitioner accounts with the appropriate [access controls](/docs/auth/access-control) in order to consume patient data. They will need to be [invited](/docs/app/invite) by administrator.
+Clinician users of Medplum can also use approved SMART-on-FHIR applications to access patient data in the system. Clinicians need to be explicitly granted Practitioner accounts with the appropriate [access controls](/docs/access/access-policies) in order to consume patient data. They will need to be [invited](/docs/app/invite) by administrator.
 
 ## FHIR Resources
 

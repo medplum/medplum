@@ -1,4 +1,4 @@
-import BrowserOnlyTabs from '@site/src/components/BrowserOnlyTabs';
+emoimport BrowserOnlyTabs from '@site/src/components/BrowserOnlyTabs';
 import TabItem from '@theme/TabItem';
 
 import CodeBlock from '@theme/CodeBlock';
@@ -169,7 +169,7 @@ If family members _do_ participate in clinical/billing activities, then it might
 
 You can model a family member explicitly as a [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource. The [RelatedPerson](/docs/api/fhir/resources/relatedperson) has one required field, `RelatedPerson.patient`, which is a reference to the target patient. The `RelatedPerson.relationship` property is a [CodeableConcept](/docs/fhir-basics#codeable-concepts-standarding-data) that can be used to specify the relationship type. In simple use cases where patients rarely share family members, then you can store basic demographic information and contact information directly in the [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource.
 
-This pattern, along with [Approach #3](#approach-3), is especially useful for situations where parents are logging in on behalf of minors. In these settings, the patient, a minor, can be modeled as a [Patient](/docs/api/fhir/resources/patient), and their parent/legal guardian would be a [RelatedPerson](/docs/api/fhir/resources/relatedperson). Medplum allows users to be registered either as a [Patient](/docs/api/fhir/resources/patient) or a [RelatedPerson](/docs/api/fhir/resources/relatedperson) (see the [user invitation tutorial](/docs/app/invite)), and you can create an [Access Policy](../auth/access-control#access-policies) to allow the parent access to minor's clinical information.
+This pattern, along with [Approach #3](#approach-3), is especially useful for situations where parents are logging in on behalf of minors. In these settings, the patient, a minor, can be modeled as a [Patient](/docs/api/fhir/resources/patient), and their parent/legal guardian would be a [RelatedPerson](/docs/api/fhir/resources/relatedperson). Medplum allows users to be registered either as a [Patient](/docs/api/fhir/resources/patient) or a [RelatedPerson](/docs/api/fhir/resources/relatedperson) (see the [user invitation tutorial](/docs/app/invite)), and you can create an [Access Policy](/docs/access/access-policies) to allow the parent access to minor's clinical information.
 
 This approach is also useful to model different insurance coverage for dependents. You can model the coverage using the [Coverage](/docs/api/fhir/resources/coverage) resource, with the [Patient](/docs/api/fhir/resources/patient) as the `Coverage.beneficiary` and the [RelatedPerson](/docs/api/fhir/resources/relatedperson) as the `Coverage.subscriber`.
 

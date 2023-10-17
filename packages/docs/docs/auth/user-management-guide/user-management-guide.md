@@ -87,7 +87,7 @@ By default, the server scopes all users [`Users`](/docs/api/fhir/medplum/user) e
 
 _Within_ each project, a project member is represented by a specific FHIR resource, known as their **profile**. The `ProjectMembership.profile` element links the [` ProjectMembership`](/docs/api/fhir/medplum/projectmembership) to the profile resource.
 
-A user's profile can be one of the three resource types in the table below. Incorporating the resources in the table below into ProjectMembership enable sophisticated access controls, as [Access Policies](/docs/auth/access-control) can access the profile of the current user ([read more](/docs/auth/access-control#patient-access))
+A user's profile can be one of the three resource types in the table below. Incorporating the resources in the table below into ProjectMembership enable sophisticated access controls, as [Access Policies](/docs/access/access-policies) can access the profile of the current user ([read more](/docs/access/access-policies#patient-access))
 
 | Resource                                                  | Description                                                                                                                             | Medplum App                                            |
 | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -120,7 +120,7 @@ To create a new `Project` resource via the API, you will need to create a `Clien
 
 :::warning
 
-Super admin features can cause unrepairable damage. We highly recommend adding an [Access Policy](/docs/auth/access-control) to this `ClientApplication` to reduce it's privileges.
+Super admin features can cause unrepairable damage. We highly recommend adding an [Access Policy](/docs/access/access-policies) to this `ClientApplication` to reduce it's privileges.
 
 :::
 
@@ -172,7 +172,7 @@ Users in Medplum can be members of multiple projects, so cannot be edited direct
 
 ### Creating Memberships
 
-Only administrators can invite users, and can do so on the [Invite](https://app.medplum.com/admin/invite) page. You can specify a role and [AccessPolicy](/docs/auth/access-control) at time of invite. The invite flow will do the following:
+Only administrators can invite users, and can do so on the [Invite](https://app.medplum.com/admin/invite) page. You can specify a role and [AccessPolicy](/docs/access/access-policies) at time of invite. The invite flow will do the following:
 
 1. Create a `User` if one does not already exist
 2. Create a FHIR resource (Patient, Practitioner or RelatedPerson)
@@ -355,7 +355,7 @@ Or use the `access` property to specify a user's `AccessPolicy` with optional pa
   {ExampleCode}
 </MedplumCodeBlock>
 
-See [Access Control](/docs/auth/access-control) for more details.
+See [Access Control](/docs/access/access-policies) for more details.
 
 :::caution
 

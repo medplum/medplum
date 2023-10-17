@@ -59,7 +59,7 @@ Commonly in diagnostics and specialty care providers are not part of the same pr
 ## Demos and Resources
 
 - [Compliance](/docs/compliance) portal with guides and resources.
-- [Access Controls](/docs/auth/access-control)
+- [Access Controls](/docs/access/access-policies)
 - [Authentication Methods](/docs/auth)
 - [Communications Product](../products/communications)
 - [Search API](/docs/search)
