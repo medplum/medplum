@@ -8,12 +8,25 @@
 
 This example app demonstrates the following:
 
-- Creating a new React app with Vite and TypeScript
-- Adding Medplum dependencies
-- Adding basic URL routing
-- Using the [Medplum client](https://www.medplum.com/docs/sdk/classes/MedplumClient) to search for FHIR resources
+- Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to display a chart that provides visibility on a patient
 - Using [Medplum GraphQL](https://graphiql.medplum.com/) queries to fetch linked resources
-- Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to display FHIR data
+
+### What This Chart Shows 
+
+The Patient Chart has 3 distinct panels
+
+1. Clinical Chart
+  The Clinical Chart Summarizes the patient history and their status. Notable information in the clinical chart includes the following Resources:
+  - Upcoming Appointments
+  - Documented Visits 
+  - List of Allergies
+  - List of Problems
+  - Medication Requests
+  - Smoking Status
+  - Vitals 
+
+2. Tasks
+  The Center Panel is a Task list that has a 
 
 ### Getting Started
 
