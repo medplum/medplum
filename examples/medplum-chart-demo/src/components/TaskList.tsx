@@ -10,7 +10,7 @@ import {
   useMedplum,
   useResource,
 } from '@medplum/react';
-import { IconFilePencil, IconListCheck, IconReportMedical, IconHeart } from '@tabler/icons-react';
+import { IconFilePencil, IconHeart, IconListCheck, IconReportMedical } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { DiagnosticReportModal } from './DiagnosticReportTask';
@@ -153,7 +153,6 @@ function TaskItem(props: TaskItemProps): JSX.Element {
 function TaskTitle(props: TaskCellProps): JSX.Element {
   const [title, setTitle] = useState<JSX.Element>();
   const medplum = useMedplum();
-  void medplum.requestSchema('QuestionnaireResponse');
 
   useEffect(() => {
     async function fetchQuestionnaireTitle(): Promise<void> {
