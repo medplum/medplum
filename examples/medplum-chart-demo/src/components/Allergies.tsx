@@ -17,7 +17,7 @@ export function Allergies(props: AllergiesProps): JSX.Element {
   const [allergies, setAllergies] = useState<AllergyIntolerance[]>(props.allergies);
   const [opened, { open, close }] = useDisclosure(false);
   const [code, setCode] = useState<CodeableConcept>();
-  
+
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
       console.log('handleSubmit', formData);
