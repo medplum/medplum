@@ -1,5 +1,5 @@
-<h1 align="center">Medplum Hello World</h1>
-<p align="center">A starter application for using the Medplum platform.</p>
+<h1 align="center">Medplum Charting Demo</h1>
+<p align="center">A starter application for building a charting app on Medplum.</p>
 <p align="center">
 <a href="https://github.com/medplum/medplum-hello-world/blob/main/LICENSE.txt">
     <img src="https://img.shields.io/badge/license-Apache-blue.svg" />
