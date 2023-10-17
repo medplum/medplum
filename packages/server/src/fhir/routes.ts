@@ -1,4 +1,4 @@
-import { allOk, ContentType, getStatus, isOk, OperationOutcomeError, validateResource } from '@medplum/core';
+import { allOk, ContentType, getStatus, isCreated, isOk, OperationOutcomeError, validateResource } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
@@ -24,6 +24,7 @@ import { projectCloneHandler } from './operations/projectclone';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { sendOutcome } from './outcomes';
 import { rewriteAttachments, RewriteMode } from './rewrite';
+import { getFullUrl } from './search';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
 export const fhirRouter = Router();
@@ -213,6 +214,9 @@ export async function sendResponse(res: Response, outcome: OperationOutcome, bod
   }
   if (body.meta?.lastUpdated) {
     res.set('Last-Modified', new Date(body.meta.lastUpdated).toUTCString());
+  }
+  if (isCreated(outcome)) {
+    res.set('Location', getFullUrl(body.resourceType, body.id as string));
   }
   res.status(getStatus(outcome)).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body));
 }
