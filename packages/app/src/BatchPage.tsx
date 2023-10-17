@@ -178,7 +178,7 @@ export function BatchPage(): JSX.Element {
               ))}
             </Tabs.List>
             {Object.keys(output).map((name) => (
-              <Tabs.Panel value={name}>
+              <Tabs.Panel key={name} value={name}>
                 <pre style={{ border: '1px solid #888' }}>{JSON.stringify(output[name], undefined, 2)}</pre>
               </Tabs.Panel>
             ))}

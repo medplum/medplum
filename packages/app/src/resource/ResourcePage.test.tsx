@@ -119,7 +119,7 @@ describe('ResourcePage', () => {
     window.alert = jest.fn();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Submit'));
     });
 
     expect(window.alert).toHaveBeenCalledWith('You submitted the preview');
