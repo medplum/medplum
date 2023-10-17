@@ -13,7 +13,7 @@ Authorization (what can you do?) are distinct in Medplum, and covered in the [Au
 
 ## Login Flowchart
 
-The [User Management Guide](/docs/auth/user-management) describes the Medplum user and project isolation model. Users can belong to multiple Medplum projects, and the service supports multiple types of authentication.
+The [User Management Guide](/docs/auth/user-management-guide) describes the Medplum user and project isolation model. Users can belong to multiple Medplum projects, and the service supports multiple types of authentication.
 
 The following diagram shows an overview of the process. Endpoints are provided to illustrate and inform, but implementors should only use [OAuth](/docs/api/oauth) endpoints or React components.
 
