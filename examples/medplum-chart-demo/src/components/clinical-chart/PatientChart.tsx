@@ -49,7 +49,6 @@ export function PatientChart(): JSX.Element | null {
         MedicationRequestList(_reference: subject, _count: 100, _sort: "-_lastUpdated") {
           id,
           status,
-          intent,
           medicationCodeableConcept { coding { code, display }},
         }
         ObservationList(_reference: subject, _count: 100, _sort: "-_lastUpdated") {
