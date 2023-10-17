@@ -60,6 +60,6 @@ The following criteria are required for CHPL listing: [d12](#encrypt-authenticat
 
 ## Real World Testing
 
-Download [Real World Testing Plan](https://drive.google.com/file/d/1c46hKmItFaWE-2_JhlFWVG2hKvkSEy8z/view?usp=sharing) 2023
+Download [Real World Testing Plan](https://drive.google.com/file/d/1hepC2n74zVZt8jr5jR4Eye3zGw0pnYJ7/view?usp=sharing) 2024
 
 ![ONC 2015 Edition Cures](/img/compliance/onc-2015-edition-cures.png)
