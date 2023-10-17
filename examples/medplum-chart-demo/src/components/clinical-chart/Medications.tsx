@@ -5,12 +5,12 @@ import { CodeableConcept, MedicationRequest, Patient } from '@medplum/fhirtypes'
 import { CodeableConceptDisplay, CodeableConceptInput, Form, useMedplum } from '@medplum/react';
 import React, { useCallback, useState } from 'react';
 
-export interface MedicationRequestsProps {
+export interface MedicationsProps {
   patient: Patient;
   medicationRequests: MedicationRequest[];
 }
 
-export function MedicationRequests(props: MedicationRequestsProps): JSX.Element {
+export function Medications(props: MedicationsProps): JSX.Element {
   const medplum = useMedplum();
   const [medicationRequests, setMedicationRequests] = useState<MedicationRequest[]>(props.medicationRequests);
   const [opened, { open, close }] = useDisclosure(false);
@@ -44,7 +44,7 @@ export function MedicationRequests(props: MedicationRequestsProps): JSX.Element 
     <>
       <Group position="apart">
         <Text fz="md" fw={700}>
-          Medication Requests
+          Medications
         </Text>
         <Anchor href="#" onClick={open}>
           + Add

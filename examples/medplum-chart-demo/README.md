@@ -9,6 +9,7 @@
 This example app demonstrates the following:
 
 - Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to display a chart that provides visibility on a patient
+  - More information on a [charting experience](https://www.medplum.com/docs/charting)
 - Using [Medplum GraphQL](https://graphiql.medplum.com/) queries to fetch linked resources
 
 ### Components of the Patient Chart

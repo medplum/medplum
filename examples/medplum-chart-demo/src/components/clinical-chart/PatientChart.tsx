@@ -3,13 +3,13 @@ import { calculateAgeString, formatHumanName, getDisplayString } from '@medplum/
 import { AllergyIntolerance, Condition, HumanName, MedicationRequest, Observation, Patient } from '@medplum/fhirtypes';
 import { ResourceAvatar, useMedplum, useResource } from '@medplum/react';
 import { IconGenderFemale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Allergies } from './Allergies';
+import { Medications } from './Medications';
 import { ProblemList } from './ProblemList';
 import { SmokingStatus } from './SmokingStatus';
 import { Vitals } from './Vitals';
-import { MedicationRequests } from './MedicationRequest';
 
 export function PatientChart(): JSX.Element | null {
   const { id } = useParams();
@@ -132,7 +132,7 @@ export function PatientChart(): JSX.Element | null {
         <Divider />
         <ProblemList patient={patient} problems={problems as Condition[]} />
         <Divider />
-        <MedicationRequests patient={patient} medicationRequests={medicationRequest as MedicationRequest[]} />
+        <Medications patient={patient} medicationRequests={medicationRequest as MedicationRequest[]} />
         <Divider />
         <SmokingStatus patient={patient} smokingStatus={smokingStatus} />
         <Divider />
