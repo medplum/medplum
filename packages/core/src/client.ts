@@ -666,6 +666,10 @@ export class MedplumClient extends EventTarget {
       this.refreshProfile().catch(console.log);
     }
 
+    if (options?.accessToken) {
+      this.accessToken = options.accessToken;
+    }
+
     this.setupStorageListener();
   }
 

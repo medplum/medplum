@@ -2193,6 +2193,12 @@ describe('Client', () => {
     expect(fetch.mock.calls).toHaveLength(expectedCalls);
   });
 
+  test('Client created with accessToken option set', async () => {
+    const accessToken = createFakeJwt({ login_id: '123' });
+    const client = new MedplumClient({ fetch, accessToken });
+    expect(client.getAccessToken()).toEqual(accessToken);
+  });
+
   test('graphql', async () => {
     const fetch = mockFetch(200, {});
     const medplum = new MedplumClient({ fetch });
