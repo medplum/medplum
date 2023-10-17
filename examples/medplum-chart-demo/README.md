@@ -1,5 +1,5 @@
-<h1 align="center">Medplum Charting Demo</h1>
-<p align="center">A starter application for building a charting app on Medplum.</p>
+<h1 align="center">Medplum Hello World</h1>
+<p align="center">A starter application for using the Medplum platform.</p>
 <p align="center">
 <a href="https://github.com/medplum/medplum-hello-world/blob/main/LICENSE.txt">
     <img src="https://img.shields.io/badge/license-Apache-blue.svg" />
@@ -16,17 +16,27 @@ This example app demonstrates the following:
 The Patient Chart has 3 distinct panels
 
 1. Clinical Chart
-  The Clinical Chart Summarizes the patient history and their status. Notable information in the clinical chart includes the following Resources:
-  - Upcoming Appointments
-  - Documented Visits 
-  - List of Allergies
-  - List of Problems
-  - Medication Requests
-  - Smoking Status
-  - Vitals 
+  The left panel shows the patient history and their status. Notable information in the clinical chart includes the following Resources:
+    - Patient Information
+    - Upcoming Appointments
+    - Documented Visits 
+    - List of Allergies
+    - List of Problems
+    - Medication Requests
+    - Smoking Status
+    - Vitals 
 
 2. Tasks
-  The Center Panel is a Task list that has a 
+  The center panel shows list of the Task resource with a different focus resource. 
+    - Each focus has is interactive to either review or fill out
+    - This example project demonstrates interactions of the following resources:
+      - Questionnaire
+      - QuestionnaireResponse
+      - DiagnosticReport 
+      - CarePlan
+
+3. SOAP Note
+  The right most panel documents an enounter with the patient through a questionnaire. When the questionnaire is filled out and submitted, a task is automatically created with the response as the focus to be reviewed.
 
 ### Getting Started
 
