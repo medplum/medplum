@@ -10,7 +10,7 @@ import {
   useMedplum,
   useResource,
 } from '@medplum/react';
-import { IconFilePencil, IconListCheck, IconReportMedical } from '@tabler/icons-react';
+import { IconFilePencil, IconListCheck, IconReportMedical, IconHeart } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { DiagnosticReportModal } from './DiagnosticReportTask';
@@ -20,6 +20,7 @@ const focusIcons: Record<string, JSX.Element> = {
   Questionnaire: <IconFilePencil color="#D33E2C" size={24} />,
   QuestionnaireResponse: <IconListCheck color="#207EDF" size={24} />,
   DiagnosticReport: <IconReportMedical color="#4EB180" size={24} />,
+  CarePlan: <IconHeart color="#FFC0CB" size={24} />,
 };
 
 export interface TaskCellProps {
@@ -99,6 +100,8 @@ function ResourceFocus(props: TaskCellProps): JSX.Element {
         return <ResponseDisplay task={props.task} resource={resource} />;
       case 'DiagnosticReport':
         return <DiagnosticReportModal task={props.task} resource={resource} />;
+      case 'CarePlan':
+        return <DiagnosticReportModal task={props.task} resource={resource} />;
       default:
         return <div />;
     }
@@ -150,6 +153,7 @@ function TaskItem(props: TaskItemProps): JSX.Element {
 function TaskTitle(props: TaskCellProps): JSX.Element {
   const [title, setTitle] = useState<JSX.Element>();
   const medplum = useMedplum();
+  void medplum.requestSchema('QuestionnaireResponse');
 
   useEffect(() => {
     async function fetchQuestionnaireTitle(): Promise<void> {

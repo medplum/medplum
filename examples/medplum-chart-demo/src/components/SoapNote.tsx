@@ -2,10 +2,10 @@ import { Box, Flex, Text } from '@mantine/core';
 import { Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-const questionnaire: Questionnaire = {
+const phq9: Questionnaire = {
   resourceType: 'Questionnaire',
   id: 'phq-9-example',
   meta: {
@@ -865,8 +865,17 @@ const questionnaire: Questionnaire = {
 export function SoapNote(): JSX.Element {
   const { id } = useParams();
   const medplum = useMedplum();
-
   const [submitted, setSubmitted] = useState(false);
+  void medplum.requestSchema('QuestionnaireResponse');
+  const [questionnaire, setQuestionnaire] = useState<Questionnaire>();
+
+  useEffect(() => {
+    medplum.searchOne('Questionnaire', 'name:contains=SOAP').then(setQuestionnaire).catch(console.log);
+  }, [medplum]);
+
+  if (!questionnaire) {
+    return <div>Loading...</div>;
+  }
 
   async function handleSubmit(questionnaireResponse: QuestionnaireResponse): Promise<void> {
     const response = await medplum.createResource(questionnaireResponse);
@@ -879,8 +888,8 @@ export function SoapNote(): JSX.Element {
         coding: [
           {
             system: 'http://loinc.org',
-            code: '44249-1',
-            display: 'PHQ-9 quick depression assessment panel [Reported.PHQ]',
+            code: 'LL1474-7',
+            display: 'Physician menopause management note',
           },
         ],
       },
