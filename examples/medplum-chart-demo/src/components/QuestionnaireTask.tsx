@@ -85,7 +85,6 @@ export function ResponseDisplay(props: TaskCellProps): JSX.Element {
   }
   const visibleItems = items.slice(0, 3);
   const collapsedItems = items.slice(3, items.length);
-
   return (
     <>
       {visibleItems.map((item) => (
@@ -113,7 +112,7 @@ export function ResponseDisplay(props: TaskCellProps): JSX.Element {
 function ItemRow(props: { item: QuestionnaireResponseItem }): JSX.Element | null {
   const item = props.item;
   const itemValue = getTypedPropertyValue(
-    { type: 'QuestionnaireItemAnswerOption', value: item?.answer?.[0] },
+    { type: 'QuestionnaireResponseItemAnswer', value: item?.answer?.[0] },
     'value'
   ) as TypedValue;
   if (!itemValue) {

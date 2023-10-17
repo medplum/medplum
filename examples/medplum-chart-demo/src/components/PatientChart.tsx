@@ -1,7 +1,7 @@
-import { Anchor, Avatar, Card, Divider, Flex, Group, Paper, Stack, Text } from '@mantine/core';
-import { calculateAgeString, formatHumanName } from '@medplum/core';
+import { Anchor, Card, Divider, Flex, Group, Paper, Stack, Text } from '@mantine/core';
+import { calculateAgeString, formatHumanName, getDisplayString } from '@medplum/core';
 import { AllergyIntolerance, Condition, HumanName, Observation, Patient } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { ResourceAvatar, useMedplum, useResource } from '@medplum/react';
 import { IconGenderFemale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -26,6 +26,7 @@ export function PatientChart(): JSX.Element | null {
         id,
         birthDate,
         gender,
+        generalPractitioner { reference },
         name { given, family },
         address { line, city, state }
         photo { contentType, url, title },
@@ -78,22 +79,15 @@ export function PatientChart(): JSX.Element | null {
   }
 
   return (
-    <Card sx={{ width: 600 }} withBorder padding="lg" radius="md" mx="md" my="xl" shadow="xs">
+    <Card w="25%" withBorder padding="lg" radius="md" mx="md" my="xl" shadow="xs">
       <Card.Section
         h={100}
         style={{
           backgroundImage:
-            'url(https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=500&q=80)',
+            'url(https://images.unsplash.com/photo-1535961652354-923cb08225a7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8bmF0dXJlJTIwc21hbGx8ZW58MHwwfDB8fHww&auto=format&fit=crop&w=800&q=60)',
         }}
       />
-      <Avatar
-        src="https://images.unsplash.com/photo-1623582854588-d60de57fa33f?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=250&q=80"
-        size={80}
-        radius={80}
-        mx="auto"
-        mt={-50}
-        sx={{ border: '2px solid white' }}
-      />
+      <ResourceAvatar value={patient} size={80} radius={80} mx="auto" mt={-50} sx={{ border: '2px solid white' }} />
       <Text ta="center" fz="lg" fw={500}>
         {formatHumanName(patient.name?.[0] as HumanName)}
       </Text>
@@ -111,7 +105,7 @@ export function PatientChart(): JSX.Element | null {
           <Flex justify="center" align="center" direction="column" gap={0}>
             <IconStethoscope size={24} color="gray" />
             <Text fz="xs" sx={{ whiteSpace: 'nowrap' }}>
-              Provider Name
+              <ProviderName patient={patient} />
             </Text>
           </Flex>
           <Flex justify="center" align="center" direction="column" gap={0}>
@@ -136,4 +130,13 @@ export function PatientChart(): JSX.Element | null {
       </Stack>
     </Card>
   );
+}
+
+function ProviderName(props: { patient: Patient }): JSX.Element | null {
+  const patient = props.patient;
+  const provider = useResource(patient?.generalPractitioner?.[0]);
+  if (provider) {
+    return <>{getDisplayString(provider)}</>;
+  }
+  return null;
 }

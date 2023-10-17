@@ -1,4 +1,4 @@
-import { Flex, Text } from '@mantine/core';
+import { Box, Flex, Text } from '@mantine/core';
 import { Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
@@ -896,15 +896,17 @@ export function SoapNote(): JSX.Element {
   }
 
   return (
-    <Document>
-      <QuestionnaireForm questionnaire={questionnaire} onSubmit={!submitted ? handleSubmit : console.log} />
+    <Box w="37.5%">
+      <Document>
+        <QuestionnaireForm questionnaire={questionnaire} onSubmit={!submitted ? handleSubmit : console.log} />
 
-      {submitted ? (
-        <Flex justify={'flex-end'} mt={8}>
-          <Text mr={8}>Submitted</Text>
-          <IconCircleCheck color="#79d290" size={24} />
-        </Flex>
-      ) : null}
-    </Document>
+        {submitted ? (
+          <Flex justify={'flex-end'} mt={8}>
+            <Text mr={8}>Submitted</Text>
+            <IconCircleCheck color="#79d290" size={24} />
+          </Flex>
+        ) : null}
+      </Document>
+    </Box>
   );
 }

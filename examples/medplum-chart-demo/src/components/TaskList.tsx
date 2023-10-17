@@ -13,8 +13,8 @@ import {
 import { IconFilePencil, IconListCheck, IconReportMedical } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { QuestionnaireTask, ResponseDisplay } from './QuestionnaireTask';
 import { DiagnosticReportModal } from './DiagnosticReportTask';
+import { QuestionnaireTask, ResponseDisplay } from './QuestionnaireTask';
 
 const focusIcons: Record<string, JSX.Element> = {
   Questionnaire: <IconFilePencil color="#D33E2C" size={24} />,
@@ -56,7 +56,7 @@ export function TaskList(): JSX.Element | null {
   }
 
   return (
-    <Card sx={{ width: 700 }} withBorder p="sm" radius="md" mx="md" my="xl" shadow="xs">
+    <Card w="33%" withBorder p="sm" radius="md" mx="md" my="xl" shadow="xs">
       <Title>{`Required Action (${tasks.length})`}</Title>
       <Box>
         <Timeline>
