@@ -295,7 +295,12 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
 function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, onChangeAnswer, allResponses } = props;
   if (item.answerValueSet) {
-    return <ValueSetAutocomplete binding={item.answerValueSet} onChange={onChangeAnswer} />;
+    return (
+      <ValueSetAutocomplete
+        binding={item.answerValueSet}
+        onChange={(answer) => onChangeAnswer({ valueCoding: answer?.[0] })}
+      />
+    );
   }
   return (
     <QuestionnaireChoiceRadioInput
