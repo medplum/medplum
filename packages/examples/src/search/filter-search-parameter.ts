@@ -23,22 +23,40 @@ curl 'https://api.medplum.com/fhir/R4/Patient?filter=name eq "simpson"' \
 // end-block syntaxCurl
 */
 
-// start-block logicalTs
+// start-block logicalAndTs
 await medplum.searchResources('Patient', {
   _filter: '(gender eq "male" and name co "sim")',
 });
-// end-block logicalTs
+// end-block logicalAndTs
 
 /*
-// start-block logicalCli
+// start-block logicalAndCli
 medplum get 'Patient?_filter=(gender eq "male" and name co "sim")'
-// end-block logicalCli
+// end-block logicalAndCli
 
-// start-block logicalCurl
+// start-block logicalAndCurl
 curl 'https://api.medplum.com/fhir/R4/Patient?filter=(gender eq "male" and name co "sim")' \
 	-H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
-// end-block logicalCurl
+// end-block logicalAndCurl
+*/
+
+// start-block logicalOrTs
+await medplum.searchResources('Patient', {
+  _filter: '(identifer eq 12345 or phone eq "555-6789")',
+});
+// end-block logicalOrTs
+
+/*
+// start-block logicalOrCli
+medplum get 'Patient?_filter=(identifier eq 12345 or phone eq "555-6789)"'
+// end-block logicalOrCli
+
+// start-block logicalOrCurl
+curl 'https://api.medplum.com/fhir/R4/Patient?_filter=(identifier eq 12345 or phone eq "555-6789") \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+// end-block logicalOrCurl
 */
 
 // start-block nestedTs

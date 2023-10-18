@@ -233,7 +233,9 @@ The Medplum SDK provides the `searchResources` helper function. This function un
 
 ## \_profile
 
-Similar to the `_tag` parameter, `_profile` allows you to search on the resource's meta data. In this case, you are searching on the `profile` field of the `meta` element for a given resource. The `_profile` parameter is a reference parameter, meaning you may provide a reference as an argument to the parameter.
+FHIR allows [profiling](http://hl7.org/fhir/R4/profiling.html) to create custom data structures that specify how resources should be structured and constrained to meet specific use cases. The `_profile` parameter allows you to search based on these profiles.
+
+The `_profile` parameter is a reference parameter, meaning you may provide a reference as an argument to the parameter.
 
 <details><summary>Example: Search for observations that are part of the pediatric growth charts profile</summary>
   <Tabs groupId="language">
