@@ -35,5 +35,9 @@
     "host": "localhost",
     "port": 6379,
     "password": "medplum"
+  },
+  "bullmq": {
+    "removeOnFail": { "count": 1 },
+    "removeOnComplete": { "count": 1 }
   }
 }

@@ -2,12 +2,12 @@ import { ContentType, createReference } from '@medplum/core';
 import { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
-import { MedplumRedisConfig } from '../config';
+import { MedplumServerConfig } from '../config';
+import { getRequestContext } from '../context';
 import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { findProjectMembership } from './utils';
-import { getRequestContext } from '../context';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 
@@ -41,11 +41,11 @@ let worker: Worker<CronJobData> | undefined = undefined;
  * Initializes the Cron worker.
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
- * @param config The Redis config.
+ * @param config The Medplum server config to use.
  */
-export function initCronWorker(config: MedplumRedisConfig): void {
+export function initCronWorker(config: MedplumServerConfig): void {
   const defaultOptions: QueueBaseOptions = {
-    connection: config,
+    connection: config.redis,
   };
 
   queue = new Queue<CronJobData>(queueName, {
@@ -58,7 +58,11 @@ export function initCronWorker(config: MedplumRedisConfig): void {
       },
     },
   });
-  worker = new Worker<CronJobData>(queueName, execBot, defaultOptions);
+
+  worker = new Worker<CronJobData>(queueName, execBot, {
+    ...defaultOptions,
+    ...config.bullmq,
+  });
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 }
@@ -66,7 +70,7 @@ export function initCronWorker(config: MedplumRedisConfig): void {
 /**
  * Shuts down the Cron worker.
  * Closes the BullMQ job queue.
- * Clsoes the BullMQ worker.
+ * Closes the BullMQ worker.
  */
 export async function closeCronWorker(): Promise<void> {
   if (queue) {
@@ -81,7 +85,7 @@ export async function closeCronWorker(): Promise<void> {
 }
 
 /**
- * Returns theCron queue instance.
+ * Returns the Cron queue instance.
  * This is used by the unit tests.
  * @returns The Cron queue (if available).
  */

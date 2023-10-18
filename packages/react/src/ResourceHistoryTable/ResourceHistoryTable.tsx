@@ -3,7 +3,7 @@ import { formatDateTime, normalizeErrorString } from '@medplum/core';
 import { Bundle, BundleEntry, Resource, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 
 export interface ResourceHistoryTableProps {

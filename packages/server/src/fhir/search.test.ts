@@ -31,6 +31,7 @@ import {
   Questionnaire,
   QuestionnaireResponse,
   Resource,
+  RiskAssessment,
   SearchParameter,
   ServiceRequest,
   StructureDefinition,
@@ -2793,6 +2794,56 @@ describe('FHIR Search', () => {
       expect(result.entry).toHaveLength(2);
     }));
 
+  test('_filter ne', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Eve'] }],
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const result = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'organization',
+            operator: Operator.EQUALS,
+            value: patient.managingOrganization?.reference as string,
+          },
+          {
+            code: '_filter',
+            operator: Operator.EQUALS,
+            value: 'given ne Eve',
+          },
+        ],
+      });
+
+      expect(result.entry).toHaveLength(0);
+    }));
+
+  test('_filter re', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Eve'] }],
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const result = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_filter',
+            operator: Operator.EQUALS,
+            value: 'organization re ' + patient.managingOrganization?.reference,
+          },
+        ],
+      });
+
+      expect(result.entry).toHaveLength(1);
+      expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
+    }));
+
   test('Lookup table exact match with comma disjunction', () =>
     withTestContext(async () => {
       const family = randomUUID();
@@ -2980,5 +3031,61 @@ describe('FHIR Search', () => {
       });
       expect(result2.entry).toHaveLength(2);
       expect(result2.entry?.[0]?.resource?.id?.localeCompare(result2.entry?.[1]?.resource?.id as string)).toBe(1);
+    }));
+
+  test('Numeric parameter', () =>
+    withTestContext(async () => {
+      const ident = randomUUID();
+      const riskAssessment: RiskAssessment = {
+        resourceType: 'RiskAssessment',
+        status: 'final',
+        identifier: [{ value: ident }],
+        subject: {
+          reference: 'Patient/test',
+        },
+        prediction: [
+          {
+            outcome: { text: 'Breast Cancer' },
+            probabilityDecimal: 0.000168,
+            whenRange: {
+              high: { value: 53, unit: 'years' },
+            },
+          },
+          {
+            outcome: { text: 'Breast Cancer' },
+            probabilityDecimal: 0.000368,
+            whenRange: {
+              low: { value: 54, unit: 'years' },
+              high: { value: 57, unit: 'years' },
+            },
+          },
+          {
+            outcome: { text: 'Breast Cancer' },
+            probabilityDecimal: 0.000594,
+            whenRange: {
+              low: { value: 58, unit: 'years' },
+              high: { value: 62, unit: 'years' },
+            },
+          },
+          {
+            outcome: { text: 'Breast Cancer' },
+            probabilityDecimal: 0.000838,
+            whenRange: {
+              low: { value: 63, unit: 'years' },
+              high: { value: 67, unit: 'years' },
+            },
+          },
+        ],
+      };
+
+      await systemRepo.createResource(riskAssessment);
+      const result = await systemRepo.search({
+        resourceType: 'RiskAssessment',
+        filters: [
+          { code: 'identifier', operator: Operator.EQUALS, value: ident },
+          { code: 'probability', operator: Operator.GREATER_THAN, value: '0.0005' },
+        ],
+      });
+      expect(result.entry).toHaveLength(1);
     }));
 });

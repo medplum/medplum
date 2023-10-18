@@ -51,6 +51,7 @@ export function initWebSockets(server: http.Server): void {
         wsServer?.emit('connection', socket, request);
       });
     } else {
+      socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
       socket.destroy();
     }
   });

@@ -11,6 +11,7 @@ import {
   forbidden,
   formatSearchQuery,
   getSearchParameterDetails,
+  getSearchParameters,
   getStatus,
   gone,
   isGone,
@@ -29,7 +30,7 @@ import {
   SearchRequest,
   stringify,
   tooManyRequests,
-  validate,
+  validateResource,
   validateResourceType,
 } from '@medplum/core';
 import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
@@ -81,7 +82,6 @@ import { validateReferences } from './references';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, Operator, SelectQuery } from './sql';
-import { getSearchParameters } from './structure';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -452,7 +452,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     } else if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
-    await this.validate(resource);
+    await this.validateResource(resource);
 
     if (this.context.checkReferencesOnWrite) {
       await validateReferences(this, resource);
@@ -516,11 +516,11 @@ export class Repository extends BaseRepository implements FhirRepository {
     return result;
   }
 
-  private async validate(resource: Resource): Promise<void> {
+  private async validateResource(resource: Resource): Promise<void> {
     if (this.context.strictMode) {
       const start = process.hrtime.bigint();
       const profileUrls = resource.meta?.profile;
-      validate(resource);
+      validateResource(resource);
       if (profileUrls) {
         await this.validateProfiles(resource, profileUrls);
       }
@@ -554,7 +554,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         continue;
       }
       const validateStart = process.hrtime.bigint();
-      validate(resource, profile);
+      validateResource(resource, profile);
       const validateTime = Number(process.hrtime.bigint() - validateStart);
       ctx.logger.debug('Profile loaded', {
         url,
@@ -1085,8 +1085,13 @@ export class Repository extends BaseRepository implements FhirRepository {
     const result: Reference[] = [];
 
     if (resource.meta?.project) {
-      // Deprecated - to be removed
+      // Deprecated - to be removed after migrating all tables to use "projectId" column
       result.push({ reference: 'Project/' + resource.meta.project });
+    }
+
+    if (resource.resourceType === 'User' && resource.project?.reference) {
+      // Deprecated - to be removed after migrating all tables to use "projectId" column
+      result.push(resource.project);
     }
 
     if (resource.meta?.account) {

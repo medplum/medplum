@@ -1,12 +1,11 @@
-import { Checkbox, Group, MultiSelect, NativeSelect, Radio, TextInput, Textarea } from '@mantine/core';
+import { Checkbox, Group, MultiSelect, NativeSelect, Radio, Textarea, TextInput } from '@mantine/core';
 import {
-  PropertyType,
   TypedValue,
   capitalize,
   deepEquals,
   formatCoding,
+  getElementDefinition,
   getTypedPropertyValue,
-  globalSchema,
   stringify,
 } from '@medplum/core';
 import {
@@ -23,12 +22,12 @@ import { DateTimeInput } from '../../DateTimeInput/DateTimeInput';
 import { QuantityInput } from '../../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
 import { ResourcePropertyDisplay } from '../../ResourcePropertyDisplay/ResourcePropertyDisplay';
-import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocomplete';
 import {
-  QuestionnaireItemType,
   getNewMultiSelectValues,
   getQuestionnaireItemReferenceTargetTypes,
+  QuestionnaireItemType,
 } from '../../utils/questionnaire';
+import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
@@ -296,12 +295,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
 function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, onChangeAnswer, allResponses } = props;
   if (item.answerValueSet) {
-    return (
-      <ValueSetAutocomplete
-        elementDefinition={{ binding: { valueSet: item.answerValueSet } }}
-        onChange={onChangeAnswer}
-      />
-    );
+    return <ValueSetAutocomplete binding={item.answerValueSet} onChange={onChangeAnswer} />;
   }
   return (
     <QuestionnaireChoiceRadioInput
@@ -316,7 +310,7 @@ function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.
 
 function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, onChangeAnswer } = props;
-  const valueElementDefinition = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+  const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
   const initialValue = getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value') as
     | TypedValue
     | undefined;
@@ -364,7 +358,7 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
           label={
             <ResourcePropertyDisplay
               property={valueElementDefinition}
-              propertyType={optionValue.type as PropertyType}
+              propertyType={optionValue.type}
               value={optionValue.value}
             />
           }

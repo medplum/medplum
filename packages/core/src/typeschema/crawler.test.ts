@@ -1,18 +1,14 @@
 import { readJson } from '@medplum/definitions';
-import { Attachment, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
-import { indexStructureDefinitionBundle, TypedValue } from '../types';
+import { Attachment, Bundle, Patient } from '@medplum/fhirtypes';
+import { TypedValue } from '../types';
 import { arrayify } from '../utils';
 import { crawlResource } from './crawler';
-import { loadDataTypes } from './types';
+import { indexStructureDefinitionBundle } from './types';
 
 describe('ResourceCrawler', () => {
   beforeAll(() => {
-    const typesData = readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>;
-    const resourcesData = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
-    indexStructureDefinitionBundle(typesData);
-    indexStructureDefinitionBundle(resourcesData);
-    loadDataTypes(typesData);
-    loadDataTypes(resourcesData);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   });
 
   test('Simple case', () => {

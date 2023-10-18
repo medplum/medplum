@@ -1,3 +1,4 @@
+import { Button, Input, Stack } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { usePrevious } from '../hooks';
 
@@ -8,7 +9,7 @@ interface TopicGeneratorProps {
 export default function TopicGenerator(props: TopicGeneratorProps): JSX.Element {
   const { onTopicChange } = props;
   const [syncing, setSyncing] = useState<boolean>(false);
-  const [topic, setTopic] = useState<string | undefined>(undefined);
+  const [topic, setTopic] = useState<string>();
   const prevTopic = usePrevious(topic);
 
   useEffect(() => {
@@ -34,18 +35,18 @@ export default function TopicGenerator(props: TopicGeneratorProps): JSX.Element 
   };
 
   return (
-    <>
-      <div>
-        <button type="button" onClick={toggleSyncing}>
-          {!syncing ? 'Sync subscribers' : 'Stop syncing subscribers'}
-        </button>
-      </div>
+    <Stack align="center">
+      <Button onClick={toggleSyncing} radius="xl" mb={20}>
+        {!syncing ? 'Sync subscribers' : 'Stop syncing subscribers'}
+      </Button>
+
       {topic ? (
         <>
-          <div>Topic ID: </div>
-          <input type="text" value={topic ?? 'No topic'} onChange={() => {}} />
+          <Input.Wrapper label="Topic" w={350}>
+            <Input value={topic ?? 'No topic'} />
+          </Input.Wrapper>
         </>
       ) : null}
-    </>
+    </Stack>
   );
 }

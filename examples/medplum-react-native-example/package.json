@@ -1,6 +1,6 @@
 {
   "name": "medplum-react-native-example",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "main": "src/main.ts",
   "scripts": {
     "start": "expo start",
@@ -10,16 +10,16 @@
   },
   "dependencies": {
     "@expo/webpack-config": "19.0.0",
-    "@medplum/core": "2.1.4",
-    "expo": "49.0.11",
+    "@medplum/core": "2.1.5",
+    "expo": "49.0.13",
     "expo-status-bar": "1.7.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-native": "0.72.4",
-    "react-native-web": "0.19.8"
+    "react-native": "0.72.6",
+    "react-native-web": "0.19.9"
   },
   "devDependencies": {
-    "@babel/core": "7.22.20",
+    "@babel/core": "7.23.2",
     "typescript": "5.2.2"
   },
   "prettier": {

@@ -1,12 +1,12 @@
 import { Stack } from '@mantine/core';
-import { getPropertyDisplayName, globalSchema } from '@medplum/core';
+import { getPropertyDisplayName, tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
 import { DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { FormSection } from '../FormSection/FormSection';
-import { setPropertyValue } from '../ResourceForm/ResourceForm';
-import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
+import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 
 export interface BackboneElementInputProps {
@@ -27,7 +27,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   }
 
   const typeName = props.typeName;
-  const typeSchema = globalSchema.types[typeName];
+  const typeSchema = tryGetDataType(typeName);
   if (!typeSchema) {
     return <div>{typeName}&nbsp;not implemented</div>;
   }
@@ -36,12 +36,10 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
 
   return (
     <Stack>
-      {Object.entries(typeSchema.properties).map((entry) => {
-        const key = entry[0];
+      {Object.entries(typeSchema.elements).map(([key, property]) => {
         if (key === 'id' || DEFAULT_IGNORED_PROPERTIES.includes(key)) {
           return null;
         }
-        const property = entry[1];
         if (!property.type) {
           return null;
         }
@@ -54,7 +52,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
             <CheckboxFormSection
               key={key}
               title={getPropertyDisplayName(key)}
-              description={property.definition}
+              description={property.description}
               htmlFor={key}
             >
               <ResourcePropertyInput
@@ -64,7 +62,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
                 defaultPropertyType={propertyType}
                 outcome={props.outcome}
                 onChange={(newValue: any, propName?: string) => {
-                  setValueWrapper(setPropertyValue(value, key, propName ?? key, entry[1], newValue));
+                  setValueWrapper(setPropertyValue(value, key, propName ?? key, property, newValue));
                 }}
               />
             </CheckboxFormSection>
@@ -75,7 +73,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
           <FormSection
             key={key}
             title={getPropertyDisplayName(key)}
-            description={property.definition}
+            description={property.description}
             withAsterisk={required}
             htmlFor={key}
             outcome={props.outcome}
@@ -86,7 +84,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
               defaultValue={propertyValue}
               defaultPropertyType={propertyType}
               onChange={(newValue: any, propName?: string) => {
-                setValueWrapper(setPropertyValue(value, key, propName ?? key, entry[1], newValue));
+                setValueWrapper(setPropertyValue(value, key, propName ?? key, property, newValue));
               }}
             />
           </FormSection>

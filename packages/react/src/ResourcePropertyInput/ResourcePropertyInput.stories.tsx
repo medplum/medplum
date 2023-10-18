@@ -15,7 +15,7 @@ export const AddressInput = (): JSX.Element => (
     <ResourcePropertyInput
       name="address-input"
       defaultValue={HomerSimpson.address?.[0]}
-      property={{ type: [{ code: 'Address' }] }}
+      property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'Address' }] }}
       defaultPropertyType={PropertyType.Address}
       onChange={console.log}
     />
@@ -27,7 +27,7 @@ export const BooleanInput = (): JSX.Element => (
     <ResourcePropertyInput
       name="boolean-input"
       defaultValue={false}
-      property={{ type: [{ code: 'boolean' }] }}
+      property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'boolean' }] }}
       defaultPropertyType={PropertyType.boolean}
       onChange={console.log}
     />
@@ -39,7 +39,7 @@ export const DateInput = (): JSX.Element => (
     <ResourcePropertyInput
       name="date-input"
       defaultValue={'2021-01-01'}
-      property={{ type: [{ code: 'date' }] }}
+      property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'date' }] }}
       defaultPropertyType={PropertyType.date}
       onChange={console.log}
     />
@@ -51,7 +51,7 @@ export const DateTimeInput = (): JSX.Element => (
     <ResourcePropertyInput
       name="date-input"
       defaultValue={'2021-01-01T16:00:01Z'}
-      property={{ type: [{ code: 'dateTime' }] }}
+      property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'dateTime' }] }}
       defaultPropertyType={PropertyType.dateTime}
       onChange={console.log}
     />

@@ -1,6 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, StructureMap } from '@medplum/fhirtypes';
-import { indexStructureDefinitionBundle } from '../types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
 
 describe('FHIR Mapping Language parser', () => {

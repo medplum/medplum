@@ -1,17 +1,11 @@
-import { ElementDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { CodeInput } from './CodeInput';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-
-const statusProperty: ElementDefinition = {
-  binding: {
-    valueSet: 'https://example.com/test',
-  },
-};
+import { CodeInput } from './CodeInput';
 
 const medplum = new MockClient();
+const binding = 'https://example.com/test';
 
 describe('CodeInput', () => {
   beforeEach(() => {
@@ -32,7 +26,7 @@ describe('CodeInput', () => {
   }
 
   test('Renders', async () => {
-    await setup(<CodeInput property={statusProperty} name="test" />);
+    await setup(<CodeInput binding={binding} name="test" />);
 
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
@@ -41,7 +35,7 @@ describe('CodeInput', () => {
     await act(async () => {
       render(
         <MedplumProvider medplum={medplum}>
-          <CodeInput property={statusProperty} name="test" defaultValue="xyz" />
+          <CodeInput binding={binding} name="test" defaultValue="xyz" />
         </MedplumProvider>
       );
     });
@@ -51,7 +45,7 @@ describe('CodeInput', () => {
   });
 
   test('Searches for results', async () => {
-    await setup(<CodeInput property={statusProperty} name="test" />);
+    await setup(<CodeInput binding={binding} name="test" />);
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 
@@ -79,7 +73,7 @@ describe('CodeInput', () => {
   });
 
   test('Searches for results with creatable set to false', async () => {
-    await setup(<CodeInput property={statusProperty} name="test" creatable={false} clearable={false} />);
+    await setup(<CodeInput binding={binding} name="test" creatable={false} clearable={false} />);
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 

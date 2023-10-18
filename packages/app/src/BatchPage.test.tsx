@@ -3,7 +3,27 @@ import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, RenderResult, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { BatchPage, DEFAULT_VALUE } from './BatchPage';
+import { BatchPage } from './BatchPage';
+
+const exampleBundle = `{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "name": [{
+          "given": ["Alice"],
+          "family": "Smith"
+        }]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      }
+    }
+  ]
+}`;
 
 const medplum = new MockClient();
 
@@ -29,7 +49,7 @@ describe('BatchPage', () => {
     // Upload file
     await act(async () => {
       const fileInput = renderResult.container.querySelector('input[type="file"]') as HTMLInputElement;
-      const files = [new File([JSON.stringify(DEFAULT_VALUE)], 'patient.json', { type: 'application/json' })];
+      const files = [new File([exampleBundle], 'patient.json', { type: 'application/json' })];
       fireEvent.change(fileInput, { target: { files } });
     });
 
@@ -54,7 +74,7 @@ describe('BatchPage', () => {
     await act(async () => {
       fireEvent.change(screen.getByTestId('batch-input'), {
         target: {
-          value: JSON.stringify(DEFAULT_VALUE),
+          value: exampleBundle,
         },
       });
     });

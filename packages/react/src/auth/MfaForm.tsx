@@ -4,7 +4,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import React, { useState } from 'react';
 import { Form } from '../Form/Form';
 import { Logo } from '../Logo/Logo';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 export interface MfaFormProps {
   login: string;
@@ -13,7 +13,7 @@ export interface MfaFormProps {
 
 export function MfaForm(props: MfaFormProps): JSX.Element {
   const medplum = useMedplum();
-  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+  const [errorMessage, setErrorMessage] = useState<string>();
   return (
     <Form
       style={{ maxWidth: 400 }}

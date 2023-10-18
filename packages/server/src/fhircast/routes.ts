@@ -4,14 +4,18 @@ import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { authenticateRequest } from '../oauth/middleware';
 import { getRedis } from '../redis';
 
 export const fhircastRouter = Router();
 
-// TODO: Enable authentication for fhircast
-// fhircastRouter.use(authenticateRequest);
+const publicRoutes = Router();
+fhircastRouter.use(publicRoutes);
 
-fhircastRouter.get('/.well-known/fhircast-configuration', (_req: Request, res: Response) => {
+const protectedRoutes = Router().use(authenticateRequest);
+fhircastRouter.use(protectedRoutes);
+
+publicRoutes.get('/.well-known/fhircast-configuration', (_req: Request, res: Response) => {
   res.status(200).json({
     eventsSupported: [
       'syncerror',
@@ -29,7 +33,7 @@ fhircastRouter.get('/.well-known/fhircast-configuration', (_req: Request, res: R
 });
 
 // Register a new subscription
-fhircastRouter.post(
+protectedRoutes.post(
   '/',
   [
     body('hub.channel.type').notEmpty().withMessage('Missing hub.channel.type'),
@@ -70,7 +74,7 @@ fhircastRouter.post(
 );
 
 // Publish an event to the hub topic
-fhircastRouter.post(
+protectedRoutes.post(
   '/:topic',
   [
     body('id').notEmpty().withMessage('Missing event ID'),
@@ -91,6 +95,6 @@ fhircastRouter.post(
 
 // Get the current subscription status
 // Non-standard FHIRCast extension to support Nuance PowerCast Hub
-fhircastRouter.get('/:topic', (req: Request, res: Response) => {
+protectedRoutes.get('/:topic', (req: Request, res: Response) => {
   res.status(200).json([]);
 });

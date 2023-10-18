@@ -1,22 +1,12 @@
 import { showNotification } from '@mantine/notifications';
-import { MedplumClient, ProfileResource } from '@medplum/core';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-
-const reactContext = createContext(undefined as MedplumContext | undefined);
-
-export type MepdlumNavigateFunction = (path: string) => void;
+import { MedplumClient } from '@medplum/core';
+import React, { useEffect, useMemo, useState } from 'react';
+import { MepdlumNavigateFunction, reactContext } from './MedplumProvider.context';
 
 export interface MedplumProviderProps {
   medplum: MedplumClient;
   navigate?: MepdlumNavigateFunction;
   children: React.ReactNode;
-}
-
-export interface MedplumContext {
-  medplum: MedplumClient;
-  navigate: MepdlumNavigateFunction;
-  profile?: ProfileResource;
-  loading: boolean;
 }
 
 /**
@@ -67,40 +57,6 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
   );
 
   return <reactContext.Provider value={medplumContext}>{props.children}</reactContext.Provider>;
-}
-
-/**
- * Returns the MedplumContext instance.
- * @returns The MedplumContext instance.
- */
-export function useMedplumContext(): MedplumContext {
-  return useContext(reactContext) as MedplumContext;
-}
-
-/**
- * Returns the MedplumClient instance.
- * This is a shortcut for useMedplumContext().medplum.
- * @returns The MedplumClient instance.
- */
-export function useMedplum(): MedplumClient {
-  return useMedplumContext().medplum;
-}
-
-/**
- * Returns the Medplum navigate function.
- * @returns The Medplum navigate function.
- */
-export function useMedplumNavigate(): MepdlumNavigateFunction {
-  return useMedplumContext().navigate;
-}
-
-/**
- * Returns the current Medplum user profile (if signed in).
- * This is a shortcut for useMedplumContext().profile.
- * @returns The current user profile.
- */
-export function useMedplumProfile(): ProfileResource | undefined {
-  return useMedplumContext().profile;
 }
 
 /**

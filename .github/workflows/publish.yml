@@ -8,6 +8,13 @@ jobs:
   build_and_check:
     name: publish
     runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: '18'
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: 'medplum'
+      TURBO_REMOTE_ONLY: true
     permissions:
       actions: read
       contents: write
@@ -36,6 +43,12 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
+
+      - name: Slack start message
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {"text": "Starting publish: ${{ github.ref_name }}"}
 
       - name: Install dependencies
         run: npm ci

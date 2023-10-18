@@ -19,7 +19,10 @@ export function AppsPage(): JSX.Element | null {
       .then(setQuestionnaires)
       .catch(console.error);
     if (isSmartLaunchType(resourceType)) {
-      medplum.searchResources('ClientApplication').then(setClientApplications).catch(console.error);
+      medplum
+        .searchResources('ClientApplication', { _count: 1000 })
+        .then((resources) => setClientApplications(resources.filter((c) => !!c.launchUri)))
+        .catch(console.error);
     }
   }, [medplum, resourceType]);
 

@@ -3,7 +3,7 @@ import { IconPlus } from '@tabler/icons-react';
 import React, { useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
+import { useMedplumNavigate } from '../MedplumProvider/MedplumProvider.context';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 
 const useStyles = createStyles((theme) => {
@@ -75,6 +75,7 @@ export interface NavbarProps {
   menus?: NavbarMenu[];
   closeNavbar: () => void;
   displayAddBookmark?: boolean;
+  resourceTypeSearchDisabled?: boolean;
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
@@ -102,14 +103,16 @@ export function Navbar(props: NavbarProps): JSX.Element {
     <>
       <MantineNavbar width={{ sm: 250 }} p="xs">
         <ScrollArea>
-          <MantineNavbar.Section mb="sm">
-            <ResourceTypeInput
-              key={window.location.pathname}
-              name="resourceType"
-              placeholder="Resource Type"
-              onChange={(newValue) => navigateResourceType(newValue)}
-            />
-          </MantineNavbar.Section>
+          {!props.resourceTypeSearchDisabled && (
+            <MantineNavbar.Section mb="sm">
+              <ResourceTypeInput
+                key={window.location.pathname}
+                name="resourceType"
+                placeholder="Resource Type"
+                onChange={(newValue) => navigateResourceType(newValue)}
+              />
+            </MantineNavbar.Section>
+          )}
           <MantineNavbar.Section grow>
             {props.menus?.map((menu) => (
               <React.Fragment key={`menu-${menu.title}`}>

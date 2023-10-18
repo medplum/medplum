@@ -4,7 +4,7 @@ import { HumanName } from '@medplum/fhirtypes';
 import { IconChevronDown, IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons-react';
 import React, { useState } from 'react';
 import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
-import { useMedplumContext } from '../MedplumProvider/MedplumProvider';
+import { useMedplumContext } from '../MedplumProvider/MedplumProvider.context';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { HeaderSearchInput } from './HeaderSearchInput';
 
@@ -56,6 +56,7 @@ const useStyles = createStyles((theme) => ({
 interface HeaderProps {
   pathname?: string;
   searchParams?: URLSearchParams;
+  headerSearchDisabled?: boolean;
   logo: React.ReactNode;
   version?: string;
   navbarToggle: () => void;
@@ -75,7 +76,9 @@ export function Header(props: HeaderProps): JSX.Element {
           <UnstyledButton className={classes.logoButton} onClick={props.navbarToggle}>
             {props.logo}
           </UnstyledButton>
-          <HeaderSearchInput pathname={props.pathname} searchParams={props.searchParams} />
+          {!props.headerSearchDisabled && (
+            <HeaderSearchInput pathname={props.pathname} searchParams={props.searchParams} />
+          )}
         </Group>
 
         <Menu

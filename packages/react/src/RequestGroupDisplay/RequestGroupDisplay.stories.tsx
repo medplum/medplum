@@ -2,7 +2,7 @@ import { ExampleWorkflowRequestGroup } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React, { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import {
   Covid19AssessmentTask,
   Covid19FollowUpConsultTask,

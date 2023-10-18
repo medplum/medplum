@@ -2,13 +2,13 @@ import { closeWorkers, initWorkers } from '.';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { initBinaryStorage } from '../fhir/storage';
-import { getStructureDefinitions } from '../fhir/structure';
+import { loadStructureDefinitions } from '../fhir/structure';
 import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
 
 describe('Workers', () => {
   beforeAll(() => {
-    getStructureDefinitions();
+    loadStructureDefinitions();
   });
 
   test('Init and close', async () => {
@@ -17,7 +17,7 @@ describe('Workers', () => {
     await initDatabase(config.database);
     await seedDatabase();
     initBinaryStorage('file:binary');
-    initWorkers(config.redis);
+    initWorkers(config);
     await closeWorkers();
     await closeDatabase();
     closeRedis();

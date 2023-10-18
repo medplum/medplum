@@ -1,12 +1,12 @@
 import {
+  getAllDataTypes,
   getSearchParameterDetails,
-  globalSchema,
   indexStructureDefinitionBundle,
+  InternalTypeSchema,
   isResourceTypeSchema,
   PropertyType,
   SearchParameterDetails,
   SearchParameterType,
-  TypeSchema,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
@@ -52,7 +52,7 @@ function buildMigrationUp(b: FileBuilder): void {
   builder.append('export async function run(client: PoolClient): Promise<void> {');
   builder.indentCount++;
 
-  for (const [resourceType, typeSchema] of Object.entries(globalSchema.types)) {
+  for (const [resourceType, typeSchema] of Object.entries(getAllDataTypes())) {
     buildCreateTables(b, resourceType, typeSchema);
   }
 
@@ -68,7 +68,7 @@ function buildMigrationUp(b: FileBuilder): void {
   builder.append('}');
 }
 
-function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeSchema): void {
+function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: InternalTypeSchema): void {
   if (!isResourceTypeSchema(fhirType)) {
     // Don't create a table if fhirType is a subtype or not a resource type
     return;

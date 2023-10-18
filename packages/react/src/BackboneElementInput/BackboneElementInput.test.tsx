@@ -1,5 +1,4 @@
-import { globalSchema, TypeSchema } from '@medplum/core';
-import { ElementDefinition } from '@medplum/fhirtypes';
+import { globalSchema, TypeInfo, InternalSchemaElement } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
 import React from 'react';
@@ -7,16 +6,11 @@ import { MemoryRouter } from 'react-router-dom';
 import { BackboneElementInput, BackboneElementInputProps } from './BackboneElementInput';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 
-const valueSetComposeProperty: ElementDefinition = {
-  id: 'ValueSet.compose',
+const valueSetComposeProperty: InternalSchemaElement = {
   path: 'ValueSet.compose',
+  description: 'Include or exclude codes from a code system or other value sets',
   min: 0,
-  max: '1',
-  base: {
-    path: 'ValueSet.compose',
-    min: 0,
-    max: '1',
-  },
+  max: 1,
   type: [
     {
       code: 'BackboneElement',
@@ -24,12 +18,11 @@ const valueSetComposeProperty: ElementDefinition = {
   ],
 };
 
-const valueSetComposeLockedDateProperty: ElementDefinition = {
-  id: 'ValueSet.compose.lockedDate',
+const valueSetComposeLockedDateProperty: InternalSchemaElement = {
   path: 'ValueSet.compose.lockedDate',
-  short: 'Locked date',
+  description: 'Locked date',
   min: 0,
-  max: '1',
+  max: 1,
   type: [
     {
       code: 'date',
@@ -37,18 +30,16 @@ const valueSetComposeLockedDateProperty: ElementDefinition = {
   ],
 };
 
-const valueSetComposeExcludeProperty: ElementDefinition = {
-  id: 'ValueSet.compose.exclude',
+const valueSetComposeExcludeProperty: InternalSchemaElement = {
   path: 'ValueSet.compose.exclude',
-  short: 'Explicitly exclude codes from a code system or other value sets',
+  description: 'Explicitly exclude codes from a code system or other value sets',
   min: 0,
-  max: '*',
-  base: {
-    path: 'ValueSet.compose.exclude',
-    min: 0,
-    max: '*',
-  },
-  contentReference: '#ValueSet.compose.include',
+  max: Infinity,
+  type: [
+    {
+      code: 'ValueSetComposeInclude',
+    },
+  ],
 };
 
 globalSchema.types['ValueSet'] = {
@@ -56,7 +47,7 @@ globalSchema.types['ValueSet'] = {
   properties: {
     compose: valueSetComposeProperty,
   },
-} as unknown as TypeSchema;
+} as unknown as TypeInfo;
 
 globalSchema.types['ValueSetCompose'] = {
   display: 'Value Set Compose',
@@ -64,7 +55,7 @@ globalSchema.types['ValueSetCompose'] = {
     lockedDate: valueSetComposeLockedDateProperty,
     exclude: valueSetComposeExcludeProperty,
   },
-} as unknown as TypeSchema;
+} as unknown as TypeInfo;
 
 const medplum = new MockClient();
 
@@ -91,7 +82,7 @@ describe('BackboneElementInput', () => {
     await medplum.requestSchema('ValueSet');
     await setup({ typeName: 'ValueSetCompose' });
     expect(screen.getByText('Locked Date')).toBeInTheDocument();
-    expect(screen.queryByText('Exclude')).toBeNull();
+    expect(screen.getByText('Exclude')).toBeInTheDocument();
   });
 
   test('Not implemented', async () => {

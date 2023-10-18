@@ -1,5 +1,5 @@
 import { Reference } from '@medplum/fhirtypes';
-import { Atom, AtomContext } from '../fhirlexer';
+import { Atom, AtomContext } from '../fhirlexer/parse';
 import { isResource, PropertyType, TypedValue } from '../types';
 import { calculateAge } from '../utils';
 import { DotAtom, SymbolAtom } from './atoms';

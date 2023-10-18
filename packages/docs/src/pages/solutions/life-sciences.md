@@ -52,7 +52,7 @@ To effectively manage your survey based instrument, you'll want to ensure that e
 
 This setup and tagging will ensure that data collected is also properly tagged and can be exported readily to other systems or converted to document/PDF format.
 
-You can see a sample of how to construct questionnaires with the appropriate tags on [Github](https://github.com/medplum/medplum/blob/main/packages/react/src/stories/QuestionnaireForm.stories.tsx).
+You can see a sample of how to construct questionnaires with the appropriate tags on [Github](https://github.com/medplum/medplum/blob/main/packages/react/src/QuestionnaireForm/QuestionnaireForm.stories.tsx).
 
 Consents are a special category, and are [FHIR Consent](https://app.medplum.com/Consent) resources. Documentation [here](/docs/api/fhir/resources/consent).
 

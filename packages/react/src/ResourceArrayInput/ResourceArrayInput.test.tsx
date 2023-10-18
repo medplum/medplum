@@ -1,9 +1,13 @@
-import { ElementDefinition } from '@medplum/fhirtypes';
+import { InternalSchemaElement } from '@medplum/core';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { ResourceArrayInput } from './ResourceArrayInput';
 
-const property: ElementDefinition = {
+const property: InternalSchemaElement = {
+  path: 'test',
+  description: 'Test',
+  min: 0,
+  max: 1,
   type: [
     {
       code: 'string',

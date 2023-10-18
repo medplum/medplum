@@ -1,12 +1,20 @@
 {
   "$schema": "https://turborepo.org/schema.json",
+  "globalEnv": ["NODE_VERSION"],
   "pipeline": {
     "clean": {
       "outputs": ["build/**", "dist/**", "coverage/**"]
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["build/**", "dist/**"]
+      "outputs": ["build/**", "dist/**"],
+      "env": [
+        "MEDPLUM_BASE_URL",
+        "MEDPLUM_CLIENT_ID",
+        "MEDPLUM_REGISTER_ENABLED",
+        "GOOGLE_CLIENT_ID",
+        "RECAPTCHA_SITE_KEY"
+      ]
     },
     "test": {
       "dependsOn": ["build"],

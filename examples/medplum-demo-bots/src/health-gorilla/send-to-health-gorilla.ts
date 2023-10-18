@@ -43,6 +43,14 @@ interface HealthGorillaConfig {
   callbackClientSecret: string;
 }
 
+// Available labs Health Gorilla IDs
+// These come from the Health Gorilla Organization resources
+const availableLabs: Record<string, string> = {
+  Test: 'f-4f0235627ac2d59b49e5575c',
+  Labcorp: 'f-388554647b89801ea5e8320b',
+  Quest: 'f-7c075564349e1a592e53147a',
+};
+
 // Available tests organized by Health Gorilla test code
 // These come from the Health Gorilla compendium CodeSystem
 // It can be difficult to find the correct codes -- it can even be difficult to find the compendium itself!
@@ -51,34 +59,30 @@ interface HealthGorillaConfig {
 // You may want to embed this information into your own application or your own questionnaire.
 // There are many different ways to pass this information.
 // Ultimately, you just need to make sure you pass the correct code to Health Gorilla in the ServiceRequest resources.
-const availableTests: Record<string, CodeableConcept> = {
-  '001032': {
-    coding: [
-      {
-        code: '001032',
-        display: 'Glucose',
-      },
-    ],
-    text: '001032-GLUCOSE',
-  },
-  '001453': {
-    coding: [
-      {
-        code: '001453',
-        display: 'Hemoglobin A1c',
-      },
-    ],
-    text: '001453-HEMOGLOBIN_A1C',
-  },
-  '008847': {
-    coding: [
-      {
-        code: '008847',
-        display: 'Urine Culture, Routine',
-      },
-    ],
-    text: '008847-URINE_CULTURE_ROUTINE',
-  },
+const availableTests: Record<string, string> = {
+  'test-1234-5': 'Test 1',
+  'labcorp-001453': 'Hemoglobin A1c',
+  'labcorp-010322': 'Prostate-Specific Ag',
+  'labcorp-322000': 'Comp. Metabolic Panel (14)',
+  'labcorp-008649': 'Aerobic Bacterial Culture',
+  'labcorp-005009': 'CBC With Differential/Platelet',
+  'labcorp-008847': 'Urine Culture, Routine',
+  'labcorp-008144': 'Stool Culture',
+  'labcorp-083935': 'HIV Ab/p24 Ag with Reflex',
+  'labcorp-322758': 'Basic Metabolic Panel (8)',
+  'labcorp-164922': 'HSV 1 and 2-Spec Ab, IgG w/Rfx',
+  'quest-866': 'Free T4',
+  'quest-899': 'TSH',
+  'quest-10306': 'Hepatitis Panel, Acute w/reflex to confirmation',
+  'quest-10231': 'Comprehensive Metabolic Panel',
+  'quest-496': 'Hemoglobin A1C',
+  'quest-2605': 'Allergen Specific IGE Dog dander, Serum',
+  'quest-7600': 'Lipid Panel (Diagnosis E04.2, Z00.00)',
+  'quest-229': 'Aldosterone, 24hr (U) (Diagnosis E04.2, Z00.00) Total Volume - 1200',
+  'quest-4112': 'FTA',
+  'quest-6399': 'CBC w/Diff',
+  'quest-16814': 'ANA Scr, IFA w/Reflex Titer / Pattern / MPX AB Cascade',
+  'quest-7573': 'Iron Total/IBC Diagnosis code D64.9',
 };
 
 const billToPatient: CodeableConcept = {
@@ -101,13 +105,28 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // Make sure that required fields are present
   const answers = getQuestionnaireAnswers(event.input);
 
+  const patient = answers.patient.valueReference;
+  if (!patient) {
+    throw new Error('QuestionnaireResponse is missing patient');
+  }
+
+  const practitioner = answers.practitioner.valueReference;
+  if (!practitioner) {
+    throw new Error('QuestionnaireResponse is missing practitioner');
+  }
+
+  const performer = answers.performer.valueString;
+  if (!performer) {
+    throw new Error('QuestionnaireResponse is missing performer');
+  }
+  if (!availableLabs[performer]) {
+    throw new Error('QuestionnaireResponse has invalid performer');
+  }
+
   // Lookup the patient and practitioner resources first
   // If the questionnaire response is invalid, this will throw and the bot will terminate
-  const medplumPatient = await medplum.readReference(answers.patient.valueReference as Reference<Patient>);
-  const medplumPractitioner = await medplum.readReference(
-    answers.practitioner.valueReference as Reference<Practitioner>
-  );
-  const medplumPerformer = await medplum.readReference(answers.performer.valueReference as Reference<Organization>);
+  const medplumPatient = await medplum.readReference(patient as Reference<Patient>);
+  const medplumPractitioner = await medplum.readReference(practitioner as Reference<Practitioner>);
 
   // Connect to Health Gorilla
   const healthGorilla = await connectToHealthGorilla(config);
@@ -165,7 +184,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // This is a special organization that is not available in the Health Gorilla API
   const healthGorillaPerformingOrganization: Organization = {
     resourceType: 'Organization',
-    id: getIdentifier(medplumPerformer, HEALTH_GORILLA_SYSTEM),
+    id: availableLabs[performer],
   };
 
   // Synchronize the account
@@ -180,12 +199,15 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // In our example questionnaire, we use checkboxes for commonly available tests.
   // You could also use a dropdown or a free text field.
   // The important thing is that you pass the correct code to Health Gorilla.
-  for (const [testKey, testCode] of Object.entries(availableTests)) {
-    const answerKey = 'test-' + testKey;
-    if (answers[answerKey]?.valueBoolean) {
-      const priority = answers[answerKey + '-priority']?.valueCoding?.code ?? 'routine';
-      const noteText = answers[answerKey + '-note']?.valueString;
-      healthGorillaServiceRequests.push(await createServiceRequest(healthGorillaPatient, testCode, priority, noteText));
+  for (const testId of Object.keys(availableTests)) {
+    if (answers[testId]?.valueBoolean) {
+      const code = testId.substring(testId.indexOf('-') + 1);
+      const display = availableTests[testId];
+      const priority = answers[testId + '-priority']?.valueCoding?.code ?? 'routine';
+      const noteText = answers[testId + '-note']?.valueString;
+      healthGorillaServiceRequests.push(
+        await createServiceRequest(healthGorillaPatient, code, display, priority, noteText)
+      );
     }
   }
 
@@ -480,7 +502,8 @@ export async function getPractitioner(healthGorilla: MedplumClient, practitioner
 
 export async function createServiceRequest(
   healthGorillaPatient: Patient,
-  code: CodeableConcept,
+  code: string,
+  display: string,
   priority: string,
   noteText: string | undefined
 ): Promise<ServiceRequest> {
@@ -500,7 +523,15 @@ export async function createServiceRequest(
         ],
       },
     ],
-    code,
+    code: {
+      coding: [
+        {
+          code,
+          display,
+        },
+      ],
+      text: `${code} - ${display}`,
+    },
     note: noteText ? [{ text: noteText }] : undefined,
     priority: priority as 'routine' | 'urgent' | 'stat' | 'asap',
   };

@@ -1,6 +1,6 @@
 import { Attachment, Binary, OperationOutcome } from '@medplum/fhirtypes';
 import React, { useRef } from 'react';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { killEvent } from '../utils/dom';
 
 export interface AttachmentButtonProps {

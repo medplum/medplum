@@ -22,6 +22,7 @@ describe('FHIRCast routes', () => {
 
   test('Get well known', async () => {
     const res = await request(app).get('/fhircast/STU2/.well-known/fhircast-configuration');
+
     expect(res.status).toBe(200);
     expect(res.body.eventsSupported).toBeDefined();
     expect(res.body.websocketSupport).toBe(true);
@@ -42,6 +43,17 @@ describe('FHIRCast routes', () => {
       });
     expect(res.status).toBe(202);
     expect(res.body['hub.channel.endpoint']).toBeDefined();
+  });
+
+  test('New subscription no auth', async () => {
+    const res = await request(app).post('/fhircast/STU2/').set('Content-Type', ContentType.JSON).send({
+      'hub.channel.type': 'websocket',
+      'hub.mode': 'subscribe',
+      'hub.topic': 'topic',
+      'hub.events': 'patient-open',
+    });
+    expect(res.status).toBe(401);
+    expect(res.body.issue[0].details.text).toEqual('Unauthorized');
   });
 
   test('New subscription missing channel type', async () => {
@@ -105,7 +117,9 @@ describe('FHIRCast routes', () => {
   test('Get context', async () => {
     // Get the current subscription status
     // Non-standard FHIRCast extension to support Nuance PowerCast Hub
-    const res = await request(app).get('/fhircast/STU2/my-topic');
+    const res = await request(app)
+      .get('/fhircast/STU2/my-topic')
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });

@@ -1,14 +1,14 @@
 import { Button, Loader, Table } from '@mantine/core';
-import { IndexedStructureDefinition, normalizeOperationOutcome, PropertyType } from '@medplum/core';
+import { normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { FhirPathDisplay } from '../FhirPathDisplay/FhirPathDisplay';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { SearchClickEvent } from '../SearchControl/SearchControl';
 import { isCheckboxCell, killEvent } from '../utils/dom';
 
 export interface FhirPathTableField {
-  readonly propertyType: PropertyType;
+  readonly propertyType: string;
   readonly name: string;
   readonly fhirPath: string;
 }
@@ -36,7 +36,7 @@ export interface SmartSearchResponse {
  */
 export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   const medplum = useMedplum();
-  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { query, fields } = props;
   const [response, setResponse] = useState<SmartSearchResponse | undefined>();
@@ -120,16 +120,11 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   useEffect(() => {
     medplum
       .requestSchema(props.resourceType)
-      .then((newSchema) => {
-        // The schema could have the same object identity,
-        // so need to use the spread operator to kick React re-render.
-        setSchema({ ...newSchema });
-      })
+      .then(() => setSchemaLoaded(true))
       .catch(console.log);
   }, [medplum, props.resourceType]);
 
-  const typeSchema = schema?.types[props.resourceType];
-  if (!typeSchema) {
+  if (!schemaLoaded) {
     return <Loader />;
   }
 

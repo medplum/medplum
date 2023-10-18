@@ -1,4 +1,4 @@
-import { getGoogleClientId } from './GoogleButton';
+import { getGoogleClientId } from './GoogleButton.utils';
 
 describe('GoogleButton', () => {
   test('googleClientId', () => {
