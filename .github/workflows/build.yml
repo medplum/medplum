@@ -60,8 +60,6 @@ jobs:
       - name: Build Project
         run: ./scripts/build.sh
         env:
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
           MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
           MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
           MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
