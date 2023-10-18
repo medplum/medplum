@@ -73,9 +73,11 @@ Server side authentication is when a **user facing application proxies through a
 
 ![Server authentication](server-auth.png)
 
-In an integration of this kind, each server can manage credentials and tokens, and use the Medplum SDK to authenticate. For example, create [Client Credentials](/docs/auth/methods/client-credentials) and store the id and secret with the other secrets used by your application. Using the [Typescript SDK](/docs/sdk/classes/MedplumClient), maintain an instance of MedplumClient as part of your running application and use the [startClientLogin](docs/sdk/classes/MedplumClient#startclientlogin) call to start an [active login](/docs/sdk/classes/MedplumClient#getactivelogin). The client will continue to refresh the connection if it is in active use, storing the access token in local storage on the server.
+For server side authentication, developers should set up a `ClientApplication` to identify the server (see this guide on [Creating a Client Application](/docs/auth/methods/oauth-auth-code#create-a-client-application)). When looking at resource [history](/docs/sdk/classes/MedplumClient#readhistory) and AuditEvents for this type of implementation, actions will be taken on behalf of the `ClientApplication` that the server is using to connect.
 
-When looking at resource [history](/docs/sdk/classes/MedplumClient#readhistory) and AuditEvents for this type of implementation, actions will be taken on behalf of the `ClientApplication` that the server is using to connect.
+The [Client Credentials](/docs/auth/methods/client-credentials) flow is the recommended authentication pattern for this kind of integration. Each server can manage credentials and tokens, and use the Medplum SDK to authenticate. Using the [Typescript SDK](/docs/sdk/classes/MedplumClient), maintain an instance of MedplumClient as part of your running application and use the [startClientLogin](docs/sdk/classes/MedplumClient#startclientlogin) call to start an [active login](/docs/sdk/classes/MedplumClient#getactivelogin). The client will continue to refresh the connection if it is in active use, storing the access token in local storage on the server.
+
+Using the client credentials flow requires the server environment to cache the Medplum access token. This may not be possible in some stateless server environments. Medplum supports [Basic Auth](https://www.medplum.com/docs/sdk/classes/MedplumClient#setbasicauth) to support these use cases.
 
 ## Device/Host
 
@@ -85,4 +87,4 @@ Device authentication is designed for true machine connectivity, for example con
 
 For machine connectivity, we encourage use of [ClientCredentials](/docs/auth/methods/client-credentials) with tightly scoped [access controls](/docs/access/access-policies), giving minimal access to the host at the edge.
 
-If OAuth2 client credentials based authentication is not an option due to device limitations, basic authentication can be used to connect to Medplum. In general, OAuth2 is preferred to basic authentication, and basic authentication should only be used when the edge environment will not tolerate OAuth2. For example, [consuming webhooks](/docs/bots/consuming-webhooks) is a use case where Basic Authentication makes sense.
+If OAuth2 client credentials based authentication is not an option due to device limitations, [Basic Authentication](https://www.medplum.com/docs/sdk/classes/MedplumClient#setbasicauth) can be used to connect to Medplum. In general, OAuth2 is preferred to basic authentication, and basic authentication should only be used when the edge environment will not tolerate OAuth2. For example, [consuming webhooks](/docs/bots/consuming-webhooks) is a use case where Basic Authentication makes sense.
