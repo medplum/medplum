@@ -1,12 +1,13 @@
 import { Anchor, Badge, Box, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { getDisplayString } from '@medplum/core';
-import { CodeableConcept, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import { createReference, getDisplayString } from '@medplum/core';
+import { CodeableConcept, Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, CodeableConceptInput, Form, useMedplum } from '@medplum/react';
 import React, { useCallback, useState } from 'react';
 
 export interface MedicationsProps {
   patient: Patient;
+  encounter?: Encounter;
   medicationRequests: MedicationRequest[];
 }
 
@@ -25,11 +26,9 @@ export function Medications(props: MedicationsProps): JSX.Element {
           resourceType: 'MedicationRequest',
           status,
           intent: 'order',
+          encounter: props.encounter ? createReference(props.encounter) : undefined,
           medicationCodeableConcept: code,
-          subject: {
-            reference: `Patient/${props.patient.id}`,
-            display: getDisplayString(props.patient),
-          },
+          subject: createReference(props.patient)
         })
         .then((newRequest) => {
           setMedicationRequests([newRequest, ...medicationRequests]);

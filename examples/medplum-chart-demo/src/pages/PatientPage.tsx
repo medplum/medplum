@@ -4,7 +4,7 @@ import { Patient } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { PatientChart } from '../components/clinical-chart/PatientChart';
+import { PatientChart } from '../components/chart/PatientChart';
 import { SoapNote } from '../components/soapnote/SoapNote';
 import { TaskList } from '../components/tasks/TaskList';
 
