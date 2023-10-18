@@ -25,7 +25,6 @@ jobs:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: 'medplum'
       TURBO_REMOTE_ONLY: true
-
     services:
       postgres:
         image: postgres:${{ matrix.pg-version }}
