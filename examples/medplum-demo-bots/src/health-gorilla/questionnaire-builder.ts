@@ -1,4 +1,4 @@
-import { Questionnaire, QuestionnaireItem } from '@medplum/fhirtypes';
+import { Coding, Extension, Questionnaire, QuestionnaireItem } from '@medplum/fhirtypes';
 
 // This scripts generates a FHIR Questionnaire resource for Health Gorilla order entry.
 // Questionnaires are used to generate forms in the Medplum UI.
@@ -58,6 +58,32 @@ const labs: Lab[] = [
   },
 ];
 
+const diagnosticCodes: Coding[] = [
+  { code: 'D64.9', display: 'Anemia, unspecified' },
+  { code: 'E11.9', display: 'Diabetes mellitus, unspecified' },
+  { code: 'I10', display: 'Essential (primary) hypertension' },
+  { code: 'N18.3', display: 'Chronic kidney disease, stage 3 (moderate)' },
+  { code: 'E78.2', display: 'Mixed hyperlipidemia' },
+  { code: 'E05.90', display: 'Hyperthyroidism, unspecified' },
+  { code: 'K70.30', display: 'Alcoholic cirrhosis of liver without ascites' },
+  { code: 'K76.0', display: 'Fatty (change of) liver, not elsewhere classified' },
+  { code: 'E55.9', display: 'Vitamin D deficiency, unspecified' },
+];
+
+const pageExtension: Extension[] = [
+  {
+    url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+    valueCodeableConcept: {
+      coding: [
+        {
+          system: 'http://hl7.org/fhir/questionnaire-item-control',
+          code: 'page',
+        },
+      ],
+    },
+  },
+];
+
 const lookup: Record<string, string> = {};
 
 const q: Questionnaire = {
@@ -67,41 +93,119 @@ const q: Questionnaire = {
   status: 'active',
   item: [
     {
-      id: 'patient',
-      linkId: 'patient',
-      type: 'reference',
-      text: 'Patient',
-      extension: [
+      id: 'page1',
+      linkId: 'page1',
+      type: 'group',
+      text: 'People',
+      extension: pageExtension,
+      item: [
         {
-          url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
-          valueCode: 'Patient',
+          id: 'practitioner',
+          linkId: 'practitioner',
+          type: 'reference',
+          text: 'Ordering Provider',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+              valueCode: 'Practitioner',
+            },
+          ],
+        },
+        {
+          id: 'patient',
+          linkId: 'patient',
+          type: 'reference',
+          text: 'Patient',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+              valueCode: 'Patient',
+            },
+          ],
         },
       ],
     },
     {
-      id: 'practitioner',
-      linkId: 'practitioner',
-      type: 'reference',
-      text: 'Ordering Provider',
-      extension: [
+      id: 'page2',
+      linkId: 'page2',
+      type: 'group',
+      text: 'Performer',
+      extension: pageExtension,
+      item: [
         {
-          url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
-          valueCode: 'Practitioner',
+          id: 'performer',
+          linkId: 'performer',
+          type: 'choice',
+          text: 'Performing Lab',
+          answerOption: labs.map((lab) => ({
+            id: lab.id,
+            valueString: lab.name,
+          })),
         },
       ],
     },
     {
-      id: 'performer',
-      linkId: 'performer',
-      type: 'choice',
-      text: 'Performing Lab',
-      answerOption: labs.map((lab) => ({
-        id: lab.id,
-        valueString: lab.name,
-      })),
+      id: 'page3',
+      linkId: 'page3',
+      type: 'group',
+      text: 'Tests',
+      extension: pageExtension,
+      item: [],
+    },
+    {
+      id: 'page4',
+      linkId: 'page4',
+      type: 'group',
+      text: 'Diagnoses',
+      extension: pageExtension,
+      item: [
+        {
+          id: 'diagnoses',
+          linkId: 'diagnoses',
+          type: 'group',
+          item: diagnosticCodes.map((code) => ({
+            id: 'diagnosis-' + code.code,
+            linkId: 'diagnosis-' + code.code,
+            type: 'boolean',
+            text: code.display,
+          })),
+        },
+      ],
+    },
+    {
+      id: 'page5',
+      linkId: 'page5',
+      type: 'group',
+      text: 'Billing',
+      extension: pageExtension,
+      item: [
+        {
+          id: 'billing',
+          linkId: 'billing',
+          type: 'choice',
+          text: 'Bill To',
+          answerOption: [
+            {
+              valueString: 'Client (our account)',
+            },
+            {
+              valueString: 'Patient',
+              initialSelected: true,
+            },
+            {
+              valueString: 'Guarantor',
+            },
+            {
+              valueString: 'Third Party',
+            },
+          ],
+        },
+      ],
     },
   ],
 };
+
+const testsPageItems = (q.item as QuestionnaireItem[])[2].item as QuestionnaireItem[];
 
 for (const lab of labs) {
   const labItem: QuestionnaireItem = {
@@ -177,7 +281,7 @@ for (const lab of labs) {
   }
 
   labItem.item = testItems;
-  (q.item as QuestionnaireItem[]).push(labItem);
+  testsPageItems.push(labItem);
 }
 
 console.log(JSON.stringify(q, null, 2));

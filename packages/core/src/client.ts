@@ -660,10 +660,14 @@ export class MedplumClient extends EventTarget {
       this.autoBatchQueue = undefined;
     }
 
-    const activeLogin = this.getActiveLogin();
-    if (activeLogin) {
-      this.setAccessToken(activeLogin.accessToken, activeLogin.refreshToken);
-      this.refreshProfile().catch(console.log);
+    if (options?.accessToken) {
+      this.setAccessToken(options.accessToken);
+    } else {
+      const activeLogin = this.getActiveLogin();
+      if (activeLogin) {
+        this.setAccessToken(activeLogin.accessToken, activeLogin.refreshToken);
+        this.refreshProfile().catch(console.log);
+      }
     }
 
     this.setupStorageListener();

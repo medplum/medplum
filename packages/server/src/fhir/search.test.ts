@@ -2794,6 +2794,56 @@ describe('FHIR Search', () => {
       expect(result.entry).toHaveLength(2);
     }));
 
+  test('_filter ne', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Eve'] }],
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const result = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'organization',
+            operator: Operator.EQUALS,
+            value: patient.managingOrganization?.reference as string,
+          },
+          {
+            code: '_filter',
+            operator: Operator.EQUALS,
+            value: 'given ne Eve',
+          },
+        ],
+      });
+
+      expect(result.entry).toHaveLength(0);
+    }));
+
+  test('_filter re', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Eve'] }],
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const result = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_filter',
+            operator: Operator.EQUALS,
+            value: 'organization re ' + patient.managingOrganization?.reference,
+          },
+        ],
+      });
+
+      expect(result.entry).toHaveLength(1);
+      expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
+    }));
+
   test('Lookup table exact match with comma disjunction', () =>
     withTestContext(async () => {
       const family = randomUUID();

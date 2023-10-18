@@ -30,8 +30,8 @@ While setting up your OAuth consent screen, use the following settings:
 
 While setting up OAuth scopes, the minimum scopes required are:
 
-- ".../auth/userinfo.email"
-- ".../auth/userinfo.profile"
+- "./docs/auth/userinfo.email"
+- "./docs/auth/userinfo.profile"
 - "openid"
 
 If your application requests sensitive OAuth scopes or uses a custom image, Google will limit it to 100 logins until the OAuth consent screen is verified. Verification can take several days. To learn more about sensitive scopes, see Google's OAuth 2.0 Scopes for Google APIs documentation.

@@ -2,7 +2,8 @@ import { getPropertyDisplayName, tryGetDataType, TypedValue } from '@medplum/cor
 import React from 'react';
 import { DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { DescriptionList, DescriptionListEntry } from '../DescriptionList/DescriptionList';
-import { getValueAndType, ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 
 export interface BackboneElementDisplayProps {
   value: TypedValue;

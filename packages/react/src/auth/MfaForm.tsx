@@ -4,7 +4,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import React, { useState } from 'react';
 import { Form } from '../Form/Form';
 import { Logo } from '../Logo/Logo';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 export interface MfaFormProps {
   login: string;

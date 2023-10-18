@@ -4,11 +4,12 @@ import { PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { FormSection } from '../FormSection/FormSection';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
-import { setPropertyValue } from '../ResourceForm/ResourceForm';
+import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
-import { getValueAndType, ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { useResource } from '../useResource/useResource';
 import { killEvent } from '../utils/dom';

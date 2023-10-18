@@ -9,8 +9,9 @@ import {
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
-import { getGoogleClientId, GoogleButton } from '../GoogleButton/GoogleButton';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { GoogleButton } from '../GoogleButton/GoogleButton';
+import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 

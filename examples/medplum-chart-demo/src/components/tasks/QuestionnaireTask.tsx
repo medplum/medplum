@@ -4,7 +4,7 @@ import { getTypedPropertyValue, TypedValue } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, QuestionnaireResponseItem, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, ResourcePropertyDisplay, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TaskCellProps } from './TaskList';
 
 export function QuestionnaireTask(props: TaskCellProps): JSX.Element {
@@ -72,19 +72,32 @@ function QuestionnaireQuickAction(props: {
   return <QuestionnaireForm questionnaire={props.questionnaire} onSubmit={props.handleSubmit} />;
 }
 
-export function ResponseDisplay(props: TaskCellProps): JSX.Element {
+export function ResponseDisplay(props: TaskCellProps): JSX.Element | null {
   const resource = props.resource as QuestionnaireResponse;
   const items = resource.item ?? [];
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
   const [reviewed, setReviewed] = useState(false);
   const [opened, { toggle }] = useDisclosure(false);
   const medplum = useMedplum();
+
+  useEffect(() => {
+    medplum
+      .requestSchema('QuestionnaireResponse')
+      .then(() => setSchemaLoaded(true))
+      .catch(console.error);
+  }, [medplum]);
 
   async function handleClick(): Promise<void> {
     await medplum.updateResource<Task>({ ...props.task, status: 'completed' });
     setReviewed(true);
   }
+
   const visibleItems = items.slice(0, 3);
   const collapsedItems = items.slice(3, items.length);
+
+  if (!schemaLoaded) {
+    return null;
+  }
 
   return (
     <>
@@ -113,7 +126,7 @@ export function ResponseDisplay(props: TaskCellProps): JSX.Element {
 function ItemRow(props: { item: QuestionnaireResponseItem }): JSX.Element | null {
   const item = props.item;
   const itemValue = getTypedPropertyValue(
-    { type: 'QuestionnaireItemAnswerOption', value: item?.answer?.[0] },
+    { type: 'QuestionnaireResponseItemAnswer', value: item?.answer?.[0] },
     'value'
   ) as TypedValue;
   if (!itemValue) {

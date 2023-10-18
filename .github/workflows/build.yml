@@ -60,6 +60,14 @@ jobs:
       - name: Build Project
         run: ./scripts/build.sh
         env:
+          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
+          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
+          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
+          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
+      - name: Test
+        run: ./scripts/test.sh
+        env:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
       - name: Coveralls GitHub Action
@@ -71,3 +79,7 @@ jobs:
         with:
           name: medplum-code-coverage
           path: coverage/lcov.info
+      - name: Danger
+        run: npx danger ci
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

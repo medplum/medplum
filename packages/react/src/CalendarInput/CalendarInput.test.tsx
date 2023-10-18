@@ -1,7 +1,8 @@
 import { Slot } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { CalendarInput, getMonthString, getStartMonth } from './CalendarInput';
+import { CalendarInput } from './CalendarInput';
+import { getMonthString, getStartMonth } from './CalendarInput.utils';
 
 describe('CalendarInput', () => {
   test('Renders', () => {

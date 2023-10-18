@@ -45,7 +45,7 @@ const operatorMap: Record<string, Operator | undefined> = {
   // ni - True if none of the concepts are in the nominated value set by URI, either a relative, literal or logical vs
   ni: Operator.NOT_IN,
   // re - True if one of the references in set points to the given URL
-  re: undefined,
+  re: Operator.EQUALS,
   // identifier - True if the identifier is in the identifier set (Medplum extension)
   identifier: Operator.IDENTIFIER,
 };

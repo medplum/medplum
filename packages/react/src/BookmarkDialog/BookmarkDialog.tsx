@@ -4,7 +4,7 @@ import { deepClone, normalizeErrorString } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import React from 'react';
 import { Form } from '../Form/Form';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 interface BookmarkDialogProps {
   pathname: string;

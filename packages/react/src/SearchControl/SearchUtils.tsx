@@ -10,7 +10,8 @@ import {
 } from '@medplum/core';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
-import { getValueAndType, ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { SearchControlField } from './SearchControlField';
 
 const searchParamToOperators: Record<string, Operator[]> = {

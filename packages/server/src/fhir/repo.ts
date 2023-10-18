@@ -1085,8 +1085,13 @@ export class Repository extends BaseRepository implements FhirRepository {
     const result: Reference[] = [];
 
     if (resource.meta?.project) {
-      // Deprecated - to be removed
+      // Deprecated - to be removed after migrating all tables to use "projectId" column
       result.push({ reference: 'Project/' + resource.meta.project });
+    }
+
+    if (resource.resourceType === 'User' && resource.project?.reference) {
+      // Deprecated - to be removed after migrating all tables to use "projectId" column
+      result.push(resource.project);
     }
 
     if (resource.meta?.account) {
