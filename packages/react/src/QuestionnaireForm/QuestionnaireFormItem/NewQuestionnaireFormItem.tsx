@@ -32,7 +32,7 @@ import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocom
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
   index: number;
-  response: QuestionnaireResponseItem;
+  response?: QuestionnaireResponseItem;
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
 
@@ -285,7 +285,12 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
 function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, onChangeAnswer, response } = props;
   if (item.answerValueSet) {
-    return <ValueSetAutocomplete binding={item.answerValueSet} onChange={onChangeAnswer} />;
+    return (
+      <ValueSetAutocomplete
+        binding={item.answerValueSet}
+        onChange={(answer) => onChangeAnswer({ valueCoding: answer?.[0] })}
+      />
+    );
   }
   return (
     <QuestionnaireChoiceRadioInput
