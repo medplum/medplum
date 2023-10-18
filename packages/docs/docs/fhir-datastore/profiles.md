@@ -32,7 +32,47 @@ other US healthcare entities.
 ## Profile adoption
 
 Using a pre-existing profile is simple: placing the canonical URL of the profile in a resource's `meta.profile` field
-will cause the server to attempt to validate the resource against that profile when the resource is written.
+will cause the server to attempt to validate the resource against that profile when the resource is written. Normally,
+the `Patient` resource type has no required fields, but the [US Core Patient profile][us-core-patient] specifies that
+at least `name`, `gender`, and `identifier` must be populated. Uploading a profiled `Patient` resource without those
+fields will produce an error:
+
+```json
+{
+  "resourceType": "Patient",
+  "meta": {
+    "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"]
+  }
+}
+```
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [
+    {
+      "severity": "error",
+      "code": "structure",
+      "details": { "text": "Missing required property" },
+      "expression": ["Patient.identifier"]
+    },
+    {
+      "severity": "error",
+      "code": "structure",
+      "details": { "text": "Missing required property" },
+      "expression": ["Patient.name"]
+    },
+    {
+      "severity": "error",
+      "code": "structure",
+      "details": { "text": "Missing required property" },
+      "expression": ["Patient.gender"]
+    }
+  ]
+}
+```
+
+To satisfy the profile declared in `meta.profile`, values for the required fields must be included in the resource:
 
 ```json
 {
@@ -40,9 +80,6 @@ will cause the server to attempt to validate the resource against that profile w
   "meta": {
     "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"]
   },
-  // Normally Patient has no required fields, but under the US Core Patient profile,
-  // all the data fields below are required
-  "gender": "male",
   "identifier": [
     {
       "system": "http://example.com/mrn",
@@ -54,7 +91,8 @@ will cause the server to attempt to validate the resource against that profile w
       "given": ["John", "Jacob"],
       "family": "Jingleheimer-Schmidt"
     }
-  ]
+  ],
+  "gender": "male"
 }
 ```
 
@@ -65,3 +103,48 @@ The corresponding `StructureDefinition` resource for the profile (i.e. one with 
 plan to use.
 
 :::
+
+[us-core-patient]: http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient
+
+## Handling missing data
+
+Sometimes, a profile requires a field that cannot be populated due to missing data: the system may not have the required
+data available, or it may be unknown. In these cases, the [Data Absent Reason extension][data-absent-ext] should be used
+to satisfy the field presence requirement, while also denoting why the data is missing:
+
+```json
+{
+  "resourceType": "Patient",
+  "meta": {
+    "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"]
+  },
+  "identifier": [
+    {
+      "system": "http://example.com/mrn",
+      "value": "12345"
+    }
+  ],
+  // For fields with complex (object) data types, add the `extension` field where necessary to indicate absent data
+  "name": [
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+          "valueCode": "masked"
+        }
+      ]
+    }
+  ],
+  // For primitive type fields, use the underscore-prefixed field name to add an object with the `extension` field
+  "_gender": {
+    "extension": [
+      {
+        "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+        "valueCode": "asked-declined"
+      }
+    ]
+  }
+}
+```
+
+[data-absent-ext]: http://hl7.org/fhir/StructureDefinition/data-absent-reason
