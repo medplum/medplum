@@ -1,11 +1,12 @@
 import { Anchor, Card, Divider, Flex, Group, Paper, Stack, Text } from '@mantine/core';
 import { calculateAgeString, formatHumanName, getDisplayString } from '@medplum/core';
-import { AllergyIntolerance, Condition, HumanName, Observation, Patient } from '@medplum/fhirtypes';
+import { AllergyIntolerance, Condition, HumanName, MedicationRequest, Observation, Patient } from '@medplum/fhirtypes';
 import { ResourceAvatar, useMedplum, useResource } from '@medplum/react';
 import { IconGenderFemale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Allergies } from './Allergies';
+import { Medications } from './Medications';
 import { ProblemList } from './ProblemList';
 import { SmokingStatus } from './SmokingStatus';
 import { Vitals } from './Vitals';
@@ -18,6 +19,7 @@ export function PatientChart(): JSX.Element | null {
   const [problems, setProblems] = useState<Condition[]>();
   const [smokingStatus, setSmokingStatus] = useState<Observation>();
   const [vitals, setVitals] = useState<Observation[]>();
+  const [medicationRequest, setMedicationRequest] = useState<MedicationRequest[]>();
 
   useEffect(() => {
     const query = `{
@@ -44,6 +46,11 @@ export function PatientChart(): JSX.Element | null {
           code { coding { display } },
           onsetDateTime
         }
+        MedicationRequestList(_reference: subject, _count: 100, _sort: "-_lastUpdated") {
+          id,
+          status,
+          medicationCodeableConcept { coding { code, display }},
+        }
         ObservationList(_reference: subject, _count: 100, _sort: "-_lastUpdated") {
           id,
           category { coding { code } },
@@ -68,6 +75,7 @@ export function PatientChart(): JSX.Element | null {
         setPatient(newPatient as Patient);
         setAllergies((newPatient.AllergyIntoleranceList ?? []) as AllergyIntolerance[]);
         setProblems(newPatient.ConditionList as Condition[]);
+        setMedicationRequest(newPatient.MedicationRequestList as MedicationRequest[]);
         setSmokingStatus(observations.find((obs) => obs.code?.coding?.[0].code === '72166-2'));
         setVitals(observations.filter((obs) => obs.category?.[0]?.coding?.[0].code === 'vital-signs'));
       })
@@ -123,6 +131,8 @@ export function PatientChart(): JSX.Element | null {
         <Allergies patient={patient} allergies={allergies as AllergyIntolerance[]} />
         <Divider />
         <ProblemList patient={patient} problems={problems as Condition[]} />
+        <Divider />
+        <Medications patient={patient} medicationRequests={medicationRequest as MedicationRequest[]} />
         <Divider />
         <SmokingStatus patient={patient} smokingStatus={smokingStatus} />
         <Divider />
