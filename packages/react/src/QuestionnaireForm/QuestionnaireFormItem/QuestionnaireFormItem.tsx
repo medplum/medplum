@@ -298,7 +298,7 @@ function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.
     return (
       <ValueSetAutocomplete
         binding={item.answerValueSet}
-        onChange={(answer) => onChangeAnswer({ valueCoding: answer?.[0] })}
+        onChange={(answer) => (answer?.length ? onChangeAnswer({ valueCoding: answer[0] }) : undefined)}
       />
     );
   }
