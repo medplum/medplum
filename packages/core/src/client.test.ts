@@ -2193,6 +2193,29 @@ describe('Client', () => {
     expect(fetch.mock.calls).toHaveLength(expectedCalls);
   });
 
+  test('Client created with accessToken option set', async () => {
+    const patient: Patient = { resourceType: 'Patient', id: '123' };
+    const fetch = jest.fn(async (url: string) => ({
+      status: 200,
+      headers: { get: () => ContentType.FHIR_JSON },
+      json: async () => (url.endsWith('/auth/me') ? { profile: patient } : patient),
+    }));
+
+    const accessToken = createFakeJwt({ login_id: '123' });
+    const client = new MedplumClient({ fetch, accessToken });
+    expect(client.getAccessToken()).toEqual(accessToken);
+
+    await expect(client.readResource('Patient', '123')).resolves.toMatchObject(patient);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect((fetch.mock.calls[0] as any[])[1].headers.Authorization).toBe(`Bearer ${accessToken}`);
+
+    expect(client.getProfile()).toBeUndefined();
+    await expect(client.getProfileAsync()).resolves.toMatchObject(patient);
+    const expectedCalls = fetch.mock.calls.length;
+    await expect(client.getProfileAsync()).resolves.toMatchObject(patient);
+    expect(fetch.mock.calls).toHaveLength(expectedCalls);
+  });
+
   test('graphql', async () => {
     const fetch = mockFetch(200, {});
     const medplum = new MedplumClient({ fetch });
