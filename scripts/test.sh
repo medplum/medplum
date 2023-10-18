@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Test
 # Run them separately because code coverage is resource intensive
 
