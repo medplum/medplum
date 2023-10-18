@@ -194,7 +194,7 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
 
 interface QuestionnaireRepeatableItemProps {
   item: QuestionnaireItem;
-  response: QuestionnaireResponseItem;
+  response?: QuestionnaireResponseItem;
   onChange: (items: QuestionnaireResponseItem[]) => void;
 }
 
