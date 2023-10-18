@@ -36,7 +36,7 @@ export function Medications(props: MedicationsProps): JSX.Element {
         })
         .catch(console.error);
     },
-    [medplum, props.patient, medicationRequests, close, code]
+    [medplum, props.patient, props.encounter, medicationRequests, close, code]
   );
 
   return (
