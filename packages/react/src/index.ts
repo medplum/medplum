@@ -87,6 +87,7 @@ export * from './StatusBadge/StatusBadge';
 export * from './Timeline/Timeline';
 export * from './TimingInput/TimingInput';
 export * from './useResource/useResource';
+export * from './useSearch/useSearch';
 export * from './utils/date';
 export * from './utils/outcomes';
 export * from './utils/questionnaire';

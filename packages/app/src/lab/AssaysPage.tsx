@@ -1,12 +1,15 @@
 import { Table } from '@mantine/core';
 import { capitalize, formatRange } from '@medplum/core';
 import { ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay, RangeDisplay, useMedplum } from '@medplum/react';
+import { CodeableConceptDisplay, Loading, RangeDisplay, useSearchResources } from '@medplum/react';
 import React, { Fragment } from 'react';
 
 export function AssaysPage(): JSX.Element {
-  const medplum = useMedplum();
-  const assays = medplum.searchResources('ObservationDefinition', '_count=100').read();
+  const assays = useSearchResources('ObservationDefinition', '_count=100');
+
+  if (!assays) {
+    return <Loading />;
+  }
 
   return (
     <Table withBorder withColumnBorders>

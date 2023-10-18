@@ -1,36 +1,25 @@
 import { Anchor, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { ClientApplication, Patient, Questionnaire, Reference, ResourceType, SmartAppLaunch } from '@medplum/fhirtypes';
-import { Document, MedplumLink, useMedplum, useResource } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { ClientApplication, Patient, Reference, ResourceType, SmartAppLaunch } from '@medplum/fhirtypes';
+import { Document, Loading, MedplumLink, useMedplum, useResource, useSearchResources } from '@medplum/react';
+import React from 'react';
 import { useParams } from 'react-router-dom';
 
 export function AppsPage(): JSX.Element | null {
   const medplum = useMedplum();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const resource = useResource({ reference: resourceType + '/' + id });
-  const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>();
-  const [clientApplications, setClientApplications] = useState<ClientApplication[]>();
+  const questionnaires = useSearchResources('Questionnaire', 'subject-type=' + resourceType);
+  const clientApplications = useSearchResources('ClientApplication', { _count: 1000 })?.filter(
+    (c) => isSmartLaunchType(resourceType) && !!c.launchUri
+  );
 
-  useEffect(() => {
-    medplum
-      .searchResources('Questionnaire', 'subject-type=' + resourceType)
-      .then(setQuestionnaires)
-      .catch(console.error);
-    if (isSmartLaunchType(resourceType)) {
-      medplum
-        .searchResources('ClientApplication', { _count: 1000 })
-        .then((resources) => setClientApplications(resources.filter((c) => !!c.launchUri)))
-        .catch(console.error);
-    }
-  }, [medplum, resourceType]);
-
-  if (!resource || !questionnaires) {
-    return null;
+  if (!resource || !questionnaires || !clientApplications) {
+    return <Loading />;
   }
 
-  if (questionnaires.length === 0 && (!clientApplications || clientApplications.length === 0)) {
+  if (questionnaires.length === 0 && clientApplications.length === 0) {
     return (
       <Document>
         <Title>Apps</Title>

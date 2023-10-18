@@ -1,14 +1,14 @@
 import { Button, createStyles, Stack, Text } from '@mantine/core';
-import { getReferenceString } from '@medplum/core';
+import { getReferenceString, isReference } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, Reference, Schedule, Slot } from '@medplum/fhirtypes';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { CalendarInput } from '../CalendarInput/CalendarInput';
 import { getStartMonth } from '../CalendarInput/CalendarInput.utils';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { QuestionnaireForm } from '../QuestionnaireForm/QuestionnaireForm';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
 import { useResource } from '../useResource/useResource';
+import { useSearchResources } from '../useSearch/useSearch';
 
 const useStyles = createStyles((theme) => ({
   container: {
@@ -35,38 +35,28 @@ export interface SchedulerProps {
 
 export function Scheduler(props: SchedulerProps): JSX.Element | null {
   const { classes } = useStyles();
-  const medplum = useMedplum();
   const schedule = useResource(props.schedule);
   const questionnaire = useResource(props.questionnaire);
-
-  const [slots, setSlots] = useState<Slot[]>();
-  const slotsRef = useRef<Slot[]>();
-  slotsRef.current = slots;
 
   const [month, setMonth] = useState<Date>(getStartMonth());
   const [date, setDate] = useState<Date>();
   const [slot, setSlot] = useState<Slot>();
   const [response, setResponse] = useState<QuestionnaireResponse>();
 
-  useEffect(() => {
-    if (schedule) {
-      setSlots([]);
-      medplum
-        .searchResources(
-          'Slot',
-          new URLSearchParams([
-            ['_count', (30 * 24).toString()],
-            ['schedule', getReferenceString(schedule)],
-            ['start', 'gt' + getStart(month)],
-            ['start', 'lt' + getEnd(month)],
-          ])
-        )
-        .then(setSlots)
-        .catch(console.log);
-    } else {
-      setSlots(undefined);
-    }
-  }, [medplum, schedule, month]);
+  const slots = useSearchResources(
+    'Slot',
+    new URLSearchParams([
+      ['_count', (30 * 24).toString()],
+      [
+        'schedule',
+        isReference(props.schedule)
+          ? (props.schedule.reference as string)
+          : getReferenceString(props.schedule as Schedule),
+      ],
+      ['start', 'gt' + getStart(month)],
+      ['start', 'lt' + getEnd(month)],
+    ])
+  );
 
   if (!schedule || !slots || !questionnaire) {
     return null;
@@ -137,7 +127,9 @@ function getEnd(month: Date): string {
 }
 
 function formatSlotInstant(time: number): string {
-  return new Date(Math.max(Date.now(), time)).toISOString();
+  const date = new Date(Math.max(Date.now(), time));
+  date.setHours(0, 0, 0, 0);
+  return date.toISOString();
 }
 
 function formatTime(date: Date): string {
