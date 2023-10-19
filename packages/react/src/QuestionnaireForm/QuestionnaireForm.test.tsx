@@ -39,6 +39,17 @@ async function setup(args: QuestionnaireFormProps): Promise<void> {
 }
 
 describe('QuestionnaireForm', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
   test('Renders empty', async () => {
     await setup({
       questionnaire: {
@@ -934,6 +945,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Value Set Choice', async () => {
+    const onSubmit = jest.fn();
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
@@ -948,18 +960,43 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit,
     });
 
-    const dropDown = screen.getByText('Valueset');
-
-    await act(async () => {
-      fireEvent.click(dropDown);
-    });
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(dropDown, { target: 'Test Display' });
+      fireEvent.change(input, { target: { value: 'Test' } });
     });
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toBeCalled();
+    const response = onSubmit.mock.calls[0][0];
+
+    const answer = getQuestionnaireAnswers(response);
+    expect(answer['q1']).toMatchObject({ valueCoding: { code: 'test-code', display: 'Test Display', system: 'x' } });
   });
 
   test('Repeated Choice Dropdown', async () => {

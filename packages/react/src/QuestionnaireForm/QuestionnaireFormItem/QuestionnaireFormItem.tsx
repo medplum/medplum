@@ -28,6 +28,7 @@ import {
   QuestionnaireItemType,
 } from '../../utils/questionnaire';
 import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocomplete';
+import { CodingInput } from '../../CodingInput/CodingInput';
 
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
@@ -296,9 +297,10 @@ function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.
   const { name, item, initial, onChangeAnswer, allResponses } = props;
   if (item.answerValueSet) {
     return (
-      <ValueSetAutocomplete
+      <CodingInput
+        name={name}
         binding={item.answerValueSet}
-        onChange={(answer) => (answer?.length ? onChangeAnswer({ valueCoding: answer[0] }) : undefined)}
+        onChange={(code) => (code ? onChangeAnswer({ valueCoding: code }) : undefined)}
       />
     );
   }
