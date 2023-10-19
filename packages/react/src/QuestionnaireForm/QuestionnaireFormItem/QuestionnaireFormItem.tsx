@@ -1,12 +1,12 @@
 import { Checkbox, Group, MultiSelect, NativeSelect, Radio, Textarea, TextInput } from '@mantine/core';
 import {
-  TypedValue,
   capitalize,
   deepEquals,
   formatCoding,
   getElementDefinition,
   getTypedPropertyValue,
   stringify,
+  TypedValue,
 } from '@medplum/core';
 import {
   QuestionnaireItem,
@@ -18,6 +18,7 @@ import {
 import React, { ChangeEvent } from 'react';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
+import { CodingInput } from '../../CodingInput/CodingInput';
 import { DateTimeInput } from '../../DateTimeInput/DateTimeInput';
 import { QuantityInput } from '../../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
@@ -27,7 +28,6 @@ import {
   getQuestionnaireItemReferenceTargetTypes,
   QuestionnaireItemType,
 } from '../../utils/questionnaire';
-import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
@@ -295,7 +295,13 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
 function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, onChangeAnswer, allResponses } = props;
   if (item.answerValueSet) {
-    return <ValueSetAutocomplete binding={item.answerValueSet} onChange={onChangeAnswer} />;
+    return (
+      <CodingInput
+        name={name}
+        binding={item.answerValueSet}
+        onChange={(code) => onChangeAnswer({ valueCoding: code })}
+      />
+    );
   }
   return (
     <QuestionnaireChoiceRadioInput
