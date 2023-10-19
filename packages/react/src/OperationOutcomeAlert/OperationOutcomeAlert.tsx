@@ -1,4 +1,5 @@
 import { Alert } from '@mantine/core';
+import { operationOutcomeIssueToString } from '@medplum/core';
 import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { IconAlertCircle } from '@tabler/icons-react';
 import React from 'react';
@@ -17,7 +18,7 @@ export function OperationOutcomeAlert(props: OperationOutcomeAlertProps): JSX.El
     <Alert icon={<IconAlertCircle size={16} />} color="red">
       {issues.map((issue) => (
         <div data-testid="text-field-error" key={issue.details?.text}>
-          {issue.details?.text} {issue.expression && `(${issue.expression[0]})`}
+          {operationOutcomeIssueToString(issue)}
         </div>
       ))}
     </Alert>
