@@ -177,9 +177,6 @@ export function isExternalSecret(obj: Record<string, any>): obj is ExternalSecre
   );
 }
 
-// TODO: Don't use partials???
-export async function normalizeInfraConfig(
-  config: Partial<MedplumSourceInfraConfig>
-): Promise<Partial<MedplumInfraConfig>> {
-  return normalizeObjectInInfraConfig(config) as Promise<Partial<MedplumInfraConfig>>;
+export async function normalizeInfraConfig(config: MedplumSourceInfraConfig): Promise<MedplumInfraConfig> {
+  return normalizeObjectInInfraConfig(config) as Promise<MedplumInfraConfig>;
 }
