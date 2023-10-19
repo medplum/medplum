@@ -13,8 +13,8 @@ This diagram shows a high level summary of the three common patterns. The [Medpl
 
 There are 3 primary domains of authentication for a Medplum healthcare app:
 
-- **Client: ** A user facing application, typically running in a web browser or native app
-- **Server:** A back-end web server acting as a proxy to Medplum, operating in a trusted environment
+- **Client-side: ** A user facing application, typically running in a web browser or native app
+- **Server-side:** A back-end web server acting as a proxy to Medplum, operating in a trusted environment
 - **Device / Host:** A non-web enabled device, such as lab analyzer or on-premise host machine
 
 ## Client Side
@@ -45,7 +45,7 @@ Most implementations integrate identity providers at the client application leve
 
 However, in some cases implementers would like _all_ users with a given domain (e.g. @myhospital.org) to sign in with a given identity provider _regardless of which application they are logging into._ Medplum offers [domain level identity provider](/docs/auth/methods/domain-level-identity-providers) integration for these use cases.
 
-#### Single vs. Multiple Tokens
+#### Medplum Managed Token vs. Token Exchange
 
 Logging in with an external identity provider will produce an access token issued by that provider (e.g. an Auth0 access token). To use this token with Medplum APIs, your application will need to exchange the identity provider's access token for a _Medplum access token_.
 
@@ -53,7 +53,7 @@ If your application only accesses Medplum APIs, you can handle this token-exchan
 
 In some situations, your application might need to store the external access token _as well as_ the Medplum token. This commonly occurs when migrating an existing application onto Medplum. In these cases, you can use the [token exchange method](/docs/auth/methods/token-exchange) to exchange the external token for the Medplum token _from the client_. While this approach is simpler to implement, it requires your application to maintain two separate access tokens in the browser. The corresponding SDK method for this approach is [`exchangeExternalAccessToken`](/docs/sdk/classes/MedplumClient#exchangeexternalaccesstoken).
 
-#### User IDs
+#### External IDs
 
 When integrating with external identity providers, Medplum needs some way to map users from the external provider to Medplum users (see the [User Management Guide](/docs/auth/user-management-guide#user-administration-via-medplum-app) for more details). **By default, Medplum matches users in both systems using their email addresses.**
 
@@ -83,7 +83,7 @@ For server side authentication, developers should set up a `ClientApplication` t
 
 The [Client Credentials](/docs/auth/methods/client-credentials) flow is the recommended authentication pattern for this kind of integration. Each server can manage credentials and tokens, and use the Medplum SDK to authenticate. Using the [Typescript SDK](/docs/sdk/classes/MedplumClient), maintain an instance of `MedplumClient` as part of your running application and use the [startClientLogin](docs/sdk/classes/MedplumClient#startclientlogin) call to start an [active login](/docs/sdk/classes/MedplumClient#getactivelogin). The client will continue to refresh the connection if it is in active use, storing the access token in memory on the server.
 
-Using the client credentials flow requires the server environment to cache the Medplum access token. This may not be possible in some stateless server environments, and Medplum supports [Basic Auth](https://www.medplum.com/docs/sdk/classes/MedplumClient#setbasicauth) to support these use cases.
+Client credentials access token should be stored in session state and reused. Client credential flow is rate limited, so frequently requesting tokens will lead to service degradation. This may not be possible in some stateless server environments, and Medplum supports [Basic Auth](https://www.medplum.com/docs/sdk/classes/MedplumClient#setbasicauth) to support these use cases.
 
 ## Device/Host
 
@@ -93,4 +93,4 @@ Device authentication is designed for true machine connectivity, for example con
 
 For machine connectivity, we encourage use of [ClientCredentials](/docs/auth/methods/client-credentials) with tightly scoped [access controls](/docs/access/access-policies), giving minimal access to the host at the edge.
 
-If OAuth2 client credentials based authentication is not an option due to device limitations, [Basic Authentication](https://www.medplum.com/docs/sdk/classes/MedplumClient#setbasicauth) can be used to connect to Medplum. In general, OAuth2 is preferred to basic authentication, and basic authentication should only be used when the edge environment will not tolerate OAuth2. For example, [consuming webhooks](/docs/bots/consuming-webhooks) is a use case where Basic Authentication makes sense.
+If OAuth2 client credentials based authentication is not an option due to device limitations, [Basic Authentication](https://www.medplum.com/docs/sdk/classes/MedplumClient#setbasicauth) can be used to connect to Medplum. In general, OAuth2 is preferred to basic authentication. [Consuming webhooks](/docs/bots/consuming-webhooks) is an example application where Basic Authentication makes sense.

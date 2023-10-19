@@ -11,7 +11,7 @@ One valuable way to prevent unauthorized data access is to restrict access to cl
 
 IP address restrictions provide an additional layer of security by limiting access to your healthcare application based on the user's IP address. This ensures that only users from approved locations or networks can access the application, reducing the risk of unauthorized access or data breaches. Moreover, IP address restrictions can be an essential component of regulatory compliance for healthcare organizations, helping them adhere to strict data security requirements.
 
-Medplum customers primarily use IP Access Restrictions to ensure that users are only accessing data from on-premise machines or via corporate VPN.
+Medplum customers primarily use IP Access Restrictions to ensure that users are only accessing data from approved origins such as on-premise devices or corporate VPN.
 
 ## Setting Up IP Address Restrictions in Medplum
 
