@@ -42,8 +42,12 @@
       "destination": "/docs/access/access-policies"
     },
     {
-      "source": "/docs/auth/:page(oauth-auth-code|client-credentials|google-auth|okta-auth|external-identity-providers|external-ids|token-exchange)",
+      "source": "/docs/auth/:page(oauth-auth-code|client-credentials|google-auth|external-identity-providers|external-ids|token-exchange)",
       "destination": "/docs/auth/methods/:page*"
+    },
+    {
+      "source": "/docs/auth/okta-auth",
+      "destination": "/docs/auth/methods/domain-level-identity-providers"
     }
   ]
 }
