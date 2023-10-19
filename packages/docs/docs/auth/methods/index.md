@@ -25,17 +25,17 @@ Rate limits will be enforced for client authentication, as it is assumed that tr
 
 ![Client authentication](client-auth.png)
 
-When implementing client side authentication, developers must choose an identity provider. Developers can either use Medplum as their primary identity provider, or use an external identity provider such as [Auth0]() or [Okta]().
+When implementing client side authentication, developers must choose an identity provider. Developers can either use Medplum as their primary identity provider, or use an external identity provider such as [Auth0](https://auth0.com/), [Okta](https://www.okta.com/), or [AWS Cognito](https://aws.amazon.com/cognito/).
 
 ### Medplum as Identity Provider
 
-When using Medplum as an identity provider, the recommended client side authentication pattern is to use the [OAuth2 Auth Code]() flow.
+When using Medplum as an identity provider, the recommended client side authentication pattern is to use the [OAuth2 Auth Code](/docs/auth/methods/oauth-auth-code) flow.
 
 You can initiate this in the Medplum Client using the [`startLogin`](/docs/sdk/classes/MedplumClient#startlogin) method.
 
 ### External Identity Provider
 
-Another option developers have integrating an external identity provider to authenticate users. This is valuable in creating **SSO (single sign on)** experiences or when implementing **alternative log-in flows** (passwordless, SMS, biometric, etc.) .
+Another option developers have integrating an external identity provider, such as [Auth0](https://auth0.com/), [Okta](https://www.okta.com/), or [AWS Cognito](https://aws.amazon.com/cognito/), to authenticate users. This is valuable in creating **SSO (single sign on)** experiences or when implementing **alternative log-in flows** (passwordless, SMS, biometric, etc.) .
 
 When integrating an external identity provider, developers have a few additional decisions to make:
 
@@ -49,15 +49,21 @@ However, in some cases implementers would like _all_ users with a given domain (
 
 Logging in with an external identity provider will produce an access token issued by that provider (e.g. an Auth0 access token). To use this token with Medplum APIs, your application will need to exchange the identity provider's access token for a _Medplum access token_.
 
-If your application only accesses Medplum APIs, you can handle this token-exchange purely on the server side using **federated identity** login. The benefit of this approach is that your application only needs to maintain a single access token. Our [External Identity Providers](/docs/auth/methods/external-identity-providers) guide describes how to set up this log in flow, and you can use the [`signInWithExternalAuth`](/docs/sdk/classes/MedplumClient#signinwithexternalauth) is the corresponding SDK function to initiate the log in flow from your application.
+If your application only accesses Medplum APIs, you can handle this token-exchange purely on the server side using **federated identity** login. The benefit of this approach is that your application only needs to maintain a single access token. Our [External Identity Providers](/docs/auth/methods/external-identity-providers) guide describes how to set up this log in flow, and you can use the [`signInWithExternalAuth`](/docs/sdk/classes/MedplumClient#signinwithexternalauth) SDK function to initiate the log in flow from your application.
 
-On the other hand, if your client application needs to access other resources using the external provider's access token, you can use the [token exchange method](/docs/auth/methods/token-exchange) to send exchange the external token for the Medplum token _from the client_. While this approach is simpler to implement, it requires your application to maintain two separate access tokens in the browser. The corresponding SDK method for this approach is [`exchangeExternalAccessToken`](/docs/sdk/classes/MedplumClient#exchangeexternalaccesstoken).
+In some situations, your application might need to store the external access token _as well as_ the Medplum token. This commonly occurs when migrating an existing application onto Medplum. In these cases, you can use the [token exchange method](/docs/auth/methods/token-exchange) to exchange the external token for the Medplum token _from the client_. While this approach is simpler to implement, it requires your application to maintain two separate access tokens in the browser. The corresponding SDK method for this approach is [`exchangeExternalAccessToken`](/docs/sdk/classes/MedplumClient#exchangeexternalaccesstoken).
 
 #### User IDs
 
-When integrating with external identity providers, Medplum needs some way to map users in the external provider to Medplum users (see the [User Management Guide](/docs/auth/user-management-guide#user-administration-via-medplum-app) for more details). **By default, Medplum matches users in both systems using email address.**
+When integrating with external identity providers, Medplum needs some way to map users from the external provider to Medplum users (see the [User Management Guide](/docs/auth/user-management-guide#user-administration-via-medplum-app) for more details). **By default, Medplum matches users in both systems using their email addresses.**
 
 For login flows that don't use email address (e.g. phone number login), Medplum allows you to use an external ID supplied by the identity provider as the user's unique ID. See our guide on [Using External IDs](/docs/auth/methods/external-ids) for more information.
+
+:::tip
+
+Medplum provides built-in first party integration with [Google](./google-auth.md). See our [Google Auth Guide](./google-auth.md) for more details.
+
+:::
 
 ### See Also
 
@@ -75,9 +81,9 @@ Server side authentication is when a **user facing application proxies through a
 
 For server side authentication, developers should set up a `ClientApplication` to identify the server (see this guide on [Creating a Client Application](/docs/auth/methods/oauth-auth-code#create-a-client-application)). When looking at resource [history](/docs/sdk/classes/MedplumClient#readhistory) and AuditEvents for this type of implementation, actions will be taken on behalf of the `ClientApplication` that the server is using to connect.
 
-The [Client Credentials](/docs/auth/methods/client-credentials) flow is the recommended authentication pattern for this kind of integration. Each server can manage credentials and tokens, and use the Medplum SDK to authenticate. Using the [Typescript SDK](/docs/sdk/classes/MedplumClient), maintain an instance of MedplumClient as part of your running application and use the [startClientLogin](docs/sdk/classes/MedplumClient#startclientlogin) call to start an [active login](/docs/sdk/classes/MedplumClient#getactivelogin). The client will continue to refresh the connection if it is in active use, storing the access token in local storage on the server.
+The [Client Credentials](/docs/auth/methods/client-credentials) flow is the recommended authentication pattern for this kind of integration. Each server can manage credentials and tokens, and use the Medplum SDK to authenticate. Using the [Typescript SDK](/docs/sdk/classes/MedplumClient), maintain an instance of `MedplumClient` as part of your running application and use the [startClientLogin](docs/sdk/classes/MedplumClient#startclientlogin) call to start an [active login](/docs/sdk/classes/MedplumClient#getactivelogin). The client will continue to refresh the connection if it is in active use, storing the access token in memory on the server.
 
-Using the client credentials flow requires the server environment to cache the Medplum access token. This may not be possible in some stateless server environments. Medplum supports [Basic Auth](https://www.medplum.com/docs/sdk/classes/MedplumClient#setbasicauth) to support these use cases.
+Using the client credentials flow requires the server environment to cache the Medplum access token. This may not be possible in some stateless server environments, and Medplum supports [Basic Auth](https://www.medplum.com/docs/sdk/classes/MedplumClient#setbasicauth) to support these use cases.
 
 ## Device/Host
 
