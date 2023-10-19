@@ -1,6 +1,6 @@
 {
   "name": "@medplum/docs",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "description": "Medplum Docs",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
