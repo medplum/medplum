@@ -10,8 +10,8 @@ export function AppsPage(): JSX.Element | null {
   const medplum = useMedplum();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const resource = useResource({ reference: resourceType + '/' + id });
-  const questionnaires = useSearchResources('Questionnaire', 'subject-type=' + resourceType);
-  const clientApplications = useSearchResources('ClientApplication', { _count: 1000 })?.filter(
+  const [questionnaires] = useSearchResources('Questionnaire', 'subject-type=' + resourceType);
+  const clientApplications = useSearchResources('ClientApplication', { _count: 1000 })?.[0]?.filter(
     (c) => isSmartLaunchType(resourceType) && !!c.launchUri
   );
 

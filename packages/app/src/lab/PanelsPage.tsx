@@ -4,8 +4,8 @@ import { CodeableConceptDisplay, Loading, useSearchResources } from '@medplum/re
 import React from 'react';
 
 export function PanelsPage(): JSX.Element {
-  const panels = useSearchResources('ActivityDefinition', '_count=100');
-  const assays = useSearchResources('ObservationDefinition', '_count=100');
+  const [panels] = useSearchResources('ActivityDefinition', '_count=100');
+  const [assays] = useSearchResources('ObservationDefinition', '_count=100');
 
   if (!panels || !assays) {
     return <Loading />;

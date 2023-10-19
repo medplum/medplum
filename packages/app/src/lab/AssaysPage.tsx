@@ -5,7 +5,7 @@ import { CodeableConceptDisplay, Loading, RangeDisplay, useSearchResources } fro
 import React, { Fragment } from 'react';
 
 export function AssaysPage(): JSX.Element {
-  const assays = useSearchResources('ObservationDefinition', '_count=100');
+  const [assays] = useSearchResources('ObservationDefinition', '_count=100');
 
   if (!assays) {
     return <Loading />;

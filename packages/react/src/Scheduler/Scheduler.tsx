@@ -43,7 +43,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
   const [slot, setSlot] = useState<Slot>();
   const [response, setResponse] = useState<QuestionnaireResponse>();
 
-  const slots = useSearchResources(
+  const [slots] = useSearchResources(
     'Slot',
     new URLSearchParams([
       ['_count', (30 * 24).toString()],
