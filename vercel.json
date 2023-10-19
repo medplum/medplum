@@ -47,7 +47,7 @@
     },
     {
       "source": "/docs/auth/okta-auth",
-      "destination": "/docs/auth/methods/okta-auth"
+      "destination": "/docs/auth/methods/domain-level-identity-providers"
     }
   ]
 }
