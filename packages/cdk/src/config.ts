@@ -1,6 +1,8 @@
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
 import {
   ExternalSecret,
+  ExternalSecretPrimitive,
+  ExternalSecretPrimitiveType,
   MedplumInfraConfig,
   MedplumSourceInfraConfig,
   OperationOutcomeError,
@@ -46,9 +48,9 @@ export async function fetchParameterStoreSecret(path: string, key: string): Prom
 
 function normalizeFetchedValue(
   key: string,
-  rawValue: string | boolean | number,
-  expectedType: 'string' | 'boolean' | 'number'
-): string | boolean | number {
+  rawValue: ExternalSecretPrimitive,
+  expectedType: ExternalSecretPrimitiveType
+): ExternalSecretPrimitive {
   const typeOfVal = typeof rawValue;
   // Return raw type if type is string and value is of type string, or if type isn't string and typeof val isn't string
   if (!['string', 'boolean', 'number'].includes(typeOfVal)) {
@@ -85,11 +87,9 @@ function normalizeFetchedValue(
   }
 }
 
-export async function fetchExternalSecret(
-  externalSecret: ExternalSecret<'string' | 'boolean' | 'number'>
-): Promise<string | number | boolean> {
+export async function fetchExternalSecret(externalSecret: ExternalSecret): Promise<ExternalSecretPrimitive> {
   const { system, key, type } = externalSecret;
-  let rawValue: string | boolean | number;
+  let rawValue: ExternalSecretPrimitive;
   switch (system) {
     case 'aws_ssm_parameter_store': {
       const [paramPath, paramKey] = key.split(':');
@@ -137,7 +137,7 @@ export async function normalizeObjectInInfraConfig(obj: Record<string, any>): Pr
               | string
               | boolean
               | number
-              | ExternalSecret<'string' | 'boolean' | 'number'>;
+              | ExternalSecret<ExternalSecretPrimitiveType>;
             if (typeof currIdxVal !== 'object') {
               newArray[i] = currIdxVal;
               continue;

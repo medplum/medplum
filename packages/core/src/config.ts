@@ -3,8 +3,10 @@ export const ExternalSecretSystems = {
 } as const;
 
 export type ExternalSecretSystem = keyof typeof ExternalSecretSystems;
+export type ExternalSecretPrimitive = string | boolean | number;
+export type ExternalSecretPrimitiveType = 'string' | 'boolean' | 'number';
 
-export type ExternalSecret<T extends 'string' | 'number' | 'boolean'> = {
+export type ExternalSecret<T extends ExternalSecretPrimitiveType = ExternalSecretPrimitiveType> = {
   system: ExternalSecretSystem;
   key: string;
   type: T;
