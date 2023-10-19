@@ -82,7 +82,13 @@ describe('WebSockets', () => {
         resourceType: 'Agent',
         name: 'Test Agent',
         status: 'active',
-        channel: [{ endpoint: { reference: 'Endpoint/123' }, targetReference: { reference: 'Bot/' + bot.id } }],
+        channel: [
+          {
+            name: 'test',
+            endpoint: { reference: 'Endpoint/123' },
+            targetReference: { reference: 'Bot/' + bot.id },
+          },
+        ],
       });
     expect(res3.status).toBe(201);
 
@@ -95,7 +101,10 @@ describe('WebSockets', () => {
       .sendText(
         JSON.stringify({
           type: 'transmit',
-          message: Hl7Message.parse(
+          accessToken,
+          channel: 'test',
+          remote: '0.0.0.0:57000',
+          body: Hl7Message.parse(
             'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
               'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
               'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
@@ -103,7 +112,7 @@ describe('WebSockets', () => {
           ).toString(),
         })
       )
-      .expectText('{"type":"error","message":"Not connected"}')
+      .expectText('{"type":"error","body":"Not connected"}')
       // Now connect
       .sendText(
         JSON.stringify({
@@ -119,7 +128,10 @@ describe('WebSockets', () => {
       .sendText(
         JSON.stringify({
           type: 'transmit',
-          message: Hl7Message.parse(
+          accessToken,
+          channel: 'test',
+          remote: '0.0.0.0:57000',
+          body: Hl7Message.parse(
             'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
               'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
               'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
@@ -127,7 +139,7 @@ describe('WebSockets', () => {
           ).toString(),
         })
       )
-      .expectText(/{"type":"transmit","message":"MSH[^"]+ACK[^"]+"}/)
+      .expectText(/{"type":"transmit","channel":"test","remote":"0.0.0.0:57000","body":"MSH[^"]+ACK[^"]+"}/)
       .close()
       .expectClosed();
 
@@ -177,7 +189,13 @@ describe('WebSockets', () => {
         resourceType: 'Agent',
         name: 'Test Agent',
         status: 'active',
-        channel: [{ endpoint: { reference: 'Endpoint/123' }, targetReference: { reference: 'Bot/' + bot.id } }],
+        channel: [
+          {
+            name: 'test',
+            endpoint: { reference: 'Endpoint/123' },
+            targetReference: { reference: 'Bot/' + bot.id },
+          },
+        ],
       });
     expect(res3.status).toBe(201);
 
@@ -197,19 +215,22 @@ describe('WebSockets', () => {
       .exec(async () => {
         const res = await request(server)
           .post(`/fhir/R4/Agent/${agent.id}/$push`)
-          .set('Content-Type', ContentType.HL7_V2)
+          .set('Content-Type', ContentType.JSON)
           .set('Authorization', 'Bearer ' + accessToken)
-          .send(
-            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          .send({
+            destination: 'x',
+            contentType: ContentType.HL7_V2,
+            body:
+              'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
               'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
               'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
-              'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
-          );
+              'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
+          });
         expect(res.status).toBe(200);
         expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
         expect(res.body).toMatchObject(allOk);
       })
-      .expectText(/{"type":"transmit","message":"MSH[^"]+ADT1[^"]+"}/)
+      .expectText(/{"type":"push",.+,"body":"MSH[^"]+ADT1[^"]+"}/)
       .close()
       .expectClosed();
 

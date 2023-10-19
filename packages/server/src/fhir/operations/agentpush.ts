@@ -1,10 +1,17 @@
-import { allOk, badRequest, getReferenceString, Hl7Message, Operator } from '@medplum/core';
+import { allOk, badRequest, getReferenceString, Operator } from '@medplum/core';
 import { Agent } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
 import { getRedis } from '../../redis';
 import { sendOutcome } from '../outcomes';
+import { parseParameters } from './utils/parameters';
+
+export interface AgentPushParameters {
+  body: string;
+  contentType: string;
+  destination: string;
+}
 
 /**
  * Handles HTTP requests for the Agent $push operation.
@@ -20,13 +27,23 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
     return;
   }
 
-  const channel = getReferenceString(agent);
-  const input = req.body;
-  const data = input instanceof Hl7Message ? input.toString() : input;
+  const message = parseParameters<AgentPushParameters>(req.body);
+  if (!message.body) {
+    sendOutcome(res, badRequest('Missing body parameter.'));
+    return;
+  }
 
-  // Publish the message to the agent channel
-  await getRedis().publish(channel, data);
+  if (!message.contentType) {
+    sendOutcome(res, badRequest('Missing contentType parameter.'));
+    return;
+  }
 
+  if (!message.destination) {
+    sendOutcome(res, badRequest('Missing destination parameter.'));
+    return;
+  }
+
+  await getRedis().publish(getReferenceString(agent), JSON.stringify({ type: 'push', ...message }));
   sendOutcome(res, allOk);
 });
 

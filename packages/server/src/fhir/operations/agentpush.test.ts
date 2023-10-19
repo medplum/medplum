@@ -28,6 +28,7 @@ describe('Agent Push', () => {
         status: 'active',
         channel: [
           {
+            name: 'test',
             endpoint: { reference: 'Endpoint/' + randomUUID() },
             targetReference: { reference: 'Bot/' + randomUUID() },
           },
@@ -44,9 +45,13 @@ describe('Agent Push', () => {
   test('Submit plain text', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Agent/${agent.id}/$push`)
-      .set('Content-Type', ContentType.TEXT)
+      .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send('input');
+      .send({
+        contentType: ContentType.TEXT,
+        body: 'input',
+        destination: 'x',
+      });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject(allOk);
   });
@@ -57,8 +62,12 @@ describe('Agent Push', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
-        resourceType: 'Patient',
-        name: [{ given: ['John'], family: ['Doe'] }],
+        contentType: ContentType.TEXT,
+        body: {
+          resourceType: 'Patient',
+          name: [{ given: ['John'], family: ['Doe'] }],
+        },
+        destination: 'x',
       });
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
@@ -71,19 +80,27 @@ describe('Agent Push', () => {
 
     const res = await request(app)
       .post(`/fhir/R4/Agent/${agent.id}/$push`)
-      .set('Content-Type', ContentType.HL7_V2)
+      .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send(text);
+      .send({
+        contentType: ContentType.HL7_V2,
+        body: text,
+        destination: 'x',
+      });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject(allOk);
   });
 
-  test('Execute by identifier', async () => {
+  test('Push by identifier', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Agent/$push?identifier=${agent.identifier?.[0]?.system}|${agent.identifier?.[0]?.value}`)
-      .set('Content-Type', ContentType.TEXT)
+      .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send('input');
+      .send({
+        contentType: ContentType.TEXT,
+        body: 'input',
+        destination: 'x',
+      });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject(allOk);
   });
@@ -91,10 +108,27 @@ describe('Agent Push', () => {
   test('Missing parameters', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Agent/$push`)
-      .set('Content-Type', ContentType.TEXT)
+      .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send('input');
+      .send({
+        contentType: ContentType.TEXT,
+        body: 'input',
+        destination: 'x',
+      });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toEqual('Must specify agent ID or identifier.');
+  });
+
+  test('Missing destination', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.TEXT,
+        body: 'input',
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toEqual('Missing destination parameter.');
   });
 });

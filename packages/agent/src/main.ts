@@ -1,12 +1,28 @@
-import { Hl7Message, MedplumClient, resolveId } from '@medplum/core';
-import { AgentChannel, Bot, Endpoint, Reference } from '@medplum/fhirtypes';
+import { Hl7Message, MedplumClient } from '@medplum/core';
+import { AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { EventLogger } from 'node-windows';
 import WebSocket from 'ws';
 
+interface WebSocketQueueItem {
+  channel: string;
+  remote: string;
+  body: string;
+}
+
+interface Hl7ConnectionQueueItem {
+  channel: string;
+  remote: string;
+  body: string;
+}
+
 export class App {
   readonly log: EventLogger;
-  readonly channels: AgentHl7Channel[];
+  readonly webSocket: WebSocket;
+  readonly webSocketQueue: WebSocketQueueItem[] = [];
+  readonly channels = new Map<string, AgentHl7Channel>();
+  readonly hl7Queue: Hl7ConnectionQueueItem[] = [];
+  live = false;
 
   constructor(
     readonly medplum: MedplumClient,
@@ -18,78 +34,7 @@ export class App {
       error: console.error,
     } as EventLogger;
 
-    this.channels = [];
-  }
-
-  async start(): Promise<void> {
-    this.log.info('Medplum service starting...');
-
-    const agent = await this.medplum.readResource('Agent', this.agentId);
-
-    for (const definition of agent.channel as AgentChannel[]) {
-      const endpoint = await this.medplum.readReference(definition.endpoint as Reference<Endpoint>);
-      const channel = new AgentHl7Channel(this, definition, endpoint);
-      channel.start();
-      this.channels.push(channel);
-    }
-
-    this.log.info('Medplum service started successfully');
-  }
-
-  stop(): void {
-    this.log.info('Medplum service stopping...');
-    this.channels.forEach((channel) => channel.stop());
-    this.log.info('Medplum service stopped successfully');
-  }
-}
-
-export class AgentHl7Channel {
-  readonly server: Hl7Server;
-  readonly connections: AgentHl7ChannelConnection[] = [];
-
-  constructor(
-    readonly app: App,
-    readonly definition: AgentChannel,
-    readonly endpoint: Endpoint
-  ) {
-    this.server = new Hl7Server((connection) => {
-      this.app.log.info('HL7 connection established');
-      this.connections.push(new AgentHl7ChannelConnection(this, connection));
-    });
-  }
-
-  start(): void {
-    const address = new URL(this.endpoint.address as string);
-    this.app.log.info(`Channel starting on ${address}`);
-    this.server.start(parseInt(address.port, 10));
-    this.app.log.info('Channel started successfully');
-  }
-
-  stop(): void {
-    this.app.log.info('Channel stopping...');
-    for (const connection of this.connections) {
-      connection.close();
-    }
-    this.server.stop();
-    this.app.log.info('Channel stopped successfully');
-  }
-}
-
-export class AgentHl7ChannelConnection {
-  readonly webSocket: WebSocket;
-  readonly webSocketQueue: Hl7Message[] = [];
-  readonly hl7ConnectionQueue: Hl7Message[] = [];
-  live = false;
-
-  constructor(
-    readonly channel: AgentHl7Channel,
-    readonly hl7Connection: Hl7Connection
-  ) {
-    const app = channel.app;
-    const medplum = app.medplum;
-
-    // Add listener immediately to handle incoming messages
-    this.hl7Connection.addEventListener('message', (event) => this.handler(event));
+    // this.channels = [];
 
     const webSocketUrl = new URL(medplum.getBaseUrl());
     webSocketUrl.protocol = webSocketUrl.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -104,8 +49,7 @@ export class AgentHl7ChannelConnection {
         JSON.stringify({
           type: 'connect',
           accessToken: medplum.getAccessToken(),
-          agentId: channel.app.agentId,
-          botId: resolveId(channel.definition.targetReference as Reference<Bot>),
+          agentId,
         })
       );
     });
@@ -122,8 +66,7 @@ export class AgentHl7ChannelConnection {
             this.trySendToWebSocket();
             break;
           case 'transmit':
-            this.hl7ConnectionQueue.push(Hl7Message.parse(command.message));
-            this.trySendToHl7Connection();
+            this.addToHl7Queue(command);
             break;
         }
       } catch (err) {
@@ -132,15 +75,35 @@ export class AgentHl7ChannelConnection {
     });
   }
 
-  private async handler(event: Hl7MessageEvent): Promise<void> {
-    try {
-      console.log('Received:');
-      console.log(event.message.toString().replaceAll('\r', '\n'));
-      this.webSocketQueue.push(event.message);
-      this.trySendToWebSocket();
-    } catch (err) {
-      console.log('HL7 error', err);
+  async start(): Promise<void> {
+    this.log.info('Medplum service starting...');
+
+    const agent = await this.medplum.readResource('Agent', this.agentId);
+
+    for (const definition of agent.channel as AgentChannel[]) {
+      const endpoint = await this.medplum.readReference(definition.endpoint as Reference<Endpoint>);
+      const channel = new AgentHl7Channel(this, definition, endpoint);
+      this.channels.set(definition.name as string, channel);
+      channel.start();
     }
+
+    this.log.info('Medplum service started successfully');
+  }
+
+  stop(): void {
+    this.log.info('Medplum service stopping...');
+    this.channels.forEach((channel) => channel.stop());
+    this.log.info('Medplum service stopped successfully');
+  }
+
+  addToWebSocketQueue(message: WebSocketQueueItem): void {
+    this.webSocketQueue.push(message);
+    this.trySendToWebSocket();
+  }
+
+  addToHl7Queue(message: Hl7ConnectionQueueItem): void {
+    this.hl7Queue.push(message);
+    this.trySendToHl7Connection();
   }
 
   private trySendToWebSocket(): void {
@@ -151,8 +114,8 @@ export class AgentHl7ChannelConnection {
           this.webSocket.send(
             JSON.stringify({
               type: 'transmit',
-              forwardedFor: this.hl7Connection.socket.remoteAddress,
-              message: msg.toString(),
+              accessToken: this.medplum.getAccessToken(),
+              ...msg,
             })
           );
         }
@@ -161,17 +124,83 @@ export class AgentHl7ChannelConnection {
   }
 
   private trySendToHl7Connection(): void {
-    while (this.hl7ConnectionQueue.length > 0) {
-      const msg = this.hl7ConnectionQueue.shift();
+    while (this.hl7Queue.length > 0) {
+      const msg = this.hl7Queue.shift();
       if (msg) {
-        this.hl7Connection.send(msg);
+        const channel = this.channels.get(msg.channel);
+        if (channel) {
+          const connection = channel.connections.get(msg.remote);
+          if (connection) {
+            connection.hl7Connection.send(Hl7Message.parse(msg.body));
+          }
+        }
       }
+    }
+  }
+}
+
+export class AgentHl7Channel {
+  readonly server: Hl7Server;
+  readonly connections = new Map<string, AgentHl7ChannelConnection>();
+
+  constructor(
+    readonly app: App,
+    readonly definition: AgentChannel,
+    readonly endpoint: Endpoint
+  ) {
+    this.server = new Hl7Server((connection) => this.handleNewConnection(connection));
+  }
+
+  start(): void {
+    const address = new URL(this.endpoint.address as string);
+    this.app.log.info(`Channel starting on ${address}`);
+    this.server.start(parseInt(address.port, 10));
+    this.app.log.info('Channel started successfully');
+  }
+
+  stop(): void {
+    this.app.log.info('Channel stopping...');
+    this.connections.forEach((connection) => connection.close());
+    this.server.stop();
+    this.app.log.info('Channel stopped successfully');
+  }
+
+  private handleNewConnection(connection: Hl7Connection): void {
+    const c = new AgentHl7ChannelConnection(this, connection);
+    this.app.log.info(`HL7 connection established: ${c.remote}`);
+    this.connections.set(c.remote, c);
+  }
+}
+
+export class AgentHl7ChannelConnection {
+  readonly remote: string;
+
+  constructor(
+    readonly channel: AgentHl7Channel,
+    readonly hl7Connection: Hl7Connection
+  ) {
+    this.remote = `${hl7Connection.socket.remoteAddress}:${hl7Connection.socket.remotePort}`;
+
+    // Add listener immediately to handle incoming messages
+    this.hl7Connection.addEventListener('message', (event) => this.handler(event));
+  }
+
+  private async handler(event: Hl7MessageEvent): Promise<void> {
+    try {
+      console.log('Received:');
+      console.log(event.message.toString().replaceAll('\r', '\n'));
+      this.channel.app.addToWebSocketQueue({
+        channel: this.channel.definition.name as string,
+        remote: this.remote,
+        body: event.message.toString(),
+      });
+    } catch (err) {
+      console.log('HL7 error', err);
     }
   }
 
   close(): void {
     this.hl7Connection.close();
-    this.webSocket.close();
   }
 }
 

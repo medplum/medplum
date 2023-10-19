@@ -1,5 +1,5 @@
 import { ContentType, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Agent, Bot, ProjectMembership } from '@medplum/fhirtypes';
+import { Agent, Bot, Reference } from '@medplum/fhirtypes';
 import { AsyncLocalStorage } from 'async_hooks';
 import bytes from 'bytes';
 import { randomUUID } from 'crypto';
@@ -98,9 +98,7 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
  */
 async function handleAgentConnection(socket: ws.WebSocket, request: IncomingMessage): Promise<void> {
   const remoteAddress = request.socket.remoteAddress;
-  let agent: Agent | undefined = undefined;
-  let bot: Bot | undefined = undefined;
-  let runAs: ProjectMembership | undefined = undefined;
+  let agentId: string | undefined = undefined;
 
   // Create a redis client for this connection.
   // According to Redis documentation: http://redis.io/commands/subscribe
@@ -123,7 +121,7 @@ async function handleAgentConnection(socket: ws.WebSocket, request: IncomingMess
             break;
         }
       } catch (err) {
-        socket.send(JSON.stringify({ type: 'error', message: normalizeErrorString(err) }));
+        socket.send(JSON.stringify({ type: 'error', body: normalizeErrorString(err) }));
       }
     })
   );
@@ -139,18 +137,28 @@ async function handleAgentConnection(socket: ws.WebSocket, request: IncomingMess
    * @param command The connect command.
    */
   async function handleConnect(command: any): Promise<void> {
-    const { accessToken, agentId, botId } = command;
-    const { login, project, membership } = await getLoginForAccessToken(accessToken);
+    if (!command.accessToken) {
+      socket.send(JSON.stringify({ type: 'error', body: 'Missing access token' }));
+      return;
+    }
+
+    if (!command.agentId) {
+      socket.send(JSON.stringify({ type: 'error', body: 'Missing agent ID' }));
+      return;
+    }
+
+    agentId = command.agentId as string;
+
+    // const { accessToken } = command;
+    const { login, project, membership } = await getLoginForAccessToken(command.accessToken);
     const repo = await getRepoForLogin(login, membership, project.strictMode, true, project.checkReferencesOnWrite);
-    agent = await repo.readResource<Agent>('Agent', agentId);
-    bot = await repo.readResource<Bot>('Bot', botId);
-    runAs = membership;
+    const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
     redisSubscriber = getRedis().duplicate();
     await redisSubscriber.subscribe(getReferenceString(agent));
     redisSubscriber.on('message', (_channel: string, message: string) => {
-      socket.send(JSON.stringify({ type: 'transmit', message }), { binary: false });
+      socket.send(message, { binary: false });
     });
 
     // Send connected message
@@ -163,20 +171,56 @@ async function handleAgentConnection(socket: ws.WebSocket, request: IncomingMess
    * @param command The transmit command.
    */
   async function handleTransmit(command: any): Promise<void> {
-    if (!bot || !runAs) {
-      socket.send(JSON.stringify({ type: 'error', message: 'Not connected' }));
+    if (!agentId) {
+      socket.send(JSON.stringify({ type: 'error', body: 'Not connected' }));
       return;
     }
+
+    if (!command.accessToken) {
+      socket.send(JSON.stringify({ type: 'error', body: 'Missing access token' }));
+      return;
+    }
+
+    if (!command.channel) {
+      socket.send(JSON.stringify({ type: 'error', body: 'Missing channel' }));
+      return;
+    }
+
+    if (!command.body) {
+      socket.send(JSON.stringify({ type: 'error', body: 'Missing body' }));
+      return;
+    }
+
+    const { login, project, membership } = await getLoginForAccessToken(command.accessToken);
+    const repo = await getRepoForLogin(login, membership, project.strictMode, true, project.checkReferencesOnWrite);
+    const agent = await repo.readResource<Agent>('Agent', agentId);
+    const channel = agent?.channel?.find((c) => (c as any).name === command.channel);
+    if (!channel) {
+      socket.send(JSON.stringify({ type: 'error', body: 'Channel not found' }));
+      return;
+    }
+
+    const bot = await repo.readReference(channel.targetReference as Reference<Bot>);
+
     const result = await executeBot({
       agent,
       bot,
-      runAs,
+      runAs: membership,
       contentType: ContentType.HL7_V2,
-      input: command.message,
+      input: command.body,
       remoteAddress,
-      forwardedFor: command.forwardedFor,
+      forwardedFor: command.remote,
     });
-    socket.send(JSON.stringify({ type: 'transmit', message: result.returnValue }), { binary: false });
+
+    socket.send(
+      JSON.stringify({
+        type: 'transmit',
+        channel: command.channel,
+        remote: command.remote,
+        body: result.returnValue,
+      }),
+      { binary: false }
+    );
   }
 }
 

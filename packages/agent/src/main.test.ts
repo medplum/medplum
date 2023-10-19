@@ -28,6 +28,23 @@ describe('Agent', () => {
   });
 
   test('Runs successfully', async () => {
+    const mockServer = new Server('wss://example.com/ws/agent');
+
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'connect') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'connected',
+              })
+            )
+          );
+        }
+      });
+    });
+
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
       channel: [
@@ -42,6 +59,7 @@ describe('Agent', () => {
     await app.start();
     app.stop();
     app.stop();
+    mockServer.stop();
   });
 
   test('Send and receive', async () => {
@@ -61,13 +79,15 @@ describe('Agent', () => {
         }
 
         if (command.type === 'transmit') {
-          const hl7Message = Hl7Message.parse(command.message);
+          const hl7Message = Hl7Message.parse(command.body);
           const ackMessage = hl7Message.buildAck();
           socket.send(
             Buffer.from(
               JSON.stringify({
                 type: 'transmit',
-                message: ackMessage.toString(),
+                channel: command.channel,
+                remote: command.remote,
+                body: ackMessage.toString(),
               })
             )
           );
@@ -79,6 +99,7 @@ describe('Agent', () => {
       resourceType: 'Agent',
       channel: [
         {
+          name: 'test',
           endpoint: createReference(endpoint),
           targetReference: createReference(bot),
         },
