@@ -4,13 +4,7 @@ import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { EventLogger } from 'node-windows';
 import WebSocket from 'ws';
 
-interface WebSocketQueueItem {
-  channel: string;
-  remote: string;
-  body: string;
-}
-
-interface Hl7ConnectionQueueItem {
+interface QueueItem {
   channel: string;
   remote: string;
   body: string;
@@ -19,9 +13,9 @@ interface Hl7ConnectionQueueItem {
 export class App {
   readonly log: EventLogger;
   readonly webSocket: WebSocket;
-  readonly webSocketQueue: WebSocketQueueItem[] = [];
+  readonly webSocketQueue: QueueItem[] = [];
   readonly channels = new Map<string, AgentHl7Channel>();
-  readonly hl7Queue: Hl7ConnectionQueueItem[] = [];
+  readonly hl7Queue: QueueItem[] = [];
   live = false;
 
   constructor(
@@ -33,8 +27,6 @@ export class App {
       warn: console.warn,
       error: console.error,
     } as EventLogger;
-
-    // this.channels = [];
 
     const webSocketUrl = new URL(medplum.getBaseUrl());
     webSocketUrl.protocol = webSocketUrl.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -83,8 +75,8 @@ export class App {
     for (const definition of agent.channel as AgentChannel[]) {
       const endpoint = await this.medplum.readReference(definition.endpoint as Reference<Endpoint>);
       const channel = new AgentHl7Channel(this, definition, endpoint);
-      this.channels.set(definition.name as string, channel);
       channel.start();
+      this.channels.set(definition.name as string, channel);
     }
 
     this.log.info('Medplum service started successfully');
@@ -96,12 +88,12 @@ export class App {
     this.log.info('Medplum service stopped successfully');
   }
 
-  addToWebSocketQueue(message: WebSocketQueueItem): void {
+  addToWebSocketQueue(message: QueueItem): void {
     this.webSocketQueue.push(message);
     this.trySendToWebSocket();
   }
 
-  addToHl7Queue(message: Hl7ConnectionQueueItem): void {
+  addToHl7Queue(message: QueueItem): void {
     this.hl7Queue.push(message);
     this.trySendToHl7Connection();
   }
