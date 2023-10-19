@@ -4,66 +4,67 @@ export const ExternalSecretSystems = {
 
 export type ExternalSecretSystem = keyof typeof ExternalSecretSystems;
 
-export type ExternalSecret = {
+export type ExternalSecret<T extends 'string' | 'number' | 'boolean'> = {
   system: ExternalSecretSystem;
   key: string;
+  type: T;
 };
 
 export interface MedplumSourceInfraConfig {
-  name: string | ExternalSecret;
-  stackName: string | ExternalSecret;
-  accountNumber: string | ExternalSecret;
-  region: string | ExternalSecret;
-  domainName: string | ExternalSecret;
-  vpcId: string | ExternalSecret;
-  apiPort: number | ExternalSecret;
-  apiDomainName: string | ExternalSecret;
-  apiSslCertArn: string | ExternalSecret;
-  apiInternetFacing?: boolean | ExternalSecret;
-  appDomainName: string | ExternalSecret;
-  appSslCertArn: string | ExternalSecret;
-  appApiProxy?: boolean | ExternalSecret;
-  appLoggingBucket?: string | ExternalSecret;
-  appLoggingPrefix?: string | ExternalSecret;
-  storageBucketName: string | ExternalSecret;
-  storageDomainName: string | ExternalSecret;
-  storageSslCertArn: string | ExternalSecret;
-  signingKeyId: string | ExternalSecret;
-  storagePublicKey: string | ExternalSecret;
-  storageLoggingBucket?: string | ExternalSecret;
-  storageLoggingPrefix?: string | ExternalSecret;
-  baseUrl: string | ExternalSecret;
-  maxAzs: number | ExternalSecret;
-  rdsInstances: number | ExternalSecret;
-  rdsInstanceType: string | ExternalSecret;
-  rdsSecretsArn?: string | ExternalSecret;
-  cacheNodeType?: string | ExternalSecret;
-  desiredServerCount: number | ExternalSecret;
-  serverImage: string | ExternalSecret;
-  serverMemory: number | ExternalSecret;
-  serverCpu: number | ExternalSecret;
-  loadBalancerLoggingBucket?: string | ExternalSecret;
-  loadBalancerLoggingPrefix?: string | ExternalSecret;
-  clamscanEnabled: boolean | ExternalSecret;
-  clamscanLoggingBucket: string | ExternalSecret;
-  clamscanLoggingPrefix: string | ExternalSecret;
-  skipDns?: boolean | ExternalSecret;
+  name: string | ExternalSecret<'string'>;
+  stackName: string | ExternalSecret<'string'>;
+  accountNumber: string | ExternalSecret<'string'>;
+  region: string | ExternalSecret<'string'>;
+  domainName: string | ExternalSecret<'string'>;
+  vpcId: string | ExternalSecret<'string'>;
+  apiPort: number | ExternalSecret<'number'>;
+  apiDomainName: string | ExternalSecret<'string'>;
+  apiSslCertArn: string | ExternalSecret<'string'>;
+  apiInternetFacing?: boolean | ExternalSecret<'boolean'>;
+  appDomainName: string | ExternalSecret<'string'>;
+  appSslCertArn: string | ExternalSecret<'string'>;
+  appApiProxy?: boolean | ExternalSecret<'boolean'>;
+  appLoggingBucket?: string | ExternalSecret<'string'>;
+  appLoggingPrefix?: string | ExternalSecret<'string'>;
+  storageBucketName: string | ExternalSecret<'string'>;
+  storageDomainName: string | ExternalSecret<'string'>;
+  storageSslCertArn: string | ExternalSecret<'string'>;
+  signingKeyId: string | ExternalSecret<'string'>;
+  storagePublicKey: string | ExternalSecret<'string'>;
+  storageLoggingBucket?: string | ExternalSecret<'string'>;
+  storageLoggingPrefix?: string | ExternalSecret<'string'>;
+  baseUrl: string | ExternalSecret<'string'>;
+  maxAzs: number | ExternalSecret<'number'>;
+  rdsInstances: number | ExternalSecret<'number'>;
+  rdsInstanceType: string | ExternalSecret<'string'>;
+  rdsSecretsArn?: string | ExternalSecret<'string'>;
+  cacheNodeType?: string | ExternalSecret<'string'>;
+  desiredServerCount: number | ExternalSecret<'number'>;
+  serverImage: string | ExternalSecret<'string'>;
+  serverMemory: number | ExternalSecret<'number'>;
+  serverCpu: number | ExternalSecret<'number'>;
+  loadBalancerLoggingBucket?: string | ExternalSecret<'string'>;
+  loadBalancerLoggingPrefix?: string | ExternalSecret<'string'>;
+  clamscanEnabled: boolean | ExternalSecret<'boolean'>;
+  clamscanLoggingBucket: string | ExternalSecret<'string'>;
+  clamscanLoggingPrefix: string | ExternalSecret<'string'>;
+  skipDns?: boolean | ExternalSecret<'boolean'>;
   additionalContainers?: {
-    name: string | ExternalSecret;
-    image: string | ExternalSecret;
-    cpu?: number | ExternalSecret;
-    memory?: number | ExternalSecret;
-    essential?: boolean | ExternalSecret;
-    command?: (string | ExternalSecret)[];
+    name: string | ExternalSecret<'string'>;
+    image: string | ExternalSecret<'string'>;
+    cpu?: number | ExternalSecret<'number'>;
+    memory?: number | ExternalSecret<'number'>;
+    essential?: boolean | ExternalSecret<'boolean'>;
+    command?: (string | ExternalSecret<'string'>)[];
     environment?: {
-      [key: string]: string | ExternalSecret;
+      [key: string]: string | ExternalSecret<'string'>;
     };
   }[];
   cloudTrailAlarms?: {
-    logGroupName: string | ExternalSecret;
-    logGroupCreate?: boolean | ExternalSecret;
-    snsTopicArn?: string | ExternalSecret;
-    snsTopicName?: string | ExternalSecret;
+    logGroupName: string | ExternalSecret<'string'>;
+    logGroupCreate?: boolean | ExternalSecret<'boolean'>;
+    snsTopicArn?: string | ExternalSecret<'string'>;
+    snsTopicName?: string | ExternalSecret<'string'>;
   };
 }
 
