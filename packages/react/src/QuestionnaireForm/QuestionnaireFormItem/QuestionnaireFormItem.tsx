@@ -299,7 +299,7 @@ function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.
       <CodingInput
         name={name}
         binding={item.answerValueSet}
-        onChange={(code) => (code ? onChangeAnswer({ valueCoding: code }) : undefined)}
+        onChange={(code) => onChangeAnswer({ valueCoding: code })}
       />
     );
   }
