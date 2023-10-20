@@ -1,3 +1,7 @@
+---
+sidebar_position: 4
+---
+
 import ExampleCode from '!!raw-loader!@site/../examples/src/search/paginated-search.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
@@ -84,6 +88,10 @@ This query will search for patients with the name "smith" and will return a Bund
 <MedplumCodeBlock language="ts" selectBlocks="searchTotalResult">
   {ExampleCode}
 </MedplumCodeBlock>
+
+:::note Note
+The Medplum SDK provides the `searchResources` helper function. This function unwraps the response bundle of your search results and returns an array of the resources that match your parameters. If you want to get the count when using this function, the `.bundle` property is added to the array. You can access the total using `response.bundle.total`.
+:::
 
 ## Navigating pages with the `Bundle.link` element
 

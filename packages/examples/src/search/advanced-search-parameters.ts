@@ -1,6 +1,5 @@
 // start-block imports
 import { MedplumClient } from '@medplum/core';
-import { Observation, Patient } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -8,17 +7,17 @@ const medplum = new MedplumClient();
 
 // start-block idTs
 await medplum.searchResources('Patient', {
-  _id: 'homer-simpson',
+  _id: 'homer-simpson,marge-simpson,lisa-simpson',
 });
 // end-block idTs
 
 /*
 // start-block idCli
-medplum get 'Patient?_id=homer-simpson'
+medplum get 'Patient?_id=homer-simpson,marge-simpson,lisa-simpson'
 // end-block idCli
 
 // start-block idCurl
-curl 'https://api.medplum.com/fhir/R4/Patient?_id=homer-simpson' \
+curl 'https://api.medplum.com/fhir/R4/Patient?_id=homer-simpson,marge-simpson,lisa-simpson' \
 	-H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block idCurl
@@ -32,11 +31,11 @@ await medplum.searchResources('Communication', {
 
 /*
 // start-block lastUpdatedCli
-medplum get 'Communication?part-of:missing=true&_lastUpdated=gt2023-10-01'
+medplum get 'Communication?_lastUpdated=gt2023-10-01'
 // end-block lastUpdatedCli
 
 // start-block lastUpdatedCurl
-curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&_lastUpdated=gt2023-10-01' \
+curl 'https://api.medplum.com/fhir/R4/Communication?&_lastUpdated=gt2023-10-01' \
 	-H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block lastUpdatedCurl
@@ -47,125 +46,293 @@ await medplum.searchResources('Patient', {
   _id: 'homer-simpson',
   _summary: true,
 });
+
+/* 
+Example response: 
+{
+  resourceType: 'Patient',
+  identifier: [
+    {
+      use: 'official',
+      system: 'https://example-hospital.org',
+      value: 'patient-1',
+    },
+  ],
+  active: true,
+  name: [
+    {
+      family: 'Simpson',
+      given: ['Homer', 'Jay'],
+    },
+  ],
+  gender: 'male',
+  birthDate: '1956-05-12',
+  deceasedBoolean: false,
+  address: [
+    {
+      use: 'home',
+      type: 'physical',
+      line: ['742 Evergreen Terrace'],
+      city: 'Springfield',
+    },
+  ],
+  managingOrganization: {
+    reference: 'Organization/example-hospital',
+  },
+  link: [
+    {
+      type: 'refer',
+    },
+  ],
+};
+*/
 // end-block summaryTs
 
 /*
 // start-block summaryCli
 medplum get 'Patient?_id=homer-simpson&_summary=true'
+
+Example response: 
+{
+  resourceType: 'Patient',
+  identifier: [
+    {
+      use: 'official',
+      system: 'https://example-hospital.org',
+      value: 'patient-1',
+    },
+  ],
+  active: true,
+  name: [
+    {
+      family: 'Simpson',
+      given: ['Homer', 'Jay'],
+    },
+  ],
+  gender: 'male',
+  birthDate: '1956-05-12',
+  deceasedBoolean: false,
+  address: [
+    {
+      use: 'home',
+      type: 'physical',
+      line: ['742 Evergreen Terrace'],
+      city: 'Springfield',
+    },
+  ],
+  managingOrganization: {
+    reference: 'Organization/example-hospital',
+  },
+  link: [
+    {
+      type: 'refer',
+    },
+  ],
+};
 // end-block summaryCli
 
 // start-block summaryCurl
 curl 'https://api.medplum.com/fhir/R4/Patient?_id=homer-simpson&_summary=true' \
 	-H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
-// end-block summaryCurl
-*/
 
-const summaryResponse: Patient =
-  // start-block summaryResponse
-  {
-    resourceType: 'Patient',
-    identifier: [
-      {
-        use: 'official',
-        system: 'https://example-hospital.org',
-        value: 'patient-1',
-      },
-    ],
-    active: true,
-    name: [
-      {
-        family: 'Simpson',
-        given: ['Homer', 'Jay'],
-      },
-    ],
-    gender: 'male',
-    birthDate: '1956-05-12',
-    deceasedBoolean: false,
-    address: [
-      {
-        use: 'home',
-        type: 'physical',
-        line: ['742 Evergreen Terrace'],
-        city: 'Springfield',
-      },
-    ],
-    managingOrganization: {
-      reference: 'Organization/example-hospital',
+Example response: 
+{
+  resourceType: 'Patient',
+  identifier: [
+    {
+      use: 'official',
+      system: 'https://example-hospital.org',
+      value: 'patient-1',
     },
-    link: [
-      {
-        type: 'refer',
-      },
-    ],
-  };
-// end-block summaryResponse
+  ],
+  active: true,
+  name: [
+    {
+      family: 'Simpson',
+      given: ['Homer', 'Jay'],
+    },
+  ],
+  gender: 'male',
+  birthDate: '1956-05-12',
+  deceasedBoolean: false,
+  address: [
+    {
+      use: 'home',
+      type: 'physical',
+      line: ['742 Evergreen Terrace'],
+      city: 'Springfield',
+    },
+  ],
+  managingOrganization: {
+    reference: 'Organization/example-hospital',
+  },
+  link: [
+    {
+      type: 'refer',
+    },
+  ],
+};
+
+  // end-block summaryCurl
+*/
 
 // start-block elementsTs
 await medplum.searchResources('Observation', {
   _elements: 'status,code,subject,performer',
 });
+/* 
+Example Response: 
+[
+  {
+    resourceType: 'Observation',
+    status: 'final',
+    code: {
+      coding: [
+        {
+          system: 'http://loinc.org',
+          code: '8867-4',
+          display: 'Heart Rate',
+        },
+      ],
+    },
+    subject: {
+      reference: 'Patient/homer-simpson',
+    },
+    performer: [
+      {
+        reference: 'Practitioner/dr-alice-smith',
+      },
+    ],
+  },
+  {
+    resourceType: 'Observation',
+    status: 'preliminary',
+    code: {
+      coding: [
+        {
+          system: 'http://loinc.org',
+          code: '8310-5',
+          display: 'Body temperature',
+        },
+      ],
+    },
+    subject: {
+      reference: 'Patient/marge-simpson',
+    },
+    performer: [
+      {
+        reference: 'Practitioner/dr-gregory-house',
+      },
+    ],
+  },
+];
+*/
 // end-block elementsTs
 
 /*
 // start-block elementsCli
 medplum get 'Observation?_elements=status,code,subject,performer'
+
+Example Response: 
+[
+  {
+    resourceType: 'Observation',
+    status: 'final',
+    code: {
+      coding: [
+        {
+          system: 'http://loinc.org',
+          code: '8867-4',
+          display: 'Heart Rate',
+        },
+      ],
+    },
+    subject: {
+      reference: 'Patient/homer-simpson',
+    },
+    performer: [
+      {
+        reference: 'Practitioner/dr-alice-smith',
+      },
+    ],
+  },
+  {
+    resourceType: 'Observation',
+    status: 'preliminary',
+    code: {
+      coding: [
+        {
+          system: 'http://loinc.org',
+          code: '8310-5',
+          display: 'Body temperature',
+        },
+      ],
+    },
+    subject: {
+      reference: 'Patient/marge-simpson',
+    },
+    performer: [
+      {
+        reference: 'Practitioner/dr-gregory-house',
+      },
+    ],
+  },
+];
 // end-block elementsCli
 
 // start-block elementsCurl
 curl 'https://api.medplum.com/fhir/R4/Observations?_elements=status,code,subject,performer' \
 	-H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \ 
+
+Example Response: 
+[
+  {
+    resourceType: 'Observation',
+    status: 'final',
+    code: {
+      coding: [
+        {
+          system: 'http://loinc.org',
+          code: '8867-4',
+          display: 'Heart Rate',
+        },
+      ],
+    },
+    subject: {
+      reference: 'Patient/homer-simpson',
+    },
+    performer: [
+      {
+        reference: 'Practitioner/dr-alice-smith',
+      },
+    ],
+  },
+  {
+    resourceType: 'Observation',
+    status: 'preliminary',
+    code: {
+      coding: [
+        {
+          system: 'http://loinc.org',
+          code: '8310-5',
+          display: 'Body temperature',
+        },
+      ],
+    },
+    subject: {
+      reference: 'Patient/marge-simpson',
+    },
+    performer: [
+      {
+        reference: 'Practitioner/dr-gregory-house',
+      },
+    ],
+  },
+];
 // end-block elementsCurl
 */
-
-const elementsResponse: Observation[] =
-  // start-block elementsResponse
-  [
-    {
-      resourceType: 'Observation',
-      status: 'final',
-      code: {
-        coding: [
-          {
-            system: 'http://loinc.org',
-            code: '8867-4',
-            display: 'Heart Rate',
-          },
-        ],
-      },
-      subject: {
-        reference: 'Patient/homer-simpson',
-      },
-      performer: [
-        {
-          reference: 'Practitioner/dr-alice-smith',
-        },
-      ],
-    },
-    {
-      resourceType: 'Observation',
-      status: 'preliminary',
-      code: {
-        coding: [
-          {
-            system: 'http://loinc.org',
-            code: '8310-5',
-            display: 'Body temperature',
-          },
-        ],
-      },
-      subject: {
-        reference: 'Patient/marge-simpson',
-      },
-      performer: [
-        {
-          reference: 'Practitioner/dr-gregory-house',
-        },
-      ],
-    },
-  ];
-// end-block elementsResponse
 
 // start-block tagTs
 await medplum.searchResources('Observation', {
@@ -238,5 +405,3 @@ curl 'https://api.medplum.com/fhir/R4/Communication?_compartment=Patient/homer-s
   -H 'content-type: application/fhir+json' \ 
 // end-block compartmentCurl
 */
-
-console.log(summaryResponse, elementsResponse);
