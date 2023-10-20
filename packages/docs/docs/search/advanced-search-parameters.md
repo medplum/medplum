@@ -12,16 +12,16 @@ import ExampleCode from '!!raw-loader!@site/..//examples/src/search/advanced-sea
 
 The FHIR search framework allows for special search parameters that enable more complex searches to fine-tune your results. In this document, we will go over the following special parameters:
 
-- [\_id](#id)
-- [\_lastUpdated](#lastupdated)
-- [\_summary](#summary)
-- [\_elements](#elements)
-- [\_tag](#tag)
-- [\_compartment](#compartment)
-- [\_total](#total)
-- [\_profile](#profile)
-- [\_filter](#filter)
-- [\_sort](#sort)
+- [\_id](#_id)
+- [\_lastUpdated](#_lastupdated)
+- [\_summary](#_summary)
+- [\_elements](#_elements)
+- [\_tag](#_tag)
+- [\_compartment](#_compartment)
+- [\_total](#_total)
+- [\_profile](#_profile)
+- [\_filter](#_filter)
+- [\_sort](#_sort)
 
 ## \_id
 
@@ -210,7 +210,7 @@ The `_total` parameter allows you to return the total count of matching resource
 
 FHIR allows [profiling](http://hl7.org/fhir/R4/profiling.html) to create custom data structures that specify how resources can be sub-specialized to meet specific use cases. The `_profile` parameter allows you to search based on these profiles.
 
-The `_profile` parameter is a reference parameter, meaning you may provide a reference as an argument to the parameter.
+The `_profile` parameter is a reference parameter, meaning you may provide a reference as an argument to the parameter. See the [FHIR Profiles doc](https://www.medplum.com/docs/fhir-datastore/profiles) to learn more about profiling.
 
 <details><summary>Example: Search for observations that are part of the pediatric growth charts profile</summary>
   <Tabs groupId="language">
