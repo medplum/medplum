@@ -113,56 +113,61 @@ export async function fetchExternalSecret(externalSecret: ExternalSecret): Promi
   return normalizeFetchedValue(key, rawValue, type);
 }
 
+async function normalizeInfraConfigArray(
+  currentVal: any[]
+): Promise<ExternalSecretPrimitive[] | Record<string, any>[]> {
+  // ------ case 3a: primitives or `ExternalSecret`
+  const firstEle = currentVal[0];
+  let newArray: ExternalSecretPrimitive[] | Record<string, any>[];
+  if ((typeof firstEle !== 'object' && firstEle !== null) || isExternalSecretLike(firstEle)) {
+    newArray = new Array(currentVal.length) as ExternalSecretPrimitive[];
+    for (let i = 0; i < currentVal.length; i++) {
+      const currIdxVal = currentVal[i] as unknown as ExternalSecretPrimitive | ExternalSecret;
+      if (typeof currIdxVal !== 'object') {
+        newArray[i] = currIdxVal;
+        continue;
+      }
+      const fetchedVal = await fetchExternalSecret(currIdxVal);
+      newArray[i] = fetchedVal;
+    }
+  }
+  // ------ case 3b: other objects (recurse)
+  else {
+    newArray = new Array(currentVal.length) as Record<string, any>[];
+    for (let i = 0; i < currentVal.length; i++) {
+      newArray[i] = await normalizeObjectInInfraConfig(currentVal[i]);
+    }
+  }
+  return newArray;
+}
+
+async function normalizeValueForKey(obj: Record<string, any>, key: string): Promise<any> {
+  const currentVal = obj[key];
+  // cases:
+  // --- case 1: primitive
+  if (typeof currentVal !== 'object') {
+    obj[key] = currentVal;
+  }
+  // --- case 2: object conforming to `ExternalSecret` schema
+  else if (isExternalSecretLike(currentVal)) {
+    obj[key] = await fetchExternalSecret(currentVal);
+  }
+  // --- case 3: an array of:
+  else if (Array.isArray(currentVal) && currentVal.length) {
+    obj[key] = await normalizeInfraConfigArray(currentVal);
+  }
+  // --- case 4: other object (recurse)
+  else if (typeof currentVal === 'object') {
+    obj[key] = await normalizeObjectInInfraConfig(currentVal);
+  }
+}
+
 export async function normalizeObjectInInfraConfig(obj: Record<string, any>): Promise<Record<string, any>> {
-  const normalizedObj = {};
+  const normalizedObj = { ...obj };
   // walk config object
-  for (const key in obj) {
-    if (Object.hasOwn(obj, key)) {
-      const currentVal = obj[key];
-      // cases:
-      // --- case 1: primitive
-      if (typeof currentVal !== 'object') {
-        // @ts-expect-error Unable to match type info for keys generically at runtime
-        normalizedObj[key] = currentVal;
-      }
-      // --- case 2: object conforming to `ExternalSecret` schema
-      else if (isExternalSecretLike(currentVal)) {
-        // @ts-expect-error Unable to match type info for keys generically at runtime
-        normalizedObj[key] = await fetchExternalSecret(currentVal);
-      }
-      // --- case 3: an array of:
-      else if (Array.isArray(currentVal) && currentVal.length) {
-        // ------ case 3a: primitives or `ExternalSecret`
-        const firstEle = currentVal[0];
-        if ((typeof firstEle !== 'object' && firstEle !== null) || isExternalSecretLike(firstEle)) {
-          const newArray = new Array(currentVal.length) as (string | number | boolean)[];
-          for (let i = 0; i < currentVal.length; i++) {
-            const currIdxVal = currentVal[i] as unknown as string | boolean | number | ExternalSecret;
-            if (typeof currIdxVal !== 'object') {
-              newArray[i] = currIdxVal;
-              continue;
-            }
-            const fetchedVal = await fetchExternalSecret(currIdxVal);
-            newArray[i] = fetchedVal;
-          }
-          // @ts-expect-error Unable to match type info for keys generically at runtime
-          normalizedObj[key] = newArray;
-        }
-        // ------ case 3b: other objects (recurse)
-        else {
-          const newArray = new Array(currentVal.length) as Record<string, any>[];
-          for (let i = 0; i < currentVal.length; i++) {
-            newArray[i] = await normalizeObjectInInfraConfig(currentVal[i]);
-          }
-          // @ts-expect-error Unable to match type info for keys generically at runtime
-          normalizedObj[key] = newArray;
-        }
-      }
-      // --- case 4: other object (recurse)
-      else if (typeof currentVal === 'object') {
-        // @ts-expect-error Unable to match type info for keys generically at runtime
-        normalizedObj[key] = await normalizeObjectInInfraConfig(currentVal);
-      }
+  for (const key in normalizedObj) {
+    if (Object.hasOwn(normalizedObj, key)) {
+      await normalizeValueForKey(normalizedObj, key);
     }
   }
   return normalizedObj;
