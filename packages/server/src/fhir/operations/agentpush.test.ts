@@ -116,7 +116,33 @@ describe('Agent Push', () => {
         destination: 'x',
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Must specify agent ID or identifier.');
+    expect(res.body.issue[0].details.text).toEqual('Must specify agent ID or identifier');
+  });
+
+  test('Missing content type', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        body: 'input',
+        destination: 'x',
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toEqual('Missing content type parameter');
+  });
+
+  test('Missing body', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.TEXT,
+        destination: 'x',
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toEqual('Missing body parameter');
   });
 
   test('Missing destination', async () => {
@@ -129,6 +155,6 @@ describe('Agent Push', () => {
         body: 'input',
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Missing destination parameter.');
+    expect(res.body.issue[0].details.text).toEqual('Missing destination parameter');
   });
 });

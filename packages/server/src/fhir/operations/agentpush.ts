@@ -23,23 +23,23 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   // Read the agent as the user to verify access
   const agent = await getAgentForRequest(req);
   if (!agent) {
-    sendOutcome(res, badRequest('Must specify agent ID or identifier.'));
+    sendOutcome(res, badRequest('Must specify agent ID or identifier'));
     return;
   }
 
   const message = parseParameters<AgentPushParameters>(req.body);
   if (!message.body) {
-    sendOutcome(res, badRequest('Missing body parameter.'));
+    sendOutcome(res, badRequest('Missing body parameter'));
     return;
   }
 
   if (!message.contentType) {
-    sendOutcome(res, badRequest('Missing contentType parameter.'));
+    sendOutcome(res, badRequest('Missing contentType parameter'));
     return;
   }
 
   if (!message.destination) {
-    sendOutcome(res, badRequest('Missing destination parameter.'));
+    sendOutcome(res, badRequest('Missing destination parameter'));
     return;
   }
 
