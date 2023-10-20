@@ -12,7 +12,7 @@ const send = createMedplumCommand('send')
   .option('--generate-example', 'Generate a sample HL7 message')
   .option('--file <file>', 'Read the HL7 message from a file')
   .action(async (host, port, body, options) => {
-    if (options.generate) {
+    if (options.generateExample) {
       body = generateSampleHl7Message();
     } else if (options.file) {
       body = readFileSync(options.file, 'utf8');

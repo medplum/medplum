@@ -114,8 +114,6 @@ describe('Agent', () => {
       port: 56000,
     });
 
-    await client.connect();
-
     const response = await client.sendAndWait(
       Hl7Message.parse(
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +

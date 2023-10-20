@@ -1,6 +1,6 @@
-import { Hl7Message, MedplumClient } from '@medplum/core';
+import { Hl7Message, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
-import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
+import { Hl7Client, Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { EventLogger } from 'node-windows';
 import WebSocket from 'ws';
 
@@ -31,11 +31,11 @@ export class App {
     const webSocketUrl = new URL(medplum.getBaseUrl());
     webSocketUrl.protocol = webSocketUrl.protocol === 'https:' ? 'wss:' : 'ws:';
     webSocketUrl.pathname = '/ws/agent';
-    console.log('Connecting to WebSocket:', webSocketUrl.href);
+    this.log.info(`Connecting to WebSocket: ${webSocketUrl.href}`);
 
     this.webSocket = new WebSocket(webSocketUrl);
     this.webSocket.binaryType = 'nodebuffer';
-    this.webSocket.addEventListener('error', console.error);
+    this.webSocket.addEventListener('error', (err) => this.log.error(err.message));
     this.webSocket.addEventListener('open', () => {
       this.webSocket.send(
         JSON.stringify({
@@ -50,7 +50,7 @@ export class App {
       try {
         const data = e.data as Buffer;
         const str = data.toString('utf8');
-        console.log('Received from WebSocket:', str.replaceAll('\r', '\n'));
+        this.log.info(`Received from WebSocket: ${str.replaceAll('\r', '\n')}`);
         const command = JSON.parse(str);
         switch (command.type) {
           case 'connected':
@@ -60,9 +60,12 @@ export class App {
           case 'transmit':
             this.addToHl7Queue(command);
             break;
+          case 'push':
+            this.pushMessage(command);
+            break;
         }
       } catch (err) {
-        console.log('WebSocket error', err);
+        this.log.error(`WebSocket error: ${normalizeErrorString(err)}`);
       }
     });
   }
@@ -129,6 +132,26 @@ export class App {
       }
     }
   }
+
+  private pushMessage(message: QueueItem): void {
+    // Parse the remote address
+    // TODO: Read from agent definition?
+    const address = new URL(message.remote as string);
+
+    const client = new Hl7Client({
+      host: address.hostname,
+      port: parseInt(address.port, 10),
+    });
+
+    client
+      .sendAndWait(Hl7Message.parse(message.body))
+      .then((response) => {
+        this.log.info(`Response: ${response.toString().replaceAll('\r', '\n')}`);
+      })
+      .catch((err) => {
+        this.log.error(`HL7 error: ${normalizeErrorString(err)}`);
+      });
+  }
 }
 
 export class AgentHl7Channel {
@@ -179,15 +202,15 @@ export class AgentHl7ChannelConnection {
 
   private async handler(event: Hl7MessageEvent): Promise<void> {
     try {
-      console.log('Received:');
-      console.log(event.message.toString().replaceAll('\r', '\n'));
+      this.channel.app.log.info('Received:');
+      this.channel.app.log.info(event.message.toString().replaceAll('\r', '\n'));
       this.channel.app.addToWebSocketQueue({
         channel: this.channel.definition.name as string,
         remote: this.remote,
         body: event.message.toString(),
       });
     } catch (err) {
-      console.log('HL7 error', err);
+      this.channel.app.log.error(`HL7 error: ${normalizeErrorString(err)}`);
     }
   }
 

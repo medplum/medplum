@@ -76,6 +76,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     redisSubscriber = getRedis().duplicate();
     await redisSubscriber.subscribe(getReferenceString(agent));
     redisSubscriber.on('message', (_channel: string, message: string) => {
+      // When a message is received, send it to the agent
       socket.send(message, { binary: false });
     });
 
