@@ -1,5 +1,5 @@
-import { allOk, ContentType } from '@medplum/core';
-import { Agent } from '@medplum/fhirtypes';
+import { allOk, ContentType, getReferenceString } from '@medplum/core';
+import { Agent, Device } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -10,6 +10,7 @@ import { initTestAuth } from '../../test.setup';
 const app = express();
 let accessToken: string;
 let agent: Agent;
+let device: Device;
 
 describe('Agent Push', () => {
   beforeAll(async () => {
@@ -17,7 +18,7 @@ describe('Agent Push', () => {
     await initApp(app, config);
     accessToken = await initTestAuth();
 
-    const res = await request(app)
+    const res1 = await request(app)
       .post(`/fhir/R4/Agent`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -34,8 +35,20 @@ describe('Agent Push', () => {
           },
         ],
       });
-    expect(res.status).toBe(201);
-    agent = res.body as Agent;
+    expect(res1.status).toBe(201);
+    agent = res1.body as Agent;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Device`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Device',
+        modelNumber: randomUUID(),
+        url: 'mllp://192.168.50.10:56001',
+      });
+    expect(res2.status).toBe(201);
+    device = res2.body as Device;
   });
 
   afterAll(async () => {
@@ -50,7 +63,7 @@ describe('Agent Push', () => {
       .send({
         contentType: ContentType.TEXT,
         body: 'input',
-        destination: 'x',
+        destination: getReferenceString(device),
       });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject(allOk);
@@ -67,7 +80,7 @@ describe('Agent Push', () => {
           resourceType: 'Patient',
           name: [{ given: ['John'], family: ['Doe'] }],
         },
-        destination: 'x',
+        destination: getReferenceString(device),
       });
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
@@ -85,7 +98,7 @@ describe('Agent Push', () => {
       .send({
         contentType: ContentType.HL7_V2,
         body: text,
-        destination: 'x',
+        destination: getReferenceString(device),
       });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject(allOk);
@@ -99,7 +112,25 @@ describe('Agent Push', () => {
       .send({
         contentType: ContentType.TEXT,
         body: 'input',
-        destination: 'x',
+        destination: getReferenceString(device),
+      });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject(allOk);
+  });
+
+  test('Destination by device search', async () => {
+    const text =
+      'MSH|^~\\&|Main_HIS|XYZ_HOSPITAL|iFW|ABC_Lab|20160915003015||ACK|9B38584D|P|2.6.1|\r' +
+      'MSA|AA|9B38584D|Everything was okay dokay!|';
+
+    const res = await request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.HL7_V2,
+        body: text,
+        destination: 'Device?model=' + device.modelNumber,
       });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject(allOk);
@@ -113,7 +144,7 @@ describe('Agent Push', () => {
       .send({
         contentType: ContentType.TEXT,
         body: 'input',
-        destination: 'x',
+        destination: getReferenceString(device),
       });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toEqual('Must specify agent ID or identifier');
@@ -126,10 +157,10 @@ describe('Agent Push', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         body: 'input',
-        destination: 'x',
+        destination: getReferenceString(device),
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Missing content type parameter');
+    expect(res.body.issue[0].details.text).toEqual('Missing contentType parameter');
   });
 
   test('Missing body', async () => {
@@ -139,7 +170,7 @@ describe('Agent Push', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         contentType: ContentType.TEXT,
-        destination: 'x',
+        destination: getReferenceString(device),
       });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toEqual('Missing body parameter');
@@ -156,5 +187,57 @@ describe('Agent Push', () => {
       });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toEqual('Missing destination parameter');
+  });
+
+  test('Unrecognized device string', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.TEXT,
+        body: 'input',
+        destination: 'foo',
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toEqual('Destination device not found');
+  });
+
+  test('Destination device not found', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.TEXT,
+        body: 'input',
+        destination: 'Device/' + randomUUID(),
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toEqual('Destination device not found');
+  });
+
+  test('Destination device missing URL', async () => {
+    // Create a device without a URL
+    const res1 = await request(app)
+      .post(`/fhir/R4/Device`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Device' });
+    expect(res1.status).toBe(201);
+
+    const device2 = res1.body as Device;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.TEXT,
+        body: 'input',
+        destination: getReferenceString(device2),
+      });
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue[0].details.text).toEqual('Destination device missing url');
   });
 });

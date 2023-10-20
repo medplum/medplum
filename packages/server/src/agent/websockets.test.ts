@@ -1,5 +1,5 @@
-import { allOk, ContentType } from '@medplum/core';
-import { Agent, Bot } from '@medplum/fhirtypes';
+import { allOk, ContentType, getReferenceString } from '@medplum/core';
+import { Agent, Bot, Device } from '@medplum/fhirtypes';
 import express from 'express';
 import { Server } from 'http';
 import request from 'superwstest';
@@ -13,6 +13,7 @@ let server: Server;
 let accessToken: string;
 let bot: Bot;
 let agent: Agent;
+let device: Device;
 
 describe('Agent WebSockets', () => {
   beforeAll(async () => {
@@ -53,7 +54,7 @@ describe('Agent WebSockets', () => {
       });
 
     // Create an agent
-    const res3 = await request(server)
+    const res2 = await request(server)
       .post('/fhir/R4/Agent')
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -69,7 +70,17 @@ describe('Agent WebSockets', () => {
           },
         ],
       });
-    agent = res3.body as Agent;
+    agent = res2.body as Agent;
+
+    const res3 = await request(server)
+      .post(`/fhir/R4/Device`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Device',
+        url: 'mllp://192.168.50.10:56001',
+      });
+    device = res3.body as Device;
   });
 
   afterAll(async () => {
@@ -274,7 +285,7 @@ describe('Agent WebSockets', () => {
           .set('Content-Type', ContentType.JSON)
           .set('Authorization', 'Bearer ' + accessToken)
           .send({
-            destination: 'x',
+            destination: getReferenceString(device),
             contentType: ContentType.HL7_V2,
             body:
               'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
