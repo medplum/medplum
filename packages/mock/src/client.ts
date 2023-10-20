@@ -3,6 +3,7 @@ import {
   badRequest,
   ContentType,
   getStatus,
+  indexSearchParameter,
   loadDataType,
   LoginState,
   MedplumClient,
@@ -510,6 +511,7 @@ class MockFetchClient {
     }
 
     for (const searchParameter of SearchParameterList) {
+      indexSearchParameter(searchParameter as SearchParameter);
       await this.repo.createResource(searchParameter as SearchParameter);
     }
 
