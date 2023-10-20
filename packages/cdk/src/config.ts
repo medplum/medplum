@@ -11,6 +11,7 @@ import {
 } from '@medplum/core';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
+const VALID_PRIMITIVE_TYPES = ['string', 'boolean', 'number'];
 
 export async function fetchParameterStoreSecret(path: string, key: string): Promise<string> {
   const region = DEFAULT_AWS_REGION;
@@ -30,7 +31,7 @@ export async function fetchParameterStoreSecret(path: string, key: string): Prom
         const paramKey = (param.Name as string).replace(path, '');
         if (paramKey === key) {
           if (!param.Value) {
-            throw new OperationOutcomeError(badRequest(`Key ${key} found in path ${path} but missing a value.`));
+            throw new OperationOutcomeError(badRequest(`Key '${key}' found in path '${path}' but missing a value.`));
           }
           return param.Value;
         }
@@ -41,19 +42,19 @@ export async function fetchParameterStoreSecret(path: string, key: string): Prom
 
   throw new OperationOutcomeError(
     badRequest(
-      `Key ${key} not found at path ${path}. Make sure your path and key are correct and are defined in your Parameter Store.`
+      `Key '${key}' not found at path '${path}'. Make sure your path and key are correct and are defined in your Parameter Store.`
     )
   );
 }
 
-function normalizeFetchedValue(
+export function normalizeFetchedValue(
   key: string,
   rawValue: ExternalSecretPrimitive,
   expectedType: ExternalSecretPrimitiveType
 ): ExternalSecretPrimitive {
   const typeOfVal = typeof rawValue;
   // Return raw type if type is string and value is of type string, or if type isn't string and typeof val isn't string
-  if (!['string', 'boolean', 'number'].includes(typeOfVal)) {
+  if (!VALID_PRIMITIVE_TYPES.includes(typeOfVal)) {
     throw new OperationOutcomeError(
       validationError(
         `Invalid value found for type, expected 'string' or 'boolean' or 'number', received: '${typeOfVal}'`
@@ -62,7 +63,7 @@ function normalizeFetchedValue(
   }
   if (expectedType === 'string' && typeOfVal === 'string') {
     return rawValue;
-  } else if (expectedType !== 'string' && typeOfVal !== 'string') {
+  } else if (expectedType !== 'string' && typeOfVal === expectedType) {
     return rawValue;
   } else if (expectedType === 'boolean' && typeOfVal === 'string') {
     const normalized = (rawValue as string).toLowerCase() as 'true' | 'false';
@@ -88,6 +89,7 @@ function normalizeFetchedValue(
 }
 
 export async function fetchExternalSecret(externalSecret: ExternalSecret): Promise<ExternalSecretPrimitive> {
+  assertValidExternalSecret(externalSecret);
   const { system, key, type } = externalSecret;
   let rawValue: ExternalSecretPrimitive;
   switch (system) {
@@ -124,7 +126,7 @@ export async function normalizeObjectInInfraConfig(obj: Record<string, any>): Pr
         normalizedObj[key] = currentVal;
       }
       // --- case 2: object conforming to `ExternalSecret` schema
-      else if (isExternalSecret(currentVal)) {
+      else if (isExternalSecretLike(currentVal)) {
         // @ts-expect-error Unable to match type info for keys generically at runtime
         normalizedObj[key] = await fetchExternalSecret(currentVal);
       }
@@ -132,14 +134,10 @@ export async function normalizeObjectInInfraConfig(obj: Record<string, any>): Pr
       else if (Array.isArray(currentVal) && currentVal.length) {
         // ------ case 3a: primitives or `ExternalSecret`
         const firstEle = currentVal[0];
-        if ((typeof firstEle !== 'object' && firstEle !== null) || isExternalSecret(firstEle)) {
+        if ((typeof firstEle !== 'object' && firstEle !== null) || isExternalSecretLike(firstEle)) {
           const newArray = new Array(currentVal.length) as (string | number | boolean)[];
           for (let i = 0; i < currentVal.length; i++) {
-            const currIdxVal = currentVal[i] as unknown as
-              | string
-              | boolean
-              | number
-              | ExternalSecret<ExternalSecretPrimitiveType>;
+            const currIdxVal = currentVal[i] as unknown as string | boolean | number | ExternalSecret;
             if (typeof currIdxVal !== 'object') {
               newArray[i] = currIdxVal;
               continue;
@@ -170,12 +168,39 @@ export async function normalizeObjectInInfraConfig(obj: Record<string, any>): Pr
   return normalizedObj;
 }
 
-export function isExternalSecret(obj: Record<string, any>): obj is ExternalSecret<'boolean' | 'number' | 'string'> {
+export function isExternalSecretLike(obj: Record<string, any>): obj is ExternalSecret {
   return (
     typeof obj === 'object' &&
     typeof obj.system === 'string' &&
     typeof obj.key === 'string' &&
-    (obj.type === 'string' || obj.type === 'boolean' || obj.type === 'number')
+    typeof obj.type === 'string'
+  );
+}
+
+export function assertValidExternalSecret(obj: Record<string, any>): asserts obj is ExternalSecret {
+  if (
+    typeof obj !== 'object' ||
+    typeof obj.system !== 'string' ||
+    typeof obj.key !== 'string' ||
+    typeof obj.type !== 'string'
+  ) {
+    throw new OperationOutcomeError(
+      validationError('obj is not a valid `ExternalSecret`, must contain a valid `system`, `key`, and `type` prop.')
+    );
+  }
+  if (!VALID_PRIMITIVE_TYPES.includes(obj.type)) {
+    throw new OperationOutcomeError(
+      validationError(`'${obj.type}' is not a valid primitive type. Must be one of ${VALID_PRIMITIVE_TYPES.join(',')}`)
+    );
+  }
+}
+
+export function isExternalSecret(obj: Record<string, any>): obj is ExternalSecret {
+  return (
+    typeof obj === 'object' &&
+    typeof obj.system === 'string' &&
+    typeof obj.key === 'string' &&
+    VALID_PRIMITIVE_TYPES.includes(obj.type)
   );
 }
 

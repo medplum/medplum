@@ -1,8 +1,15 @@
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { MedplumInfraConfig } from '@medplum/core';
+import { ExternalSecret, MedplumInfraConfig, OperationOutcomeError } from '@medplum/core';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
-import { normalizeInfraConfig } from './config';
+import {
+  assertValidExternalSecret,
+  fetchParameterStoreSecret,
+  isExternalSecret,
+  normalizeFetchedValue,
+  normalizeInfraConfig,
+  normalizeObjectInInfraConfig,
+} from './config';
 
 const baseConfig = {
   name: 'MyMedplumApp',
@@ -206,6 +213,225 @@ describe('Config', () => {
           logGroupCreate: false,
         },
       });
+    });
+
+    test('Invalid system', async () => {
+      await expect(
+        // @ts-expect-error System is not valid
+        normalizeInfraConfig({ ...baseConfig, apiPort: { system: 'google_drive', key: '/:abc', type: 'number' } })
+      ).rejects.toBeInstanceOf(OperationOutcomeError);
+    });
+
+    test('Invalid AWS Param Store key', async () => {
+      await expect(
+        normalizeInfraConfig({
+          ...baseConfig,
+          apiPort: { system: 'aws_ssm_parameter_store', key: 'abc', type: 'number' },
+        })
+      ).rejects.toBeInstanceOf(OperationOutcomeError);
+    });
+
+    test('Invalid type specified', async () => {
+      await expect(
+        normalizeInfraConfig({
+          ...baseConfig,
+          // @ts-expect-error Type 'plum' not a valid type
+          apiPort: { system: 'aws_ssm_parameter_store', key: '/:abc', type: 'plum' },
+        })
+      ).rejects.toBeInstanceOf(OperationOutcomeError);
+    });
+
+    test('Mismatched type specified', async () => {
+      await expect(
+        normalizeInfraConfig({
+          ...baseConfig,
+          // @ts-expect-error Type 'boolean' is not the proper type for `apiPort`
+          apiPort: { system: 'aws_ssm_parameter_store', key: '/:abc', type: 'boolean' },
+        })
+      ).rejects.toBeInstanceOf(OperationOutcomeError);
+    });
+  });
+
+  describe('normalizeFetchedValue', () => {
+    // Test [object, string] => throws
+    test('Provided object, expected string => throws', () => {
+      // @ts-expect-error rawValue must be a valid primitive, string | boolean | number
+      expect(() => normalizeFetchedValue('medplumString', { med: 'plum' }, 'string')).toThrowError(
+        OperationOutcomeError
+      );
+    });
+    // Test [string, string] => return raw
+    test('Provided string, expected string => rawValue', () => {
+      expect(normalizeFetchedValue('medplumString', 'medplum', 'string')).toEqual('medplum');
+    });
+    // Test [string, number] => number
+    test('Provided string, expected number => parseInt(string)', () => {
+      expect(normalizeFetchedValue('medplumNumber', '20', 'number')).toEqual(20);
+    });
+    // Test [number, number] => rawValue
+    test('Provided number, expected number => rawValue', () => {
+      expect(normalizeFetchedValue('medplumNumber', 20, 'number')).toEqual(20);
+    });
+    // Test [invalidNumStr, number] => throws
+    test('Provided non-numeric string, expected number => throws', () => {
+      expect(() => normalizeFetchedValue('medplumNumber', 'medplum', 'number')).toThrowError(OperationOutcomeError);
+    });
+    // Test [string, boolean] => boolean
+    test('Provided string, expected boolean => parsedBoolean', () => {
+      expect(normalizeFetchedValue('medplumBool', 'TRUE', 'boolean')).toEqual(true);
+      expect(normalizeFetchedValue('medplumBool', 'false', 'boolean')).toEqual(false);
+      expect(normalizeFetchedValue('medplumBool', 'TrUe', 'boolean')).toEqual(true);
+      expect(normalizeFetchedValue('medplumBool', 'FALSE', 'boolean')).toEqual(false);
+    });
+    // Test [invalidStr, boolean] => throws
+    test('Provided string, expected boolean => parsedBoolean', () => {
+      expect(() => normalizeFetchedValue('medplumBool', 'TRUEE', 'boolean')).toThrowError(OperationOutcomeError);
+      expect(() => normalizeFetchedValue('medplumBool', '10', 'boolean')).toThrowError(OperationOutcomeError);
+      expect(() => normalizeFetchedValue('medplumBool', '0', 'boolean')).toThrowError(OperationOutcomeError);
+    });
+    // Test [bool, number] => throws
+    test('Provided boolean, expected number => throws', () => {
+      expect(() => normalizeFetchedValue('medplumNumber', true, 'number')).toThrowError(OperationOutcomeError);
+    });
+    // Test [string, invalid_type] => throws
+    test('Provided string, expected {invalidType} => throws', () => {
+      // @ts-expect-error Plum is not a valid expectedType
+      expect(() => normalizeFetchedValue('medplum???', 'medplum', 'plum')).toThrowError(OperationOutcomeError);
+    });
+  });
+
+  describe('fetchParameterStoreSecret', () => {
+    let mockSSMClient: AwsClientStub<SSMClient>;
+
+    beforeEach(() => {
+      mockSSMClient = mockClient(SSMClient);
+
+      mockSSMClient.on(GetParametersByPathCommand).resolves({
+        Parameters: [{ Name: 'stackName', Value: 'MyFoomedicalStack' }, { Name: 'emptyValue' }],
+      });
+    });
+
+    afterEach(() => {
+      mockSSMClient.restore();
+    });
+
+    test('Valid key in param store', async () => {
+      await expect(fetchParameterStoreSecret('/', 'stackName')).resolves.toEqual('MyFoomedicalStack');
+    });
+
+    test('Invalid key in param store', async () => {
+      await expect(fetchParameterStoreSecret('/', 'medplum')).rejects.toBeInstanceOf(OperationOutcomeError);
+    });
+
+    test('Valid key with no value', async () => {
+      await expect(fetchParameterStoreSecret('/', 'emptyValue')).rejects.toBeInstanceOf(OperationOutcomeError);
+    });
+  });
+
+  describe('normalizeObjectInInfraConfig', () => {
+    let mockSSMClient: AwsClientStub<SSMClient>;
+
+    beforeEach(() => {
+      mockSSMClient = mockClient(SSMClient);
+
+      mockSSMClient.on(GetParametersByPathCommand).resolves({
+        Parameters: [{ Name: 'medplumSecret', Value: 'MyMedplumSecret' }],
+      });
+    });
+
+    afterEach(() => {
+      mockSSMClient.restore();
+    });
+
+    test('Array of primitives or secrets', async () => {
+      expect(
+        await normalizeObjectInInfraConfig({
+          medplumStuff: [
+            'medplum',
+            {
+              system: 'aws_ssm_parameter_store',
+              key: '/:medplumSecret',
+              type: 'string',
+            } satisfies ExternalSecret<'string'>,
+          ],
+        })
+      ).toEqual({ medplumStuff: ['medplum', 'MyMedplumSecret'] });
+      expect(
+        await normalizeObjectInInfraConfig({
+          medplumStuff: [
+            {
+              system: 'aws_ssm_parameter_store',
+              key: '/:medplumSecret',
+              type: 'string',
+            } satisfies ExternalSecret<'string'>,
+            'medplum',
+          ],
+        })
+      ).toEqual({ medplumStuff: ['MyMedplumSecret', 'medplum'] });
+    });
+  });
+
+  describe('assertValidExternalSecret', () => {
+    // Test perfectly valid secret
+    test('Valid ExternalSecret', () => {
+      expect(() =>
+        assertValidExternalSecret({
+          system: 'aws_ssm_parameter_store',
+          key: 'medplumString',
+          type: 'string',
+        } satisfies ExternalSecret<'string'>)
+      ).not.toThrow();
+    });
+    // Test secret with shape but invalid type
+    test('Almost valid ExternalSecret, invalid type value', () => {
+      expect(() =>
+        assertValidExternalSecret({
+          system: 'aws_ssm_parameter_store',
+          key: 'medplumString',
+          type: 'plum',
+        })
+      ).toThrowError(OperationOutcomeError);
+    });
+    // Test completely invalid secret
+    test('Invalid ExternalSecret', () => {
+      expect(() =>
+        assertValidExternalSecret({
+          key: 10,
+          type: true,
+        })
+      ).toThrowError(OperationOutcomeError);
+    });
+  });
+
+  describe('isExternalSecret', () => {
+    // Test perfectly valid secret
+    test('Valid ExternalSecret', () => {
+      expect(
+        isExternalSecret({
+          system: 'aws_ssm_parameter_store',
+          key: 'medplumString',
+          type: 'string',
+        } satisfies ExternalSecret<'string'>)
+      ).toEqual(true);
+    });
+    // Test secret with shape but invalid type
+    test('Almost valid ExternalSecret, invalid type value', () => {
+      expect(
+        isExternalSecret({
+          system: 'aws_ssm_parameter_store',
+          key: 'medplumString',
+          type: 'plum',
+        })
+      ).toEqual(false);
+    });
+    // Test completely invalid secret
+    test('Invalid ExternalSecret', () => {
+      expect(
+        isExternalSecret({
+          key: 10,
+          type: true,
+        })
+      ).toEqual(false);
     });
   });
 });
