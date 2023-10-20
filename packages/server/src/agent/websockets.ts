@@ -112,7 +112,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     const { login, project, membership } = await getLoginForAccessToken(command.accessToken);
     const repo = await getRepoForLogin(login, membership, project.strictMode, true, project.checkReferencesOnWrite);
     const agent = await repo.readResource<Agent>('Agent', agentId);
-    const channel = agent?.channel?.find((c) => (c as any).name === command.channel);
+    const channel = agent?.channel?.find((c) => c.name === command.channel);
     if (!channel) {
       socket.send(JSON.stringify({ type: 'error', body: 'Channel not found' }));
       return;
