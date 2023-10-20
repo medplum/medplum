@@ -104,7 +104,9 @@ export async function fetchExternalSecret(externalSecret: ExternalSecret): Promi
       break;
     }
     default:
-      throw new Error(`Unknown system '${system}' for ExternalSecret. Unable to fetch the secret for key '${key}'.`);
+      throw new OperationOutcomeError(
+        validationError(`Unknown system '${system}' for ExternalSecret. Unable to fetch the secret for key '${key}'.`)
+      );
   }
   return normalizeFetchedValue(key, rawValue, type);
 }
