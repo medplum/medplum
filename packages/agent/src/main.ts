@@ -134,10 +134,7 @@ export class App {
   }
 
   private pushMessage(message: QueueItem): void {
-    // Parse the remote address
-    // TODO: Read from agent definition?
-    const address = new URL(message.remote as string);
-
+    const address = new URL(message.remote);
     const client = new Hl7Client({
       host: address.hostname,
       port: parseInt(address.port, 10),
@@ -150,6 +147,9 @@ export class App {
       })
       .catch((err) => {
         this.log.error(`HL7 error: ${normalizeErrorString(err)}`);
+      })
+      .finally(() => {
+        client.close();
       });
   }
 }
