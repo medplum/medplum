@@ -182,24 +182,6 @@ export function isExternalSecretLike(obj: Record<string, any>): obj is ExternalS
   );
 }
 
-export function assertValidExternalSecret(obj: Record<string, any>): asserts obj is ExternalSecret {
-  if (
-    typeof obj !== 'object' ||
-    typeof obj.system !== 'string' ||
-    typeof obj.key !== 'string' ||
-    typeof obj.type !== 'string'
-  ) {
-    throw new OperationOutcomeError(
-      validationError('obj is not a valid `ExternalSecret`, must contain a valid `system`, `key`, and `type` prop.')
-    );
-  }
-  if (!VALID_PRIMITIVE_TYPES.includes(obj.type)) {
-    throw new OperationOutcomeError(
-      validationError(`'${obj.type}' is not a valid primitive type. Must be one of ${VALID_PRIMITIVE_TYPES.join(',')}`)
-    );
-  }
-}
-
 export function isExternalSecret(obj: Record<string, any>): obj is ExternalSecret {
   return (
     typeof obj === 'object' &&
@@ -207,6 +189,14 @@ export function isExternalSecret(obj: Record<string, any>): obj is ExternalSecre
     typeof obj.key === 'string' &&
     VALID_PRIMITIVE_TYPES.includes(obj.type)
   );
+}
+
+export function assertValidExternalSecret(obj: Record<string, any>): asserts obj is ExternalSecret {
+  if (!isExternalSecret(obj)) {
+    throw new OperationOutcomeError(
+      validationError('obj is not a valid `ExternalSecret`, must contain a valid `system`, `key`, and `type` prop.')
+    );
+  }
 }
 
 export async function normalizeInfraConfig(config: MedplumSourceInfraConfig): Promise<MedplumInfraConfig> {
