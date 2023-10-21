@@ -61,11 +61,9 @@ export function normalizeFetchedValue(
       )
     );
   }
-  if (expectedType === 'string' && typeOfVal === 'string') {
+  if (typeOfVal === expectedType) {
     return rawValue;
-  } else if (expectedType !== 'string' && typeOfVal === expectedType) {
-    return rawValue;
-  } else if (expectedType === 'boolean' && typeOfVal === 'string') {
+  } else if (typeOfVal === 'string' && expectedType === 'boolean') {
     const normalized = (rawValue as string).toLowerCase() as 'true' | 'false';
     if (normalized !== 'true' && normalized !== 'false') {
       throw new OperationOutcomeError(
@@ -73,7 +71,7 @@ export function normalizeFetchedValue(
       );
     }
     return normalized === 'true';
-  } else if (expectedType === 'number' && typeOfVal === 'string') {
+  } else if (typeOfVal === 'string' && expectedType === 'number') {
     const parsed = parseInt(rawValue as string, 10);
     if (Number.isNaN(parsed)) {
       throw new OperationOutcomeError(
