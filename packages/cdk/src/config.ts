@@ -57,7 +57,7 @@ export function normalizeFetchedValue(
   if (!VALID_PRIMITIVE_TYPES.includes(typeOfVal)) {
     throw new OperationOutcomeError(
       validationError(
-        `Invalid value found for type, expected 'string' or 'boolean' or 'number', received: '${typeOfVal}'`
+        `Invalid value found for type; expected either ${VALID_PRIMITIVE_TYPES.join(', or')} but got ${typeOfVal}`
       )
     );
   }
@@ -67,7 +67,7 @@ export function normalizeFetchedValue(
     const normalized = (rawValue as string).toLowerCase() as 'true' | 'false';
     if (normalized !== 'true' && normalized !== 'false') {
       throw new OperationOutcomeError(
-        validationError(`Invalid value found for key '${key}', expected boolean value but got '${rawValue}'`)
+        validationError(`Invalid value found for key '${key}'; expected boolean value but got '${rawValue}'`)
       );
     }
     return normalized === 'true';
@@ -75,13 +75,13 @@ export function normalizeFetchedValue(
     const parsed = parseInt(rawValue as string, 10);
     if (Number.isNaN(parsed)) {
       throw new OperationOutcomeError(
-        validationError(`Invalid value found for key '${key}', expected integer value but got '${rawValue}'`)
+        validationError(`Invalid value found for key '${key}'; expected integer value but got '${rawValue}'`)
       );
     }
     return parsed;
   } else {
     throw new OperationOutcomeError(
-      validationError(`Invalid value found for type, expected '${expectedType}', received: '${typeOfVal}'`)
+      validationError(`Invalid value found for type; expected ${expectedType} value but got value of type ${typeOfVal}`)
     );
   }
 }
@@ -163,10 +163,8 @@ async function normalizeValueForKey(obj: Record<string, any>, key: string): Prom
 export async function normalizeObjectInInfraConfig(obj: Record<string, any>): Promise<Record<string, any>> {
   const normalizedObj = { ...obj };
   // walk config object
-  for (const key in normalizedObj) {
-    if (Object.hasOwn(normalizedObj, key)) {
-      await normalizeValueForKey(normalizedObj, key);
-    }
+  for (const key of Object.keys(normalizedObj)) {
+    await normalizeValueForKey(normalizedObj, key);
   }
   return normalizedObj;
 }
