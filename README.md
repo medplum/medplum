@@ -5,7 +5,7 @@
 Medplum is a developer platform that enables flexible and rapid development of healthcare apps.
 
 - **Medplum Auth** - End-to-end identity solution for easy user authentication, sign-in, and permissions using OAuth, OpenID, and SMART-on-FHIR.
-- **Medplum Clinical Data Repository (CDR)** - Backend server that hosts your healthcare data in a secure, compliant, and standards based repository.
+- **Medplum Clinical Data Repository (CDR)** - Backend server that hosts your healthcare data in a secure, compliant, and standards-based repository.
 - **Medplum API** - FHIR-based API for sending, receiving, and manipulating data.
 - **Medplum SDK** - Client libraries that simplify the process of interacting with the **Medplum API**.
 - **Medplum App** - Web application where you can view your data and perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
@@ -36,7 +36,7 @@ By making a contribution to this project, you are deemed to have accepted the [D
 
 All conversations and communities on Medplum are expected to follow GitHub's [Community Guidelines](https://help.github.com/en/github/site-policy/github-community-guidelines)
 and [Acceptable Use Policies](https://help.github.com/en/github/site-policy/github-acceptable-use-policies). We expect
-discussions in issues and pull requests to stay positive, productive, and respectful. Remember: there are real people on
+discussions on issues and pull requests to stay positive, productive, and respectful. Remember: there are real people on
 the other side of the screen!
 
 #### Reporting a bug or proposing a new feature
@@ -62,7 +62,7 @@ If you find a bug and open a Pull Request that fixes it, we'll review it as soon
 If you want to implement a new feature, open an issue first to discuss with us how the feature might work, and to ensure
 it fits into our roadmap and plans for the app.
 
-If you want to contribute but are unsure to start, we have [a "good first issue" label](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) which is applied to newcomer-friendly issues. Take a look at [the full list of good first issues](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and pick something you like!
+If you want to contribute but are unsure how to start, we have [a "good first issue" label](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) which is applied to newcomer-friendly issues. Take a look at [the full list of good first issues](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and pick something you like!
 
 **Ready to get started writing code?** Follow the [local setup instructions](https://www.medplum.com/docs/contributing/local-dev-setup) and jump in!
 
