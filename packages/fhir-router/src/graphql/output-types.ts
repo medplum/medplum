@@ -6,13 +6,14 @@ import {
   getSearchParameters,
   InternalSchemaElement,
   isLowerCase,
+  isReference,
   isResourceTypeSchema,
   normalizeOperationOutcome,
   OperationOutcomeError,
   toJsBoolean,
   toTypedValue,
 } from '@medplum/core';
-import { ElementDefinitionType, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import { ElementDefinitionType, Resource, ResourceType } from '@medplum/fhirtypes';
 import {
   GraphQLEnumType,
   GraphQLEnumValueConfigMap,
@@ -325,8 +326,11 @@ async function resolveField(source: any, args: any, _ctx: GraphQLContext, info: 
  * @returns Promise to read the resoure(s) for the query.
  */
 async function resolveByReference(source: any, _args: any, ctx: GraphQLContext): Promise<Resource | undefined> {
+  if (!isReference(source)) {
+    return undefined;
+  }
   try {
-    return await ctx.dataLoader.load(source as Reference);
+    return await ctx.dataLoader.load(source);
   } catch (err) {
     throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
   }

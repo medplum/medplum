@@ -12,6 +12,7 @@ import {
   Binary,
   Bundle,
   Encounter,
+  ExplanationOfBenefit,
   Extension,
   HumanName,
   OperationOutcome,
@@ -21,8 +22,8 @@ import {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { FhirRequest, FhirRouter } from '../fhirrouter';
-import { getRootSchema, graphqlHandler } from './graphql';
 import { MemoryRepository } from '../repo';
+import { getRootSchema, graphqlHandler } from './graphql';
 
 const repo = new MemoryRepository();
 let binary: Binary;
@@ -1219,5 +1220,41 @@ describe('GraphQL', () => {
     } catch (err) {
       expect((err as Error).message).toBe('Not found');
     }
+  });
+
+  test('Reference missing reference property', async () => {
+    const eob = await repo.createResource<ExplanationOfBenefit>({
+      resourceType: 'ExplanationOfBenefit',
+      facility: {
+        display: 'test',
+      },
+    });
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+        {
+          ExplanationOfBenefit(id: "${eob.id}") {
+            facility {
+              display
+              resource {
+                ... on Organization {
+                  resourceType
+                  name
+                }
+              }
+            }
+          }
+        }
+      `,
+      },
+    };
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+    expect((res[1] as any).errors).toBeUndefined();
   });
 });
