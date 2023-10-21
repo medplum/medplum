@@ -1,5 +1,6 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import { forbidden, OperationOutcomeError } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -84,5 +85,24 @@ describe('AppsPage', () => {
     });
 
     expect(window.location.assign).toBeCalled();
+  });
+
+  test('Access denied to ClientApplications', async () => {
+    const medplum = new MockClient();
+    (medplum as any).originalSearchResources = medplum.searchResources;
+    medplum.searchResources = jest.fn().mockImplementation(async (resourceType, query) => {
+      if (resourceType === 'ClientApplication') {
+        throw new OperationOutcomeError(forbidden);
+      }
+
+      // Otherwise, fallback to the default implementation
+      return (medplum as any).originalSearchResources(resourceType, query);
+    });
+
+    await setup('/Patient/123/apps', medplum);
+    await waitFor(() => screen.getByText('Apps'));
+
+    expect(screen.getByText('Apps')).toBeInTheDocument();
+    expect(screen.getByText('Vitals')).toBeInTheDocument();
   });
 });
