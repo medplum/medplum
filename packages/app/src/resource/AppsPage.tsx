@@ -10,16 +10,15 @@ export function AppsPage(): JSX.Element | null {
   const medplum = useMedplum();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const resource = useResource({ reference: resourceType + '/' + id });
-  const [questionnaires] = useSearchResources('Questionnaire', 'subject-type=' + resourceType);
-  const clientApplications = useSearchResources('ClientApplication', { _count: 1000 })?.[0]?.filter(
-    (c) => isSmartLaunchType(resourceType) && !!c.launchUri
-  );
+  const [questionnaires, questionnairesLoading] = useSearchResources('Questionnaire', 'subject-type=' + resourceType);
+  const [clientApps, clientAppsLoading] = useSearchResources('ClientApplication', { _count: 1000 });
 
-  if (!resource || !questionnaires || !clientApplications) {
+  if (!resource || questionnairesLoading || clientAppsLoading) {
     return <Loading />;
   }
 
-  if (questionnaires.length === 0 && clientApplications.length === 0) {
+  const smartApps = clientApps?.filter((c) => isSmartLaunchType(resourceType) && !!c.launchUri);
+  if ((!questionnaires || questionnaires.length === 0) && (!smartApps || smartApps.length === 0)) {
     return (
       <Document>
         <Title>Apps</Title>
@@ -65,7 +64,7 @@ export function AppsPage(): JSX.Element | null {
 
   return (
     <Document>
-      {questionnaires.map((questionnaire) => (
+      {questionnaires?.map((questionnaire) => (
         <div key={questionnaire.id}>
           <Title order={3}>
             <MedplumLink to={`/forms/${questionnaire.id}?subject=${getReferenceString(resource)}`}>
@@ -75,7 +74,7 @@ export function AppsPage(): JSX.Element | null {
           <Text>{questionnaire.description}</Text>
         </div>
       ))}
-      {clientApplications?.map((clientApplication) => (
+      {smartApps?.map((clientApplication) => (
         <div key={clientApplication.id}>
           <Title order={3}>
             <Anchor onClick={() => launchApp(clientApplication)}>{clientApplication.name}</Anchor>
