@@ -11,8 +11,18 @@ import {
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
 import { SearchParameterDetails } from './search/details';
-import { getAllDataTypes, InternalSchemaElement, InternalTypeSchema, tryGetDataType } from './typeschema/types';
+import { InternalSchemaElement, InternalTypeSchema, getAllDataTypes, tryGetDataType } from './typeschema/types';
 import { capitalize, createReference } from './utils';
+
+export type TypeName<T> = T extends string
+  ? 'string'
+  : T extends number
+  ? 'number'
+  : T extends boolean
+  ? 'boolean'
+  : T extends undefined
+  ? 'undefined'
+  : 'object';
 
 export interface TypedValue {
   readonly type: string;

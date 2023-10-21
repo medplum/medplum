@@ -1,5 +1,5 @@
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { ExternalSecret, MedplumInfraConfig, OperationOutcomeError } from '@medplum/core';
+import { ExternalSecret, MedplumInfraConfig, MedplumSourceInfraConfig, OperationOutcomeError } from '@medplum/core';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import {
@@ -42,7 +42,7 @@ const baseConfig = {
   clamscanLoggingBucket: 'no_logging',
   clamscanLoggingPrefix: 'foo_',
   skipDns: true,
-} as const;
+} as const satisfies MedplumSourceInfraConfig;
 
 const additionalContainers = [
   {
