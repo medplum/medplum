@@ -145,7 +145,7 @@ describe('SearchFilterValueInput', () => {
       await waitFor(() => screen.getByText('Test Organization'));
     });
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getAllByRole('searchbox')[1] as HTMLInputElement;
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
     });
