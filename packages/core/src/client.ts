@@ -39,33 +39,34 @@ import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import {
+  createFhircastMessagePayload,
   FhircastConnection,
   FhircastEventContext,
   FhircastEventName,
   PendingSubscriptionRequest,
-  SubscriptionRequest,
-  createFhircastMessagePayload,
   serializeFhircastSubscriptionRequest,
+  SubscriptionRequest,
   validateFhircastSubscriptionRequest,
 } from './fhircast';
 import { Hl7Message } from './hl7';
 import { isJwt, isMedplumAccessToken, parseJWTPayload } from './jwt';
 import {
-  OperationOutcomeError,
   badRequest,
   isOk,
   isOperationOutcome,
   normalizeOperationOutcome,
   notFound,
+  OperationOutcomeError,
   validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded } from './typeschema/types';
-import { CodeChallengeMethod, ProfileResource, arrayBufferToBase64, createReference, sleep } from './utils';
+import { arrayBufferToBase64, CodeChallengeMethod, createReference, ProfileResource, sleep } from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
+export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
@@ -2402,13 +2403,14 @@ export class MedplumClient extends EventTarget {
     const binary = await this.createBinary(contents, filename, contentType);
     return this.createResource(
       {
-        ...additionalFields,
         resourceType: 'Media',
+        status: 'completed',
         content: {
           contentType: contentType,
           url: BINARY_URL_PREFIX + binary.id,
           title: filename,
         },
+        ...additionalFields,
       },
       options
     );
@@ -2729,7 +2731,11 @@ export class MedplumClient extends EventTarget {
       headers = {};
       options.headers = headers;
     }
-    headers['Accept'] = ContentType.FHIR_JSON;
+
+    if (!headers['Accept']) {
+      headers['Accept'] = DEFAULT_ACCEPT;
+    }
+
     headers['X-Medplum'] = 'extended';
 
     if (options.body && !headers['Content-Type']) {
