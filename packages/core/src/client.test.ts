@@ -14,6 +14,7 @@ import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'p
 import { TextEncoder } from 'util';
 import { encodeBase64 } from './base64';
 import {
+  DEFAULT_ACCEPT,
   FetchLike,
   InviteRequest,
   MedplumClient,
@@ -26,13 +27,13 @@ import {
   FhircastConnection,
   FhircastEventName,
   PendingSubscriptionRequest,
-  SubscriptionRequest,
   serializeFhircastSubscriptionRequest,
+  SubscriptionRequest,
 } from './fhircast';
 import { createFhircastMessageContext } from './fhircast/test-utils';
-import { OperationOutcomeError, getStatus, isOperationOutcome, notFound, unauthorized } from './outcomes';
+import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
 import { isDataTypeLoaded } from './typeschema/types';
-import { ProfileResource, createReference } from './utils';
+import { createReference, ProfileResource } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -715,7 +716,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
           'X-Medplum': 'extended',
         },
@@ -742,7 +743,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
           'X-Medplum': 'extended',
         },
@@ -780,7 +781,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           Authorization: `Bearer ${accessToken}`,
           'X-Medplum': 'extended',
         },
@@ -828,7 +829,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           Authorization: `Bearer ${accessToken}`,
           'X-Medplum': 'extended',
         },
@@ -1393,7 +1394,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.FHIR_JSON,
           'X-Medplum': 'extended',
         },
@@ -1456,7 +1457,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'PUT',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.FHIR_JSON,
           'X-Medplum': 'extended',
         },
@@ -1511,7 +1512,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.TEXT,
           'X-Medplum': 'extended',
         },
@@ -1529,7 +1530,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.TEXT,
           'X-Medplum': 'extended',
         },
@@ -1547,7 +1548,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.TEXT,
           'X-Medplum': 'extended',
         },
@@ -1621,7 +1622,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': 'application/pdf',
           'X-Medplum': 'extended',
         },
@@ -1645,7 +1646,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': 'application/pdf',
           'X-Medplum': 'extended',
         },
@@ -2059,7 +2060,7 @@ describe('Client', () => {
         expect.objectContaining({
           method: 'POST',
           headers: {
-            Accept: ContentType.FHIR_JSON,
+            Accept: DEFAULT_ACCEPT,
             'Content-Type': ContentType.FHIR_JSON,
             'X-Medplum': 'extended',
           },
@@ -2107,7 +2108,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.JSON,
           'X-Medplum': 'extended',
         },
@@ -2126,7 +2127,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.HL7_V2,
           'X-Medplum': 'extended',
         },
@@ -2235,7 +2236,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.JSON,
           'X-Medplum': 'extended',
         },
@@ -2519,7 +2520,7 @@ describe('Client', () => {
         expect.stringContaining('/$export'),
         expect.objectContaining({
           headers: {
-            Accept: ContentType.FHIR_JSON,
+            Accept: DEFAULT_ACCEPT,
             Prefer: 'respond-async',
             'X-Medplum': 'extended',
           },
@@ -2632,7 +2633,7 @@ describe('Client', () => {
         baseUrl,
         expect.objectContaining({
           headers: {
-            Accept: ContentType.FHIR_JSON,
+            Accept: DEFAULT_ACCEPT,
             'X-Medplum': 'extended',
           },
         })
@@ -2646,7 +2647,7 @@ describe('Client', () => {
         `${baseUrl}${fhirUrlPath}Binary/fake-id`,
         expect.objectContaining({
           headers: {
-            Accept: ContentType.FHIR_JSON,
+            Accept: DEFAULT_ACCEPT,
             'X-Medplum': 'extended',
           },
         })
@@ -2659,12 +2660,23 @@ describe('Client', () => {
     test('Upload Media', async () => {
       const fetch = mockFetch(200, {});
       const client = new MedplumClient({ fetch });
+      const media = await client.uploadMedia('Hello world', 'text/plain', 'hello.txt');
+      expect(media).toBeDefined();
+      expect(fetch).toBeCalledTimes(2);
 
-      const media = await client.uploadMedia('media', 'Film', 'file');
-      const retrievedMedia = await client.readResource('Media', media.id ?? '');
-
-      expect(retrievedMedia.id).toEqual(media.id);
-      expect(retrievedMedia.content?.contentType).toEqual(media.content?.contentType);
+      const calls = fetch.mock.calls;
+      expect(calls).toHaveLength(2);
+      expect(calls[0][0]).toEqual('https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt');
+      expect(calls[1][0]).toEqual('https://api.medplum.com/fhir/R4/Media');
+      expect(JSON.parse(calls[1][1].body)).toMatchObject({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: 'text/plain',
+          url: 'Binary/undefined',
+          title: 'hello.txt',
+        },
+      });
     });
   });
 
@@ -2766,7 +2778,7 @@ describe('Client', () => {
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
     expect(console.log).toBeCalledWith('> GET https://api.medplum.com/fhir/R4/Patient/123');
-    expect(console.log).toBeCalledWith('> Accept: application/fhir+json');
+    expect(console.log).toBeCalledWith('> Accept: application/fhir+json, */*; q=0.1');
     expect(console.log).toBeCalledWith('> X-Medplum: extended');
     expect(console.log).toBeCalledWith('< 200 OK');
     expect(console.log).toBeCalledWith('< foo: bar');
