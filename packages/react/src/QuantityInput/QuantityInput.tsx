@@ -6,6 +6,7 @@ export interface QuantityInputProps {
   name: string;
   defaultValue?: Quantity;
   autoFocus?: boolean;
+  required?: boolean;
   onChange?: (value: Quantity) => void;
   disableWheel?: boolean;
 }
@@ -37,6 +38,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
       <TextInput
         id={props.name}
         name={props.name}
+        required={props.required}
         data-autofocus={props.autoFocus}
         data-testid={props.name + '-value'}
         type="number"

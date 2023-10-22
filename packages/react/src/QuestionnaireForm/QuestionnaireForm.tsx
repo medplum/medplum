@@ -210,7 +210,12 @@ function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps
   }
 
   return (
-    <FormSection key={props.item.linkId} htmlFor={props.item.linkId} title={props.item.text}>
+    <FormSection
+      key={props.item.linkId}
+      htmlFor={props.item.linkId}
+      title={props.item.text}
+      withAsterisk={props.item.required}
+    >
       <QuestionnaireRepeatWrapper
         item={props.item}
         allResponses={props.allResponses}
@@ -276,7 +281,18 @@ function ButtonGroup(props: ButtonGroupProps): JSX.Element {
   return (
     <Group position="right" mt="xl" spacing="xs">
       {showBackButton && <Button onClick={props.prevStep}>Back</Button>}
-      {showNextButton && <Button onClick={props.nextStep}>Next</Button>}
+      {showNextButton && (
+        <Button
+          onClick={(e) => {
+            const form = e.currentTarget.closest('form') as HTMLFormElement;
+            if (form.reportValidity()) {
+              props.nextStep();
+            }
+          }}
+        >
+          Next
+        </Button>
+      )}
       {showSubmitButton && <Button type="submit">{props.submitButtonText ?? 'Submit'}</Button>}
     </Group>
   );

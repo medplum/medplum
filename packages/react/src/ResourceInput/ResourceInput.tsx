@@ -76,6 +76,7 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly defaultValue?: T | Reference<T>;
   readonly placeholder?: string;
   readonly loadOnFocus?: boolean;
+  readonly required?: boolean;
   readonly onChange?: (value: T | undefined) => void;
 }
 
@@ -127,6 +128,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
   return (
     <AsyncAutocomplete<T>
       name={props.name}
+      required={props.required}
       itemComponent={ItemComponent}
       defaultValue={defaultValue}
       placeholder={props.placeholder}
