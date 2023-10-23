@@ -110,40 +110,13 @@ export async function handler(
 
     // If we created the top level ResourceGroup or DiagnosticReport,
     // then get the PDF from Health Gorilla
-    if (
-      (resource.resourceType === 'RequestGroup' || resource.resourceType === 'DiagnosticReport') &&
-      result.entry?.find(
+    if (resource.resourceType === 'RequestGroup' || resource.resourceType === 'DiagnosticReport') {
+      const entry = result.entry?.find(
         (e) => e.response?.status === '201' && e.response?.location?.startsWith(resource.resourceType + '/')
-      )
-    ) {
-      const id = getIdentifier(resource, HEALTH_GORILLA_SYSTEM);
-      const config = getHealthGorillaConfig(event);
-      const healthGorilla = await connectToHealthGorilla(config);
-      const pdfResult = await healthGorilla.get(healthGorilla.fhirUrl(resource.resourceType, id as string, '$pdf'));
-
-      // Get the PDF URL from the Parameters resource
-      const pdfUrl = (pdfResult as Parameters).parameter?.find((p) => p.name === 'url')?.valueString as string;
-
-      // Use fetch because MedplumClient overrides "Accept" header :(
-      // const pdfBlob = await healthGorilla.download(pdfUrl);
-      const pdfResponse = await fetch(pdfUrl, {
-        headers: {
-          Accept: 'application/fhir+json, */*; q=0.1',
-          Authorization: 'Bearer ' + healthGorilla.getAccessToken(),
-        },
-      });
-
-      // node-fetch does not allow streaming from a Response object
-      // So read the PDF into memory first
-      const pdfBlob = await pdfResponse.blob();
-      const pdfArrayBuffer = await (pdfBlob as any).arrayBuffer();
-      const pdfUint8Array = new Uint8Array(pdfArrayBuffer);
-
-      // Create a Medplum media resource
-      const media = await medplum.uploadMedia(pdfUint8Array, 'application/pdf', resource.resourceType + '.pdf', {
-        status: 'completed',
-      });
-      console.log('Uploaded PDF as media: ' + media.id);
+      );
+      if (entry?.resource) {
+        await attachPdf(medplum, event);
+      }
     }
   } catch (err) {
     console.log(normalizeErrorString(err));
@@ -174,6 +147,14 @@ function getHealthGorillaConfig(event: BotEvent): HealthGorillaConfig {
     callbackClientId: requireStringSecret(secrets, 'HEALTH_GORILLA_CALLBACK_CLIENT_ID'),
     callbackClientSecret: requireStringSecret(secrets, 'HEALTH_GORILLA_CALLBACK_CLIENT_SECRET'),
   };
+}
+
+function requireStringSecret(secrets: Record<string, ProjectSecret>, name: string): string {
+  const secret = secrets[name];
+  if (!secret?.valueString) {
+    throw new Error(`Missing secret: ${name}`);
+  }
+  return secret.valueString;
 }
 
 /**
@@ -348,10 +329,30 @@ async function searchByHealthGorillaId(
   return medplum.searchOne(resourceType, { identifier: `${HEALTH_GORILLA_SYSTEM}|${id}` });
 }
 
-function requireStringSecret(secrets: Record<string, ProjectSecret>, name: string): string {
-  const secret = secrets[name];
-  if (!secret?.valueString) {
-    throw new Error(`Missing secret: ${name}`);
-  }
-  return secret.valueString;
+/**
+ * Downloads the PDF from Health Gorilla and attaches it to the Medplum resource as a Media resource.
+ * @param medplum The Medplum client.
+ * @param event The Bot execution event with a Health Gorilla resource.
+ */
+async function attachPdf<T extends HealthGorillaResource>(medplum: MedplumClient, event: BotEvent<T>): Promise<void> {
+  const resource = event.input;
+  const id = getIdentifier(resource, HEALTH_GORILLA_SYSTEM);
+  const config = getHealthGorillaConfig(event);
+  const healthGorilla = await connectToHealthGorilla(config);
+
+  // Use the HealthGorilla "$pdf" operation to get the PDF URL
+  const pdfResult = await healthGorilla.get(healthGorilla.fhirUrl(resource.resourceType, id as string, '$pdf'));
+
+  // Get the PDF URL from the Parameters resource
+  const pdfUrl = (pdfResult as Parameters).parameter?.find((p) => p.name === 'url')?.valueString as string;
+  const pdfBlob = await healthGorilla.download(pdfUrl, { headers: { Accept: 'application/pdf' } });
+
+  // node-fetch does not allow streaming from a Response object
+  // So read the PDF into memory first
+  const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+  const pdfUint8Array = new Uint8Array(pdfArrayBuffer);
+
+  // Create a Medplum media resource
+  const media = await medplum.uploadMedia(pdfUint8Array, 'application/pdf', resource.resourceType + '.pdf');
+  console.log('Uploaded PDF as media: ' + media.id);
 }
