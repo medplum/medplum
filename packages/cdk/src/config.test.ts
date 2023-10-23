@@ -123,6 +123,13 @@ describe('Config', () => {
       mockSSMClient.restore();
     });
 
+    test('Missing `region` in config', async () => {
+      // @ts-expect-error Region must be defined
+      await expect(normalizeInfraConfig({ ...baseConfig, region: undefined })).rejects.toBeInstanceOf(
+        OperationOutcomeError
+      );
+    });
+
     test('Valid infra source config w/ external secrets', async () => {
       const result = await normalizeInfraConfig(baseConfig);
       expect(result).toEqual<MedplumInfraConfig>({

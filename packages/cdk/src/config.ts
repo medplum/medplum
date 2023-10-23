@@ -18,6 +18,9 @@ export class InfraConfigNormalizer {
   private clients: { ssm: SSMClient };
   constructor(config: MedplumSourceInfraConfig) {
     const { region } = config;
+    if (!region) {
+      throw new OperationOutcomeError(validationError("'region' must be defined as a string literal in config."));
+    }
     if (!ssmClients[region]) {
       ssmClients[region] = new SSMClient({ region });
     }
