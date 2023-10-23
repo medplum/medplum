@@ -59,6 +59,10 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     setResponse(newResponse);
   }
 
+  function checkForQuestionEnabled(item: QuestionnaireItem): boolean {
+    return isQuestionEnabled(item, response?.item ?? []);
+  }
+
   if (!schemaLoaded || !questionnaire) {
     return null;
   }
@@ -92,6 +96,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
           renderPages={numberOfPages > 1}
           activePage={activePage}
           numberOfPages={numberOfPages}
+          checkForQuestionEnabled={checkForQuestionEnabled}
           nextStep={nextStep}
           prevStep={prevStep}
         />
@@ -107,23 +112,46 @@ interface QuestionnairePageSequenceProps {
   activePage?: number;
   numberOfPages: number;
   submitButtonText?: string;
+  checkForQuestionEnabled: (item: QuestionnaireItem) => boolean;
   onChange: (items: QuestionnaireResponseItem | QuestionnaireResponseItem[]) => void;
   nextStep: () => void;
   prevStep: () => void;
 }
 
 function QuestionnairePageSequence(props: QuestionnairePageSequenceProps): JSX.Element {
-  const { items, response, activePage, onChange, nextStep, prevStep, numberOfPages, renderPages, submitButtonText } =
-    props;
+  const {
+    items,
+    response,
+    activePage,
+    onChange,
+    nextStep,
+    prevStep,
+    numberOfPages,
+    renderPages,
+    submitButtonText,
+    checkForQuestionEnabled,
+  } = props;
 
   const form = items.map((item) => {
     const itemResponse = response?.item?.filter((i) => i.linkId === item.linkId) ?? [];
 
     const repeatedItem =
       item.type === QuestionnaireItemType.group ? (
-        <QuestionnaireRepeatedGroup key={item.linkId} item={item} response={itemResponse} onChange={onChange} />
+        <QuestionnaireRepeatedGroup
+          key={item.linkId}
+          item={item}
+          response={itemResponse}
+          onChange={onChange}
+          checkForQuestionEnabled={checkForQuestionEnabled}
+        />
       ) : (
-        <QuestionnaireRepeatableItem key={item.linkId} item={item} response={itemResponse[0]} onChange={onChange} />
+        <QuestionnaireRepeatableItem
+          key={item.linkId}
+          item={item}
+          response={itemResponse[0]}
+          onChange={onChange}
+          checkForQuestionEnabled={checkForQuestionEnabled}
+        />
       );
 
     if (renderPages) {
@@ -158,11 +186,11 @@ function QuestionnairePageSequence(props: QuestionnairePageSequenceProps): JSX.E
 interface QuestionnaireRepeatableGroupProps {
   item: QuestionnaireItem;
   response: QuestionnaireResponseItem[];
+  checkForQuestionEnabled: (item: QuestionnaireItem) => boolean;
   onChange: (responses: QuestionnaireResponseItem | QuestionnaireResponseItem[]) => void;
 }
 
 function QuestionnaireRepeatedGroup(props: QuestionnaireRepeatableGroupProps): JSX.Element | null {
-  // find all responses that match this group
   const [responses, setResponses] = useState(props.response);
 
   if (responses.length === 0) {
@@ -187,8 +215,8 @@ function QuestionnaireRepeatedGroup(props: QuestionnaireRepeatableGroupProps): J
           key={idx}
           item={props.item}
           response={response}
+          checkForQuestionEnabled={props.checkForQuestionEnabled}
           onChange={(r) => onSetRepeatableGroup(r, idx)}
-          index={idx}
         />
       ))}
       {props.item.repeats && <Anchor onClick={insertNewGroup}>Add Group</Anchor>}
@@ -198,26 +226,24 @@ function QuestionnaireRepeatedGroup(props: QuestionnaireRepeatableGroupProps): J
 
 interface QuestionnaireGroupProps {
   item: QuestionnaireItem;
-  index?: number;
   response: QuestionnaireResponseItem;
+  checkForQuestionEnabled: (item: QuestionnaireItem) => boolean;
   onChange: (response: QuestionnaireResponseItem) => void;
 }
 
 function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null {
-  const { response, onChange } = props;
+  const { response, checkForQuestionEnabled, onChange } = props;
   function onSetGroup(newResponseItem: QuestionnaireResponseItem): void {
     const newResponse = response?.item?.map((i) =>
       i.linkId === newResponseItem.linkId ? newResponseItem : i
     ) as QuestionnaireResponseItem;
-    const groupResponse = {...response, item: newResponse} as QuestionnaireResponseItem;
-    console.log(groupResponse)
+    const groupResponse = { ...response, item: newResponse } as QuestionnaireResponseItem;
     onChange(groupResponse);
   }
 
-  // use context + hook
-  // if (!isQuestionEnabled(item, [])) {
-  //   return null;
-  // }
+  if (!props.checkForQuestionEnabled(props.item)) {
+    return null;
+  }
 
   return (
     <>
@@ -228,12 +254,14 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
               key={index}
               item={item}
               response={response.item?.filter((i) => i.linkId === item.linkId) ?? []}
+              checkForQuestionEnabled={checkForQuestionEnabled}
               onChange={(r) => onSetGroup(r as QuestionnaireResponseItem)}
             />
           ) : (
             <QuestionnaireGroup
               key={index}
               item={item}
+              checkForQuestionEnabled={checkForQuestionEnabled}
               response={response.item?.find((i) => i.linkId === item.linkId) ?? {}}
               onChange={onSetGroup}
             />
@@ -244,6 +272,7 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
             item={item}
             response={response.item?.find((i) => i.linkId === item.linkId)}
             onChange={onSetGroup}
+            checkForQuestionEnabled={checkForQuestionEnabled}
             key={index}
           />
         );
@@ -255,15 +284,16 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
 interface QuestionnaireRepeatableItemProps {
   item: QuestionnaireItem;
   response?: QuestionnaireResponseItem;
+  checkForQuestionEnabled: (item: QuestionnaireItem) => boolean;
   onChange: (items: QuestionnaireResponseItem) => void;
 }
 
 function QuestionnaireRepeatableItem(props: QuestionnaireRepeatableItemProps): JSX.Element | null {
   const { item, response, onChange } = props;
   const [number, setNumber] = useState(1);
-  // if (!isQuestionEnabled(item, [])) {
-  //   return null;
-  // }
+  if (!props.checkForQuestionEnabled(item)) {
+    return null;
+  }
 
   if (item.type === QuestionnaireItemType.display) {
     return <p key={item.linkId}>{item.text}</p>;
