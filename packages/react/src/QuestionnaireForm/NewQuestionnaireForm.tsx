@@ -111,8 +111,9 @@ interface QuestionnairePageSequenceProps {
 function QuestionnairePageSequence(props: QuestionnairePageSequenceProps): JSX.Element {
   const { items, response, activePage, onChange, nextStep, prevStep, numberOfPages, renderPages, submitButtonText } =
     props;
+
   const form = items.map((item) => {
-    const itemResponse = response?.item?.find((i) => i.linkId === item.linkId);
+    const itemResponse = response?.item?.filter((i) => i.linkId === item.linkId) ?? [];
 
     const repeatedGroup = <QuestionnaireRepeatedGroup item={item} response={itemResponse} onChange={onChange} />;
 
@@ -145,32 +146,68 @@ function QuestionnairePageSequence(props: QuestionnairePageSequenceProps): JSX.E
   );
 }
 
-interface QuestionnaireGroupProps {
+interface QuestionnaireRepeatableGroupProps {
   item: QuestionnaireItem;
-  response?: QuestionnaireResponseItem;
-  onChange: (items: QuestionnaireResponseItem[]) => void;
+  response: QuestionnaireResponseItem[];
+  onChange: (responses: QuestionnaireResponseItem | QuestionnaireResponseItem[]) => void;
 }
 
-function QuestionnaireRepeatedGroup(props: QuestionnaireGroupProps): JSX.Element {
-  const [items, setItems] = useState([props.item]);
-  const [responses, setResponses] = useState([props.response]);
+function QuestionnaireRepeatedGroup(props: QuestionnaireRepeatableGroupProps): JSX.Element | null {
+  // find all responses that match this group
+  const [responses, setResponses] = useState(props.response);
+
+  if (responses.length === 0) {
+    return null;
+  }
+
+  function onSetRepeatableGroup(newResponseItems: QuestionnaireResponseItem, index: number): void {
+    const newResponses = responses.map((responses, idx) => (idx === index ? newResponseItems : responses));
+    setResponses(newResponses);
+    props.onChange(newResponses);
+  }
+
+  function insertNewGroup(): void {
+    const newResponse = buildInitialResponseItem(props.item);
+    setResponses([...responses, newResponse]);
+  }
 
   return (
     <>
-      {items.map((item, index) => (
-        <QuestionnaireGroup item={item} response={responses[index]} onChange={props.onChange} />
+      {responses.map((response, idx) => (
+        <QuestionnaireGroup
+          item={props.item}
+          response={response}
+          onChange={(r) => onSetRepeatableGroup(r, idx)}
+          index={idx}
+        />
       ))}
-      {props.item.repeats && <Anchor onClick={() => console.log('')}>Add Group</Anchor>}
+      {props.item.repeats && <Anchor onClick={insertNewGroup}>Add Group</Anchor>}
     </>
   );
 }
 
+interface QuestionnaireGroupProps {
+  item: QuestionnaireItem;
+  index?: number;
+  response: QuestionnaireResponseItem;
+  onChange: (response: QuestionnaireResponseItem) => void;
+}
+
 function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null {
   const { item, response, onChange } = props;
-  // use context + hook 
+
+  function onSetGroup(newResponseItem: QuestionnaireResponseItem): void {
+    const newResponse = response?.item?.map((i) =>
+      i.linkId === newResponseItem.linkId ? newResponseItem : i
+    ) as QuestionnaireResponseItem;
+    onChange(newResponse);
+  }
+
+  // use context + hook
   if (!isQuestionEnabled(item, [])) {
     return null;
   }
+
   return (
     <>
       {(item.item ?? []).map((item, index) => {
@@ -179,14 +216,14 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
             <QuestionnaireRepeatedGroup
               key={index}
               item={item}
-              response={response?.item?.find((i) => i.linkId === item.linkId)}
-              onChange={onChange}
+              response={response.item?.filter((i) => i.linkId === item.linkId) ?? []}
+              onChange={(r) => onSetGroup(r as QuestionnaireResponseItem)}
             />
           ) : (
-            <QuestionnaireGroup key={index} item={item} response={response} onChange={onChange} />
+            <QuestionnaireGroup key={index} item={item} response={response} onChange={onSetGroup} />
           );
         }
-        return <QuestionnaireRepeatableItem item={item} response={response} onChange={onChange} key={index} />;
+        return <QuestionnaireRepeatableItem item={item} response={response} onChange={onSetGroup} key={index} />;
       })}
     </>
   );
@@ -195,15 +232,17 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
 interface QuestionnaireRepeatableItemProps {
   item: QuestionnaireItem;
   response?: QuestionnaireResponseItem;
-  onChange: (items: QuestionnaireResponseItem[]) => void;
+  onChange: (items: QuestionnaireResponseItem) => void;
 }
 
 function QuestionnaireRepeatableItem(props: QuestionnaireRepeatableItemProps): JSX.Element | null {
   const { item, response, onChange } = props;
   const [number, setNumber] = useState(1);
+
   if (isQuestionEnabled(item, [])) {
     return null;
   }
+
   const showAddButton =
     item?.repeats && item.type !== QuestionnaireItemType.choice && item.type !== QuestionnaireItemType.openChoice;
 
