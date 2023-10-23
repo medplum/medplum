@@ -69,6 +69,10 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     return null;
   }
 
+  if (!response) {
+    return null;
+  }
+
   const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
   const defaultValue =
     getCurrentAnswer(response) ?? getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value');
