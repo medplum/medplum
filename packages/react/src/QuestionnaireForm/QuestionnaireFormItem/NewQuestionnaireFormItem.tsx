@@ -40,6 +40,10 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
   const item = props.item;
   const response = props.response;
 
+  if (!response) {
+    return null;
+  }
+
   function onChangeAnswer(
     newResponseAnswer: QuestionnaireResponseItemAnswer | QuestionnaireResponseItemAnswer[]
   ): void {
@@ -47,8 +51,16 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     if (Array.isArray(newResponseAnswer)) {
       // It's a multi-select case, so use the array directly.
       updatedAnswers = newResponseAnswer;
+    } else if (props.index !== 0) {
+      if (props.index >= (props.response?.answer?.length ?? 0)) {
+        updatedAnswers = (props.response?.answer ?? []).concat([newResponseAnswer]);
+      } else {
+        const newAnswers = (props.response?.answer ?? []).map((a, idx) =>
+          idx === props.index ? newResponseAnswer : a
+        ) as QuestionnaireResponseItemAnswer[];
+        updatedAnswers = newAnswers ?? [];
+      }
     } else {
-      // It's a single answer case.
       updatedAnswers = [newResponseAnswer];
     }
     props.onChange({
@@ -64,10 +76,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     return null;
   }
 
-  if (!response) {
-    return null;
-  }
-
   const name = response.id;
   if (!name) {
     return null;
@@ -75,7 +83,8 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
 
   const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
   const defaultValue =
-    getCurrentAnswer(response) ?? getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value');
+    getCurrentAnswer(response, props.index) ??
+    getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value');
 
   switch (type) {
     case QuestionnaireItemType.display:
