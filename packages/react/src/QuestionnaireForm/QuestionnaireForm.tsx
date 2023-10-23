@@ -14,10 +14,10 @@ import { buildInitialResponse, getNumberOfPages, isQuestionEnabled } from '../ut
 import { QuestionnairePageSequence } from './QuestionnaireFormComponents/QuestionnaireFormPageSequence';
 
 export interface QuestionnaireFormProps {
-  questionnaire: Questionnaire | Reference<Questionnaire>;
+  questionnaire: Questionnaire;
   subject?: Reference;
   submitButtonText?: string;
-  onSubmit: (response: QuestionnaireResponse) => void;
+  onSubmit?: (response: QuestionnaireResponse) => void;
 }
 
 export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | null {
@@ -84,18 +84,19 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }}
     >
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
-      <QuestionnairePageSequence
-        items={questionnaire.item ?? []}
-        response={response}
-        onChange={setItems}
-        renderPages={numberOfPages > 1}
-        activePage={activePage}
-        numberOfPages={numberOfPages}
-        submitButtonText={props.submitButtonText}
-        checkForQuestionEnabled={checkForQuestionEnabled}
-        nextStep={nextStep}
-        prevStep={prevStep}
-      />
+      {questionnaire.item && (
+        <QuestionnairePageSequence
+          items={questionnaire.item ?? []}
+          response={response}
+          onChange={setItems}
+          renderPages={numberOfPages > 1}
+          activePage={activePage}
+          numberOfPages={numberOfPages}
+          checkForQuestionEnabled={checkForQuestionEnabled}
+          nextStep={nextStep}
+          prevStep={prevStep}
+        />
+      )}
     </Form>
   );
 }
@@ -139,6 +140,8 @@ function mergeItems(
       result.push(newItem);
     }
   }
+
+  result = result.concat(prevItems);
 
   return result;
 }

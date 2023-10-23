@@ -1,7 +1,7 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document/Document';
-import { QuestionnaireForm } from './NewQuestionnaireForm';
+import { QuestionnaireForm } from './QuestionnaireForm';
 
 export default {
   title: 'Medplum/QuestionnaireForm',
