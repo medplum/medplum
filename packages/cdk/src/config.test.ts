@@ -1,48 +1,49 @@
-import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { ExternalSecret, MedplumInfraConfig, MedplumSourceInfraConfig, OperationOutcomeError } from '@medplum/core';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import {
+  InfraConfigNormalizer,
   assertValidExternalSecret,
-  fetchParameterStoreSecret,
   isExternalSecret,
   normalizeFetchedValue,
   normalizeInfraConfig,
-  normalizeObjectInInfraConfig,
 } from './config';
 
 const baseConfig = {
   name: 'MyMedplumApp',
-  stackName: { system: 'aws_ssm_parameter_store', key: '/:stackName', type: 'string' },
+  stackName: { system: 'aws_ssm_parameter_store', key: 'stackName', type: 'string' },
   accountNumber: 'medplum123',
   region: 'us-east-1',
   domainName: 'foomedical.com',
   vpcId: 'abc-321123',
-  apiPort: { system: 'aws_ssm_parameter_store', key: '/:apiPort', type: 'number' },
-  apiDomainName: { system: 'aws_ssm_parameter_store', key: '/:apiDomainName', type: 'string' },
-  apiSslCertArn: { system: 'aws_ssm_parameter_store', key: '/:apiSslCertArn', type: 'string' },
+  apiPort: { system: 'aws_ssm_parameter_store', key: 'apiPort', type: 'number' },
+  apiDomainName: { system: 'aws_ssm_parameter_store', key: 'apiDomainName', type: 'string' },
+  apiSslCertArn: { system: 'aws_ssm_parameter_store', key: 'apiSslCertArn', type: 'string' },
   apiInternetFacing: true,
   appDomainName: 'app.foomedical.com',
   appSslCertArn: 'arn:abc-123',
-  appApiProxy: { system: 'aws_ssm_parameter_store', key: '/:appApiProxy', type: 'boolean' },
-  storageBucketName: { system: 'aws_ssm_parameter_store', key: '/:storageBucketName', type: 'string' },
+  appApiProxy: { system: 'aws_ssm_parameter_store', key: 'appApiProxy', type: 'boolean' },
+  storageBucketName: { system: 'aws_ssm_parameter_store', key: 'storageBucketName', type: 'string' },
   storageDomainName: 'storage.foomedical.com',
   storageSslCertArn: 'arn:def-123',
-  signingKeyId: { system: 'aws_ssm_parameter_store', key: '/:signingKeyId', type: 'string' },
-  storagePublicKey: { system: 'aws_ssm_parameter_store', key: '/:storagePublicKey', type: 'string' },
+  signingKeyId: { system: 'aws_ssm_parameter_store', key: 'signingKeyId', type: 'string' },
+  storagePublicKey: { system: 'aws_ssm_parameter_store', key: 'storagePublicKey', type: 'string' },
   baseUrl: 'foomedical.com',
-  maxAzs: { system: 'aws_ssm_parameter_store', key: '/:maxAzs', type: 'number' },
-  rdsInstances: { system: 'aws_ssm_parameter_store', key: '/:rdsInstances', type: 'number' },
+  maxAzs: { system: 'aws_ssm_parameter_store', key: 'maxAzs', type: 'number' },
+  rdsInstances: { system: 'aws_ssm_parameter_store', key: 'rdsInstances', type: 'number' },
   rdsInstanceType: 'big',
-  desiredServerCount: { system: 'aws_ssm_parameter_store', key: '/:desiredServerCount', type: 'number' },
+  desiredServerCount: { system: 'aws_ssm_parameter_store', key: 'desiredServerCount', type: 'number' },
   serverImage: 'arn:our-image',
-  serverMemory: { system: 'aws_ssm_parameter_store', key: '/:serverMemory', type: 'number' },
-  serverCpu: { system: 'aws_ssm_parameter_store', key: '/:serverCpu', type: 'number' },
+  serverMemory: { system: 'aws_ssm_parameter_store', key: 'serverMemory', type: 'number' },
+  serverCpu: { system: 'aws_ssm_parameter_store', key: 'serverCpu', type: 'number' },
   clamscanEnabled: false,
   clamscanLoggingBucket: 'no_logging',
   clamscanLoggingPrefix: 'foo_',
   skipDns: true,
 } as const satisfies MedplumSourceInfraConfig;
+
+// TODO: Test throwing on missing region
 
 const additionalContainers = [
   {
@@ -50,14 +51,14 @@ const additionalContainers = [
     image: 'arn:big_image',
     environment: {
       FOO: 'BAR',
-      MED: { system: 'aws_ssm_parameter_store', key: '/:MED', type: 'string' },
+      MED: { system: 'aws_ssm_parameter_store', key: 'MED', type: 'string' },
     },
   },
 ] as const;
 
 const cloudTrailAlarms = {
-  logGroupName: { system: 'aws_ssm_parameter_store', key: '/:logGroupName', type: 'string' },
-  logGroupCreate: { system: 'aws_ssm_parameter_store', key: '/:logGroupCreate', type: 'boolean' },
+  logGroupName: { system: 'aws_ssm_parameter_store', key: 'logGroupName', type: 'string' },
+  logGroupCreate: { system: 'aws_ssm_parameter_store', key: 'logGroupCreate', type: 'boolean' },
 } as const;
 
 describe('Config', () => {
@@ -67,25 +68,54 @@ describe('Config', () => {
     beforeEach(() => {
       mockSSMClient = mockClient(SSMClient);
 
-      mockSSMClient.on(GetParametersByPathCommand).resolves({
-        Parameters: [
-          { Name: 'stackName', Value: 'MyFoomedicalStack' },
-          { Name: 'apiPort', Value: '1337' },
-          { Name: 'apiDomainName', Value: 'api.foomedical.com' },
-          { Name: 'apiSslCertArn', Value: 'arn:foomedical_api_ssl_cert' },
-          { Name: 'appApiProxy', Value: 'true' },
-          { Name: 'signingKeyId', Value: 'key-abc123' },
-          { Name: 'storageBucketName', Value: 'foomedical_storage_bucket' },
-          { Name: 'storagePublicKey', Value: 'VERY_LONG_KEY' },
-          { Name: 'maxAzs', Value: '6' },
-          { Name: 'rdsInstances', Value: '10' },
-          { Name: 'desiredServerCount', Value: '0' },
-          { Name: 'serverMemory', Value: '16384' },
-          { Name: 'serverCpu', Value: '4096' },
-          { Name: 'MED', Value: 'PLUM' },
-          { Name: 'logGroupName', Value: 'FOOMEDICAL_PROD' },
-          { Name: 'logGroupCreate', Value: 'false' },
-        ],
+      mockSSMClient.on(GetParameterCommand).rejects();
+      mockSSMClient.on(GetParameterCommand, { Name: 'stackName' }).resolves({
+        Parameter: { Name: 'stackName', Value: 'MyFoomedicalStack' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'apiPort' }).resolves({
+        Parameter: { Name: 'apiPort', Value: '1337' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'apiDomainName' }).resolves({
+        Parameter: { Name: 'apiDomainName', Value: 'api.foomedical.com' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'apiSslCertArn' }).resolves({
+        Parameter: { Name: 'apiSslCertArn', Value: 'arn:foomedical_api_ssl_cert' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'appApiProxy' }).resolves({
+        Parameter: { Name: 'appApiProxy', Value: 'true' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'signingKeyId' }).resolves({
+        Parameter: { Name: 'signingKeyId', Value: 'key-abc123' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'storageBucketName' }).resolves({
+        Parameter: { Name: 'storageBucketName', Value: 'foomedical_storage_bucket' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'storagePublicKey' }).resolves({
+        Parameter: { Name: 'storagePublicKey', Value: 'VERY_LONG_KEY' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'maxAzs' }).resolves({
+        Parameter: { Name: 'maxAzs', Value: '6' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'rdsInstances' }).resolves({
+        Parameter: { Name: 'rdsInstances', Value: '10' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'desiredServerCount' }).resolves({
+        Parameter: { Name: 'desiredServerCount', Value: '0' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'serverMemory' }).resolves({
+        Parameter: { Name: 'serverMemory', Value: '16384' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'serverCpu' }).resolves({
+        Parameter: { Name: 'serverCpu', Value: '4096' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'MED' }).resolves({
+        Parameter: { Name: 'MED', Value: 'PLUM' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'logGroupName' }).resolves({
+        Parameter: { Name: 'logGroupName', Value: 'FOOMEDICAL_PROD' },
+      });
+      mockSSMClient.on(GetParameterCommand, { Name: 'logGroupCreate' }).resolves({
+        Parameter: { Name: 'logGroupCreate', Value: 'false' },
       });
     });
 
@@ -218,7 +248,7 @@ describe('Config', () => {
     test('Invalid system', async () => {
       await expect(
         // @ts-expect-error System is not valid
-        normalizeInfraConfig({ ...baseConfig, apiPort: { system: 'google_drive', key: '/:abc', type: 'number' } })
+        normalizeInfraConfig({ ...baseConfig, apiPort: { system: 'google_drive', key: 'abc', type: 'number' } })
       ).rejects.toBeInstanceOf(OperationOutcomeError);
     });
 
@@ -228,7 +258,7 @@ describe('Config', () => {
           ...baseConfig,
           apiPort: { system: 'aws_ssm_parameter_store', key: 'abc', type: 'number' },
         })
-      ).rejects.toBeInstanceOf(OperationOutcomeError);
+      ).rejects.toBeInstanceOf(Error);
     });
 
     test('Invalid type specified', async () => {
@@ -236,7 +266,7 @@ describe('Config', () => {
         normalizeInfraConfig({
           ...baseConfig,
           // @ts-expect-error Type 'plum' not a valid type
-          apiPort: { system: 'aws_ssm_parameter_store', key: '/:abc', type: 'plum' },
+          apiPort: { system: 'aws_ssm_parameter_store', key: 'abc', type: 'plum' },
         })
       ).rejects.toBeInstanceOf(OperationOutcomeError);
     });
@@ -246,7 +276,7 @@ describe('Config', () => {
         normalizeInfraConfig({
           ...baseConfig,
           // @ts-expect-error Type 'boolean' is not the proper type for `apiPort`
-          apiPort: { system: 'aws_ssm_parameter_store', key: '/:abc', type: 'boolean' },
+          apiPort: { system: 'aws_ssm_parameter_store', key: 'apiPort', type: 'boolean' },
         })
       ).rejects.toBeInstanceOf(OperationOutcomeError);
     });
@@ -302,13 +332,20 @@ describe('Config', () => {
 
   describe('fetchParameterStoreSecret', () => {
     let mockSSMClient: AwsClientStub<SSMClient>;
+    let configNormalizer: InfraConfigNormalizer;
 
     beforeEach(() => {
       mockSSMClient = mockClient(SSMClient);
 
-      mockSSMClient.on(GetParametersByPathCommand).resolves({
-        Parameters: [{ Name: 'stackName', Value: 'MyFoomedicalStack' }, { Name: 'emptyValue' }],
+      mockSSMClient.on(GetParameterCommand).rejects();
+      mockSSMClient.on(GetParameterCommand, { Name: 'stackName' }).resolves({
+        Parameter: { Name: 'stackName', Value: 'MyFoomedicalStack' },
       });
+      mockSSMClient.on(GetParameterCommand, { Name: 'emptyValue' }).resolves({
+        Parameter: { Name: 'emptyValue' },
+      });
+
+      configNormalizer = new InfraConfigNormalizer(baseConfig);
     });
 
     afterEach(() => {
@@ -316,27 +353,33 @@ describe('Config', () => {
     });
 
     test('Valid key in param store', async () => {
-      await expect(fetchParameterStoreSecret('/', 'stackName')).resolves.toEqual('MyFoomedicalStack');
+      await expect(configNormalizer.fetchParameterStoreSecret('stackName')).resolves.toEqual('MyFoomedicalStack');
     });
 
     test('Invalid key in param store', async () => {
-      await expect(fetchParameterStoreSecret('/', 'medplum')).rejects.toBeInstanceOf(OperationOutcomeError);
+      await expect(configNormalizer.fetchParameterStoreSecret('medplum')).rejects.toBeInstanceOf(Error);
     });
 
     test('Valid key with no value', async () => {
-      await expect(fetchParameterStoreSecret('/', 'emptyValue')).rejects.toBeInstanceOf(OperationOutcomeError);
+      await expect(configNormalizer.fetchParameterStoreSecret('emptyValue')).rejects.toBeInstanceOf(
+        OperationOutcomeError
+      );
     });
   });
 
   describe('normalizeObjectInInfraConfig', () => {
     let mockSSMClient: AwsClientStub<SSMClient>;
+    let configNormalizer: InfraConfigNormalizer;
 
     beforeEach(() => {
       mockSSMClient = mockClient(SSMClient);
 
-      mockSSMClient.on(GetParametersByPathCommand).resolves({
-        Parameters: [{ Name: 'medplumSecret', Value: 'MyMedplumSecret' }],
+      mockSSMClient.on(GetParameterCommand).rejects();
+      mockSSMClient.on(GetParameterCommand, { Name: 'medplumSecret' }).resolves({
+        Parameter: { Name: 'medplumSecret', Value: 'MyMedplumSecret' },
       });
+
+      configNormalizer = new InfraConfigNormalizer(baseConfig);
     });
 
     afterEach(() => {
@@ -345,23 +388,23 @@ describe('Config', () => {
 
     test('Array of primitives or secrets', async () => {
       expect(
-        await normalizeObjectInInfraConfig({
+        await configNormalizer.normalizeObjectInInfraConfig({
           medplumStuff: [
             'medplum',
             {
               system: 'aws_ssm_parameter_store',
-              key: '/:medplumSecret',
+              key: 'medplumSecret',
               type: 'string',
             } satisfies ExternalSecret<'string'>,
           ],
         })
       ).toEqual({ medplumStuff: ['medplum', 'MyMedplumSecret'] });
       expect(
-        await normalizeObjectInInfraConfig({
+        await configNormalizer.normalizeObjectInInfraConfig({
           medplumStuff: [
             {
               system: 'aws_ssm_parameter_store',
-              key: '/:medplumSecret',
+              key: 'medplumSecret',
               type: 'string',
             } satisfies ExternalSecret<'string'>,
             'medplum',

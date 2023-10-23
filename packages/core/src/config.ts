@@ -18,7 +18,7 @@ export interface MedplumSourceInfraConfig {
   name: ValueOrExternalSecret<string>;
   stackName: ValueOrExternalSecret<string>;
   accountNumber: ValueOrExternalSecret<string>;
-  region: ValueOrExternalSecret<string>;
+  region: string;
   domainName: ValueOrExternalSecret<string>;
   vpcId: ValueOrExternalSecret<string>;
   apiPort: ValueOrExternalSecret<number>;

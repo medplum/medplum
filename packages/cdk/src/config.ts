@@ -1,4 +1,4 @@
-import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import {
   ExternalSecret,
   ExternalSecretPrimitive,
@@ -10,41 +10,123 @@ import {
   validationError,
 } from '@medplum/core';
 
-const DEFAULT_AWS_REGION = 'us-east-1';
 const VALID_PRIMITIVE_TYPES = ['string', 'boolean', 'number'];
+const ssmClients = {} as Record<string, SSMClient>;
 
-export async function fetchParameterStoreSecret(path: string, key: string): Promise<string> {
-  const region = DEFAULT_AWS_REGION;
-  const client = new SSMClient({ region });
+export class InfraConfigNormalizer {
+  private config: MedplumSourceInfraConfig;
+  private clients: { ssm: SSMClient };
+  constructor(config: MedplumSourceInfraConfig) {
+    const { region } = config;
+    if (!ssmClients[region]) {
+      ssmClients[region] = new SSMClient({ region });
+    }
+    this.config = config;
+    this.clients = { ssm: ssmClients[region] };
+  }
 
-  let nextToken: string | undefined;
-  do {
-    const response = await client.send(
-      new GetParametersByPathCommand({
-        Path: path,
-        NextToken: nextToken,
+  async fetchParameterStoreSecret(key: string): Promise<string> {
+    const response = await this.clients.ssm.send(
+      new GetParameterCommand({
+        Name: key,
         WithDecryption: true,
       })
     );
-    if (response.Parameters) {
-      for (const param of response.Parameters) {
-        const paramKey = (param.Name as string).replace(path, '');
-        if (paramKey === key) {
-          if (!param.Value) {
-            throw new OperationOutcomeError(badRequest(`Key '${key}' found in path '${path}' but missing a value.`));
-          }
-          return param.Value;
+    const param = response.Parameter;
+    if (!param) {
+      throw new OperationOutcomeError(
+        badRequest(
+          `Key '${key}' not found. Make sure your key is correct and that it is defined in your Parameter Store.`
+        )
+      );
+    }
+    const paramValue = param.Value;
+    if (!paramValue) {
+      throw new OperationOutcomeError(
+        badRequest(
+          `Key '${key}' found but has no value. Make sure your key is correct and that it is defined in your Parameter Store.`
+        )
+      );
+    }
+    return paramValue;
+  }
+
+  async fetchExternalSecret(externalSecret: ExternalSecret): Promise<ExternalSecretPrimitive> {
+    assertValidExternalSecret(externalSecret);
+    const { system, key, type } = externalSecret;
+    let rawValue: ExternalSecretPrimitive;
+    switch (system) {
+      case 'aws_ssm_parameter_store': {
+        rawValue = await this.fetchParameterStoreSecret(key);
+        break;
+      }
+      default:
+        throw new OperationOutcomeError(
+          validationError(`Unknown system '${system}' for ExternalSecret. Unable to fetch the secret for key '${key}'.`)
+        );
+    }
+    return normalizeFetchedValue(key, rawValue, type);
+  }
+
+  async normalizeInfraConfigArray(currentVal: any[]): Promise<ExternalSecretPrimitive[] | Record<string, any>[]> {
+    // ------ case 3a: primitives or `ExternalSecret`
+    const firstEle = currentVal[0];
+    let newArray: ExternalSecretPrimitive[] | Record<string, any>[];
+    if ((typeof firstEle !== 'object' && firstEle !== null) || isExternalSecretLike(firstEle)) {
+      newArray = new Array(currentVal.length) as ExternalSecretPrimitive[];
+      for (let i = 0; i < currentVal.length; i++) {
+        const currIdxVal = currentVal[i] as unknown as ExternalSecretPrimitive | ExternalSecret;
+        if (typeof currIdxVal !== 'object') {
+          newArray[i] = currIdxVal;
+          continue;
         }
+        const fetchedVal = await this.fetchExternalSecret(currIdxVal);
+        newArray[i] = fetchedVal;
       }
     }
-    nextToken = response.NextToken;
-  } while (nextToken);
+    // ------ case 3b: other objects (recurse)
+    else {
+      newArray = new Array(currentVal.length) as Record<string, any>[];
+      for (let i = 0; i < currentVal.length; i++) {
+        newArray[i] = await this.normalizeObjectInInfraConfig(currentVal[i]);
+      }
+    }
+    return newArray;
+  }
 
-  throw new OperationOutcomeError(
-    badRequest(
-      `Key '${key}' not found at path '${path}'. Make sure your path and key are correct and are defined in your Parameter Store.`
-    )
-  );
+  async normalizeValueForKey(obj: Record<string, any>, key: string): Promise<void> {
+    const currentVal = obj[key];
+    // cases:
+    // --- case 1: primitive
+    if (typeof currentVal !== 'object') {
+      obj[key] = currentVal;
+    }
+    // --- case 2: object conforming to `ExternalSecret` schema
+    else if (isExternalSecretLike(currentVal)) {
+      obj[key] = await this.fetchExternalSecret(currentVal);
+    }
+    // --- case 3: an array of:
+    else if (Array.isArray(currentVal) && currentVal.length) {
+      obj[key] = await this.normalizeInfraConfigArray(currentVal);
+    }
+    // --- case 4: other object (recurse)
+    else if (typeof currentVal === 'object') {
+      obj[key] = await this.normalizeObjectInInfraConfig(currentVal);
+    }
+  }
+
+  async normalizeObjectInInfraConfig(obj: Record<string, any>): Promise<Record<string, any>> {
+    const normalizedObj = { ...obj };
+    // walk config object
+    for (const key of Object.keys(normalizedObj)) {
+      await this.normalizeValueForKey(normalizedObj, key);
+    }
+    return normalizedObj;
+  }
+
+  async normalizeConfig(): Promise<MedplumInfraConfig> {
+    return this.normalizeObjectInInfraConfig(this.config) as Promise<MedplumInfraConfig>;
+  }
 }
 
 export function normalizeFetchedValue(
@@ -86,89 +168,6 @@ export function normalizeFetchedValue(
   }
 }
 
-export async function fetchExternalSecret(externalSecret: ExternalSecret): Promise<ExternalSecretPrimitive> {
-  assertValidExternalSecret(externalSecret);
-  const { system, key, type } = externalSecret;
-  let rawValue: ExternalSecretPrimitive;
-  switch (system) {
-    case 'aws_ssm_parameter_store': {
-      const [paramPath, paramKey] = key.split(':');
-      if (!(paramPath && paramKey)) {
-        throw new OperationOutcomeError(
-          validationError(
-            'Keys for AWS Param Store secrets must be a path followed by a ":" and a key. (/path/to/param:my_key)'
-          )
-        );
-      }
-      rawValue = await fetchParameterStoreSecret(paramPath, paramKey);
-      break;
-    }
-    default:
-      throw new OperationOutcomeError(
-        validationError(`Unknown system '${system}' for ExternalSecret. Unable to fetch the secret for key '${key}'.`)
-      );
-  }
-  return normalizeFetchedValue(key, rawValue, type);
-}
-
-async function normalizeInfraConfigArray(
-  currentVal: any[]
-): Promise<ExternalSecretPrimitive[] | Record<string, any>[]> {
-  // ------ case 3a: primitives or `ExternalSecret`
-  const firstEle = currentVal[0];
-  let newArray: ExternalSecretPrimitive[] | Record<string, any>[];
-  if ((typeof firstEle !== 'object' && firstEle !== null) || isExternalSecretLike(firstEle)) {
-    newArray = new Array(currentVal.length) as ExternalSecretPrimitive[];
-    for (let i = 0; i < currentVal.length; i++) {
-      const currIdxVal = currentVal[i] as unknown as ExternalSecretPrimitive | ExternalSecret;
-      if (typeof currIdxVal !== 'object') {
-        newArray[i] = currIdxVal;
-        continue;
-      }
-      const fetchedVal = await fetchExternalSecret(currIdxVal);
-      newArray[i] = fetchedVal;
-    }
-  }
-  // ------ case 3b: other objects (recurse)
-  else {
-    newArray = new Array(currentVal.length) as Record<string, any>[];
-    for (let i = 0; i < currentVal.length; i++) {
-      newArray[i] = await normalizeObjectInInfraConfig(currentVal[i]);
-    }
-  }
-  return newArray;
-}
-
-async function normalizeValueForKey(obj: Record<string, any>, key: string): Promise<any> {
-  const currentVal = obj[key];
-  // cases:
-  // --- case 1: primitive
-  if (typeof currentVal !== 'object') {
-    obj[key] = currentVal;
-  }
-  // --- case 2: object conforming to `ExternalSecret` schema
-  else if (isExternalSecretLike(currentVal)) {
-    obj[key] = await fetchExternalSecret(currentVal);
-  }
-  // --- case 3: an array of:
-  else if (Array.isArray(currentVal) && currentVal.length) {
-    obj[key] = await normalizeInfraConfigArray(currentVal);
-  }
-  // --- case 4: other object (recurse)
-  else if (typeof currentVal === 'object') {
-    obj[key] = await normalizeObjectInInfraConfig(currentVal);
-  }
-}
-
-export async function normalizeObjectInInfraConfig(obj: Record<string, any>): Promise<Record<string, any>> {
-  const normalizedObj = { ...obj };
-  // walk config object
-  for (const key of Object.keys(normalizedObj)) {
-    await normalizeValueForKey(normalizedObj, key);
-  }
-  return normalizedObj;
-}
-
 export function isExternalSecretLike(obj: Record<string, any>): obj is ExternalSecret {
   return (
     typeof obj === 'object' &&
@@ -196,5 +195,5 @@ export function assertValidExternalSecret(obj: Record<string, any>): asserts obj
 }
 
 export async function normalizeInfraConfig(config: MedplumSourceInfraConfig): Promise<MedplumInfraConfig> {
-  return normalizeObjectInInfraConfig(config) as Promise<MedplumInfraConfig>;
+  return new InfraConfigNormalizer(config).normalizeConfig();
 }
