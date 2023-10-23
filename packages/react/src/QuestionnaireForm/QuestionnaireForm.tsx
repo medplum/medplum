@@ -12,15 +12,15 @@ import {
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import React, { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
-import { FormSection } from '../FormSection/FormSection';
 import { isQuestionEnabled, QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireFormItem } from './QuestionnaireFormItem/QuestionnaireFormItem';
+import { FormSection } from '../FormSection/FormSection';
 
 export interface QuestionnaireFormProps {
-  questionnaire: Questionnaire | Reference<Questionnaire>;
+  questionnaire: Questionnaire;
   subject?: Reference;
   submitButtonText?: string;
-  onSubmit: (response: QuestionnaireResponse) => void;
+  onSubmit?: (response: QuestionnaireResponse) => void;
 }
 
 export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | null {
@@ -43,9 +43,12 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
   }, [questionnaire]);
 
-  function setItems(newResponseItems: QuestionnaireResponseItem[]): void {
+  function setItems(newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[]): void {
     const currentItems = response?.item ?? [];
-    const mergedItems = mergeItems(currentItems, newResponseItems);
+    const mergedItems = mergeItems(
+      currentItems,
+      Array.isArray(newResponseItems) ? newResponseItems : [newResponseItems]
+    );
 
     const newResponse: QuestionnaireResponse = {
       resourceType: 'QuestionnaireResponse',
@@ -53,6 +56,10 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     };
 
     setResponse(newResponse);
+  }
+
+  function checkForQuestionEnabled(item: QuestionnaireItem): boolean {
+    return isQuestionEnabled(item, response?.item ?? []);
   }
 
   if (!schemaLoaded || !questionnaire) {
@@ -80,221 +87,250 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }}
     >
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
-
       {questionnaire.item && (
-        <QuestionnaireFormItemArray
+        <QuestionnairePageSequence
           items={questionnaire.item ?? []}
-          allResponses={response?.item ?? []}
+          response={response}
           onChange={setItems}
           renderPages={numberOfPages > 1}
           activePage={activePage}
+          numberOfPages={numberOfPages}
+          checkForQuestionEnabled={checkForQuestionEnabled}
+          nextStep={nextStep}
+          prevStep={prevStep}
         />
       )}
-
-      <ButtonGroup
-        activePage={activePage}
-        numberOfPages={numberOfPages}
-        nextStep={nextStep}
-        prevStep={prevStep}
-        submitButtonText={props.submitButtonText}
-      />
     </Form>
   );
 }
 
-interface QuestionnaireFormItemArrayProps {
+interface QuestionnairePageSequenceProps {
   items: QuestionnaireItem[];
-  allResponses: QuestionnaireResponseItem[];
-  renderPages?: boolean;
+  response?: QuestionnaireResponse;
+  renderPages: boolean;
   activePage?: number;
-  groupSequence?: number;
-  onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
-}
-
-function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX.Element {
-  const [currentResponseItems, setCurrentResponseItems] = useState<QuestionnaireResponseItem[]>(
-    buildInitialResponseItems(props.items)
-  );
-
-  function setResponseItem(responseId: string, newResponseItem: QuestionnaireResponseItem): void {
-    const itemExists = currentResponseItems.some((r) => r.id === responseId);
-    let newResponseItems;
-    if (itemExists) {
-      newResponseItems = currentResponseItems.map((r) => (r.id === responseId ? newResponseItem : r));
-    } else {
-      newResponseItems = [...currentResponseItems, newResponseItem];
-    }
-    setCurrentResponseItems(newResponseItems);
-    props.onChange(newResponseItems);
-  }
-
-  const questionForm = props.items.map((item, index) => {
-    if (props.renderPages) {
-      return (
-        <Stepper.Step label={item.text} key={item.linkId}>
-          <QuestionnaireFormArrayContent
-            key={`${item.linkId}-${index}`}
-            item={item}
-            index={index}
-            allResponses={props.allResponses}
-            currentResponseItems={currentResponseItems}
-            groupSequence={props.groupSequence}
-            setResponseItem={setResponseItem}
-          />
-        </Stepper.Step>
-      );
-    }
-    return (
-      <QuestionnaireFormArrayContent
-        key={`${item.linkId}-${index}`}
-        item={item}
-        index={index}
-        groupSequence={props.groupSequence}
-        allResponses={props.allResponses}
-        currentResponseItems={currentResponseItems}
-        setResponseItem={setResponseItem}
-      />
-    );
-  });
-
-  if (props.renderPages) {
-    return (
-      <Stepper active={props.activePage ?? 0} allowNextStepsSelect={false} p={6}>
-        {questionForm}
-      </Stepper>
-    );
-  }
-  return <Stack>{questionForm}</Stack>;
-}
-
-interface QuestionnaireFormArrayContentProps {
-  item: QuestionnaireItem;
-  index: number;
-  allResponses: QuestionnaireResponseItem[];
-  currentResponseItems: QuestionnaireResponseItem[];
-  groupSequence?: number;
-  setResponseItem: (responseId: string, newResponseItem: QuestionnaireResponseItem) => void;
-}
-
-function QuestionnaireFormArrayContent(props: QuestionnaireFormArrayContentProps): JSX.Element | null {
-  if (!isQuestionEnabled(props.item, props.allResponses)) {
-    return null;
-  }
-  if (props.item.type === QuestionnaireItemType.display) {
-    return <p key={props.item.linkId}>{props.item.text}</p>;
-  }
-  if (props.item.type === QuestionnaireItemType.group) {
-    return (
-      <QuestionnaireRepeatWrapper
-        key={props.item.linkId}
-        item={props.item}
-        allResponses={props.allResponses}
-        currentResponseItems={props.currentResponseItems}
-        groupSequence={props.groupSequence}
-        onChange={(newResponseItem) => props.setResponseItem(newResponseItem.id as string, newResponseItem)}
-      />
-    );
-  }
-
-  if (props.item.type === QuestionnaireItemType.boolean) {
-    return (
-      <QuestionnaireRepeatWrapper
-        item={props.item}
-        allResponses={props.allResponses}
-        currentResponseItems={props.currentResponseItems}
-        groupSequence={props.groupSequence}
-        onChange={(newResponseItem) => props.setResponseItem(newResponseItem.id as string, newResponseItem)}
-      />
-    );
-  }
-
-  return (
-    <FormSection
-      key={props.item.linkId}
-      htmlFor={props.item.linkId}
-      title={props.item.text}
-      withAsterisk={props.item.required}
-    >
-      <QuestionnaireRepeatWrapper
-        item={props.item}
-        allResponses={props.allResponses}
-        currentResponseItems={props.currentResponseItems}
-        groupSequence={props.groupSequence}
-        onChange={(newResponseItem) => props.setResponseItem(newResponseItem.id as string, newResponseItem)}
-      />
-    </FormSection>
-  );
-}
-
-export interface QuestionnaireRepeatWrapperProps {
-  item: QuestionnaireItem;
-  allResponses: QuestionnaireResponseItem[];
-  currentResponseItems: QuestionnaireResponseItem[];
-  groupSequence?: number;
-  onChange: (newResponseItem: QuestionnaireResponseItem, index?: number) => void;
-}
-
-export function QuestionnaireRepeatWrapper(props: QuestionnaireRepeatWrapperProps): JSX.Element {
-  const item = props.item;
-  function onChangeItem(newResponseItems: QuestionnaireResponseItem[], number?: number): void {
-    const index = number ?? 0;
-    const responses = props.currentResponseItems.filter((r) => r.linkId === item.linkId);
-    props.onChange({
-      id: getResponseId(responses, index),
-      linkId: item.linkId,
-      text: item.text,
-      item: newResponseItems,
-    });
-  }
-  if (item.type === QuestionnaireItemType.group) {
-    return (
-      <RepeatableGroup
-        key={props.item.linkId}
-        text={item.text ?? ''}
-        item={item ?? []}
-        allResponses={props.allResponses}
-        onChange={onChangeItem}
-      />
-    );
-  }
-  return (
-    <RepeatableItem item={props.item} key={props.item.linkId}>
-      {({ index }: { index: number }) => <QuestionnaireFormItem {...props} index={index} />}
-    </RepeatableItem>
-  );
-}
-
-interface ButtonGroupProps {
-  activePage: number;
   numberOfPages: number;
   submitButtonText?: string;
+  checkForQuestionEnabled: (item: QuestionnaireItem) => boolean;
+  onChange: (items: QuestionnaireResponseItem | QuestionnaireResponseItem[]) => void;
   nextStep: () => void;
   prevStep: () => void;
 }
 
-function ButtonGroup(props: ButtonGroupProps): JSX.Element {
-  const showBackButton = props.activePage > 0;
-  const showNextButton = props.activePage < props.numberOfPages - 1;
-  const showSubmitButton = props.activePage === props.numberOfPages - 1;
+function QuestionnairePageSequence(props: QuestionnairePageSequenceProps): JSX.Element {
+  const {
+    items,
+    response,
+    activePage,
+    onChange,
+    nextStep,
+    prevStep,
+    numberOfPages,
+    renderPages,
+    submitButtonText,
+    checkForQuestionEnabled,
+  } = props;
+
+  const form = items.map((item) => {
+    const itemResponse = response?.item?.filter((i) => i.linkId === item.linkId) ?? [];
+
+    const repeatedItem =
+      item.type === QuestionnaireItemType.group ? (
+        <QuestionnaireRepeatedGroup
+          key={item.linkId}
+          item={item}
+          response={itemResponse}
+          onChange={onChange}
+          checkForQuestionEnabled={checkForQuestionEnabled}
+        />
+      ) : (
+        <QuestionnaireRepeatableItem
+          key={item.linkId}
+          item={item}
+          response={itemResponse[0]}
+          onChange={onChange}
+          checkForQuestionEnabled={checkForQuestionEnabled}
+        />
+      );
+
+    if (renderPages) {
+      return (
+        <Stepper.Step key={item.linkId} label={item.text}>
+          {repeatedItem}
+        </Stepper.Step>
+      );
+    }
+    return repeatedItem;
+  });
 
   return (
-    <Group position="right" mt="xl" spacing="xs">
-      {showBackButton && <Button onClick={props.prevStep}>Back</Button>}
-      {showNextButton && (
-        <Button
-          onClick={(e) => {
-            const form = e.currentTarget.closest('form') as HTMLFormElement;
-            if (form.reportValidity()) {
-              props.nextStep();
-            }
-          }}
-        >
-          Next
-        </Button>
+    <>
+      {renderPages && (
+        <Stepper active={activePage ?? 0} allowNextStepsSelect={false} p={6}>
+          {form}
+        </Stepper>
       )}
-      {showSubmitButton && <Button type="submit">{props.submitButtonText ?? 'Submit'}</Button>}
-    </Group>
+      {!renderPages && <Stack>{form}</Stack>}
+      <ButtonGroup
+        activePage={activePage ?? 0}
+        numberOfPages={numberOfPages}
+        nextStep={nextStep}
+        prevStep={prevStep}
+        submitButtonText={submitButtonText}
+      />
+    </>
   );
+}
+
+interface QuestionnaireRepeatableGroupProps {
+  item: QuestionnaireItem;
+  response: QuestionnaireResponseItem[];
+  checkForQuestionEnabled: (item: QuestionnaireItem) => boolean;
+  onChange: (responses: QuestionnaireResponseItem | QuestionnaireResponseItem[]) => void;
+}
+
+function QuestionnaireRepeatedGroup(props: QuestionnaireRepeatableGroupProps): JSX.Element | null {
+  const [responses, setResponses] = useState(props.response);
+
+  if (responses.length === 0) {
+    return null;
+  }
+
+  function onSetRepeatableGroup(newResponseItems: QuestionnaireResponseItem, index: number): void {
+    const newResponses = responses.map((responses, idx) => (idx === index ? newResponseItems : responses));
+    setResponses(newResponses);
+    props.onChange(newResponses);
+  }
+
+  function insertNewGroup(): void {
+    const newResponse = buildInitialResponseItem(props.item);
+    setResponses([...responses, newResponse]);
+  }
+
+  return (
+    <>
+      {responses.map((response, idx) => (
+        <QuestionnaireGroup
+          key={idx}
+          item={props.item}
+          response={response}
+          checkForQuestionEnabled={props.checkForQuestionEnabled}
+          onChange={(r) => onSetRepeatableGroup(r, idx)}
+        />
+      ))}
+      {props.item.repeats && <Anchor onClick={insertNewGroup}>Add Group</Anchor>}
+    </>
+  );
+}
+
+interface QuestionnaireGroupProps {
+  item: QuestionnaireItem;
+  response: QuestionnaireResponseItem;
+  checkForQuestionEnabled: (item: QuestionnaireItem) => boolean;
+  onChange: (response: QuestionnaireResponseItem) => void;
+}
+
+function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null {
+  const { response, checkForQuestionEnabled, onChange } = props;
+  function onSetGroup(newResponseItem: QuestionnaireResponseItem): void {
+    const newResponse = response?.item?.map((i) =>
+      i.linkId === newResponseItem.linkId ? newResponseItem : i
+    ) as QuestionnaireResponseItem;
+    const groupResponse = { ...response, item: newResponse } as QuestionnaireResponseItem;
+    onChange(groupResponse);
+  }
+
+  if (!props.checkForQuestionEnabled(props.item)) {
+    return null;
+  }
+
+  return (
+    <>
+      <div key={props.item.linkId}>
+        {props.item.text && (
+          <Title order={3} mb="md">
+            {props.item.text}
+          </Title>
+        )}
+      </div>
+      {(props.item.item ?? []).map((item, index) => {
+        if (item.type === QuestionnaireItemType.group) {
+          return item.repeats ? (
+            <QuestionnaireRepeatedGroup
+              key={index}
+              item={item}
+              response={response.item?.filter((i) => i.linkId === item.linkId) ?? []}
+              checkForQuestionEnabled={checkForQuestionEnabled}
+              onChange={(r) => onSetGroup(r as QuestionnaireResponseItem)}
+            />
+          ) : (
+            <QuestionnaireGroup
+              key={index}
+              item={item}
+              checkForQuestionEnabled={checkForQuestionEnabled}
+              response={response.item?.find((i) => i.linkId === item.linkId) ?? {}}
+              onChange={onSetGroup}
+            />
+          );
+        }
+        return (
+          <QuestionnaireRepeatableItem
+            item={item}
+            response={response.item?.find((i) => i.linkId === item.linkId)}
+            onChange={onSetGroup}
+            checkForQuestionEnabled={checkForQuestionEnabled}
+            key={index}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+interface QuestionnaireRepeatableItemProps {
+  item: QuestionnaireItem;
+  response?: QuestionnaireResponseItem;
+  checkForQuestionEnabled: (item: QuestionnaireItem) => boolean;
+  onChange: (items: QuestionnaireResponseItem) => void;
+}
+
+function QuestionnaireRepeatableItem(props: QuestionnaireRepeatableItemProps): JSX.Element | null {
+  const { item, response, onChange } = props;
+  const [number, setNumber] = useState(getNumberOfRepeats(item, response ?? {}));
+  if (!props.checkForQuestionEnabled(item)) {
+    return null;
+  }
+
+  if (item.type === QuestionnaireItemType.display) {
+    return <p key={item.linkId}>{item.text}</p>;
+  }
+
+  const showAddButton =
+    item?.repeats && item.type !== QuestionnaireItemType.choice && item.type !== QuestionnaireItemType.openChoice;
+
+  // Styling reason to avoid duplicate text
+  if (item.type === QuestionnaireItemType.boolean) {
+    return <QuestionnaireFormItem key={item.linkId} item={item} response={response} onChange={onChange} index={0} />;
+  }
+
+  return (
+    <>
+      <FormSection key={props.item.linkId} htmlFor={props.item.linkId} title={props.item.text}>
+        {[...Array(number)].map((_, index) => (
+          <QuestionnaireFormItem key={index} item={item} response={response} onChange={onChange} index={index} />
+        ))}
+        {showAddButton && <Anchor onClick={() => setNumber((n) => n + 1)}>Add Item</Anchor>}
+      </FormSection>
+    </>
+  );
+}
+
+function getNumberOfRepeats(item: QuestionnaireItem, response: QuestionnaireResponseItem): number {
+  if (item.type === QuestionnaireItemType.choice || item.type === QuestionnaireItemType.openChoice) {
+    return 1;
+  }
+  const answers = response.answer;
+  return answers?.length ? answers.length : 1;
 }
 
 function buildInitialResponse(questionnaire: Questionnaire): QuestionnaireResponse {
@@ -355,86 +391,37 @@ function getNumberOfPages(questionnaire: Questionnaire): number {
   return 1;
 }
 
-interface RepeatableGroupProps {
-  item: QuestionnaireItem;
-  text: string;
-  allResponses: QuestionnaireResponseItem[];
-  onChange: (newResponseItem: QuestionnaireResponseItem[], index?: number) => void;
+interface ButtonGroupProps {
+  activePage: number;
+  numberOfPages: number;
+  submitButtonText?: string;
+  nextStep: () => void;
+  prevStep: () => void;
 }
 
-function RepeatableGroup(props: RepeatableGroupProps): JSX.Element | null {
-  const [number, setNumber] = useState(getNumberOfGroups(props.item, props.allResponses));
+function ButtonGroup(props: ButtonGroupProps): JSX.Element {
+  const showBackButton = props.activePage > 0;
+  const showNextButton = props.activePage < props.numberOfPages - 1;
+  const showSubmitButton = props.activePage === props.numberOfPages - 1;
 
-  const item = props.item;
   return (
-    <>
-      {[...Array(number)].map((_, i) => {
-        return (
-          <div key={i}>
-            {props.text && (
-              <Title order={3} mb="md">
-                {props.text}
-              </Title>
-            )}
-            <QuestionnaireFormItemArray
-              items={item.item ?? []}
-              allResponses={props.allResponses}
-              groupSequence={i}
-              onChange={(response) => props.onChange(response, i)}
-            />
-          </div>
-        );
-      })}
-      {props.item.repeats && <Anchor onClick={() => setNumber((n) => n + 1)}>Add Group</Anchor>}
-    </>
+    <Group position="right" mt="xl" spacing="xs">
+      {showBackButton && <Button onClick={props.prevStep}>Back</Button>}
+      {showNextButton && <Button onClick={props.nextStep}>Next</Button>}
+      {showSubmitButton && <Button type="submit">{props.submitButtonText ?? 'Submit'}</Button>}
+    </Group>
   );
-}
-
-interface RepeatableItemProps {
-  item: QuestionnaireItem;
-  children: (props: { index: number }) => JSX.Element;
-}
-
-function RepeatableItem(props: RepeatableItemProps): JSX.Element {
-  const [number, setNumber] = useState(1);
-  const showAddButton =
-    props.item?.repeats &&
-    props.item.type !== QuestionnaireItemType.choice &&
-    props.item.type !== QuestionnaireItemType.openChoice;
-  return (
-    <>
-      {[...Array(number)].map((_, i) => {
-        return <React.Fragment key={`${props.item.linkId}-${i}`}>{props.children({ index: i })}</React.Fragment>;
-      })}
-      {showAddButton && <Anchor onClick={() => setNumber((n) => n + 1)}>Add Item</Anchor>}
-    </>
-  );
-}
-
-function getResponseId(responses: QuestionnaireResponseItem[], index: number): string {
-  if (responses.length === 0 || responses.length < index + 1) {
-    return generateId();
-  }
-  return responses[index].id as string;
-}
-
-function getNumberOfGroups(item: QuestionnaireItem, responses: QuestionnaireResponseItem[]): number {
-  // This is to maintain the group number for the stepper
-  const responseLength = responses.filter((r) => r.linkId === item.linkId).length;
-  return responseLength > 0 ? responseLength : 1;
 }
 
 function mergeIndividualItems(
   prevItem: QuestionnaireResponseItem,
   newItem: QuestionnaireResponseItem
 ): QuestionnaireResponseItem {
-  // Recursively merge the nested items.
   const mergedNestedItems = mergeItems(prevItem.item ?? [], newItem.item ?? []);
 
   return {
     ...newItem,
     item: mergedNestedItems,
-    // Prioritize answers from the new item, but fall back to the old item's answers if the new item doesn't provide any.
     answer: newItem.answer && newItem.answer.length > 0 ? newItem.answer : prevItem.answer,
   };
 }
@@ -446,7 +433,6 @@ function mergeItemsWithSameLinkId(
   const result: QuestionnaireResponseItem[] = [];
   const maxLength = Math.max(prevItems.length, newItems.length);
 
-  // Loop over items to handle cases where there are varying counts of items with the same linkId between old and new items.
   for (let i = 0; i < maxLength; i++) {
     if (prevItems[i] && newItems[i]) {
       // If both old and new items exist for the current index, merge them.
@@ -465,15 +451,19 @@ function mergeItems(
 ): QuestionnaireResponseItem[] {
   let result: QuestionnaireResponseItem[] = [];
 
-  // Iterate over unique linkIds from newItems.
-  for (const linkId of new Set(newItems.map((item) => item.linkId))) {
-    // Gather all items from the old and new list that share the current linkId.
+  for (const newItem of newItems) {
+    const linkId = newItem.linkId;
+
     const prevMatchedItems = prevItems.filter((oldItem) => oldItem.linkId === linkId);
     const newMatchedItems = newItems.filter((newItem) => newItem.linkId === linkId);
 
-    // Merge the gathered items and append to the result.
+    prevItems = prevItems.filter((item) => item.linkId !== linkId);
+    newItems = newItems.filter((item) => item.linkId !== linkId);
+
     result = result.concat(mergeItemsWithSameLinkId(prevMatchedItems, newMatchedItems));
   }
+
+  result = result.concat(prevItems);
 
   return result;
 }
