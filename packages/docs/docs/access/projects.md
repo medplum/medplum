@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ---
 sidebar_position: 0
 tags: [auth]
@@ -80,3 +81,30 @@ For more information, refer to the Super Admin [Project Management guide](/docs/
 - [Super Admin Guide](/docs/self-hosting/super-admin-guide)
 - [Super Admin CLI](/docs/self-hosting/super-admin-cli#project-management)
 - [Project Resource Schema](/docs/api/fhir/medplum/project)
+=======
+### Projects
+
+- Project: First level of access control
+
+- Different sets of users
+  - Different identity providers
+  - Different configuration settings
+    - Check references on write
+    - ...
+  - No references between resources
+
+Medplum has the concept of [`Projects`](/docs/api/fhir/medplum/project), which are isolated containers of resources of FHIR resources. Each project is administered separately, and users can have different privileges between projects. [`Projects`](/docs/api/fhir/medplum/project) create a "hard boundary" between resources, and resources within one project cannot reference resources from another project.
+
+Some common use cases for projects are:
+
+- **Multi-tenancy:** In [B2B2C environments](https://a16z.com/b2c2b-in-digital-health-a-founders-playbook/), a service provider may partner with multiple healthcare organizations to deliver care to patients. Each of [`Projects`](/docs/api/fhir/medplum/project) can provide each of these partners their own isolated environments, that have their own patient data, log-in flows, and project administrators. The [Medplum hosted service](/pricing) uses a multi-tenant instance of Medplum to service our hosted customers.
+- **Development vs. Production:** A common requirement for development teams to have a separate [`Project`](/docs/api/fhir/medplum/project) , with non-protected data, for testing and debugging purposes, before deploying workflow changes to production. A common Medplum usage pattern is to create a "development", "staging", and "production" [`Project`](/docs/api/fhir/medplum/project).
+
+Each project has it's own user administration
+
+Users are linked to Projects via. the ProjectMembership resource
+
+How to create a new project
+
+- Sign out if you're also creating a new user
+>>>>>>> c29614ec (WIP docs)
