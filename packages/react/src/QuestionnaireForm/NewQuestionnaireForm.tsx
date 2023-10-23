@@ -398,13 +398,11 @@ function mergeIndividualItems(
   prevItem: QuestionnaireResponseItem,
   newItem: QuestionnaireResponseItem
 ): QuestionnaireResponseItem {
-  // Recursively merge the nested items.
   const mergedNestedItems = mergeItems(prevItem.item ?? [], newItem.item ?? []);
 
   return {
     ...newItem,
     item: mergedNestedItems,
-    // Prioritize answers from the new item, but fall back to the old item's answers if the new item doesn't provide any.
     answer: newItem.answer && newItem.answer.length > 0 ? newItem.answer : prevItem.answer,
   };
 }
@@ -416,7 +414,6 @@ function mergeItemsWithSameLinkId(
   const result: QuestionnaireResponseItem[] = [];
   const maxLength = Math.max(prevItems.length, newItems.length);
 
-  // Loop over items to handle cases where there are varying counts of items with the same linkId between old and new items.
   for (let i = 0; i < maxLength; i++) {
     if (prevItems[i] && newItems[i]) {
       // If both old and new items exist for the current index, merge them.
@@ -435,23 +432,18 @@ function mergeItems(
 ): QuestionnaireResponseItem[] {
   let result: QuestionnaireResponseItem[] = [];
 
-  // Iterate over all linkIds from newItems.
   for (const newItem of newItems) {
     const linkId = newItem.linkId;
 
-    // Gather all items from the old list that share the current linkId.
     const prevMatchedItems = prevItems.filter((oldItem) => oldItem.linkId === linkId);
     const newMatchedItems = newItems.filter((newItem) => newItem.linkId === linkId);
 
-    // Remove matched items from prevItems to prevent merging them multiple times.
     prevItems = prevItems.filter((item) => item.linkId !== linkId);
     newItems = newItems.filter((item) => item.linkId !== linkId);
 
-    // Merge the gathered items and append to the result.
     result = result.concat(mergeItemsWithSameLinkId(prevMatchedItems, newMatchedItems));
   }
 
-  // Add remaining items from prevItems to result.
   result = result.concat(prevItems);
 
   return result;
