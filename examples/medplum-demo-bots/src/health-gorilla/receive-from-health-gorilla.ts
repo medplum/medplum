@@ -2,6 +2,7 @@ import {
   allOk,
   BotEvent,
   convertContainedResourcesToBundle,
+  encodeBase64,
   getIdentifier,
   getReferenceString,
   MedplumClient,
@@ -14,12 +15,31 @@ import {
   DiagnosticReport,
   Observation,
   OperationOutcome,
+  Parameters,
   Patient,
   Practitioner,
   PractitionerRole,
+  ProjectSecret,
   RequestGroup,
   ServiceRequest,
 } from '@medplum/fhirtypes';
+import { createHmac } from 'crypto';
+import fetch from 'node-fetch';
+
+interface HealthGorillaConfig {
+  baseUrl: string;
+  clientId: string;
+  clientSecret: string;
+  clientUri: string;
+  userLogin: string;
+  tenantId: string;
+  subtenantId: string;
+  subtenantAccountNumber: string;
+  scopes: string;
+  callbackBotId: string;
+  callbackClientId: string;
+  callbackClientSecret: string;
+}
 
 type HealthGorillaResource =
   | Account
@@ -87,11 +107,91 @@ export async function handler(
         console.log(entry.response.status, entry.response.location);
       }
     }
+
+    // If we created the top level ResourceGroup or DiagnosticReport,
+    // then get the PDF from Health Gorilla
+    if (resource.resourceType === 'RequestGroup' || resource.resourceType === 'DiagnosticReport') {
+      const entry = result.entry?.find(
+        (e) => e.response?.status === '201' && e.response?.location?.startsWith(resource.resourceType + '/')
+      );
+      if (entry?.resource) {
+        await attachPdf(medplum, event);
+      }
+    }
   } catch (err) {
     console.log(normalizeErrorString(err));
   }
 
   return allOk;
+}
+
+/**
+ * Returns the Health Gorilla config settings from the Medplum project secrets.
+ * If any required config values are missing, this method will throw and the bot will terminate.
+ * @param event The bot input event.
+ * @returns The Health Gorilla config settings.
+ */
+function getHealthGorillaConfig(event: BotEvent): HealthGorillaConfig {
+  const secrets = event.secrets;
+  return {
+    baseUrl: requireStringSecret(secrets, 'HEALTH_GORILLA_BASE_URL'),
+    clientId: requireStringSecret(secrets, 'HEALTH_GORILLA_CLIENT_ID'),
+    clientSecret: requireStringSecret(secrets, 'HEALTH_GORILLA_CLIENT_SECRET'),
+    clientUri: requireStringSecret(secrets, 'HEALTH_GORILLA_CLIENT_URI'),
+    userLogin: requireStringSecret(secrets, 'HEALTH_GORILLA_USER_LOGIN'),
+    tenantId: requireStringSecret(secrets, 'HEALTH_GORILLA_TENANT_ID'),
+    subtenantId: requireStringSecret(secrets, 'HEALTH_GORILLA_SUBTENANT_ID'),
+    subtenantAccountNumber: requireStringSecret(secrets, 'HEALTH_GORILLA_SUBTENANT_ACCOUNT_NUMBER'),
+    scopes: requireStringSecret(secrets, 'HEALTH_GORILLA_SCOPES'),
+    callbackBotId: requireStringSecret(secrets, 'HEALTH_GORILLA_CALLBACK_BOT_ID'),
+    callbackClientId: requireStringSecret(secrets, 'HEALTH_GORILLA_CALLBACK_CLIENT_ID'),
+    callbackClientSecret: requireStringSecret(secrets, 'HEALTH_GORILLA_CALLBACK_CLIENT_SECRET'),
+  };
+}
+
+function requireStringSecret(secrets: Record<string, ProjectSecret>, name: string): string {
+  const secret = secrets[name];
+  if (!secret?.valueString) {
+    throw new Error(`Missing secret: ${name}`);
+  }
+  return secret.valueString;
+}
+
+/**
+ * Connects to the Health Gorilla API and returns a FHIR client.
+ * @param config The Health Gorilla config settings.
+ * @returns The FHIR client.
+ */
+async function connectToHealthGorilla(config: HealthGorillaConfig): Promise<MedplumClient> {
+  const healthGorilla = new MedplumClient({
+    fetch,
+    baseUrl: config.baseUrl,
+    tokenUrl: config.baseUrl + '/oauth/token',
+    onUnauthenticated: () => console.error('Unauthenticated'),
+  });
+
+  const header = {
+    typ: 'JWT',
+    alg: 'HS256',
+  };
+
+  const currentTimestamp = Math.floor(Date.now() / 1000);
+
+  const data = {
+    aud: config.baseUrl + '/oauth/token',
+    iss: config.clientUri,
+    sub: config.userLogin,
+    iat: currentTimestamp,
+    exp: currentTimestamp + 604800, // expiry time is 7 days from time of creation
+  };
+
+  const encodedHeader = encodeBase64(JSON.stringify(header));
+  const encodedData = encodeBase64(JSON.stringify(data));
+  const token = `${encodedHeader}.${encodedData}`;
+  const signature = createHmac('sha256', config.clientSecret).update(token).digest('base64url');
+  const signedToken = `${token}.${signature}`;
+  await healthGorilla.startJwtBearerLogin(config.clientId, signedToken, config.scopes);
+  return healthGorilla;
 }
 
 /**
@@ -227,4 +327,32 @@ async function searchByHealthGorillaId(
 
   // Default case - search by identifier
   return medplum.searchOne(resourceType, { identifier: `${HEALTH_GORILLA_SYSTEM}|${id}` });
+}
+
+/**
+ * Downloads the PDF from Health Gorilla and attaches it to the Medplum resource as a Media resource.
+ * @param medplum The Medplum client.
+ * @param event The Bot execution event with a Health Gorilla resource.
+ */
+async function attachPdf<T extends HealthGorillaResource>(medplum: MedplumClient, event: BotEvent<T>): Promise<void> {
+  const resource = event.input;
+  const id = getIdentifier(resource, HEALTH_GORILLA_SYSTEM);
+  const config = getHealthGorillaConfig(event);
+  const healthGorilla = await connectToHealthGorilla(config);
+
+  // Use the HealthGorilla "$pdf" operation to get the PDF URL
+  const pdfResult = await healthGorilla.get(healthGorilla.fhirUrl(resource.resourceType, id as string, '$pdf'));
+
+  // Get the PDF URL from the Parameters resource
+  const pdfUrl = (pdfResult as Parameters).parameter?.find((p) => p.name === 'url')?.valueString as string;
+  const pdfBlob = await healthGorilla.download(pdfUrl, { headers: { Accept: 'application/pdf' } });
+
+  // node-fetch does not allow streaming from a Response object
+  // So read the PDF into memory first
+  const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+  const pdfUint8Array = new Uint8Array(pdfArrayBuffer);
+
+  // Create a Medplum media resource
+  const media = await medplum.uploadMedia(pdfUint8Array, 'application/pdf', resource.resourceType + '.pdf');
+  console.log('Uploaded PDF as media: ' + media.id);
 }
