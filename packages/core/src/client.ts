@@ -2266,8 +2266,11 @@ export class MedplumClient extends EventTarget {
       this.get('auth/me')
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
+          const profileChanged = this.sessionDetails?.profile?.id !== result.profile.id;
           this.sessionDetails = result;
-          this.dispatchEvent({ type: 'change' });
+          if (profileChanged) {
+            this.dispatchEvent({ type: 'change' });
+          }
           resolve(result.profile);
         })
         .catch(reject);
