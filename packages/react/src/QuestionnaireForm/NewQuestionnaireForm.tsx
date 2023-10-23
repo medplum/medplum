@@ -196,7 +196,7 @@ function QuestionnaireRepeatedGroup(props: QuestionnaireRepeatableGroupProps): J
   if (responses.length === 0) {
     return null;
   }
-  // console.log(responses);
+
   function onSetRepeatableGroup(newResponseItems: QuestionnaireResponseItem, index: number): void {
     const newResponses = responses.map((responses, idx) => (idx === index ? newResponseItems : responses));
     setResponses(newResponses);
@@ -290,7 +290,7 @@ interface QuestionnaireRepeatableItemProps {
 
 function QuestionnaireRepeatableItem(props: QuestionnaireRepeatableItemProps): JSX.Element | null {
   const { item, response, onChange } = props;
-  const [number, setNumber] = useState(1);
+  const [number, setNumber] = useState(getNumberOfRepeats(response ?? {}));
   if (!props.checkForQuestionEnabled(item)) {
     return null;
   }
@@ -312,6 +312,11 @@ function QuestionnaireRepeatableItem(props: QuestionnaireRepeatableItemProps): J
       </FormSection>
     </>
   );
+}
+
+function getNumberOfRepeats(response: QuestionnaireResponseItem): number {
+  const answers = response.answer;
+  return answers?.length ? answers.length : 1;
 }
 
 function buildInitialResponse(questionnaire: Questionnaire): QuestionnaireResponse {
