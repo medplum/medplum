@@ -52,8 +52,8 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       updatedAnswers = [newResponseAnswer];
     }
     props.onChange({
-      id: response.id,
-      linkId: response.linkId,
+      id: response?.id,
+      linkId: response?.linkId,
       text: item.text,
       answer: updatedAnswers,
     });
