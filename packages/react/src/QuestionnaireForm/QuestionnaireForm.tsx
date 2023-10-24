@@ -44,6 +44,8 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
   function setItems(newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[]): void {
     const currentItems = response?.item ?? [];
+    console.log('currentItems', currentItems);
+    console.log('newResponseItems', newResponseItems);
     const mergedItems = mergeItems(
       currentItems,
       Array.isArray(newResponseItems) ? newResponseItems : [newResponseItems]
@@ -230,9 +232,18 @@ interface QuestionnaireGroupProps {
 function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null {
   const { response, checkForQuestionEnabled, onChange } = props;
   function onSetGroup(newResponseItem: QuestionnaireResponseItem): void {
-    const newResponse = response?.item?.map((i) =>
-      i.linkId === newResponseItem.linkId ? newResponseItem : i
-    ) as QuestionnaireResponseItem;
+    let newResponse: QuestionnaireResponseItem;
+    if (Array.isArray(newResponseItem)) {
+      newResponse = response?.item?.map((i) => {
+        const matchingItem = newResponseItem.find((nr) => nr.linkId === i.linkId);
+        return matchingItem ?? i;
+      }) as QuestionnaireResponseItem;
+    } else {
+      newResponse = response?.item?.map((i) =>
+        i.linkId === newResponseItem.linkId ? newResponseItem : i
+      ) as QuestionnaireResponseItem;
+    }
+
     const groupResponse = { ...response, item: newResponse } as QuestionnaireResponseItem;
     onChange(groupResponse);
   }
@@ -432,7 +443,7 @@ function mergeIndividualItems(
 
   return {
     ...newItem,
-    item: mergedNestedItems,
+    item: mergedNestedItems.length > 0 ? mergedNestedItems : undefined,
     answer: newItem.answer && newItem.answer.length > 0 ? newItem.answer : prevItem.answer,
   };
 }
@@ -441,26 +452,24 @@ function mergeItems(
   prevItems: QuestionnaireResponseItem[],
   newItems: QuestionnaireResponseItem[]
 ): QuestionnaireResponseItem[] {
+  // Using responseId as the key because it is guaranteed to be unique
   const result: QuestionnaireResponseItem[] = [];
-  const usedLinkIds = new Set<string>();
+  const usedIds = new Set<string>();
 
   for (const prevItem of prevItems) {
-    const linkId = prevItem.linkId;
-    const newMatchedItems = newItems.filter((newItem) => newItem.linkId === linkId);
+    const itemId = prevItem.id;
+    const newItem = newItems.find((item) => item.id === itemId);
 
-    if (newMatchedItems.length) {
-      for (const newItem of newMatchedItems) {
-        result.push(mergeIndividualItems(prevItem, newItem));
-        usedLinkIds.add(newItem.linkId as string);
-      }
+    if (newItem) {
+      result.push(mergeIndividualItems(prevItem, newItem));
+      usedIds.add(newItem.id as string);
     } else {
       result.push(prevItem);
     }
   }
 
-  // Add items from newItems that were not in prevItems.
   for (const newItem of newItems) {
-    if (!usedLinkIds.has(newItem.linkId as string)) {
+    if (!usedIds.has(newItem.id as string)) {
       result.push(newItem);
     }
   }
