@@ -63,7 +63,14 @@ import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded } from './typeschema/types';
-import { arrayBufferToBase64, CodeChallengeMethod, createReference, ProfileResource, sleep } from './utils';
+import {
+  arrayBufferToBase64,
+  CodeChallengeMethod,
+  createReference,
+  getReferenceString,
+  ProfileResource,
+  sleep,
+} from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
@@ -2213,7 +2220,9 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   async setActiveLogin(login: LoginState): Promise<void> {
-    this.clearActiveLogin();
+    if (!this.sessionDetails?.profile || getReferenceString(this.sessionDetails.profile) !== login.profile?.reference) {
+      this.clearActiveLogin();
+    }
     this.setAccessToken(login.accessToken, login.refreshToken);
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
@@ -2266,8 +2275,11 @@ export class MedplumClient extends EventTarget {
       this.get('auth/me')
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
+          const profileChanged = this.sessionDetails?.profile?.id !== result.profile.id;
           this.sessionDetails = result;
-          this.dispatchEvent({ type: 'change' });
+          if (profileChanged) {
+            this.dispatchEvent({ type: 'change' });
+          }
           resolve(result.profile);
         })
         .catch(reject);
