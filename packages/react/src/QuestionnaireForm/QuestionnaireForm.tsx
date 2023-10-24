@@ -42,8 +42,6 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
   function setItems(newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[]): void {
     const currentItems = response?.item ?? [];
-    console.log('currentItems', currentItems);
-    console.log('newResponseItems', newResponseItems);
     const mergedItems = mergeItems(
       currentItems,
       Array.isArray(newResponseItems) ? newResponseItems : [newResponseItems]
@@ -119,7 +117,6 @@ function mergeItems(
   prevItems: QuestionnaireResponseItem[],
   newItems: QuestionnaireResponseItem[]
 ): QuestionnaireResponseItem[] {
-  // Using responseId as the key because it is guaranteed to be unique
   const result: QuestionnaireResponseItem[] = [];
   const usedIds = new Set<string>();
 
@@ -135,6 +132,7 @@ function mergeItems(
     }
   }
 
+  // Add items from newItems that were not in prevItems.
   for (const newItem of newItems) {
     if (!usedIds.has(newItem.id as string)) {
       result.push(newItem);
