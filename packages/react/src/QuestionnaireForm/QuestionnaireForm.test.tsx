@@ -804,6 +804,7 @@ describe('QuestionnaireForm', () => {
                 linkId: 'question1',
                 text: visibleQuestion,
                 type: 'string',
+                required: true,
               },
               {
                 linkId: 'question2-string',
@@ -831,7 +832,20 @@ describe('QuestionnaireForm', () => {
       onSubmit: jest.fn(),
     });
 
-    const visibleQuestionInput = screen.getByLabelText(visibleQuestion);
+    const visibleQuestionInput = screen.getByLabelText(visibleQuestion + ' *');
+    expect(visibleQuestionInput).toBeInTheDocument();
+
+    const nextButton = screen.getByText('Next');
+    expect(nextButton).toBeInTheDocument();
+
+    // Try to click "Next" without answering the question.
+    // This should fail, because the question is required.
+    await act(async () => {
+      fireEvent.click(nextButton);
+    });
+
+    expect(visibleQuestionInput).toBeInTheDocument();
+
     fireEvent.change(visibleQuestionInput, { target: { value: 'Test Value' } });
 
     expect((visibleQuestionInput as HTMLInputElement).value).toBe('Test Value');
@@ -842,7 +856,7 @@ describe('QuestionnaireForm', () => {
     expect((question2StringInput as HTMLInputElement).value).toBe('Test Value for Question2-String');
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(nextButton);
     });
 
     // Check that the texts for visibleQuestion and question2-string are no longer in the document.
@@ -857,7 +871,7 @@ describe('QuestionnaireForm', () => {
     });
 
     // Check that the values in the visibleQuestion and question2-string inputs are still the same.
-    const updatedVisibleQuestionInput = screen.getByLabelText(visibleQuestion) as HTMLInputElement;
+    const updatedVisibleQuestionInput = screen.getByLabelText(visibleQuestion + ' *') as HTMLInputElement;
     expect(updatedVisibleQuestionInput.value).toBe('Test Value');
 
     const updatedQuestion2StringInput = screen.getByLabelText('visible question 2') as HTMLInputElement;

@@ -99,6 +99,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           step="any"
           id={name}
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) => onChangeAnswer({ valueDecimal: e.currentTarget.valueAsNumber }, index)}
         />
@@ -110,6 +111,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           step={1}
           id={name}
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) => onChangeAnswer({ valueInteger: e.currentTarget.valueAsNumber }, index)}
         />
@@ -120,6 +122,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           type="date"
           id={name}
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) => onChangeAnswer({ valueDate: e.currentTarget.value }, index)}
         />
@@ -128,6 +131,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <DateTimeInput
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(newValue: string) => onChangeAnswer({ valueDateTime: newValue }, index)}
         />
@@ -138,6 +142,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           type="time"
           id={name}
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) => onChangeAnswer({ valueTime: e.currentTarget.value }, index)}
         />
@@ -148,6 +153,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <TextInput
           id={name}
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
@@ -157,6 +163,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <Textarea
           id={name}
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
@@ -175,6 +182,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <ReferenceInput
           name={name}
+          required={item.required}
           targetTypes={getQuestionnaireItemReferenceTargetTypes(item)}
           defaultValue={defaultValue?.value}
           onChange={(newValue) => onChangeAnswer({ valueReference: newValue }, index)}
@@ -184,6 +192,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <QuantityInput
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue }, index)}
           disableWheel
