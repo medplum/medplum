@@ -422,44 +422,33 @@ function mergeIndividualItems(
   };
 }
 
-function mergeItemsWithSameLinkId(
-  prevItems: QuestionnaireResponseItem[],
-  newItems: QuestionnaireResponseItem[]
-): QuestionnaireResponseItem[] {
-  const result: QuestionnaireResponseItem[] = [];
-  const maxLength = Math.max(prevItems.length, newItems.length);
-
-  for (let i = 0; i < maxLength; i++) {
-    if (prevItems[i] && newItems[i]) {
-      // If both old and new items exist for the current index, merge them.
-      result.push(mergeIndividualItems(prevItems[i], newItems[i]));
-    } else if (newItems[i]) {
-      // If only a new item exists for the current index, add it to the result.
-      result.push(newItems[i]);
-    }
-  }
-  return result;
-}
-
 function mergeItems(
   prevItems: QuestionnaireResponseItem[],
   newItems: QuestionnaireResponseItem[]
 ): QuestionnaireResponseItem[] {
-  let result: QuestionnaireResponseItem[] = [];
+  const result: QuestionnaireResponseItem[] = [];
+  const usedLinkIds = new Set<string>();
 
-  for (const newItem of newItems) {
-    const linkId = newItem.linkId;
-
-    const prevMatchedItems = prevItems.filter((oldItem) => oldItem.linkId === linkId);
+  for (const prevItem of prevItems) {
+    const linkId = prevItem.linkId;
     const newMatchedItems = newItems.filter((newItem) => newItem.linkId === linkId);
 
-    prevItems = prevItems.filter((item) => item.linkId !== linkId);
-    newItems = newItems.filter((item) => item.linkId !== linkId);
-
-    result = result.concat(mergeItemsWithSameLinkId(prevMatchedItems, newMatchedItems));
+    if (newMatchedItems.length) {
+      for (const newItem of newMatchedItems) {
+        result.push(mergeIndividualItems(prevItem, newItem));
+        usedLinkIds.add(newItem.linkId as string);
+      }
+    } else {
+      result.push(prevItem);
+    }
   }
 
-  result = result.concat(prevItems);
+  // Add items from newItems that were not in prevItems.
+  for (const newItem of newItems) {
+    if (!usedLinkIds.has(newItem.linkId as string)) {
+      result.push(newItem);
+    }
+  }
 
   return result;
 }
