@@ -975,6 +975,11 @@ describe('Client', () => {
           profile: { reference: 'Patient/123' },
         };
       }
+      if (url.includes('auth/me')) {
+        return {
+          profile: { resourceType: 'Patient', id: '123' },
+        };
+      }
       return {};
     });
 

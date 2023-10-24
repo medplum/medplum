@@ -16,7 +16,7 @@ While the Medplum Agent traditionally connected healthcare facilities to cloud s
 
 ## How it works
 
-First, consider the most simple case: an HL7 device on the network:
+First, consider the most simple case: an HL7 device on the network (e.g. a Radiology Information System or Lab Instrument):
 
 ![Medplum Agent Push 1](./medplum-agent-push-1.webp)
 
@@ -38,9 +38,9 @@ medplum hl7 send localhost 56000 --generate-example
 
 This will send a message and print the reply to the terminal.
 
-The main challenge with HL7 interfaces is the need to be on the local network.
+The main challenge with HL7 interfaces is the need to be on the local network. Historically, this meant running the EHR software on-premise.
 
-Instead, we will use the Medplum Agent to proxy traffic:
+Instead, we will use the Medplum Agent to proxy traffic to the Medplum server hosted in the cloud:
 
 ![Medplum Agent Push 3](./medplum-agent-push-3.webp)
 
