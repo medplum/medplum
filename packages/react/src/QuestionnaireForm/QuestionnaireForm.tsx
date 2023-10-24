@@ -93,6 +93,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         renderPages={numberOfPages > 1}
         activePage={activePage}
         numberOfPages={numberOfPages}
+        submitButtonText={props.submitButtonText}
         checkForQuestionEnabled={checkForQuestionEnabled}
         nextStep={nextStep}
         prevStep={prevStep}
@@ -102,12 +103,12 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 }
 
 interface QuestionnairePageSequenceProps {
-  items: QuestionnaireItem[];
-  response?: QuestionnaireResponse;
-  renderPages: boolean;
-  activePage?: number;
-  numberOfPages: number;
-  submitButtonText?: string;
+  readonly items: QuestionnaireItem[];
+  readonly response?: QuestionnaireResponse;
+  readonly renderPages: boolean;
+  readonly activePage?: number;
+  readonly numberOfPages: number;
+  readonly submitButtonText?: string;
   checkForQuestionEnabled: (item: QuestionnaireItem) => boolean;
   onChange: (items: QuestionnaireResponseItem | QuestionnaireResponseItem[]) => void;
   nextStep: () => void;
@@ -221,8 +222,8 @@ function QuestionnaireRepeatedGroup(props: QuestionnaireRepeatableGroupProps): J
 }
 
 interface QuestionnaireGroupProps {
-  item: QuestionnaireItem;
-  response: QuestionnaireResponseItem;
+  readonly item: QuestionnaireItem;
+  readonly response: QuestionnaireResponseItem;
   checkForQuestionEnabled: (item: QuestionnaireItem) => boolean;
   onChange: (response: QuestionnaireResponseItem) => void;
 }
@@ -257,11 +258,11 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
           {props.item.text}
         </Title>
       )}
-      {(props.item.item ?? []).map((item, index) => {
+      {(props.item.item ?? []).map((item) => {
         if (item.type === QuestionnaireItemType.group) {
           return item.repeats ? (
             <QuestionnaireRepeatedGroup
-              key={index}
+              key={item.linkId}
               item={item}
               response={response.item?.filter((i) => i.linkId === item.linkId) ?? []}
               checkForQuestionEnabled={checkForQuestionEnabled}
@@ -269,7 +270,7 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
             />
           ) : (
             <QuestionnaireGroup
-              key={index}
+              key={item.linkId}
               item={item}
               checkForQuestionEnabled={checkForQuestionEnabled}
               response={response.item?.find((i) => i.linkId === item.linkId) ?? {}}
@@ -279,11 +280,11 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
         }
         return (
           <QuestionnaireRepeatableItem
+            key={item.linkId}
             item={item}
             response={response.item?.find((i) => i.linkId === item.linkId)}
             onChange={onSetGroup}
             checkForQuestionEnabled={checkForQuestionEnabled}
-            key={index}
           />
         );
       })}
@@ -292,8 +293,8 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
 }
 
 interface QuestionnaireRepeatableItemProps {
-  item: QuestionnaireItem;
-  response?: QuestionnaireResponseItem;
+  readonly item: QuestionnaireItem;
+  readonly response?: QuestionnaireResponseItem;
   checkForQuestionEnabled: (item: QuestionnaireItem) => boolean;
   onChange: (items: QuestionnaireResponseItem) => void;
 }
@@ -318,19 +319,17 @@ function QuestionnaireRepeatableItem(props: QuestionnaireRepeatableItemProps): J
   }
 
   return (
-    <>
-      <FormSection
-        key={props.item.linkId}
-        htmlFor={props.item.linkId}
-        title={props.item.text}
-        withAsterisk={props.item.required}
-      >
-        {[...Array(number)].map((_, index) => (
-          <QuestionnaireFormItem key={index} item={item} response={response} onChange={onChange} index={index} />
-        ))}
-        {showAddButton && <Anchor onClick={() => setNumber((n) => n + 1)}>Add Item</Anchor>}
-      </FormSection>
-    </>
+    <FormSection
+      key={props.item.linkId}
+      htmlFor={props.item.linkId}
+      title={props.item.text}
+      withAsterisk={props.item.required}
+    >
+      {[...Array(number)].map((_, index) => (
+        <QuestionnaireFormItem key={item.linkId} item={item} response={response} onChange={onChange} index={index} />
+      ))}
+      {showAddButton && <Anchor onClick={() => setNumber((n) => n + 1)}>Add Item</Anchor>}
+    </FormSection>
   );
 }
 
