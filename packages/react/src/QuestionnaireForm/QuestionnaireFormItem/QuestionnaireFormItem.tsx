@@ -76,7 +76,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     return null;
   }
 
-  const name = response.id;
+  const name = item.linkId;
   if (!name) {
     return null;
   }
@@ -94,7 +94,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <CheckboxFormSection key={props.item.linkId} title={props.item.text} htmlFor={props.item.linkId}>
           <Checkbox
             id={props.item.linkId}
-            name={name}
+            name={props.item.linkId}
             defaultChecked={defaultValue?.value}
             onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked })}
           />
@@ -317,7 +317,7 @@ function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.
   }
   return (
     <QuestionnaireChoiceRadioInput
-      name={name}
+      name={response?.id ?? name}
       item={item}
       initial={initial}
       response={response}

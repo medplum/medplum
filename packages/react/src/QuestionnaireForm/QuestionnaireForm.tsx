@@ -17,10 +17,10 @@ import { QuestionnaireFormItem } from './QuestionnaireFormItem/QuestionnaireForm
 import { FormSection } from '../FormSection/FormSection';
 
 export interface QuestionnaireFormProps {
-  questionnaire: Questionnaire;
+  questionnaire: Questionnaire | Reference<Questionnaire>;
   subject?: Reference;
   submitButtonText?: string;
-  onSubmit?: (response: QuestionnaireResponse) => void;
+  onSubmit: (response: QuestionnaireResponse) => void;
 }
 
 export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | null {
@@ -87,19 +87,17 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }}
     >
       {questionnaire.title && <Title>{questionnaire.title}</Title>}
-      {questionnaire.item && (
-        <QuestionnairePageSequence
-          items={questionnaire.item ?? []}
-          response={response}
-          onChange={setItems}
-          renderPages={numberOfPages > 1}
-          activePage={activePage}
-          numberOfPages={numberOfPages}
-          checkForQuestionEnabled={checkForQuestionEnabled}
-          nextStep={nextStep}
-          prevStep={prevStep}
-        />
-      )}
+      <QuestionnairePageSequence
+        items={questionnaire.item ?? []}
+        response={response}
+        onChange={setItems}
+        renderPages={numberOfPages > 1}
+        activePage={activePage}
+        numberOfPages={numberOfPages}
+        checkForQuestionEnabled={checkForQuestionEnabled}
+        nextStep={nextStep}
+        prevStep={prevStep}
+      />
     </Form>
   );
 }
@@ -245,14 +243,12 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
   }
 
   return (
-    <>
-      <div key={props.item.linkId}>
-        {props.item.text && (
-          <Title order={3} mb="md">
-            {props.item.text}
-          </Title>
-        )}
-      </div>
+    <div key={props.item.linkId}>
+      {props.item.text && (
+        <Title order={3} mb="md">
+          {props.item.text}
+        </Title>
+      )}
       {(props.item.item ?? []).map((item, index) => {
         if (item.type === QuestionnaireItemType.group) {
           return item.repeats ? (
@@ -283,7 +279,7 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
           />
         );
       })}
-    </>
+    </div>
   );
 }
 
