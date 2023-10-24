@@ -1,5 +1,5 @@
 import { Anchor, Button, Group, Stack, Stepper, Title } from '@mantine/core';
-import { createReference, getExtension, getReferenceString, ProfileResource } from '@medplum/core';
+import { ProfileResource, createReference, getExtension, getReferenceString } from '@medplum/core';
 import {
   Questionnaire,
   QuestionnaireItem,
@@ -14,7 +14,6 @@ import React, { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
 import { isQuestionEnabled, QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireFormItem } from './QuestionnaireFormItem/QuestionnaireFormItem';
-import { FormSection } from '../FormSection/FormSection';
 
 export interface QuestionnaireFormProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
