@@ -2,7 +2,7 @@
 
 ![Medplum](packages/docs/static/img/cover.webp)
 
-Medplum is a developer platform that enables flexible and rapid development of healthcare apps.
+Medplum is a developer platform that enables the flexible and rapid development of healthcare apps.
 
 - **Medplum Auth** - End-to-end identity solution for easy user authentication, sign-in, and permissions using OAuth, OpenID, and SMART-on-FHIR.
 - **Medplum Clinical Data Repository (CDR)** - Backend server that hosts your healthcare data in a secure, compliant, and standards-based repository.
