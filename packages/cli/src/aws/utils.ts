@@ -68,7 +68,7 @@ export async function getStackByTag(tag: string): Promise<MedplumStackDetails | 
 export async function getStackDetails(stackName: string): Promise<MedplumStackDetails | undefined> {
   const result = {} as Partial<MedplumStackDetails>;
   await buildStackDetails(cloudFormationClient, stackName, result);
-  if (cloudFormationClient.config.region !== 'us-east-1') {
+  if ((await cloudFormationClient.config.region()) !== 'us-east-1') {
     await buildStackDetails(new CloudFormationClient({ region: 'us-east-1' }), stackName + '-us-east-1', result);
   }
   return result as MedplumStackDetails;
