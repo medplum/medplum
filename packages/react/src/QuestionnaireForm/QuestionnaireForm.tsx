@@ -91,6 +91,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         renderPages={numberOfPages > 1}
         activePage={activePage}
         numberOfPages={numberOfPages}
+        submitButtonText={props.submitButtonText}
         checkForQuestionEnabled={checkForQuestionEnabled}
         nextStep={nextStep}
         prevStep={prevStep}
