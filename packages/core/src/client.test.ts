@@ -975,6 +975,11 @@ describe('Client', () => {
           profile: { reference: 'Patient/123' },
         };
       }
+      if (url.includes('auth/me')) {
+        return {
+          profile: { resourceType: 'Patient', id: '123' },
+        };
+      }
       return {};
     });
 
@@ -2120,7 +2125,12 @@ describe('Client', () => {
   test('Push to agent', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const result = await client.pushToAgent({ resourceType: 'Agent', id: '123' }, 'XYZ', ContentType.HL7_V2);
+    const result = await client.pushToAgent(
+      { resourceType: 'Agent', id: '123' },
+      { resourceType: 'Device', id: '456' },
+      'XYZ',
+      ContentType.HL7_V2
+    );
     expect(result).toBeDefined();
     expect(fetch).toBeCalledWith(
       'https://api.medplum.com/fhir/R4/Agent/123/$push',
@@ -2128,10 +2138,10 @@ describe('Client', () => {
         method: 'POST',
         headers: {
           Accept: DEFAULT_ACCEPT,
-          'Content-Type': ContentType.HL7_V2,
+          'Content-Type': ContentType.FHIR_JSON,
           'X-Medplum': 'extended',
         },
-        body: expect.stringContaining('XYZ'),
+        body: expect.stringMatching(/.+"destination":".+"body":"XYZ","contentType":"x-application\/hl7-v2\+er7".+/),
       })
     );
   });

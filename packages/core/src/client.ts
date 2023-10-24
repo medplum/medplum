@@ -69,6 +69,7 @@ import {
   createReference,
   getReferenceString,
   ProfileResource,
+  resolveId,
   sleep,
 } from './utils';
 
@@ -2197,13 +2198,29 @@ export class MedplumClient extends EventTarget {
    * Pushes a message to an agent.
    *
    * @param agent The agent to push to.
+   * @param destination The destination device.
    * @param body The message body.
    * @param contentType Optional message content type.
    * @param options Optional fetch options.
    * @returns Promise to the operation outcome.
    */
-  pushToAgent(agent: Agent, body: any, contentType?: string, options?: RequestInit): Promise<OperationOutcome> {
-    return this.post(this.fhirUrl('Agent', agent.id as string, '$push'), body, contentType, options);
+  pushToAgent(
+    agent: Agent | Reference<Agent>,
+    destination: Device | Reference<Device>,
+    body: any,
+    contentType?: string,
+    options?: RequestInit
+  ): Promise<OperationOutcome> {
+    return this.post(
+      this.fhirUrl('Agent', resolveId(agent) as string, '$push'),
+      {
+        destination: getReferenceString(destination),
+        body,
+        contentType,
+      },
+      ContentType.FHIR_JSON,
+      options
+    );
   }
 
   /**

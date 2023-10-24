@@ -18,6 +18,7 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
+import { isReference } from './types';
 
 /**
  * @internal
@@ -51,20 +52,29 @@ export function createReference<T extends Resource>(resource: T): Reference<T> {
 
 /**
  * Returns a reference string for a resource.
- * @param resource The FHIR resource.
+ * @param input The FHIR resource or reference.
  * @returns A reference string of the form resourceType/id.
  */
-export function getReferenceString(resource: Resource): string {
-  return resource.resourceType + '/' + resource.id;
+export function getReferenceString(input: Reference | Resource): string {
+  if (isReference(input)) {
+    return input.reference;
+  }
+  return `${(input as Resource).resourceType}/${input.id}`;
 }
 
 /**
  * Returns the ID portion of a reference.
- * @param reference A FHIR reference.
+ * @param input A FHIR reference or resource.
  * @returns The ID portion of a reference.
  */
-export function resolveId(reference: Reference | undefined): string | undefined {
-  return reference?.reference?.split('/')[1];
+export function resolveId(input: Reference | Resource | undefined): string | undefined {
+  if (!input) {
+    return undefined;
+  }
+  if (isReference(input)) {
+    return input.reference.split('/')[1];
+  }
+  return input.id;
 }
 
 /**
