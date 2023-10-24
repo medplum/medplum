@@ -1,7 +1,14 @@
-import { Patient } from '@medplum/fhirtypes';
+import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { formatSearchQuery, Operator, parseSearchDefinition, parseXFhirQuery, SearchRequest } from './search';
+import { indexSearchParameterBundle } from '../types';
+import { readJson } from '@medplum/definitions';
 
 describe('Search Utils', () => {
+  beforeAll(() => {
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
+  });
+
   test('Parse Patient search', () => {
     const result = parseSearchDefinition('/x/y/z/Patient');
     expect(result.resourceType).toBe('Patient');
@@ -115,6 +122,36 @@ describe('Search Utils', () => {
           code: '_lastUpdated',
           operator: Operator.LESS_THAN_OR_EQUALS,
           value: '2023-05-01T06:59:59.999Z',
+        },
+      ],
+    });
+  });
+
+  test('Parse chained search parameters', () => {
+    const searchReq = parseSearchDefinition(
+      'Patient?organization.name=Kaiser%20Permanente&_has:Observation:subject:performer:Practitioner.name=Alice'
+    );
+    expect(searchReq).toMatchObject<SearchRequest>({
+      resourceType: 'Patient',
+      chains: [
+        {
+          chain: [
+            {
+              resourceType: 'Organization',
+              code: 'organization',
+              filter: { code: 'name', operator: Operator.EQUALS, value: 'Kaiser Permanente' },
+            },
+          ],
+        },
+        {
+          chain: [
+            { resourceType: 'Observation', code: 'subject', reverse: true },
+            {
+              resourceType: 'Practitioner',
+              code: 'performer',
+              filter: { code: 'name', operator: Operator.EQUALS, value: 'Alice' },
+            },
+          ],
         },
       ],
     });
