@@ -139,7 +139,12 @@ function mergeItems(
     }
   }
 
-  result = result.concat(prevItems);
+  // Add items from newItems that were not in prevItems.
+  for (const newItem of newItems) {
+    if (!usedLinkIds.has(newItem.linkId as string)) {
+      result.push(newItem);
+    }
+  }
 
   return result;
 }
