@@ -12,9 +12,9 @@ import {
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import React, { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
-import { isQuestionEnabled, QuestionnaireItemType } from '../utils/questionnaire';
-import { QuestionnaireFormItem } from './QuestionnaireFormItem/QuestionnaireFormItem';
 import { FormSection } from '../FormSection/FormSection';
+import { QuestionnaireItemType, isQuestionEnabled } from '../utils/questionnaire';
+import { QuestionnaireFormItem } from './QuestionnaireFormItem/QuestionnaireFormItem';
 
 export interface QuestionnaireFormProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
@@ -260,11 +260,11 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
         </Title>
       )}
       <Stack>
-        {(props.item.item ?? []).map((item) => {
+        {(props.item.item ?? []).map((item, idx) => {
           if (item.type === QuestionnaireItemType.group) {
             return item.repeats ? (
               <QuestionnaireRepeatedGroup
-                key={item.linkId}
+                key={`${item.linkId}-${idx}`}
                 item={item}
                 response={response.item?.filter((i) => i.linkId === item.linkId) ?? []}
                 checkForQuestionEnabled={checkForQuestionEnabled}
@@ -272,7 +272,7 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
               />
             ) : (
               <QuestionnaireGroup
-                key={item.linkId}
+                key={`${item.linkId}-${idx}`}
                 item={item}
                 checkForQuestionEnabled={checkForQuestionEnabled}
                 response={response.item?.find((i) => i.linkId === item.linkId) ?? {}}
@@ -282,7 +282,7 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
           }
           return (
             <QuestionnaireRepeatableItem
-              key={item.linkId}
+              key={`${item.linkId}-${idx}`}
               item={item}
               response={response.item?.find((i) => i.linkId === item.linkId)}
               onChange={onSetGroup}
@@ -329,7 +329,13 @@ function QuestionnaireRepeatableItem(props: QuestionnaireRepeatableItemProps): J
       withAsterisk={props.item.required}
     >
       {[...Array(number)].map((_, index) => (
-        <QuestionnaireFormItem key={item.linkId} item={item} response={response} onChange={onChange} index={index} />
+        <QuestionnaireFormItem
+          key={`${item.linkId}-${index}`}
+          item={item}
+          response={response}
+          onChange={onChange}
+          index={index}
+        />
       ))}
       {showAddButton && <Anchor onClick={() => setNumber((n) => n + 1)}>Add Item</Anchor>}
     </FormSection>
