@@ -1,6 +1,6 @@
 import { GoogleCredentialResponse } from '@medplum/core';
+import { useMedplum } from '@medplum/react-hooks';
 import React, { useEffect, useRef, useState } from 'react';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { createScriptTag } from '../utils/script';
 
 interface GoogleApi {

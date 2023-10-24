@@ -29,6 +29,7 @@
     "@medplum/definitions": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
+    "@medplum/react-hooks": "*",
     "@storybook/addon-actions": "7.4.6",
     "@storybook/addon-essentials": "7.4.6",
     "@storybook/addon-links": "7.4.6",

@@ -32,6 +32,7 @@ packages/graphiql/public/
 packages/hl7/dist/
 packages/mock/dist/
 packages/react/dist/
+packages/react-hooks/dist/
 packages/server/dist/
 
 # Storybook output

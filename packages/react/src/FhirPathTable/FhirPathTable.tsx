@@ -1,9 +1,9 @@
 import { Button, Loader, Table } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
 import React, { useEffect, useRef, useState } from 'react';
 import { FhirPathDisplay } from '../FhirPathDisplay/FhirPathDisplay';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { SearchClickEvent } from '../SearchControl/SearchControl';
 import { isCheckboxCell, killEvent } from '../utils/dom';
 

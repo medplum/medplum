@@ -1,7 +1,7 @@
 import { MedplumClient } from '@medplum/core';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { AttachmentDisplay, AttachmentDisplayProps } from './AttachmentDisplay';
 
 function mockFetch(url: string, options: any): Promise<any> {

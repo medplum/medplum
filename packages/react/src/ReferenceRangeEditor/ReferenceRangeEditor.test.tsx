@@ -1,10 +1,10 @@
 import { deepClone } from '@medplum/core';
 import { ObservationDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { HDLDefinition, TestosteroneDefinition } from '../stories/referenceLab';
 import { ReferenceRangeEditor, ReferenceRangeEditorProps } from './ReferenceRangeEditor';
 

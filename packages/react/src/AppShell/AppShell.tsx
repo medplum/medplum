@@ -1,8 +1,8 @@
 import { AppShell as MantineAppShell, useMantineTheme } from '@mantine/core';
+import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import React, { Suspense, useState } from 'react';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { Loading } from '../Loading/Loading';
-import { useMedplum, useMedplumProfile } from '../MedplumProvider/MedplumProvider.context';
 import { Header } from './Header';
 import { Navbar, NavbarMenu } from './Navbar';
 

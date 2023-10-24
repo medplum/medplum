@@ -1,11 +1,10 @@
 import { Group, Text } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import React, { forwardRef, useCallback, useState } from 'react';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
-import { useResource } from '../useResource/useResource';
 
 /**
  * Search parameter overrides for specific resource types.

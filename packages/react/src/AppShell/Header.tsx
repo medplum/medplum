@@ -1,10 +1,10 @@
 import { Avatar, createStyles, Group, Header as MantineHeader, Menu, Stack, Text, UnstyledButton } from '@mantine/core';
 import { formatHumanName, getReferenceString, ProfileResource } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
+import { useMedplumContext } from '@medplum/react-hooks';
 import { IconChevronDown, IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons-react';
 import React, { useState } from 'react';
 import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
-import { useMedplumContext } from '../MedplumProvider/MedplumProvider.context';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { HeaderSearchInput } from './HeaderSearchInput';
 

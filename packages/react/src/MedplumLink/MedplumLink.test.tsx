@@ -1,9 +1,9 @@
 import { MedplumClient } from '@medplum/core';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumLink } from './MedplumLink';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 
 function mockFetch(url: string, options: any): Promise<any> {
   const response: any = {
