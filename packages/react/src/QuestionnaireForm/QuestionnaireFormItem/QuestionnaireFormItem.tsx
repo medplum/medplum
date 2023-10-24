@@ -51,17 +51,15 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     if (Array.isArray(newResponseAnswer)) {
       // It's a multi-select case, so use the array directly.
       updatedAnswers = newResponseAnswer;
-    } else if (props.index !== 0) {
-      if (props.index >= (props.response?.answer?.length ?? 0)) {
-        updatedAnswers = (props.response?.answer ?? []).concat([newResponseAnswer]);
-      } else {
-        const newAnswers = (props.response?.answer ?? []).map((a, idx) =>
-          idx === props.index ? newResponseAnswer : a
-        ) as QuestionnaireResponseItemAnswer[];
-        updatedAnswers = newAnswers ?? [];
-      }
+    } else if (props.index >= (props.response?.answer?.length ?? 0)) {
+      // if adding a new answer
+      updatedAnswers = (props.response?.answer ?? []).concat([newResponseAnswer]);
     } else {
-      updatedAnswers = [newResponseAnswer];
+      // if updating an existing answer
+      const newAnswers = (props.response?.answer ?? []).map((a, idx) =>
+        idx === props.index ? newResponseAnswer : a
+      ) as QuestionnaireResponseItemAnswer[];
+      updatedAnswers = newAnswers ?? [];
     }
     props.onChange({
       id: response?.id,
