@@ -34,6 +34,12 @@
         "useLiteralKeys": "warn",
         "useFlatMap": "warn",
         "noUselessFragments": "warn",
+        "noExcessiveCognitiveComplexity": {
+          "level": "warn",
+          "options": {
+            "maxAllowedComplexity": 15
+          }
+        },
 
         "noForEach": "warn",
         "useSimplifiedLogicExpression": "warn"
@@ -54,14 +60,6 @@
         "noPositiveTabindex": "warn",
         "useMediaCaption": "warn",
         "useAltText": "warn"
-      },
-      "nursery": {
-        "noExcessiveComplexity": {
-          "level": "warn",
-          "options": {
-            "maxAllowedComplexity": 15
-          }
-        }
       }
     }
   },
