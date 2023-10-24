@@ -29,13 +29,13 @@ import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { Form } from '../Form/Form';
-import { useMedplum, useMedplumNavigate } from '../MedplumProvider/MedplumProvider.context';
+import { useMedplum, useMedplumNavigate } from '@medplum/react-hooks';
 import { Panel } from '../Panel/Panel';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceDiffTable } from '../ResourceDiffTable/ResourceDiffTable';
 import { ResourceTable } from '../ResourceTable/ResourceTable';
 import { Timeline, TimelineItem } from '../Timeline/Timeline';
-import { useResource } from '../useResource/useResource';
+import { useResource } from '@medplum/react-hooks';
 import { sortByDateAndPriority } from '../utils/date';
 
 const useStyles = createStyles((theme) => ({

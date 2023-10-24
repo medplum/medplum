@@ -1,10 +1,10 @@
-import { globalSchema, TypeInfo, InternalSchemaElement } from '@medplum/core';
+import { globalSchema, InternalSchemaElement, TypeInfo } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { BackboneElementInput, BackboneElementInputProps } from './BackboneElementInput';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 
 const valueSetComposeProperty: InternalSchemaElement = {
   path: 'ValueSet.compose',

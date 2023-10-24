@@ -5,7 +5,7 @@ import {
   AsyncAutocompleteOption,
   AsyncAutocompleteProps,
 } from '../AsyncAutocomplete/AsyncAutocomplete';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+import { useMedplum } from '@medplum/react-hooks';
 
 export interface ValueSetAutocompleteProps
   extends Omit<AsyncAutocompleteProps<ValueSetExpansionContains>, 'loadOptions' | 'toKey' | 'toOption'> {

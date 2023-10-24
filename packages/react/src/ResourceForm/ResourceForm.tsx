@@ -4,8 +4,8 @@ import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
 import { FormSection } from '../FormSection/FormSection';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
-import { useResource } from '../useResource/useResource';
+import { useMedplum } from '@medplum/react-hooks';
+import { useResource } from '@medplum/react-hooks';
 
 export interface ResourceFormProps {
   defaultValue: Resource | Reference;

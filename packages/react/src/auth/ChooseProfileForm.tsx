@@ -3,7 +3,7 @@ import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum
 import { OperationOutcome, ProjectMembership } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { Logo } from '../Logo/Logo';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+import { useMedplum } from '@medplum/react-hooks';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 
 export interface ChooseProfileFormProps {

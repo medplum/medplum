@@ -11,7 +11,7 @@ import React, { useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { GoogleButton } from '../GoogleButton/GoogleButton';
 import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+import { useMedplum } from '@medplum/react-hooks';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 

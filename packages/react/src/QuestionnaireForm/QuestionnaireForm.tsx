@@ -12,8 +12,8 @@ import {
 import React, { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
 import { FormSection } from '../FormSection/FormSection';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
-import { useResource } from '../useResource/useResource';
+import { useMedplum } from '@medplum/react-hooks';
+import { useResource } from '@medplum/react-hooks';
 import { isQuestionEnabled, QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireFormItem } from './QuestionnaireFormItem/QuestionnaireFormItem';
 

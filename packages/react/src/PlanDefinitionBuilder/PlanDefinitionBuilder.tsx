@@ -1,17 +1,16 @@
 import { Anchor, Button, createStyles, NativeSelect, Stack, TextInput } from '@mantine/core';
 import { getReferenceString, InternalSchemaElement } from '@medplum/core';
 import { PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { FormSection } from '../FormSection/FormSection';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
-import { useResource } from '../useResource/useResource';
 import { killEvent } from '../utils/dom';
 
 const useStyles = createStyles((theme) => ({

@@ -3,9 +3,9 @@ import { getDisplayString, getReferenceString } from '@medplum/core';
 import { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import React, { forwardRef, useCallback, useState } from 'react';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+import { useMedplum } from '@medplum/react-hooks';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
-import { useResource } from '../useResource/useResource';
+import { useResource } from '@medplum/react-hooks';
 
 /**
  * Search parameter overrides for specific resource types.

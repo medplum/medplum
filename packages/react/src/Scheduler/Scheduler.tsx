@@ -7,8 +7,8 @@ import { getStartMonth } from '../CalendarInput/CalendarInput.utils';
 import { QuestionnaireForm } from '../QuestionnaireForm/QuestionnaireForm';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
-import { useResource } from '../useResource/useResource';
-import { useSearchResources } from '../useSearch/useSearch';
+import { useResource } from '@medplum/react-hooks';
+import { useSearchResources } from '@medplum/react-hooks';
 
 const useStyles = createStyles((theme) => ({
   container: {

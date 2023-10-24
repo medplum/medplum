@@ -6,7 +6,7 @@ import { randomUUID } from 'crypto';
 import each from 'jest-each';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 
