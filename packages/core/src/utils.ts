@@ -54,17 +54,28 @@ export function createReference<T extends Resource>(resource: T): Reference<T> {
  * @param resource The FHIR resource.
  * @returns A reference string of the form resourceType/id.
  */
-export function getReferenceString(resource: Resource): string {
-  return resource.resourceType + '/' + resource.id;
+export function getReferenceString(resource: Reference | Resource): string {
+  const { reference, resourceType, id } = resource as any;
+  if (reference && typeof reference === 'string') {
+    return reference;
+  }
+  return `${resourceType}/${id}`;
 }
 
 /**
  * Returns the ID portion of a reference.
- * @param reference A FHIR reference.
+ * @param input A FHIR reference or resource.
  * @returns The ID portion of a reference.
  */
-export function resolveId(reference: Reference | undefined): string | undefined {
-  return reference?.reference?.split('/')[1];
+export function resolveId(input: Reference | Resource | undefined): string | undefined {
+  if (!input) {
+    return undefined;
+  }
+  const { reference, id } = input as any;
+  if (reference) {
+    return reference.split('/')[1];
+  }
+  return id;
 }
 
 /**
