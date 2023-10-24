@@ -12,9 +12,9 @@ import {
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import React, { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
-import { FormSection } from '../FormSection/FormSection';
-import { QuestionnaireItemType, isQuestionEnabled } from '../utils/questionnaire';
+import { isQuestionEnabled, QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireFormItem } from './QuestionnaireFormItem/QuestionnaireFormItem';
+import { FormSection } from '../FormSection/FormSection';
 
 export interface QuestionnaireFormProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
@@ -259,36 +259,38 @@ function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null 
           {props.item.text}
         </Title>
       )}
-      {(props.item.item ?? []).map((item) => {
-        if (item.type === QuestionnaireItemType.group) {
-          return item.repeats ? (
-            <QuestionnaireRepeatedGroup
+      <Stack>
+        {(props.item.item ?? []).map((item) => {
+          if (item.type === QuestionnaireItemType.group) {
+            return item.repeats ? (
+              <QuestionnaireRepeatedGroup
+                key={item.linkId}
+                item={item}
+                response={response.item?.filter((i) => i.linkId === item.linkId) ?? []}
+                checkForQuestionEnabled={checkForQuestionEnabled}
+                onChange={onSetGroup}
+              />
+            ) : (
+              <QuestionnaireGroup
+                key={item.linkId}
+                item={item}
+                checkForQuestionEnabled={checkForQuestionEnabled}
+                response={response.item?.find((i) => i.linkId === item.linkId) ?? {}}
+                onChange={onSetGroup}
+              />
+            );
+          }
+          return (
+            <QuestionnaireRepeatableItem
               key={item.linkId}
               item={item}
-              response={response.item?.filter((i) => i.linkId === item.linkId) ?? []}
-              checkForQuestionEnabled={checkForQuestionEnabled}
+              response={response.item?.find((i) => i.linkId === item.linkId)}
               onChange={onSetGroup}
-            />
-          ) : (
-            <QuestionnaireGroup
-              key={item.linkId}
-              item={item}
               checkForQuestionEnabled={checkForQuestionEnabled}
-              response={response.item?.find((i) => i.linkId === item.linkId) ?? {}}
-              onChange={onSetGroup}
             />
           );
-        }
-        return (
-          <QuestionnaireRepeatableItem
-            key={item.linkId}
-            item={item}
-            response={response.item?.find((i) => i.linkId === item.linkId)}
-            onChange={onSetGroup}
-            checkForQuestionEnabled={checkForQuestionEnabled}
-          />
-        );
-      })}
+        })}
+      </Stack>
     </div>
   );
 }
