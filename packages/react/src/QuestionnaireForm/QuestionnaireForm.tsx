@@ -9,11 +9,10 @@ import {
   QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import React, { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
 import { FormSection } from '../FormSection/FormSection';
-import { useMedplum } from '@medplum/react-hooks';
-import { useResource } from '@medplum/react-hooks';
 import { isQuestionEnabled, QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireFormItem } from './QuestionnaireFormItem/QuestionnaireFormItem';
 

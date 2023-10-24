@@ -1,8 +1,7 @@
 import { Reference, Resource } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import React, { useEffect, useState } from 'react';
 import { BackboneElementDisplay } from '../BackboneElementDisplay/BackboneElementDisplay';
-import { useMedplum } from '@medplum/react-hooks';
-import { useResource } from '@medplum/react-hooks';
 
 export interface ResourceTableProps {
   /**
