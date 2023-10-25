@@ -1,4 +1,4 @@
-import { badRequest } from '@medplum/core';
+import { badRequest, normalizeOperationOutcome } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import internal from 'stream';
@@ -40,7 +40,7 @@ binaryRouter.post(
         url: getPresignedUrl(resource),
       });
     } catch (err) {
-      sendOutcome(res, badRequest(err as string));
+      sendOutcome(res, normalizeOperationOutcome(err));
     }
   })
 );
