@@ -1,20 +1,17 @@
-import { Anchor, Button, Group, Stack, Stepper, Title } from '@mantine/core';
-import { ProfileResource, createReference, getExtension, getReferenceString } from '@medplum/core';
+import { Title } from '@mantine/core';
+import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
 import {
   Questionnaire,
   QuestionnaireItem,
-  QuestionnaireItemInitial,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
-  QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import React, { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
-import { FormSection } from '../FormSection/FormSection';
-import { QuestionnaireItemType, isQuestionEnabled } from '../utils/questionnaire';
-import { QuestionnaireFormItem } from './QuestionnaireFormItem/QuestionnaireFormItem';
+import { buildInitialResponse, getNumberOfPages, isQuestionEnabled } from '../utils/questionnaire';
+import { QuestionnairePageSequence } from './QuestionnaireFormComponents/QuestionnaireFormPageSequence';
 
 export interface QuestionnaireFormProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;

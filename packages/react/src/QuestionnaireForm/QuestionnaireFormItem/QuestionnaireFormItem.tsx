@@ -2,6 +2,7 @@ import { Checkbox, Group, MultiSelect, NativeSelect, Radio, Textarea, TextInput 
 import {
   capitalize,
   deepEquals,
+  formatCodeableConcept,
   formatCoding,
   getElementDefinition,
   getTypedPropertyValue,
@@ -32,17 +33,13 @@ import {
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
   index: number;
-  response?: QuestionnaireResponseItem;
+  response: QuestionnaireResponseItem;
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
 
 export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element | null {
   const item = props.item;
   const response = props.response;
-
-  if (!response) {
-    return null;
-  }
 
   function onChangeAnswer(
     newResponseAnswer: QuestionnaireResponseItemAnswer | QuestionnaireResponseItemAnswer[]
@@ -412,10 +409,10 @@ function typedValueToString(typedValue: TypedValue | undefined): string | undefi
     return undefined;
   }
   if (typedValue.type === 'CodeableConcept') {
-    return typedValue.value.coding[0].display;
+    return formatCodeableConcept(typedValue.value);
   }
   if (typedValue.type === 'Coding') {
-    return typedValue.value.display;
+    return formatCoding(typedValue.value);
   }
   return typedValue.value.toString();
 }
