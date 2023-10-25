@@ -52,6 +52,9 @@ describe('Profiles Auth', () => {
       if (url.includes('oauth2/token')) {
         return { access_token: accessTokenFromClientId };
       }
+      if (url.includes('auth/me')) {
+        return { profile: { resourceType: 'Practitioner', id: '123' } };
+      }
       return {};
     });
     const profile = new FileSystemStorage(profileName);
@@ -112,6 +115,9 @@ describe('Profiles Auth', () => {
         return {
           access_token: accessTokenFromClientId,
         };
+      }
+      if (url.includes('auth/me')) {
+        return { profile: { resourceType: 'Practitioner', id: '123' } };
       }
       return {};
     });
