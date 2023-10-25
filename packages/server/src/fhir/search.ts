@@ -51,6 +51,7 @@ import {
   Negation,
   SelectQuery,
   Operator as SQL,
+  SqlBuilder,
 } from './sql';
 
 /**
@@ -472,6 +473,32 @@ export function buildSearchExpression(selectQuery: SelectQuery, searchRequest: S
       const expr = buildSearchFilterExpression(selectQuery, searchRequest.resourceType, filter);
       if (expr) {
         expressions.push(expr);
+      }
+    }
+  }
+  if (searchRequest.chains) {
+    for (const param of searchRequest.chains) {
+      let currentTable = searchRequest.resourceType as string;
+      let currentResourceType = searchRequest.resourceType as string;
+      for (const link of param.chain) {
+        const nextTable = selectQuery.getNextJoinAlias();
+        let joinCondition: Condition;
+        if (link.reverse) {
+          joinCondition = new Condition(
+            new Column(nextTable, link.code),
+            SQL.EQUALS,
+            `'${currentResourceType}/'||"${currentTable}".id`
+          );
+        } else {
+          joinCondition = new Condition(
+            new Column(nextTable, 'id'),
+            SQL.EQUALS,
+            `SPLIT_PART("${currentTable}"."${link.code}", '/', 2)`
+          );
+        }
+        selectQuery.innerJoin(link.resourceType, nextTable, joinCondition);
+        currentTable = nextTable;
+        currentResourceType = link.resourceType;
       }
     }
   }
