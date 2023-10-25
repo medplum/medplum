@@ -99,9 +99,13 @@ describe('AttachmentButton', () => {
   });
 
   test('Error handling', async () => {
-    window.alert = jest.fn();
+    const errorFn = jest.fn();
 
-    setup(<AttachmentButton onUpload={console.log}>{(props) => <Button {...props}>Upload</Button>}</AttachmentButton>);
+    setup(
+      <AttachmentButton onUpload={console.log} onUploadError={errorFn}>
+        {(props) => <Button {...props}>Upload</Button>}
+      </AttachmentButton>
+    );
 
     await act(async () => {
       const files = [new File(['exe'], 'hello.exe', { type: 'application/exe' })];
@@ -110,7 +114,10 @@ describe('AttachmentButton', () => {
       });
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Invalid file type');
+    expect(errorFn).toHaveBeenCalledWith({
+      resourceType: 'OperationOutcome',
+      issue: [{ code: 'invalid', details: { text: 'Invalid file type' }, severity: 'error' }],
+    });
   });
 
   test('Custom text', async () => {
