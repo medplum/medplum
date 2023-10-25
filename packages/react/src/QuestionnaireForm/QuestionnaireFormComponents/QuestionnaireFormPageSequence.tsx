@@ -1,9 +1,9 @@
-import { QuestionnaireItem, QuestionnaireResponse, QuestionnaireResponseItem } from "@medplum/fhirtypes";
-import { QuestionnaireItemType } from "../../utils/questionnaire";
-import { QuestionnaireRepeatedGroup } from "./QuestionnaireFormGroup";
-import { Button, Group, Stack, Stepper } from "@mantine/core";
-import React from "react";
-import { QuestionnaireRepeatableItem } from "../QuestionnaireFormItem/QuestionnaireRepeatableItem";
+import { QuestionnaireItem, QuestionnaireResponse, QuestionnaireResponseItem } from '@medplum/fhirtypes';
+import { QuestionnaireItemType } from '../../utils/questionnaire';
+import { QuestionnaireRepeatedGroup } from './QuestionnaireFormGroup';
+import { Button, Group, Stack, Stepper } from '@mantine/core';
+import React from 'react';
+import { QuestionnaireRepeatableItem } from '../QuestionnaireFormItem/QuestionnaireRepeatableItem';
 
 interface QuestionnairePageSequenceProps {
   readonly items: QuestionnaireItem[];
@@ -84,11 +84,11 @@ export function QuestionnairePageSequence(props: QuestionnairePageSequenceProps)
 }
 
 interface ButtonGroupProps {
-  activePage: number;
-  numberOfPages: number;
-  submitButtonText?: string;
-  nextStep: () => void;
-  prevStep: () => void;
+  readonly activePage: number;
+  readonly numberOfPages: number;
+  readonly submitButtonText?: string;
+  readonly nextStep: () => void;
+  readonly prevStep: () => void;
 }
 
 function ButtonGroup(props: ButtonGroupProps): JSX.Element {
