@@ -1,9 +1,9 @@
-import { QuestionnaireItem, QuestionnaireResponse, QuestionnaireResponseItem } from '@medplum/fhirtypes';
-import { QuestionnaireItemType } from '../../utils/questionnaire';
-import { QuestionnaireRepeatedGroup } from './QuestionnaireFormGroup';
 import { Button, Group, Stack, Stepper } from '@mantine/core';
+import { QuestionnaireItem, QuestionnaireResponse, QuestionnaireResponseItem } from '@medplum/fhirtypes';
 import React from 'react';
+import { QuestionnaireItemType } from '../../utils/questionnaire';
 import { QuestionnaireRepeatableItem } from '../QuestionnaireFormItem/QuestionnaireRepeatableItem';
+import { QuestionnaireRepeatedGroup } from './QuestionnaireFormGroup';
 
 interface QuestionnairePageSequenceProps {
   readonly items: QuestionnaireItem[];
