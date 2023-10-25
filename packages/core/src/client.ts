@@ -39,24 +39,24 @@ import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import {
-  createFhircastMessagePayload,
   FhircastConnection,
   FhircastEventContext,
   FhircastEventName,
   PendingSubscriptionRequest,
-  serializeFhircastSubscriptionRequest,
   SubscriptionRequest,
+  createFhircastMessagePayload,
+  serializeFhircastSubscriptionRequest,
   validateFhircastSubscriptionRequest,
 } from './fhircast';
 import { Hl7Message } from './hl7';
 import { isJwt, isMedplumAccessToken, parseJWTPayload } from './jwt';
 import {
+  OperationOutcomeError,
   badRequest,
   isOk,
   isOperationOutcome,
   normalizeOperationOutcome,
   notFound,
-  OperationOutcomeError,
   validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
@@ -64,11 +64,11 @@ import { ClientStorage } from './storage';
 import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded } from './typeschema/types';
 import {
-  arrayBufferToBase64,
   CodeChallengeMethod,
+  ProfileResource,
+  arrayBufferToBase64,
   createReference,
   getReferenceString,
-  ProfileResource,
   resolveId,
   sleep,
 } from './utils';
@@ -1790,7 +1790,7 @@ export class MedplumClient extends EventTarget {
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve(xhr.response);
         } else {
-          reject(new Error(xhr.statusText));
+          reject(new OperationOutcomeError(normalizeOperationOutcome(xhr.response || xhr.statusText)));
         }
       };
 
