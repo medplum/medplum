@@ -30,6 +30,7 @@ const HEALTH_GORILLA_SYSTEM = 'https://www.healthgorilla.com';
 
 interface HealthGorillaConfig {
   baseUrl: string;
+  audienceUrl: string;
   clientId: string;
   clientSecret: string;
   clientUri: string;
@@ -234,6 +235,7 @@ function getHealthGorillaConfig(event: BotEvent): HealthGorillaConfig {
   const secrets = event.secrets;
   return {
     baseUrl: requireStringSecret(secrets, 'HEALTH_GORILLA_BASE_URL'),
+    audienceUrl: requireStringSecret(secrets, 'HEALTH_GORILLA_AUDIENCE_URL'),
     clientId: requireStringSecret(secrets, 'HEALTH_GORILLA_CLIENT_ID'),
     clientSecret: requireStringSecret(secrets, 'HEALTH_GORILLA_CLIENT_SECRET'),
     clientUri: requireStringSecret(secrets, 'HEALTH_GORILLA_CLIENT_URI'),
@@ -269,7 +271,7 @@ async function connectToHealthGorilla(config: HealthGorillaConfig): Promise<Medp
   const currentTimestamp = Math.floor(Date.now() / 1000);
 
   const data = {
-    aud: config.baseUrl + '/oauth/token',
+    aud: config.audienceUrl,
     iss: config.clientUri,
     sub: config.userLogin,
     iat: currentTimestamp,
