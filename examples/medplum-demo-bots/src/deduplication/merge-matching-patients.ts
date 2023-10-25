@@ -5,6 +5,7 @@ import {
   deepClone,
   getQuestionnaireAnswers,
   getReferenceString,
+  resolveId,
 } from '@medplum/core';
 import {
   Identifier,
@@ -134,6 +135,40 @@ export function linkPatientRecords(src: Patient, target: Patient): MergedPatient
 }
 
 // end-block linkPatientRecords
+
+// start-block unLinkPatientRecords
+
+/**
+ * Unlink two patient that have been merged
+ *
+ * @param src - The source patient record which is marked as replaced.
+ * @param target - The target patient marked as the master record.
+ * @returns - Object containing updated source and target patient records with their links.
+ */
+export function unLinkPatientRecords(src: Patient, target: Patient): MergedPatients {
+  const targetCopy = deepClone(target);
+  const srcCopy = deepClone(src);
+  // Find the index of the source patient in the target's `link` array
+  const srcIndex = targetCopy.link?.findIndex((link) => resolveId(link.other) === src.id);
+  if (srcIndex !== undefined && srcIndex !== -1) {
+    targetCopy.link?.splice(srcIndex, 1);
+  }
+
+  // Find the index of the target patient in the source's `link` array
+  const targetIndex = srcCopy.link?.findIndex((link) => resolveId(link.other) === target.id);
+  if (targetIndex !== undefined && targetIndex !== -1) {
+    srcCopy.link?.splice(targetIndex, 1);
+  }
+
+  // If the source record is no longer replaced, make it active again
+  if (!srcCopy.link?.filter((link) => link.type === 'replaced-by')?.length) {
+    srcCopy.active = true;
+  }
+
+  return { src: srcCopy, target: targetCopy };
+}
+
+// end-block unLinkPatientRecords
 
 // start-block mergeIdentifiers
 /**
