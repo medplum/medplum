@@ -1331,6 +1331,22 @@ describe('Client', () => {
             body: expect.any(String),
           })
         );
+
+        // 'diagnosticreport-open' requires both a report and a patient
+        await expect(
+          client.fhircastPublish('xyz-789', 'diagnosticreport-open', [
+            createFhircastMessageContext<'diagnosticreport-open'>('DiagnosticReport', 'report-987'),
+            createFhircastMessageContext<'diagnosticreport-open'>('Patient', 'patient-123'),
+          ])
+        ).resolves;
+        expect(fetch).toBeCalledWith(
+          'https://api.medplum.com/fhircast/STU2/xyz-789',
+          expect.objectContaining<RequestInit>({
+            method: 'POST',
+            headers: expect.objectContaining({ 'Content-Type': ContentType.JSON }),
+            body: expect.any(String),
+          })
+        );
       });
 
       test('Invalid context published', async () => {
@@ -1351,6 +1367,15 @@ describe('Client', () => {
         await expect(
           // @ts-expect-error Invalid event
           client.fhircastPublish('abc123', 'random-event', createFhircastMessageContext('Patient', 'patient-123'))
+        ).rejects.toBeInstanceOf(OperationOutcomeError);
+
+        // 'diagnosticreport-open' requires both a report and a patient
+        await expect(
+          client.fhircastPublish(
+            'xyz-789',
+            'diagnosticreport-open',
+            createFhircastMessageContext<'diagnosticreport-open'>('DiagnosticReport', 'report-987')
+          )
         ).rejects.toBeInstanceOf(OperationOutcomeError);
       });
     });
