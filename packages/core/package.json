@@ -15,7 +15,7 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && api-extractor run --local",
     "test": "jest"
   },
   "devDependencies": {
@@ -31,11 +31,11 @@
       "optional": true
     }
   },
-  "types": "dist/types/index.d.ts",
+  "types": "dist/types.d.ts",
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
   "exports": {
-    "types": "./dist/types/index.d.ts",
+    "types": "./dist/types.d.ts",
     "require": "./dist/cjs/index.cjs",
     "import": "./dist/esm/index.mjs"
   },

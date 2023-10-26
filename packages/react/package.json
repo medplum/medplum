@@ -16,7 +16,7 @@
   "scripts": {
     "clean": "rimraf dist storybook-static",
     "dev": "storybook dev -p 6006",
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && api-extractor run --local",
     "test": "jest",
     "storybook": "storybook build"
   },
@@ -78,9 +78,9 @@
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
-  "types": "dist/types/index.d.ts",
+  "types": "dist/types.d.ts",
   "exports": {
-    "types": "./dist/types/index.d.ts",
+    "types": "./dist/types.d.ts",
     "require": "./dist/cjs/index.cjs",
     "import": "./dist/esm/index.mjs"
   },
