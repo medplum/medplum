@@ -1,6 +1,6 @@
 {
   "name": "@medplum/examples",
-  "version": "2.1.9",
+  "version": "2.1.10",
   "description": "Medplum Code Examples",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
