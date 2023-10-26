@@ -3,33 +3,90 @@ import { generateId } from '../crypto';
 import { TypedEventTarget } from '../eventtarget';
 import { OperationOutcomeError, validationError } from '../outcomes';
 
+// TODO: Change the way we validate keys
+// TODO: Update tests
+// TODO: Add tests for diagnosticreport-open specifically
+// TODO: Add support for syncerror
+// TODO: Add tests for syncerror
+// TODO: Update backend reporting via .wellknown
+
+// We currently try to satisfy both STU2 and STU3. Where STU3 removes a resource / key from STU2, we leave it in as a valid key but don't require it.
+
 const FHIRCAST_EVENT_NAMES = {
   'patient-open': 'patient-open',
   'patient-close': 'patient-close',
   'imagingstudy-open': 'imagingstudy-open',
   'imagingstudy-close': 'imagingstudy-close',
+  'encounter-open': 'encounter-open',
+  'encounter-close': 'encounter-close',
+  'diagnosticreport-open': 'diagnosticreport-open',
+  'diagnosticreport-close': 'diagnosticreport-close',
+  syncerror: 'syncerror',
 } as const;
 
-const FHIRCAST_RESOURCE_TYPES = ['Patient', 'Encounter', 'ImagingStudy'] as const;
+const FHIRCAST_RESOURCE_TYPES = [
+  'Patient',
+  'Encounter',
+  'ImagingStudy',
+  'DiagnosticReport',
+  'OperationOutcome',
+] as const;
 
 export type FhircastEventName = keyof typeof FHIRCAST_EVENT_NAMES;
 export type FhircastResourceType = (typeof FHIRCAST_RESOURCE_TYPES)[number];
 
-// Key value pairs of { [FhircastEventName]: [required_resource1, required_resource2] }
-const FHIRCAST_EVENT_REQUIRED_RESOURCES = {
-  'patient-open': ['Patient'],
-  'patient-close': ['Patient'],
-  'imagingstudy-open': ['Patient', 'ImagingStudy'],
-  'imagingstudy-close': ['Patient', 'ImagingStudy'],
-} as const;
+type FhircastEventContextDetails = {
+  resourceType: FhircastResourceType;
+  optional?: boolean; // NOTE: optional here is only referring to the schema, the spec often mentions that these are required if available as references for a given anchor resource
+  manyAllowed?: boolean;
+};
 
-// Key value pairs of { [FhircastEventName]: [optional_resource1, ...] }
-const FHIRCAST_EVENT_OPTIONAL_RESOURCES = {
-  'patient-open': ['Encounter'],
-  'patient-close': ['Encounter'],
-  'imagingstudy-open': [],
-  'imagingstudy-close': [],
-} as const;
+// Key value pairs of { [FhircastEventName]: [required_resource1, required_resource2] }
+const FHIRCAST_EVENT_RESOURCES = {
+  'patient-open': {
+    patient: { resourceType: 'Patient' },
+    /* STU2 only! `encounter` key removed in STU3 */
+    encounter: { resourceType: 'Encounter', optional: true },
+  },
+  'patient-close': {
+    patient: { resourceType: 'Patient' },
+    /* STU2 only! `encounter` key removed in STU3 */
+    encounter: { resourceType: 'Encounter', optional: true },
+  },
+  'imagingstudy-open': {
+    study: { resourceType: 'ImagingStudy' },
+    encounter: { resourceType: 'Encounter', optional: true },
+    patient: { resourceType: 'Patient', optional: true },
+  },
+  'imagingstudy-close': {
+    study: { resourceType: 'ImagingStudy' },
+    encounter: { resourceType: 'Encounter', optional: true },
+    patient: { resourceType: 'Patient', optional: true },
+  },
+  'encounter-open': {
+    encounter: { resourceType: 'Encounter' },
+    patient: { resourceType: 'Patient' },
+  },
+  'encounter-close': {
+    encounter: { resourceType: 'Encounter' },
+    patient: { resourceType: 'Patient' },
+  },
+  'diagnosticreport-open': {
+    report: { resourceType: 'DiagnosticReport' },
+    encounter: { resourceType: 'Encounter', optional: true },
+    study: { resourceType: 'ImagingStudy', optional: true, manyAllowed: true },
+    patient: { resourceType: 'Patient' },
+  },
+  'diagnosticreport-close': {
+    report: { resourceType: 'DiagnosticReport' },
+    encounter: { resourceType: 'Encounter', optional: true },
+    study: { resourceType: 'ImagingStudy', optional: true, manyAllowed: true },
+    patient: { resourceType: 'Patient' },
+  },
+  syncerror: {
+    operationoutcome: { resourceType: 'OperationOutcome' },
+  },
+} as const satisfies Record<FhircastEventName, Record<string, FhircastEventContextDetails>>;
 
 /**
  * Checks if a `ResourceType` can be used in a `FHIRcast` context.
@@ -60,12 +117,14 @@ const FHIRCAST_CONTEXT_KEY_LOOKUP = {
   study: 'ImagingStudy',
   patient: 'Patient',
   encounter: 'Encounter',
+  report: 'DiagnosticReport',
 } as const;
 
 const FHIRCAST_CONTEXT_KEY_REVERSE_LOOKUP = {
   ImagingStudy: 'study',
   Patient: 'patient',
   Encounter: 'encounter',
+  DiagnosticReport: 'report',
 } as const;
 
 type FhircastEventContextMap = typeof FHIRCAST_CONTEXT_KEY_LOOKUP;
@@ -172,23 +231,20 @@ export function validateFhircastSubscriptionRequest(
  * @param event - The `FHIRcast` event name associated with the provided contexts.
  * @param context - The `FHIRcast` event contexts to validate.
  * @param i - The index of the current context in the context list.
+ * @param keySchema - Schema for given key for FHIRcast event.
  * @param keysSeen - Set of keys seen so far. Used to prevent duplicate keys.
  */
-function validateFhircastContext(
-  event: FhircastEventName,
+function validateFhircastContext<EventType extends FhircastEventName>(
+  event: EventType,
   context: FhircastEventContext,
   i: number,
-  keysSeen: Set<FhircastEventContextKey>
+  keySchema: FhircastEventContextDetails,
+  keysSeen: Map<FhircastEventContextKey, number>
 ): void {
   if (!(context.key && typeof context.key === 'string')) {
     throw new OperationOutcomeError(validationError(`context[${i}] is invalid. Context must contain a key.`));
   }
-  if (keysSeen.has(context.key)) {
-    throw new OperationOutcomeError(
-      validationError(`context[${i}] is invalid. Key ${context.key} has already been used in a previous context.`)
-    );
-  }
-  keysSeen.add(context.key);
+  keysSeen.set(context.key, (keysSeen.get(context.key) || 0) + 1);
   if (typeof context.resource !== 'object') {
     throw new OperationOutcomeError(
       validationError(
@@ -214,15 +270,8 @@ function validateFhircastContext(
       )
     );
   }
-
-  const requiredResources = FHIRCAST_EVENT_REQUIRED_RESOURCES[event];
-  const optionalResources = FHIRCAST_EVENT_OPTIONAL_RESOURCES[event];
-  let expectedResourceType: FhircastResourceType | undefined;
-  if (i < requiredResources.length) {
-    expectedResourceType = requiredResources[i];
-  } else if (i - requiredResources.length < optionalResources.length) {
-    expectedResourceType = optionalResources[i - requiredResources.length];
-  }
+  // Make sure that resource is a valid type for this event
+  const expectedResourceType = keySchema.resourceType;
   if (expectedResourceType && resourceType !== expectedResourceType) {
     throw new OperationOutcomeError(
       validationError(
@@ -245,9 +294,38 @@ function validateFhircastContext(
  * @param contexts - The `FHIRcast` event contexts to validate.
  */
 function validateFhircastContexts(event: FhircastEventName, contexts: FhircastEventContext[]): void {
-  const keysSeen = new Set<FhircastEventContextKey>();
+  const keysSeen = new Map<FhircastEventContextKey, number>();
+  const eventSchema = FHIRCAST_EVENT_RESOURCES[event] as Record<FhircastEventContextKey, FhircastEventContextDetails>;
   for (let i = 0; i < contexts.length; i++) {
-    validateFhircastContext(event, contexts[i], i, keysSeen);
+    const key = contexts[i].key;
+    if (!eventSchema[key]) {
+      throw new OperationOutcomeError(
+        validationError(`Key '${key}' not found for event '${event}'. Make sure to add only valid keys.`)
+      );
+    }
+    validateFhircastContext(event, contexts[i], i, eventSchema[key], keysSeen);
+  }
+  // Iterate each key, if conditions for keys are not met as confirmed by `keysSeen` map, throw an error
+  for (const [key, details] of Object.entries(eventSchema) as [
+    FhircastEventContextKey,
+    FhircastEventContextDetails,
+  ][]) {
+    // If not optional and not keysSeen.has(key), throw
+    if (!(details.optional || keysSeen.has(key))) {
+      throw new OperationOutcomeError(
+        validationError(`Missing required key '${key}' on context for '${event}' event.`)
+      );
+    }
+    // If not multiple allowed and keySeen.get(key) > 1, throw
+    if (!details.manyAllowed && (keysSeen.get(key) || 0) > 1) {
+      throw new OperationOutcomeError(
+        validationError(
+          `${keysSeen.get(
+            key
+          )} context entries with key '${key}' found for the '${event}' event when schema only allows for 1.`
+        )
+      );
+    }
   }
 }
 
