@@ -6,7 +6,7 @@ import { randomUUID } from 'crypto';
 import each from 'jest-each';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 
@@ -39,6 +39,17 @@ async function setup(args: QuestionnaireFormProps): Promise<void> {
 }
 
 describe('QuestionnaireForm', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
   test('Renders empty', async () => {
     await setup({
       questionnaire: {
@@ -793,6 +804,7 @@ describe('QuestionnaireForm', () => {
                 linkId: 'question1',
                 text: visibleQuestion,
                 type: 'string',
+                required: true,
               },
               {
                 linkId: 'question2-string',
@@ -820,7 +832,20 @@ describe('QuestionnaireForm', () => {
       onSubmit: jest.fn(),
     });
 
-    const visibleQuestionInput = screen.getByLabelText(visibleQuestion);
+    const visibleQuestionInput = screen.getByLabelText(visibleQuestion + ' *');
+    expect(visibleQuestionInput).toBeInTheDocument();
+
+    const nextButton = screen.getByText('Next');
+    expect(nextButton).toBeInTheDocument();
+
+    // Try to click "Next" without answering the question.
+    // This should fail, because the question is required.
+    await act(async () => {
+      fireEvent.click(nextButton);
+    });
+
+    expect(visibleQuestionInput).toBeInTheDocument();
+
     fireEvent.change(visibleQuestionInput, { target: { value: 'Test Value' } });
 
     expect((visibleQuestionInput as HTMLInputElement).value).toBe('Test Value');
@@ -831,7 +856,7 @@ describe('QuestionnaireForm', () => {
     expect((question2StringInput as HTMLInputElement).value).toBe('Test Value for Question2-String');
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(nextButton);
     });
 
     // Check that the texts for visibleQuestion and question2-string are no longer in the document.
@@ -846,7 +871,7 @@ describe('QuestionnaireForm', () => {
     });
 
     // Check that the values in the visibleQuestion and question2-string inputs are still the same.
-    const updatedVisibleQuestionInput = screen.getByLabelText(visibleQuestion) as HTMLInputElement;
+    const updatedVisibleQuestionInput = screen.getByLabelText(visibleQuestion + ' *') as HTMLInputElement;
     expect(updatedVisibleQuestionInput.value).toBe('Test Value');
 
     const updatedQuestion2StringInput = screen.getByLabelText('visible question 2') as HTMLInputElement;
@@ -934,6 +959,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Value Set Choice', async () => {
+    const onSubmit = jest.fn();
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
@@ -948,18 +974,43 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit,
     });
 
-    const dropDown = screen.getByText('Valueset');
-
-    await act(async () => {
-      fireEvent.click(dropDown);
-    });
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(dropDown, { target: 'Test Display' });
+      fireEvent.change(input, { target: { value: 'Test' } });
     });
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toBeCalled();
+    const response = onSubmit.mock.calls[0][0];
+
+    const answer = getQuestionnaireAnswers(response);
+    expect(answer['q1']).toMatchObject({ valueCoding: { code: 'test-code', display: 'Test Display', system: 'x' } });
   });
 
   test('Repeated Choice Dropdown', async () => {

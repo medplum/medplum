@@ -1,12 +1,15 @@
 import { Table } from '@mantine/core';
 import { ObservationDefinition } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
+import { CodeableConceptDisplay, Loading, useSearchResources } from '@medplum/react';
 import React from 'react';
 
 export function PanelsPage(): JSX.Element {
-  const medplum = useMedplum();
-  const panels = medplum.searchResources('ActivityDefinition', '_count=100').read();
-  const assays = medplum.searchResources('ObservationDefinition', '_count=100').read();
+  const [panels] = useSearchResources('ActivityDefinition', '_count=100');
+  const [assays] = useSearchResources('ObservationDefinition', '_count=100');
+
+  if (!panels || !assays) {
+    return <Loading />;
+  }
 
   return (
     <Table withBorder withColumnBorders>

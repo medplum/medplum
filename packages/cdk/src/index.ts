@@ -1,7 +1,8 @@
-import { MedplumInfraConfig } from '@medplum/core';
+import { MedplumSourceInfraConfig } from '@medplum/core';
 import { App } from 'aws-cdk-lib';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { normalizeInfraConfig } from './config';
 import { MedplumStack } from './stack';
 
 export * from './backend';
@@ -21,12 +22,19 @@ export function main(context?: Record<string, string>): void {
     return;
   }
 
-  const config = JSON.parse(readFileSync(resolve(configFileName), 'utf-8')) as MedplumInfraConfig;
+  const config = JSON.parse(readFileSync(resolve(configFileName), 'utf-8')) as MedplumSourceInfraConfig;
 
-  const stack = new MedplumStack(app, config);
-  console.log('Stack', stack.primaryStack.stackId);
+  normalizeInfraConfig(config)
+    .then((normalizedConfig) => {
+      const stack = new MedplumStack(app, normalizedConfig);
+      console.log('Stack', stack.primaryStack.stackId);
 
-  app.synth();
+      app.synth();
+    })
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
 }
 
 if (require.main === module) {

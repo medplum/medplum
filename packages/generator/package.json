@@ -1,6 +1,6 @@
 {
   "name": "@medplum/generator",
-  "version": "2.1.5",
+  "version": "2.1.9",
   "description": "Medplum Code Generator",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -28,11 +28,13 @@
     "@medplum/definitions": "*",
     "@medplum/fhirtypes": "*",
     "@types/json-schema": "7.0.13",
+    "@types/pg": "8.10.2",
     "@types/unzipper": "0.10.7",
     "fast-xml-parser": "4.3.2",
     "fhirpath": "3.7.1",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
+    "pg": "8.11.3",
     "tinybench": "2.5.1",
     "unzipper": "0.10.14"
   }

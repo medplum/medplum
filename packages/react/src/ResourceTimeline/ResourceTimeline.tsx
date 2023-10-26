@@ -9,10 +9,12 @@ import {
   Communication,
   DiagnosticReport,
   Media,
+  OperationOutcome,
   Reference,
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
+import { useMedplum, useMedplumNavigate, useResource } from '@medplum/react-hooks';
 import {
   IconCheck,
   IconCloudUpload,
@@ -29,13 +31,11 @@ import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { Form } from '../Form/Form';
-import { useMedplum, useMedplumNavigate } from '../MedplumProvider/MedplumProvider.context';
 import { Panel } from '../Panel/Panel';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceDiffTable } from '../ResourceDiffTable/ResourceDiffTable';
 import { ResourceTable } from '../ResourceTable/ResourceTable';
 import { Timeline, TimelineItem } from '../Timeline/Timeline';
-import { useResource } from '../useResource/useResource';
 import { sortByDateAndPriority } from '../utils/date';
 
 const useStyles = createStyles((theme) => ({
@@ -251,6 +251,17 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     });
   }
 
+  function onUploadError(outcome: OperationOutcome): void {
+    updateNotification({
+      id: 'upload-notification',
+      color: 'red',
+      title: 'Upload error',
+      message: normalizeErrorString(outcome),
+      icon: <IconFileAlert size={16} />,
+      autoClose: 2000,
+    });
+  }
+
   if (!resource) {
     return (
       <Center style={{ width: '100%', height: '100%' }}>
@@ -290,6 +301,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
                 onUpload={createMedia}
                 onUploadStart={onUploadStart}
                 onUploadProgress={onUploadProgress}
+                onUploadError={onUploadError}
               >
                 {(props) => (
                   <ActionIcon {...props} radius="xl" color="blue" variant="filled">

@@ -1,3 +1,14 @@
+#!/usr/bin/env bash
+
+# Fail on error
+set -e
+
+# Echo commands
+set -x
+
+# Set node options
+export NODE_OPTIONS='--max-old-space-size=5120'
+
 # Test
 # Run them separately because code coverage is resource intensive
 
@@ -29,6 +40,7 @@ PACKAGES=(
   "hl7"
   "mock"
   "react"
+  "react-hooks"
   "server"
 )
 

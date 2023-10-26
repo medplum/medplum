@@ -63,9 +63,18 @@ import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded } from './typeschema/types';
-import { CodeChallengeMethod, ProfileResource, arrayBufferToBase64, createReference, sleep } from './utils';
+import {
+  CodeChallengeMethod,
+  ProfileResource,
+  arrayBufferToBase64,
+  createReference,
+  getReferenceString,
+  resolveId,
+  sleep,
+} from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
+export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
@@ -1781,7 +1790,7 @@ export class MedplumClient extends EventTarget {
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve(xhr.response);
         } else {
-          reject(new Error(xhr.statusText));
+          reject(new OperationOutcomeError(normalizeOperationOutcome(xhr.response || xhr.statusText)));
         }
       };
 
@@ -2189,13 +2198,29 @@ export class MedplumClient extends EventTarget {
    * Pushes a message to an agent.
    *
    * @param agent The agent to push to.
+   * @param destination The destination device.
    * @param body The message body.
    * @param contentType Optional message content type.
    * @param options Optional fetch options.
    * @returns Promise to the operation outcome.
    */
-  pushToAgent(agent: Agent, body: any, contentType?: string, options?: RequestInit): Promise<OperationOutcome> {
-    return this.post(this.fhirUrl('Agent', agent.id as string, '$push'), body, contentType, options);
+  pushToAgent(
+    agent: Agent | Reference<Agent>,
+    destination: Device | Reference<Device>,
+    body: any,
+    contentType?: string,
+    options?: RequestInit
+  ): Promise<OperationOutcome> {
+    return this.post(
+      this.fhirUrl('Agent', resolveId(agent) as string, '$push'),
+      {
+        destination: getReferenceString(destination),
+        body,
+        contentType,
+      },
+      ContentType.FHIR_JSON,
+      options
+    );
   }
 
   /**
@@ -2212,7 +2237,9 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   async setActiveLogin(login: LoginState): Promise<void> {
-    this.clearActiveLogin();
+    if (!this.sessionDetails?.profile || getReferenceString(this.sessionDetails.profile) !== login.profile?.reference) {
+      this.clearActiveLogin();
+    }
     this.setAccessToken(login.accessToken, login.refreshToken);
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
@@ -2265,8 +2292,11 @@ export class MedplumClient extends EventTarget {
       this.get('auth/me')
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
+          const profileChanged = this.sessionDetails?.profile?.id !== result.profile.id;
           this.sessionDetails = result;
-          this.dispatchEvent({ type: 'change' });
+          if (profileChanged) {
+            this.dispatchEvent({ type: 'change' });
+          }
           resolve(result.profile);
         })
         .catch(reject);
@@ -2402,13 +2432,14 @@ export class MedplumClient extends EventTarget {
     const binary = await this.createBinary(contents, filename, contentType);
     return this.createResource(
       {
-        ...additionalFields,
         resourceType: 'Media',
+        status: 'completed',
         content: {
           contentType: contentType,
           url: BINARY_URL_PREFIX + binary.id,
           title: filename,
         },
+        ...additionalFields,
       },
       options
     );
@@ -2729,7 +2760,11 @@ export class MedplumClient extends EventTarget {
       headers = {};
       options.headers = headers;
     }
-    headers['Accept'] = ContentType.FHIR_JSON;
+
+    if (!headers['Accept']) {
+      headers['Accept'] = DEFAULT_ACCEPT;
+    }
+
     headers['X-Medplum'] = 'extended';
 
     if (options.body && !headers['Content-Type']) {

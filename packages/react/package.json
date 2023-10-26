@@ -1,6 +1,6 @@
 {
   "name": "@medplum/react",
-  "version": "2.1.5",
+  "version": "2.1.9",
   "description": "Medplum React Component Library",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -29,6 +29,7 @@
     "@medplum/definitions": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
+    "@medplum/react-hooks": "*",
     "@storybook/addon-actions": "7.4.6",
     "@storybook/addon-essentials": "7.4.6",
     "@storybook/addon-links": "7.4.6",

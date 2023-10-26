@@ -4,7 +4,7 @@ toc_max_heading_level: 2
 tags: [auth]
 ---
 
-# OAuth2 Authorization
+# OAuth2 Authorization Code
 
 ## Introduction
 

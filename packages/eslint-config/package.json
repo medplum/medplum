@@ -1,6 +1,6 @@
 {
   "name": "@medplum/eslint-config",
-  "version": "2.1.5",
+  "version": "2.1.9",
   "description": "Shared ESLint configuration for Medplum projects",
   "main": "index.cjs",
   "repository": {

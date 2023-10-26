@@ -1,9 +1,9 @@
 import { Button, createStyles, Navbar as MantineNavbar, ScrollArea, Space, Text } from '@mantine/core';
+import { useMedplumNavigate } from '@medplum/react-hooks';
 import { IconPlus } from '@tabler/icons-react';
 import React, { useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { useMedplumNavigate } from '../MedplumProvider/MedplumProvider.context';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 
 const useStyles = createStyles((theme) => {

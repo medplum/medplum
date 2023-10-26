@@ -11,7 +11,7 @@ import {
   Text,
   UnstyledButton,
 } from '@mantine/core';
-import { DEFAULT_SEARCH_COUNT, Filter, formatSearchQuery, globalSchema, SearchRequest } from '@medplum/core';
+import { DEFAULT_SEARCH_COUNT, Filter, formatSearchQuery, SearchRequest } from '@medplum/core';
 import {
   Bundle,
   OperationOutcome,
@@ -32,7 +32,7 @@ import {
 } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+import { useMedplum } from '@medplum/react-hooks';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
 import { SearchFieldEditor } from '../SearchFieldEditor/SearchFieldEditor';
 import { SearchFilterEditor } from '../SearchFilterEditor/SearchFilterEditor';
@@ -295,8 +295,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       .catch(console.log);
   }, [medplum, props.search.resourceType]);
 
-  const typeSchema = schemaLoaded && globalSchema.types[props.search.resourceType];
-  if (!typeSchema) {
+  if (!schemaLoaded) {
     return (
       <Center style={{ width: '100%', height: '100%' }}>
         <Loader />

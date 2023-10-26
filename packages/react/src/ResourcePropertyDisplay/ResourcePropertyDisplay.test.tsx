@@ -19,7 +19,7 @@ import { MockClient } from '@medplum/mock';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 const medplum = new MockClient();

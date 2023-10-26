@@ -1,0 +1,73 @@
+{
+  "name": "@medplum/react-hooks",
+  "version": "2.1.9",
+  "description": "Medplum React Hooks Library",
+  "author": "Medplum <hello@medplum.com>",
+  "license": "Apache-2.0",
+  "homepage": "https://www.medplum.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/medplum/medplum.git",
+    "directory": "packages/react-hooks"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@medplum/core": "*",
+    "@medplum/definitions": "*",
+    "@medplum/fhirtypes": "*",
+    "@medplum/mock": "*",
+    "@testing-library/dom": "9.3.3",
+    "@testing-library/jest-dom": "6.1.4",
+    "@testing-library/react": "14.0.0",
+    "@types/jest": "29.5.5",
+    "@types/node": "20.8.6",
+    "@types/react": "18.2.28",
+    "@types/react-dom": "18.2.13",
+    "jest": "29.7.0",
+    "jest-each": "29.7.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "rimraf": "5.0.5",
+    "typescript": "5.2.2"
+  },
+  "peerDependencies": {
+    "@medplum/core": "*",
+    "react": "^17.0.2 || ^18.0.0",
+    "react-dom": "^17.0.2 || ^18.0.0"
+  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    "types": "./dist/types/index.d.ts",
+    "require": "./dist/cjs/index.cjs",
+    "import": "./dist/esm/index.mjs"
+  },
+  "sideEffects": false,
+  "keywords": [
+    "medplum",
+    "fhir",
+    "healthcare",
+    "interoperability",
+    "json",
+    "serialization",
+    "hl7",
+    "standards",
+    "clinical",
+    "dstu2",
+    "stu3",
+    "r4",
+    "normative",
+    "ui",
+    "input",
+    "react",
+    "react-component"
+  ]
+}

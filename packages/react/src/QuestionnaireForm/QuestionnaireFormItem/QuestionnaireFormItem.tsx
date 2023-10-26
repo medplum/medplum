@@ -1,12 +1,12 @@
 import { Checkbox, Group, MultiSelect, NativeSelect, Radio, Textarea, TextInput } from '@mantine/core';
 import {
-  TypedValue,
   capitalize,
   deepEquals,
   formatCoding,
   getElementDefinition,
   getTypedPropertyValue,
   stringify,
+  TypedValue,
 } from '@medplum/core';
 import {
   QuestionnaireItem,
@@ -18,6 +18,7 @@ import {
 import React, { ChangeEvent } from 'react';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
+import { CodingInput } from '../../CodingInput/CodingInput';
 import { DateTimeInput } from '../../DateTimeInput/DateTimeInput';
 import { QuantityInput } from '../../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
@@ -27,7 +28,6 @@ import {
   getQuestionnaireItemReferenceTargetTypes,
   QuestionnaireItemType,
 } from '../../utils/questionnaire';
-import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
@@ -99,6 +99,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           step="any"
           id={name}
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) => onChangeAnswer({ valueDecimal: e.currentTarget.valueAsNumber }, index)}
         />
@@ -110,6 +111,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           step={1}
           id={name}
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) => onChangeAnswer({ valueInteger: e.currentTarget.valueAsNumber }, index)}
         />
@@ -120,6 +122,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           type="date"
           id={name}
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) => onChangeAnswer({ valueDate: e.currentTarget.value }, index)}
         />
@@ -128,6 +131,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <DateTimeInput
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(newValue: string) => onChangeAnswer({ valueDateTime: newValue }, index)}
         />
@@ -138,6 +142,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           type="time"
           id={name}
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) => onChangeAnswer({ valueTime: e.currentTarget.value }, index)}
         />
@@ -148,6 +153,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <TextInput
           id={name}
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
@@ -157,6 +163,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <Textarea
           id={name}
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value }, index)}
         />
@@ -175,6 +182,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <ReferenceInput
           name={name}
+          required={item.required}
           targetTypes={getQuestionnaireItemReferenceTargetTypes(item)}
           defaultValue={defaultValue?.value}
           onChange={(newValue) => onChangeAnswer({ valueReference: newValue }, index)}
@@ -184,6 +192,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <QuantityInput
           name={name}
+          required={item.required}
           defaultValue={defaultValue?.value}
           onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue }, index)}
           disableWheel
@@ -295,7 +304,13 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
 function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, onChangeAnswer, allResponses } = props;
   if (item.answerValueSet) {
-    return <ValueSetAutocomplete binding={item.answerValueSet} onChange={onChangeAnswer} />;
+    return (
+      <CodingInput
+        name={name}
+        binding={item.answerValueSet}
+        onChange={(code) => onChangeAnswer({ valueCoding: code })}
+      />
+    );
   }
   return (
     <QuestionnaireChoiceRadioInput

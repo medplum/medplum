@@ -19,15 +19,14 @@ import {
   Reference,
   ResourceType,
 } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
-import { useResource } from '../useResource/useResource';
 import { killEvent } from '../utils/dom';
 import {
   getQuestionnaireItemReferenceTargetTypes,

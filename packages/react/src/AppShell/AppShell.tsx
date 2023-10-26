@@ -1,8 +1,9 @@
 import { AppShell as MantineAppShell, useMantineTheme } from '@mantine/core';
-import React, { Suspense, useState } from 'react';
+import { showNotification } from '@mantine/notifications';
+import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
+import React, { Suspense, useEffect, useState } from 'react';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { Loading } from '../Loading/Loading';
-import { useMedplum, useMedplumProfile } from '../MedplumProvider/MedplumProvider.context';
 import { Header } from './Header';
 import { Navbar, NavbarMenu } from './Navbar';
 
@@ -23,6 +24,14 @@ export function AppShell(props: AppShellProps): JSX.Element {
   const [navbarOpen, setNavbarOpen] = useState(localStorage['navbarOpen'] === 'true');
   const medplum = useMedplum();
   const profile = useMedplumProfile();
+
+  useEffect(() => {
+    function eventListener(): void {
+      showNotification({ color: 'red', message: 'No connection to server', autoClose: false });
+    }
+    medplum.addEventListener('offline', eventListener);
+    return () => medplum.removeEventListener('offline', eventListener);
+  }, [medplum]);
 
   function setNavbarOpenWrapper(open: boolean): void {
     localStorage['navbarOpen'] = open.toString();

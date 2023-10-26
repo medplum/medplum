@@ -1,7 +1,6 @@
 import { Title } from '@mantine/core';
-import { Questionnaire } from '@medplum/fhirtypes';
-import { Document, Loading, MedplumLink, useMedplum } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { Document, Loading, MedplumLink, useSearchResources } from '@medplum/react';
+import React from 'react';
 import { useParams } from 'react-router-dom';
 
 export function BulkAppPage(): JSX.Element {
@@ -11,12 +10,7 @@ export function BulkAppPage(): JSX.Element {
   };
   const queryParams = Object.fromEntries(new URLSearchParams(location.search).entries()) as Record<string, string>;
   const ids = (queryParams.ids || '').split(',').filter((e) => !!e);
-  const medplum = useMedplum();
-  const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>();
-
-  useEffect(() => {
-    medplum.searchResources('Questionnaire', `subject-type=${resourceType}`).then(setQuestionnaires).catch(console.log);
-  }, [medplum, resourceType]);
+  const [questionnaires] = useSearchResources('Questionnaire', `subject-type=${resourceType}`);
 
   if (!questionnaires) {
     return <Loading />;

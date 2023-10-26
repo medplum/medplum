@@ -86,6 +86,11 @@ export interface Agent {
 export interface AgentChannel {
 
   /**
+   * The channel name.
+   */
+  name?: string;
+
+  /**
    * The channel endpoint definition including protocol and network binding
    * details.
    */

@@ -3,23 +3,23 @@ sidebar_position: 6
 tags: [auth]
 ---
 
-# Okta Authentication
+# Domain-level Identity Providers
 
-This guide walks through how to set up Okta authentication for your domain.
+A Domain-level Identity Provider (DL-IDP) is a server-level configuration that sets up an external identity provider for all users from a given domain. This identity provider will be used for *all* Medplum applications the user logs into, **including the Medplum App**. Domain-level providers are primarily used to ensure that all practitioners access Medplum data via your corporate identity solution.
 
-**Okta authentication is enabled at the domain level. That means that once Okta login is enabled for mydomain.com, any user that attempts to sign in with an email on that domain (name@mydomain.com) will be prompted to authenticate using Okta.**
+Once a DL-IDP is enabled for mydomain.com, any user that attempts to sign in with an email on that domain (name@mydomain.com) will be prompted to authenticate using the configured provider. Enabling DL-IDPs will apply to *all* emails at that domain, including dev accounts and name+text@mydomain.com type emails.
 
-Enabling Okta for a domain will apply to all emails at that domain, including dev accounts and name+text@mydomain.com type emails.
-
-Users will need accounts with both Medplum and Okta to enable access. Medplum accounts are not automatically provisioned for Okta users.
+This guide demonstrates how to set up a DL-IDP, using Okta as an example provider.
 
 :::caution Note
 
-Okta authentication requires an Enterprise account. If [self-hosting](/docs/self-hosting), setting it up requires super admin privileges.
+Setting up DL-IDPs on the Medplum Hosted instance requires an Enterprise account. If [self-hosting](/docs/self-hosting), setting it up requires super admin privileges.
 
 :::
 
-## Set up Okta
+## Example: Setting up Okta as a Domain-level Identity Provider
+
+### Okta Setup
 
 Enabling Okta requires configuration on the Okta side and the Medplum side. You will need to be an Okta admin to set up a App Integration on Okta.
 
@@ -35,13 +35,13 @@ Use the following settings:
 
 - App integration name: Choose your preferred name, or "Medplum"
 - Grant Type
-  - Client Credentials - unchecked
-  - Authorization Code - checked
-  - Refresh Token - unchecked
-  - Implicit (hybrid) - unchecked
+  - 🔲 Client Credentials - unchecked
+  - ☑️ Authorization Code - checked
+  - 🔲 Refresh Token - unchecked
+  - 🔲 Implicit (hybrid) - unchecked
 - Sign-in redirect URIs
-  - Allow wildcard - unchecked
-  - Callback URL - "{apiServerBaseUrl}/auth/external"
+  - 🔲 Allow wildcard - unchecked
+  - Callback URL - "{medplumApiServerBaseUrl}/auth/external"
     - For example:
       - Medplum hosted apiServerBaseUrl is "https://api.medplum.com"
       - So the callback URL is "https://api.medplum.com/auth/external"
@@ -56,7 +56,7 @@ Scroll down to the Assignments section:
   - Controlled access
     - Choose the level appropriate for your organization
     - We recommend "Allow everyone in your organization to access" as a an account on Medplum is still required to be able to access
-  - Enable immediate access - checked
+  - ☑️ Enable immediate access - checked
 
 Then click "Save".
 
@@ -64,7 +64,7 @@ Then click "Save".
 
 On the next page, note the "Client ID" and "Client Secret", take note of those - they will be needed for the Medplum set up.
 
-## Set up Medplum
+### Medplum Setup
 
 To configure Okta as an external authentication provider, you will need 5 pieces of data:
 
@@ -88,8 +88,8 @@ Client ID and Client secret will be the same as those obtained at the end of the
 
 :::caution Note
 
-Configuring a domain authentication requires a Medplum team member, contact us at hello@medplum.com to enable. For those self-hosting, setup below requires super admin privileges.
+Configuring a DL-IDP on the Medplum Hosted service requires a Medplum team member, contact us at hello@medplum.com to enable. For those self-hosting, setup below requires super admin privileges.
 
 :::
 
-Create a DomainConfiguration resource with the 5 elements above and save. Once the resource has been saved, all new authentication requests from that domain will use Okta authentication.
+Create a [`DomainConfiguration`](/docs/api/fhir/medplum/domainconfiguration) resource with the five elements above and save. Once the resource has been saved, all new authentication requests from that domain will use Okta authentication.
