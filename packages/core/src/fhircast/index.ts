@@ -260,7 +260,7 @@ function validateFhircastContext<EventName extends FhircastEventName>(
   if (!(context.key && typeof context.key === 'string')) {
     throw new OperationOutcomeError(validationError(`context[${i}] is invalid. Context must contain a key.`));
   }
-  keysSeen.set(context.key, (keysSeen.get(context.key) || 0) + 1);
+  keysSeen.set(context.key, (keysSeen.get(context.key) ?? 0) + 1);
   if (typeof context.resource !== 'object') {
     throw new OperationOutcomeError(
       validationError(
@@ -375,7 +375,7 @@ export function createFhircastMessagePayload<EventName extends FhircastEventName
     throw new OperationOutcomeError(validationError('context must be a context object or array of context objects.'));
   }
 
-  const normalizedContexts = (Array.isArray(context) ? context : [context]) as FhircastEventContext<EventName>[];
+  const normalizedContexts = Array.isArray(context) ? context : [context];
   // This will throw if any context in the array is invalid
   validateFhircastContexts(event, normalizedContexts);
   return {
