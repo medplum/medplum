@@ -3,8 +3,6 @@ import { generateId } from '../crypto';
 import { TypedEventTarget } from '../eventtarget';
 import { OperationOutcomeError, validationError } from '../outcomes';
 
-// TODO: Update backend reporting via .wellknown
-
 // We currently try to satisfy both STU2 and STU3. Where STU3 removes a resource / key from STU2, we leave it in as a valid key but don't require it.
 
 const FHIRCAST_EVENT_NAMES = {
