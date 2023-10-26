@@ -145,20 +145,13 @@ export function linkPatientRecords(src: Patient, target: Patient): MergedPatient
  * @param target - The target patient marked as the master record.
  * @returns - Object containing updated source and target patient records with their links.
  */
-export function unLinkPatientRecords(src: Patient, target: Patient): MergedPatients {
+export function unlinkPatientRecords(src: Patient, target: Patient): MergedPatients {
   const targetCopy = deepClone(target);
   const srcCopy = deepClone(src);
-  // Find the index of the source patient in the target's `link` array
-  const srcIndex = targetCopy.link?.findIndex((link) => resolveId(link.other) === src.id);
-  if (srcIndex !== undefined && srcIndex !== -1) {
-    targetCopy.link?.splice(srcIndex, 1);
-  }
-
-  // Find the index of the target patient in the source's `link` array
-  const targetIndex = srcCopy.link?.findIndex((link) => resolveId(link.other) === target.id);
-  if (targetIndex !== undefined && targetIndex !== -1) {
-    srcCopy.link?.splice(targetIndex, 1);
-  }
+  // Filter out links from the target to the source
+  targetCopy.link = targetCopy.link?.filter((link) => resolveId(link.other) !== src.id);
+  // Filter out links from the source to the target
+  srcCopy.link = srcCopy.link?.filter((link) => resolveId(link.other) !== target.id);
 
   // If the source record is no longer replaced, make it active again
   if (!srcCopy.link?.filter((link) => link.type === 'replaced-by')?.length) {

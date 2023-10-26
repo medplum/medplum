@@ -4,7 +4,7 @@ import { Mock, vi } from 'vitest';
 import {
   linkPatientRecords,
   mergePatientRecords,
-  unLinkPatientRecords,
+  unlinkPatientRecords,
   updateResourceReferences,
 } from './merge-matching-patients';
 
@@ -101,7 +101,7 @@ describe('Deduplication', () => {
       link: [{ other: createReference(srcPatient), type: 'replaces' }],
     } as Patient;
 
-    const result = unLinkPatientRecords(srcPatient, targetPatient);
+    const result = unlinkPatientRecords(srcPatient, targetPatient);
 
     expect(result.src.link?.length).toBe(0);
     expect(result.target.link?.length).toBe(0);
