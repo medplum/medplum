@@ -1,4 +1,3 @@
-import { showNotification } from '@mantine/notifications';
 import { MedplumClient } from '@medplum/core';
 import React, { useEffect, useMemo, useState } from 'react';
 import { MepdlumNavigateFunction, reactContext } from './MedplumProvider.context';
@@ -38,14 +37,6 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
     medplum.addEventListener('change', eventListener);
     return () => medplum.removeEventListener('change', eventListener);
   }, [medplum, state]);
-
-  useEffect(() => {
-    function eventListener(): void {
-      showNotification({ color: 'red', message: 'No connection to server', autoClose: false });
-    }
-    medplum.addEventListener('offline', eventListener);
-    return () => medplum.removeEventListener('offline', eventListener);
-  }, [medplum]);
 
   const medplumContext = useMemo(
     () => ({
