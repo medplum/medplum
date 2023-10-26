@@ -1149,7 +1149,7 @@ describe('Client', () => {
   describe('FHIRcast', () => {
     describe('fhircastSubscribe', () => {
       test('Valid subscription request', async () => {
-        const fetch = mockFetch(200, { 'hub.channel.endpoint': 'wss://api.medplum.com/fhircast/STU2/def456' });
+        const fetch = mockFetch(200, { 'hub.channel.endpoint': 'wss://api.medplum.com/ws/fhircast/def456' });
         const client = new MedplumClient({ fetch });
 
         const topic = 'abc123';
@@ -1209,7 +1209,7 @@ describe('Client', () => {
           channelType: 'websocket',
           topic: 'abc123',
           events: ['patient-open'],
-          endpoint: 'wss://api.medplum.com/fhircast/STU2/def456',
+          endpoint: 'wss://api.medplum.com/ws/fhircast/def456',
         } satisfies SubscriptionRequest;
         const serializedSubRequest = serializeFhircastSubscriptionRequest({ ...subRequest, mode: 'unsubscribe' });
 
@@ -1234,7 +1234,7 @@ describe('Client', () => {
             channelType: 'websocket',
             topic: 'abc123',
             events: ['patient-open'],
-            endpoint: 'wss://api.medplum.com/fhircast/STU2/def456',
+            endpoint: 'wss://api.medplum.com/ws/fhircast/def456',
           })
         ).rejects.toBeInstanceOf(OperationOutcomeError);
         await expect(
@@ -1243,7 +1243,7 @@ describe('Client', () => {
             mode: 'subscribe',
             topic: 'abc123',
             events: ['patient-open'],
-            endpoint: 'wss://api.medplum.com/fhircast/STU2/def456',
+            endpoint: 'wss://api.medplum.com/ws/fhircast/def456',
           })
         ).rejects.toBeInstanceOf(OperationOutcomeError);
         await expect(
@@ -1301,7 +1301,11 @@ describe('Client', () => {
         const fetch = mockFetch(201, { message: 'Welcome to Medplum!' });
         const client = new MedplumClient({ fetch });
         await expect(
-          client.fhircastPublish('abc123', 'patient-open', createFhircastMessageContext('Patient', 'patient-123'))
+          client.fhircastPublish(
+            'abc123',
+            'patient-open',
+            createFhircastMessageContext<'patient-open'>('Patient', 'patient-123')
+          )
         ).resolves;
         expect(fetch).toBeCalledWith(
           'https://api.medplum.com/fhircast/STU2/abc123',
@@ -1315,8 +1319,8 @@ describe('Client', () => {
         // Multiple contexts
         await expect(
           client.fhircastPublish('def456', 'imagingstudy-open', [
-            createFhircastMessageContext('Patient', 'patient-123'),
-            createFhircastMessageContext('ImagingStudy', 'imagingstudy-456'),
+            createFhircastMessageContext<'imagingstudy-open'>('Patient', 'patient-123'),
+            createFhircastMessageContext<'imagingstudy-open'>('ImagingStudy', 'imagingstudy-456'),
           ])
         ).resolves;
         expect(fetch).toBeCalledWith(
@@ -1334,7 +1338,11 @@ describe('Client', () => {
         const client = new MedplumClient({ fetch });
         await expect(
           // Topic needs to be a string with a length
-          client.fhircastPublish('', 'patient-open', createFhircastMessageContext('Patient', 'patient-123'))
+          client.fhircastPublish(
+            '',
+            'patient-open',
+            createFhircastMessageContext<'patient-open'>('Patient', 'patient-123')
+          )
         ).rejects.toBeInstanceOf(OperationOutcomeError);
         await expect(
           // @ts-expect-error Invalid context object

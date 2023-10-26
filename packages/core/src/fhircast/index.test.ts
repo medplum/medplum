@@ -183,7 +183,7 @@ describe('createFhircastMessagePayload', () => {
     const topic = 'abc123';
     const event = 'patient-open';
     const resourceId = 'patient-123';
-    const context = createFhircastMessageContext('Patient', resourceId);
+    const context = createFhircastMessageContext<typeof event>('Patient', resourceId);
 
     const messagePayload = createFhircastMessagePayload(topic, event, context);
 
@@ -201,9 +201,9 @@ describe('createFhircastMessagePayload', () => {
     const topic = 'abc123';
     const event = 'imagingstudy-open';
     const resourceId1 = 'patient-123';
-    const context1 = createFhircastMessageContext('Patient', resourceId1);
+    const context1 = createFhircastMessageContext<typeof event>('Patient', resourceId1);
     const resourceId2 = 'imagingstudy-456';
-    const context2 = createFhircastMessageContext('ImagingStudy', resourceId2);
+    const context2 = createFhircastMessageContext<typeof event>('ImagingStudy', resourceId2);
 
     const messagePayload = createFhircastMessagePayload(topic, event, [context1, context2]);
 
@@ -222,9 +222,9 @@ describe('createFhircastMessagePayload', () => {
     const topic = 'abc123';
     const event = 'patient-open';
     const resourceId1 = 'patient-123';
-    const context1 = createFhircastMessageContext('Patient', resourceId1);
+    const context1 = createFhircastMessageContext<typeof event>('Patient', resourceId1);
     const resourceId2 = 'encounter-456';
-    const context2 = createFhircastMessageContext('Encounter', resourceId2);
+    const context2 = createFhircastMessageContext<typeof event>('Encounter', resourceId2);
 
     const messagePayload = createFhircastMessagePayload(topic, event, [context1, context2]);
 
@@ -239,6 +239,19 @@ describe('createFhircastMessagePayload', () => {
     expect(messagePayload.event.context[1]).toEqual(context2);
   });
 
+  test('Syncerror', () => {
+    expect(
+      createFhircastMessagePayload('abc-123', 'syncerror', {
+        key: 'operationoutcome',
+        resource: { resourceType: 'OperationOutcome', id: 'patient-123' },
+      })
+    ).toEqual<FhircastMessagePayload<'syncerror'>>({
+      id: expect.any(String),
+      timestamp: expect.any(String),
+      event: { 'hub.topic': 'abc-123', 'hub.event': 'syncerror', context: expect.any(Object) },
+    });
+  });
+
   test('Invalid topic', () => {
     expect(() =>
       createFhircastMessagePayload(
@@ -246,8 +259,8 @@ describe('createFhircastMessagePayload', () => {
         123,
         'imagingstudy-open',
         [
-          createFhircastMessageContext('Patient', 'patient-123'),
-          createFhircastMessageContext('ImagingStudy', 'imagingstudy-123'),
+          createFhircastMessageContext<'imagingstudy-open'>('Patient', 'patient-123'),
+          createFhircastMessageContext<'imagingstudy-open'>('ImagingStudy', 'imagingstudy-123'),
         ]
       )
     ).toThrowError(OperationOutcomeError);
@@ -260,8 +273,8 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid event, must be one of the enumerated FHIRcast events
         'imagingstudy-create',
         [
-          createFhircastMessageContext('Patient', 'patient-123'),
-          createFhircastMessageContext('ImagingStudy', 'imagingstudy-123'),
+          createFhircastMessageContext<'imagingstudy-open'>('Patient', 'patient-123'),
+          createFhircastMessageContext<'imagingstudy-open'>('ImagingStudy', 'imagingstudy-123'),
         ]
       )
     ).toThrowError(OperationOutcomeError);
@@ -336,6 +349,7 @@ describe('createFhircastMessagePayload', () => {
       // Should throw because patient-open has an optional 2nd context of `Encounter`
       createFhircastMessagePayload('abc-123', 'patient-open', [
         { key: 'patient', resource: { resourceType: 'Patient', id: 'patient-123' } },
+        // @ts-expect-error 'study' is not a valid key on 'patient-open' event
         { key: 'study', resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-456' } },
       ])
     ).toThrowError(OperationOutcomeError);
@@ -379,8 +393,8 @@ describe('FhircastConnection', () => {
     const message = createFhircastMessagePayload(
       'abc123',
       'patient-open',
-      createFhircastMessageContext('Patient', 'patient-123')
-    ) satisfies FhircastMessagePayload;
+      createFhircastMessageContext<'patient-open'>('Patient', 'patient-123')
+    ) satisfies FhircastMessagePayload<'patient-open'>;
 
     const handler = (event: FhircastMessageEvent): void => {
       expect(event).toBeDefined();
