@@ -7,7 +7,7 @@ import { getConfig } from '../config';
  *
  * Reference:
  * https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/modules/_aws_sdk_cloudfront_signer.html
- * @param binary Binary resource.
+ * @param binary - Binary resource.
  * @returns Presigned URL to access the binary data.
  */
 export function getPresignedUrl(binary: Binary): string {

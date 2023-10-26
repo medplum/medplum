@@ -94,7 +94,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 
   /**
    * Handles a batch request response.
-   * @param batchResponse The batch response.
+   * @param batchResponse - The batch response.
    */
   const handleBatchResponse = useCallback(
     (batchResponse: PromiseSettledResult<Bundle>[]): void => {
@@ -125,7 +125,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 
   /**
    * Adds an array of resources to the timeline.
-   * @param resource Resource to add.
+   * @param resource - Resource to add.
    */
   const addResource = useCallback(
     (resource: Resource): void => sortAndSetItems([...itemsRef.current, resource]),
@@ -151,7 +151,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 
   /**
    * Adds a Communication resource to the timeline.
-   * @param contentString The comment content.
+   * @param contentString - The comment content.
    */
   function createComment(contentString: string): void {
     if (!resource || !props.createCommunication) {
@@ -166,7 +166,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 
   /**
    * Adds a Media resource to the timeline.
-   * @param attachment The media attachment.
+   * @param attachment - The media attachment.
    */
   function createMedia(attachment: Attachment): void {
     if (!resource || !props.createMedia) {

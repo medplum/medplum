@@ -24,8 +24,8 @@ interface PolicyStatement {
  *
  * This is necessary for Medplum deployments outside of the us-east-1 region.
  *
- * @param tag The Medplum stack tag.
- * @param options The update options.
+ * @param tag - The Medplum stack tag.
+ * @param options - The update options.
  */
 export async function updateBucketPoliciesCommand(tag: string, options: UpdateBucketPoliciesOptions): Promise<void> {
   const config = readConfig(tag);

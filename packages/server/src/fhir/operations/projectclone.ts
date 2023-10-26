@@ -12,8 +12,8 @@ import { getBinaryStorage } from '../storage';
  * Handles a Project clone request.
  *
  * Endpoint: [fhir base]/Project/[id]/$clone
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 export async function projectCloneHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();

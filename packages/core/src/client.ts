@@ -753,7 +753,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Invalidates any cached values or cached requests for the given URL.
    * @category Caching
-   * @param url The URL to invalidate.
+   * @param url - The URL to invalidate.
    */
   invalidateUrl(url: URL | string): void {
     url = url.toString();
@@ -771,7 +771,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Invalidates all cached search results or cached requests for the given resourceType.
    * @category Caching
-   * @param resourceType The resource type to invalidate.
+   * @param resourceType - The resource type to invalidate.
    */
   invalidateSearches<K extends ResourceType>(resourceType: K): void {
     const url = this.fhirBaseUrl + resourceType;
@@ -791,8 +791,8 @@ export class MedplumClient extends EventTarget {
    * For common operations, we recommend using higher level methods
    * such as `readResource()`, `search()`, etc.
    * @category HTTP
-   * @param url The target URL.
-   * @param options Optional fetch options.
+   * @param url - The target URL.
+   * @param options - Optional fetch options.
    * @returns Promise to the response content.
    */
   get<T = any>(url: URL | string, options: RequestInit = {}): ReadablePromise<T> {
@@ -833,10 +833,10 @@ export class MedplumClient extends EventTarget {
    * For common operations, we recommend using higher level methods
    * such as `createResource()`.
    * @category HTTP
-   * @param url The target URL.
-   * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
-   * @param contentType The content type to be included in the "Content-Type" header.
-   * @param options Optional fetch options.
+   * @param url - The target URL.
+   * @param body - The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
+   * @param contentType - The content type to be included in the "Content-Type" header.
+   * @param options - Optional fetch options.
    * @returns Promise to the response content.
    */
   post(url: URL | string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
@@ -856,10 +856,10 @@ export class MedplumClient extends EventTarget {
    * For common operations, we recommend using higher level methods
    * such as `updateResource()`.
    * @category HTTP
-   * @param url The target URL.
-   * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
-   * @param contentType The content type to be included in the "Content-Type" header.
-   * @param options Optional fetch options.
+   * @param url - The target URL.
+   * @param body - The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
+   * @param contentType - The content type to be included in the "Content-Type" header.
+   * @param options - Optional fetch options.
    * @returns Promise to the response content.
    */
   put(url: URL | string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
@@ -879,9 +879,9 @@ export class MedplumClient extends EventTarget {
    * For common operations, we recommend using higher level methods
    * such as `patchResource()`.
    * @category HTTP
-   * @param url The target URL.
-   * @param operations Array of JSONPatch operations.
-   * @param options Optional fetch options.
+   * @param url - The target URL.
+   * @param operations - Array of JSONPatch operations.
+   * @param options - Optional fetch options.
    * @returns Promise to the response content.
    */
   patch(url: URL | string, operations: PatchOperation[], options: RequestInit = {}): Promise<any> {
@@ -900,8 +900,8 @@ export class MedplumClient extends EventTarget {
    * For common operations, we recommend using higher level methods
    * such as `deleteResource()`.
    * @category HTTP
-   * @param url The target URL.
-   * @param options Optional fetch options.
+   * @param url - The target URL.
+   * @param options - Optional fetch options.
    * @returns Promise to the response content.
    */
   delete(url: URL | string, options?: RequestInit): Promise<any> {
@@ -917,8 +917,8 @@ export class MedplumClient extends EventTarget {
    * 1) New Practitioner and new Project
    * 2) New Patient registration
    * @category Authentication
-   * @param newUserRequest Register request including email and password.
-   * @param options Optional fetch options.
+   * @param newUserRequest - Register request including email and password.
+   * @param options - Optional fetch options.
    * @returns Promise to the authentication response.
    */
   async startNewUser(newUserRequest: NewUserRequest, options?: RequestInit): Promise<LoginAuthenticationResponse> {
@@ -940,8 +940,8 @@ export class MedplumClient extends EventTarget {
    * Initiates a new project flow.
    *
    * This requires a partial login from `startNewUser` or `startNewGoogleUser`.
-   * @param newProjectRequest Register request including email and password.
-   * @param options Optional fetch options.
+   * @param newProjectRequest - Register request including email and password.
+   * @param options - Optional fetch options.
    * @returns Promise to the authentication response.
    */
   async startNewProject(
@@ -955,8 +955,8 @@ export class MedplumClient extends EventTarget {
    * Initiates a new patient flow.
    *
    * This requires a partial login from `startNewUser` or `startNewGoogleUser`.
-   * @param newPatientRequest Register request including email and password.
-   * @param options Optional fetch options.
+   * @param newPatientRequest - Register request including email and password.
+   * @param options - Optional fetch options.
    * @returns Promise to the authentication response.
    */
   async startNewPatient(
@@ -969,8 +969,8 @@ export class MedplumClient extends EventTarget {
   /**
    * Initiates a user login flow.
    * @category Authentication
-   * @param loginRequest Login request including email and password.
-   * @param options Optional fetch options.
+   * @param loginRequest - Login request including email and password.
+   * @param options - Optional fetch options.
    * @returns Promise to the authentication response.
    */
   async startLogin(
@@ -994,8 +994,8 @@ export class MedplumClient extends EventTarget {
    * The response parameter is the result of a Google authentication.
    * See: https://developers.google.com/identity/gsi/web/guides/handle-credential-responses-js-functions
    * @category Authentication
-   * @param loginRequest Login request including Google credential response.
-   * @param options Optional fetch options.
+   * @param loginRequest - Login request including Google credential response.
+   * @param options - Optional fetch options.
    * @returns Promise to the authentication response.
    */
   async startGoogleLogin(
@@ -1019,7 +1019,7 @@ export class MedplumClient extends EventTarget {
    * If the login request already includes a code challenge, it is returned.
    * Otherwise, a new PKCE code challenge is generated.
    * @category Authentication
-   * @param loginRequest The original login request.
+   * @param loginRequest - The original login request.
    * @returns The PKCE code challenge and method.
    */
   async ensureCodeChallenge<T extends BaseLoginRequest>(loginRequest: T): Promise<T> {
@@ -1044,7 +1044,7 @@ export class MedplumClient extends EventTarget {
    * Returns true if the user is signed in.
    * This may result in navigating away to the sign in page.
    * @category Authentication
-   * @param loginParams Optional login parameters.
+   * @param loginParams - Optional login parameters.
    * @returns The user profile resource if available.
    */
   async signInWithRedirect(loginParams?: Partial<BaseLoginRequest>): Promise<ProfileResource | undefined> {
@@ -1069,10 +1069,10 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Initiates sign in with an external identity provider.
-   * @param authorizeUrl The external authorization URL.
-   * @param clientId The external client ID.
-   * @param redirectUri The external identity provider redirect URI.
-   * @param baseLogin The Medplum login request.
+   * @param authorizeUrl - The external authorization URL.
+   * @param clientId - The external client ID.
+   * @param redirectUri - The external identity provider redirect URI.
+   * @param baseLogin - The Medplum login request.
    * @category Authentication
    */
   async signInWithExternalAuth(
@@ -1087,8 +1087,8 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Exchange an external access token for a Medplum access token.
-   * @param token The access token that was generated by the external identity provider.
-   * @param clientId The ID of the `ClientApplication` in your Medplum project that will be making the exchange request.
+   * @param token - The access token that was generated by the external identity provider.
+   * @param clientId - The ID of the `ClientApplication` in your Medplum project that will be making the exchange request.
    * @returns The user profile resource.
    * @category Authentication
    */
@@ -1108,10 +1108,10 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Builds the external identity provider redirect URI.
-   * @param authorizeUrl The external authorization URL.
-   * @param clientId The external client ID.
-   * @param redirectUri The external identity provider redirect URI.
-   * @param loginRequest  The Medplum login request.
+   * @param authorizeUrl - The external authorization URL.
+   * @param clientId - The external client ID.
+   * @param redirectUri - The external identity provider redirect URI.
+   * @param loginRequest - The Medplum login request.
    * @returns The external identity provider redirect URI.
    * @category Authentication
    */
@@ -1144,7 +1144,7 @@ export class MedplumClient extends EventTarget {
    * Builds a FHIR URL from a collection of URL path components.
    * For example, `buildUrl('/Patient', '123')` returns `fhir/R4/Patient/123`.
    * @category HTTP
-   * @param path The path component of the URL.
+   * @param path - The path component of the URL.
    * @returns The well-formed FHIR URL.
    */
   fhirUrl(...path: string[]): URL {
@@ -1155,8 +1155,8 @@ export class MedplumClient extends EventTarget {
    * Builds a FHIR search URL from a search query or structured query object.
    * @category HTTP
    * @category Search
-   * @param resourceType The FHIR resource type.
-   * @param query The FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
+   * @param resourceType - The FHIR resource type.
+   * @param query - The FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
    * @returns The well-formed FHIR URL.
    */
   fhirSearchUrl(resourceType: ResourceType, query: QueryTypes): URL {
@@ -1209,9 +1209,9 @@ export class MedplumClient extends EventTarget {
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
    * @category Search
-   * @param resourceType The FHIR resource type.
-   * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
-   * @param options Optional fetch options.
+   * @param resourceType - The FHIR resource type.
+   * @param query - Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
+   * @param options - Optional fetch options.
    * @returns Promise to the search result bundle.
    */
   search<K extends ResourceType>(
@@ -1256,9 +1256,9 @@ export class MedplumClient extends EventTarget {
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
    * @category Search
-   * @param resourceType The FHIR resource type.
-   * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
-   * @param options Optional fetch options.
+   * @param resourceType - The FHIR resource type.
+   * @param query - Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
+   * @param options - Optional fetch options.
    * @returns Promise to the first search result.
    */
   searchOne<K extends ResourceType>(
@@ -1297,9 +1297,9 @@ export class MedplumClient extends EventTarget {
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
    * @category Search
-   * @param resourceType The FHIR resource type.
-   * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
-   * @param options Optional fetch options.
+   * @param resourceType - The FHIR resource type.
+   * @param query - Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
+   * @param options - Optional fetch options.
    * @returns Promise to the array of search results.
    */
   searchResources<K extends ResourceType>(
@@ -1333,9 +1333,9 @@ export class MedplumClient extends EventTarget {
    * }
    * ```
    * @category Search
-   * @param resourceType The FHIR resource type.
-   * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
-   * @param options Optional fetch options.
+   * @param resourceType - The FHIR resource type.
+   * @param query - Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
+   * @param options - Optional fetch options.
    * @yields An async generator, where each result is an array of resources for each page.
    */
   async *searchResourcePages<K extends ResourceType>(
@@ -1362,9 +1362,9 @@ export class MedplumClient extends EventTarget {
    * Searches a ValueSet resource using the "expand" operation.
    * See: https://www.hl7.org/fhir/operation-valueset-expand.html
    * @category Search
-   * @param system The ValueSet system url.
-   * @param filter The search string.
-   * @param options Optional fetch options.
+   * @param system - The ValueSet system url.
+   * @param filter - The search string.
+   * @param options - Optional fetch options.
    * @returns Promise to expanded ValueSet.
    */
   searchValueSet(system: string, filter: string, options?: RequestInit): ReadablePromise<ValueSet> {
@@ -1377,8 +1377,8 @@ export class MedplumClient extends EventTarget {
   /**
    * Returns a cached resource if it is available.
    * @category Caching
-   * @param resourceType The FHIR resource type.
-   * @param id The FHIR resource ID.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The FHIR resource ID.
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
   getCached<K extends ResourceType>(resourceType: K, id: string): ExtractResource<K> | undefined {
@@ -1389,7 +1389,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Returns a cached resource if it is available.
    * @category Caching
-   * @param reference The FHIR reference.
+   * @param reference - The FHIR reference.
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
   getCachedReference<T extends Resource>(reference: Reference<T>): T | undefined {
@@ -1419,9 +1419,9 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
    * @category Read
-   * @param resourceType The FHIR resource type.
-   * @param id The resource ID.
-   * @param options Optional fetch options.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The resource ID.
+   * @param options - Optional fetch options.
    * @returns The resource if available; undefined otherwise.
    */
   readResource<K extends ResourceType>(
@@ -1447,8 +1447,8 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
    * @category Read
-   * @param reference The FHIR reference object.
-   * @param options Optional fetch options.
+   * @param reference - The FHIR reference object.
+   * @param options - Optional fetch options.
    * @returns The resource if available; undefined otherwise.
    */
   readReference<T extends Resource>(reference: Reference<T>, options?: RequestInit): ReadablePromise<T> {
@@ -1470,7 +1470,7 @@ export class MedplumClient extends EventTarget {
    * Requests the schema for a resource type.
    * If the schema is already cached, the promise is resolved immediately.
    * @category Schema
-   * @param resourceType The FHIR resource type.
+   * @param resourceType - The FHIR resource type.
    * @returns Promise to a schema with the requested resource type.
    */
   requestSchema(resourceType: string): Promise<void> {
@@ -1552,9 +1552,9 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "history" operation for full details: https://www.hl7.org/fhir/http.html#history
    * @category Read
-   * @param resourceType The FHIR resource type.
-   * @param id The resource ID.
-   * @param options Optional fetch options.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The resource ID.
+   * @param options - Optional fetch options.
    * @returns Promise to the resource history.
    */
   readHistory<K extends ResourceType>(
@@ -1577,10 +1577,10 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "vread" operation for full details: https://www.hl7.org/fhir/http.html#vread
    * @category Read
-   * @param resourceType The FHIR resource type.
-   * @param id The resource ID.
-   * @param vid The version ID.
-   * @param options Optional fetch options.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The resource ID.
+   * @param vid - The version ID.
+   * @param options - Optional fetch options.
    * @returns The resource if available; undefined otherwise.
    */
   readVersion<K extends ResourceType>(
@@ -1604,8 +1604,8 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "patient-everything" operation for full details: https://hl7.org/fhir/operation-patient-everything.html
    * @category Read
-   * @param id The Patient Id
-   * @param options Optional fetch options.
+   * @param id - The Patient Id
+   * @param options - Optional fetch options.
    * @returns A Bundle of all Resources related to the Patient
    */
   readPatientEverything(id: string, options?: RequestInit): ReadablePromise<Bundle> {
@@ -1632,8 +1632,8 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
    * @category Create
-   * @param resource The FHIR resource to create.
-   * @param options Optional fetch options.
+   * @param resource - The FHIR resource to create.
+   * @param options - Optional fetch options.
    * @returns The result of the create operation.
    */
   createResource<T extends Resource>(resource: T, options?: RequestInit): Promise<T> {
@@ -1679,9 +1679,9 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "conditional create" operation for full details: https://www.hl7.org/fhir/http.html#ccreate
    * @category Create
-   * @param resource The FHIR resource to create.
-   * @param query The search query for an equivalent resource (should not include resource type or "?").
-   * @param options Optional fetch options.
+   * @param resource - The FHIR resource to create.
+   * @param query - The search query for an equivalent resource (should not include resource type or "?").
+   * @param options - Optional fetch options.
    * @returns The result of the create operation.
    */
   async createResourceIfNoneExist<T extends Resource>(resource: T, query: string, options?: RequestInit): Promise<T> {
@@ -1707,10 +1707,10 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
    * @category Create
-   * @param data The binary data to upload.
-   * @param filename Optional filename for the binary.
-   * @param contentType Content type for the binary.
-   * @param onProgress Optional callback for progress events.
+   * @param data - The binary data to upload.
+   * @param filename - Optional filename for the binary.
+   * @param contentType - Content type for the binary.
+   * @param onProgress - Optional callback for progress events.
    * @returns The result of the create operation.
    */
   async createAttachment(
@@ -1745,10 +1745,10 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
    * @category Create
-   * @param data The binary data to upload.
-   * @param filename Optional filename for the binary.
-   * @param contentType Content type for the binary.
-   * @param onProgress Optional callback for progress events.
+   * @param data - The binary data to upload.
+   * @param filename - Optional filename for the binary.
+   * @param contentType - Content type for the binary.
+   * @param onProgress - Optional callback for progress events.
    * @returns The result of the create operation.
    */
   createBinary(
@@ -1822,10 +1822,10 @@ export class MedplumClient extends EventTarget {
    *
    * See the pdfmake document definition for full details: https://pdfmake.github.io/docs/0.1/document-definition-object/
    * @category Media
-   * @param docDefinition The PDF document definition.
-   * @param filename Optional filename for the PDF binary resource.
-   * @param tableLayouts Optional pdfmake custom table layout.
-   * @param fonts Optional pdfmake custom font dictionary.
+   * @param docDefinition - The PDF document definition.
+   * @param filename - Optional filename for the PDF binary resource.
+   * @param tableLayouts - Optional pdfmake custom table layout.
+   * @param fonts - Optional pdfmake custom font dictionary.
    * @returns The result of the create operation.
    */
   async createPdf(
@@ -1846,9 +1846,9 @@ export class MedplumClient extends EventTarget {
    *
    * This is a convenience method to handle commmon cases where a `Communication` resource is created with a `payload`.
    * @category Create
-   * @param resource The FHIR resource to comment on.
-   * @param text The text of the comment.
-   * @param options Optional fetch options.
+   * @param resource - The FHIR resource to comment on.
+   * @param text - The text of the comment.
+   * @param options - Optional fetch options.
    * @returns The result of the create operation.
    */
   createComment(resource: Resource, text: string, options?: RequestInit): Promise<Communication> {
@@ -1905,8 +1905,8 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "update" operation for full details: https://www.hl7.org/fhir/http.html#update
    * @category Write
-   * @param resource The FHIR resource to update.
-   * @param options Optional fetch options.
+   * @param resource - The FHIR resource to update.
+   * @param options - Optional fetch options.
    * @returns The result of the update operation.
    */
   async updateResource<T extends Resource>(resource: T, options?: RequestInit): Promise<T> {
@@ -1946,10 +1946,10 @@ export class MedplumClient extends EventTarget {
    *
    * See the JSONPatch specification for full details: https://tools.ietf.org/html/rfc6902
    * @category Write
-   * @param resourceType The FHIR resource type.
-   * @param id The resource ID.
-   * @param operations The JSONPatch operations.
-   * @param options Optional fetch options.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The resource ID.
+   * @param operations - The JSONPatch operations.
+   * @param options - Optional fetch options.
    * @returns The result of the patch operations.
    */
   patchResource<K extends ResourceType>(
@@ -1973,9 +1973,9 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "delete" operation for full details: https://www.hl7.org/fhir/http.html#delete
    * @category Delete
-   * @param resourceType The FHIR resource type.
-   * @param id The resource ID.
-   * @param options Optional fetch options.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The resource ID.
+   * @param options - Optional fetch options.
    * @returns The result of the delete operation.
    */
   deleteResource(resourceType: ResourceType, id: string, options?: RequestInit): Promise<any> {
@@ -1997,8 +1997,8 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "$validate" operation for full details: https://www.hl7.org/fhir/resource-operation-validate.html
-   * @param resource The FHIR resource.
-   * @param options Optional fetch options.
+   * @param resource - The FHIR resource.
+   * @param options - Optional fetch options.
    * @returns The validate operation outcome.
    */
   validateResource<T extends Resource>(resource: T, options?: RequestInit): Promise<OperationOutcome> {
@@ -2007,10 +2007,10 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Executes a bot by ID or Identifier.
-   * @param idOrIdentifier The Bot ID or Identifier.
-   * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
-   * @param contentType The content type to be included in the "Content-Type" header.
-   * @param options Optional fetch options.
+   * @param idOrIdentifier - The Bot ID or Identifier.
+   * @param body - The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
+   * @param contentType - The content type to be included in the "Content-Type" header.
+   * @param options - Optional fetch options.
    * @returns The Bot return value.
    */
   executeBot(
@@ -2074,8 +2074,8 @@ export class MedplumClient extends EventTarget {
    *
    * See The FHIR "batch/transaction" section for full details: https://hl7.org/fhir/http.html#transaction
    * @category Batch
-   * @param bundle The FHIR batch/transaction bundle.
-   * @param options Optional fetch options.
+   * @param bundle - The FHIR batch/transaction bundle.
+   * @param options - Optional fetch options.
    * @returns The FHIR batch/transaction response bundle.
    */
   executeBatch(bundle: Bundle, options?: RequestInit): Promise<Bundle> {
@@ -2116,8 +2116,8 @@ export class MedplumClient extends EventTarget {
    *
    * See options here: https://nodemailer.com/extras/mailcomposer/
    * @category Media
-   * @param email The MailComposer options.
-   * @param options Optional fetch options.
+   * @param email - The MailComposer options.
+   * @param options - Optional fetch options.
    * @returns Promise to the operation outcome.
    */
   sendEmail(email: MailOptions, options?: RequestInit): Promise<OperationOutcome> {
@@ -2165,10 +2165,10 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR GraphQL documentation for FHIR specific details: https://www.hl7.org/fhir/graphql.html
    * @category Read
-   * @param query The GraphQL query.
-   * @param operationName Optional GraphQL operation name.
-   * @param variables Optional GraphQL variables.
-   * @param options Optional fetch options.
+   * @param query - The GraphQL query.
+   * @param operationName - Optional GraphQL operation name.
+   * @param variables - Optional GraphQL variables.
+   * @param options - Optional fetch options.
    * @returns The GraphQL result.
    */
   graphql(query: string, operationName?: string | null, variables?: any, options?: RequestInit): Promise<any> {
@@ -2179,10 +2179,10 @@ export class MedplumClient extends EventTarget {
    * Executes the $graph operation on this resource to fetch a Bundle of resources linked to the target resource
    * according to a graph definition
    * @category Read
-   * @param resourceType The FHIR resource type.
-   * @param id The resource ID.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The resource ID.
    * @param graphName `name` parameter of the GraphDefinition
-   * @param options Optional fetch options.
+   * @param options - Optional fetch options.
    * @returns A Bundle
    */
   readResourceGraph<K extends ResourceType>(
@@ -2197,11 +2197,11 @@ export class MedplumClient extends EventTarget {
   /**
    * Pushes a message to an agent.
    *
-   * @param agent The agent to push to.
-   * @param destination The destination device.
-   * @param body The message body.
-   * @param contentType Optional message content type.
-   * @param options Optional fetch options.
+   * @param agent - The agent to push to.
+   * @param destination - The destination device.
+   * @param body - The message body.
+   * @param contentType - Optional message content type.
+   * @param options - Optional fetch options.
    * @returns Promise to the operation outcome.
    */
   pushToAgent(
@@ -2233,7 +2233,7 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Sets the active login.
-   * @param login The new active login state.
+   * @param login - The new active login state.
    * @category Authentication
    */
   async setActiveLogin(login: LoginState): Promise<void> {
@@ -2258,8 +2258,8 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Sets the current access token.
-   * @param accessToken The new access token.
-   * @param refreshToken Optional refresh token.
+   * @param accessToken - The new access token.
+   * @param refreshToken - Optional refresh token.
    * @category Authentication
    */
   setAccessToken(accessToken: string, refreshToken?: string): void {
@@ -2396,8 +2396,8 @@ export class MedplumClient extends EventTarget {
   /**
    * Downloads the URL as a blob. Can accept binary URLs in the form of `Binary/{id}` as well.
    * @category Read
-   * @param url The URL to request. Can be a standard URL or one in the form of `Binary/{id}`.
-   * @param options Optional fetch request init options.
+   * @param url - The URL to request. Can be a standard URL or one in the form of `Binary/{id}`.
+   * @param options - Optional fetch request init options.
    * @returns Promise to the response body as a blob.
    */
   async download(url: URL | string, options: RequestInit = {}): Promise<Blob> {
@@ -2415,11 +2415,11 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Upload media to the server and create a Media instance for the uploaded content.
-   * @param contents The contents of the media file, as a string, Uint8Array, File, or Blob.
-   * @param contentType The media type of the content.
-   * @param filename The name of the file to be uploaded, or undefined if not applicable.
-   * @param additionalFields Additional fields for Media.
-   * @param options Optional fetch options.
+   * @param contents - The contents of the media file, as a string, Uint8Array, File, or Blob.
+   * @param contentType - The media type of the content.
+   * @param filename - The name of the file to be uploaded, or undefined if not applicable.
+   * @param additionalFields - Additional fields for Media.
+   * @param options - Optional fetch options.
    * @returns Promise that resolves to the created Media
    */
   async uploadMedia(
@@ -2447,10 +2447,10 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Performs Bulk Data Export operation request flow. See The FHIR "Bulk Data Export" for full details: https://build.fhir.org/ig/HL7/bulk-data/export.html#bulk-data-export
-   * @param exportLevel Optional export level. Defaults to system level export. 'Group/:id' - Group of Patients, 'Patient' - All Patients.
-   * @param resourceTypes A string of comma-delimited FHIR resource types.
-   * @param since Resources will be included in the response if their state has changed after the supplied time (e.g. if Resource.meta.lastUpdated is later than the supplied _since time).
-   * @param options Optional fetch options.
+   * @param exportLevel - Optional export level. Defaults to system level export. 'Group/:id' - Group of Patients, 'Patient' - All Patients.
+   * @param resourceTypes - A string of comma-delimited FHIR resource types.
+   * @param since - Resources will be included in the response if their state has changed after the supplied time (e.g. if Resource.meta.lastUpdated is later than the supplied _since time).
+   * @param options - Optional fetch options.
    * @returns Bulk Data Response containing links to Bulk Data files. See "Response - Complete Status" for full details: https://build.fhir.org/ig/HL7/bulk-data/export.html#response---complete-status
    */
   async bulkExport(
@@ -2476,8 +2476,8 @@ export class MedplumClient extends EventTarget {
   /**
    * Starts an async request following the FHIR "Asynchronous Request Pattern".
    * See: https://hl7.org/fhir/r4/async.html
-   * @param url The URL to request.
-   * @param options Optional fetch options.
+   * @param url - The URL to request.
+   * @param options - Optional fetch options.
    * @returns The response body.
    */
   async startAsyncRequest<T>(url: string, options: RequestInit = {}): Promise<T> {
@@ -2504,8 +2504,8 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Returns the cache entry if available and not expired.
-   * @param key The cache key to retrieve.
-   * @param options Optional fetch options for cache settings.
+   * @param key - The cache key to retrieve.
+   * @param options - Optional fetch options for cache settings.
    * @returns The cached entry if found.
    */
   private getCacheEntry(key: string, options: RequestInit | undefined): RequestCacheEntry | undefined {
@@ -2521,8 +2521,8 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Adds a readable promise to the cache.
-   * @param key The cache key to store.
-   * @param value The readable promise to store.
+   * @param key - The cache key to store.
+   * @param value - The readable promise to store.
    */
   private setCacheEntry(key: string, value: ReadablePromise<any>): void {
     if (this.requestCache) {
@@ -2534,7 +2534,7 @@ export class MedplumClient extends EventTarget {
    * Adds a concrete value as the cache entry for the given resource.
    * This is used in cases where the resource is loaded indirectly.
    * For example, when a resource is loaded as part of a Bundle.
-   * @param resource The resource to cache.
+   * @param resource - The resource to cache.
    */
   private cacheResource(resource: Resource | undefined): void {
     if (resource?.id && !resource.meta?.tag?.some((t) => t.code === 'SUBSETTED')) {
@@ -2547,7 +2547,7 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Deletes a cache entry.
-   * @param key The cache key to delete.
+   * @param key - The cache key to delete.
    */
   private deleteCacheEntry(key: string): void {
     if (this.requestCache) {
@@ -2557,9 +2557,9 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Makes an HTTP request.
-   * @param method The HTTP method (GET, POST, etc).
-   * @param url The target URL.
-   * @param options Optional fetch request init options.
+   * @param method - The HTTP method (GET, POST, etc).
+   * @param url - The target URL.
+   * @param options - Optional fetch request init options.
    * @returns The JSON content body if available.
    */
   private async request<T>(method: string, url: string, options: RequestInit = {}): Promise<T> {
@@ -2752,7 +2752,7 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Adds default options to the fetch options.
-   * @param options The options to add defaults to.
+   * @param options - The options to add defaults to.
    */
   private addFetchOptionsDefaults(options: RequestInit): void {
     let headers = options.headers as Record<string, string> | undefined;
@@ -2787,8 +2787,8 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Sets the "Content-Type" header on fetch options.
-   * @param options The fetch options.
-   * @param contentType The new content type to set.
+   * @param options - The fetch options.
+   * @param contentType - The new content type to set.
    */
   private setRequestContentType(options: RequestInit, contentType: string): void {
     if (!options.headers) {
@@ -2800,8 +2800,8 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Sets the body on fetch options.
-   * @param options The fetch options.
-   * @param data The new content body.
+   * @param options - The fetch options.
+   * @param data - The new content body.
    */
   private setRequestBody(options: RequestInit, data: any): void {
     if (
@@ -2820,9 +2820,9 @@ export class MedplumClient extends EventTarget {
    * Handles an unauthenticated response from the server.
    * First, tries to refresh the access token and retry the request.
    * Otherwise, calls unauthenticated callbacks and rejects.
-   * @param method The HTTP method of the original request.
-   * @param url The URL of the original request.
-   * @param options Optional fetch request init options.
+   * @param method - The HTTP method of the original request.
+   * @param url - The URL of the original request.
+   * @param options - Optional fetch request init options.
    * @returns The result of the retry.
    */
   private handleUnauthenticated(method: string, url: string, options: RequestInit): Promise<any> {
@@ -2859,7 +2859,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Redirects the user to the login screen for authorization.
    * Clears all auth state including local storage and session storage.
-   * @param loginParams The authorization login parameters.
+   * @param loginParams - The authorization login parameters.
    * @see https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
   private async requestAuthorization(loginParams?: Partial<BaseLoginRequest>): Promise<void> {
@@ -2878,8 +2878,8 @@ export class MedplumClient extends EventTarget {
   /**
    * Processes an OAuth authorization code.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
-   * @param code The authorization code received by URL parameter.
-   * @param loginParams Optional login parameters.
+   * @param code - The authorization code received by URL parameter.
+   * @param loginParams - Optional login parameters.
    * @returns The user profile resource.
    * @category Authentication
    */
@@ -2939,8 +2939,8 @@ export class MedplumClient extends EventTarget {
    * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
    *
    * @category Authentication
-   * @param clientId The client ID.
-   * @param clientSecret The client secret.
+   * @param clientId - The client ID.
+   * @param clientSecret - The client secret.
    * @returns Promise that resolves to the client profile.
    */
   async startClientLogin(clientId: string, clientSecret: string): Promise<ProfileResource> {
@@ -2966,9 +2966,9 @@ export class MedplumClient extends EventTarget {
    * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.1
    *
    * @category Authentication
-   * @param clientId The client ID.
-   * @param assertion The JWT assertion.
-   * @param scope The OAuth scope.
+   * @param clientId - The client ID.
+   * @param assertion - The JWT assertion.
+   * @param scope - The OAuth scope.
    * @returns Promise that resolves to the client profile.
    */
   async startJwtBearerLogin(clientId: string, assertion: string, scope: string): Promise<ProfileResource> {
@@ -2988,7 +2988,7 @@ export class MedplumClient extends EventTarget {
    * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.2
    *
    * @category Authentication
-   * @param jwt The JWT assertion.
+   * @param jwt - The JWT assertion.
    * @returns Promise that resolves to the client profile.
    */
   async startJwtAssertionLogin(jwt: string): Promise<ProfileResource> {
@@ -3008,8 +3008,8 @@ export class MedplumClient extends EventTarget {
    * await medplum.searchResources('Patient')
    * ```
    * @category Authentication
-   * @param clientId The client ID.
-   * @param clientSecret The client secret.
+   * @param clientId - The client ID.
+   * @param clientSecret - The client secret.
    */
   setBasicAuth(clientId: string, clientSecret: string): void {
     this.clientId = clientId;
@@ -3023,8 +3023,8 @@ export class MedplumClient extends EventTarget {
    * Once you have the `SubscriptionRequest` returned from this method, you can call `fhircastConnect(subscriptionRequest)` to connect to the subscription stream.
    *
    * @category FHIRcast
-   * @param topic The topic to publish to. Usually a UUID.
-   * @param events An array of event names to listen for.
+   * @param topic - The topic to publish to. Usually a UUID.
+   * @param events - An array of event names to listen for.
    * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
    */
   async fhircastSubscribe(topic: string, events: FhircastEventName[]): Promise<SubscriptionRequest> {
@@ -3066,7 +3066,7 @@ export class MedplumClient extends EventTarget {
    * Unsubscribes from the specified topic.
    *
    * @category FHIRcast
-   * @param subRequest A `SubscriptionRequest` representing a subscription to cancel. Mode will be set to `unsubscribe` automatically.
+   * @param subRequest - A `SubscriptionRequest` representing a subscription to cancel. Mode will be set to `unsubscribe` automatically.
    * @returns A `Promise` that resolves when request to unsubscribe is completed.
    */
   async fhircastUnsubscribe(subRequest: SubscriptionRequest): Promise<void> {
@@ -3091,7 +3091,7 @@ export class MedplumClient extends EventTarget {
    * Connects to a `FHIRcast` session.
    *
    * @category FHIRcast
-   * @param subRequest The `SubscriptionRequest` to use for connecting.
+   * @param subRequest - The `SubscriptionRequest` to use for connecting.
    * @returns A `FhircastConnection` which emits lifecycle events for the `FHIRcast` WebSocket connection.
    */
   fhircastConnect(subRequest: SubscriptionRequest): FhircastConnection {
@@ -3102,9 +3102,9 @@ export class MedplumClient extends EventTarget {
    * Publishes a new context to a given topic for a specified event type.
    *
    * @category FHIRcast
-   * @param topic The topic to publish to. Usually a UUID.
-   * @param event The name of the event to publish an updated context for, ie. `patient-open`.
-   * @param context The updated context containing resources relevant to this event.
+   * @param topic - The topic to publish to. Usually a UUID.
+   * @param event - The name of the event to publish an updated context for, ie. `patient-open`.
+   * @param context - The updated context containing resources relevant to this event.
    * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
    */
   async fhircastPublish(
@@ -3117,8 +3117,8 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Invite a user to a project.
-   * @param projectId The project ID.
-   * @param body The InviteRequest.
+   * @param projectId - The project ID.
+   * @param body - The InviteRequest.
    * @returns Promise that returns a project membership or an operation outcome.
    */
   async invite(projectId: string, body: InviteRequest): Promise<ProjectMembership | OperationOutcome> {
@@ -3128,7 +3128,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Makes a POST request to the tokens endpoint.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
-   * @param formBody Token parameters in URL encoded format.
+   * @param formBody - Token parameters in URL encoded format.
    * @returns The user profile resource.
    */
   private async fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
@@ -3163,7 +3163,7 @@ export class MedplumClient extends EventTarget {
    * Verifies the tokens received from the auth server.
    * Validates the JWT against the JWKS.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
-   * @param tokens The token response.
+   * @param tokens - The token response.
    * @returns Promise to complete.
    */
   private async verifyTokens(tokens: TokenResponse): Promise<void> {
@@ -3255,7 +3255,7 @@ function getWindowOrigin(): string {
 
 /**
  * Ensures the given URL has a trailing slash.
- * @param url The URL to ensure has a trailing slash.
+ * @param url - The URL to ensure has a trailing slash.
  * @returns The URL with a trailing slash.
  */
 function ensureTrailingSlash(url: string): string {
@@ -3267,8 +3267,8 @@ function ensureTrailingSlash(url: string): string {
  *
  * If the URL is absolute, it is returned as-is.
  *
- * @param baseUrl The base URL.
- * @param url The URL to concat. Can be relative or absolute.
+ * @param baseUrl - The base URL.
+ * @param url - The URL to concat. Can be relative or absolute.
  * @returns The concatenated URL.
  */
 function concatUrls(baseUrl: string, url: string): string {
@@ -3287,7 +3287,7 @@ function concatUrls(baseUrl: string, url: string): string {
  * from the 'diagnostics' field of the first issue in an OperationOutcome object
  * present in the response body. If all attempts fail, the function returns 'undefined'.
  * @async
- * @param response The HTTP response object from which to extract the content location.
+ * @param response - The HTTP response object from which to extract the content location.
  * @returns A Promise that resolves to the content location string if it is found, or 'undefined' if the content location cannot be determined from the response.
  */
 async function tryGetContentLocation(response: Response): Promise<string | undefined> {
@@ -3318,7 +3318,7 @@ async function tryGetContentLocation(response: Response): Promise<string | undef
 /**
  * Converts a FHIR resource bundle to a resource array.
  * The bundle is attached to the array as a property named "bundle".
- * @param bundle A FHIR resource bundle.
+ * @param bundle - A FHIR resource bundle.
  * @returns The resource array with the bundle attached.
  */
 function bundleToResourceArray<T extends Resource>(bundle: Bundle<T>): ResourceArray<T> {

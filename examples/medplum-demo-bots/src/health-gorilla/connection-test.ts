@@ -40,7 +40,7 @@ export async function handler(
 /**
  * Returns the Health Gorilla config settings from the Medplum project secrets.
  * If any required config values are missing, this method will throw and the bot will terminate.
- * @param event The bot input event.
+ * @param event - The bot input event.
  * @returns The Health Gorilla config settings.
  */
 function getHealthGorillaConfig(event: BotEvent): HealthGorillaConfig {
@@ -64,7 +64,7 @@ function getHealthGorillaConfig(event: BotEvent): HealthGorillaConfig {
 
 /**
  * Connects to the Health Gorilla API and returns a FHIR client.
- * @param config The Health Gorilla config settings.
+ * @param config - The Health Gorilla config settings.
  * @returns The FHIR client.
  */
 async function connectToHealthGorilla(config: HealthGorillaConfig): Promise<MedplumClient> {

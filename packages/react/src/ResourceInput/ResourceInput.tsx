@@ -162,7 +162,7 @@ const ItemComponent = forwardRef<HTMLDivElement, any>(({ label, resource, ...oth
  * If the resource type is in SEARCH_CODES, then that value is used.
  * Otherwise, if the resource type is in NAME_RESOURCE_TYPES, then "name" is used.
  * Otherwise, "_id" is used.
- * @param resourceType The FHIR resource type.
+ * @param resourceType - The FHIR resource type.
  * @returns The search parameter to use for the autocomplete input.
  */
 function getSearchParamForResourceType(resourceType: string): string {

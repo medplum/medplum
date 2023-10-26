@@ -364,7 +364,7 @@ const fhirPathParserBuilder = initFhirPathParserBuilder()
 
 /**
  * Parses a FHIR Mapping Language document into an AST.
- * @param input The FHIR Mapping Language document to parse.
+ * @param input - The FHIR Mapping Language document to parse.
  * @returns The AST representing the document.
  */
 export function parseMappingLanguage(input: string): StructureMap {

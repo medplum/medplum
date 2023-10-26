@@ -462,8 +462,8 @@ export class BackEnd extends Construct {
    * Returns a container image for the given image name.
    * If the image name is an ECR image, then the image will be pulled from ECR.
    * Otherwise, the image name is assumed to be a Docker Hub image.
-   * @param config The config settings (account number and region).
-   * @param imageName The image name.
+   * @param config - The config settings (account number and region).
+   * @param imageName - The image name.
    * @returns The container image.
    */
   private getContainerImage(config: MedplumInfraConfig, imageName: string): ecs.ContainerImage {

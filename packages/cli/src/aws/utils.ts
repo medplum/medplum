@@ -45,7 +45,7 @@ export async function getAllStacks(): Promise<(StackSummary & { StackName: strin
 
 /**
  * Returns Medplum stack details for the given tag.
- * @param tag The Medplum stack tag.
+ * @param tag - The Medplum stack tag.
  * @returns The Medplum stack details.
  */
 export async function getStackByTag(tag: string): Promise<MedplumStackDetails | undefined> {
@@ -62,7 +62,7 @@ export async function getStackByTag(tag: string): Promise<MedplumStackDetails | 
 
 /**
  * Returns Medplum stack details for the given stack name.
- * @param stackName The CloudFormation stack name.
+ * @param stackName - The CloudFormation stack name.
  * @returns The Medplum stack details.
  */
 export async function getStackDetails(stackName: string): Promise<MedplumStackDetails | undefined> {
@@ -76,9 +76,9 @@ export async function getStackDetails(stackName: string): Promise<MedplumStackDe
 
 /**
  * Builds the Medplum stack details for the given stack name and region.
- * @param client The CloudFormation client.
- * @param stackName The CloudFormation stack name.
- * @param result The Medplum stack details builder.
+ * @param client - The CloudFormation client.
+ * @param stackName - The CloudFormation stack name.
+ * @param result - The Medplum stack details builder.
  */
 async function buildStackDetails(
   client: CloudFormationClient,
@@ -148,7 +148,7 @@ function assignStackDetails(resource: StackResource, result: Partial<MedplumStac
 
 /**
  * Prints the given Medplum stack details to stdout.
- * @param details The Medplum stack details.
+ * @param details - The Medplum stack details.
  */
 export function printStackDetails(details: MedplumStackDetails): void {
   console.log(`Medplum Tag:           ${details.tag}`);
@@ -167,7 +167,7 @@ export function printStackDetails(details: MedplumStackDetails): void {
 
 /**
  * Parses the ECS service name from the given AWS ECS service resource.
- * @param resource The AWS ECS service resource.
+ * @param resource - The AWS ECS service resource.
  * @returns The ECS service name.
  */
 export function getEcsServiceName(resource: StackResource | undefined): string | undefined {
@@ -180,7 +180,7 @@ export function getEcsServiceName(resource: StackResource | undefined): string |
  * In a perfect world, every deploy is clean, and hashed resources should be cached forever.
  * However, we do not recalculate hashes after variable replacements.
  * So if variables change, we need to invalidate the cache.
- * @param distributionId The CloudFront distribution ID.
+ * @param distributionId - The CloudFront distribution ID.
  */
 export async function createInvalidation(distributionId: string): Promise<void> {
   const response = await cloudFrontClient.send(

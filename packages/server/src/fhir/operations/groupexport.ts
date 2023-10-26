@@ -16,8 +16,8 @@ import { getAuthenticatedContext, getRequestContext } from '../../context';
  *
  * See: https://hl7.org/fhir/uv/bulkdata/export.html
  * See: https://hl7.org/fhir/R4/async.html
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 export async function groupExportHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();

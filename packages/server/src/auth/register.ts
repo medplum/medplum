@@ -34,7 +34,7 @@ export interface RegisterResponse {
 
 /**
  * Registers a new user and/or new project.
- * @param request The register request.
+ * @param request - The register request.
  * @returns The registration response.
  */
 export async function registerNew(request: RegisterRequest): Promise<RegisterResponse> {

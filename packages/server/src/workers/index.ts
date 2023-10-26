@@ -8,7 +8,7 @@ import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } 
 
 /**
  * Initializes all background workers.
- * @param config The config to initialize the workers with. Should contain `redis` and optionally `bullmq` fields.
+ * @param config - The config to initialize the workers with. Should contain `redis` and optionally `bullmq` fields.
  */
 export function initWorkers(config: MedplumServerConfig): void {
   globalLogger.debug('Initializing workers...');
@@ -29,8 +29,8 @@ export async function closeWorkers(): Promise<void> {
 
 /**
  * Adds all background jobs for a given resource.
- * @param resource The resource that was created or updated.
- * @param context The background job context.
+ * @param resource - The resource that was created or updated.
+ * @param context - The background job context.
  */
 export async function addBackgroundJobs(resource: Resource, context: BackgroundJobContext): Promise<void> {
   await addSubscriptionJobs(resource, context);

@@ -115,7 +115,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
 
 /**
  * Tries to find the identity provider configuration.
- * @param state The external auth state.
+ * @param state - The external auth state.
  * @returns External identity provider definition if found.
  */
 async function getIdentityProvider(
@@ -140,8 +140,8 @@ async function getIdentityProvider(
 
 /**
  * Returns ID token claims for the authorization code.
- * @param idp The identity provider configuration.
- * @param code The authorization code.
+ * @param idp - The identity provider configuration.
+ * @param code - The authorization code.
  * @returns ID token claims.
  */
 async function verifyCode(idp: IdentityProvider, code: string): Promise<Record<string, unknown>> {

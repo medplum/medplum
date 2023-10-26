@@ -34,12 +34,12 @@ export function findProjectMembership(project: string, profile: Reference): Prom
 
 /**
  * Creates an AuditEvent for a subscription attempt.
- * @param resource The resource that triggered the subscription.
- * @param startTime The time the subscription attempt started.
- * @param outcome The outcome code.
- * @param outcomeDesc The outcome description text.
- * @param subscription Optional rest-hook subscription.
- * @param bot Optional bot that was executed.
+ * @param resource - The resource that triggered the subscription.
+ * @param startTime - The time the subscription attempt started.
+ * @param outcome - The outcome code.
+ * @param outcomeDesc - The outcome description text.
+ * @param subscription - Optional rest-hook subscription.
+ * @param bot - Optional bot that was executed.
  */
 export async function createAuditEvent(
   resource: Resource,

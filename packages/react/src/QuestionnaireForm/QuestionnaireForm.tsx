@@ -341,7 +341,7 @@ function buildInitialResponseAnswer(answer: QuestionnaireItemInitial): Questionn
  * If the questionnaire has a page extension on the first item, then the number of pages
  * is the number of top level items in the questionnaire.
  *
- * @param questionnaire The questionnaire to get the number of pages for.
+ * @param questionnaire - The questionnaire to get the number of pages for.
  * @returns The number of pages in the questionnaire. Default is 1.
  */
 function getNumberOfPages(questionnaire: Questionnaire): number {

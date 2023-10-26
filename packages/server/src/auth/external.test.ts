@@ -434,8 +434,8 @@ describe('External', () => {
 
 /**
  * Returns fake tokens to mock the external identity provider.
- * @param email The user email address to include in the ID token.
- * @param sub The user subject to include as the sub claim.
+ * @param email - The user email address to include in the ID token.
+ * @param sub - The user subject to include as the sub claim.
  * @returns Fake tokens to mock the external identity provider.
  */
 function buildTokens(email: string, sub?: string): Record<string, string> {

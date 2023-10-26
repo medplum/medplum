@@ -25,37 +25,37 @@ import {
 export abstract class LookupTable<T> {
   /**
    * Returns the unique name of the lookup table.
-   * @param resourceType The resource type.
+   * @param resourceType - The resource type.
    * @returns The unique name of the lookup table.
    */
   protected abstract getTableName(resourceType: ResourceType): string;
 
   /**
    * Returns the column name for the given search parameter.
-   * @param code The search parameter code.
+   * @param code - The search parameter code.
    */
   protected abstract getColumnName(code: string): string;
 
   /**
    * Determines if the search parameter is indexed by this index table.
-   * @param searchParam The search parameter.
-   * @param resourceType The resource type.
+   * @param searchParam - The search parameter.
+   * @param resourceType - The resource type.
    * @returns True if the search parameter is indexed.
    */
   abstract isIndexed(searchParam: SearchParameter, resourceType: string): boolean;
 
   /**
    * Indexes the resource in the lookup table.
-   * @param client The database client.
-   * @param resource The resource to index.
+   * @param client - The database client.
+   * @param resource - The resource to index.
    */
   abstract indexResource(client: PoolClient, resource: Resource): Promise<void>;
 
   /**
    * Builds a "where" condition for the select query builder.
-   * @param selectQuery The select query builder.
-   * @param resourceType The FHIR resource type.
-   * @param filter The search filter details.
+   * @param selectQuery - The select query builder.
+   * @param resourceType - The FHIR resource type.
+   * @param filter - The search filter details.
    * @returns The select query where expression.
    */
   buildWhere(selectQuery: SelectQuery, resourceType: ResourceType, filter: Filter): Expression {
@@ -101,9 +101,9 @@ export abstract class LookupTable<T> {
 
   /**
    * Adds "order by" clause to the select query builder.
-   * @param selectQuery The select query builder.
-   * @param resourceType The FHIR resource type.
-   * @param sortRule The sort rule details.
+   * @param selectQuery - The select query builder.
+   * @param resourceType - The FHIR resource type.
+   * @param sortRule - The sort rule details.
    */
   addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
     const tableName = this.getTableName(resourceType);
@@ -120,9 +120,9 @@ export abstract class LookupTable<T> {
 
   /**
    * Returns the existing list of indexed addresses.
-   * @param client The database client.
-   * @param resourceType The FHIR resource type.
-   * @param resourceId The FHIR resource ID.
+   * @param client - The database client.
+   * @param resourceType - The FHIR resource type.
+   * @param resourceId - The FHIR resource ID.
    * @returns Promise for the list of indexed addresses.
    */
   protected async getExistingValues(
@@ -141,9 +141,9 @@ export abstract class LookupTable<T> {
 
   /**
    * Inserts values into the lookup table for a resource.
-   * @param client The database client.
-   * @param resourceType The resource type.
-   * @param values The values to insert.
+   * @param client - The database client.
+   * @param resourceType - The resource type.
+   * @param values - The values to insert.
    */
   protected async insertValuesForResource(
     client: Pool | PoolClient,
@@ -159,8 +159,8 @@ export abstract class LookupTable<T> {
 
   /**
    * Deletes the resource from the lookup table.
-   * @param client The database client.
-   * @param resource The resource to delete.
+   * @param client - The database client.
+   * @param resource - The resource to delete.
    */
   async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
     const tableName = this.getTableName(resource.resourceType);

@@ -23,8 +23,8 @@ export const newProjectValidators = [
  * Handles a HTTP request to /auth/newproject.
  * Requires a partial login.
  * Creates a Project, Profile, ProjectMembership, and default ClientApplication.
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 export async function newProjectHandler(req: Request, res: Response): Promise<void> {
   const errors = validationResult(req);
@@ -56,10 +56,10 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
 
 /**
  * Creates a new project.
- * @param login The partial login.
- * @param projectName The new project name.
- * @param firstName The practitioner's first name.
- * @param lastName The practitioner's last name.
+ * @param login - The partial login.
+ * @param projectName - The new project name.
+ * @param firstName - The practitioner's first name.
+ * @param lastName - The practitioner's last name.
  * @returns The new project membership.
  */
 export async function createProject(

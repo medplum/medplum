@@ -34,7 +34,7 @@ const FHIRCAST_EVENT_OPTIONAL_RESOURCES = {
 /**
  * Checks if a `ResourceType` can be used in a `FHIRcast` context.
  *
- * @param resourceType A `ResourceType` to test.
+ * @param resourceType - A `ResourceType` to test.
  * @returns `true` if this is a resource type associated with `FHIRcast` contexts, otherwise returns `false`.
  */
 export function isFhircastResourceType(resourceType: FhircastResourceType): boolean {
@@ -97,7 +97,7 @@ export function isCompletedSubscriptionRequest(
 /**
  * Creates a serialized url-encoded payload for a `FHIRcast` subscription from a `SubscriptionRequest` object that can be directly used in an HTTP request to the Hub.
  *
- * @param subscriptionRequest An object representing a subscription request.
+ * @param subscriptionRequest - An object representing a subscription request.
  * @returns A serialized subscription in url-encoded form.
  */
 export function serializeFhircastSubscriptionRequest(
@@ -127,7 +127,7 @@ export function serializeFhircastSubscriptionRequest(
 /**
  * Validates that a `SubscriptionRequest`.
  *
- * @param subscriptionRequest The `SubscriptionRequest` to validate.
+ * @param subscriptionRequest - The `SubscriptionRequest` to validate.
  * @returns A `boolean` indicating whether or not the `SubscriptionRequest` is valid.
  */
 export function validateFhircastSubscriptionRequest(
@@ -169,10 +169,10 @@ export function validateFhircastSubscriptionRequest(
 /**
  * Throws if the context is invalid. Intended as a helper for `validateFhircastContexts` only.
  *
- * @param event The `FHIRcast` event name associated with the provided contexts.
- * @param context The `FHIRcast` event contexts to validate.
- * @param i The index of the current context in the context list.
- * @param keysSeen Set of keys seen so far. Used to prevent duplicate keys.
+ * @param event - The `FHIRcast` event name associated with the provided contexts.
+ * @param context - The `FHIRcast` event contexts to validate.
+ * @param i - The index of the current context in the context list.
+ * @param keysSeen - Set of keys seen so far. Used to prevent duplicate keys.
  */
 function validateFhircastContext(
   event: FhircastEventName,
@@ -241,8 +241,8 @@ function validateFhircastContext(
 /**
  * Throws if any context in the given array of contexts is invalid.
  *
- * @param event The `FHIRcast` event name associated with the provided contexts.
- * @param contexts The `FHIRcast` event contexts to validate.
+ * @param event - The `FHIRcast` event name associated with the provided contexts.
+ * @param contexts - The `FHIRcast` event contexts to validate.
  */
 function validateFhircastContexts(event: FhircastEventName, contexts: FhircastEventContext[]): void {
   const keysSeen = new Set<FhircastEventContextKey>();
@@ -254,9 +254,9 @@ function validateFhircastContexts(event: FhircastEventName, contexts: FhircastEv
 /**
  * Creates a serializable JSON payload for the `FHIRcast` protocol
  *
- * @param topic The topic that this message will be published on. Usually a UUID.
- * @param event The event name, ie. "patient-open" or "patient-close".
- * @param context The updated context, containing new versions of resources related to this event.
+ * @param topic - The topic that this message will be published on. Usually a UUID.
+ * @param event - The event name, ie. "patient-open" or "patient-close".
+ * @param context - The updated context, containing new versions of resources related to this event.
  * @returns A serializable `FhircastMessagePayload`.
  */
 export function createFhircastMessagePayload(
@@ -318,7 +318,7 @@ export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEve
 
   /**
    * Creates a new `FhircastConnection`.
-   * @param subRequest The subscription request to initialize the connection from.
+   * @param subRequest - The subscription request to initialize the connection from.
    */
   constructor(subRequest: SubscriptionRequest) {
     super();

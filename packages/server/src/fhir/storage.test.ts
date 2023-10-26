@@ -252,7 +252,7 @@ describe('Storage', () => {
 /**
  * Reads a stream into a string.
  * See: https://stackoverflow.com/a/49428486/2051724
- * @param stream The readable stream.
+ * @param stream - The readable stream.
  * @returns The string contents.
  */
 export function streamToString(stream: internal.Readable): Promise<string> {

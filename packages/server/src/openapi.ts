@@ -101,9 +101,9 @@ function buildBaseSpec(): OpenAPIObjectWithPaths {
 
 /**
  * Builds the OpenAPI specification details for a FHIR type.
- * @param result The OpenAPI specification output.
- * @param typeName The FHIR type name.
- * @param typeDefinition The FHIR type definition.
+ * @param result - The OpenAPI specification output.
+ * @param typeName - The FHIR type name.
+ * @param typeDefinition - The FHIR type definition.
  */
 function buildFhirType(result: OpenAPIObject, typeName: string, typeDefinition: JSONSchema4): void {
   buildSchema(result, typeName, typeDefinition);
@@ -115,9 +115,9 @@ function buildFhirType(result: OpenAPIObject, typeName: string, typeDefinition: 
 /**
  * Builds the schema for a FHIR type.
  * See: https://swagger.io/specification/#schema-object
- * @param result The OpenAPI specification output.
- * @param typeName The FHIR type name.
- * @param typeDefinition The FHIR type definition.
+ * @param result - The OpenAPI specification output.
+ * @param typeName - The FHIR type name.
+ * @param typeDefinition - The FHIR type definition.
  */
 function buildSchema(result: OpenAPIObject, typeName: string, typeDefinition: JSONSchema4): void {
   ((result.components as ComponentsObject).schemas as SchemaMap)[typeName] = buildObjectSchema(typeDefinition);
@@ -125,7 +125,7 @@ function buildSchema(result: OpenAPIObject, typeName: string, typeDefinition: JS
 
 /**
  * Converts a JSONSchema type definition to an OpenAPI type definition.
- * @param definition The JSONSchema type definition.
+ * @param definition - The JSONSchema type definition.
  * @returns The OpenAPI type definition.
  */
 function buildObjectSchema(definition: JSONSchema4): SchemaObject {
@@ -141,8 +141,8 @@ function buildObjectSchema(definition: JSONSchema4): SchemaObject {
 /**
  * Replaces JSONSchema references with OpenAPI references.
  * Can be used as 2nd parameter in JSON.stringify.
- * @param key The JSON property key.
- * @param value The JSON property value.
+ * @param key - The JSON property key.
+ * @param value - The JSON property value.
  * @returns The updated JSON property value.
  */
 function refReplacer(key: string, value: any): any {
@@ -158,9 +158,9 @@ function refReplacer(key: string, value: any): any {
 /**
  * Builds the tags for a FHIR type.
  * See: https://swagger.io/specification/#tag-object
- * @param result The OpenAPI specification output.
- * @param typeName The FHIR type name.
- * @param typeDefinition The FHIR type definition.
+ * @param result - The OpenAPI specification output.
+ * @param typeName - The FHIR type name.
+ * @param typeDefinition - The FHIR type definition.
  */
 function buildTags(result: OpenAPIObject, typeName: string, typeDefinition: JSONSchema4): void {
   (result.tags as TagObject[]).push({
@@ -174,7 +174,7 @@ function buildTags(result: OpenAPIObject, typeName: string, typeDefinition: JSON
 
 /**
  * Builds the paths for a FHIR resource type.
- * @param result The OpenAPI specification output.
+ * @param result - The OpenAPI specification output.
  */
 function buildPaths(result: OpenAPIObjectWithPaths): void {
   result.paths[`/fhir/R4/{resourceType}`] = {

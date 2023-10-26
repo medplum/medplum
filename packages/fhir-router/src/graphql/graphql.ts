@@ -77,9 +77,9 @@ interface ConnectionEdge {
  * Handles FHIR GraphQL requests.
  *
  * See: https://www.hl7.org/fhir/graphql.html
- * @param req The request details.
- * @param repo The current user FHIR repository.
- * @param router The router for router options.
+ * @param req - The request details.
+ * @param repo - The current user FHIR repository.
+ * @param router - The router for router options.
  * @returns The response.
  */
 export async function graphqlHandler(
@@ -133,7 +133,7 @@ export async function graphqlHandler(
  * Introspection queries ask for the schema, which is expensive.
  *
  * See: https://graphql.org/learn/introspection/
- * @param query The GraphQL query.
+ * @param query - The GraphQL query.
  * @returns True if the query is an introspection query.
  */
 function isIntrospectionQuery(query: string): boolean {
@@ -279,10 +279,10 @@ function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: Gr
  * GraphQL data loader for search requests.
  * The field name should always end with "List" (i.e., "Patient" search uses "PatientList").
  * The search args should be FHIR search parameters.
- * @param source The source/root.  This should always be null for our top level readers.
- * @param args The GraphQL search arguments.
- * @param ctx The GraphQL context.
- * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
+ * @param source - The source/root.  This should always be null for our top level readers.
+ * @param args - The GraphQL search arguments.
+ * @param ctx - The GraphQL context.
+ * @param info - The GraphQL resolve info.  This includes the schema, and additional field details.
  * @returns Promise to read the resoures for the query.
  */
 async function resolveByConnectionApi(
@@ -314,10 +314,10 @@ async function resolveByConnectionApi(
  * GraphQL data loader for ID requests.
  * The field name should always by the resource type.
  * There should always be exactly one argument "id".
- * @param _source The source/root.  This should always be null for our top level readers.
- * @param args The GraphQL search arguments.
- * @param ctx The GraphQL context.
- * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
+ * @param _source - The source/root.  This should always be null for our top level readers.
+ * @param args - The GraphQL search arguments.
+ * @param ctx - The GraphQL context.
+ * @param info - The GraphQL resolve info.  This includes the schema, and additional field details.
  * @returns Promise to read the resoure for the query.
  */
 async function resolveById(
@@ -337,10 +337,10 @@ async function resolveById(
  * GraphQL resolver function for create requests.
  * The field name should end with "Create" (i.e., "PatientCreate" for updating a Patient).
  * The args should include the data to be created for the specified resource type.
- * @param _source The source/root object. In the case of creates, this is typically not used and is thus ignored.
- * @param args The GraphQL arguments, containing the new data for the resource.
- * @param ctx The GraphQL context. This includes the repository where resources are stored.
- * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
+ * @param _source - The source/root object. In the case of creates, this is typically not used and is thus ignored.
+ * @param args - The GraphQL arguments, containing the new data for the resource.
+ * @param ctx - The GraphQL context. This includes the repository where resources are stored.
+ * @param info - The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
  * @returns A Promise that resolves to the created resource, or undefined if the resource could not be found or updated.
  */
 async function resolveByCreate(
@@ -366,10 +366,10 @@ async function resolveByCreate(
  * GraphQL resolver function for update requests.
  * The field name should end with "Update" (i.e., "PatientUpdate" for updating a Patient).
  * The args should include the data to be updated for the specified resource type.
- * @param _source The source/root object. In the case of updates, this is typically not used and is thus ignored.
- * @param args The GraphQL arguments, containing the new data for the resource.
- * @param ctx The GraphQL context. This includes the repository where resources are stored.
- * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
+ * @param _source - The source/root object. In the case of updates, this is typically not used and is thus ignored.
+ * @param args - The GraphQL arguments, containing the new data for the resource.
+ * @param ctx - The GraphQL context. This includes the repository where resources are stored.
+ * @param info - The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
  * @returns A Promise that resolves to the updated resource, or undefined if the resource could not be found or updated.
  */
 async function resolveByUpdate(
@@ -397,10 +397,10 @@ async function resolveByUpdate(
  * GraphQL resolver function for delete requests.
  * The field name should end with "Delete" (e.g., "PatientDelete" for deleting a Patient).
  * The args should include the ID of the resource to be deleted.
- * @param _source The source/root object. In the case of deletions, this is typically not used and is thus ignored.
- * @param args The GraphQL arguments, containing the ID of the resource to be deleted.
- * @param ctx The GraphQL context. This includes the repository where resources are stored.
- * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
+ * @param _source - The source/root object. In the case of deletions, this is typically not used and is thus ignored.
+ * @param args - The GraphQL arguments, containing the ID of the resource to be deleted.
+ * @param ctx - The GraphQL context. This includes the repository where resources are stored.
+ * @param info - The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
  * @returns A Promise that resolves when the resource has been deleted. No value is returned.
  */
 async function resolveByDelete(
@@ -416,7 +416,7 @@ async function resolveByDelete(
 
 /**
  * Custom GraphQL rule that enforces max depth constraint.
- * @param context The validation context.
+ * @param context - The validation context.
  * @returns An ASTVisitor that validates the maximum depth rule.
  */
 const MaxDepthRule = (context: ValidationContext): ASTVisitor => ({

@@ -3,7 +3,7 @@ import { ecsClient, getEcsServiceName, getStackByTag } from './utils';
 
 /**
  * The AWS "update-server" command updates the Medplum server in a Medplum CloudFormation stack.
- * @param tag The Medplum stack tag.
+ * @param tag - The Medplum stack tag.
  */
 export async function updateServerCommand(tag: string): Promise<void> {
   const details = await getStackByTag(tag);

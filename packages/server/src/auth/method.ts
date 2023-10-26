@@ -37,7 +37,7 @@ export async function methodHandler(req: Request, res: Response): Promise<void> 
 
 /**
  * Checks if the given email address is configured for external authentication.
- * @param email The user email address.
+ * @param email - The user email address.
  * @returns External auth url if available. Otherwise undefined.
  */
 export async function isExternalAuth(email: string): Promise<{ domain: string; authorizeUrl: string } | undefined> {
@@ -62,7 +62,7 @@ export async function isExternalAuth(email: string): Promise<{ domain: string; a
 
 /**
  * Returns the domain configuration for the given domain name.
- * @param domain The domain name.
+ * @param domain - The domain name.
  * @returns The domain configuration for the domain name if available.
  */
 export async function getDomainConfiguration(domain: string): Promise<DomainConfiguration | undefined> {

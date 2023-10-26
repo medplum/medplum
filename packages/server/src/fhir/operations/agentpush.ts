@@ -66,8 +66,8 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
  * If using "/Agent/:id/$execute", then the agent ID is read from the path parameter.
  * If using "/Agent/$execute?identifier=...", then the agent is searched by identifier.
  * Otherwise, returns undefined.
- * @param req The HTTP request.
- * @param repo The repository.
+ * @param req - The HTTP request.
+ * @param repo - The repository.
  * @returns The agent, or undefined if not found.
  */
 async function getAgentForRequest(req: Request, repo: Repository): Promise<Agent | undefined> {

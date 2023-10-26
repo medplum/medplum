@@ -228,7 +228,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 /**
  * Returns the Health Gorilla config settings from the Medplum project secrets.
  * If any required config values are missing, this method will throw and the bot will terminate.
- * @param event The bot input event.
+ * @param event - The bot input event.
  * @returns The Health Gorilla config settings.
  */
 function getHealthGorillaConfig(event: BotEvent): HealthGorillaConfig {
@@ -252,7 +252,7 @@ function getHealthGorillaConfig(event: BotEvent): HealthGorillaConfig {
 
 /**
  * Connects to the Health Gorilla API and returns a FHIR client.
- * @param config The Health Gorilla config settings.
+ * @param config - The Health Gorilla config settings.
  * @returns The FHIR client.
  */
 async function connectToHealthGorilla(config: HealthGorillaConfig): Promise<MedplumClient> {
@@ -294,8 +294,8 @@ async function connectToHealthGorilla(config: HealthGorillaConfig): Promise<Medp
  * If the subscriptions are in "error" status, this method will delete them and create new ones.
  * If the subscriptions are in "active" status, this method will do nothing.
  *
- * @param config The Health Gorilla config settings.
- * @param healthGorilla The Health Gorilla FHIR client.
+ * @param config - The Health Gorilla config settings.
+ * @param healthGorilla - The Health Gorilla FHIR client.
  */
 export async function ensureSubscriptions(config: HealthGorillaConfig, healthGorilla: MedplumClient): Promise<void> {
   // Get all subscriptions
@@ -308,10 +308,10 @@ export async function ensureSubscriptions(config: HealthGorillaConfig, healthGor
 /**
  * Ensures that there is an active subscription for the given criteria.
  *
- * @param config The Health Gorilla config settings.
- * @param healthGorilla The Health Gorilla FHIR client.
- * @param existingSubscriptions The existing subscriptions.
- * @param criteria The subscription criteria.
+ * @param config - The Health Gorilla config settings.
+ * @param healthGorilla - The Health Gorilla FHIR client.
+ * @param existingSubscriptions - The existing subscriptions.
+ * @param criteria - The subscription criteria.
  */
 export async function ensureSubscription(
   config: HealthGorillaConfig,
@@ -354,9 +354,9 @@ export async function ensureSubscription(
  *
  * Returns the Health Gorilla patient resource.
  *
- * @param medplum The Medplum FHIR client.
- * @param healthGorilla The Health Gorilla FHIR client.
- * @param patient The Medplum patient resource.
+ * @param medplum - The Medplum FHIR client.
+ * @param healthGorilla - The Health Gorilla FHIR client.
+ * @param patient - The Medplum patient resource.
  * @returns The Health Gorilla patient resource.
  */
 export async function syncPatient(
@@ -432,10 +432,10 @@ export async function syncPatient(
  *
  * Returns the Health Gorilla patient resource.
  *
- * @param medplum The Medplum FHIR client.
- * @param medplumPatient The Medplum patient resource.
- * @param healthGorillaPatient The Health Gorilla patient resource.
- * @param billingType The Health Gorilla billing type.
+ * @param medplum - The Medplum FHIR client.
+ * @param medplumPatient - The Medplum patient resource.
+ * @param healthGorillaPatient - The Health Gorilla patient resource.
+ * @param billingType - The Health Gorilla billing type.
  * @returns The Health Gorilla account resource.
  */
 export async function syncAccount(
@@ -489,8 +489,8 @@ export async function syncAccount(
  * If the Medplum Practitioner resource does not have a Health Gorilla ID in `identifier`,
  * this method will throw and the bot will terminate.
  *
- * @param healthGorilla The Health Gorilla FHIR client.
- * @param practitioner The Medplum practitioner resource.
+ * @param healthGorilla - The Health Gorilla FHIR client.
+ * @param practitioner - The Medplum practitioner resource.
  * @returns The Health Gorilla practitioner resource.
  */
 export async function getPractitioner(healthGorilla: MedplumClient, practitioner: Practitioner): Promise<Practitioner> {
@@ -544,14 +544,14 @@ export async function createServiceRequest(
  *
  * The FHIR RequestGroup is a combination of the following resources:
  *
- * @param healthGorilla The Health Gorilla FHIR client.
- * @param healthGorillaTenantOrganization The authorizing organization resource.
- * @param healthGorillaSubtenantOrganization The authorizing organization resource.
- * @param healthGorillaPerformingOrganization The performing organization resource.
- * @param healthGorillaAccount The account resource.
- * @param healthGorillaPatient The patient resource.
- * @param healthGorillaPractitioner The practitioner resource.
- * @param healthGorillaServiceRequests The service request resources.
+ * @param healthGorilla - The Health Gorilla FHIR client.
+ * @param healthGorillaTenantOrganization - The authorizing organization resource.
+ * @param healthGorillaSubtenantOrganization - The authorizing organization resource.
+ * @param healthGorillaPerformingOrganization - The performing organization resource.
+ * @param healthGorillaAccount - The account resource.
+ * @param healthGorillaPatient - The patient resource.
+ * @param healthGorillaPractitioner - The practitioner resource.
+ * @param healthGorillaServiceRequests - The service request resources.
  */
 export async function createRequestGroup(
   healthGorilla: MedplumClient,

@@ -61,7 +61,7 @@ export default function MedplumCodeBlock({
 
 /**
  * Returns an map from the block name to the start and stop lines for that block
- * @param codeLines Array of code lines.
+ * @param codeLines - Array of code lines.
  * @returns The code blocks.
  */
 function extractBlocks(codeLines: string[]): Record<string, [number, number]> {

@@ -31,8 +31,8 @@ import { getAuthenticatedContext, getRequestContext } from '../../context';
  * The operation fetches all the data related to this resources as defined by a GraphDefinition resource
  *
  * See: https://hl7.org/fhir/plandefinition-operation-apply.html
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 export async function resourceGraphHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
@@ -134,11 +134,11 @@ async function followLinks(
  *    For elem in elements:
  *      If element is reference: follow reference
  *      If element is canonical: search for resources with url===canonical
- * @param repo The repository object for fetching data
- * @param link A link element defined in the GraphDefinition
- * @param target The target types.
- * @param resource The resource for which this GraphDefinition is being applied
- * @param resourceCache A cache of previously fetched resources. Used to prevent redundant reads
+ * @param repo - The repository object for fetching data
+ * @param link - A link element defined in the GraphDefinition
+ * @param target - The target types.
+ * @param resource - The resource for which this GraphDefinition is being applied
+ * @param resourceCache - A cache of previously fetched resources. Used to prevent redundant reads
  * @returns The running list of all the resources found while applying this graph
  */
 async function followFhirPathLink(
@@ -239,10 +239,10 @@ async function followCanonicalElements(
 /**
  * Fetches all resources referenced by this GraphDefinition link,
  * where the link is specified using search parameters
- * @param repo The repository object for fetching data
- * @param resource The resource for which this GraphDefinition is being applied
- * @param link A link element defined in the GraphDefinition
- * @param resourceCache A cache of previously fetched resources. Used to prevent redundant reads
+ * @param repo - The repository object for fetching data
+ * @param resource - The resource for which this GraphDefinition is being applied
+ * @param link - A link element defined in the GraphDefinition
+ * @param resourceCache - A cache of previously fetched resources. Used to prevent redundant reads
  * @returns The running list of all the resources found while applying this graph
  */
 async function followSearchLink(
@@ -277,7 +277,7 @@ async function followSearchLink(
 /**
  * Parses and validates the operation parameters.
  * See: https://www.hl7.org/fhir/resource-operation-graph.html
- * @param req The HTTP request.
+ * @param req - The HTTP request.
  * @returns The operation parameters if available; otherwise, undefined.
  */
 async function validateQueryParameters(req: Request): Promise<GraphDefinition> {
