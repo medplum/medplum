@@ -2181,7 +2181,7 @@ export class MedplumClient extends EventTarget {
    * @category Read
    * @param resourceType - The FHIR resource type.
    * @param id - The resource ID.
-   * @param graphName `name` parameter of the GraphDefinition
+   * @param graphName - `name` parameter of the GraphDefinition
    * @param options - Optional fetch options.
    * @returns A Bundle
    */

@@ -198,10 +198,10 @@ export async function processOruMessage(
  * Check if the order was cancelled and set the appropriate status fields if so
  * @param medplum - MedplumClient object
  * @param message - parsed HL7 message
- * @param serviceRequest `ServiceRequest` representing this order
+ * @param serviceRequest - `ServiceRequest` representing this order
  * @param observations - parsed `Observation` resources
- * @param report `DiagnosticReport` for these results
- * @param specimens `Specimen` associated with the results
+ * @param report - `DiagnosticReport` for these results
+ * @param specimens - `Specimen` associated with the results
  */
 async function handleOrderCancellation(
   medplum: MedplumClient,

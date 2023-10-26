@@ -163,12 +163,12 @@ async function uploadAppToS3(tmpDir: string, bucketName: string, options: Update
 /**
  * Uploads a directory of files to S3.
  * @param options - The upload options such as bucket name, content type, and cache control.
- * @param options.rootDir The root directory of the upload.
- * @param options.bucketName The destination bucket name.
- * @param options.fileNamePattern The glob file pattern to upload.
- * @param options.contentType The content type MIME type.
- * @param options.cached True to mark as public and cached forever.
- * @param options.dryrun True to skip the upload.
+ * @param options.rootDir - The root directory of the upload.
+ * @param options.bucketName - The destination bucket name.
+ * @param options.fileNamePattern - The glob file pattern to upload.
+ * @param options.contentType - The content type MIME type.
+ * @param options.cached - True to mark as public and cached forever.
+ * @param options.dryrun - True to skip the upload.
  */
 async function uploadFolderToS3(options: {
   rootDir: string;
@@ -188,11 +188,11 @@ async function uploadFolderToS3(options: {
  * Uploads a file to S3.
  * @param filePath - The file path.
  * @param options - The upload options such as bucket name, content type, and cache control.
- * @param options.rootDir The root directory of the upload.
- * @param options.bucketName The destination bucket name.
- * @param options.contentType The content type MIME type.
- * @param options.cached True to mark as public and cached forever.
- * @param options.dryrun True to skip the upload.
+ * @param options.rootDir - The root directory of the upload.
+ * @param options.bucketName - The destination bucket name.
+ * @param options.contentType - The content type MIME type.
+ * @param options.cached - True to mark as public and cached forever.
+ * @param options.dryrun - True to skip the upload.
  */
 async function uploadFileToS3(
   filePath: string,
