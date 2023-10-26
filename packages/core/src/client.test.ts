@@ -27,13 +27,13 @@ import {
   FhircastConnection,
   FhircastEventName,
   PendingSubscriptionRequest,
-  serializeFhircastSubscriptionRequest,
   SubscriptionRequest,
+  serializeFhircastSubscriptionRequest,
 } from './fhircast';
 import { createFhircastMessageContext } from './fhircast/test-utils';
-import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
+import { OperationOutcomeError, getStatus, isOperationOutcome, notFound, unauthorized } from './outcomes';
 import { isDataTypeLoaded } from './typeschema/types';
-import { createReference, ProfileResource } from './utils';
+import { ProfileResource, createReference } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -1301,7 +1301,7 @@ describe('Client', () => {
         const fetch = mockFetch(201, { message: 'Welcome to Medplum!' });
         const client = new MedplumClient({ fetch });
         await expect(
-          client.fhircastPublish('abc123', 'patient-open', createFhircastMessageContext('patient', 'patient-123'))
+          client.fhircastPublish('abc123', 'patient-open', createFhircastMessageContext('Patient', 'patient-123'))
         ).resolves;
         expect(fetch).toBeCalledWith(
           'https://api.medplum.com/fhircast/STU2/abc123',
@@ -1315,8 +1315,8 @@ describe('Client', () => {
         // Multiple contexts
         await expect(
           client.fhircastPublish('def456', 'imagingstudy-open', [
-            createFhircastMessageContext('patient', 'patient-123'),
-            createFhircastMessageContext('imagingstudy', 'imagingstudy-456'),
+            createFhircastMessageContext('Patient', 'patient-123'),
+            createFhircastMessageContext('ImagingStudy', 'imagingstudy-456'),
           ])
         ).resolves;
         expect(fetch).toBeCalledWith(
@@ -1334,7 +1334,7 @@ describe('Client', () => {
         const client = new MedplumClient({ fetch });
         await expect(
           // Topic needs to be a string with a length
-          client.fhircastPublish('', 'patient-open', createFhircastMessageContext('patient', 'patient-123'))
+          client.fhircastPublish('', 'patient-open', createFhircastMessageContext('Patient', 'patient-123'))
         ).rejects.toBeInstanceOf(OperationOutcomeError);
         await expect(
           // @ts-expect-error Invalid context object
@@ -1342,7 +1342,7 @@ describe('Client', () => {
         ).rejects.toBeInstanceOf(OperationOutcomeError);
         await expect(
           // @ts-expect-error Invalid event
-          client.fhircastPublish('abc123', 'random-event', createFhircastMessageContext('patient', 'patient-123'))
+          client.fhircastPublish('abc123', 'random-event', createFhircastMessageContext('Patient', 'patient-123'))
         ).rejects.toBeInstanceOf(OperationOutcomeError);
       });
     });

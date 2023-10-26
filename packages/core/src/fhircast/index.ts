@@ -113,18 +113,20 @@ export type SubscriptionRequest = {
 
 export type PendingSubscriptionRequest = Omit<SubscriptionRequest, 'endpoint'>;
 
-const FHIRCAST_CONTEXT_KEY_LOOKUP = {
+export const FHIRCAST_CONTEXT_KEY_LOOKUP = {
   study: 'ImagingStudy',
   patient: 'Patient',
   encounter: 'Encounter',
   report: 'DiagnosticReport',
+  operationoutcome: 'OperationOutcome',
 } as const;
 
-const FHIRCAST_CONTEXT_KEY_REVERSE_LOOKUP = {
+export const FHIRCAST_CONTEXT_KEY_REVERSE_LOOKUP = {
   ImagingStudy: 'study',
   Patient: 'patient',
   Encounter: 'encounter',
   DiagnosticReport: 'report',
+  OperationOutcome: 'operationoutcome',
 } as const;
 
 type FhircastEventContextMap = typeof FHIRCAST_CONTEXT_KEY_LOOKUP;

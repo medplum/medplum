@@ -1,28 +1,22 @@
-import { FhircastEventContext, FhircastResourceType } from '.';
+import { FHIRCAST_CONTEXT_KEY_REVERSE_LOOKUP, FhircastEventContext, FhircastResourceType } from '.';
 import { OperationOutcomeError, validationError } from '../outcomes';
 
-const FHIRCAST_RESOURCE_TYPES = {
-  patient: 'Patient',
-  imagingstudy: 'ImagingStudy',
-  encounter: 'Encounter',
-} as const;
-
 export function createFhircastMessageContext(
-  resourceType: Lowercase<FhircastResourceType>,
+  resourceType: FhircastResourceType,
   resourceId: string
 ): FhircastEventContext {
-  if (!FHIRCAST_RESOURCE_TYPES[resourceType]) {
+  if (!FHIRCAST_CONTEXT_KEY_REVERSE_LOOKUP[resourceType]) {
     throw new OperationOutcomeError(
-      validationError(`resourceType must be one of: ${Object.keys(FHIRCAST_RESOURCE_TYPES).join(', ')}`)
+      validationError(`resourceType must be one of: ${Object.keys(FHIRCAST_CONTEXT_KEY_REVERSE_LOOKUP).join(', ')}`)
     );
   }
   if (!(resourceId && typeof resourceId === 'string')) {
     throw new OperationOutcomeError(validationError('Must provide a resourceId.'));
   }
   return {
-    key: resourceType === 'imagingstudy' ? 'study' : resourceType,
+    key: FHIRCAST_CONTEXT_KEY_REVERSE_LOOKUP[resourceType],
     resource: {
-      resourceType: FHIRCAST_RESOURCE_TYPES[resourceType],
+      resourceType,
       id: resourceId,
     },
   };
