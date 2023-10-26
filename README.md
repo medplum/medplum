@@ -2,7 +2,10 @@
 
 ![Medplum](packages/docs/static/img/cover.webp)
 
-Medplum is a developer platform that enables flexible and rapid development of healthcare apps.
+
+Medplum is a comprehensive developer platform dedicated to simplifying and enhancing healthcare application development. With a strong focus on security, compliance, and interoperability, Medplum offers a range of interconnected components and tools designed to streamline the creation of healthcare applications and systems.
+
+Below are the key components of the Medplum ecosystem, each playing a vital role in achieving our vision of accessible and efficient healthcare application development:
 
 - **Medplum Auth** - End-to-end identity solution for easy user authentication, sign-in, and permissions using OAuth, OpenID, and SMART-on-FHIR.
 - **Medplum Clinical Data Repository (CDR)** - Backend server that hosts your healthcare data in a secure, compliant, and standards-based repository.
@@ -70,17 +73,18 @@ If you want to contribute but are unsure how to start, we have [a "good first is
 
 #### Technologies
 
-With the ground rules out of the way, let's talk about the coarse architecture of this mono repo:
+Let's discuss the key technologies that power this monorepo, providing a foundation for our healthcare application development:
 
-- **Full-stack TypeScript**: We use Node.js to power our servers, and React to power our frontend apps. Almost all of the code you'll touch in this codebase will be TypeScript.
+- **Full-stack TypeScript**: Our codebase is primarily built using TypeScript, enabling type-safe development across both the server and frontend components. Node.js is used for server-side code, while React powers the frontend applications.
 
-Here is a list of all the big technologies we use:
+Here is a list of the major technologies in use:
 
-- **PostgreSQL**: Data storage
-- **Redis**: Background jobs and caching
-- **Express**: API server
-- **TypeScript**: Type-safe JavaScript
-- **React**: Frontend React app
+- **PostgreSQL**: Our choice for data storage, ensuring a robust and reliable foundation for healthcare data.
+- **Redis**: Used for background jobs and caching, enhancing the performance and responsiveness of our applications.
+- **Express**: Serving as our API server, Express simplifies routing and handling requests, facilitating efficient data exchange.
+- **TypeScript**: A type-safe extension of JavaScript, TypeScript enhances code quality and maintainability, crucial for healthcare application development.
+- **React**: As the driving force behind our frontend applications, React offers a versatile and component-based approach to creating intuitive user interfaces.
+
 
 #### Folder structure
 
