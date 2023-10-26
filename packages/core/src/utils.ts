@@ -20,23 +20,17 @@ import {
 import { formatHumanName } from './format';
 import { isReference } from './types';
 
-/**
- * @internal
- */
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
 
 /**
  * Allowed values for `code_challenge_method` in a PKCE exchange.
- * @internal
  */
 export type CodeChallengeMethod = 'plain' | 'S256';
 
-interface Code {
+export interface Code {
   code?: CodeableConcept;
 }
-/**
- * @internal
- */
+
 export type ResourceWithCode = Resource & Code;
 
 /**

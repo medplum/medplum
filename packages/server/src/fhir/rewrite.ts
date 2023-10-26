@@ -1,8 +1,8 @@
 import { Binary, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../config';
+import { getRequestContext } from '../context';
 import { Repository } from './repo';
 import { getPresignedUrl } from './signer';
-import { getRequestContext } from '../context';
 
 /**
  * The target type of the attachment rewrite.
@@ -95,8 +95,8 @@ class Rewriter {
   /**
    * Rewrites an object property.
    * @param keyValue - The key/value pair to rewrite.
-   * @param keyValue."0" The key.
-   * @param keyValue."1" The value.
+   * @param keyValue."0" - The key.
+   * @param keyValue."1" - The value.
    * @returns The rewritten key/value pair.
    */
   async rewriteProperty([key, value]: [string, any]): Promise<[string, any]> {
@@ -113,8 +113,8 @@ class Rewriter {
    * If successful, returns the rewritten URL.
    * Otherwise, returns undefined.
    * @param keyValue - The key/value pair to rewrite.
-   * @param keyValue."0" The key.
-   * @param keyValue."1" The value.
+   * @param keyValue."0" - The key.
+   * @param keyValue."1" - The value.
    * @returns The rewritten URL or undefined.
    */
   async rewriteAttachmentUrl([key, value]: [string, any]): Promise<string | boolean | undefined> {
