@@ -144,7 +144,7 @@ const useStyles = createStyles((theme) => ({
  * The SearchControl component represents the embeddable search table control.
  * It includes the table, rows, headers, sorting, etc.
  * It does not include the field editor, filter editor, pagination buttons.
- * @param props The SearchControl React props.
+ * @param props - The SearchControl React props.
  * @returns The SearchControl React node.
  */
 export function SearchControl(props: SearchControlProps): JSX.Element {
@@ -246,7 +246,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
   /**
    * Emits a change event to the optional change listener.
-   * @param newSearch The new search definition.
+   * @param newSearch - The new search definition.
    */
   function emitSearchChange(newSearch: SearchRequest): void {
     if (props.onChange) {
@@ -256,8 +256,8 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
   /**
    * Handles a click on a order row.
-   * @param e The click event.
-   * @param resource The FHIR resource.
+   * @param e - The click event.
+   * @param resource - The FHIR resource.
    */
   function handleRowClick(e: React.MouseEvent, resource: Resource): void {
     if (isCheckboxCell(e.target as Element)) {

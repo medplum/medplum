@@ -153,8 +153,8 @@ export async function addTestUser(
 
 /**
  * Sets up the pwnedPassword mock to handle "Have I Been Pwned" requests.
- * @param pwnedPassword The pwnedPassword mock.
- * @param numPwns The mock value to return. Zero is a safe password.
+ * @param pwnedPassword - The pwnedPassword mock.
+ * @param numPwns - The mock value to return. Zero is a safe password.
  */
 export function setupPwnedPasswordMock(pwnedPassword: jest.Mock, numPwns: number): void {
   pwnedPassword.mockImplementation(async () => numPwns);
@@ -162,8 +162,8 @@ export function setupPwnedPasswordMock(pwnedPassword: jest.Mock, numPwns: number
 
 /**
  * Sets up the fetch mock to handle Recaptcha requests.
- * @param fetch The fetch mock.
- * @param success Whether the mock should return a successful response.
+ * @param fetch - The fetch mock.
+ * @param success - Whether the mock should return a successful response.
  */
 export function setupRecaptchaMock(fetch: jest.Mock, success: boolean): void {
   fetch.mockImplementation(() => ({
@@ -174,8 +174,8 @@ export function setupRecaptchaMock(fetch: jest.Mock, success: boolean): void {
 
 /**
  * Returns true if the resource is in an entry in the bundle.
- * @param bundle A bundle of resources.
- * @param resource The resource to search for.
+ * @param bundle - A bundle of resources.
+ * @param resource - The resource to search for.
  * @returns True if the resource is in the bundle.
  */
 export function bundleContains(bundle: Bundle, resource: Resource): boolean {
@@ -185,7 +185,7 @@ export function bundleContains(bundle: Bundle, resource: Resource): boolean {
 /**
  * Waits for a function to evaluate successfully.
  * Use this to wait for async behaviors without a handle.
- * @param fn Function to call.
+ * @param fn - Function to call.
  */
 export function waitFor(fn: () => Promise<void>): Promise<void> {
   return new Promise((resolve) => {

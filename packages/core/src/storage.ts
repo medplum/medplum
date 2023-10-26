@@ -67,7 +67,7 @@ export class MemoryStorage implements Storage {
 
   /**
    * Returns the current value associated with the given key, or null if the given key does not exist.
-   * @param key The specified storage key.
+   * @param key - The specified storage key.
    * @returns The current value associated with the given key, or null if the given key does not exist.
    */
   getItem(key: string): string | null {
@@ -76,8 +76,8 @@ export class MemoryStorage implements Storage {
 
   /**
    * Sets the value of the pair identified by key to value, creating a new key/value pair if none existed for key previously.
-   * @param key The storage key.
-   * @param value The new value.
+   * @param key - The storage key.
+   * @param value - The new value.
    */
   setItem(key: string, value: string | null): void {
     if (value) {
@@ -89,7 +89,7 @@ export class MemoryStorage implements Storage {
 
   /**
    * Removes the key/value pair with the given key, if a key/value pair with the given key exists.
-   * @param key The storage key.
+   * @param key - The storage key.
    */
   removeItem(key: string): void {
     this.data.delete(key);
@@ -97,7 +97,7 @@ export class MemoryStorage implements Storage {
 
   /**
    * Returns the name of the nth key, or null if n is greater than or equal to the number of key/value pairs.
-   * @param index The numeric index.
+   * @param index - The numeric index.
    * @returns The nth key.
    */
   key(index: number): string | null {

@@ -36,8 +36,8 @@ export const googleValidators = [
 /**
  * Google authentication request handler.
  * This handles POST requests to /auth/google.
- * @param req The request.
- * @param res The response.
+ * @param req - The request.
+ * @param res - The response.
  */
 export async function googleHandler(req: Request, res: Response): Promise<void> {
   const errors = validationResult(req);

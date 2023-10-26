@@ -187,8 +187,8 @@ async function createZipFile(code: string): Promise<Uint8Array> {
 
 /**
  * Returns true if the AWS Lambda exists for the bot name.
- * @param client The AWS Lambda client.
- * @param name The bot name.
+ * @param client - The AWS Lambda client.
+ * @param name - The bot name.
  * @returns True if the bot exists.
  */
 async function lambdaExists(client: LambdaClient, name: string): Promise<boolean> {
@@ -203,9 +203,9 @@ async function lambdaExists(client: LambdaClient, name: string): Promise<boolean
 
 /**
  * Creates a new AWS Lambda for the bot name.
- * @param client The AWS Lambda client.
- * @param name The bot name.
- * @param zipFile The zip file with the bot code.
+ * @param client - The AWS Lambda client.
+ * @param name - The bot name.
+ * @param zipFile - The zip file with the bot code.
  */
 async function createLambda(client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
   const layerVersion = await getLayerVersion(client);
@@ -230,9 +230,9 @@ async function createLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
 
 /**
  * Updates an existing AWS Lambda for the bot name.
- * @param client The AWS Lambda client.
- * @param name The bot name.
- * @param zipFile The zip file with the bot code.
+ * @param client - The AWS Lambda client.
+ * @param name - The bot name.
+ * @param zipFile - The zip file with the bot code.
  */
 async function updateLambda(client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
   // First, make sure the lambda configuration is up to date
@@ -250,8 +250,8 @@ async function updateLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
 
 /**
  * Updates the lambda configuration.
- * @param client The AWS Lambda client.
- * @param name The lambda name.
+ * @param client - The AWS Lambda client.
+ * @param name - The lambda name.
  */
 async function updateLambdaConfig(client: LambdaClient, name: string): Promise<void> {
   const layerVersion = await getLayerVersion(client);
@@ -303,7 +303,7 @@ async function getLambdaConfig(client: LambdaClient, name: string): Promise<GetF
  * Returns the latest layer version for the Medplum bot layer.
  * The first result is the latest version.
  * See: https://stackoverflow.com/a/55752188
- * @param client The AWS Lambda client.
+ * @param client - The AWS Lambda client.
  * @returns The most recent layer version ARN.
  */
 async function getLayerVersion(client: LambdaClient): Promise<string> {

@@ -6,8 +6,8 @@ import { Filter, Operator, SearchRequest } from './search';
 
 /**
  * Determines if the resource matches the search request.
- * @param resource The resource that was created or updated.
- * @param searchRequest The subscription criteria as a search request.
+ * @param resource - The resource that was created or updated.
+ * @param searchRequest - The subscription criteria as a search request.
  * @returns True if the resource satisfies the search request.
  */
 export function matchesSearchRequest(resource: Resource, searchRequest: SearchRequest): boolean {
@@ -26,9 +26,9 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
 
 /**
  * Determines if the resource matches the search filter.
- * @param resource The resource that was created or updated.
- * @param searchRequest The search request.
- * @param filter One of the filters of a subscription criteria.
+ * @param resource - The resource that was created or updated.
+ * @param searchRequest - The search request.
+ * @param filter - One of the filters of a subscription criteria.
  * @returns True if the resource satisfies the search filter.
  */
 function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {

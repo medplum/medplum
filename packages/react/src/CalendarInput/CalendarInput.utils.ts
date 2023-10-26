@@ -1,6 +1,6 @@
 /**
  * Returns a month display string (e.g. "January 2020").
- * @param date Any date within the month.
+ * @param date - Any date within the month.
  * @returns The month display string (e.g. "January 2020")
  */
 export function getMonthString(date: Date): string {

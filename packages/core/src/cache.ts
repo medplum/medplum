@@ -20,7 +20,7 @@ export class LRUCache<T> {
 
   /**
    * Returns the value for the given key.
-   * @param key The key to retrieve.
+   * @param key - The key to retrieve.
    * @returns The value if found; undefined otherwise.
    */
   get(key: string): T | undefined {
@@ -34,8 +34,8 @@ export class LRUCache<T> {
 
   /**
    * Sets the value for the given key.
-   * @param key The key to set.
-   * @param val The value to set.
+   * @param key - The key to set.
+   * @param val - The value to set.
    */
   set(key: string, val: T): void {
     if (this.cache.has(key)) {
@@ -48,7 +48,7 @@ export class LRUCache<T> {
 
   /**
    * Deletes the value for the given key.
-   * @param key The key to delete.
+   * @param key - The key to delete.
    */
   delete(key: string): void {
     this.cache.delete(key);

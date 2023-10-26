@@ -26,7 +26,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
   /**
    * Handles a key down event on the "available" field.
    * If the user presses enter, it is a shortcut for the "Add" button.
-   * @param e The keyboard event.
+   * @param e - The keyboard event.
    */
   function handleAvailableKeyDown(e: React.KeyboardEvent): void {
     if (e.key === 'Enter') {
@@ -45,7 +45,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
   /**
    * Handles a key down event on the "available" field.
    * If the user presses enter, it is a shortcut for the "Add" button.
-   * @param e The keyboard event.
+   * @param e - The keyboard event.
    */
   function handleSelectedKeyDown(e: React.KeyboardEvent): void {
     if (e.key === 'Enter') {
@@ -142,9 +142,9 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
 
   /**
    * Swaps two fields in the search.
-   * @param fields The array of fields.
-   * @param i The index of the first field.
-   * @param j The index of the second field.
+   * @param fields - The array of fields.
+   * @param i - The index of the first field.
+   * @param j - The index of the second field.
    */
   function swapFields(fields: string[], i: number, j: number): void {
     const temp = fields[i];
@@ -251,8 +251,8 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
 /**
  * Returns a list of fields/columns available for a type.
  * The result is the union of properties and search parameters.
- * @param typeSchema The type definition.
- * @param searchParams The search parameters.
+ * @param typeSchema - The type definition.
+ * @param searchParams - The search parameters.
  * @returns A list of fields/columns available for a resource type.
  */
 function getFieldsList(

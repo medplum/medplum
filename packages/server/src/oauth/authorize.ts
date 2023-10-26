@@ -43,9 +43,9 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
  * This is used for both GET and POST requests.
  * We currently only support query string parameters.
  * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
- * @param req The HTTP request.
- * @param res The HTTP response.
- * @param params The params (query string params for GET, form body params for POST).
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
+ * @param params - The params (query string params for GET, form body params for POST).
  * @returns True on success; false on error.
  */
 async function validateAuthorizeRequest(req: Request, res: Response, params: Record<string, any>): Promise<boolean> {
@@ -128,7 +128,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
 
 /**
  * Returns true if the audience is valid.
- * @param aud The user provided audience.
+ * @param aud - The user provided audience.
  * @returns True if the audience is valid; false otherwise.
  */
 function isValidAudience(aud: string | undefined): boolean {
@@ -150,8 +150,8 @@ function isValidAudience(aud: string | undefined): boolean {
 
 /**
  * Tries to get an existing login for the current request.
- * @param req The HTTP request.
- * @param client The current client application.
+ * @param req - The HTTP request.
+ * @param client - The current client application.
  * @returns Existing login if found; undefined otherwise.
  */
 async function getExistingLogin(req: Request, client: ClientApplication): Promise<Login | undefined> {
@@ -173,7 +173,7 @@ async function getExistingLogin(req: Request, client: ClientApplication): Promis
 
 /**
  * Tries to get an existing login based on the "id_token_hint" query string parameter.
- * @param req The HTTP request.
+ * @param req - The HTTP request.
  * @returns Existing login if found; undefined otherwise.
  */
 async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | undefined> {
@@ -201,8 +201,8 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
 
 /**
  * Tries to get an existing login based on the HTTP cookies.
- * @param req The HTTP request.
- * @param client The current client application.
+ * @param req - The HTTP request.
+ * @param client - The current client application.
  * @returns Existing login if found; undefined otherwise.
  */
 async function getExistingLoginFromCookie(req: Request, client: ClientApplication): Promise<Login | undefined> {
@@ -229,10 +229,10 @@ async function getExistingLoginFromCookie(req: Request, client: ClientApplicatio
 
 /**
  * Sends a redirect back to the client application with error codes and state.
- * @param res The response.
- * @param redirectUri The client redirect URI.  This URI may already have query string parameters.
- * @param error The OAuth/OpenID error code.
- * @param state The client state.
+ * @param res - The response.
+ * @param redirectUri - The client redirect URI.  This URI may already have query string parameters.
+ * @param error - The OAuth/OpenID error code.
+ * @param state - The client state.
  */
 function sendErrorRedirect(res: Response, redirectUri: string, error: string, state: string): void {
   const url = new URL(redirectUri);
@@ -243,9 +243,9 @@ function sendErrorRedirect(res: Response, redirectUri: string, error: string, st
 
 /**
  * Sends a successful redirect.
- * @param req The HTTP request.
- * @param res The HTTP response.
- * @param params The redirect parameters.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
+ * @param params - The redirect parameters.
  */
 function sendSuccessRedirect(req: Request, res: Response, params: Record<string, any>): void {
   const redirectUrl = new URL(getConfig().appBaseUrl + 'oauth');

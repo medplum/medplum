@@ -6,7 +6,7 @@ import { NextFunction, Request, RequestHandler, Response } from 'express';
  * This is almost the exact same as express-async-handler,
  * except that package is out of date and lacks TypeScript bindings.
  * https://www.npmjs.com/package/express-async-handler/v/1.1.4
- * @param callback The handler.
+ * @param callback - The handler.
  * @returns Async wrapped handler.
  */
 export function asyncWrap(callback: (req: Request, res: Response, next: NextFunction) => Promise<any>): RequestHandler {

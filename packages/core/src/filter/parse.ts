@@ -95,7 +95,7 @@ const fhirPathParserBuilder = initFhirPathParserBuilder();
 
 /**
  * Parses a FHIR _filter parameter expression into an AST.
- * @param input The FHIR _filter parameter expression.
+ * @param input - The FHIR _filter parameter expression.
  * @returns The AST representing the filters.
  */
 export function parseFilterParameter(input: string): FhirFilterExpression {

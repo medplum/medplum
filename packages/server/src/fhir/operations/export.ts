@@ -15,8 +15,8 @@ import { getAuthenticatedContext } from '../../context';
  *
  * See: https://hl7.org/fhir/uv/bulkdata/export.html
  * See: https://hl7.org/fhir/R4/async.html
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 export async function bulkExportHandler(req: Request, res: Response): Promise<void> {
   await startExport(req, res, 'System');
@@ -30,8 +30,8 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
  *
  * See: https://hl7.org/fhir/uv/bulkdata/export.html#endpoint---all-patients
  * See: https://hl7.org/fhir/R4/async.html
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 export async function patientExportHandler(req: Request, res: Response): Promise<void> {
   await startExport(req, res, 'Patient');

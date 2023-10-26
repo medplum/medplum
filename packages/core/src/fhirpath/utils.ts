@@ -5,7 +5,7 @@ import { capitalize, isEmpty } from '../utils';
 
 /**
  * Returns a single element array with a typed boolean value.
- * @param value The primitive boolean value.
+ * @param value - The primitive boolean value.
  * @returns Single element array with a typed boolean value.
  */
 export function booleanToTypedValue(value: boolean): [TypedValue] {
@@ -14,7 +14,7 @@ export function booleanToTypedValue(value: boolean): [TypedValue] {
 
 /**
  * Returns a "best guess" TypedValue for a given value.
- * @param value The unknown value to check.
+ * @param value - The unknown value to check.
  * @returns A "best guess" TypedValue for the given value.
  */
 export function toTypedValue(value: unknown): TypedValue {
@@ -41,7 +41,7 @@ export function toTypedValue(value: unknown): TypedValue {
  * Converts unknown object into a JavaScript boolean.
  * Note that this is different than the FHIRPath "toBoolean",
  * which has particular semantics around arrays, empty arrays, and type conversions.
- * @param obj Any value or array of values.
+ * @param obj - Any value or array of values.
  * @returns The converted boolean value according to FHIRPath rules.
  */
 export function toJsBoolean(obj: TypedValue[]): boolean {
@@ -64,8 +64,8 @@ export function singleton(collection: TypedValue[], type?: string): TypedValue |
  * For example, "Observation.value[x]" can be "valueString", "valueInteger", "valueQuantity", etc.
  * According to the spec, there can only be one property for a given element definition.
  * This function returns the value and the type.
- * @param input The base context (FHIR resource or backbone element).
- * @param path The property path.
+ * @param input - The base context (FHIR resource or backbone element).
+ * @param path - The property path.
  * @returns The value of the property and the property type.
  */
 export function getTypedPropertyValue(input: TypedValue, path: string): TypedValue[] | TypedValue | undefined {
@@ -83,9 +83,9 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
 
 /**
  * Returns the value of the property and the property type using a type schema.
- * @param input The base context (FHIR resource or backbone element).
- * @param path The property path.
- * @param element The property element definition.
+ * @param input - The base context (FHIR resource or backbone element).
+ * @param path - The property path.
+ * @param element - The property element definition.
  * @returns The value of the property and the property type.
  */
 function getTypedPropertyValueWithSchema(
@@ -149,8 +149,8 @@ function toTypedValueWithType(value: any, type: string): TypedValue {
  * Returns the value of the property and the property type using a type schema.
  * Note that because the type schema is not available, this function may be inaccurate.
  * In some cases, that is the desired behavior.
- * @param typedValue The base context (FHIR resource or backbone element).
- * @param path The property path.
+ * @param typedValue - The base context (FHIR resource or backbone element).
+ * @param path - The property path.
  * @returns The value of the property and the property type.
  */
 function getTypedPropertyValueWithoutSchema(
@@ -195,7 +195,7 @@ function getTypedPropertyValueWithoutSchema(
 
 /**
  * Removes duplicates in array using FHIRPath equality rules.
- * @param arr The input array.
+ * @param arr - The input array.
  * @returns The result array with duplicates removed.
  */
 export function removeDuplicates(arr: TypedValue[]): TypedValue[] {
@@ -217,7 +217,7 @@ export function removeDuplicates(arr: TypedValue[]): TypedValue[] {
 
 /**
  * Returns a negated FHIRPath boolean expression.
- * @param input The input array.
+ * @param input - The input array.
  * @returns The negated type value array.
  */
 export function fhirPathNot(input: TypedValue[]): TypedValue[] {
@@ -226,8 +226,8 @@ export function fhirPathNot(input: TypedValue[]): TypedValue[] {
 
 /**
  * Determines if two arrays are equal according to FHIRPath equality rules.
- * @param x The first array.
- * @param y The second array.
+ * @param x - The first array.
+ * @param y - The second array.
  * @returns FHIRPath true if the arrays are equal.
  */
 export function fhirPathArrayEquals(x: TypedValue[], y: TypedValue[]): TypedValue[] {
@@ -242,8 +242,8 @@ export function fhirPathArrayEquals(x: TypedValue[], y: TypedValue[]): TypedValu
 
 /**
  * Determines if two values are equal according to FHIRPath equality rules.
- * @param x The first value.
- * @param y The second value.
+ * @param x - The first value.
+ * @param y - The second value.
  * @returns True if equal.
  */
 export function fhirPathEquals(x: TypedValue, y: TypedValue): TypedValue[] {
@@ -263,8 +263,8 @@ export function fhirPathEquals(x: TypedValue, y: TypedValue): TypedValue[] {
 
 /**
  * Determines if two arrays are equivalent according to FHIRPath equality rules.
- * @param x The first array.
- * @param y The second array.
+ * @param x - The first array.
+ * @param y - The second array.
  * @returns FHIRPath true if the arrays are equivalent.
  */
 export function fhirPathArrayEquivalent(x: TypedValue[], y: TypedValue[]): TypedValue[] {
@@ -281,8 +281,8 @@ export function fhirPathArrayEquivalent(x: TypedValue[], y: TypedValue[]): Typed
 
 /**
  * Determines if two values are equivalent according to FHIRPath equality rules.
- * @param x The first value.
- * @param y The second value.
+ * @param x - The first value.
+ * @param y - The second value.
  * @returns True if equivalent.
  */
 export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
@@ -330,8 +330,8 @@ export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
 
 /**
  * Returns the sort order of two values for FHIRPath array equivalence.
- * @param x The first value.
- * @param y The second value.
+ * @param x - The first value.
+ * @param y - The second value.
  * @returns The sort order of the values.
  */
 function fhirPathEquivalentCompare(x: TypedValue, y: TypedValue): number {
@@ -348,8 +348,8 @@ function fhirPathEquivalentCompare(x: TypedValue, y: TypedValue): number {
 
 /**
  * Determines if the typed value is the desired type.
- * @param typedValue The typed value to check.
- * @param desiredType The desired type name.
+ * @param typedValue - The typed value to check.
+ * @param desiredType - The desired type name.
  * @returns True if the typed value is of the desired type.
  */
 export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean {
@@ -382,7 +382,7 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
 /**
  * Determines if the input is a Period object.
  * This is heuristic based, as we do not have strong typing at runtime.
- * @param input The input value.
+ * @param input - The input value.
  * @returns True if the input is a period.
  */
 export function isPeriod(input: unknown): input is Period {
@@ -392,7 +392,7 @@ export function isPeriod(input: unknown): input is Period {
 /**
  * Determines if the input is a Quantity object.
  * This is heuristic based, as we do not have strong typing at runtime.
- * @param input The input value.
+ * @param input - The input value.
  * @returns True if the input is a quantity.
  */
 export function isQuantity(input: unknown): input is Quantity {
@@ -409,8 +409,8 @@ export function isQuantityEquivalent(x: Quantity, y: Quantity): boolean {
 /**
  * Resource equality.
  * See: https://dmitripavlutin.com/how-to-compare-objects-in-javascript/#4-deep-equality
- * @param object1 The first object.
- * @param object2 The second object.
+ * @param object1 - The first object.
+ * @param object2 - The second object.
  * @returns True if the objects are equal.
  */
 function deepEquals<T1 extends object, T2 extends object>(object1: T1, object2: T2): boolean {

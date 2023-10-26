@@ -46,7 +46,7 @@ function createValue(input: string): ValueSetExpansionContains {
 /**
  * A low-level component to autocomplete based on a FHIR Valueset.
  * This is the base component for CodeableConceptInput, CodingInput, and CodeInput.
- * @param props The ValueSetAutocomplete React props.
+ * @param props - The ValueSetAutocomplete React props.
  * @returns The ValueSetAutocomplete React node.
  */
 export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Element {

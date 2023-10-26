@@ -18,7 +18,7 @@ let wsServer: ws.Server | undefined = undefined;
 
 /**
  * Initializes a websocket listener on the given HTTP server.
- * @param server The HTTP server.
+ * @param server - The HTTP server.
  */
 export function initWebSockets(server: http.Server): void {
   wsServer = new ws.Server({
@@ -58,7 +58,7 @@ function getWebSocketPath(path: string): string {
 /**
  * Handles a new WebSocket connection to the echo service.
  * The echo service simply echoes back whatever it receives.
- * @param socket The WebSocket connection.
+ * @param socket - The WebSocket connection.
  */
 async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
   // Create a redis client for this connection.

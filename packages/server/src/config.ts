@@ -96,7 +96,7 @@ export function getConfig(): MedplumServerConfig {
  * The identifier must start with one of the following prefixes:
  *   1) "file:" string followed by relative path.
  *   2) "aws:" followed by AWS SSM path prefix.
- * @param configName The medplum config identifier.
+ * @param configName - The medplum config identifier.
  * @returns The loaded configuration.
  */
 export async function loadConfig(configName: string): Promise<MedplumServerConfig> {
@@ -175,7 +175,7 @@ function loadEnvConfig(): MedplumServerConfig {
 /**
  * Loads configuration settings from a JSON file.
  * Path relative to the current working directory at runtime.
- * @param path The config file path.
+ * @param path - The config file path.
  * @returns The configuration.
  */
 async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
@@ -184,7 +184,7 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
 
 /**
  * Loads configuration settings from AWS SSM Parameter Store.
- * @param path The AWS SSM Parameter Store path prefix.
+ * @param path - The AWS SSM Parameter Store path prefix.
  * @returns The loaded configuration.
  */
 async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
@@ -230,8 +230,8 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
 
 /**
  * Returns the AWS Database Secret data as a JSON map.
- * @param region The AWS region.
- * @param secretId Secret ARN
+ * @param region - The AWS region.
+ * @param secretId - Secret ARN
  * @returns The secret data as a JSON map.
  */
 async function loadAwsSecrets(region: string, secretId: string): Promise<Record<string, any> | undefined> {
@@ -247,7 +247,7 @@ async function loadAwsSecrets(region: string, secretId: string): Promise<Record<
 
 /**
  * Adds default values to the config.
- * @param config The input config as loaded from the config file.
+ * @param config - The input config as loaded from the config file.
  * @returns The config with default values added.
  */
 function addDefaults(config: MedplumServerConfig): MedplumServerConfig {

@@ -203,12 +203,12 @@ export function mergePatientRecords(src: Patient, target: Patient, fields?: Part
 /**
  * Rewrites all references to source patient to the target patient, for the given resource type.
  *
- * @param medplum The MedplumClient
- * @param sourcePatient Source `Patient` resource. After this operation, no resources of the specified type will refer
+ * @param medplum - The MedplumClient
+ * @param sourcePatient - Source `Patient` resource. After this operation, no resources of the specified type will refer
  * to this `Patient`
- * @param targetPatient Target `Patient` resource. After this operation, no resources of the specified type will refer
+ * @param targetPatient - Target `Patient` resource. After this operation, no resources of the specified type will refer
  * to this `Patient`
- * @param resourceType Resource type to rewrite (e.g. `Encounter`)
+ * @param resourceType - Resource type to rewrite (e.g. `Encounter`)
  */
 export async function updateResourceReferences<T extends ResourceType>(
   medplum: MedplumClient,
@@ -231,9 +231,9 @@ export async function updateResourceReferences<T extends ResourceType>(
 
 /**
  * Recursive function to search for all references to the source resource, and translate them to the target resource
- * @param obj A FHIR resource or element
- * @param srcReference The reference string referring to the source resource
- * @param targetReference The reference string referring to the target resource
+ * @param obj - A FHIR resource or element
+ * @param srcReference - The reference string referring to the source resource
+ * @param targetReference - The reference string referring to the target resource
  */
 function replaceReferences(obj: any, srcReference: string, targetReference: string): void {
   for (const key in obj) {

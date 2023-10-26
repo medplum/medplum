@@ -646,7 +646,7 @@ let nextId = 1;
 /**
  * Generates a link ID for an item.
  * Link IDs are required properties on QuestionnaireItem objects.
- * @param prefix The link ID prefix string.
+ * @param prefix - The link ID prefix string.
  * @returns A unique link ID.
  */
 function generateLinkId(prefix: string): string {
