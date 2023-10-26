@@ -3,7 +3,6 @@ import { generateId } from '../crypto';
 import { TypedEventTarget } from '../eventtarget';
 import { OperationOutcomeError, validationError } from '../outcomes';
 
-// TODO: Update tests
 // TODO: Add tests for diagnosticreport-open specifically
 // TODO: Add tests for syncerror
 // TODO: Update backend reporting via .wellknown
