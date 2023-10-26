@@ -25,10 +25,14 @@ publicRoutes.get('/.well-known/fhircast-configuration', (_req: Request, res: Res
       'patient-close',
       'imagingstudy-open',
       'imagingstudy-close',
+      'encounter-open',
+      'encounter-close',
+      'diagnosticreport-open',
+      'diagnosticreport-close',
     ],
     websocketSupport: true,
     webhookSupport: false,
-    fhircastVersion: 'STU2',
+    fhircastVersion: 'STU3',
   });
 });
 

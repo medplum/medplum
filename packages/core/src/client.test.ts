@@ -1164,7 +1164,7 @@ describe('Client', () => {
 
         const subRequest = await client.fhircastSubscribe(topic, events);
         expect(fetch).toBeCalledWith(
-          'https://api.medplum.com/fhircast/STU2',
+          'https://api.medplum.com/fhircast/STU3',
           expect.objectContaining<RequestInit>({
             method: 'POST',
             body: serializedSubRequest,
@@ -1215,7 +1215,7 @@ describe('Client', () => {
 
         await client.fhircastUnsubscribe(subRequest);
         expect(fetch).toHaveBeenCalledWith(
-          'https://api.medplum.com/fhircast/STU2',
+          'https://api.medplum.com/fhircast/STU3',
           expect.objectContaining<RequestInit>({
             method: 'POST',
             body: serializedSubRequest,
@@ -1308,7 +1308,7 @@ describe('Client', () => {
           )
         ).resolves;
         expect(fetch).toBeCalledWith(
-          'https://api.medplum.com/fhircast/STU2/abc123',
+          'https://api.medplum.com/fhircast/STU3/abc123',
           expect.objectContaining<RequestInit>({
             method: 'POST',
             headers: expect.objectContaining({ 'Content-Type': ContentType.JSON }),
@@ -1324,7 +1324,7 @@ describe('Client', () => {
           ])
         ).resolves;
         expect(fetch).toBeCalledWith(
-          'https://api.medplum.com/fhircast/STU2/def456',
+          'https://api.medplum.com/fhircast/STU3/def456',
           expect.objectContaining<RequestInit>({
             method: 'POST',
             headers: expect.objectContaining({ 'Content-Type': ContentType.JSON }),
@@ -1340,7 +1340,7 @@ describe('Client', () => {
           ])
         ).resolves;
         expect(fetch).toBeCalledWith(
-          'https://api.medplum.com/fhircast/STU2/xyz-789',
+          'https://api.medplum.com/fhircast/STU3/xyz-789',
           expect.objectContaining<RequestInit>({
             method: 'POST',
             headers: expect.objectContaining({ 'Content-Type': ContentType.JSON }),
