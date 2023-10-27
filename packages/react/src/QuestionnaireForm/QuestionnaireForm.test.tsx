@@ -464,6 +464,57 @@ describe('QuestionnaireForm', () => {
     expect((radioButton2 as HTMLInputElement).checked).toBe(true);
   });
 
+  test('Choice valueCoding default value', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            text: 'q1',
+            answerOption: [
+              {
+                valueString: 'a1',
+              },
+              {
+                valueString: 'a2',
+              },
+              {
+                valueCoding: {
+                  code: 'patient',
+                },
+              },
+              {
+                valueCoding: {
+                  code: 'organization',
+                },
+              },
+            ],
+            initial: [
+              {
+                valueCoding: {
+                  code: 'patient',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const radioButton1 = screen.getByLabelText('a1');
+    expect(radioButton1).toBeInTheDocument();
+    expect((radioButton1 as HTMLInputElement).checked).toBe(false);
+
+    const radioButton2 = screen.getByLabelText('patient');
+    expect(radioButton2).toBeInTheDocument();
+    expect((radioButton2 as HTMLInputElement).checked).toBe(true);
+  });
+
   test('Open choice input', async () => {
     await setup({
       questionnaire: {
@@ -786,7 +837,7 @@ describe('QuestionnaireForm', () => {
     expect((dropDown as HTMLSelectElement).value).toBe('a2');
   });
 
-  test('Drop down choice input default reference value (display)', async () => {
+  test('Drop down choice input default reference value', async () => {
     const onSubmit = jest.fn();
 
     await setup({

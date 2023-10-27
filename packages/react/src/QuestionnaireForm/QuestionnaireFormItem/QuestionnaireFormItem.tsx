@@ -414,7 +414,7 @@ function typedValueToString(typedValue: TypedValue | undefined): string | undefi
     return formatCoding(typedValue.value);
   }
   if (typedValue.type === 'Reference') {
-    return typedValue.value.display;
+    return formatReferenceString(typedValue);
   }
   return typedValue.value.toString();
 }
@@ -457,4 +457,8 @@ function formatSelectData(item: QuestionnaireItem): FormattedData {
 
 function getValueAndLabel(option: QuestionnaireItemAnswerOption, propertyName: string): string | undefined {
   return formatCoding(option.valueCoding) || option[propertyName as keyof QuestionnaireItemAnswerOption]?.toString();
+}
+
+function formatReferenceString(typedValue: TypedValue): string {
+  return typedValue.value.display || typedValue.value.reference || stringify(typedValue.value)
 }
