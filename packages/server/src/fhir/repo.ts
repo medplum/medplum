@@ -7,7 +7,7 @@ import {
   deepEquals,
   evalFhirPath,
   evalFhirPathTyped,
-  Operator as FhirOperator,
+  Operator,
   forbidden,
   formatSearchQuery,
   getSearchParameterDetails,
@@ -81,7 +81,7 @@ import { getPatients } from './patient';
 import { validateReferences } from './references';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
-import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, Operator, SelectQuery } from './sql';
+import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, SelectQuery } from './sql';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -241,7 +241,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<T> {
     const client = getClient();
-    const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', Operator.EQUALS, id);
+    const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', 'EQUALS', id);
 
     this.addSecurityFilters(builder, resourceType);
 
@@ -356,7 +356,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         .column('id')
         .column('content')
         .column('lastUpdated')
-        .where('id', Operator.EQUALS, id)
+        .where('id', 'EQUALS', id)
         .orderBy('lastUpdated', true)
         .limit(100)
         .execute(client);
@@ -417,8 +417,8 @@ export class Repository extends BaseRepository implements FhirRepository {
       const client = getClient();
       const rows = await new SelectQuery(resourceType + '_History')
         .column('content')
-        .where('id', Operator.EQUALS, id)
-        .where('versionId', Operator.EQUALS, vid)
+        .where('id', 'EQUALS', id)
+        .where('versionId', 'EQUALS', vid)
         .execute(client);
 
       if (rows.length === 0) {
@@ -579,7 +579,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       filters: [
         {
           code: 'url',
-          operator: FhirOperator.EQUALS,
+          operator: Operator.EQUALS,
           value: url,
         },
       ],
@@ -679,8 +679,8 @@ export class Repository extends BaseRepository implements FhirRepository {
     const client = getClient();
     const rows = await new SelectQuery(resourceType + '_History')
       .raw(`COUNT (DISTINCT "versionId")::int AS "count"`)
-      .where('id', Operator.EQUALS, id)
-      .where('lastUpdated', Operator.GREATER_THAN, new Date(Date.now() - 1000 * seconds))
+      .where('id', 'EQUALS', id)
+      .where('lastUpdated', 'GREATER_THAN', new Date(Date.now() - 1000 * seconds))
       .execute(client);
     return (rows[0].count as number) >= maxVersions;
   }
@@ -896,8 +896,8 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('id', Operator.EQUALS, id).execute(getClient());
-    await new DeleteQuery(resourceType + '_History').where('id', Operator.EQUALS, id).execute(getClient());
+    await new DeleteQuery(resourceType).where('id', 'EQUALS', id).execute(getClient());
+    await new DeleteQuery(resourceType + '_History').where('id', 'EQUALS', id).execute(getClient());
     await deleteCacheEntry(resourceType, id);
   }
 
@@ -911,8 +911,8 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('id', Operator.IN, ids).execute(getClient());
-    await new DeleteQuery(resourceType + '_History').where('id', Operator.IN, ids).execute(getClient());
+    await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(getClient());
+    await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(getClient());
     await deleteCacheEntries(resourceType, ids);
   }
 
@@ -926,9 +926,9 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('lastUpdated', Operator.LESS_THAN_OR_EQUALS, before).execute(getClient());
+    await new DeleteQuery(resourceType).where('lastUpdated', 'LESS_THAN_OR_EQUALS', before).execute(getClient());
     await new DeleteQuery(resourceType + '_History')
-      .where('lastUpdated', Operator.LESS_THAN_OR_EQUALS, before)
+      .where('lastUpdated', 'LESS_THAN_OR_EQUALS', before)
       .execute(getClient());
   }
 
@@ -955,7 +955,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @param builder The select query builder.
    */
   addDeletedFilter(builder: SelectQuery): void {
-    builder.where('deleted', Operator.EQUALS, false);
+    builder.where('deleted', 'EQUALS', false);
   }
 
   /**
@@ -979,7 +979,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    */
   private addProjectFilters(builder: SelectQuery): void {
     if (this.context.project) {
-      builder.where('compartments', Operator.ARRAY_CONTAINS, [this.context.project, r4ProjectId], 'UUID[]');
+      builder.where('compartments', 'ARRAY_CONTAINS', [this.context.project, r4ProjectId], 'UUID[]');
     }
   }
 
@@ -1001,7 +1001,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         if (policyCompartmentId) {
           // Deprecated - to be removed
           // Add compartment restriction for the access policy.
-          expressions.push(new Condition('compartments', Operator.ARRAY_CONTAINS, policyCompartmentId, 'UUID[]'));
+          expressions.push(new Condition('compartments', 'ARRAY_CONTAINS', policyCompartmentId, 'UUID[]'));
         } else if (policy.criteria) {
           // Add subquery for access policy criteria.
           const searchRequest = parseCriteriaAsSearchRequest(policy.criteria);

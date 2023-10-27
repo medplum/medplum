@@ -19,7 +19,7 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
-import { Column, Condition, Conjunction, Disjunction, Expression, Operator, SelectQuery } from '../sql';
+import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays, deriveIdentifierSearchParameter } from './util';
 
@@ -102,25 +102,24 @@ export class TokenTable extends LookupTable<Token> {
    * Builds a "where" condition for the select query builder.
    * @param selectQuery The select query builder.
    * @param resourceType The resource type.
+   * @param table The resource table.
    * @param filter The search filter details.
    * @returns The select query where expression.
    */
-  buildWhere(selectQuery: SelectQuery, resourceType: ResourceType, filter: Filter): Expression {
+  buildWhere(selectQuery: SelectQuery, resourceType: ResourceType, table: string, filter: Filter): Expression {
     const tableName = getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const joinOnExpression = new Conjunction([
-      new Condition(new Column(resourceType, 'id'), Operator.EQUALS, new Column(joinName, 'resourceId')),
-      new Condition(new Column(joinName, 'code'), Operator.EQUALS, filter.code),
+      new Condition(new Column(table, 'id'), 'EQUALS', new Column(joinName, 'resourceId')),
+      new Condition(new Column(joinName, 'code'), 'EQUALS', filter.code),
     ]);
     joinOnExpression.expressions.push(buildWhereExpression(joinName, filter));
-    selectQuery.innerJoin(tableName, joinName, joinOnExpression);
+    selectQuery.leftJoin(tableName, joinName, joinOnExpression);
 
     // If the filter is "not equals", then we're looking for ID=null
     // If the filter is "equals", then we're looking for ID!=null
     const sqlOperator =
-      filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS
-        ? Operator.EQUALS
-        : Operator.NOT_EQUALS;
+      filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS ? 'EQUALS' : 'NOT_EQUALS';
     return new Condition(new Column(joinName, 'resourceId'), sqlOperator, null);
   }
 
@@ -134,10 +133,10 @@ export class TokenTable extends LookupTable<Token> {
     const tableName = getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const joinOnExpression = new Conjunction([
-      new Condition(new Column(resourceType, 'id'), Operator.EQUALS, new Column(joinName, 'resourceId')),
-      new Condition(new Column(joinName, 'code'), Operator.EQUALS, sortRule.code),
+      new Condition(new Column(resourceType, 'id'), 'EQUALS', new Column(joinName, 'resourceId')),
+      new Condition(new Column(joinName, 'code'), 'EQUALS', sortRule.code),
     ]);
-    joinOnExpression.expressions.push(new Condition(new Column(joinName, 'code'), Operator.EQUALS, sortRule.code));
+    joinOnExpression.expressions.push(new Condition(new Column(joinName, 'code'), 'EQUALS', sortRule.code));
     selectQuery.innerJoin(tableName, joinName, joinOnExpression);
     selectQuery.orderBy(new Column(joinName, 'value'), sortRule.descending);
   }
@@ -356,7 +355,7 @@ async function getExistingValues(client: PoolClient, resourceType: ResourceType,
     .column('code')
     .column('system')
     .column('value')
-    .where('resourceId', Operator.EQUALS, resourceId)
+    .where('resourceId', 'EQUALS', resourceId)
     .orderBy('index')
     .execute(client)
     .then((result) =>
@@ -379,7 +378,7 @@ function buildWhereExpression(tableName: string, filter: Filter): Expression {
 function buildWhereCondition(tableName: string, operator: FhirOperator, query: string): Expression {
   const parts = query.split('|');
   if (parts.length === 2) {
-    const systemCondition = new Condition(new Column(tableName, 'system'), Operator.EQUALS, parts[0]);
+    const systemCondition = new Condition(new Column(tableName, 'system'), 'EQUALS', parts[0]);
     return parts[1]
       ? new Conjunction([systemCondition, buildValueCondition(tableName, operator, parts[1])])
       : systemCondition;
@@ -395,13 +394,13 @@ function buildValueCondition(tableName: string, operator: FhirOperator, value: s
   const column = new Column(tableName, 'value');
   if (operator === FhirOperator.TEXT) {
     return new Conjunction([
-      new Condition(new Column(tableName, 'system'), Operator.EQUALS, 'text'),
-      new Condition(column, Operator.LIKE, value.trim() + '%'),
+      new Condition(new Column(tableName, 'system'), 'EQUALS', 'text'),
+      new Condition(column, 'LIKE', value.trim() + '%'),
     ]);
   } else if (operator === FhirOperator.CONTAINS) {
-    return new Condition(column, Operator.LIKE, value.trim() + '%');
+    return new Condition(column, 'LIKE', value.trim() + '%');
   } else {
-    return new Condition(column, Operator.EQUALS, value.trim());
+    return new Condition(column, 'EQUALS', value.trim());
   }
 }
 
@@ -479,8 +478,8 @@ function buildInValueSetCondition(tableName: string, value: string): Condition {
   //
   return new Condition(
     new Column(tableName, 'system'),
-    Operator.IN_SUBQUERY,
-    new SelectQuery('ValueSet').column('reference').where('url', Operator.EQUALS, value).limit(1),
+    'IN_SUBQUERY',
+    new SelectQuery('ValueSet').column('reference').where('url', 'EQUALS', value).limit(1),
     'TEXT[]'
   );
 }

@@ -5,7 +5,7 @@ import { asyncWrap } from '../../async';
 import { getClient } from '../../database';
 import { sendOutcome } from '../outcomes';
 import { systemRepo } from '../repo';
-import { Condition, Conjunction, Disjunction, Expression, Operator, SelectQuery } from '../sql';
+import { Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
 
 // Implements FHIR "Value Set Expansion"
 // https://www.hl7.org/fhir/operation-valueset-expand.html
@@ -73,7 +73,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
 
   const filterQuery = filterToTsvectorQuery(filter);
   if (filterQuery) {
-    query.where('display', Operator.TSVECTOR_ENGLISH, filterQuery);
+    query.where('display', 'TSVECTOR_ENGLISH', filterQuery);
   }
 
   const rows = await query.execute(client);
@@ -131,12 +131,12 @@ function processInclude(systemExpressions: Expression[], include: ValueSetCompos
     return;
   }
 
-  const systemExpression = new Condition('system', Operator.EQUALS, include.system as string);
+  const systemExpression = new Condition('system', 'EQUALS', include.system as string);
 
   if (include.concept) {
     const codeExpressions: Expression[] = [];
     for (const concept of include.concept) {
-      codeExpressions.push(new Condition('code', Operator.EQUALS, concept.code as string));
+      codeExpressions.push(new Condition('code', 'EQUALS', concept.code as string));
     }
     systemExpressions.push(new Conjunction([systemExpression, new Disjunction(codeExpressions)]));
   } else {

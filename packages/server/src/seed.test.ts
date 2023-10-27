@@ -2,7 +2,7 @@ import { Project } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config';
 import { getClient } from './database';
-import { Operator, SelectQuery } from './fhir/sql';
+import { SelectQuery } from './fhir/sql';
 import { seedDatabase } from './seed';
 import { withTestContext } from './test.setup';
 
@@ -25,7 +25,7 @@ describe('Seed', () => {
     // Make sure the first project is a super admin
     const rows = await new SelectQuery('Project')
       .column('content')
-      .where('name', Operator.EQUALS, 'Super Admin')
+      .where('name', 'EQUALS', 'Super Admin')
       .execute(getClient());
     expect(rows.length).toBe(1);
 
