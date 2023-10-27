@@ -144,60 +144,6 @@ export class Condition implements Expression {
     }
     operator(sql, this.column, this.parameter, this.parameterType);
   }
-
-  // protected buildArrayCondition(sql: SqlBuilder): void {
-  // sql.append('(');
-  // sql.appendColumn(this.column);
-  // sql.append(' IS NOT NULL AND ');
-  // sql.appendColumn(this.column);
-  // sql.append('&&ARRAY[');
-  // this.appendParameters(sql, false);
-  // sql.append(']');
-  // if (this.parameterType) {
-  //   sql.append('::' + this.parameterType);
-  // }
-  // sql.append(')');
-  // }
-
-  // protected buildInSubqueryCondition(sql: SqlBuilder): void {
-  // sql.appendColumn(this.column);
-  // sql.append('=ANY(');
-  // if (this.parameterType) {
-  //   sql.append('(');
-  // }
-  // (this.parameter as SelectQuery).buildSql(sql);
-  // if (this.parameterType) {
-  //   sql.append(')::' + this.parameterType);
-  // }
-  // sql.append(')');
-  // }
-
-  // protected buildSimpleCondition(sql: SqlBuilder): void {
-  //   if (this.operator === Operator.LIKE) {
-  // sql.append('LOWER(');
-  // sql.appendColumn(this.column);
-  // sql.append(')');
-  // sql.append(this.operator);
-  // sql.param((this.parameter as string).toLowerCase());
-  // } else if (this.operator === Operator.TSVECTOR_SIMPLE || this.operator === Operator.TSVECTOR_ENGLISH) {
-  // sql.append(`to_tsvector('${this.operator === Operator.TSVECTOR_SIMPLE ? 'simple' : 'english'}',`);
-  // sql.appendColumn(this.column);
-  // sql.append(')');
-  // sql.append(this.operator);
-  // sql.param(this.parameter);
-  // sql.append(')');
-  // } else if (this.operator === Operator.EQUALS && this.parameter === null) {
-  // sql.appendColumn(this.column);
-  // sql.append(' IS NULL');
-  // } else if (this.operator === Operator.NOT_EQUALS && this.parameter === null) {
-  // sql.appendColumn(this.column);
-  // sql.append(' IS NOT NULL');
-  // } else {
-  // sql.appendColumn(this.column);
-  // sql.append(this.operator);
-  // this.appendParameters(sql, true);
-  // }
-  // }
 }
 
 export abstract class Connective implements Expression {
