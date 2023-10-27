@@ -275,9 +275,7 @@ export interface MedplumClientOptions {
   verbose?: boolean;
 }
 
-export interface FetchLike {
-  (url: string, options?: any): Promise<any>;
-}
+export type FetchLike = (url: string, options?: any) => Promise<any>;
 
 /**
  * QueryTypes defines the different ways to specify FHIR search parameters.
