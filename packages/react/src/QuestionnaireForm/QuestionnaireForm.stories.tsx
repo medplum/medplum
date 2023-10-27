@@ -86,6 +86,52 @@ export const Groups = (): JSX.Element => (
   </Document>
 );
 
+export const Choices = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'nested-example',
+        title: 'Nested Groups Example',
+        item: [
+          {
+            linkId: 'group1',
+            type: 'group',
+            text: 'group1',
+            repeats: true,
+            item: [
+              {
+                linkId: 'group2',
+                type: 'group',
+                text: 'group2',
+                repeats: true,
+                item: [
+                  {
+                    linkId: 'q1',
+                    type: 'choice',
+                    text: 'Question 1',
+                    answerOption: [
+                      {
+                        valueString: 'Yes',
+                      },
+                      {
+                        valueString: 'No',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
 export const Pages = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
