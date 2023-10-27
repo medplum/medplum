@@ -1,6 +1,9 @@
 {
   "name": "root",
   "version": "2.1.10",
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "workspaces": [
     "packages/*",
     "examples/*"

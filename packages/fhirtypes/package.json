@@ -26,6 +26,7 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
+  "type": "module",
   "main": "",
   "types": "dist/index.d.ts",
   "scripts": {

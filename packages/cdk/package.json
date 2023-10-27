@@ -10,6 +10,7 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "bin": {
     "medplum-cdk-init": "./dist/cjs/init.cjs"
   },

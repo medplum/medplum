@@ -30,6 +30,7 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
+  "type": "module",
   "exports": {
     "types": "./dist/types.d.ts",
     "require": "./dist/cjs/index.cjs",

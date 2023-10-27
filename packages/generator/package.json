@@ -10,6 +10,7 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "scripts": {
     "baseschema": "ts-node src/baseschema.ts",
     "benchmark": "ts-node src/benchmarks.ts",
