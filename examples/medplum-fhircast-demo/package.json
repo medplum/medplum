@@ -1,12 +1,17 @@
 {
   "name": "medplum-fhircast-demo",
-  "private": true,
   "version": "2.1.10",
+  "private": true,
   "scripts": {
-    "dev": "vite",
     "build": "tsc && vite build",
+    "dev": "vite",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
   },
   "devDependencies": {
     "@mantine/core": "6.0.21",
@@ -25,10 +30,5 @@
     "react-router-dom": "6.16.0",
     "typescript": "5.2.2",
     "vite": "4.4.11"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
   }
 }

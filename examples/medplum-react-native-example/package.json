@@ -3,10 +3,20 @@
   "version": "2.1.10",
   "main": "src/main.ts",
   "scripts": {
-    "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
+    "start": "expo start",
     "web": "expo start --web"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
   },
   "dependencies": {
     "@expo/webpack-config": "19.0.0",
@@ -21,15 +31,5 @@
   "devDependencies": {
     "@babel/core": "7.23.2",
     "typescript": "5.2.2"
-  },
-  "prettier": {
-    "printWidth": 120,
-    "singleQuote": true,
-    "trailingComma": "es5"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
   }
 }

@@ -1,21 +1,33 @@
 {
   "name": "root",
   "version": "2.1.10",
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "scripts": {
-    "clean": "turbo run clean",
-    "build": "turbo run build",
-    "test": "turbo run test",
-    "lint": "eslint .",
-    "prettier": "prettier --write \"**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}\"",
-    "cyclonedx": "cyclonedx-npm --omit dev --omit optional --omit peer"
-  },
   "workspaces": [
     "packages/*",
     "examples/*"
   ],
+  "scripts": {
+    "build": "turbo run build",
+    "clean": "turbo run clean",
+    "cyclonedx": "cyclonedx-npm --omit dev --omit optional --omit peer",
+    "lint": "eslint .",
+    "prettier": "prettier --write \"**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}\"",
+    "sort-package-json": "sort-package-json package.json \"packages/*/package.json\" \"examples/*/package.json\"",
+    "test": "turbo run test"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "parserOptions": {
+      "project": "./tsconfig.json"
+    },
+    "extends": [
+      "@medplum/eslint-config"
+    ],
+    "root": true
+  },
   "devDependencies": {
     "@babel/core": "7.23.2",
     "@babel/preset-env": "7.23.2",
@@ -37,11 +49,16 @@
     "nyc": "15.1.0",
     "prettier": "3.0.3",
     "rimraf": "5.0.5",
+    "sort-package-json": "2.6.0",
     "source-map-explorer": "2.5.3",
     "ts-node": "10.9.1",
     "tslib": "2.6.2",
     "turbo": "1.10.15",
     "typescript": "5.2.2"
+  },
+  "packageManager": "npm@9.8.1",
+  "engines": {
+    "node": ">=18.0.0"
   },
   "overrides": {
     "esbuild": "0.19.4",
@@ -49,20 +66,5 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "trim": "0.0.3"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@medplum/eslint-config"
-    ],
-    "parserOptions": {
-      "project": "./tsconfig.json"
-    }
-  },
-  "prettier": {
-    "printWidth": 120,
-    "singleQuote": true,
-    "trailingComma": "es5"
-  },
-  "packageManager": "npm@9.8.1"
+  }
 }

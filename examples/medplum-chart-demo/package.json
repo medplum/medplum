@@ -1,11 +1,21 @@
 {
   "name": "medplum-chart-demo",
-  "private": true,
   "version": "2.1.10",
+  "private": true,
   "scripts": {
-    "dev": "vite",
     "build": "tsc && vite build",
+    "dev": "vite",
     "preview": "vite preview"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
   },
   "devDependencies": {
     "@emotion/react": "11.11.1",
@@ -26,15 +36,5 @@
     "react-router-dom": "6.16.0",
     "typescript": "5.2.2",
     "vite": "4.4.11"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
-  "prettier": {
-    "printWidth": 120,
-    "singleQuote": true,
-    "trailingComma": "es5"
   }
 }

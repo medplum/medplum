@@ -2,25 +2,6 @@
   "name": "@medplum/fhirtypes",
   "version": "2.1.10",
   "description": "Medplum FHIR Type Definitions",
-  "author": "Medplum <hello@medplum.com>",
-  "license": "Apache-2.0",
-  "homepage": "https://www.medplum.com/",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/medplum/medplum.git",
-    "directory": "packages/fhirtypes"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "scripts": {
-    "clean": "",
-    "build": "",
-    "test": ""
-  },
-  "main": "",
-  "types": "dist/index.d.ts",
-  "sideEffects": false,
   "keywords": [
     "medplum",
     "fhir",
@@ -35,5 +16,24 @@
     "stu3",
     "r4",
     "normative"
-  ]
+  ],
+  "homepage": "https://www.medplum.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/medplum/medplum.git",
+    "directory": "packages/fhirtypes"
+  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "sideEffects": false,
+  "main": "",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "",
+    "clean": "",
+    "test": ""
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
