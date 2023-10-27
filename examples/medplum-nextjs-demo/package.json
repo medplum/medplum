@@ -1,13 +1,13 @@
 {
   "name": "medplum-nextjs-demo",
   "version": "2.1.10",
-  "type": "module",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "next dev",
+    "lint": "next lint",
+    "start": "next start"
   },
   "dependencies": {
     "@emotion/react": "11.11.1",

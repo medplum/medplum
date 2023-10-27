@@ -2,20 +2,17 @@
   "name": "@medplum/examples",
   "version": "2.1.10",
   "description": "Medplum Code Examples",
-  "author": "Medplum <hello@medplum.com>",
-  "license": "Apache-2.0",
   "homepage": "https://www.medplum.com/",
   "repository": {
     "type": "git",
     "url": "https://github.com/medplum/medplum.git",
     "directory": "packages/examples"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
   "scripts": {
-    "clean": "rimraf dist",
-    "build": "npm run clean && tsc"
+    "build": "npm run clean && tsc",
+    "clean": "rimraf dist"
   },
   "devDependencies": {
     "@jest/globals": "29.7.0",
@@ -23,5 +20,8 @@
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
     "jest": "29.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

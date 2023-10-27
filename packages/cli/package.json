@@ -2,21 +2,36 @@
   "name": "@medplum/cli",
   "version": "2.1.10",
   "description": "Medplum Command Line Interface",
-  "author": "Medplum <hello@medplum.com>",
-  "license": "Apache-2.0",
+  "keywords": [
+    "medplum",
+    "fhir",
+    "healthcare",
+    "interoperability",
+    "json",
+    "serialization",
+    "hl7",
+    "standards",
+    "clinical",
+    "dstu2",
+    "stu3",
+    "r4",
+    "normative"
+  ],
   "homepage": "https://www.medplum.com/",
   "repository": {
     "type": "git",
     "url": "https://github.com/medplum/medplum.git",
     "directory": "packages/cli"
   },
-  "engines": {
-    "node": ">=18.0.0"
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "bin": {
+    "medplum": "./dist/cjs/index.cjs"
   },
   "scripts": {
-    "medplum": "ts-node src/index.ts",
-    "clean": "rimraf dist",
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
+    "clean": "rimraf dist",
+    "medplum": "ts-node src/index.ts",
     "test": "jest"
   },
   "dependencies": {
@@ -43,22 +58,7 @@
     "@types/node-fetch": "2.6.6",
     "@types/tar": "6.1.6"
   },
-  "bin": {
-    "medplum": "./dist/cjs/index.cjs"
-  },
-  "keywords": [
-    "medplum",
-    "fhir",
-    "healthcare",
-    "interoperability",
-    "json",
-    "serialization",
-    "hl7",
-    "standards",
-    "clinical",
-    "dstu2",
-    "stu3",
-    "r4",
-    "normative"
-  ]
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
