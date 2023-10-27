@@ -460,5 +460,5 @@ function getValueAndLabel(option: QuestionnaireItemAnswerOption, propertyName: s
 }
 
 function formatReferenceString(typedValue: TypedValue): string {
-  return typedValue.value.display || typedValue.value.reference || stringify(typedValue.value)
+  return typedValue.value.display || typedValue.value.reference || stringify(typedValue.value);
 }
