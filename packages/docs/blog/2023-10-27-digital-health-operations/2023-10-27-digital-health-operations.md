@@ -1,3 +1,15 @@
+---
+slug: digital-health-operations
+title: Digital Health is an Operations Game
+authors:
+  name: Rahul Agarwal
+  title: Medplum Core Team
+  url: https://github.com/rahul1
+  image_url: https://github.com/rahul1.png
+tags: ['care plans', 'workflow', 'tasks']
+keywords: ['digital health', 'healthcare operations', 'EHR']
+---
+
 # Digital Health is an Operations Game
 
 Digital health companies are at the forefront of revolutionizing patient experience by combining quality care, at lower costs, and at national scale. Typically, they target a specific healthcare niche, concentrating on top-notch execution. Their ultimate goal? To merge an exceptional patient experience with smooth operations behind the scenes.
