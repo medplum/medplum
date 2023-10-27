@@ -255,7 +255,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
   }
 
   const defaultValue =
-    getCurrentAnswer(response) ?? getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value');
+    getCurrentAnswer(response) ?? initialValue;
 
   if (item.repeats) {
     const { propertyName, data } = formatSelectData(props.item);
@@ -293,7 +293,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
         const propertyName = 'value' + capitalize(optionValue.type);
         props.onChangeAnswer({ [propertyName]: optionValue.value });
       }}
-      defaultValue={(formatCoding(defaultValue?.value) || defaultValue?.value) ?? typedValueToString(initialValue)}
+      defaultValue={(formatCoding(defaultValue?.value) || defaultValue?.value)}
       data={data}
     />
   );
