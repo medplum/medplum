@@ -164,7 +164,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/dicom/PS3/', dicomRouter);
   apiRouter.use('/email/v1/', emailRouter);
   apiRouter.use('/fhir/R4/', fhirRouter);
-  apiRouter.use('/fhircast/STU2/', fhircastRouter);
+  apiRouter.use('/fhircast/STU3/', fhircastRouter);
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);
   apiRouter.use('/storage/', storageRouter);

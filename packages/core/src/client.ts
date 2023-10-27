@@ -275,9 +275,7 @@ export interface MedplumClientOptions {
   verbose?: boolean;
 }
 
-export interface FetchLike {
-  (url: string, options?: any): Promise<any>;
-}
+export type FetchLike = (url: string, options?: any) => Promise<any>;
 
 /**
  * QueryTypes defines the different ways to specify FHIR search parameters.
@@ -3047,7 +3045,7 @@ export class MedplumClient extends EventTarget {
     } as PendingSubscriptionRequest;
 
     const body = (await this.post(
-      '/fhircast/STU2',
+      '/fhircast/STU3',
       serializeFhircastSubscriptionRequest(subRequest),
       ContentType.FORM_URL_ENCODED
     )) as { 'hub.channel.endpoint': string };
@@ -3084,7 +3082,7 @@ export class MedplumClient extends EventTarget {
     // Turn subRequest -> unsubRequest
     subRequest.mode = 'unsubscribe';
     // Send unsub request
-    await this.post('/fhircast/STU2', serializeFhircastSubscriptionRequest(subRequest), ContentType.FORM_URL_ENCODED);
+    await this.post('/fhircast/STU3', serializeFhircastSubscriptionRequest(subRequest), ContentType.FORM_URL_ENCODED);
   }
 
   /**
@@ -3107,12 +3105,12 @@ export class MedplumClient extends EventTarget {
    * @param context - The updated context containing resources relevant to this event.
    * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
    */
-  async fhircastPublish(
+  async fhircastPublish<EventName extends FhircastEventName = FhircastEventName>(
     topic: string,
-    event: FhircastEventName,
-    context: FhircastEventContext | FhircastEventContext[]
+    event: EventName,
+    context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[]
   ): Promise<void> {
-    return this.post(`/fhircast/STU2/${topic}`, createFhircastMessagePayload(topic, event, context), ContentType.JSON);
+    return this.post(`/fhircast/STU3/${topic}`, createFhircastMessagePayload(topic, event, context), ContentType.JSON);
   }
 
   /**
