@@ -10,17 +10,20 @@ import {
 } from '@medplum/core';
 import {
   Account,
+  Annotation,
   CodeableConcept,
   Organization,
   Patient,
   Practitioner,
   ProjectSecret,
   QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
   Reference,
   RequestGroup,
   RequestGroupAction,
   Resource,
   ServiceRequest,
+  Specimen,
   Subscription,
 } from '@medplum/fhirtypes';
 import { createHmac } from 'crypto';
@@ -84,6 +87,31 @@ const availableTests: Record<string, string> = {
   'quest-6399': 'CBC w/Diff',
   'quest-16814': 'ANA Scr, IFA w/Reflex Titer / Pattern / MPX AB Cascade',
   'quest-7573': 'Iron Total/IBC Diagnosis code D64.9',
+};
+
+// Available diagnoses organized by ICD10 code
+// You may want to allow open search for all diagnoses.
+// In this demo, we're only allowing a few common diagnoses.
+const availableDiagnoses: Record<string, string> = {
+  'diagnosis-D63.1': 'Anemia in chronic kidney disease',
+  'diagnosis-D64.9': 'Anemia, unspecified',
+  'diagnosis-E04.2': 'Nontoxic multinodular goiter',
+  'diagnosis-E05.90': 'Hyperthyroidism, unspecified',
+  'diagnosis-E11.9': 'Diabetes mellitus, unspecified',
+  'diagnosis-E11.42': 'Type 2 diabetes mellitus with diabetic polyneuropathy',
+  'diagnosis-E55.9': 'Vitamin D deficiency, unspecified',
+  'diagnosis-E78.2': 'Mixed hyperlipidemia',
+  'diagnosis-E88.89': 'Other specified metabolic disorders',
+  'diagnosis-F06.8': 'Other specified mental disorders due to known physiological condition',
+  'diagnosis-I10': 'Essential (primary) hypertension',
+  'diagnosis-K70.30': 'Alcoholic cirrhosis of liver without ascites',
+  'diagnosis-K76.0': 'Fatty (change of) liver, not elsewhere classified',
+  'diagnosis-M10.9': 'Gout, unspecified',
+  'diagnosis-N13.5': 'Crossing vessel and stricture of ureter',
+  'diagnosis-N18.3': 'Chronic kidney disease, stage 3 (moderate)',
+  'diagnosis-R53.83': 'Other fatigue',
+  'diagnosis-Z00.00': 'Encounter for general adult medical examination without abnormal findings',
+  'diagnosis-Z34.90': 'Encounter for supervision of normal pregnancy, unspecified trimester',
 };
 
 const billToPatient: CodeableConcept = {
@@ -221,7 +249,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     healthGorillaAccount,
     healthGorillaPatient,
     healthGorillaPractitioner,
-    healthGorillaServiceRequests
+    healthGorillaServiceRequests,
+    answers
   );
 }
 
@@ -552,6 +581,7 @@ export async function createServiceRequest(
  * @param healthGorillaPatient - The patient resource.
  * @param healthGorillaPractitioner - The practitioner resource.
  * @param healthGorillaServiceRequests - The service request resources.
+ * @param answers - The questionnaire answers.
  */
 export async function createRequestGroup(
   healthGorilla: MedplumClient,
@@ -561,7 +591,8 @@ export async function createRequestGroup(
   healthGorillaAccount: Account,
   healthGorillaPatient: Patient,
   healthGorillaPractitioner: Practitioner,
-  healthGorillaServiceRequests: ServiceRequest[]
+  healthGorillaServiceRequests: ServiceRequest[],
+  answers: Record<string, QuestionnaireResponseItemAnswer>
 ): Promise<void> {
   const inputJson = {
     resourceType: 'RequestGroup',
@@ -629,6 +660,8 @@ export async function createRequestGroup(
     subject: createReference(healthGorillaPatient),
     author: createReference(healthGorillaPractitioner),
     action: [] as RequestGroupAction[],
+    reasonCode: [] as CodeableConcept[],
+    note: [] as Annotation[],
   } satisfies RequestGroup;
 
   for (let i = 0; i < healthGorillaServiceRequests.length; i++) {
@@ -641,6 +674,49 @@ export async function createRequestGroup(
         reference: '#labtest' + i,
         display: healthGorillaServiceRequests[i].code?.text,
       },
+    });
+  }
+
+  for (const diagnosisId of Object.keys(availableDiagnoses)) {
+    if (answers[diagnosisId]?.valueBoolean) {
+      const code = diagnosisId.substring(diagnosisId.indexOf('-') + 1);
+      const display = availableDiagnoses[diagnosisId];
+      inputJson.reasonCode.push({
+        coding: [
+          {
+            system: 'http://hl7.org/fhir/sid/icd-10',
+            code,
+            display,
+          },
+        ],
+        text: `${code} - ${display}`,
+      });
+    }
+  }
+
+  if (answers['specimenCollectedDateTime']?.valueDateTime) {
+    const specimen: Specimen = {
+      resourceType: 'Specimen',
+      id: 'specimen',
+      subject: createReference(healthGorillaPatient),
+      collection: {
+        collectedDateTime: answers['specimenCollectedDateTime']?.valueDateTime,
+      },
+    };
+
+    inputJson.contained.push(specimen);
+
+    inputJson.extension.push({
+      url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-specimen',
+      valueReference: {
+        reference: `#${specimen.id}`,
+      },
+    });
+  }
+
+  if (answers['orderNote']?.valueString) {
+    inputJson.note.push({
+      text: answers['orderNote']?.valueString,
     });
   }
 
