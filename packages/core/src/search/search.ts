@@ -2,6 +2,7 @@ import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { badRequest, OperationOutcomeError } from '../outcomes';
 import { TypedValue, stringifyTypedValue, globalSchema, getSearchParameter } from '../types';
 import { evalFhirPathTyped } from '../fhirpath/parse';
+import { SearchParameterDetails, getSearchParameterDetails } from './details';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 
@@ -40,7 +41,8 @@ export interface IncludeTarget {
 
 export interface ChainedSearchLink {
   resourceType: string;
-  code: string;
+  searchParam: SearchParameter;
+  details: SearchParameterDetails;
   reverse?: boolean;
   filter?: Filter;
 }
@@ -423,7 +425,8 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
       } else if (!searchParam.target?.includes(currentResourceType as ResourceType)) {
         throw new Error(`Unable to identify next resource type for search parameter: ${resourceType}?${code}`);
       }
-      param.chain.push({ resourceType, code, reverse: true });
+      const details = getSearchParameterDetails(resourceType, searchParam);
+      param.chain.push({ resourceType, searchParam, details, reverse: true });
       currentResourceType = resourceType;
     } else if (i === parts.length - 1) {
       const [code, modifier] = part.split(':', 2);
@@ -446,7 +449,8 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
       } else {
         throw new Error(`Unable to identify next resource type for search parameter: ${currentResourceType}?${code}`);
       }
-      param.chain.push({ resourceType, code });
+      const details = getSearchParameterDetails(resourceType, searchParam);
+      param.chain.push({ resourceType, searchParam, details });
       currentResourceType = resourceType;
     }
   }

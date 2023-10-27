@@ -1,7 +1,8 @@
 import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { formatSearchQuery, Operator, parseSearchDefinition, parseXFhirQuery, SearchRequest } from './search';
-import { indexSearchParameterBundle } from '../types';
+import { getSearchParameter, indexSearchParameterBundle } from '../types';
 import { readJson } from '@medplum/definitions';
+import { getSearchParameterDetails } from './details';
 
 describe('Search Utils', () => {
   beforeAll(() => {
@@ -131,6 +132,9 @@ describe('Search Utils', () => {
     const searchReq = parseSearchDefinition(
       'Patient?organization.name=Kaiser%20Permanente&_has:Observation:subject:performer:Practitioner.name=Alice'
     );
+    const patientOrganization = getSearchParameter('Patient', 'organization') as SearchParameter;
+    const observationSubject = getSearchParameter('Observation', 'subject') as SearchParameter;
+    const observationPerformer = getSearchParameter('Observation', 'performer') as SearchParameter;
     expect(searchReq).toMatchObject<SearchRequest>({
       resourceType: 'Patient',
       chains: [
@@ -138,17 +142,24 @@ describe('Search Utils', () => {
           chain: [
             {
               resourceType: 'Organization',
-              code: 'organization',
+              searchParam: patientOrganization,
+              details: getSearchParameterDetails('Patient', patientOrganization),
               filter: { code: 'name', operator: Operator.EQUALS, value: 'Kaiser Permanente' },
             },
           ],
         },
         {
           chain: [
-            { resourceType: 'Observation', code: 'subject', reverse: true },
+            {
+              resourceType: 'Observation',
+              searchParam: observationSubject,
+              details: getSearchParameterDetails('Observation', observationSubject),
+              reverse: true,
+            },
             {
               resourceType: 'Practitioner',
-              code: 'performer',
+              searchParam: observationPerformer,
+              details: getSearchParameterDetails('Observation', observationPerformer),
               filter: { code: 'name', operator: Operator.EQUALS, value: 'Alice' },
             },
           ],
