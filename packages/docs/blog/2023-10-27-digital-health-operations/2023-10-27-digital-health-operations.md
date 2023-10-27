@@ -12,9 +12,9 @@ keywords: ['digital health', 'healthcare operations', 'EHR']
 
 # Digital Health is an Operations Game
 
-Digital health companies are at the forefront of revolutionizing patient experience by combining quality care, at lower costs, and at national scale. Typically, they target a specific healthcare niche, concentrating on top-notch execution. Their ultimate goal? To merge an exceptional patient experience with smooth operations behind the scenes.
+Digital health companies are at the forefront of revolutionizing patient experience by combining quality care, at lower costs, and at national scale. Typically, they target a specific healthcare niche, concentrating on _top-notch execution_. Their ultimate goal? To merge an exceptional patient experience with smooth operations behind the scenes.
 
-When operations are executed right, patients have a seamless experience - everything Just Works <sup>TM</sup>. In this post, we will delve into the four foundational elements that make digital health operations truly stand out:
+When operations are executed right, patients have a seamless experience - everything Just Works <sup>TM</sup>. At Medplum, we've worked with many excellent digital health implementations, and there are four foundational elements that make their operations truly stand out:
 
 1. [Well-defined Service Menu](#well-defined-service-menu)
 2. [Top of License Care](#top-of-license-care)
@@ -23,19 +23,19 @@ When operations are executed right, patients have a seamless experience - everyt
 
 To implement these elements, companies need IT infrastructure that can be tailored to their service niche.
 
-_But this not what traditional EHRs were built for_ - rather, they were built to serve a broad healthcare domain at a smaller scale, typically within the four walls of a single site.
+_Traditional EHRs weren't built for this_ - rather, they were built to serve a broad healthcare domain at a smaller scale, typically within the four walls of a single site.
 
 ## Well-Defined Service Menu
 
-Successful digital health operations start with a crystal-clear understanding of their clinical service menu. From an IT standpoint, this translates into a world of codes:
+Successful digital health operations start with a crystal-clear understanding of their clinical service menu. From an IT standpoint, this means defining your codes:
 
 - [ICD-10](https://www.icd10data.com/) and [CPT](https://www.ama-assn.org/practice-management/cpt/cpt-overview-and-code-approval) codes for services
 - [LOINC](/docs/careplans/loinc) codes for diagnostics
 - [RXNorm](/docs/medications/medication-codes#rxnorm) codes for medications
 
-A well-defined scope not only sets the stage for streamlined billing and integration, but also paves the way for a superior clinical experience. Instead of using one-size-fits-all EHRs, developers can build dedicated interfaces for physicians, highlighting only the necessary data for that specific care context.
+A well-defined scope not only sets the stage for streamlined integration and billing, but also paves the way for a superior clinical experience. Instead of using one-size-fits-all EHRs, developers can build dedicated interfaces for physicians, highlighting only the necessary data for that specific care context.
 
-The result? Reduced data entry, no physician burnout, and easier physician recruitment. That's why Medplum provides a truly headless platform - to empower developers to create purpose-built physician experiences.
+The result? Reduced data entry, no physician burnout, and easier clinician recruitment. That's why Medplum provides a truly headless platform - to empower developers to create purpose-built physician experiences.
 
 :::tip Example: Summer Health
 
@@ -55,11 +55,11 @@ The cumulative effect of these changes was to convert charting from a chore to a
 
 ## Top of License Care
 
-Delivering high quality care at reasonable cost means that everyone is working at the "top of their license". MDs and NPs focus diagnosing and prescribing; nurses and care coordinators handle routine patient inquiries and serve as the patient's primary touch point.
+Delivering high quality care at reasonable cost means that everyone is working at the "top of their license". MDs and NPs focus diagnosing, prescribing, and designing care plans; care coordinators handle administrative inquiries.
 
 To implement this model at scale, operations teams need to [develop a clear ontology](https://www.forbes.com/sites/sachinjain/2022/04/04/the-great-american-healthcare-labor-arbitrage/?sh=591613766133) of clinical tasks and roles that mirrors their care model, and manage them in a unified task system. The challenge is ensuring tasks are automatically directed to the professional, while still being able to escalate when needed.
 
-Many traditional EHRs make offer a fixed clinical workflow, or offer limited configurability. Most of them cater to MDs, but don't account for care coordinators, customer success representatives, fulfillment workers, and the host of other roles that make up the digital health care chain.
+Many traditional EHRs make offer a fixed clinical workflow, or offer limited configurability. Most of them cater to MDs, but don't account for care coordinators, customer success representatives, fulfillment teams, and the host of other roles that make up the digital health care workforce.
 
 Platforms like Medplum offer a layer of programmability on top of the [FHIR Task model](/docs/careplans/tasks), which allows developers to implement the precise clinical workflow model. Tasks can be organized into queues and assigned based on credentials and availability. And by integrating these automations (i.e. [Bots](/docs/bots)) into the [software development lifecycle](/docs/bots/bots-in-production), operations teams can test workflow changes before deploying and release with confidence.
 
@@ -67,7 +67,7 @@ For a deeper dive, check out our [guide on Task-based workflows](/docs/careplans
 
 ## Fifty-State Workflow
 
-One of the game-changing innovations of digital health was the ability to serve patients across all 50 states. But this evolution brought with it a significant challenge: managing physician licensure and credentials across all 50 states.
+One of the game-changing innovations of digital health was the ability to serve patients across all 50 states. But this evolution brought with it a significant challenge: managing physician licensure and credentials nationwide.
 
 Operations teams need to make sure that enough physicians with the correct licenses are staffed to serve their patient population. They need to account for differing physician specialties, regulatory restrictions, and vacations across service lines.
 
