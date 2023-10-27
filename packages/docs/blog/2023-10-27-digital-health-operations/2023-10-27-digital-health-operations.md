@@ -47,7 +47,7 @@ Some of their design innovations were:
 - Integrating an **LLM summarization** of the SMS exchange between provider / patient exchange significantly reduced typing time.
 - Implementing a **paginated workflow** for each encounter made efficient use of the mobile screen real estate and reduced physician frustration.
 
-![Summer Health](./Medplum%20Case%20Study_%20Summer%20Health.gif)
+![Summer Health](./summer-health-charting.gif)
 
 The cumulative effect of these changes was to convert charting from a chore to a delight. Physicians spent more time on patient care, and less time and energy on charting.
 
