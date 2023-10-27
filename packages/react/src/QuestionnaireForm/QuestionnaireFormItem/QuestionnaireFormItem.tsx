@@ -413,6 +413,9 @@ function typedValueToString(typedValue: TypedValue | undefined): string | undefi
   if (typedValue.type === 'Coding') {
     return formatCoding(typedValue.value);
   }
+  if (typedValue.type === 'Reference') {
+    return typedValue.value.display;
+  }
   return typedValue.value.toString();
 }
 

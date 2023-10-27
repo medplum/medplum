@@ -786,6 +786,65 @@ describe('QuestionnaireForm', () => {
     expect((dropDown as HTMLSelectElement).value).toBe('a2');
   });
 
+  test('Drop down choice input default reference value (display)', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+            text: 'q1',
+            answerOption: [
+              {
+                valueString: 'a1',
+              },
+              {
+                valueReference: {
+                  reference: 'Organization/123',
+                  display: 'Test Organization',
+                },
+              },
+            ],
+            initial: [
+              {
+                valueReference: {
+                  reference: 'Organization/123',
+                  display: 'Test Organization',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByText('q1')).toBeInTheDocument();
+
+    const dropDown = screen.getByLabelText('q1');
+    expect(dropDown).toBeInTheDocument();
+    expect(dropDown).toBeInstanceOf(HTMLSelectElement);
+    expect((dropDown as HTMLSelectElement).value).toBe('Test Organization');
+  });
+
   test('Page Sequence', async () => {
     const visibleQuestion = 'Visible Question';
     const hiddenQuestion = 'Hidden Question';

@@ -142,7 +142,7 @@ function mergeItems(
 
   // Add items from newItems that were not in prevItems.
   for (const newItem of newItems) {
-    if (!usedLinkIds.has(newItem.linkId as string)) {
+    if (!usedIds.has(newItem.id as string)) {
       result.push(newItem);
     }
   }
