@@ -92,8 +92,22 @@ export const Operator = {
     }
     sql.append(')');
   },
-  // LINK: 'SPLIT_PART(',
-  // REVERSE_LINK: '',
+  LINK: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' = SPLIT_PART(');
+    sql.appendColumn(parameter as Column);
+    sql.append(`, '/', 2)`);
+  },
+  REVERSE_LINK: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' = ');
+    (parameter as Expression).buildSql(sql);
+  },
+  PREFIX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.param(parameter);
+    sql.append('||');
+    sql.appendColumn(column);
+  },
 };
 
 function simpleBinaryOperator(operator: string): OperatorFunc {

@@ -873,17 +873,22 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
     const nextTable = selectQuery.getNextJoinAlias();
     let joinCondition: Expression;
     if (link.reverse) {
+      const details = getSearchParameterDetails(
+        link.resourceType,
+        getSearchParameter(link.resourceType, link.code) as SearchParameter
+      );
+      // TODO: Handle array case
       joinCondition = new Condition(
-        new Column(nextTable, link.code),
-        'EQUALS',
-        `'${currentResourceType}/'||"${currentTable}".id`
+        new Column(nextTable, details.columnName),
+        'REVERSE_LINK',
+        new Condition(new Column(currentTable, 'id'), 'PREFIX', currentResourceType + '/')
       );
     } else {
-      joinCondition = new Condition(
-        new Column(nextTable, 'id'),
-        'EQUALS',
-        `SPLIT_PART("${currentTable}"."${link.code}", '/', 2)`
+      const details = getSearchParameterDetails(
+        currentResourceType,
+        getSearchParameter(currentResourceType, link.code) as SearchParameter
       );
+      joinCondition = new Condition(new Column(nextTable, 'id'), 'LINK', new Column(currentTable, details.columnName));
     }
 
     selectQuery.innerJoin(link.resourceType, nextTable, joinCondition);

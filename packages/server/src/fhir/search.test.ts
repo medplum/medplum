@@ -17,6 +17,7 @@ import {
   Appointment,
   AuditEvent,
   Bundle,
+  CareTeam,
   Coding,
   Communication,
   Condition,
@@ -1802,6 +1803,44 @@ describe('FHIR Search', () => {
         ],
       });
       expect(searchResult.entry?.[0]?.resource?.id).toEqual(observation.id);
+    }));
+
+  test('Chained search', () =>
+    withTestContext(async () => {
+      // Create Patient
+      const pcp = await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+      });
+      // Create Patient
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        generalPractitioner: [createReference(pcp)],
+      });
+
+      // Create CareTeam
+      await systemRepo.createResource<CareTeam>({
+        resourceType: 'CareTeam',
+        category: [
+          {
+            coding: [
+              {
+                system: 'http://loinc.org',
+                code: 'LA28867-2',
+                display: 'Public health-focused care team',
+              },
+            ],
+          },
+        ],
+        participant: [{ member: createReference(pcp) }],
+      });
+
+      // Search chain
+      const searchResult = await systemRepo.search(
+        parseSearchDefinition(
+          'Patient?general-practitioner:Practitioner._has:CareTeam:participant:category=http://loinc.org|LA28867-2'
+        )
+      );
+      expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
     }));
 
   test('Include references success', () =>
