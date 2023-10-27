@@ -1,8 +1,9 @@
 import { AsyncLocalStorage } from 'async_hooks';
 import { Client, Pool, PoolClient } from 'pg';
 import Cursor from 'pg-cursor';
+import { env } from 'process';
 
-const DEBUG = false;
+const DEBUG = env['SQL_DEBUG'];
 
 export enum ColumnType {
   UUID = 'uuid',
@@ -19,7 +20,7 @@ export const Operator = {
       sql.append(' IS NULL');
     } else {
       sql.append(' = ');
-      sql.appendParameters(parameter);
+      sql.appendParameters(parameter, true);
     }
   },
   NOT_EQUALS: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
@@ -28,7 +29,7 @@ export const Operator = {
       sql.append(' IS NOT NULL');
     } else {
       sql.append(' <> ');
-      sql.appendParameters(parameter);
+      sql.appendParameters(parameter, true);
     }
   },
   LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
@@ -56,7 +57,7 @@ export const Operator = {
     sql.append(' IS NOT NULL AND ');
     sql.appendColumn(column);
     sql.append(' && ARRAY[');
-    sql.appendParameters(parameter);
+    sql.appendParameters(parameter, false);
     sql.append(']');
     if (paramType) {
       sql.append('::' + paramType);
@@ -99,9 +100,7 @@ function simpleBinaryOperator(operator: string): OperatorFunc {
   return (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.appendColumn(column);
     sql.append(` ${operator} `);
-    sql.append('(');
-    sql.appendParameters(parameter);
-    sql.append(')');
+    sql.appendParameters(parameter, true);
   };
 }
 
@@ -312,14 +311,20 @@ export class SqlBuilder {
     return this;
   }
 
-  appendParameters(parameter: any): void {
+  appendParameters(parameter: any, addParens: boolean): void {
     if (Array.isArray(parameter) || parameter instanceof Set) {
+      if (addParens) {
+        this.append('(');
+      }
       let i = 0;
       for (const value of parameter) {
         if (i++) {
           this.append(',');
         }
         this.param(value);
+      }
+      if (addParens) {
+        this.append(')');
       }
     } else {
       this.param(parameter);
@@ -346,7 +351,7 @@ export class SqlBuilder {
     if (DEBUG) {
       const endTime = Date.now();
       const duration = endTime - startTime;
-      console.log('duration', duration);
+      console.log(`result: ${result.rows.length} rows (${duration} ms)`);
     }
     return result.rows;
   }

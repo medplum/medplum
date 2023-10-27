@@ -682,7 +682,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       .where('id', 'EQUALS', id)
       .where('lastUpdated', 'GREATER_THAN', new Date(Date.now() - 1000 * seconds))
       .execute(client);
-    return (rows[0].count as number) >= maxVersions;
+    return (rows?.[0]?.count ?? 0) >= maxVersions;
   }
 
   /**
