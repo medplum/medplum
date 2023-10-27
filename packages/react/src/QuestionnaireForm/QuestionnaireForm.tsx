@@ -140,12 +140,5 @@ function mergeItems(
     }
   }
 
-  // Add items from newItems that were not in prevItems.
-  for (const newItem of newItems) {
-    if (!usedIds.has(newItem.id as string)) {
-      result.push(newItem);
-    }
-  }
-
   return result;
 }
