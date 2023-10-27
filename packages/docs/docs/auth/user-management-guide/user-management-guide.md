@@ -313,7 +313,7 @@ It is important to spread the original `ProjectMembership` to ensure that you ar
 
 ## Invite via API
 
-Inviting users can be done programmatically using the `/invite` endpoint
+Inviting users can be done programmatically using the [`/invite` endpoint](/docs/api/project-admin/invite).
 
 Prepare JSON payload:
 
@@ -321,7 +321,7 @@ Prepare JSON payload:
   {ExampleCode}
 </MedplumCodeBlock>
 
-Then POST to the `/invite` endpoint:
+Then POST to the [`/invite` endpoint](/docs/api/project-admin/invite):
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
@@ -341,7 +341,7 @@ Then POST to the `/invite` endpoint:
   </TabItem>
 </Tabs>
 
-The `/invite` endpoint creates a [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership). The `ProjectMembership` resource includes additional properties to customize the user experience. The `/invite` endpoint accepts a partial `ProjectMembership` in the `membership` property where you can provide membership details.
+The [`/invite` endpoint](/docs/api/project-admin/invite) creates a [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership). The `ProjectMembership` resource includes additional properties to customize the user experience. The [`/invite` endpoint](/docs/api/project-admin/invite) accepts a partial `ProjectMembership` in the `membership` property where you can provide membership details.
 
 For example, use `admin: true` to make the new user a project administrator:
 
@@ -354,6 +354,8 @@ Or use the `access` property to specify a user's `AccessPolicy` with optional pa
 <MedplumCodeBlock language="ts" selectBlocks="prepareJsonAccessPolicy">
   {ExampleCode}
 </MedplumCodeBlock>
+
+For more information, see the [`/invite` endpoint API docs](/docs/api/project-admin/invite)
 
 See [Access Control](/docs/access/access-policies) for more details.
 
