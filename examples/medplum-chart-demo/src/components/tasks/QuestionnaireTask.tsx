@@ -115,7 +115,7 @@ export function ResponseDisplay(props: TaskCellProps): JSX.Element | null {
           <IconCircleCheck color="#79d290" size={48} />
         ) : (
           <Button mt={8} onClick={handleClick}>
-            Ok
+            Complete Review
           </Button>
         )}
       </Flex>
