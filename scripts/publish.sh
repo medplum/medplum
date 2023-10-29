@@ -14,6 +14,7 @@ PACKAGES=(
   "hl7"
   "mock"
   "react"
+  "react-hooks"
 )
 
 for package in ${PACKAGES[@]}; do

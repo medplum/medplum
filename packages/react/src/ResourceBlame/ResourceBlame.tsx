@@ -1,8 +1,8 @@
 import { createStyles } from '@mantine/core';
 import { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
 import React, { useEffect, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 import { blame } from '../utils/blame';
 import { getTimeString, getVersionUrl } from './ResourceBlame.utils';

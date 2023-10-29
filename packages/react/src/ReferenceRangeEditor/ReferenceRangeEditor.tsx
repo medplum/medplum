@@ -112,8 +112,8 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
 
   /**
    * Add/Remove/Update specific Qualified Intervals
-   * @param groupId The reference range group ID.
-   * @param changedInterval The updated reference range interval.
+   * @param groupId - The reference range group ID.
+   * @param changedInterval - The updated reference range interval.
    */
   function changeInterval(groupId: string, changedInterval: ObservationDefinitionQualifiedInterval): void {
     setIntervalGroups((groups) => {
@@ -260,7 +260,7 @@ interface ReferenceRangeGroupFiltersProps {
 
 /**
  * Render the "filters" section of the IntervalGroup.
- * @param props The ReferenceRangeGroupFilter React props.
+ * @param props - The ReferenceRangeGroupFilter React props.
  * @returns The ReferenceRangeGroupFilter React node.
  */
 function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX.Element {
@@ -366,8 +366,8 @@ function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX
 
 /**
  * Helper function that assigns ids to each qualifiedInterval of an ObservationDefinition
- * @param definition An ObservationDefinition
- * @param setIntervalId React setState function for the intervalId
+ * @param definition - An ObservationDefinition
+ * @param setIntervalId - React setState function for the intervalId
  * @returns The updated observation definition.
  */
 function ensureQualifiedIntervalKeys(
@@ -403,8 +403,8 @@ function ensureQualifiedIntervalKeys(
 /**
  * Group all ObservationDefinitionQualifiedIntervals based on the values of their "filter" properties,
  * so that similar ranges can be grouped together.
- * @param intervals Array of reference range intervals.
- * @param setGroupId Callback to set the group ID.
+ * @param intervals - Array of reference range intervals.
+ * @param setGroupId - Callback to set the group ID.
  * @returns The grouped intervals.
  */
 function groupQualifiedIntervals(
@@ -430,7 +430,7 @@ function groupQualifiedIntervals(
 
 /**
  * Generates a unique string for each set of filter values, so that similarly filtered intervals can be grouped together.
- * @param interval The reference range interval.
+ * @param interval - The reference range interval.
  * @returns A "group key" that corresponds to the value of the interval filter properties.
  */
 function generateGroupKey(interval: ObservationDefinitionQualifiedInterval): string {

@@ -223,6 +223,10 @@ describe('FHIR Routes', () => {
       .get(`/fhir/R4/Patient/${patientId}/_history/${patientVersionId}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
+
+    // Expect "ETag" header to start with "W/" (weak validator)
+    expect(res.headers.etag).toBeDefined();
+    expect(res.headers.etag).toContain('W/');
   });
 
   test('Read resource version invalid UUID', async () => {

@@ -1,43 +1,7 @@
 {
   "name": "@medplum/mock",
-  "version": "2.1.5",
+  "version": "2.1.10",
   "description": "Medplum Mock Client",
-  "author": "Medplum <hello@medplum.com>",
-  "license": "Apache-2.0",
-  "homepage": "https://www.medplum.com/",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/medplum/medplum.git",
-    "directory": "packages/mock"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "scripts": {
-    "clean": "rimraf dist",
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
-    "test": "jest"
-  },
-  "dependencies": {
-    "@medplum/core": "*",
-    "@medplum/definitions": "*",
-    "@medplum/fhir-router": "*",
-    "@medplum/fhirtypes": "*",
-    "dataloader": "2.2.2",
-    "rfc6902": "5.0.1"
-  },
-  "devDependencies": {
-    "@types/pdfmake": "0.2.5"
-  },
-  "main": "dist/cjs/index.cjs",
-  "module": "dist/esm/index.mjs",
-  "types": "dist/types/index.d.ts",
-  "exports": {
-    "types": "./dist/types/index.d.ts",
-    "require": "./dist/cjs/index.cjs",
-    "import": "./dist/esm/index.mjs"
-  },
-  "sideEffects": false,
   "keywords": [
     "medplum",
     "fhir",
@@ -52,5 +16,41 @@
     "stu3",
     "r4",
     "normative"
-  ]
+  ],
+  "homepage": "https://www.medplum.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/medplum/medplum.git",
+    "directory": "packages/mock"
+  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "sideEffects": false,
+  "exports": {
+    "types": "./dist/types.d.ts",
+    "require": "./dist/cjs/index.cjs",
+    "import": "./dist/esm/index.mjs"
+  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/types.d.ts",
+  "scripts": {
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && api-extractor run --local",
+    "clean": "rimraf dist",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@medplum/core": "*",
+    "@medplum/definitions": "*",
+    "@medplum/fhir-router": "*",
+    "@medplum/fhirtypes": "*",
+    "dataloader": "2.2.2",
+    "rfc6902": "5.0.1"
+  },
+  "devDependencies": {
+    "@types/pdfmake": "0.2.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

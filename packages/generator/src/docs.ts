@@ -71,7 +71,7 @@ export async function main(): Promise<void> {
 
 /**
  * Indexes search parameters by "base" resource type.
- * @param searchParams The bundle of SearchParameter resources.
+ * @param searchParams - The bundle of SearchParameter resources.
  * @returns A map from resourceType -> an array of associated SearchParameters
  */
 function indexSearchParameters(searchParams: SearchParameter[]): Record<string, SearchParameter[]> {
@@ -318,7 +318,7 @@ function getInheritance(property: ElementDefinition): { inherited: boolean; base
 
 /**
  * Rewrite internal links from official FHIR site to medplum internal links
- * @param text text which contains internal links
+ * @param text - text which contains internal links
  * @returns returns text with internal links rewritten
  */
 function rewriteLinksText(text: string | undefined): string {
@@ -361,9 +361,9 @@ function rewriteLinksText(text: string | undefined): string {
 
 /**
  * Download a Zip file from the given URL, and unzip to the given path
- * @param downloadURL Source URL
- * @param zipFilePath Destination path for *.zip
- * @param outputFolder Destination path for extracted contents
+ * @param downloadURL - Source URL
+ * @param zipFilePath - Destination path for *.zip
+ * @param outputFolder - Destination path for extracted contents
  */
 async function downloadAndUnzip(downloadURL: string, zipFilePath: string, outputFolder: string): Promise<void> {
   console.info('Downloading FHIR Spec...');
@@ -407,8 +407,8 @@ async function downloadAndUnzip(downloadURL: string, zipFilePath: string, output
 }
 /**
  * For each core FHIR resource type, find the corresponding HTML page and extract the relevant introductory sections.
- * @param htmlDirectory Directory containing HTML files for each resource ([resourceType].html)
- * @param definitions Array of all core FHIR StructureDefinitions
+ * @param htmlDirectory - Directory containing HTML files for each resource ([resourceType].html)
+ * @param definitions - Array of all core FHIR StructureDefinitions
  * @returns A map from resourcename to html description data
  */
 function extractResourceDescriptions(
@@ -471,7 +471,7 @@ function extractResourceDescriptions(
 
 /**
  * Converts local links to FHIR resources from the FHIR site to relative links in the medplum documentation site
- * @param anchorElement An Anchor tag, potentially referring to a resource page (e.g. "appointmentresponse.html")
+ * @param anchorElement - An Anchor tag, potentially referring to a resource page (e.g. "appointmentresponse.html")
  */
 function rewriteHtmlSpecHref(anchorElement: HTMLAnchorElement): void {
   const href = anchorElement.getAttribute('href'); // Get the href attribute of the anchor tag
@@ -565,7 +565,7 @@ function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
 /**
  * Download the "entire fhir spec" as a zip file, and parse the HTML file for each resource to extract the detailed
  * information about usage and scope for each resource
- * @param definitions FHIR core profile definitions
+ * @param definitions - FHIR core profile definitions
  * @returns Map from resource name to extracted HTML data
  */
 async function fetchHtmlSpecContent(

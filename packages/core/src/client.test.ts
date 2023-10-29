@@ -1,19 +1,11 @@
-import {
-  Bot,
-  Bundle,
-  Identifier,
-  OperationOutcome,
-  Patient,
-  SearchParameter,
-  StructureDefinition,
-} from '@medplum/fhirtypes';
+import { Bot, Bundle, Identifier, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'crypto';
-import WS from 'jest-websocket-mock';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
 import { encodeBase64 } from './base64';
 import {
+  DEFAULT_ACCEPT,
   FetchLike,
   InviteRequest,
   MedplumClient,
@@ -21,16 +13,9 @@ import {
   NewProjectRequest,
   NewUserRequest,
 } from './client';
+import { mockFetch } from './client-test-utils';
 import { ContentType } from './contenttype';
-import {
-  FhircastConnection,
-  FhircastEventName,
-  PendingSubscriptionRequest,
-  SubscriptionRequest,
-  serializeFhircastSubscriptionRequest,
-} from './fhircast';
-import { createFhircastMessageContext } from './fhircast/test-utils';
-import { OperationOutcomeError, getStatus, isOperationOutcome, notFound, unauthorized } from './outcomes';
+import { OperationOutcomeError, notFound, unauthorized } from './outcomes';
 import { isDataTypeLoaded } from './typeschema/types';
 import { ProfileResource, createReference } from './utils';
 
@@ -69,25 +54,6 @@ const schemaResponse = {
     SearchParameterList: [patientSearchParameter],
   },
 };
-
-function mockFetch(
-  status: number,
-  body: OperationOutcome | Record<string, unknown> | ((url: string, options?: any) => any),
-  contentType = ContentType.FHIR_JSON
-): FetchLike & jest.Mock {
-  const bodyFn = typeof body === 'function' ? body : () => body;
-  return jest.fn((url: string, options?: any) => {
-    const response = bodyFn(url, options);
-    const responseStatus = isOperationOutcome(response) ? getStatus(response) : status;
-    return Promise.resolve({
-      ok: responseStatus < 400,
-      status: responseStatus,
-      headers: { get: () => contentType },
-      blob: () => Promise.resolve(response),
-      json: () => Promise.resolve(response),
-    });
-  });
-}
 
 const originalWindow = globalThis.window;
 const originalBuffer = globalThis.Buffer;
@@ -715,7 +681,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
           'X-Medplum': 'extended',
         },
@@ -742,7 +708,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
           'X-Medplum': 'extended',
         },
@@ -780,7 +746,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           Authorization: `Bearer ${accessToken}`,
           'X-Medplum': 'extended',
         },
@@ -828,7 +794,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           Authorization: `Bearer ${accessToken}`,
           'X-Medplum': 'extended',
         },
@@ -972,6 +938,11 @@ describe('Client', () => {
           access_token: createFakeJwt({ client_id: '123', login_id: '123' }),
           refresh_token: createFakeJwt({ client_id: '123' }),
           profile: { reference: 'Patient/123' },
+        };
+      }
+      if (url.includes('auth/me')) {
+        return {
+          profile: { resourceType: 'Patient', id: '123' },
         };
       }
       return {};
@@ -1140,208 +1111,6 @@ describe('Client', () => {
     });
   });
 
-  describe('FHIRcast', () => {
-    describe('fhircastSubscribe', () => {
-      test('Valid subscription request', async () => {
-        const fetch = mockFetch(200, { 'hub.channel.endpoint': 'wss://api.medplum.com/fhircast/STU2/def456' });
-        const client = new MedplumClient({ fetch });
-
-        const topic = 'abc123';
-        const events = ['patient-open'] as FhircastEventName[];
-        const expectedSubRequest = {
-          mode: 'subscribe',
-          channelType: 'websocket',
-          topic,
-          events,
-        } satisfies PendingSubscriptionRequest;
-        const serializedSubRequest = serializeFhircastSubscriptionRequest(expectedSubRequest);
-
-        const subRequest = await client.fhircastSubscribe(topic, events);
-        expect(fetch).toBeCalledWith(
-          'https://api.medplum.com/fhircast/STU2',
-          expect.objectContaining<RequestInit>({
-            method: 'POST',
-            body: serializedSubRequest,
-            headers: expect.objectContaining({ 'Content-Type': ContentType.FORM_URL_ENCODED }),
-          })
-        );
-        expect(subRequest).toEqual(expect.objectContaining<PendingSubscriptionRequest>(expectedSubRequest));
-        expect(subRequest.endpoint).toBeDefined();
-        expect(subRequest.endpoint?.startsWith('ws')).toBeTruthy();
-      });
-
-      test('Invalid subscription request', async () => {
-        const fetch = mockFetch(500, { error: 'how did we make it here?' });
-        const client = new MedplumClient({ fetch });
-
-        await expect(client.fhircastSubscribe('', ['patient-open'])).rejects.toBeInstanceOf(OperationOutcomeError);
-        // @ts-expect-error Topic must be a string
-        await expect(client.fhircastSubscribe(123, ['patient-open'])).rejects.toBeInstanceOf(OperationOutcomeError);
-        // @ts-expect-error Events must be an array of events
-        await expect(client.fhircastSubscribe('abc123', 'patient-open')).rejects.toBeInstanceOf(OperationOutcomeError);
-        // @ts-expect-error Events must be an array of valid events
-        await expect(client.fhircastSubscribe('abc123', ['random-event'])).rejects.toBeInstanceOf(
-          OperationOutcomeError
-        );
-      });
-
-      test('Server returns invalid response', async () => {
-        const fetch = mockFetch(500, { error: 'how did we make it here?' });
-        const client = new MedplumClient({ fetch });
-
-        await expect(client.fhircastSubscribe('abc123', ['patient-open'])).rejects.toBeInstanceOf(Error);
-      });
-    });
-
-    describe('fhircastUnsubscribe', () => {
-      test('Valid unsubscription request', async () => {
-        const fetch = mockFetch(201, { response: 'Hello from Medplum!' });
-        const client = new MedplumClient({ fetch });
-
-        const subRequest = {
-          mode: 'subscribe', // you should be able to pass a sub request with mode still set to `subscribe`
-          channelType: 'websocket',
-          topic: 'abc123',
-          events: ['patient-open'],
-          endpoint: 'wss://api.medplum.com/fhircast/STU2/def456',
-        } satisfies SubscriptionRequest;
-        const serializedSubRequest = serializeFhircastSubscriptionRequest({ ...subRequest, mode: 'unsubscribe' });
-
-        await client.fhircastUnsubscribe(subRequest);
-        expect(fetch).toHaveBeenCalledWith(
-          'https://api.medplum.com/fhircast/STU2',
-          expect.objectContaining<RequestInit>({
-            method: 'POST',
-            body: serializedSubRequest,
-            headers: expect.objectContaining({ 'Content-Type': ContentType.FORM_URL_ENCODED }),
-          })
-        );
-      });
-
-      test('Invalid unsubscription request', async () => {
-        const fetch = mockFetch(500, { error: 'How did we get here?' });
-        const client = new MedplumClient({ fetch });
-
-        await expect(
-          // @ts-expect-error Sub request requires mode
-          client.fhircastUnsubscribe({
-            channelType: 'websocket',
-            topic: 'abc123',
-            events: ['patient-open'],
-            endpoint: 'wss://api.medplum.com/fhircast/STU2/def456',
-          })
-        ).rejects.toBeInstanceOf(OperationOutcomeError);
-        await expect(
-          // @ts-expect-error Sub request requires channelType
-          client.fhircastUnsubscribe({
-            mode: 'subscribe',
-            topic: 'abc123',
-            events: ['patient-open'],
-            endpoint: 'wss://api.medplum.com/fhircast/STU2/def456',
-          })
-        ).rejects.toBeInstanceOf(OperationOutcomeError);
-        await expect(
-          // @ts-expect-error This is a valid SubscriptionRequest but it lacks an endpoint
-          client.fhircastUnsubscribe({
-            channelType: 'websocket',
-            mode: 'subscribe',
-            topic: 'abc123',
-            events: ['patient-open'],
-          })
-        ).rejects.toBeInstanceOf(OperationOutcomeError);
-      });
-    });
-
-    describe('fhircastConnect', () => {
-      let client: MedplumClient;
-
-      beforeAll(() => {
-        const fetch = mockFetch(500, { error: 'How did we get here?' });
-        // @ts-expect-error not used directly but needed for mocking WS
-        const _wsServer = new WS('wss://api.medplum.com/ws/fhircast/abc123', { jsonProtocol: true });
-        client = new MedplumClient({ fetch });
-      });
-
-      afterAll(() => {
-        WS.clean();
-      });
-
-      test('Valid subscription request', async () => {
-        const connection = client.fhircastConnect({
-          channelType: 'websocket',
-          mode: 'subscribe',
-          topic: 'abc123',
-          events: ['patient-open'],
-          endpoint: 'wss://api.medplum.com/ws/fhircast/abc123',
-        });
-        expect(connection).toBeInstanceOf(FhircastConnection);
-      });
-
-      test('Invalid subscription request', () => {
-        expect(() =>
-          // @ts-expect-error Invalid subscription request, requires endpoint
-          client.fhircastConnect({
-            channelType: 'websocket',
-            mode: 'subscribe',
-            topic: 'abc123',
-            events: ['patient-open'],
-          })
-        ).toThrowError(OperationOutcomeError);
-      });
-    });
-
-    describe('fhircastPublish', () => {
-      test('Valid context published', async () => {
-        const fetch = mockFetch(201, { message: 'Welcome to Medplum!' });
-        const client = new MedplumClient({ fetch });
-        await expect(
-          client.fhircastPublish('abc123', 'patient-open', createFhircastMessageContext('patient', 'patient-123'))
-        ).resolves;
-        expect(fetch).toBeCalledWith(
-          'https://api.medplum.com/fhircast/STU2/abc123',
-          expect.objectContaining<RequestInit>({
-            method: 'POST',
-            headers: expect.objectContaining({ 'Content-Type': ContentType.JSON }),
-            body: expect.any(String),
-          })
-        );
-
-        // Multiple contexts
-        await expect(
-          client.fhircastPublish('def456', 'imagingstudy-open', [
-            createFhircastMessageContext('patient', 'patient-123'),
-            createFhircastMessageContext('imagingstudy', 'imagingstudy-456'),
-          ])
-        ).resolves;
-        expect(fetch).toBeCalledWith(
-          'https://api.medplum.com/fhircast/STU2/def456',
-          expect.objectContaining<RequestInit>({
-            method: 'POST',
-            headers: expect.objectContaining({ 'Content-Type': ContentType.JSON }),
-            body: expect.any(String),
-          })
-        );
-      });
-
-      test('Invalid context published', async () => {
-        const fetch = mockFetch(500, { error: 'How did we make it here?' });
-        const client = new MedplumClient({ fetch });
-        await expect(
-          // Topic needs to be a string with a length
-          client.fhircastPublish('', 'patient-open', createFhircastMessageContext('patient', 'patient-123'))
-        ).rejects.toBeInstanceOf(OperationOutcomeError);
-        await expect(
-          // @ts-expect-error Invalid context object
-          client.fhircastPublish('abc123', 'patient-open', {})
-        ).rejects.toBeInstanceOf(OperationOutcomeError);
-        await expect(
-          // @ts-expect-error Invalid event
-          client.fhircastPublish('abc123', 'random-event', createFhircastMessageContext('patient', 'patient-123'))
-        ).rejects.toBeInstanceOf(OperationOutcomeError);
-      });
-    });
-  });
-
   test('Disabled cache read cached resource', async () => {
     const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
     const client = new MedplumClient({ fetch, cacheTime: 0 });
@@ -1393,7 +1162,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.FHIR_JSON,
           'X-Medplum': 'extended',
         },
@@ -1456,7 +1225,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'PUT',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.FHIR_JSON,
           'X-Medplum': 'extended',
         },
@@ -1511,7 +1280,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.TEXT,
           'X-Medplum': 'extended',
         },
@@ -1529,7 +1298,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.TEXT,
           'X-Medplum': 'extended',
         },
@@ -1547,7 +1316,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.TEXT,
           'X-Medplum': 'extended',
         },
@@ -1621,7 +1390,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': 'application/pdf',
           'X-Medplum': 'extended',
         },
@@ -1645,7 +1414,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': 'application/pdf',
           'X-Medplum': 'extended',
         },
@@ -2059,7 +1828,7 @@ describe('Client', () => {
         expect.objectContaining({
           method: 'POST',
           headers: {
-            Accept: ContentType.FHIR_JSON,
+            Accept: DEFAULT_ACCEPT,
             'Content-Type': ContentType.FHIR_JSON,
             'X-Medplum': 'extended',
           },
@@ -2107,7 +1876,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.JSON,
           'X-Medplum': 'extended',
         },
@@ -2119,18 +1888,23 @@ describe('Client', () => {
   test('Push to agent', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const result = await client.pushToAgent({ resourceType: 'Agent', id: '123' }, 'XYZ', ContentType.HL7_V2);
+    const result = await client.pushToAgent(
+      { resourceType: 'Agent', id: '123' },
+      { resourceType: 'Device', id: '456' },
+      'XYZ',
+      ContentType.HL7_V2
+    );
     expect(result).toBeDefined();
     expect(fetch).toBeCalledWith(
       'https://api.medplum.com/fhir/R4/Agent/123/$push',
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
-          'Content-Type': ContentType.HL7_V2,
+          Accept: DEFAULT_ACCEPT,
+          'Content-Type': ContentType.FHIR_JSON,
           'X-Medplum': 'extended',
         },
-        body: expect.stringContaining('XYZ'),
+        body: expect.stringMatching(/.+"destination":".+"body":"XYZ","contentType":"x-application\/hl7-v2\+er7".+/),
       })
     );
   });
@@ -2235,7 +2009,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          Accept: ContentType.FHIR_JSON,
+          Accept: DEFAULT_ACCEPT,
           'Content-Type': ContentType.JSON,
           'X-Medplum': 'extended',
         },
@@ -2519,7 +2293,7 @@ describe('Client', () => {
         expect.stringContaining('/$export'),
         expect.objectContaining({
           headers: {
-            Accept: ContentType.FHIR_JSON,
+            Accept: DEFAULT_ACCEPT,
             Prefer: 'respond-async',
             'X-Medplum': 'extended',
           },
@@ -2632,7 +2406,7 @@ describe('Client', () => {
         baseUrl,
         expect.objectContaining({
           headers: {
-            Accept: ContentType.FHIR_JSON,
+            Accept: DEFAULT_ACCEPT,
             'X-Medplum': 'extended',
           },
         })
@@ -2646,7 +2420,7 @@ describe('Client', () => {
         `${baseUrl}${fhirUrlPath}Binary/fake-id`,
         expect.objectContaining({
           headers: {
-            Accept: ContentType.FHIR_JSON,
+            Accept: DEFAULT_ACCEPT,
             'X-Medplum': 'extended',
           },
         })
@@ -2659,12 +2433,23 @@ describe('Client', () => {
     test('Upload Media', async () => {
       const fetch = mockFetch(200, {});
       const client = new MedplumClient({ fetch });
+      const media = await client.uploadMedia('Hello world', 'text/plain', 'hello.txt');
+      expect(media).toBeDefined();
+      expect(fetch).toBeCalledTimes(2);
 
-      const media = await client.uploadMedia('media', 'Film', 'file');
-      const retrievedMedia = await client.readResource('Media', media.id ?? '');
-
-      expect(retrievedMedia.id).toEqual(media.id);
-      expect(retrievedMedia.content?.contentType).toEqual(media.content?.contentType);
+      const calls = fetch.mock.calls;
+      expect(calls).toHaveLength(2);
+      expect(calls[0][0]).toEqual('https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt');
+      expect(calls[1][0]).toEqual('https://api.medplum.com/fhir/R4/Media');
+      expect(JSON.parse(calls[1][1].body)).toMatchObject({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: 'text/plain',
+          url: 'Binary/undefined',
+          title: 'hello.txt',
+        },
+      });
     });
   });
 
@@ -2766,7 +2551,7 @@ describe('Client', () => {
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
     expect(console.log).toBeCalledWith('> GET https://api.medplum.com/fhir/R4/Patient/123');
-    expect(console.log).toBeCalledWith('> Accept: application/fhir+json');
+    expect(console.log).toBeCalledWith('> Accept: application/fhir+json, */*; q=0.1');
     expect(console.log).toBeCalledWith('> X-Medplum: extended');
     expect(console.log).toBeCalledWith('< 200 OK');
     expect(console.log).toBeCalledWith('< foo: bar');

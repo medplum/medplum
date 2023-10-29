@@ -23,6 +23,7 @@ packages/core/docs/
 packages/definitions/dist/**/*.js
 packages/definitions/dist/**/*.js.map
 packages/definitions/dist/**/*.d.ts
+packages/definitions/dist/**/*.d.ts.map
 packages/examples/dist/
 packages/fhir-router/dist/
 packages/generator/dist/
@@ -32,6 +33,7 @@ packages/graphiql/public/
 packages/hl7/dist/
 packages/mock/dist/
 packages/react/dist/
+packages/react-hooks/dist/
 packages/server/dist/
 
 # Storybook output

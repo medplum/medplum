@@ -31,7 +31,7 @@ export interface ResourcePropertyDisplayProps {
 
 /**
  * Low-level component that renders a property from a given resource, given type information.
- * @param props The ResourcePropertyDisplay React props.
+ * @param props - The ResourcePropertyDisplay React props.
  * @returns The ResourcePropertyDisplay React node.
  */
 export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JSX.Element {

@@ -210,7 +210,7 @@ export function isFhirJsonContentType(req: Request): boolean {
 export async function sendResponse(res: Response, outcome: OperationOutcome, body: Resource): Promise<void> {
   const ctx = getAuthenticatedContext();
   if (body.meta?.versionId) {
-    res.set('ETag', `"${body.meta.versionId}"`);
+    res.set('ETag', `W/"${body.meta.versionId}"`);
   }
   if (body.meta?.lastUpdated) {
     res.set('Last-Modified', new Date(body.meta.lastUpdated).toUTCString());

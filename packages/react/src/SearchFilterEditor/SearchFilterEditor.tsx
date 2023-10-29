@@ -1,5 +1,5 @@
 import { Button, Group, Modal, NativeSelect } from '@mantine/core';
-import { Filter, globalSchema, Operator, SearchRequest, stringify } from '@medplum/core';
+import { Filter, getSearchParameters, Operator, SearchRequest, stringify } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -40,7 +40,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
   }
 
   const resourceType = props.search.resourceType;
-  const searchParams = (globalSchema.types[resourceType].searchParams as Record<string, SearchParameter>) ?? {};
+  const searchParams = getSearchParameters(resourceType) ?? {};
   const filters = search.filters || [];
 
   return (
@@ -202,7 +202,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
         )}
       </td>
       <td>
-        {value.code && value.operator && value.value && (
+        {value.code && value.operator && (
           <Button
             compact
             variant="outline"

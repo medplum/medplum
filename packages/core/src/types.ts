@@ -11,8 +11,18 @@ import {
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
 import { SearchParameterDetails } from './search/details';
-import { getAllDataTypes, InternalSchemaElement, InternalTypeSchema, tryGetDataType } from './typeschema/types';
+import { InternalSchemaElement, InternalTypeSchema, getAllDataTypes, tryGetDataType } from './typeschema/types';
 import { capitalize, createReference } from './utils';
+
+export type TypeName<T> = T extends string
+  ? 'string'
+  : T extends number
+  ? 'number'
+  : T extends boolean
+  ? 'boolean'
+  : T extends undefined
+  ? 'undefined'
+  : 'object';
 
 export interface TypedValue {
   readonly type: string;
@@ -130,7 +140,7 @@ export interface TypeInfo {
 
 /**
  * Indexes a bundle of SearchParameter resources for faster lookup.
- * @param bundle A FHIR bundle SearchParameter resources.
+ * @param bundle - A FHIR bundle SearchParameter resources.
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): void {
@@ -145,7 +155,7 @@ export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): voi
 /**
  * Indexes a SearchParameter resource for fast lookup.
  * Indexes by SearchParameter.code, which is the query string parameter name.
- * @param searchParam The SearchParameter resource.
+ * @param searchParam - The SearchParameter resource.
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 export function indexSearchParameter(searchParam: SearchParameter): void {
@@ -211,7 +221,7 @@ export function indexSearchParameter(searchParam: SearchParameter): void {
 
 /**
  * Returns the type name for an ElementDefinition.
- * @param elementDefinition The element definition.
+ * @param elementDefinition - The element definition.
  * @returns The Medplum type name.
  */
 export function getElementDefinitionTypeName(elementDefinition: ElementDefinition): string {
@@ -230,7 +240,7 @@ export function buildTypeName(components: string[]): string {
 
 /**
  * Returns true if the type schema is a non-abstract FHIR resource.
- * @param typeSchema The type schema to check.
+ * @param typeSchema - The type schema to check.
  * @returns True if the type schema is a non-abstract FHIR resource.
  */
 export function isResourceTypeSchema(typeSchema: InternalTypeSchema): boolean {
@@ -250,7 +260,7 @@ export function getResourceTypes(): ResourceType[] {
 
 /**
  * Returns the search parameters for the resource type indexed by search code.
- * @param resourceType The resource type.
+ * @param resourceType - The resource type.
  * @returns The search parameters for the resource type indexed by search code.
  */
 export function getSearchParameters(resourceType: string): Record<string, SearchParameter> | undefined {
@@ -259,8 +269,8 @@ export function getSearchParameters(resourceType: string): Record<string, Search
 
 /**
  * Returns a search parameter for a resource type by search code.
- * @param resourceType The FHIR resource type.
- * @param code The search parameter code.
+ * @param resourceType - The FHIR resource type.
+ * @param code - The search parameter code.
  * @returns The search parameter if found, otherwise undefined.
  */
 export function getSearchParameter(resourceType: string, code: string): SearchParameter | undefined {
@@ -269,7 +279,7 @@ export function getSearchParameter(resourceType: string, code: string): SearchPa
 
 /**
  * Returns a human friendly display name for a FHIR element definition path.
- * @param path The FHIR element definition path.
+ * @param path - The FHIR element definition path.
  * @returns The best guess of the display name.
  */
 export function getPropertyDisplayName(path: string): string {
@@ -305,8 +315,8 @@ function capitalizeDisplayWord(word: string): string {
 /**
  * Returns an element definition by type and property name.
  * Handles content references.
- * @param typeName The type name.
- * @param propertyName The property name.
+ * @param typeName - The type name.
+ * @param propertyName - The property name.
  * @returns The element definition if found.
  */
 export function getElementDefinition(typeName: string, propertyName: string): InternalSchemaElement | undefined {
@@ -319,7 +329,7 @@ export function getElementDefinition(typeName: string, propertyName: string): In
 
 /**
  * Typeguard to validate that an object is a FHIR resource
- * @param value The object to check
+ * @param value - The object to check
  * @returns True if the input is of type 'object' and contains property 'resourceType'
  */
 export function isResource(value: unknown): value is Resource {
@@ -328,7 +338,7 @@ export function isResource(value: unknown): value is Resource {
 
 /**
  * Typeguard to validate that an object is a FHIR resource
- * @param value The object to check
+ * @param value - The object to check
  * @returns True if the input is of type 'object' and contains property 'reference'
  */
 export function isReference(value: unknown): value is Reference & { reference: string } {
@@ -342,7 +352,7 @@ export const globalSchema: IndexedStructureDefinition = { types: {} };
 
 /**
  * Output the string representation of a value, suitable for use as part of a search query.
- * @param v The value to format as a string
+ * @param v - The value to format as a string
  * @returns The stringified value
  */
 export function stringifyTypedValue(v: TypedValue): string {

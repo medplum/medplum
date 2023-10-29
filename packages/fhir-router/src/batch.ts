@@ -18,9 +18,9 @@ import { HttpMethod } from './urlrouter';
  * Processes a FHIR batch request.
  *
  * See: https://www.hl7.org/fhir/http.html#transaction
- * @param router The FHIR router.
- * @param repo The FHIR repository.
- * @param bundle The input bundle.
+ * @param router - The FHIR router.
+ * @param repo - The FHIR repository.
+ * @param bundle - The input bundle.
  * @returns The bundle response.
  */
 export async function processBatch(router: FhirRouter, repo: FhirRepository, bundle: Bundle): Promise<Bundle> {
@@ -36,9 +36,9 @@ class BatchProcessor {
 
   /**
    * Creates a batch processor.
-   * @param router The FHIR router.
-   * @param repo The FHIR repository.
-   * @param bundle The input bundle.
+   * @param router - The FHIR router.
+   * @param repo - The FHIR repository.
+   * @param bundle - The input bundle.
    */
   constructor(
     private readonly router: FhirRouter,
@@ -92,7 +92,7 @@ class BatchProcessor {
 
   /**
    * Processes a single entry from a FHIR batch request.
-   * @param entry The bundle entry.
+   * @param entry - The bundle entry.
    * @returns The bundle entry response.
    */
   private async processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {

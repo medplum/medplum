@@ -98,10 +98,10 @@ export function fhirParamToGraphQLField(code: string): string {
  * GraphQL data loader for search requests.
  * The field name should always end with "List" (i.e., "Patient" search uses "PatientList").
  * The search args should be FHIR search parameters.
- * @param source The source/root.  This should always be null for our top level readers.
- * @param args The GraphQL search arguments.
- * @param ctx The GraphQL context.
- * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
+ * @param source - The source/root.  This should always be null for our top level readers.
+ * @param args - The GraphQL search arguments.
+ * @param ctx - The GraphQL context.
+ * @param info - The GraphQL resolve info.  This includes the schema, and additional field details.
  * @returns Promise to read the resoures for the query.
  */
 export async function resolveBySearch(
@@ -163,7 +163,7 @@ export function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumen
  * Returns the depth of the GraphQL node in a query.
  * We use "selections" as the representation of depth.
  * As a rough approximation, it's the number of indentations in a well formatted query.
- * @param path The GraphQL node path.
+ * @param path - The GraphQL node path.
  * @returns The "depth" of the node.
  */
 export function getDepth(path: readonly (string | number)[]): number {
@@ -172,8 +172,8 @@ export function getDepth(path: readonly (string | number)[]): number {
 
 /**
  * Returns true if the field is requested in the GraphQL query.
- * @param info The GraphQL resolve info.  This includes the field name.
- * @param fieldName The field name to check.
+ * @param info - The GraphQL resolve info.  This includes the field name.
+ * @param fieldName - The field name to check.
  * @returns True if the field is requested in the GraphQL query.
  */
 export function isFieldRequested(info: GraphQLResolveInfo, fieldName: string): boolean {
@@ -187,7 +187,7 @@ export function isFieldRequested(info: GraphQLResolveInfo, fieldName: string): b
 
 /**
  * Returns an OperationOutcome for GraphQL errors.
- * @param errors Array of GraphQL errors.
+ * @param errors - Array of GraphQL errors.
  * @returns OperationOutcome with the GraphQL errors as OperationOutcome issues.
  */
 export function invalidRequest(errors: readonly GraphQLError[]): OperationOutcome {

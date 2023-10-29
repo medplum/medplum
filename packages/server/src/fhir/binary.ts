@@ -1,4 +1,4 @@
-import { badRequest } from '@medplum/core';
+import { badRequest, normalizeOperationOutcome } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import internal from 'stream';
@@ -40,7 +40,7 @@ binaryRouter.post(
         url: getPresignedUrl(resource),
       });
     } catch (err) {
-      sendOutcome(res, badRequest(err as string));
+      sendOutcome(res, normalizeOperationOutcome(err));
     }
   })
 );
@@ -96,7 +96,7 @@ binaryRouter.get(
  *
  * Unfortunately body-parser will always write the content to a temporary file on local disk.
  * That is not acceptable for multi gigabyte files, which could easily fill up the disk.
- * @param req The HTTP request.
+ * @param req - The HTTP request.
  * @returns The content stream.
  */
 function getContentStream(req: Request): internal.Readable | undefined {

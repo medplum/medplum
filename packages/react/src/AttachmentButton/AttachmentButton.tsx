@@ -1,12 +1,14 @@
 import { Attachment, Binary, OperationOutcome } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
 import React, { useRef } from 'react';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { killEvent } from '../utils/dom';
+import { normalizeOperationOutcome } from '@medplum/core';
 
 export interface AttachmentButtonProps {
   onUpload: (attachment: Attachment) => void;
   onUploadStart?: () => void;
   onUploadProgress?: (e: ProgressEvent) => void;
+  onUploadError?: (outcome: OperationOutcome) => void;
   children(props: { onClick(e: React.MouseEvent): void }): React.ReactNode;
 }
 
@@ -29,7 +31,7 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
 
   /**
    * Processes a single file.
-   * @param file The file descriptor.
+   * @param file - The file descriptor.
    */
   function processFile(file: File): void {
     if (!file) {
@@ -56,8 +58,10 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
           title: filename,
         });
       })
-      .catch((outcome: OperationOutcome) => {
-        alert(outcome.issue?.[0]?.details?.text);
+      .catch((err) => {
+        if (props.onUploadError) {
+          props.onUploadError(normalizeOperationOutcome(err));
+        }
       });
   }
 

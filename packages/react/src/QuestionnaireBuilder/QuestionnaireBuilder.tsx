@@ -19,15 +19,14 @@ import {
   Reference,
   ResourceType,
 } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
-import { useResource } from '../useResource/useResource';
 import { killEvent } from '../utils/dom';
 import {
   getQuestionnaireItemReferenceTargetTypes,
@@ -291,9 +290,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           <>
             {resource.title && <Title>{resource.title}</Title>}
             {item.text && <div>{item.text}</div>}
-            {!isContainer && (
-              <QuestionnaireFormItem item={item} index={0} allResponses={[]} onChange={() => undefined} />
-            )}
+            {!isContainer && <QuestionnaireFormItem item={item} index={0} onChange={() => undefined} response={{}} />}
           </>
         )}
       </div>
@@ -647,7 +644,7 @@ let nextId = 1;
 /**
  * Generates a link ID for an item.
  * Link IDs are required properties on QuestionnaireItem objects.
- * @param prefix The link ID prefix string.
+ * @param prefix - The link ID prefix string.
  * @returns A unique link ID.
  */
 function generateLinkId(prefix: string): string {

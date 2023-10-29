@@ -139,6 +139,7 @@ module.exports = {
         definedTags: ['category', 'experimental', 'ts-ignore'],
       },
     ],
+    'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
     'jsdoc/require-jsdoc': 'off',
     'jsdoc/tag-lines': 'off',
   },

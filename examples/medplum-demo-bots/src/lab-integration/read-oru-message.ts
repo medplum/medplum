@@ -36,8 +36,8 @@ const PARTNER_TIMEZONE = '-05:00';
  * resources. Incoming data is the the form of HL7v2 ORU messages
  *
  * See: https://v2plus.hl7.org/2021Jan/message-structure/ORU_R01.html
- * @param medplum The Medplum client
- * @param event The Bot event
+ * @param medplum - The Medplum client
+ * @param event - The Bot event
  * @returns The Bot result
  */
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
@@ -95,9 +95,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
  *
  * Note: While ORU is an HL7 standard, every LIS/EHR system implements the standard in a slightly different way
  *
- * @param medplum The Medplum Client object
- * @param message Parsed ORU message.
- * @param performer The `Organization` resource corresponding to the lab that performed the test.
+ * @param medplum - The Medplum Client object
+ * @param message - Parsed ORU message.
+ * @param performer - The `Organization` resource corresponding to the lab that performed the test.
  */
 export async function processOruMessage(
   medplum: MedplumClient,
@@ -196,12 +196,12 @@ export async function processOruMessage(
 
 /**
  * Check if the order was cancelled and set the appropriate status fields if so
- * @param medplum MedplumClient object
- * @param message  parsed HL7 message
- * @param serviceRequest `ServiceRequest` representing this order
- * @param observations  parsed `Observation` resources
- * @param report `DiagnosticReport` for these results
- * @param specimens `Specimen` associated with the results
+ * @param medplum - MedplumClient object
+ * @param message - parsed HL7 message
+ * @param serviceRequest - `ServiceRequest` representing this order
+ * @param observations - parsed `Observation` resources
+ * @param report - `DiagnosticReport` for these results
+ * @param specimens - `Specimen` associated with the results
  */
 async function handleOrderCancellation(
   medplum: MedplumClient,
@@ -234,9 +234,9 @@ async function handleOrderCancellation(
 /**
  * Check to see if the order was cancelled. If so, return the cancellation reason
  *
- * @param medplum The MedplumClient object.
- * @param message The parsed HL7 message.
- * @param serviceRequest The ServiceRequest resource.
+ * @param medplum - The MedplumClient object.
+ * @param message - The parsed HL7 message.
+ * @param serviceRequest - The ServiceRequest resource.
  * @returns The cancellation reason, if any.
  */
 async function getCancellationReason(
@@ -316,9 +316,9 @@ async function readSFTPDirectory(sftp: SftpClient, dir: string, batchSize = 25):
  * Some observations have notes that are stored in subsequent lines, so we need to keep a pointer to the last
  * processed observation
  *
- * @param message Parsed HL7 Message
- * @param serviceRequest Current `ServiceRequest` representing the lab order
- * @param performer A reference to the performing lab
+ * @param message - Parsed HL7 Message
+ * @param serviceRequest - Current `ServiceRequest` representing the lab order
+ * @param performer - A reference to the performing lab
  * @returns An array of `Observation` resources.
  */
 function processObxSegments(
@@ -368,9 +368,9 @@ function processObxSegments(
  *
  * Note that some systems send numerical values with comparators (e.g. <, >) as structured text fields
  *
- * @param segment The OBX segment to convert.
- * @param serviceRequest The current `ServiceRequest` representing the lab order.
- * @param performer The performing lab.
+ * @param segment - The OBX segment to convert.
+ * @param serviceRequest - The current `ServiceRequest` representing the lab order.
+ * @param performer - The performing lab.
  * @returns The converted `Observation` resource.
  */
 function processObservation(
@@ -437,9 +437,9 @@ function processObservation(
 
 /**
  * Check if there is an existing `Observation` resource with the same LOINC code, and update if necessary
- * @param medplum The Medplum Client
- * @param updatedObservation The latest `Observation`
- * @param existingObservations The existing `Observation` on the server
+ * @param medplum - The Medplum Client
+ * @param updatedObservation - The latest `Observation`
+ * @param existingObservations - The existing `Observation` on the server
  * @returns The updated `Observation` resource.
  */
 function createOrUpdateObservation(
@@ -464,10 +464,10 @@ function createOrUpdateObservation(
 /**
  * Upload any embedded rendered PDF reports in the HL7 message as a FHIR `Media` resource
  * and attach it to the diagnostic report in the `DiagnosticReport.presentedForm` property
- * @param medplum The Medplum Client.
- * @param report The current `DiagnosticReport` resource.
- * @param fileName The name of the PDF file.
- * @param message The HL7 message.
+ * @param medplum - The Medplum Client.
+ * @param report - The current `DiagnosticReport` resource.
+ * @param fileName - The name of the PDF file.
+ * @param message - The HL7 message.
  * @returns The uploaded `Media` resources.
  */
 async function uploadEmbeddedPdfs(

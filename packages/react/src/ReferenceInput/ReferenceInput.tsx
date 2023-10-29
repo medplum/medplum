@@ -11,6 +11,7 @@ export interface ReferenceInputProps {
   defaultValue?: Reference;
   targetTypes?: string[];
   autoFocus?: boolean;
+  required?: boolean;
   onChange?: (value: Reference | undefined) => void;
 }
 
@@ -52,6 +53,7 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
       <ResourceInput
         resourceType={resourceType as ResourceType}
         name={props.name + '-id'}
+        required={props.required}
         placeholder={props.placeholder}
         defaultValue={value}
         onChange={(item: Resource | undefined) => {

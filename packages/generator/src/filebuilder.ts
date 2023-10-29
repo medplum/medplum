@@ -57,8 +57,8 @@ export class FileBuilder {
 /**
  * Returns a word-wrapped string.
  * Based on: https://stackoverflow.com/a/38709683
- * @param text Original input string.
- * @param maxLength Width in number of characters.
+ * @param text - Original input string.
+ * @param maxLength - Width in number of characters.
  * @returns Array of lines.
  */
 export function wordWrap(text: string, maxLength: number): string[] {

@@ -8,6 +8,7 @@ export function useClientId(): string {
 
 export function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T>();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: We want this to run on every render
   useEffect(() => {
     ref.current = value;
   });

@@ -76,7 +76,7 @@ async function startWebServer(medplum: MedplumClient): Promise<void> {
 /**
  * Opens a web browser to the specified URL.
  * See: https://hasinthaindrajee.medium.com/browser-sso-for-cli-applications-b0be743fa656
- * @param url The URL to open.
+ * @param url - The URL to open.
  */
 async function openBrowser(url: string): Promise<void> {
   const os = platform();
@@ -100,7 +100,7 @@ async function openBrowser(url: string): Promise<void> {
 
 /**
  * Prints the current user and project.
- * @param medplum The Medplum client.
+ * @param medplum - The Medplum client.
  */
 function printMe(medplum: MedplumClient): void {
   const loginState = medplum.getActiveLogin();

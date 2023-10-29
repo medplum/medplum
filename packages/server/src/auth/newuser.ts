@@ -20,8 +20,8 @@ export const newUserValidators = [
 
 /**
  * Handles a HTTP request to /auth/newuser.
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 export async function newUserHandler(req: Request, res: Response): Promise<void> {
   const config = getConfig();

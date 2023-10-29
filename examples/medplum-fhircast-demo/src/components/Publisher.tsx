@@ -4,7 +4,7 @@ import { Document, useMedplum } from '@medplum/react';
 import { useState } from 'react';
 import TopicGenerator from './TopicGenerator';
 
-function createFhircastMessageContext(patientId: string): FhircastEventContext {
+function createFhircastMessageContext(patientId: string): FhircastEventContext<'patient-open'> {
   if (!patientId) {
     throw new Error('Must provide a patientId!');
   }

@@ -6,13 +6,14 @@ import {
   getSearchParameters,
   InternalSchemaElement,
   isLowerCase,
+  isReference,
   isResourceTypeSchema,
   normalizeOperationOutcome,
   OperationOutcomeError,
   toJsBoolean,
   toTypedValue,
 } from '@medplum/core';
-import { ElementDefinitionType, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import { ElementDefinitionType, Resource, ResourceType } from '@medplum/fhirtypes';
 import {
   GraphQLEnumType,
   GraphQLEnumValueConfigMap,
@@ -133,7 +134,7 @@ function buildOutputPropertyField(
  *   4. All properties of the list element type.
  *
  * See: https://hl7.org/fhir/R4/graphql.html#list
- * @param fieldTypeName The type name of the field.
+ * @param fieldTypeName - The type name of the field.
  * @returns The arguments for the field.
  */
 function buildListPropertyFieldArgs(fieldTypeName: string): GraphQLFieldConfigArgumentMap {
@@ -171,10 +172,10 @@ function buildListPropertyFieldArgs(fieldTypeName: string): GraphQLFieldConfigAr
 
 /**
  * Builds a field argument for a list property.
- * @param fieldArgs The output argument map.
- * @param fieldKey The key of the field.
- * @param elementDefinition The FHIR element definition of the field.
- * @param elementDefinitionType The FHIR element definition type of the field.
+ * @param fieldArgs - The output argument map.
+ * @param fieldKey - The key of the field.
+ * @param elementDefinition - The FHIR element definition of the field.
+ * @param elementDefinitionType - The FHIR element definition type of the field.
  */
 function buildListPropertyFieldArg(
   fieldArgs: GraphQLFieldConfigArgumentMap,
@@ -226,8 +227,8 @@ function buildListPropertyFieldArg(
  * (except that the "id" argument is prohibited here as nonsensical).
  *
  * See: https://www.hl7.org/fhir/graphql.html#reverse
- * @param resourceType The resource type to build fields for.
- * @param fields The fields object to add fields to.
+ * @param resourceType - The resource type to build fields for.
+ * @param fields - The fields object to add fields to.
  */
 function buildReverseLookupFields(resourceType: ResourceType, fields: GraphQLFieldConfigMap<any, any>): void {
   for (const childResourceType of getResourceTypes()) {
@@ -282,10 +283,10 @@ function getOutputPropertyType(
  * GraphQL resolver for fields.
  * In the common case, this is just a matter of returning the field value from the source object.
  * If the field is a list and the user specifies list arguments, then we can apply those arguments here.
- * @param source The source. This is the object that contains the field.
- * @param args The GraphQL search arguments.
- * @param _ctx The GraphQL context.
- * @param info The GraphQL resolve info.  This includes the field name.
+ * @param source - The source. This is the object that contains the field.
+ * @param args - The GraphQL search arguments.
+ * @param _ctx - The GraphQL context.
+ * @param info - The GraphQL resolve info.  This includes the field name.
  * @returns Promise to read the resoure for the query.
  */
 async function resolveField(source: any, args: any, _ctx: GraphQLContext, info: GraphQLResolveInfo): Promise<any> {
@@ -319,14 +320,17 @@ async function resolveField(source: any, args: any, _ctx: GraphQLContext, info: 
 /**
  * GraphQL data loader for Reference requests.
  * This is a special data loader for following Reference objects.
- * @param source The source/root.  This should always be null for our top level readers.
- * @param _args The GraphQL search arguments.
- * @param ctx The GraphQL context.
+ * @param source - The source/root.  This should always be null for our top level readers.
+ * @param _args - The GraphQL search arguments.
+ * @param ctx - The GraphQL context.
  * @returns Promise to read the resoure(s) for the query.
  */
 async function resolveByReference(source: any, _args: any, ctx: GraphQLContext): Promise<Resource | undefined> {
+  if (!isReference(source)) {
+    return undefined;
+  }
   try {
-    return await ctx.dataLoader.load(source as Reference);
+    return await ctx.dataLoader.load(source);
   } catch (err) {
     throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
   }
@@ -335,7 +339,7 @@ async function resolveByReference(source: any, _args: any, ctx: GraphQLContext):
 /**
  * GraphQL type resolver for resources.
  * When loading a resource via reference, GraphQL needs to know the type of the resource.
- * @param resource The loaded resource.
+ * @param resource - The loaded resource.
  * @returns The GraphQL type of the resource.
  */
 function resolveTypeByReference(resource: Resource | undefined): string | undefined {

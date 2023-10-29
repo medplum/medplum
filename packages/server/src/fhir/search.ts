@@ -102,8 +102,8 @@ export async function searchImpl<T extends Resource>(
 
 /**
  * Returns the bundle entries for a search request.
- * @param repo The repository.
- * @param searchRequest The search request.
+ * @param repo - The repository.
+ * @param searchRequest - The search request.
  * @returns The bundle entries for the search result.
  */
 async function getSearchEntries<T extends Resource>(
@@ -183,10 +183,10 @@ function removeResourceFields(resource: Resource, repo: Repository, searchReques
 
 /**
  * Gets the extra search entries for the _include and _revinclude parameters.
- * @param repo The FHIR repository.
- * @param searchRequest The original search request.
- * @param resources The resources returned by the original search.
- * @param entries The output bundle entries.
+ * @param repo - The FHIR repository.
+ * @param searchRequest - The original search request.
+ * @param resources - The resources returned by the original search.
+ * @param entries - The output bundle entries.
  */
 async function getExtraEntries<T extends Resource>(
   repo: Repository,
@@ -235,9 +235,9 @@ async function getExtraEntries<T extends Resource>(
  * Returns bundle entries for the resources that are included in the search result.
  *
  * See documentation on _include: https://hl7.org/fhir/R4/search.html#include
- * @param repo The repository.
- * @param include The include parameter.
- * @param resources The base search result resources.
+ * @param repo - The repository.
+ * @param include - The include parameter.
+ * @param resources - The base search result resources.
  * @returns The bundle entries for the included resources.
  */
 async function getSearchIncludeEntries(
@@ -291,9 +291,9 @@ async function getSearchIncludeEntries(
  * Returns bundle entries for the resources that are reverse included in the search result.
  *
  * See documentation on _revinclude: https://hl7.org/fhir/R4/search.html#revinclude
- * @param repo The repository.
- * @param revInclude The revInclude parameter.
- * @param resources The base search result resources.
+ * @param repo - The repository.
+ * @param revInclude - The revInclude parameter.
+ * @param resources - The base search result resources.
  * @returns The bundle entries for the reverse included resources.
  */
 async function getSearchRevIncludeEntries(
@@ -337,8 +337,8 @@ async function getSearchRevIncludeEntries(
  * Returns the search bundle links for a search request.
  * At minimum, the 'self' link will be returned.
  * If "count" does not equal zero, then 'first', 'next', and 'previous' links will be included.
- * @param searchRequest The search request.
- * @param hasMore True if there are more entries after the current page.
+ * @param searchRequest - The search request.
+ * @param hasMore - True if there are more entries after the current page.
  * @returns The search bundle links.
  */
 function getSearchLinks(searchRequest: SearchRequest, hasMore: boolean | undefined): BundleLink[] {
@@ -387,8 +387,8 @@ function getSearchUrl(searchRequest: SearchRequest): string {
 /**
  * Returns the total number of matching results for a search request.
  * This ignores page number and page size.
- * @param repo The repository.
- * @param searchRequest The search request.
+ * @param repo - The repository.
+ * @param searchRequest - The search request.
  * @returns The total number of matching results.
  */
 async function getAccurateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
@@ -412,9 +412,9 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
  * Returns the estimated number of matching results for a search request.
  * This ignores page number and page size.
  * This uses the estimated row count technique as described here: https://wiki.postgresql.org/wiki/Count_estimate
- * @param repo The repository.
- * @param searchRequest The search request.
- * @param rowCount The number of matching results if found.
+ * @param repo - The repository.
+ * @param searchRequest - The search request.
+ * @param rowCount - The number of matching results if found.
  * @returns The total number of matching results.
  */
 async function getEstimateCount(
@@ -455,8 +455,8 @@ async function getEstimateCount(
 
 /**
  * Adds all search filters as "WHERE" clauses to the query builder.
- * @param selectQuery The select query builder.
- * @param searchRequest The search request.
+ * @param selectQuery - The select query builder.
+ * @param searchRequest - The search request.
  */
 function addSearchFilters(selectQuery: SelectQuery, searchRequest: SearchRequest): void {
   const expr = buildSearchExpression(selectQuery, searchRequest);
@@ -486,9 +486,9 @@ export function buildSearchExpression(selectQuery: SelectQuery, searchRequest: S
 
 /**
  * Builds a single search filter as "WHERE" clause to the query builder.
- * @param selectQuery The select query builder.
- * @param resourceType The type of resources requested.
- * @param filter The search filter.
+ * @param selectQuery - The select query builder.
+ * @param resourceType - The type of resources requested.
+ * @param filter - The search filter.
  * @returns The search query where expression
  */
 function buildSearchFilterExpression(
@@ -532,9 +532,9 @@ function buildSearchFilterExpression(
  * Builds a search filter expression for a normal search parameter.
  *
  * Not any special cases, just a normal search parameter.
- * @param resourceType The FHIR resource type.
- * @param param The FHIR search parameter.
- * @param filter The search filter.
+ * @param resourceType - The FHIR resource type.
+ * @param param - The FHIR search parameter.
+ * @param filter - The search filter.
  * @returns A SQL "WHERE" clause expression.
  */
 function buildNormalSearchFilterExpression(resourceType: string, param: SearchParameter, filter: Filter): Expression {
@@ -564,9 +564,9 @@ function buildNormalSearchFilterExpression(resourceType: string, param: SearchPa
  * Returns true if the search parameter code is a special search parameter.
  *
  * See: https://www.hl7.org/fhir/search.html#all
- * @param selectQuery The select query builder.
- * @param resourceType The type of resources requested.
- * @param filter The search filter.
+ * @param selectQuery - The select query builder.
+ * @param resourceType - The type of resources requested.
+ * @param filter - The search filter.
  * @returns True if the search parameter is a special code.
  */
 function trySpecialSearchParameter(
@@ -641,9 +641,9 @@ function buildFilterParameterComparison(
 
 /**
  * Adds a string search filter as "WHERE" clause to the query builder.
- * @param details The search parameter details.
- * @param operator The search operator.
- * @param values The string values to search against.
+ * @param details - The search parameter details.
+ * @param operator - The search operator.
+ * @param values - The string values to search against.
  * @returns The select query condition.
  */
 function buildStringSearchFilter(details: SearchParameterDetails, operator: Operator, values: string[]): Expression {
@@ -666,10 +666,10 @@ function buildStringSearchFilter(details: SearchParameterDetails, operator: Oper
 
 /**
  * Adds an ID search filter as "WHERE" clause to the query builder.
- * @param resourceType The resource type.
- * @param details The search parameter details.
- * @param operator The search operator.
- * @param values The string values to search against.
+ * @param resourceType - The resource type.
+ * @param details - The search parameter details.
+ * @param operator - The search operator.
+ * @param values - The string values to search against.
  * @returns The select query condition.
  */
 function buildIdSearchFilter(
@@ -698,10 +698,10 @@ function buildIdSearchFilter(
 
 /**
  * Adds a token search filter as "WHERE" clause to the query builder.
- * @param resourceType The resource type.
- * @param details The search parameter details.
- * @param operator The search operator.
- * @param values The string values to search against.
+ * @param resourceType - The resource type.
+ * @param details - The search parameter details.
+ * @param operator - The search operator.
+ * @param values - The string values to search against.
  * @returns The select query condition.
  */
 function buildTokenSearchFilter(
@@ -720,8 +720,8 @@ function buildTokenSearchFilter(
 
 /**
  * Adds a reference search filter as "WHERE" clause to the query builder.
- * @param details The search parameter details.
- * @param values The string values to search against.
+ * @param details - The search parameter details.
+ * @param values - The string values to search against.
  * @returns The select query condition.
  */
 function buildReferenceSearchFilter(details: SearchParameterDetails, values: string[]): Expression {
@@ -738,8 +738,8 @@ function buildReferenceSearchFilter(details: SearchParameterDetails, values: str
 
 /**
  * Adds a date or date/time search filter.
- * @param details The search parameter details.
- * @param filter The search filter.
+ * @param details - The search parameter details.
+ * @param filter - The search filter.
  * @returns The select query condition.
  */
 function buildDateSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
@@ -752,8 +752,8 @@ function buildDateSearchFilter(details: SearchParameterDetails, filter: Filter):
 
 /**
  * Adds all "order by" clauses to the query builder.
- * @param builder The client query builder.
- * @param searchRequest The search request.
+ * @param builder - The client query builder.
+ * @param searchRequest - The search request.
  */
 function addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void {
   searchRequest.sortRules?.forEach((sortRule) => addOrderByClause(builder, searchRequest, sortRule));
@@ -761,9 +761,9 @@ function addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void 
 
 /**
  * Adds a single "order by" clause to the query builder.
- * @param builder The client query builder.
- * @param searchRequest The search request.
- * @param sortRule The sort rule.
+ * @param builder - The client query builder.
+ * @param searchRequest - The search request.
+ * @param sortRule - The sort rule.
  */
 function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
   if (sortRule.code === '_id') {
@@ -796,7 +796,7 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
  * Converts a FHIR search operator into a SQL operator.
  * Only works for simple conversions.
  * For complex conversions, need to build custom SQL.
- * @param fhirOperator The FHIR operator.
+ * @param fhirOperator - The FHIR operator.
  * @returns The equivalent SQL operator.
  */
 function fhirOperatorToSqlOperator(fhirOperator: Operator): SQL {

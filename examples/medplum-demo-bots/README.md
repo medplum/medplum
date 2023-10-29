@@ -21,8 +21,8 @@ To set up your bot deployment you will need to do the following:
 }
 ```
 
-- [Create an ClientApplication](https://app.medplum.com/ClientApplication/new) on Medplum. (All ClientApplications in your account can be found [here](https://app.medplum.com/ClientApplication))
-- Create a .env file locally by copying `.env.example` and put the `ClientId` and `ClientSecret` from the `ClientApplication` into the file.
+- [Create a ClientApplication](https://app.medplum.com/ClientApplication/new) on Medplum. (All ClientApplications in your account can be found [here](https://app.medplum.com/ClientApplication))
+- Create a .env file locally by copying `.env.example` and putting the `ClientId` and `ClientSecret` from the `ClientApplication` into the file.
 - (Optional) Create an [AccessPolicy](<(https://app.medplum.com/AccessPolicy)>) on Medplum that can only read/write Bots and add it to the Bot in the [admin panel](https://app.medplum.com/admin/project).
 
 ## Installation

@@ -10,17 +10,20 @@ import {
 } from '@medplum/core';
 import {
   Account,
+  Annotation,
   CodeableConcept,
   Organization,
   Patient,
   Practitioner,
   ProjectSecret,
   QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
   Reference,
   RequestGroup,
   RequestGroupAction,
   Resource,
   ServiceRequest,
+  Specimen,
   Subscription,
 } from '@medplum/fhirtypes';
 import { createHmac } from 'crypto';
@@ -30,6 +33,7 @@ const HEALTH_GORILLA_SYSTEM = 'https://www.healthgorilla.com';
 
 interface HealthGorillaConfig {
   baseUrl: string;
+  audienceUrl: string;
   clientId: string;
   clientSecret: string;
   clientUri: string;
@@ -83,6 +87,31 @@ const availableTests: Record<string, string> = {
   'quest-6399': 'CBC w/Diff',
   'quest-16814': 'ANA Scr, IFA w/Reflex Titer / Pattern / MPX AB Cascade',
   'quest-7573': 'Iron Total/IBC Diagnosis code D64.9',
+};
+
+// Available diagnoses organized by ICD10 code
+// You may want to allow open search for all diagnoses.
+// In this demo, we're only allowing a few common diagnoses.
+const availableDiagnoses: Record<string, string> = {
+  'diagnosis-D63.1': 'Anemia in chronic kidney disease',
+  'diagnosis-D64.9': 'Anemia, unspecified',
+  'diagnosis-E04.2': 'Nontoxic multinodular goiter',
+  'diagnosis-E05.90': 'Hyperthyroidism, unspecified',
+  'diagnosis-E11.9': 'Diabetes mellitus, unspecified',
+  'diagnosis-E11.42': 'Type 2 diabetes mellitus with diabetic polyneuropathy',
+  'diagnosis-E55.9': 'Vitamin D deficiency, unspecified',
+  'diagnosis-E78.2': 'Mixed hyperlipidemia',
+  'diagnosis-E88.89': 'Other specified metabolic disorders',
+  'diagnosis-F06.8': 'Other specified mental disorders due to known physiological condition',
+  'diagnosis-I10': 'Essential (primary) hypertension',
+  'diagnosis-K70.30': 'Alcoholic cirrhosis of liver without ascites',
+  'diagnosis-K76.0': 'Fatty (change of) liver, not elsewhere classified',
+  'diagnosis-M10.9': 'Gout, unspecified',
+  'diagnosis-N13.5': 'Crossing vessel and stricture of ureter',
+  'diagnosis-N18.3': 'Chronic kidney disease, stage 3 (moderate)',
+  'diagnosis-R53.83': 'Other fatigue',
+  'diagnosis-Z00.00': 'Encounter for general adult medical examination without abnormal findings',
+  'diagnosis-Z34.90': 'Encounter for supervision of normal pregnancy, unspecified trimester',
 };
 
 const billToPatient: CodeableConcept = {
@@ -220,20 +249,22 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     healthGorillaAccount,
     healthGorillaPatient,
     healthGorillaPractitioner,
-    healthGorillaServiceRequests
+    healthGorillaServiceRequests,
+    answers
   );
 }
 
 /**
  * Returns the Health Gorilla config settings from the Medplum project secrets.
  * If any required config values are missing, this method will throw and the bot will terminate.
- * @param event The bot input event.
+ * @param event - The bot input event.
  * @returns The Health Gorilla config settings.
  */
 function getHealthGorillaConfig(event: BotEvent): HealthGorillaConfig {
   const secrets = event.secrets;
   return {
     baseUrl: requireStringSecret(secrets, 'HEALTH_GORILLA_BASE_URL'),
+    audienceUrl: requireStringSecret(secrets, 'HEALTH_GORILLA_AUDIENCE_URL'),
     clientId: requireStringSecret(secrets, 'HEALTH_GORILLA_CLIENT_ID'),
     clientSecret: requireStringSecret(secrets, 'HEALTH_GORILLA_CLIENT_SECRET'),
     clientUri: requireStringSecret(secrets, 'HEALTH_GORILLA_CLIENT_URI'),
@@ -250,7 +281,7 @@ function getHealthGorillaConfig(event: BotEvent): HealthGorillaConfig {
 
 /**
  * Connects to the Health Gorilla API and returns a FHIR client.
- * @param config The Health Gorilla config settings.
+ * @param config - The Health Gorilla config settings.
  * @returns The FHIR client.
  */
 async function connectToHealthGorilla(config: HealthGorillaConfig): Promise<MedplumClient> {
@@ -269,7 +300,7 @@ async function connectToHealthGorilla(config: HealthGorillaConfig): Promise<Medp
   const currentTimestamp = Math.floor(Date.now() / 1000);
 
   const data = {
-    aud: config.baseUrl + '/oauth/token',
+    aud: config.audienceUrl,
     iss: config.clientUri,
     sub: config.userLogin,
     iat: currentTimestamp,
@@ -292,8 +323,8 @@ async function connectToHealthGorilla(config: HealthGorillaConfig): Promise<Medp
  * If the subscriptions are in "error" status, this method will delete them and create new ones.
  * If the subscriptions are in "active" status, this method will do nothing.
  *
- * @param config The Health Gorilla config settings.
- * @param healthGorilla The Health Gorilla FHIR client.
+ * @param config - The Health Gorilla config settings.
+ * @param healthGorilla - The Health Gorilla FHIR client.
  */
 export async function ensureSubscriptions(config: HealthGorillaConfig, healthGorilla: MedplumClient): Promise<void> {
   // Get all subscriptions
@@ -306,10 +337,10 @@ export async function ensureSubscriptions(config: HealthGorillaConfig, healthGor
 /**
  * Ensures that there is an active subscription for the given criteria.
  *
- * @param config The Health Gorilla config settings.
- * @param healthGorilla The Health Gorilla FHIR client.
- * @param existingSubscriptions The existing subscriptions.
- * @param criteria The subscription criteria.
+ * @param config - The Health Gorilla config settings.
+ * @param healthGorilla - The Health Gorilla FHIR client.
+ * @param existingSubscriptions - The existing subscriptions.
+ * @param criteria - The subscription criteria.
  */
 export async function ensureSubscription(
   config: HealthGorillaConfig,
@@ -352,9 +383,9 @@ export async function ensureSubscription(
  *
  * Returns the Health Gorilla patient resource.
  *
- * @param medplum The Medplum FHIR client.
- * @param healthGorilla The Health Gorilla FHIR client.
- * @param patient The Medplum patient resource.
+ * @param medplum - The Medplum FHIR client.
+ * @param healthGorilla - The Health Gorilla FHIR client.
+ * @param patient - The Medplum patient resource.
  * @returns The Health Gorilla patient resource.
  */
 export async function syncPatient(
@@ -430,10 +461,10 @@ export async function syncPatient(
  *
  * Returns the Health Gorilla patient resource.
  *
- * @param medplum The Medplum FHIR client.
- * @param medplumPatient The Medplum patient resource.
- * @param healthGorillaPatient The Health Gorilla patient resource.
- * @param billingType The Health Gorilla billing type.
+ * @param medplum - The Medplum FHIR client.
+ * @param medplumPatient - The Medplum patient resource.
+ * @param healthGorillaPatient - The Health Gorilla patient resource.
+ * @param billingType - The Health Gorilla billing type.
  * @returns The Health Gorilla account resource.
  */
 export async function syncAccount(
@@ -487,8 +518,8 @@ export async function syncAccount(
  * If the Medplum Practitioner resource does not have a Health Gorilla ID in `identifier`,
  * this method will throw and the bot will terminate.
  *
- * @param healthGorilla The Health Gorilla FHIR client.
- * @param practitioner The Medplum practitioner resource.
+ * @param healthGorilla - The Health Gorilla FHIR client.
+ * @param practitioner - The Medplum practitioner resource.
  * @returns The Health Gorilla practitioner resource.
  */
 export async function getPractitioner(healthGorilla: MedplumClient, practitioner: Practitioner): Promise<Practitioner> {
@@ -542,14 +573,15 @@ export async function createServiceRequest(
  *
  * The FHIR RequestGroup is a combination of the following resources:
  *
- * @param healthGorilla The Health Gorilla FHIR client.
- * @param healthGorillaTenantOrganization The authorizing organization resource.
- * @param healthGorillaSubtenantOrganization The authorizing organization resource.
- * @param healthGorillaPerformingOrganization The performing organization resource.
- * @param healthGorillaAccount The account resource.
- * @param healthGorillaPatient The patient resource.
- * @param healthGorillaPractitioner The practitioner resource.
- * @param healthGorillaServiceRequests The service request resources.
+ * @param healthGorilla - The Health Gorilla FHIR client.
+ * @param healthGorillaTenantOrganization - The authorizing organization resource.
+ * @param healthGorillaSubtenantOrganization - The authorizing organization resource.
+ * @param healthGorillaPerformingOrganization - The performing organization resource.
+ * @param healthGorillaAccount - The account resource.
+ * @param healthGorillaPatient - The patient resource.
+ * @param healthGorillaPractitioner - The practitioner resource.
+ * @param healthGorillaServiceRequests - The service request resources.
+ * @param answers - The questionnaire answers.
  */
 export async function createRequestGroup(
   healthGorilla: MedplumClient,
@@ -559,7 +591,8 @@ export async function createRequestGroup(
   healthGorillaAccount: Account,
   healthGorillaPatient: Patient,
   healthGorillaPractitioner: Practitioner,
-  healthGorillaServiceRequests: ServiceRequest[]
+  healthGorillaServiceRequests: ServiceRequest[],
+  answers: Record<string, QuestionnaireResponseItemAnswer>
 ): Promise<void> {
   const inputJson = {
     resourceType: 'RequestGroup',
@@ -627,6 +660,8 @@ export async function createRequestGroup(
     subject: createReference(healthGorillaPatient),
     author: createReference(healthGorillaPractitioner),
     action: [] as RequestGroupAction[],
+    reasonCode: [] as CodeableConcept[],
+    note: [] as Annotation[],
   } satisfies RequestGroup;
 
   for (let i = 0; i < healthGorillaServiceRequests.length; i++) {
@@ -639,6 +674,49 @@ export async function createRequestGroup(
         reference: '#labtest' + i,
         display: healthGorillaServiceRequests[i].code?.text,
       },
+    });
+  }
+
+  for (const diagnosisId of Object.keys(availableDiagnoses)) {
+    if (answers[diagnosisId]?.valueBoolean) {
+      const code = diagnosisId.substring(diagnosisId.indexOf('-') + 1);
+      const display = availableDiagnoses[diagnosisId];
+      inputJson.reasonCode.push({
+        coding: [
+          {
+            system: 'http://hl7.org/fhir/sid/icd-10',
+            code,
+            display,
+          },
+        ],
+        text: `${code} - ${display}`,
+      });
+    }
+  }
+
+  if (answers['specimenCollectedDateTime']?.valueDateTime) {
+    const specimen: Specimen = {
+      resourceType: 'Specimen',
+      id: 'specimen',
+      subject: createReference(healthGorillaPatient),
+      collection: {
+        collectedDateTime: answers['specimenCollectedDateTime']?.valueDateTime,
+      },
+    };
+
+    inputJson.contained.push(specimen);
+
+    inputJson.extension.push({
+      url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-specimen',
+      valueReference: {
+        reference: `#${specimen.id}`,
+      },
+    });
+  }
+
+  if (answers['orderNote']?.valueString) {
+    inputJson.note.push({
+      text: answers['orderNote']?.valueString,
     });
   }
 

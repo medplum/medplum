@@ -193,6 +193,16 @@ Run CDK synth:
 npx cdk synth -c config=medplum.demo.config.json
 ```
 
+### CDK Diff
+
+Use the `diff` command to see how it will change your AWS resources.
+
+Run CDK diff:
+
+```bash
+npx cdk diff -c config=medplum.demo.config.json
+```
+
 ### CDK Deploy
 
 When you are ready to actually execute the CDK configuration, use the `deploy` command.
@@ -205,14 +215,38 @@ npx cdk deploy -c config=medplum.demo.config.json
 
 Note that you may receive warnings about changing security details. This is normal and expected anytime CDK makes changes to VPC, IAM, and other security features.
 
-### CDK Diff
+### Update Bucket Policies
 
-If you make changes to the CDK config, you can use the `diff` command to see how it will change your AWS resources.
+When deploying to any region other than `us-east-1`, there is one additional step. AWS CloudFront needs access to S3 buckets. At present, this is not possible entirely within CDK.
 
-Run CDK diff:
+:::info
+
+This is due to cross-region circular dependencies:
+
+1. An S3 bucket in your primary region
+2. A CloudFront distribution in `us-east-1`, because CloudFront distributions must always be in `us-east-1`
+3. Updated S3 bucket policy that references the CloudFront distribution
+
+See this [Github issue](https://github.com/medplum/medplum/issues/2901) for more details.
+
+:::
+
+The Medplum CLI includes a command to update the bucket policy automatically:
 
 ```bash
-npx cdk diff -c config=medplum.demo.config.json
+npx medplum aws update-bucket-policies [env name]
+```
+
+For example:
+
+```bash
+npx medplum aws update-bucket-policies demo
+```
+
+You can use the `--dry-run` option to preview the changes:
+
+```bash
+npx medplum aws update-bucket-policies [env name] --dry-run
 ```
 
 ### Deploy the app

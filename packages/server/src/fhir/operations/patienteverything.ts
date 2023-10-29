@@ -20,8 +20,8 @@ import { getAuthenticatedContext } from '../../context';
 /**
  * Handles a Patient everything request.
  * Searches for all resources related to the patient.
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 export async function patientEverythingHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
@@ -39,8 +39,8 @@ export async function patientEverythingHandler(req: Request, res: Response): Pro
 /**
  * Executes the Patient $everything operation.
  * Searches for all resources related to the patient.
- * @param repo The repository.
- * @param patient The root patient.
+ * @param repo - The repository.
+ * @param patient - The root patient.
  * @returns The patient everything search result bundle.
  */
 export async function getPatientEverything(repo: Repository, patient: Patient): Promise<Bundle> {

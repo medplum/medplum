@@ -69,8 +69,8 @@ export async function createProjectMembership(
  * Sends a login response to the client.
  * If the user has multiple profiles, sends the list of profiles to choose from.
  * Otherwise, sends the authorization code.
- * @param res The response object.
- * @param login The login details.
+ * @param res - The response object.
+ * @param login - The login details.
  */
 export async function sendLoginResult(res: Response, login: Login): Promise<void> {
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
@@ -114,8 +114,8 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
 
 /**
  * Adds a login cookie to the response if this is a OAuth2 client login.
- * @param res The response object.
- * @param login The login details.
+ * @param res - The response object.
+ * @param login - The login details.
  */
 export function sendLoginCookie(res: Response, login: Login): void {
   if (login.client) {
@@ -131,8 +131,8 @@ export function sendLoginCookie(res: Response, login: Login): void {
 
 /**
  * Verifies the recaptcha response from the client.
- * @param secretKey The Recaptcha secret key to use for verification.
- * @param recaptchaToken The Recaptcha response from the client.
+ * @param secretKey - The Recaptcha secret key to use for verification.
+ * @param recaptchaToken - The Recaptcha response from the client.
  * @returns True on success, false on failure.
  */
 export async function verifyRecaptcha(secretKey: string, recaptchaToken: string): Promise<boolean> {
@@ -150,8 +150,8 @@ export async function verifyRecaptcha(secretKey: string, recaptchaToken: string)
 
 /**
  * Returns project ID if clientId is provided.
- * @param clientId clientId from the client
- * @param projectId projectId from the client
+ * @param clientId - clientId from the client
+ * @param projectId - projectId from the client
  * @returns The Project ID
  * @throws OperationOutcomeError
  */
@@ -174,8 +174,8 @@ export async function getProjectIdByClientId(
 
 /**
  * Returns a project by recaptcha site key.
- * @param recaptchaSiteKey reCAPTCHA site key from the client.
- * @param projectId Optional project ID from the client.
+ * @param recaptchaSiteKey - reCAPTCHA site key from the client.
+ * @param projectId - Optional project ID from the client.
  * @returns Project if found, otherwise undefined.
  */
 export function getProjectByRecaptchaSiteKey(
@@ -203,7 +203,7 @@ export function getProjectByRecaptchaSiteKey(
 
 /**
  * Returns the bcrypt hash of the password.
- * @param password The input password.
+ * @param password - The input password.
  * @returns The bcrypt hash of the password.
  */
 export function bcryptHashPassword(password: string): Promise<string> {

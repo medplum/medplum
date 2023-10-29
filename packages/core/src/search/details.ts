@@ -49,13 +49,13 @@ interface SearchParameterDetailsBuilder {
  *   1) The "date" type includes "date", "datetime", and "period".
  *   2) The "token" type includes enums and booleans.
  *   3) Arrays/multiple values are not reflected at all.
- * @param resourceType The root resource type.
- * @param searchParam The search parameter.
+ * @param resourceType - The root resource type.
+ * @param searchParam - The search parameter.
  * @returns The search parameter type details.
  */
 export function getSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   let result: SearchParameterDetails | undefined =
-    globalSchema.types[resourceType].searchParamsDetails?.[searchParam.code as string];
+    globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code as string];
   if (!result) {
     result = buildSearchParameterDetails(resourceType, searchParam);
   }
@@ -185,7 +185,7 @@ function isBackboneElement(propertyType: string): boolean {
 
 /**
  * Converts a hyphen-delimited code to camelCase string.
- * @param code The search parameter code.
+ * @param code - The search parameter code.
  * @returns The SQL column name.
  */
 function convertCodeToColumnName(code: string): string {

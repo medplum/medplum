@@ -1,12 +1,12 @@
 import { getQuestionnaireAnswers } from '@medplum/core';
 import { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import each from 'jest-each';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 
@@ -39,6 +39,17 @@ async function setup(args: QuestionnaireFormProps): Promise<void> {
 }
 
 describe('QuestionnaireForm', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
   test('Renders empty', async () => {
     await setup({
       questionnaire: {
@@ -793,6 +804,7 @@ describe('QuestionnaireForm', () => {
                 linkId: 'question1',
                 text: visibleQuestion,
                 type: 'string',
+                required: true,
               },
               {
                 linkId: 'question2-string',
@@ -820,7 +832,20 @@ describe('QuestionnaireForm', () => {
       onSubmit: jest.fn(),
     });
 
-    const visibleQuestionInput = screen.getByLabelText(visibleQuestion);
+    const visibleQuestionInput = screen.getByLabelText(visibleQuestion + ' *');
+    expect(visibleQuestionInput).toBeInTheDocument();
+
+    const nextButton = screen.getByText('Next');
+    expect(nextButton).toBeInTheDocument();
+
+    // Try to click "Next" without answering the question.
+    // This should fail, because the question is required.
+    await act(async () => {
+      fireEvent.click(nextButton);
+    });
+
+    expect(visibleQuestionInput).toBeInTheDocument();
+
     fireEvent.change(visibleQuestionInput, { target: { value: 'Test Value' } });
 
     expect((visibleQuestionInput as HTMLInputElement).value).toBe('Test Value');
@@ -831,7 +856,7 @@ describe('QuestionnaireForm', () => {
     expect((question2StringInput as HTMLInputElement).value).toBe('Test Value for Question2-String');
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(nextButton);
     });
 
     // Check that the texts for visibleQuestion and question2-string are no longer in the document.
@@ -846,7 +871,7 @@ describe('QuestionnaireForm', () => {
     });
 
     // Check that the values in the visibleQuestion and question2-string inputs are still the same.
-    const updatedVisibleQuestionInput = screen.getByLabelText(visibleQuestion) as HTMLInputElement;
+    const updatedVisibleQuestionInput = screen.getByLabelText(visibleQuestion + ' *') as HTMLInputElement;
     expect(updatedVisibleQuestionInput.value).toBe('Test Value');
 
     const updatedQuestion2StringInput = screen.getByLabelText('visible question 2') as HTMLInputElement;
@@ -934,6 +959,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Value Set Choice', async () => {
+    const onSubmit = jest.fn();
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
@@ -948,18 +974,43 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit,
     });
 
-    const dropDown = screen.getByText('Valueset');
-
-    await act(async () => {
-      fireEvent.click(dropDown);
-    });
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(dropDown, { target: 'Test Display' });
+      fireEvent.change(input, { target: { value: 'Test' } });
     });
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toBeCalled();
+    const response = onSubmit.mock.calls[0][0];
+
+    const answer = getQuestionnaireAnswers(response);
+    expect(answer['q1']).toMatchObject({ valueCoding: { code: 'test-code', display: 'Test Display', system: 'x' } });
   });
 
   test('Repeated Choice Dropdown', async () => {
@@ -1200,6 +1251,70 @@ describe('QuestionnaireForm', () => {
     const searchInput = screen.getByPlaceholderText('Select items');
     expect(searchInput).toBeInTheDocument();
     expect(searchInput).toBeInstanceOf(HTMLInputElement);
+  });
+
+  test('Nested repeat', async () => {
+    const onSubmit = jest.fn();
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'pages-example',
+        title: 'Pages Example',
+        item: [
+          {
+            linkId: 'group1',
+            type: 'group',
+            text: 'group1',
+            repeats: true,
+            item: [
+              {
+                linkId: 'group2',
+                type: 'group',
+                text: 'group2',
+                repeats: true,
+                item: [
+                  {
+                    linkId: 'question1',
+                    type: 'string',
+                    text: 'question1',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByText('group1')).toBeInTheDocument();
+
+    const addGroupButtons = screen.getAllByText('Add Group');
+
+    expect(addGroupButtons).toHaveLength(2);
+
+    await act(async () => {
+      fireEvent.click(addGroupButtons[1]);
+    });
+
+    expect(screen.getAllByText('group1').length).toBe(2);
+    expect(screen.getAllByText('group2').length).toBe(2);
+
+    const stringInputs = screen.getAllByText('question1');
+    expect(stringInputs).toHaveLength(2);
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('question1'), { target: { value: 'answer1' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toBeCalled();
+
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].item[0].item[0].answer[0].valueString).toEqual('answer1');
   });
 
   test('repeatableQuestion', async () => {
