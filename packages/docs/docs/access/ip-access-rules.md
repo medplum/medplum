@@ -18,7 +18,7 @@ Medplum customers primarily use IP Access Restrictions to ensure that users are 
 To configure IP address restrictions in Medplum, follow the steps below:
 
 1. Log in to your Medplum account as a project administrator
-2. Navigate to the AccessPolicy page (i.e., <https://app.medplum.com/AccessPolicy>)
+2. Navigate to the AccessPolicy page (i.e., [https://app.medplum.com/AccessPolicy](https://app.medplum.com/AccessPolicy))
 3. Select an existing AccessPolicy or click "New..." to create a new one
 4. Scroll down to the section labeled "IP Access Rules"
 5. In the "IP Access Rules" section, you can add "allow" and "block" rules based on IP addresses

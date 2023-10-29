@@ -34,12 +34,11 @@ To create a [`Patient`](/docs/api/fhir/resources/patient):
   </TabItem>
 </Tabs>
 
-<details>
-  <summary>Example Response</summary>
+<DetailsBlock summary="Example Response">
   <MedplumCodeBlock language="ts" selectBlocks="MutationCreateResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ### Aliasing the output
 
@@ -58,12 +57,11 @@ Just as with GraphQL queries, you can alias the newly created resource.
   </TabItem>
 </Tabs>
 
-<details>
-  <summary>Example Response</summary>
+<DetailsBlock summary="Example Response">
   <MedplumCodeBlock language="ts" selectBlocks="MutationCreateResponseAliased">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ### Built-in types
 
@@ -99,12 +97,11 @@ This examples demonstrates how to create a mutation that creates a [`Communicati
   </TabItem>
 </Tabs>
 
-<details>
-  <summary>Example Response</summary>
+<DetailsBlock summary="Example Response">
   <MedplumCodeBlock language="ts" selectBlocks="MutationUpdateResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ## Delete Mutation
 

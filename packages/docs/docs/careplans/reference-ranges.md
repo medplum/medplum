@@ -45,33 +45,33 @@ A range is defined by the following properties:
 | `qualifiedInterval.range.high`      | Upper bound for the reference range, inclusive. <br />(Empty value denotes no upper bound) | 100 mg/dL |
 | `qualifiedInterval.range.condition` | How to interpret observation values in this interval                                       | "High"    |
 
-<details><summary>Example: 10 - 100 mg/dL</summary>
+<DetailsBlock summary="Example: 10 - 100 mg/dL">
   <MedplumCodeBlock language="ts" selectBlocks="midRange">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
-<details><summary>Example: Less or equal to than 5 mg/dL </summary>
+<DetailsBlock summary="Example: Less or equal to than 5 mg/dL ">
   <MedplumCodeBlock la nguage="ts" selectBlocks="lowRange">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
-<details><summary>Example: Greater than or equal to 20 mg/dL </summary>
+<DetailsBlock summary="Example: Greater than or equal to 20 mg/dL ">
   <MedplumCodeBlock language="ts" selectBlocks="highRange">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 In practice, multiple an [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) will define multiple reference ranges for a given patient population, to provide interpretations for each value of the [`Observation`](/docs/api/fhir/resources/observation).
 
-<details><summary>Example: Multiple Ranges</summary>
+<DetailsBlock summary="Example: Multiple Ranges">
 The example below defines three reference ranges, to be interpreted as "Low", "Normal", and "High".
 
   <MedplumCodeBlock language="ts" selectBlocks="allRanges">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ## Patient-dependent reference ranges
 
@@ -88,12 +88,12 @@ The table below describes which patient attributes can be used to target referen
 | Gestational Age     | `qualifiedInterval.gestationalAge` | Range           |                                                                                                          |         |
 | Racial/Ethnic Group | `qualifiedInterval.appliesTo`      | CodeableConcept | _(Example)_ [OMB Race Categories](https://build.fhir.org/ig/HL7/US-Core/ValueSet-omb-race-category.html) | Asian   |
 
-<details><summary>Example: Age and gender dependent reference ranges</summary>
+<DetailsBlock summary="Example: Age and gender dependent reference ranges">
 The example below demonstrates how to represent different normal ranges for a testosterone test, for both adults and children.
   <MedplumCodeBlock language="ts" selectBlocks="testosterone">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 :::note
 
@@ -105,13 +105,13 @@ For any range, if these demographic qualifiers are left unspecified, the system 
 
 The Medplum SDK provides helper functions,[ `findObservationInterval`](/docs/sdk/modules#findobservationinterval), [`findObservationReferenceRange`](/docs/sdk/modules#findobservationreferencerange), and [`matchesRange`](/docs/sdk/modules#matchesrange) to find reference ranges that match a particular patient.
 
-<details><summary>Example</summary>
+<DetailsBlock summary="Example">
 
   <MedplumCodeBlock language="ts" selectBlocks="findInterval">
     {ExampleCode}
   </MedplumCodeBlock>
 
-</details>
+</DetailsBlock>
 
 :::
 
@@ -127,12 +127,11 @@ Reference ranges can be categorized into three different types:
 
 The type of reference range is specified in the `qualifiedInterval.category` field.
 
-<details>
-  <summary>Example</summary>
+<DetailsBlock summary="Example">
   <MedplumCodeBlock language="ts" selectBlocks="categories">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ## Editing reference ranges in the Medplum App
 

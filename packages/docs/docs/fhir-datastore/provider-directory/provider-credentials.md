@@ -34,12 +34,11 @@ The `issuer` is typically the state (e.g., "State of New York"). Although this e
 
 To augment the `issuer`, the Davinci PDEX implementation guide [defines an extension](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/StructureDefinition-qualification.html) for `Practitioner.qualification`, named `practitioner-qualification`. This extension contains an element, `whereValid` , which allows you to represent medical license jurisdictions using USPS postal codes for convenience.
 
-<details>
-<summary>Example</summary>
+<DetailsBlock summary="Example">
 <MedplumCodeBlock language="ts" selectBlocks="practitioner-head,qualifications-head,license,qualifications-tail,practitioner-tail">
 {ExampleCode}
 </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ## Medical Specialty
 
@@ -48,12 +47,11 @@ A provider's specialty certifications can also be represented Unlike licensure, 
 - **Specialty Code**: The PDEX implementation guide requires selecting a provider's specialty code from the [NUCC provider taxonomy](https://taxonomy.nucc.org/) (system: `http://nucc.org/provider-taxonomy`).
 - **Issuer: **The issuer for specialist certifications are typically professional certification boards (e.g. American Board of Internal Medicine or American College of Obstetricians and Gynecologists )
 
-<details>
-<summary>Example</summary>
+<DetailsBlock summary="Example">
 <MedplumCodeBlock language="ts" selectBlocks="practitioner-head,qualifications-head,specialty,qualifications-tail,practitioner-tail">
 {ExampleCode}
 </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 :::tip `Practitioner.qualification` vs. `PractitionerRole.specialty`
 

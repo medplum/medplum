@@ -25,11 +25,11 @@ The `Patient.link` element is used to connect duplicate patient records via refe
   - `Patient.link.other` references each source record
   - `Patient.link.type` takes the value `"replaces"`
 
-<details><summary>Example: Linking patient records</summary>
+<DetailsBlock summary="Example: Linking patient records">
   <MedplumCodeBlock language="ts" selectBlocks="linkPatientRecords">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ## Master Record Structure
 
@@ -56,11 +56,11 @@ Use this approach if:
 - Unmerge is an important and frequent operation.
 - Duplicates are common.
 
-<details><summary>Example: Merge identifiers of two patient records</summary>
+<DetailsBlock summary="Example: Merge identifiers of two patient records">
   <MedplumCodeBlock language="ts" selectBlocks="mergeIdentifiers">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ### Record Promotion
 
@@ -107,11 +107,11 @@ The tradeoff primary will be dictated by the downstream applications and the fre
 
 Rewriting all references to point to the master record simplifies queries for client applications, and most mature implementations for patient care should target this approach. Web and mobile apps can ignore the existence of source records and simply query for clinical resources associated with the master record. For temporary source systems, this configuration also simplifies the elimination of source records over time.
 
-<details><summary>Example: Update References on Clinical Data</summary>
+<DetailsBlock summary="Example: Update References on Clinical Data">
   <MedplumCodeBlock language="ts" selectBlocks="updateReferences">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 However, this approach complicates the unmerge operation. Unmerging a single `Patient` might require rewriting references for a large number of clinical resources. Additionally, we will need to maintain information about the source patient for each clinical resource, which we can do by setting the `Resource.meta.source` element to a value corresponding to the source system.
 
@@ -123,8 +123,8 @@ Maintaining references to source records is preferable when absolute clarity abo
 
 In some cases, you may want to completely disable merging for two records. This could be because they are similar, but have been determined not to be duplicates by a human review. In this case you can add them to a Do Not Match List. For more details, see the docs on [Do Not Match Lists](/docs/fhir-datastore/patient-deduplication/matching#do-not-match-lists).
 
-<details><summary>Example: Add record to a Do Not Match List</summary>
+<DetailsBlock summary="Example: Add record to a Do Not Match List">
   <MedplumCodeBlock language="ts" selectBlocks="doNotMatch">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>

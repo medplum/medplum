@@ -35,11 +35,10 @@ Here is an example of searching for a list of `Patient` resources using the Conn
   </TabItem>
 </Tabs>
 
-<details>
-  <summary>Example Response</summary>
+<DetailsBlock summary="Example Response">
   <MedplumCodeBlock language="ts" selectBlocks="ConnectionApiResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 See the "[Connection API](https://hl7.org/fhir/graphql.html#searching)" section of the FHIR GraphQL specification for more information.

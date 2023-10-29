@@ -57,7 +57,7 @@ scenarios:
 
 The key points:
 
-- Targeting the Medplum staging environment at <https://api.staging.medplum.com>
+- Targeting the Medplum staging environment at [https://api.staging.medplum.com](https://api.staging.medplum.com)
 - 10 second warmup with 10 virtual users with loops of 10 requests (100 requests per second)
 - 5 minute ramp up to 100 virtual users with loops of 10 requests (1000 requests per second)
 - Note that we use a blend of virtual users and loops to generate load without oversaturating our own host system

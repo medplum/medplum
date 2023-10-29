@@ -37,11 +37,7 @@ The following points are covered in this implementation:
 
 ## Transcript
 
-A video describing this implementation and annotated transcript is below.
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/f1lDK-Af-RI?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-
-<details>
+<DetailsBlock summary="Transcript">
 Today I'll go over a simple patient deduplication workflow in Medplum. [Patient deduplication](https://www.medplum.com/docs/fhir-datastore/patient-deduplication) is an important problem in healthcare, not just for cleaning up your data, but also for enriching your data when you're pulling patient records from multiple sources. Today's administration will show a human-in-the-loop deduplication pipeline that proceeds in two steps.
 
 First, we will [listen for changes](/docs/subscriptions/publish-and-subscribe#setting-up-the-subscription) to a Patient. Create a set of candidate matches for that patient. Next, we'll have a human review those matches and decide whether to merge or block those matches. So let's get started. You'll see here that we have three patient records, all for people named Alex Smith.
@@ -90,4 +86,4 @@ The way we set that up is that if we go to the bot resource itself, we click on 
 
 So, This is just to give you a quick overview of how even though we performed this merger operation, you can audit when it was done and who it was done by. These bots are stored in our Medplum demo bots repo, and I encourage you to check out that repository to check out the code.
 
-</details>
+</DetailsBlock>

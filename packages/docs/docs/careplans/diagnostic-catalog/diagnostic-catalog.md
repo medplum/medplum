@@ -103,11 +103,11 @@ A great [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition
 
 Key amongst these is the `qualifiedInterval` element, which is used to define _how results should be interpreted._ See our [guide on reference ranges](./reference-ranges) for more information.
 
-<details><summary>Example: Blood Sodium Level </summary>
+<DetailsBlock summary="Example: Blood Sodium Level ">
   <MedplumCodeBlock language="ts" selectBlocks="observationDefinitionSodium">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ## Define your specimens
 
@@ -133,12 +133,12 @@ Material that is collected from a patient may be split up, prepared, and handled
 
 :::
 
-<details><summary>Example: Capillary Blood Sample </summary>
+<DetailsBlock summary="Example: Capillary Blood Sample ">
 The following examples defines a fingerprick blood sample that is distributed into two collection tubes: a red cap and a green cap.
   <MedplumCodeBlock language="ts" selectBlocks="fingerprickSpecimen">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ## Define your services
 
@@ -200,7 +200,7 @@ The most important fields for [`ActivityDefinition`](/docs/api/fhir/resources/ac
 
 In most cases, each service will only require a single laboratory procedure. In these cases, you will only need a single `PlanDefinition.action` and [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition), representing the main operational procedure performed to fulfill this laboratory service.
 
-<details><summary>Example: Electrolyte Panel </summary>
+<DetailsBlock summary="Example: Electrolyte Panel ">
   In the example below, a patient can order an Electrolyte Panel, which is a single laboratory procedure
   <h5>Patient-facing service</h5>
   <MedplumCodeBlock language="ts" selectBlocks="electrolytesPanelService">
@@ -210,7 +210,7 @@ In most cases, each service will only require a single laboratory procedure. In 
     <MedplumCodeBlock language="ts" selectBlocks="electrolytesPanel">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ### Reusing Procedures
 
@@ -218,7 +218,7 @@ In some cases, a product offering might _embed_ multiple procedures that are reu
 
 This allows you to reuse the data definition of your procedures, while allowing you to compose them into different patient-facing product offerings.
 
-<details><summary>Example: Men's Health Panel </summary>
+<DetailsBlock summary="Example: Men's Health Panel ">
   <p>
     This PlanDefintion reuses the Electrolyte Panel from the previous example, and but adds a free testosterone test.
   </p>
@@ -240,7 +240,7 @@ This allows you to reuse the data definition of your procedures, while allowing 
   <MedplumCodeBlock language="ts" selectBlocks="electrolytesPanel">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 :::tip Sub actions
 
@@ -364,7 +364,7 @@ graph TD
 
 ```
 
-<details><summary>Services (<code>PlanDefinition</code>)</summary>
+<DetailsBlock summary="Services (PlanDefinition)">
     <h5>
     Men's Health
   </h5>
@@ -377,9 +377,9 @@ graph TD
     <MedplumCodeBlock language="ts" selectBlocks="womensHealthService">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
-<details><summary>Procedures (<code>ActivityDefinition</code>)</summary>
+<DetailsBlock summary="Procedures (ActivityDefinition)">
     <h5>
     Testosterone
   </h5>
@@ -398,9 +398,9 @@ graph TD
     <MedplumCodeBlock language="ts" selectBlocks="electrolytesPanel">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
-<details><summary>Observations (<code>ObservationDefinition</code>)</summary>
+<DetailsBlock summary="Observations (ObservationDefinition)">
     <h5>
     Free Testosterone
   </h5>
@@ -437,13 +437,13 @@ graph TD
     <MedplumCodeBlock language="ts" selectBlocks="observationDefinitionCarbonDioxide">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
-<details><summary>Specimen (<code>SpecimenDefinition</code>)</summary>
+<DetailsBlock summary="Specimen (SpecimenDefinition)">
     <h5>
     Finger-prick Capillary Blood
   </h5>
   <MedplumCodeBlock language="ts" selectBlocks="fingerprickSpecimen">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>

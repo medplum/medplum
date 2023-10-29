@@ -73,12 +73,11 @@ Most tests require setting up some resources in the mock environment before runn
 
 The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/finalize-reports.test.ts) from [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/) provides a good example. Each test sets up a [Patient](/docs/api/fhir/resources/patient), an [Observation](/docs/api/fhir/resources/observation), and a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) before invoking the bot.
 
-<details>
-  <summary>Example: Create Resources</summary>
+<DetailsBlock summary="Example: Create Resources">
   <MedplumCodeBlock language="ts" selectBlocks="create-resources">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ### Invoke your Bot
 
@@ -96,21 +95,19 @@ To check the bot's response, simply check the return value of your `handler` fun
 
 The after running the Bot, the [finalize-report bot's tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/finalize-reports.test.ts) read the updated `DiagnosticReport` and `Observation` resources to confirm their status.
 
-<details>
-  <summary>Example: Query the results</summary>
+<DetailsBlock summary="Example: Query the results">
   <MedplumCodeBlock language="ts" selectBlocks="query-results">
   {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 :::note A note on idempotency
 Many times, you'd like to make sure your Bot is [idempotent](https://en.wikipedia.org/wiki/Idempotence#Computer_science_meaning). This can be accomplished by calling your bot twice, and using your test framework's `spyOn` functions to ensure that no resources are created/updated in the second call.
 
-<details>
-  <summary>Example: Idempotency test</summary>
+<DetailsBlock summary="Example: Idempotency test">
   <MedplumCodeBlock language="ts" selectBlocks="test-idempotent">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 :::

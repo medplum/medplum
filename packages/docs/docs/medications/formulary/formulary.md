@@ -92,10 +92,9 @@ The table below summarizes the most important medication metadata elements.
 | `packaging`           | Description of the medication package (bottle, blister pack, etc.)       | [MedicationKnowledge Package Type Codes](http://hl7.org/fhir/R4/valueset-medicationknowledge-package-type.html)     |
 | `intendedRoute`       | Method of ingestion (oral, intravenous, etc.)                            | [SNOMED Route Codes](http://hl7.org/fhir/R4/valueset-route-codes.html)                                              |
 
-<details>
-<summary>
+<DetailsBlock summary="
 Example of Drug Characteristics
-</summary>
+">
 
 ```ts
 {
@@ -188,7 +187,7 @@ Example of Drug Characteristics
 }
 ```
 
-</details>
+</DetailsBlock>
 
 :::caution A note about units
 
@@ -219,8 +218,7 @@ The `MedicationKnowledge.amount` field indicates the total amount of the compoun
 
 `ingredient.active` indicates which of the listed ingredients are active.
 
-<details>
-	<summary>Example Compounded Medication</summary>
+<DetailsBlock summary="Example Compounded Medication">
 
 ```ts
 {
@@ -363,7 +361,7 @@ The `MedicationKnowledge.amount` field indicates the total amount of the compoun
 }
 ```
 
-</details>
+</DetailsBlock>
 
 ## Medication Relationships
 

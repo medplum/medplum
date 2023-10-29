@@ -27,7 +27,7 @@ The FHIR search framework allows for special search parameters that enable more 
 
 The `_id` parameter allows you to search for any resource based on its `id` element. It is also the only way to search using multiple ids in FHIR. To do so, just enter the ids as a comma separated list.
 
-<details><summary>Example: Searching for patients by _id</summary>
+<DetailsBlock summary="Example: Searching for patients by _id">
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="idTs">
@@ -45,7 +45,7 @@ The `_id` parameter allows you to search for any resource based on its `id` elem
       </MedplumCodeBlock>
     </TabItem>
   </Tabs>
-</details>
+</DetailsBlock>
 
 ## \_lastUpdated
 
@@ -53,7 +53,7 @@ The `_lastUpdated` parameter allows you to search for resources based on when th
 
 This is especially useful when combined with [comparision operators](/docs/search/basic-search#searching-by-comparison), such as `gt` (greater than) or `lt` (less than) to find resources that have or have not been changed since a certain time or date.
 
-<details><summary>Example: Searching for only communications that have occurred since the beginning of October, 2023</summary>
+<DetailsBlock summary="Example: Searching for only communications that have occurred since the beginning of October, 2023">
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="lastUpdatedTs">
@@ -71,7 +71,7 @@ This is especially useful when combined with [comparision operators](/docs/searc
       </MedplumCodeBlock>
     </TabItem>
   </Tabs>
-</details>
+</DetailsBlock>
 
 ## \_summary
 
@@ -84,7 +84,7 @@ The `_summary` parameter can contain one of the following value set:
 | `true`  | Only returns elements that are marked as `summary` in the resource definition.                      |
 | `count` | Returns the count of matching resources, but none of the actual resource details for those matches. |
 
-<details><summary>Example: Searching for a summary of a patient</summary>
+<DetailsBlock summary="Example: Searching for a summary of a patient">
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="summaryTs">
@@ -102,7 +102,7 @@ The `_summary` parameter can contain one of the following value set:
       </MedplumCodeBlock>
     </TabItem>
   </Tabs>
-</details>
+</DetailsBlock>
 
 ## \_elements
 
@@ -112,7 +112,7 @@ The fields you choose should be formatted as a comma separated list of base elem
 
 Note that any top-level mandatory or modifier elements should always be included in the chosen list of elements.
 
-<details><summary>Example: Searching the subject and performers of observations</summary>
+<DetailsBlock summary="Example: Searching the subject and performers of observations">
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="elementsTs">
@@ -130,13 +130,13 @@ Note that any top-level mandatory or modifier elements should always be included
       </MedplumCodeBlock>
     </TabItem>
   </Tabs>
-</details>
+</DetailsBlock>
 
 ## \_tag
 
 The `_tag` parameter allows you to search on the `tag` field of the `meta` element of the resource you are searching for. The `tag` field contains user-defined tags to categorize the resource.
 
-<details><summary>Example: Searching for observations that are tagged as critical</summary>
+<DetailsBlock summary="Example: Searching for observations that are tagged as critical">
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="tagTs">
@@ -154,7 +154,7 @@ The `_tag` parameter allows you to search on the `tag` field of the `meta` eleme
       </MedplumCodeBlock>
     </TabItem>
   </Tabs>
-</details>
+</DetailsBlock>
 
 ## \_compartment
 
@@ -162,7 +162,7 @@ A compartment is a grouping of resources which share a common relation. For exam
 
 Medplum allows you to easily search using compartments by providing the non-standard `_compartment` parameter. This enables you to find all resources of a given type that are associated with a certain compartment.
 
-<details><summary>Example: Find all communications for a patient</summary>
+<DetailsBlock summary="Example: Find all communications for a patient">
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="compartmentTs">
@@ -180,13 +180,13 @@ Medplum allows you to easily search using compartments by providing the non-stan
       </MedplumCodeBlock>
     </TabItem>
   </Tabs>
-</details>
+</DetailsBlock>
 
 ## \_total
 
 The `_total` parameter allows you to return the total count of matching resources in your search response. For more details see the [Paginated Search docs.](/docs/search/paginated-search#getting-the-total-number-of-results-with-total)
 
-<details><summary>Example: Search for all patients in your organization and get an estimate of the total number</summary>
+<DetailsBlock summary="Example: Search for all patients in your organization and get an estimate of the total number">
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="totalTs">
@@ -204,7 +204,7 @@ The `_total` parameter allows you to return the total count of matching resource
       </MedplumCodeBlock>
     </TabItem>
   </Tabs>
-</details>
+</DetailsBlock>
 
 ## \_profile
 
@@ -212,7 +212,7 @@ FHIR allows [profiling](http://hl7.org/fhir/R4/profiling.html) to create custom 
 
 The `_profile` parameter is a reference parameter, meaning you may provide a reference as an argument to the parameter. See the [FHIR Profiles doc](https://www.medplum.com/docs/fhir-datastore/profiles) to learn more about profiling.
 
-<details><summary>Example: Search for observations that are part of the pediatric growth charts profile</summary>
+<DetailsBlock summary="Example: Search for observations that are part of the pediatric growth charts profile">
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="profileTs">
@@ -230,7 +230,7 @@ The `_profile` parameter is a reference parameter, meaning you may provide a ref
       </MedplumCodeBlock>
     </TabItem>
   </Tabs>
-</details>
+</DetailsBlock>
 
 ## \_filter
 

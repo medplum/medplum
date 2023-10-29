@@ -70,7 +70,7 @@ In most cases, Medplum recommends Phased Adoption. While there is some additiona
 
 ## References
 
-- [Adoption (software implementation)](<https://en.wikipedia.org/wiki/Adoption_(software_implementation)>)
+- [Adoption (software implementation)](<[https://en.wikipedia.org/wiki/Adoption_(software_implementation)](https://en.wikipedia.org/wiki/Adoption_(software_implementation))>)
 - [Big bang adoption](https://en.wikipedia.org/wiki/Big_bang_adoption)
 - [Parallel adoption](https://en.wikipedia.org/wiki/Parallel_adoption)
 - [Phased adoption](https://en.wikipedia.org/wiki/Phased_adoption)

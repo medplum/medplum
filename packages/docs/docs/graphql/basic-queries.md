@@ -41,12 +41,11 @@ For example, to request a `Patient` by ID:
   </TabItem>
 </Tabs>
 
-<details>
-  <summary>Example Response</summary>
+<DetailsBlock summary="Example Response">
   <MedplumCodeBlock language="ts" selectBlocks="GetPatientByIdResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 This query retrieves the `resourceType`, `id`, `name`, and `address` of the specified `Patient`.
 
@@ -82,12 +81,11 @@ To search for a list of `Patient` resources with a specific name and city:
   </TabItem>
 </Tabs>
 
-<details>
-  <summary>Example Response</summary>
+<DetailsBlock summary="Example Response">
   <MedplumCodeBlock language="ts" selectBlocks="SearchPatientsByNameAndCityResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 This query searches for Patient resources with the name `"Eve"` and a city of `"Philadelphia"`, and aliases the list of patients as `patients` in the response.
 
@@ -125,12 +123,11 @@ For example, to retrieve a `DiagnosticReport` and all the `Observation` resource
   </TabItem>
 </Tabs>
 
-<details>
-  <summary>Example Response</summary>
+<DetailsBlock summary="Example Response">
   <MedplumCodeBlock language="ts" selectBlocks="DiagnosticReportWithObservationsResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 This query retrieves a `DiagnosticReport` and the `Observation` resources associated with it.
 
@@ -162,12 +159,11 @@ In the example below, we first search for a `Patient` by id, and then find all t
   </TabItem>
 </Tabs>
 
-<details>
-  <summary>Example Response</summary>
+<DetailsBlock summary="Example Response">
   <MedplumCodeBlock language="ts" selectBlocks="PatientWithRelatedEncountersResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 See the "[Reverse References](https://hl7.org/fhir/r4/graphql.html#searching)" section of the FHIR GraphQL specification for more information.
 
@@ -193,12 +189,11 @@ FHIR GraphQL supports filtering array properties using field arguments. For exam
   </TabItem>
 </Tabs>
 
-<details>
-  <summary>Example Response</summary>
+<DetailsBlock summary="Example Response">
   <MedplumCodeBlock language="ts" selectBlocks="FilterPatientNameByUseResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 Another common use is to filter an `extension` array by `url`:
 
@@ -220,12 +215,11 @@ Another common use is to filter an `extension` array by `url`:
   </TabItem>
 </Tabs>
 
-<details>
-  <summary>Example Response</summary>
+<DetailsBlock summary="Example Response">
   <MedplumCodeBlock language="ts" selectBlocks="FilterExtensionByUrlResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 If more powerful filtering capabilities are required, a FHIRPath expression can be evaluated to select which list items are included in the response. The expression should evaluate to `true` for an item to be included. This example selects all patient names without a family part:
 
@@ -242,12 +236,11 @@ If more powerful filtering capabilities are required, a FHIRPath expression can 
   </TabItem>
 </Tabs>
 
-<details>
-  <summary>Example Response</summary>
+<DetailsBlock summary="Example Response">
   <MedplumCodeBlock language="ts" selectBlocks="FilterPatientNameByFHIRPathResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 :::tip Query Performance
 
@@ -281,12 +274,11 @@ This query searches for a list of `Patients` named `"Eve"`, living in `"Philadel
   </TabItem>
 </Tabs>
 
-<details>
-  <summary>Example Response</summary>
+<DetailsBlock summary="Example Response">
   <MedplumCodeBlock language="ts" selectBlocks="PatientsWithReportsResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ## Conclusion
 

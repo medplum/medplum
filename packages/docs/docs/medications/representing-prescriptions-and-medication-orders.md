@@ -114,11 +114,11 @@ The instructions to the pharmacy on how the order should be dispensed should be 
 | `expectedSupplyDuration` | The time period over which the medication is supposed to be used or which the prescription should last.                                                                                                |
 | `performer`              | The organization (i.e. Pharmacy) that should dispense the medication.                                                                                                                                  |
 
-<details><summary>Example: Dispense Instructions</summary>
+<DetailsBlock summary="Example: Dispense Instructions">
   <MedplumCodeBlock language="ts" selectBlocks="dispenseInstructions">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ## Representing Patient Instructions
 
@@ -141,11 +141,11 @@ The instructions for how the patient should take the medication should be includ
 
 Note that this field is stored as an array, so there can be multiple dosage instructions for each order. For example, the same medication may be taken multiple times throughout the day, but in different dosages each time. This is where the `dosageInstruction.sequence` field should be used to indicate which order the instructions are in.
 
-<details><summary>Example: Dosage Instructions</summary>
+<DetailsBlock summary="Example: Dosage Instructions">
   <MedplumCodeBlock language="ts" selectBlocks="dosageInstructions">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 ## Distinguishing Between Prescriptions and Medication Orders
 
@@ -153,14 +153,14 @@ A [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) can represen
 
 These types of requests should be differentiated as outpatient vs. inpatient using the `MedicationRequest.category` field, which represents the type of medical request. The [FHIR MedicationRequest Admin Location value set](https://www.hl7.org/fhir/valueset-medicationrequest-admin-location.html) can be used for this. Note that the `category` field is an array, so it is possible to have multiple values if you wish to categorize your requests in other ways as well.
 
-<details><summary>Example: A MedicationRequest categorized for a prescription</summary>
+<DetailsBlock summary="Example: A MedicationRequest categorized for a prescription">
   <MedplumCodeBlock language="ts" selectBlocks="prescriptionRequest">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
-<details><summary>Example: A MedicationRequest categorized for a medication fulfillment order</summary>
+<DetailsBlock summary="Example: A MedicationRequest categorized for a medication fulfillment order">
   <MedplumCodeBlock language="ts" selectBlocks="orderRequest">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>

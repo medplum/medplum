@@ -22,7 +22,7 @@ A filter expression has three parts: a **parameter**, an **operator**, and a **v
 - The **operator** is the type of comparison you will make [(see below)](#comparison-operators)
 - The **value** is the criteria you want to compare against
 
-<details><summary>Example: Filter syntax</summary>
+<DetailsBlock summary="Example: Filter syntax">
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="syntaxTs">
@@ -40,7 +40,7 @@ A filter expression has three parts: a **parameter**, an **operator**, and a **v
       </MedplumCodeBlock>
     </TabItem>
   </Tabs>
-</details>
+</DetailsBlock>
 
 In this example, the filter expression is `name eq "simpson"`, where `name` is the **parameter**, `eq` is the **operator**, and `"simpson"` is the **value**.
 
@@ -66,7 +66,7 @@ The `_filter` parameter allows you to apply multiple filters using logical opera
 
 This example will return all male patients that have the string "sim" somewhere in their name.
 
-<details><summary>Example: Filtering a serach based on both name and gender</summary>
+<DetailsBlock summary="Example: Filtering a serach based on both name and gender">
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="logicalAndTs">
@@ -84,11 +84,11 @@ This example will return all male patients that have the string "sim" somewhere 
       </MedplumCodeBlock>
     </TabItem>
   </Tabs>
-</details>
+</DetailsBlock>
 
 This example will return any patients that have an identifier of 12345 OR the phone number "555-6789". It is important to note that this is _impossible_ to do using standard search parameter syntax.
 
-<details><summary>Example: Filtering a serach based on either an identifier or phone number</summary>
+<DetailsBlock summary="Example: Filtering a serach based on either an identifier or phone number">
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="logicalOrTs">
@@ -106,13 +106,13 @@ This example will return any patients that have an identifier of 12345 OR the ph
       </MedplumCodeBlock>
     </TabItem>
   </Tabs>
-</details>
+</DetailsBlock>
 
 ## Nested Filters
 
 You can further refine your search by nesting filters using parentheses and logical operators.
 
-<details><summary>Example: Filtering a search based on gender and two potential names</summary>
+<DetailsBlock summary="Example: Filtering a search based on gender and two potential names">
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="nestedTs">
@@ -130,6 +130,6 @@ You can further refine your search by nesting filters using parentheses and logi
       </MedplumCodeBlock>
     </TabItem>
   </Tabs>
-</details>
+</DetailsBlock>
 
 This example initially filters for all male patients. It then filters those male patients for any names that contain either of the strings "sim" or "wigg".

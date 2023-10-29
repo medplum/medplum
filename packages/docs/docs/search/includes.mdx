@@ -47,15 +47,14 @@ For example, the search query described above for `Observation`, `Patient`, and 
   </TabItem>
 </Tabs>
 
-<details>
-  <summary>
+<DetailsBlock summary="
     Example response
-  </summary>
+  ">
 
   <MedplumCodeBlock language="ts" selectBlocks="includesResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 :::caution Note
 
@@ -119,15 +118,14 @@ to search for `Observation` resources, plus the `Patient` resources they refer t
   </TabItem>
 </Tabs>
 
-<details>
-  <summary>
+<DetailsBlock summary="
     Example response
-  </summary>
+  ">
 
   <MedplumCodeBlock language="ts" selectBlocks="iterateResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</details>
+</DetailsBlock>
 
 This query would return a Bundle containing all the resources from a linked graph like the following:
 

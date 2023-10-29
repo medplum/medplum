@@ -118,7 +118,7 @@ What's fantastic about the LOINC system is its intuitiveness. For instance, when
 | Feeling nervous, anxious or on edge ([69725-0](https://loinc.org/69725-0)) | [LL358-3](https://loinc.org/LL358-3)   | <ul><li>Not at all ([LA6568-5](https://loinc.org/LA6568-5))</li><li>Several days ([LA6569-3](https://loinc.org/LA6569-3))</li><li>More than half the days ([LA6570-1](https://loinc.org/LA6570-1))</li><li>Nearly every day ([LA6571-9](https://loinc.org/LA6571-9))</li></ul>                                                                                                                                                                                                                    |
 | Age group ([46251-5](https://loinc.org/46251-5))                           | [LL2435-7](https://loinc.org/LL2435-7) | <ul><li>Infant ([LA19747-7](https://loinc.org/LA19747-7))</li><li>Newborn ([LA10403-6](https://loinc.org/LA10403-6))</li><li>Child ([LA9949-4](https://loinc.org/LA9949-4))</li><li>Pre-school ([LA19748-5](https://loinc.org/LA19748-5))</li><li>Adolescent ([LA19749-3](https://loinc.org/LA19749-3))</li><li>Adult ([LA13524-6](https://loinc.org/LA13524-6))</li><li>Middle aged ([LA19750-1](https://loinc.org/LA19750-1))</li><li>Aged ([LA19751-9](https://loinc.org/LA19751-9))</li></ul> |
 
-<details><summary>Example: PHQ-4 Questionnaire</summary>
+<DetailsBlock summary="Example: PHQ-4 Questionnaire">
 
 ```json
 {
@@ -363,7 +363,7 @@ What's fantastic about the LOINC system is its intuitiveness. For instance, when
 }
 ```
 
-</details>
+</DetailsBlock>
 
 ## See Also
 
