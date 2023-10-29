@@ -8,6 +8,8 @@ authors:
   image_url: https://github.com/rahul1.png
 ---
 
+import DetailsBlock from '@site/src/components/DetailsBlock';
+
 # Enterprise Master Patient Index (EMPI) Reference Implementation
 
 Patient record-keeping systems often have duplicate patient records, which can affect patient care and service delivery. One of the Medplum [use cases](/solutions#enterprise-master-patient-index-empi) is the the Enterprise Mater Patient Index (EMPI), database used in healthcare settings to maintain accurate and consistent unique identifiers for patients across various departments and services. A great EMPI implementation will improve patient safety, enhance the quality of care, facilitate data sharing among disparate healthcare systems, AND speed payer contracting.
@@ -16,7 +18,15 @@ The Medplum team has had experience with EMPIs across different practices, inclu
 
 This video walkthrough summarizes a [reference implementation](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/deduplication) that we have developed based on our experience. It can be used with any identity solutions or matching algorithms.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/f1lDK-Af-RI?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/f1lDK-Af-RI?start=0"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+></iframe>
 
 Our overview of [Patient Deduplication Architectures](/docs/fhir-datastore/patient-deduplication) describes the data model and pipelines in detail.
 

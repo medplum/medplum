@@ -1,13 +1,13 @@
 import React from 'react';
 
-import styles from './ResourceTables.module.css';
 import { buildTypeName } from '@medplum/core';
+import styles from './ResourceTables.module.css';
 
 import {
+  DocumentationLocation,
   PropertyDocInfo,
   PropertyTypeDocInfo,
   SearchParamDocInfo,
-  DocumentationLocation,
 } from '../types/documentationTypes';
 
 export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }): JSX.Element {
@@ -49,7 +49,7 @@ export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }
                 <summary>Details</summary>
                 <p>{property.definition}</p>
                 <p>{property.comment}</p>
-              </DetailsBlock>
+              </details>
             </td>
           </tr>
         ))}

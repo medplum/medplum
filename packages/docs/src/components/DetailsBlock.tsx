@@ -5,6 +5,11 @@ export interface DetailsBlockProps {
   children?: React.ReactNode;
 }
 
-export function DetailsBlock(props: DetailsBlockProps): JSX.Element {
-  return <DetailsBlock summary="{props.summary}">{props.children}</DetailsBlock>;
+export default function DetailsBlock(props: DetailsBlockProps): JSX.Element {
+  return (
+    <details>
+      <summary>{props.summary}</summary>
+      {props.children}
+    </details>
+  );
 }

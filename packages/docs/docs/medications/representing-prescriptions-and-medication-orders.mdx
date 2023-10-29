@@ -1,12 +1,12 @@
+import DetailsBlock from '@site/src/components/DetailsBlock';
+import ExampleCode from '!!raw-loader!@site/..//examples/src/medications/representing-prescriptions-and-medication-orders.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-import ExampleCode from '!!raw-loader!@site/..//examples/src/medications/representing-prescriptions-and-medication-orders.ts';
-
 # Representing Prescriptions and Medication Orders
 
-Prescriptions and medication orders are very common in healthcare settings and accuracy is vitally important. This guide will go over how to represent all aspects of a medication order, from the request to the administration instructions. Note that this is an _operational counterpart_ to the [Modeling A Formulary](/docs/medications/formulary/formulary.md) documentation.
+Prescriptions and medication orders are very common in healthcare settings and accuracy is vitally important. This guide will go over how to represent all aspects of a medication order, from the request to the administration instructions. Note that this is an _operational counterpart_ to the [Modeling A Formulary](/docs/medications/formulary) documentation.
 
 ## The `MedicationRequest` Resource
 
@@ -19,31 +19,53 @@ In addition, it can contain contextual information such as instructions on admin
 
 <table>
   <tr>
-    <td><strong>Element</strong></td>
-    <td><strong>Description</strong></td>
-    <td><strong>Example</strong></td>
+    <td>
+      <strong>Element</strong>
+    </td>
+    <td>
+      <strong>Description</strong>
+    </td>
+    <td>
+      <strong>Example</strong>
+    </td>
   </tr>
   <tr>
-    <td colspan="3"><strong><em>Dispense and Ingestion Information</em></strong></td>
+    <td colspan="3">
+      <strong>
+        <em>Dispense and Ingestion Information</em>
+      </strong>
+    </td>
   </tr>
   <tr>
     <td>medicationCodeableConcept</td>
-    <td>The medication being requested, coded as a concept. The details of the drug will be in the MedicationKnowledge resource with the same code.</td>
+    <td>
+      The medication being requested, coded as a concept. The details of the drug will be in the MedicationKnowledge
+      resource with the same code.
+    </td>
     <td>42844 - Percocet</td>
   </tr>
   <tr>
     <td>dosageInstructions</td>
     <td>Instructions on how the medication should be used by the patient.</td>
-    <td><a href="#representing-patient-instructions">See below</a></td>
+    <td>
+      <a href="#representing-patient-instructions">See below</a>
+    </td>
   </tr>
   <tr>
     <td>dispenseRequest</td>
-    <td>Provides details about how the medication should be dispensed or supplied, including quantity, refills, and more.</td>
-    <td><a href="#representing-dispense-instructions">See below</a></td>
+    <td>
+      Provides details about how the medication should be dispensed or supplied, including quantity, refills, and more.
+    </td>
+    <td>
+      <a href="#representing-dispense-instructions">See below</a>
+    </td>
   </tr>
   <tr>
     <td>substitution</td>
-    <td>A boolean value, indicating whether a substitution is allowed by the dispensing pharmacist. If it is blank, it implies that a substitution is allowed.</td>
+    <td>
+      A boolean value, indicating whether a substitution is allowed by the dispensing pharmacist. If it is blank, it
+      implies that a substitution is allowed.
+    </td>
     <td>false</td>
   </tr>
   <tr>
@@ -52,7 +74,11 @@ In addition, it can contain contextual information such as instructions on admin
     <td>urgent</td>
   </tr>
   <tr>
-    <td colspan="3"><strong><em>Tracking and Administration</em></strong></td>
+    <td colspan="3">
+      <strong>
+        <em>Tracking and Administration</em>
+      </strong>
+    </td>
   </tr>
   <tr>
     <td>subject</td>
@@ -80,9 +106,9 @@ In addition, it can contain contextual information such as instructions on admin
     <td>MedicationRequest/homer-simpson-percocet-1</td>
   </tr>
   <tr>
-      <td>status</td>
-      <td>The current state of the order (i.e. completed, active, etc.)</td>
-      <td>completed</td>
+    <td>status</td>
+    <td>The current state of the order (i.e. completed, active, etc.)</td>
+    <td>completed</td>
   </tr>
 </table>
 
@@ -98,7 +124,7 @@ The [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resour
 - Description of the medication package (bottle, blister pack, etc.)
 - Method of ingestion (oral, intravenous, etc.)
 
-For more details on the `MedicationKnowledge` resource and how to model medications, see the [Modeling a Formulary docs](/docs/medications/formulary/formulary.md).
+For more details on the `MedicationKnowledge` resource and how to model medications, see the [Modeling a Formulary docs](/docs/medications/formulary).
 
 ## Representing Dispense Instructions
 

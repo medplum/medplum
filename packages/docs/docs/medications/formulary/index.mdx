@@ -10,6 +10,8 @@ tags:
   - pharmacy
 ---
 
+import DetailsBlock from '@site/src/components/DetailsBlock';
+
 # Modeling a Formulary
 
 A "formulary" refers to a catalog of drugs offered by your organization. When implementing a custom EMR, Digital Health clinical administrators often curate a formulary of relevant drugs, along with relevant metadata, to assist prescribing physicians, pharmacists, and patients.
@@ -92,9 +94,7 @@ The table below summarizes the most important medication metadata elements.
 | `packaging`           | Description of the medication package (bottle, blister pack, etc.)       | [MedicationKnowledge Package Type Codes](http://hl7.org/fhir/R4/valueset-medicationknowledge-package-type.html)     |
 | `intendedRoute`       | Method of ingestion (oral, intravenous, etc.)                            | [SNOMED Route Codes](http://hl7.org/fhir/R4/valueset-route-codes.html)                                              |
 
-<DetailsBlock summary="
-Example of Drug Characteristics
-">
+<DetailsBlock summary="Example of Drug Characteristics">
 
 ```ts
 {
