@@ -35,7 +35,9 @@
   "module": "dist/esm/index.mjs",
   "types": "dist/types.d.ts",
   "scripts": {
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && api-extractor run --local",
+    "api-extractor": "api-extractor run --local",
+    "api-documenter": "api-documenter markdown --input-folder temp --output-folder ../docs/docs/sdk/",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor && npm run api-documenter",
     "clean": "rimraf dist",
     "test": "jest"
   },
