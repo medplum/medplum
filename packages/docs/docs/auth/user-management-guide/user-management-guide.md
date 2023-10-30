@@ -50,17 +50,8 @@ graph TD
 | Resource                                                        | Description                                                                                                                                                                                                                       | Medplum App                                                                                                              |
 | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | [`User`](/docs/api/fhir/medplum/user)                           | A resource that represents a user identity. Users exist above the Project level and can only be self-updated.                                                                                                                     | None                                                                                                                     |
-| [`Project`](/docs/api/fhir/medplum/project)                     | A [Project](/docs/tutorials/register#medplum-projects) is an isolated set of resources.                                                                                                                                           | [Project Admin](https://app.medplum.com/admin/project)                                                                   |
+| [`Project`](/docs/api/fhir/medplum/project)                     | A [Project](/docs/tutorials/register#medplum-projects) is an isolated set of resources. See the [Projects guide](http://localhost:3000/docs/access/projects)                                                                      | [Project Admin](https://app.medplum.com/admin/project)                                                                   |
 | [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) | A ProjectMembership represents granting a user access to the resources within a Project. Inviting a user to a project, and specifying their `profile` and `accessPolicy` you can determine what set of resources they can access. | [Invite (Admins only)](https://app.medplum.com/admin/invite), [Users (Admins only)](https://app.medplum.com/admin/users) |
-
-### Projects
-
-Medplum has the concept of [`Projects`](/docs/api/fhir/medplum/project), which are isolated containers of resources of FHIR resources. Each project is administered separately, and users can have different privileges between projects. [`Projects`](/docs/api/fhir/medplum/project) create a "hard boundary" between resources, and resources within one project cannot reference resources from another project.
-
-Some common use cases for projects are:
-
-- **Multi-tenancy:** In [B2B2C environments](https://a16z.com/b2c2b-in-digital-health-a-founders-playbook/), a service provider may partner with multiple healthcare organizations to deliver care to patients. Each of [`Projects`](/docs/api/fhir/medplum/project) can provide each of these partners their own isolated environments, that have their own patient data, log-in flows, and project administrators. The [Medplum hosted service](/pricing) uses a multi-tenant instance of Medplum to service our hosted customers.
-- **Development vs. Production:** A common requirement for development teams to have a separate [`Project`](/docs/api/fhir/medplum/project) , with non-protected data, for testing and debugging purposes, before deploying workflow changes to production. A common Medplum usage pattern is to create a "development", "staging", and "production" [`Project`](/docs/api/fhir/medplum/project).
 
 ### Users
 
@@ -73,11 +64,11 @@ The [User](/docs/api/fhir/medplum/user) resource is the main resource that repre
 
 #### Server Scoped Users
 
-**Server scoped [`Users`](/docs/api/fhir/medplum/user)** are typically used for `Practitioners`. Practitioners can be members of multiple projects (e.g. "staging" and "prod"), and having their `Users` at the server level allows them to easily sign into multiple projects.
+Server scoped [`Users`](/docs/api/fhir/medplum/user) are typically used for `Practitioners`. Practitioners can be members of multiple projects (e.g. "staging" and "prod"), and having their `Users` at the server level allows them to easily sign into multiple projects.
 
 #### Project Scoped Users
 
-**Project scoped [`Users`](/docs/api/fhir/medplum/user)** only exist inside a project level, and cannot sign into server-level tools such as the [Medplum App](/docs/app). The most common use case is for [`Patient`](/docs/api/fhir/resources/patient) users. These users will have to be invited and enrolled separately to each[ `Project` ](/docs/api/fhir/medplum/project) they are a part of, and there will be no link between their identities across projects.
+Project scoped [`Users`](/docs/api/fhir/medplum/user) only exist inside a project level, and cannot sign into server-level tools such as the [Medplum App](/docs/app). The most common use case is for [`Patient`](/docs/api/fhir/resources/patient) users. These users will have to be invited and enrolled separately to each[ `Project` ](/docs/api/fhir/medplum/project) they are a part of, and there will be no link between their identities across projects.
 
 This is desirable in multi-tenant use cases, where patients enrolled with one tenant should not be aware of other tenants.
 
