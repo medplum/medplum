@@ -25,6 +25,7 @@ import { QuantityInput } from '../../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
 import { ResourcePropertyDisplay } from '../../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import {
+  formatReferenceString,
   getNewMultiSelectValues,
   getQuestionnaireItemReferenceTargetTypes,
   QuestionnaireItemType,
@@ -457,8 +458,4 @@ function formatSelectData(item: QuestionnaireItem): FormattedData {
 
 function getValueAndLabel(option: QuestionnaireItemAnswerOption, propertyName: string): string | undefined {
   return formatCoding(option.valueCoding) || option[propertyName as keyof QuestionnaireItemAnswerOption]?.toString();
-}
-
-function formatReferenceString(typedValue: TypedValue): string {
-  return typedValue.value.display || typedValue.value.reference || stringify(typedValue.value);
 }

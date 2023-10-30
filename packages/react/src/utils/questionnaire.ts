@@ -6,6 +6,7 @@ import {
   getTypedPropertyValue,
   TypedValue,
   getReferenceString,
+  stringify,
 } from '@medplum/core';
 import {
   Questionnaire,
@@ -255,6 +256,10 @@ function buildInitialResponseAnswer(answer: QuestionnaireItemInitial): Questionn
   // This works because QuestionnaireItemInitial and QuestionnaireResponseItemAnswer
   // have the same properties.
   return { ...answer };
+}
+
+export function formatReferenceString(typedValue: TypedValue): string {
+  return typedValue.value.display || typedValue.value.reference || stringify(typedValue.value);
 }
 
 /**
