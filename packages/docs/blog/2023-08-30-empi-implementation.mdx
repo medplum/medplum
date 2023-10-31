@@ -47,6 +47,7 @@ The following points are covered in this implementation:
 
 <details>
 <summary>Transcript</summary>
+
 Today I'll go over a simple patient deduplication workflow in Medplum. [Patient deduplication](https://www.medplum.com/docs/fhir-datastore/patient-deduplication) is an important problem in healthcare, not just for cleaning up your data, but also for enriching your data when you're pulling patient records from multiple sources. Today's administration will show a human-in-the-loop deduplication pipeline that proceeds in two steps.
 
 First, we will [listen for changes](/docs/subscriptions/publish-and-subscribe#setting-up-the-subscription) to a Patient. Create a set of candidate matches for that patient. Next, we'll have a human review those matches and decide whether to merge or block those matches. So let's get started. You'll see here that we have three patient records, all for people named Alex Smith.
