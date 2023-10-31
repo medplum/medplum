@@ -419,15 +419,8 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
     if (part.startsWith('_has')) {
-      const [, resourceType, code] = part.split(':', 3);
-      const searchParam = getSearchParameter(resourceType, code);
-      if (!searchParam) {
-        throw new Error(`Invalid search parameter in chain: ${resourceType}?${code}`);
-      } else if (!searchParam.target?.includes(currentResourceType as ResourceType)) {
-        throw new Error(`Unable to identify next resource type for search parameter: ${resourceType}?${code}`);
-      }
-      const details = getSearchParameterDetails(resourceType, searchParam);
-      param.chain.push({ resourceType, searchParam, details, reverse: true });
+      const link = parseReverseChainLink(part, currentResourceType);
+      param.chain.push(link);
       currentResourceType = resourceType;
     } else if (i === parts.length - 1) {
       const [code, modifier] = part.split(':', 2);
@@ -437,25 +430,42 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
       }
       param.chain[param.chain.length - 1].filter = parseParameter(searchParam, modifier, value);
     } else {
-      const [code, modifier] = part.split(':', 2);
-      const searchParam = getSearchParameter(currentResourceType, code);
-      if (!searchParam) {
-        throw new Error(`Invalid search parameter in chain: ${currentResourceType}?${code}`);
-      }
-      let resourceType: string;
-      if (searchParam.target?.length === 1) {
-        resourceType = searchParam.target[0];
-      } else if (searchParam.target?.includes(modifier as ResourceType)) {
-        resourceType = modifier;
-      } else {
-        throw new Error(`Unable to identify next resource type for search parameter: ${currentResourceType}?${code}`);
-      }
-      const details = getSearchParameterDetails(currentResourceType, searchParam);
-      param.chain.push({ resourceType, searchParam, details });
+      const link = parseChainLink(part, currentResourceType);
+      param.chain.push(link);
       currentResourceType = resourceType;
     }
   }
   return param;
+}
+
+function parseChainLink(param: string, currentResourceType: string): ChainedSearchLink {
+  const [code, modifier] = param.split(':', 2);
+  const searchParam = getSearchParameter(currentResourceType, code);
+  if (!searchParam) {
+    throw new Error(`Invalid search parameter in chain: ${currentResourceType}?${code}`);
+  }
+  let resourceType: string;
+  if (searchParam.target?.length === 1) {
+    resourceType = searchParam.target[0];
+  } else if (searchParam.target?.includes(modifier as ResourceType)) {
+    resourceType = modifier;
+  } else {
+    throw new Error(`Unable to identify next resource type for search parameter: ${currentResourceType}?${code}`);
+  }
+  const details = getSearchParameterDetails(currentResourceType, searchParam);
+  return { resourceType, searchParam, details };
+}
+
+function parseReverseChainLink(param: string, targetResourceType: string): ChainedSearchLink {
+  const [, resourceType, code] = param.split(':', 3);
+  const searchParam = getSearchParameter(resourceType, code);
+  if (!searchParam) {
+    throw new Error(`Invalid search parameter in chain: ${resourceType}?${code}`);
+  } else if (!searchParam.target?.includes(targetResourceType as ResourceType)) {
+    throw new Error(`Unable to identify next resource type for search parameter: ${resourceType}?${code}`);
+  }
+  const details = getSearchParameterDetails(resourceType, searchParam);
+  return { resourceType, searchParam, details, reverse: true };
 }
 
 function splitChainedSearch(chain: string): string[] {

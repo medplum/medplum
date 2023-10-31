@@ -1,5 +1,6 @@
 import {
   badRequest,
+  ChainedSearchLink,
   ChainedSearchParameter,
   DEFAULT_SEARCH_COUNT,
   evalFhirPathTyped,
@@ -871,56 +872,53 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
   let currentTable = resourceType;
   for (const link of param.chain) {
     const nextTable = selectQuery.getNextJoinAlias();
-    let joinCondition: Expression;
-    if (link.reverse) {
-      if (link.details.array) {
-        joinCondition = new ArraySubquery(
-          new Column(nextTable, link.details.columnName),
-          new Condition(
-            new Column(undefined, link.details.columnName),
-            'REVERSE_LINK',
-            new Column(currentTable, 'id'),
-            currentResourceType
-          )
-        );
-      } else {
-        joinCondition = new Condition(
-          new Column(nextTable, link.details.columnName),
-          'REVERSE_LINK',
-          new Column(currentTable, 'id'),
-          currentResourceType
-        );
-      }
-    } else if (link.details.array) {
-      joinCondition = new ArraySubquery(
-        // link.details.columnName,
-        new Column(currentTable, link.details.columnName),
-        new Condition(new Column(nextTable, 'id'), 'LINK', new Column(undefined, link.details.columnName))
-      );
-    } else {
-      joinCondition = new Condition(
-        new Column(nextTable, 'id'),
-        'LINK',
-        new Column(currentTable, link.details.columnName)
-      );
-    }
 
+    const joinCondition = buildSearchLinkCondition(currentResourceType, link, currentTable, nextTable);
     selectQuery.innerJoin(link.resourceType, nextTable, joinCondition);
 
     if (link.filter) {
-      const terminalCondition = buildSearchFilterExpression(
+      const endCondition = buildSearchFilterExpression(
         selectQuery,
         link.resourceType as ResourceType,
         nextTable,
         link.filter
       );
-      if (!terminalCondition) {
+      if (!endCondition) {
         throw new OperationOutcomeError(serverError(new Error(`Failed to build terminal filter for chained search`)));
       }
-      selectQuery.whereExpr(terminalCondition);
+      selectQuery.whereExpr(endCondition);
     }
 
     currentTable = nextTable;
     currentResourceType = link.resourceType;
+  }
+}
+
+function buildSearchLinkCondition(
+  resourceType: string,
+  link: ChainedSearchLink,
+  currentTable: string,
+  nextTable: string
+): Expression {
+  const linkColumn = new Column(currentTable, link.details.columnName);
+  if (link.reverse) {
+    const nextColumn = new Column(nextTable, link.details.columnName);
+    const currentColumn = new Column(currentTable, 'id');
+
+    if (link.details.array) {
+      return new ArraySubquery(
+        nextColumn,
+        new Condition(new Column(undefined, link.details.columnName), 'REVERSE_LINK', currentColumn, resourceType)
+      );
+    } else {
+      return new Condition(nextColumn, 'REVERSE_LINK', currentColumn, resourceType);
+    }
+  } else if (link.details.array) {
+    return new ArraySubquery(
+      linkColumn,
+      new Condition(new Column(nextTable, 'id'), 'LINK', new Column(undefined, link.details.columnName))
+    );
+  } else {
+    return new Condition(new Column(nextTable, 'id'), 'LINK', linkColumn);
   }
 }
