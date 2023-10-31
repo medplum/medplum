@@ -131,12 +131,12 @@ function processInclude(systemExpressions: Expression[], include: ValueSetCompos
     return;
   }
 
-  const systemExpression = new Condition('system', 'EQUALS', include.system as string);
+  const systemExpression = new Condition('system', '=', include.system as string);
 
   if (include.concept) {
     const codeExpressions: Expression[] = [];
     for (const concept of include.concept) {
-      codeExpressions.push(new Condition('code', 'EQUALS', concept.code as string));
+      codeExpressions.push(new Condition('code', '=', concept.code as string));
     }
     systemExpressions.push(new Conjunction([systemExpression, new Disjunction(codeExpressions)]));
   } else {

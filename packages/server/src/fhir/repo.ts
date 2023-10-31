@@ -241,7 +241,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<T> {
     const client = getClient();
-    const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', 'EQUALS', id);
+    const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
 
     this.addSecurityFilters(builder, resourceType);
 
@@ -356,7 +356,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         .column('id')
         .column('content')
         .column('lastUpdated')
-        .where('id', 'EQUALS', id)
+        .where('id', '=', id)
         .orderBy('lastUpdated', true)
         .limit(100)
         .execute(client);
@@ -417,8 +417,8 @@ export class Repository extends BaseRepository implements FhirRepository {
       const client = getClient();
       const rows = await new SelectQuery(resourceType + '_History')
         .column('content')
-        .where('id', 'EQUALS', id)
-        .where('versionId', 'EQUALS', vid)
+        .where('id', '=', id)
+        .where('versionId', '=', vid)
         .execute(client);
 
       if (rows.length === 0) {
@@ -679,8 +679,8 @@ export class Repository extends BaseRepository implements FhirRepository {
     const client = getClient();
     const rows = await new SelectQuery(resourceType + '_History')
       .raw(`COUNT (DISTINCT "versionId")::int AS "count"`)
-      .where('id', 'EQUALS', id)
-      .where('lastUpdated', 'GREATER_THAN', new Date(Date.now() - 1000 * seconds))
+      .where('id', '=', id)
+      .where('lastUpdated', '>', new Date(Date.now() - 1000 * seconds))
       .execute(client);
     return (rows?.[0]?.count ?? 0) >= maxVersions;
   }
@@ -896,8 +896,8 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('id', 'EQUALS', id).execute(getClient());
-    await new DeleteQuery(resourceType + '_History').where('id', 'EQUALS', id).execute(getClient());
+    await new DeleteQuery(resourceType).where('id', '=', id).execute(getClient());
+    await new DeleteQuery(resourceType + '_History').where('id', '=', id).execute(getClient());
     await deleteCacheEntry(resourceType, id);
   }
 
@@ -926,10 +926,8 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('lastUpdated', 'LESS_THAN_OR_EQUALS', before).execute(getClient());
-    await new DeleteQuery(resourceType + '_History')
-      .where('lastUpdated', 'LESS_THAN_OR_EQUALS', before)
-      .execute(getClient());
+    await new DeleteQuery(resourceType).where('lastUpdated', '<=', before).execute(getClient());
+    await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(getClient());
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
@@ -955,7 +953,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @param builder - The select query builder.
    */
   addDeletedFilter(builder: SelectQuery): void {
-    builder.where('deleted', 'EQUALS', false);
+    builder.where('deleted', '=', false);
   }
 
   /**

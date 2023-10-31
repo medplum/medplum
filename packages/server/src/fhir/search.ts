@@ -560,7 +560,7 @@ function buildNormalSearchFilterExpression(
 ): Expression {
   const details = getSearchParameterDetails(resourceType, param);
   if (filter.operator === Operator.MISSING) {
-    return new Condition(details.columnName, filter.value === 'true' ? 'EQUALS' : 'NOT_EQUALS', null);
+    return new Condition(details.columnName, filter.value === 'true' ? '=' : '!=', null);
   } else if (param.type === 'string') {
     return buildStringSearchFilter(details, filter.operator, filter.value.split(','));
   } else if (param.type === 'token' || param.type === 'uri') {
@@ -674,7 +674,7 @@ function buildFilterParameterComparison(
 function buildStringSearchFilter(details: SearchParameterDetails, operator: Operator, values: string[]): Expression {
   const conditions = values.map((v) => {
     if (operator === Operator.EXACT) {
-      return new Condition(details.columnName, 'EQUALS', v);
+      return new Condition(details.columnName, '=', v);
     } else if (operator === Operator.CONTAINS) {
       return new Condition(details.columnName, 'LIKE', `%${v}%`);
     } else {
@@ -756,7 +756,7 @@ function buildReferenceSearchFilter(details: SearchParameterDetails, values: str
   if (details.array) {
     return new Condition(details.columnName, 'ARRAY_CONTAINS', values);
   } else if (values.length === 1) {
-    return new Condition(details.columnName, 'EQUALS', values[0]);
+    return new Condition(details.columnName, '=', values[0]);
   }
   return new Condition(details.columnName, 'IN', values);
 }
@@ -828,20 +828,20 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
 function fhirOperatorToSqlOperator(fhirOperator: Operator): keyof typeof SQL {
   switch (fhirOperator) {
     case Operator.EQUALS:
-      return 'EQUALS';
+      return '=';
     case Operator.NOT:
     case Operator.NOT_EQUALS:
-      return 'NOT_EQUALS';
+      return '!=';
     case Operator.GREATER_THAN:
     case Operator.STARTS_AFTER:
-      return 'GREATER_THAN';
+      return '>';
     case Operator.GREATER_THAN_OR_EQUALS:
-      return 'GREATER_THAN_OR_EQUALS';
+      return '>=';
     case Operator.LESS_THAN:
     case Operator.ENDS_BEFORE:
-      return 'LESS_THAN';
+      return '<';
     case Operator.LESS_THAN_OR_EQUALS:
-      return 'LESS_THAN_OR_EQUALS';
+      return '<=';
     default:
       throw new Error(`Unknown FHIR operator: ${fhirOperator}`);
   }
@@ -858,7 +858,7 @@ function buildEqualityCondition(
   } else if (values.length > 1) {
     return new Condition(column, 'IN', values, details.type);
   } else {
-    return new Condition(column, 'EQUALS', values[0], details.type);
+    return new Condition(column, '=', values[0], details.type);
   }
 }
 

@@ -110,8 +110,8 @@ export class TokenTable extends LookupTable<Token> {
     const tableName = getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const joinOnExpression = new Conjunction([
-      new Condition(new Column(table, 'id'), 'EQUALS', new Column(joinName, 'resourceId')),
-      new Condition(new Column(joinName, 'code'), 'EQUALS', filter.code),
+      new Condition(new Column(table, 'id'), '=', new Column(joinName, 'resourceId')),
+      new Condition(new Column(joinName, 'code'), '=', filter.code),
     ]);
     joinOnExpression.expressions.push(buildWhereExpression(joinName, filter));
     selectQuery.leftJoin(tableName, joinName, joinOnExpression);
@@ -119,7 +119,7 @@ export class TokenTable extends LookupTable<Token> {
     // If the filter is "not equals", then we're looking for ID=null
     // If the filter is "equals", then we're looking for ID!=null
     const sqlOperator =
-      filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS ? 'EQUALS' : 'NOT_EQUALS';
+      filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS ? '=' : '!=';
     return new Condition(new Column(joinName, 'resourceId'), sqlOperator, null);
   }
 
@@ -133,10 +133,10 @@ export class TokenTable extends LookupTable<Token> {
     const tableName = getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const joinOnExpression = new Conjunction([
-      new Condition(new Column(resourceType, 'id'), 'EQUALS', new Column(joinName, 'resourceId')),
-      new Condition(new Column(joinName, 'code'), 'EQUALS', sortRule.code),
+      new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId')),
+      new Condition(new Column(joinName, 'code'), '=', sortRule.code),
     ]);
-    joinOnExpression.expressions.push(new Condition(new Column(joinName, 'code'), 'EQUALS', sortRule.code));
+    joinOnExpression.expressions.push(new Condition(new Column(joinName, 'code'), '=', sortRule.code));
     selectQuery.innerJoin(tableName, joinName, joinOnExpression);
     selectQuery.orderBy(new Column(joinName, 'value'), sortRule.descending);
   }
@@ -355,7 +355,7 @@ async function getExistingValues(client: PoolClient, resourceType: ResourceType,
     .column('code')
     .column('system')
     .column('value')
-    .where('resourceId', 'EQUALS', resourceId)
+    .where('resourceId', '=', resourceId)
     .orderBy('index')
     .execute(client)
     .then((result) =>
@@ -378,7 +378,7 @@ function buildWhereExpression(tableName: string, filter: Filter): Expression {
 function buildWhereCondition(tableName: string, operator: FhirOperator, query: string): Expression {
   const parts = query.split('|');
   if (parts.length === 2) {
-    const systemCondition = new Condition(new Column(tableName, 'system'), 'EQUALS', parts[0]);
+    const systemCondition = new Condition(new Column(tableName, 'system'), '=', parts[0]);
     return parts[1]
       ? new Conjunction([systemCondition, buildValueCondition(tableName, operator, parts[1])])
       : systemCondition;
@@ -394,13 +394,13 @@ function buildValueCondition(tableName: string, operator: FhirOperator, value: s
   const column = new Column(tableName, 'value');
   if (operator === FhirOperator.TEXT) {
     return new Conjunction([
-      new Condition(new Column(tableName, 'system'), 'EQUALS', 'text'),
+      new Condition(new Column(tableName, 'system'), '=', 'text'),
       new Condition(column, 'LIKE', value.trim() + '%'),
     ]);
   } else if (operator === FhirOperator.CONTAINS) {
     return new Condition(column, 'LIKE', value.trim() + '%');
   } else {
-    return new Condition(column, 'EQUALS', value.trim());
+    return new Condition(column, '=', value.trim());
   }
 }
 
@@ -479,7 +479,7 @@ function buildInValueSetCondition(tableName: string, value: string): Condition {
   return new Condition(
     new Column(tableName, 'system'),
     'IN_SUBQUERY',
-    new SelectQuery('ValueSet').column('reference').where('url', 'EQUALS', value).limit(1),
+    new SelectQuery('ValueSet').column('reference').where('url', '=', value).limit(1),
     'TEXT[]'
   );
 }

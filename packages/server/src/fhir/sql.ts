@@ -14,7 +14,7 @@ export enum ColumnType {
 export type OperatorFunc = (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => void;
 
 export const Operator = {
-  EQUALS: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+  '=': (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.appendColumn(column);
     if (parameter === null) {
       sql.append(' IS NULL');
@@ -23,7 +23,7 @@ export const Operator = {
       sql.appendParameters(parameter, true);
     }
   },
-  NOT_EQUALS: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+  '!=': (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.appendColumn(column);
     if (parameter === null) {
       sql.append(' IS NOT NULL');
@@ -46,10 +46,10 @@ export const Operator = {
     sql.append(' NOT LIKE ');
     sql.param((parameter as string).toLowerCase());
   },
-  LESS_THAN: simpleBinaryOperator('<'),
-  LESS_THAN_OR_EQUALS: simpleBinaryOperator('<='),
-  GREATER_THAN: simpleBinaryOperator('>'),
-  GREATER_THAN_OR_EQUALS: simpleBinaryOperator('>='),
+  '<': simpleBinaryOperator('<'),
+  '<=': simpleBinaryOperator('<='),
+  '>': simpleBinaryOperator('>'),
+  '>=': simpleBinaryOperator('>='),
   IN: simpleBinaryOperator('IN'),
   ARRAY_CONTAINS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
     sql.append('(');

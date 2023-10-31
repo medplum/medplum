@@ -3,9 +3,11 @@ import { formatSearchQuery, Operator, parseSearchDefinition, parseXFhirQuery, Se
 import { getSearchParameter, indexSearchParameterBundle } from '../types';
 import { readJson } from '@medplum/definitions';
 import { getSearchParameterDetails } from './details';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
 
 describe('Search Utils', () => {
   beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
     indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
     indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
   });
