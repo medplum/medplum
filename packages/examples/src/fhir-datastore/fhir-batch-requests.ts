@@ -319,7 +319,6 @@ const conditional: Bundle =
 // Main thread pauses and waits for Promise to resolve. This request cannot be added to a batch
 await medplum.createResource({
   resourceType: 'Patient',
-  id: 'john-smith',
   name: [
     {
       family: 'Smith',
@@ -331,7 +330,6 @@ await medplum.createResource({
 // Main thread pauses and waits for Promise to resolve. This request cannot be added to a batch
 await medplum.createResource({
   resourceType: 'Patient',
-  id: 'homer-simpson',
   name: [
     {
       family: 'Simpson',
@@ -347,7 +345,6 @@ const patientsToCreate = [];
 patientsToCreate.push(
   medplum.createResource({
     resourceType: 'Patient',
-    id: 'john-smith',
     name: [
       {
         family: 'Smith',
@@ -361,7 +358,6 @@ patientsToCreate.push(
 patientsToCreate.push(
   medplum.createResource({
     resourceType: 'Patient',
-    id: 'homer-simpson',
     name: [
       {
         family: 'Simpson',

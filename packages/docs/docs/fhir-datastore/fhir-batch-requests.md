@@ -16,12 +16,12 @@ Batch requests are performed by sending a POST request to [baseURL]/ with a FHIR
 
 The details of your request will be in the `entry` field of the `Bundle`, which is an array of `BundleEntry` objects. Each `BundleEntry` should have the details of the resource you are working with, as well as additional information about the request you are making.
 
-| Element       | Description                                                                                                                                                                                                                                      |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `request`     | The HTTP request you are making, including the method and url to send it to. <ul><li>GET: Used to read resources</li><li>POST: Used to create resources</li><li>PUT: Used to update resources</li><li>DELETE: Used to delete resources</li></ul> |
-| `ifNoneExist` | Exists on the `request` property of a `BundleEntry`. [See below](#conditional-batch-actions)                                                                                                                                                     |
-| `resource`    | The details of the FHIR resource that is being created/updated.                                                                                                                                                                                  |
-| `fullUrl`     | [See below](#creating-internal-references)                                                                                                                                                                                                       |
+| Element               | Description                                                                                                                                                                                                                               |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `request.method`      | The type of HTTP request you are making. Can be one of the following: <ul><li>GET: Used to read resources</li><li>POST: Used to create resources</li><li>PUT: Used to update resources</li><li>DELETE: Used to delete resources</li></ul> |
+| `request.ifNoneExist` | [See below](#conditional-batch-actions)                                                                                                                                                                                                   |
+| `resource`            | The details of the FHIR resource that is being created/updated.                                                                                                                                                                           |
+| `fullUrl`             | [See below](#creating-internal-references)                                                                                                                                                                                                |
 
 <details><summary>Example: A simple batch request to simultaneously search for two patients</summary>
 <Tabs groupId="language">
