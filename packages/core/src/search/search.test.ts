@@ -137,6 +137,7 @@ describe('Search Utils', () => {
     const patientOrganization = getSearchParameter('Patient', 'organization') as SearchParameter;
     const observationSubject = getSearchParameter('Observation', 'subject') as SearchParameter;
     const observationPerformer = getSearchParameter('Observation', 'performer') as SearchParameter;
+
     expect(searchReq).toMatchObject<SearchRequest>({
       resourceType: 'Patient',
       chains: [
@@ -144,7 +145,6 @@ describe('Search Utils', () => {
           chain: [
             {
               resourceType: 'Organization',
-              searchParam: patientOrganization,
               details: getSearchParameterDetails('Patient', patientOrganization),
               filter: { code: 'name', operator: Operator.EQUALS, value: 'Kaiser Permanente' },
             },
@@ -154,13 +154,11 @@ describe('Search Utils', () => {
           chain: [
             {
               resourceType: 'Observation',
-              searchParam: observationSubject,
               details: getSearchParameterDetails('Observation', observationSubject),
               reverse: true,
             },
             {
               resourceType: 'Practitioner',
-              searchParam: observationPerformer,
               details: getSearchParameterDetails('Observation', observationPerformer),
               filter: { code: 'name', operator: Operator.EQUALS, value: 'Alice' },
             },
