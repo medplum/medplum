@@ -1,4 +1,3 @@
-import DetailsBlock from '@site/src/components/DetailsBlock';
 import ExampleCode from '!!raw-loader!@site/..//examples/src/communications/organizing-communications.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
@@ -70,11 +69,12 @@ Because of how specific the `topic` field should be, it is best to use a custom 
 
 :::
 
-<DetailsBlock summary="Example of a thread grouped using a Communication resource">
+<details>
+  <summary>Example of a thread grouped using a Communication resource</summary>
   <MedplumCodeBlock language="ts" selectBlocks="communicationGroupedThread">
     {ExampleCode}
   </MedplumCodeBlock>
-</DetailsBlock>
+</details>
 
 ```mermaid
 
@@ -102,11 +102,12 @@ Here are some common types of tags that can be used for grouping:
 | Clinical specialty  | [SNOMED Care Team Member Function valueset](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion)                              |
 | Product offering    | [SNOMED](http://hl7.org/fhir/R4/valueset-medication-form-codes.html), [LOINC](https://www.medplum.com/docs/careplans/loinc), Custom Internal Coding |
 
-<DetailsBlock summary="Example of Multiple Categories">
+<details>
+  <summary>Example of Multiple Categories</summary>
   <MedplumCodeBlock language="ts" selectBlocks="communicationCategories">
     {ExampleCode}
   </MedplumCodeBlock>
-</DetailsBlock>
+</details>
 
 :::tip Designing category schemes
 

@@ -3,7 +3,6 @@ sidebar_position: 2
 toc_max_heading_level: 3
 ---
 
-import DetailsBlock from '@site/src/components/DetailsBlock';
 import ExampleCode from '!!raw-loader!@site/../examples/src/bots/finalize-report.test.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
@@ -20,7 +19,7 @@ The first step is to set up your test framework in your Bots package. Medplum Bo
 Next you'll want to index the FHIR schema definitions. To keep the client small, the `MockClient` class only ships with a subset of the FHIR schema. Index the full schema as shown below, either in a [`beforeAll` function](https://vitest.dev/api/#beforeall) or [setup file](https://vitest.dev/config/#setupfiles), to make sure your [test queries](##query-the-results) work.
 
 <MedplumCodeBlock language="ts" selectBlocks="index-schema">
-{ExampleCode}
+  {ExampleCode}
 </MedplumCodeBlock>
 
 Our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots) repo also contains recommended [eslintrc](https://github.com/medplum/medplum-demo-bots/blob/main/.eslintrc.json), [tsconfig](https://github.com/medplum/medplum-demo-bots/blob/main/tsconfig.json), and [vite.config](https://github.com/medplum/medplum-demo-bots/blob/main/vite.config.ts) settings for a faster developer feedback cycle.
@@ -51,7 +50,7 @@ The [finalize-report tests](https://github.com/medplum/medplum-demo-bots/blob/ma
 The Medplum `MockClient` class extends the `MedplumClient` class, but stores resources in local memory rather than persisting them to the server. This presents a type-compatible interface to the Bot's handler function, which makes it ideal for unit tests.
 
 <MedplumCodeBlock language="ts" selectBlocks="create-client">
-{ExampleCode}
+  {ExampleCode}
 </MedplumCodeBlock>
 
 We recommend creating a `MockClient` at the beginning of each test, to avoid any cross-talk between tests.
@@ -74,18 +73,19 @@ Most tests require setting up some resources in the mock environment before runn
 
 The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/finalize-reports.test.ts) from [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/) provides a good example. Each test sets up a [Patient](/docs/api/fhir/resources/patient), an [Observation](/docs/api/fhir/resources/observation), and a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) before invoking the bot.
 
-<DetailsBlock summary="Example: Create Resources">
+<details>
+  <summary>Example: Create Resources</summary>
   <MedplumCodeBlock language="ts" selectBlocks="create-resources">
     {ExampleCode}
   </MedplumCodeBlock>
-</DetailsBlock>
+</details>
 
 ### Invoke your Bot
 
 After setting up your mock resources, you can invoke your bot by calling your bot's handler function. See the ["Bot Basics" tutorial](/docs/bots/bot-basics#editing-a-bot) for more information about the arguments to `handler`
 
 <MedplumCodeBlock language="ts" selectBlocks="invoke-bot">
-{ExampleCode}
+  {ExampleCode}
 </MedplumCodeBlock>
 
 ### Query the results
@@ -96,19 +96,21 @@ To check the bot's response, simply check the return value of your `handler` fun
 
 The after running the Bot, the [finalize-report bot's tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/finalize-reports.test.ts) read the updated `DiagnosticReport` and `Observation` resources to confirm their status.
 
-<DetailsBlock summary="Example: Query the results">
+<details>
+  <summary>Example: Query the results</summary>
   <MedplumCodeBlock language="ts" selectBlocks="query-results">
-  {ExampleCode}
+    {ExampleCode}
   </MedplumCodeBlock>
-</DetailsBlock>
+</details>
 
 :::note A note on idempotency
 Many times, you'd like to make sure your Bot is [idempotent](https://en.wikipedia.org/wiki/Idempotence#Computer_science_meaning). This can be accomplished by calling your bot twice, and using your test framework's `spyOn` functions to ensure that no resources are created/updated in the second call.
 
-<DetailsBlock summary="Example: Idempotency test">
+<details>
+  <summary>Example: Idempotency test</summary>
   <MedplumCodeBlock language="ts" selectBlocks="test-idempotent">
     {ExampleCode}
   </MedplumCodeBlock>
-</DetailsBlock>
+</details>
 
 :::

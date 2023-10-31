@@ -2,7 +2,6 @@
 sidebar_position: 2
 ---
 
-import DetailsBlock from '@site/src/components/DetailsBlock';
 import ExampleCode from '!!raw-loader!@site/../examples/src/graphql/basic-query.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
@@ -36,10 +35,11 @@ Here is an example of searching for a list of `Patient` resources using the Conn
   </TabItem>
 </Tabs>
 
-<DetailsBlock summary="Example Response">
+<details>
+  <summary>Example Response</summary>
   <MedplumCodeBlock language="ts" selectBlocks="ConnectionApiResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</DetailsBlock>
+</details>
 
 See the "[Connection API](https://hl7.org/fhir/graphql.html#searching)" section of the FHIR GraphQL specification for more information.

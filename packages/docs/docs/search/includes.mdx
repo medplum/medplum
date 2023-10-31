@@ -2,7 +2,6 @@
 sidebar_position: 5
 ---
 
-import DetailsBlock from '@site/src/components/DetailsBlock';
 import ExampleCode from '!!raw-loader!@site/../examples/src/search/includes.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
@@ -48,11 +47,12 @@ For example, the search query described above for `Observation`, `Patient`, and 
   </TabItem>
 </Tabs>
 
-<DetailsBlock summary="Example response">
+<details>
+  <summary>Example response</summary>
   <MedplumCodeBlock language="ts" selectBlocks="includesResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</DetailsBlock>
+</details>
 
 :::caution Note
 
@@ -116,11 +116,12 @@ to search for `Observation` resources, plus the `Patient` resources they refer t
   </TabItem>
 </Tabs>
 
-<DetailsBlock summary="Example response">
+<details>
+  <summary>Example response</summary>
   <MedplumCodeBlock language="ts" selectBlocks="iterateResponse">
     {ExampleCode}
   </MedplumCodeBlock>
-</DetailsBlock>
+</details>
 
 This query would return a Bundle containing all the resources from a linked graph like the following:
 

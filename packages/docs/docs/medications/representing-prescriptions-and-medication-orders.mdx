@@ -1,4 +1,3 @@
-import DetailsBlock from '@site/src/components/DetailsBlock';
 import ExampleCode from '!!raw-loader!@site/..//examples/src/medications/representing-prescriptions-and-medication-orders.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
@@ -140,11 +139,12 @@ The instructions to the pharmacy on how the order should be dispensed should be 
 | `expectedSupplyDuration` | The time period over which the medication is supposed to be used or which the prescription should last.                                                                                                |
 | `performer`              | The organization (i.e. Pharmacy) that should dispense the medication.                                                                                                                                  |
 
-<DetailsBlock summary="Example: Dispense Instructions">
+<details>
+  <summary>Example: Dispense Instructions</summary>
   <MedplumCodeBlock language="ts" selectBlocks="dispenseInstructions">
     {ExampleCode}
   </MedplumCodeBlock>
-</DetailsBlock>
+</details>
 
 ## Representing Patient Instructions
 
@@ -167,11 +167,12 @@ The instructions for how the patient should take the medication should be includ
 
 Note that this field is stored as an array, so there can be multiple dosage instructions for each order. For example, the same medication may be taken multiple times throughout the day, but in different dosages each time. This is where the `dosageInstruction.sequence` field should be used to indicate which order the instructions are in.
 
-<DetailsBlock summary="Example: Dosage Instructions">
+<details>
+  <summary>Example: Dosage Instructions</summary>
   <MedplumCodeBlock language="ts" selectBlocks="dosageInstructions">
     {ExampleCode}
   </MedplumCodeBlock>
-</DetailsBlock>
+</details>
 
 ## Distinguishing Between Prescriptions and Medication Orders
 
@@ -179,14 +180,16 @@ A [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) can represen
 
 These types of requests should be differentiated as outpatient vs. inpatient using the `MedicationRequest.category` field, which represents the type of medical request. The [FHIR MedicationRequest Admin Location value set](https://www.hl7.org/fhir/valueset-medicationrequest-admin-location.html) can be used for this. Note that the `category` field is an array, so it is possible to have multiple values if you wish to categorize your requests in other ways as well.
 
-<DetailsBlock summary="Example: A MedicationRequest categorized for a prescription">
+<details>
+  <summary>Example: A MedicationRequest categorized for a prescription</summary>
   <MedplumCodeBlock language="ts" selectBlocks="prescriptionRequest">
     {ExampleCode}
   </MedplumCodeBlock>
-</DetailsBlock>
+</details>
 
-<DetailsBlock summary="Example: A MedicationRequest categorized for a medication fulfillment order">
+<details>
+  <summary>Example: A MedicationRequest categorized for a medication fulfillment order</summary>
   <MedplumCodeBlock language="ts" selectBlocks="orderRequest">
     {ExampleCode}
   </MedplumCodeBlock>
-</DetailsBlock>
+</details>
