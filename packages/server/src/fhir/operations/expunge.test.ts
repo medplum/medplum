@@ -184,6 +184,6 @@ async function existsInCache(resourceType: string, id: string | undefined): Prom
 }
 
 async function existsInDatabase(tableName: string, id: string | undefined): Promise<boolean> {
-  const rows = await new SelectQuery(tableName).column('id').where('id', 'EQUALS', id).execute(getClient());
+  const rows = await new SelectQuery(tableName).column('id').where('id', '=', id).execute(getClient());
   return rows.length > 0;
 }

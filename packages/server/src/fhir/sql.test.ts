@@ -9,7 +9,7 @@ describe('SqlBuilder', () => {
 
   test('Select where', () => {
     const sql = new SqlBuilder();
-    new SelectQuery('MyTable').column('id').where('name', 'EQUALS', 'x').buildSql(sql);
+    new SelectQuery('MyTable').column('id').where('name', '=', 'x').buildSql(sql);
     expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" = $1');
   });
 
@@ -17,7 +17,7 @@ describe('SqlBuilder', () => {
     const sql = new SqlBuilder();
     new SelectQuery('MyTable')
       .column('id')
-      .whereExpr(new Condition('name', 'EQUALS', 'x'))
+      .whereExpr(new Condition('name', '=', 'x'))
       .buildSql(sql);
     expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "name" = $1');
   });
@@ -26,7 +26,7 @@ describe('SqlBuilder', () => {
     const sql = new SqlBuilder();
     new SelectQuery('MyTable')
       .column('id')
-      .whereExpr(new Negation(new Condition('name', 'EQUALS', 'x')))
+      .whereExpr(new Negation(new Condition('name', '=', 'x')))
       .buildSql(sql);
     expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE NOT ("name" = $1)');
   });
@@ -49,13 +49,13 @@ describe('SqlBuilder', () => {
 
   test('Select where is null', () => {
     const sql = new SqlBuilder();
-    new SelectQuery('MyTable').column('id').where('name', 'EQUALS', null).buildSql(sql);
+    new SelectQuery('MyTable').column('id').where('name', '=', null).buildSql(sql);
     expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" IS NULL');
   });
 
   test('Select where is not null', () => {
     const sql = new SqlBuilder();
-    new SelectQuery('MyTable').column('id').where('name', 'NOT_EQUALS', null).buildSql(sql);
+    new SelectQuery('MyTable').column('id').where('name', '!=', null).buildSql(sql);
     expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" IS NOT NULL');
   });
 
