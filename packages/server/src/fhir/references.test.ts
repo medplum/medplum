@@ -51,7 +51,7 @@ describe('Reference checks', () => {
         // This will be enforced
         subject: createReference(patient),
 
-        // Logical references
+        // Conditional references
         // These are ignored (for now)
         basedOn: [{ reference: 'ServiceRequest?identifier=123' }, { display: 'Display only' }],
 
