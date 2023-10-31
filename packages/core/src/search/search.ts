@@ -3,6 +3,7 @@ import { badRequest, OperationOutcomeError } from '../outcomes';
 import { TypedValue, stringifyTypedValue, globalSchema, getSearchParameter } from '../types';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { SearchParameterDetails, getSearchParameterDetails } from './details';
+import { splitN } from '../utils';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 
@@ -423,7 +424,7 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
       param.chain.push(link);
       currentResourceType = link.resourceType;
     } else if (i === parts.length - 1) {
-      const [code, modifier] = part.split(':', 2);
+      const [code, modifier] = splitN(part, ':', 2);
       const searchParam = getSearchParameter(currentResourceType, part);
       if (!searchParam) {
         throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
@@ -439,7 +440,7 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
 }
 
 function parseChainLink(param: string, currentResourceType: string): ChainedSearchLink {
-  const [code, modifier] = param.split(':', 2);
+  const [code, modifier] = splitN(param, ':', 2);
   const searchParam = getSearchParameter(currentResourceType, code);
   if (!searchParam) {
     throw new Error(`Invalid search parameter in chain: ${currentResourceType}?${code}`);
@@ -457,7 +458,7 @@ function parseChainLink(param: string, currentResourceType: string): ChainedSear
 }
 
 function parseReverseChainLink(param: string, targetResourceType: string): ChainedSearchLink {
-  const [, resourceType, code] = param.split(':', 3);
+  const [, resourceType, code] = splitN(param, ':', 3);
   const searchParam = getSearchParameter(resourceType, code);
   if (!searchParam) {
     throw new Error(`Invalid search parameter in chain: ${resourceType}?${code}`);
