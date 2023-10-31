@@ -1358,7 +1358,7 @@ describe('QuestionnaireForm', () => {
 
     expect(screen.getByText('q1')).toBeInTheDocument();
 
-    const searchInput = screen.getByPlaceholderText('Select items');
+    const searchInput = screen.getByPlaceholderText('No Answers Defined');
     expect(searchInput).toBeInTheDocument();
     expect(searchInput).toBeInstanceOf(HTMLInputElement);
   });
@@ -1469,5 +1469,97 @@ describe('QuestionnaireForm', () => {
     expect(screen.getAllByText('Group').length).toBe(2);
 
     expect(screen.getAllByText('Question 2').length).toBe(2);
+  });
+
+  test('No Answers Defined', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'no-answers',
+        title: 'No Answers Example',
+        item: [
+          {
+            linkId: 'choices',
+            text: 'Choices',
+            type: 'choice',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
+  });
+
+  test('Empty Array of Answer Options', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'empty-answers',
+        title: 'Empty Answers Example',
+        item: [
+          {
+            linkId: 'choices',
+            text: 'Choices',
+            type: 'choice',
+            answerOption: [],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
+  });
+
+  test('Empty Answer Options for Radio', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'empty-radio',
+        title: 'Empty Radio Example',
+        item: [
+          {
+            linkId: 'choices',
+            text: 'Choices',
+            type: 'choice',
+            answerOption: [],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
   });
 });
