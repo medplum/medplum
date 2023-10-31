@@ -42,7 +42,6 @@ export interface IncludeTarget {
 
 export interface ChainedSearchLink {
   resourceType: string;
-  searchParam: SearchParameter;
   details: SearchParameterDetails;
   reverse?: boolean;
   filter?: Filter;
@@ -454,7 +453,7 @@ function parseChainLink(param: string, currentResourceType: string): ChainedSear
     throw new Error(`Unable to identify next resource type for search parameter: ${currentResourceType}?${code}`);
   }
   const details = getSearchParameterDetails(currentResourceType, searchParam);
-  return { resourceType, searchParam, details };
+  return { resourceType, details };
 }
 
 function parseReverseChainLink(param: string, targetResourceType: string): ChainedSearchLink {
@@ -468,7 +467,7 @@ function parseReverseChainLink(param: string, targetResourceType: string): Chain
     );
   }
   const details = getSearchParameterDetails(resourceType, searchParam);
-  return { resourceType, searchParam, details, reverse: true };
+  return { resourceType, details, reverse: true };
 }
 
 function splitChainedSearch(chain: string): string[] {
