@@ -40,7 +40,7 @@ export function QuestionnaireRepeatedGroup(props: QuestionnaireRepeatableGroupPr
           onChange={(r) => handleRepeatableGroup(r, idx)}
         />
       ))}
-      {props.item.repeats && <Anchor onClick={insertNewGroup}>Add Group</Anchor>}
+      {props.item.repeats && <Anchor onClick={insertNewGroup}>{`Add Group: ${props.item.text}`}</Anchor>}
     </>
   );
 }
