@@ -98,8 +98,11 @@ protectedRoutes.post(
     const stringifiedBody = JSON.stringify(req.body);
     // Check if this an open event
     if (event['hub.event'].endsWith('-open')) {
-      // NOTE: We get the topic from the event since per the spec, the URL should eventually NOT contain the topic but another slug linked to topic
-      await getRedis().set(`${event['hub.topic']}-latest`, stringifiedBody);
+      // TODO: we need to get topic from event and not route param since per spec, the topic shouldn't be the slug like we have it
+      await getRedis().set(`::fhircast::${req.params.topic}::latest::`, stringifiedBody);
+    } else if (event['hub.event'].endsWith('-close')) {
+      // We always close the current context, even if the event is not for the original resource... There isn't any mention of checking to see it's the right resource, so it seems it may be assumed to be always valid to do any arbitrary close as long as there is an existing context...
+      await getRedis().del(`::fhircast::${req.params.topic}::latest::`);
     }
     await getRedis().publish(req.params.topic as string, stringifiedBody);
     res.status(201).json({ success: true, event: body });
@@ -110,12 +113,12 @@ protectedRoutes.post(
 protectedRoutes.get(
   '/:topic',
   asyncWrap(async (req: Request, res: Response) => {
-    const latestEvent = await getRedis().get(`${req.params.topic}-latest`);
+    const latestEventStr = await getRedis().get(`::fhircast::${req.params.topic}::latest::`);
     // Non-standard FHIRCast extension to support Nuance PowerCast Hub
-    if (!latestEvent) {
+    if (!latestEventStr) {
       res.status(200).json([]);
       return;
     }
-    res.status(200).json(JSON.parse(latestEvent).event.context);
+    res.status(200).json(JSON.parse(latestEventStr).event.context);
   })
 );

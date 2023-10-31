@@ -1,9 +1,10 @@
-import { ContentType, createFhircastMessagePayload } from '@medplum/core';
+import { ContentType, FhircastEventContext, createFhircastMessagePayload } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
+import { getRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
 
 const app = express();
@@ -137,12 +138,40 @@ describe('FHIRCast routes', () => {
       .send(payload);
     expect(publishRes.status).toBe(201);
 
-    // Get the current subscription status
-    // Non-standard FHIRCast extension to support Nuance PowerCast Hub
     const contextRes = await request(app)
       .get('/fhircast/STU3/my-topic')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(contextRes.status).toBe(200);
     expect(contextRes.body).toEqual(payload.event.context);
+  });
+
+  test('Get context after *-close event', async () => {
+    const context = [
+      { key: 'study', resource: { id: 'def-456', resourceType: 'ImagingStudy' } },
+      { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
+    ] as FhircastEventContext<'imagingstudy-open'>[];
+
+    const payload = createFhircastMessagePayload('my-topic', 'imagingstudy-open', context);
+    // Setup the key as if we have already opened this resource
+    await getRedis().set('::fhircast::my-topic::latest::', JSON.stringify(payload));
+
+    const beforeContextRes = await request(app)
+      .get('/fhircast/STU3/my-topic')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(beforeContextRes.status).toBe(200);
+    expect(beforeContextRes.body).toEqual(context);
+
+    const publishRes = await request(app)
+      .post('/fhircast/STU3/my-topic')
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(createFhircastMessagePayload('my-topic', 'imagingstudy-close', context));
+    expect(publishRes.status).toBe(201);
+
+    const afterContextRes = await request(app)
+      .get('/fhircast/STU3/my-topic')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(afterContextRes.status).toBe(200);
+    expect(afterContextRes.body).toEqual([]);
   });
 });
