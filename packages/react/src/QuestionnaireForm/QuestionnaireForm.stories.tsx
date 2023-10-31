@@ -97,13 +97,13 @@ export const Choices = (): JSX.Element => (
           {
             linkId: 'group1',
             type: 'group',
-            text: 'group1',
+            text: 'Outside Group',
             repeats: true,
             item: [
               {
                 linkId: 'group2',
                 type: 'group',
-                text: 'group2',
+                text: 'Inside Group',
                 repeats: true,
                 item: [
                   {
@@ -1116,7 +1116,7 @@ export const RepeatableItems = (): JSX.Element => (
         item: [
           {
             linkId: 'group1',
-            text: 'Group 1',
+            text: 'Question Group',
             type: 'group',
             item: [
               {
