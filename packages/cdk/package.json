@@ -5,14 +5,11 @@
   "homepage": "https://www.medplum.com/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/medplum/medplum.git",
+    "url": "git+https://github.com/medplum/medplum.git",
     "directory": "packages/cdk"
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
-  "bin": {
-    "medplum-cdk-init": "./dist/cjs/init.cjs"
-  },
   "scripts": {
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
     "cdk": "cdk",
