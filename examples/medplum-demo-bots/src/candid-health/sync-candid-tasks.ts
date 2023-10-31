@@ -86,9 +86,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 /**
  * Authenticates into the Candid Health API using API key and API secret, and gets the Task object from
  * Candid's /v1/tasks endpoint
- * @param candidCodedEncounter The CodedEncounter object to send to Candid Health
- * @param apiKey  Candid Health API Key
- * @param apiSecret Candid Health API Secret
+ * @param candidCodedEncounter - The CodedEncounter object to send to Candid Health
+ * @param apiKey - Candid Health API Key
+ * @param apiSecret - Candid Health API Secret
  * @returns The response from the Candid Health API
  */
 async function getCandidTasks(candidCodedEncounter: any, apiKey: string, apiSecret: string): Promise<any> {

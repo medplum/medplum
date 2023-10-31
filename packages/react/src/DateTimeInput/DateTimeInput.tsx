@@ -19,7 +19,7 @@ export interface DateTimeInputProps {
  * The main purpose is to reconcile time zones.
  * Most of our date/time values are in ISO-8601, which includes a time zone offset.
  * The datetime-local input does not support the time zone offset.
- * @param props The Input props.
+ * @param props - The Input props.
  * @returns The JSX element to render.
  */
 export function DateTimeInput(props: DateTimeInputProps): JSX.Element {

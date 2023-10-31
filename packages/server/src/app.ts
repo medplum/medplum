@@ -41,9 +41,9 @@ let server: http.Server | undefined = undefined;
 
 /**
  * Sets standard headers for all requests.
- * @param _req The request.
- * @param res The response.
- * @param next The next handler.
+ * @param _req - The request.
+ * @param res - The response.
+ * @param next - The next handler.
  */
 function standardHeaders(_req: Request, res: Response, next: NextFunction): void {
   // Disables all caching
@@ -81,10 +81,10 @@ function standardHeaders(_req: Request, res: Response, next: NextFunction): void
 /**
  * Global error handler.
  * See: https://expressjs.com/en/guide/error-handling.html
- * @param err Unhandled error.
- * @param req The request.
- * @param res The response.
- * @param next The next handler.
+ * @param err - Unhandled error.
+ * @param req - The request.
+ * @param res - The response.
+ * @param next - The next handler.
  */
 function errorHandler(err: any, req: Request, res: Response, next: NextFunction): void {
   if (res.headersSent) {
@@ -164,7 +164,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/dicom/PS3/', dicomRouter);
   apiRouter.use('/email/v1/', emailRouter);
   apiRouter.use('/fhir/R4/', fhirRouter);
-  apiRouter.use('/fhircast/STU2/', fhircastRouter);
+  apiRouter.use('/fhircast/STU3/', fhircastRouter);
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);
   apiRouter.use('/storage/', storageRouter);

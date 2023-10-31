@@ -1,26 +1,7 @@
 {
   "name": "@medplum/definitions",
-  "version": "2.1.7",
+  "version": "2.1.10",
   "description": "Medplum Data Definitions",
-  "author": "Medplum <hello@medplum.com>",
-  "license": "Apache-2.0",
-  "homepage": "https://www.medplum.com/",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/medplum/medplum.git",
-    "directory": "packages/definitions"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "scripts": {
-    "clean": "rimraf dist/index.js dist/index.d.ts",
-    "build": "npm run clean && tsc --project tsconfig.build.json",
-    "test": "jest"
-  },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "sideEffects": false,
   "keywords": [
     "medplum",
     "fhir",
@@ -35,5 +16,24 @@
     "stu3",
     "r4",
     "normative"
-  ]
+  ],
+  "homepage": "https://www.medplum.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/medplum/medplum.git",
+    "directory": "packages/definitions"
+  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "sideEffects": false,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "npm run clean && tsc --project tsconfig.build.json",
+    "clean": "rimraf dist/index.js dist/index.d.ts",
+    "test": "jest"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

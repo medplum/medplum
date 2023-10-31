@@ -1,24 +1,21 @@
 {
   "name": "@medplum/server",
-  "version": "2.1.7",
+  "version": "2.1.10",
   "description": "Medplum Server",
-  "author": "Medplum <hello@medplum.com>",
-  "license": "Apache-2.0",
   "homepage": "https://www.medplum.com/",
   "repository": {
     "type": "git",
     "url": "https://github.com/medplum/medplum.git",
     "directory": "packages/server"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
   "scripts": {
-    "clean": "rimraf dist",
     "build": "npm run clean && tsc --project tsconfig.build.json",
+    "clean": "rimraf dist",
+    "dev": "ts-node-dev --poll --respawn --transpile-only src/index.ts",
     "prestart": "tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node-dev --poll --respawn --transpile-only src/index.ts",
     "test": "jest --runInBand"
   },
   "dependencies": {
@@ -98,5 +95,8 @@
     "supertest": "6.3.3",
     "superwstest": "2.0.3",
     "ts-node-dev": "2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

@@ -27,7 +27,7 @@ export function DiagnosticReportModal(props: TaskCellProps): JSX.Element {
         <DiagnosticReportDisplay value={report} />
         <Flex justify={'flex-end'}>
           <Button mt={8} onClick={handleClick}>
-            Ok
+            Release
           </Button>
         </Flex>
       </Modal>

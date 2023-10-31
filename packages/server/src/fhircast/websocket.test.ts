@@ -4,7 +4,7 @@ import express from 'express';
 import { Server } from 'http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig, MedplumServerConfig } from '../config';
+import { MedplumServerConfig, loadTestConfig } from '../config';
 import { initTestAuth } from '../test.setup';
 
 const app = express();
@@ -39,7 +39,7 @@ describe('FHIRCast WebSocket', () => {
       })
       .exec(async () => {
         const res = await request(server)
-          .post(`/fhircast/STU2/${topic}`)
+          .post(`/fhircast/STU3/${topic}`)
           .set('Content-Type', ContentType.JSON)
           .set('Authorization', 'Bearer ' + accessToken)
           .send({

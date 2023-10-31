@@ -6,8 +6,8 @@ import { getTypedPropertyValue, TypedValue } from '@medplum/core';
  * For example, "Observation.value[x]" can be "valueString", "valueInteger", "valueQuantity", etc.
  * According to the spec, there can only be one property for a given element definition.
  * This function returns the value and the type.
- * @param context The base context (usually a FHIR resource).
- * @param path The property path.
+ * @param context - The base context (usually a FHIR resource).
+ * @param path - The property path.
  * @returns The value of the property and the property type.
  */
 export function getValueAndType(context: TypedValue, path: string): [any, string] {

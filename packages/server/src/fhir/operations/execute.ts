@@ -114,7 +114,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
  * If using "/Bot/:id/$execute", then the bot ID is read from the path parameter.
  * If using "/Bot/$execute?identifier=...", then the bot is searched by identifier.
  * Otherwise, returns undefined.
- * @param req The HTTP request.
+ * @param req - The HTTP request.
  * @returns The bot, or undefined if not found.
  */
 async function getBotForRequest(req: Request): Promise<Bot | undefined> {
@@ -142,7 +142,7 @@ async function getBotForRequest(req: Request): Promise<Bot | undefined> {
  * Executes a Bot.
  * This method ensures the bot is valid and enabled.
  * This method dispatches to the appropriate execution method.
- * @param request The bot request.
+ * @param request - The bot request.
  * @returns The bot execution result.
  */
 export async function executeBot(request: BotExecutionRequest): Promise<BotExecutionResult> {
@@ -177,7 +177,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
 
 /**
  * Returns true if the bot is enabled and bots are enabled for the project.
- * @param bot The bot resource.
+ * @param bot - The bot resource.
  * @returns True if the bot is enabled.
  */
 export async function isBotEnabled(bot: Bot): Promise<boolean> {
@@ -198,7 +198,7 @@ export async function isBotEnabled(bot: Bot): Promise<boolean> {
  * 1. Creating tables in Athena: https://docs.aws.amazon.com/athena/latest/ug/creating-tables.html
  * 2. Partitioning data in Athena: https://docs.aws.amazon.com/athena/latest/ug/partitions.html
  *
- * @param request The bot request.
+ * @param request - The bot request.
  */
 async function writeBotInputToStorage(request: BotExecutionRequest): Promise<void> {
   const { bot, contentType, input } = request;
@@ -256,7 +256,7 @@ async function writeBotInputToStorage(request: BotExecutionRequest): Promise<voi
 
 /**
  * Executes a Bot in an AWS Lambda.
- * @param request The bot request.
+ * @param request - The bot request.
  * @returns The bot execution result.
  */
 async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionResult> {
@@ -311,7 +311,7 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
  * Returns the AWS Lambda function name for the given bot.
  * By default, the function name is based on the bot ID.
  * If the bot has a custom function, and the server allows it, then that is used instead.
- * @param bot The Bot resource.
+ * @param bot - The Bot resource.
  * @returns The AWS Lambda function name.
  */
 export function getLambdaFunctionName(bot: Bot): string {
@@ -335,7 +335,7 @@ export function getLambdaFunctionName(bot: Bot): string {
  * so we attempt to scrub away all of that extra metadata.
  *
  * See: https://docs.aws.amazon.com/lambda/latest/dg/nodejs-logging.html
- * @param logResult The raw log result from the AWS lambda event.
+ * @param logResult - The raw log result from the AWS lambda event.
  * @returns The parsed log result.
  */
 function parseLambdaLog(logResult: string): string {
@@ -359,7 +359,7 @@ function parseLambdaLog(logResult: string): string {
 
 /**
  * Executes a Bot on the server in a separate Node.js VM.
- * @param request The bot request.
+ * @param request - The bot request.
  * @returns The bot execution result.
  */
 async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutionResult> {
@@ -502,10 +502,10 @@ function getResponseContentType(req: Request): string {
 
 /**
  * Creates an AuditEvent for a subscription attempt.
- * @param request The bot request.
- * @param startTime The time the execution attempt started.
- * @param outcome The outcome code.
- * @param outcomeDesc The outcome description text.
+ * @param request - The bot request.
+ * @param startTime - The time the execution attempt started.
+ * @param outcome - The outcome code.
+ * @param outcomeDesc - The outcome description text.
  */
 async function createAuditEvent(
   request: BotExecutionRequest,

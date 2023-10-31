@@ -4,7 +4,7 @@ import { AddressInfo } from 'net';
 import request from 'superwstest';
 import WebSocket from 'ws';
 import { initApp, shutdownApp } from './app';
-import { loadTestConfig, MedplumServerConfig } from './config';
+import { MedplumServerConfig, loadTestConfig } from './config';
 
 const app = express();
 let config: MedplumServerConfig;
@@ -40,7 +40,7 @@ describe('WebSockets', () => {
     const serverUrl = `localhost:${(server.address() as AddressInfo).port}`;
 
     // Make sure even when we error, we are getting back a response from server to prevent hanging socket connection
-    const ws = new WebSocket(`ws://${serverUrl}/fhircast/STU2`);
+    const ws = new WebSocket(`ws://${serverUrl}/fhircast/STU3`);
     await new Promise<void>((done) => {
       ws.on('error', (err) => {
         expect(err.message).toContain('404');

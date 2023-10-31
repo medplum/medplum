@@ -35,7 +35,7 @@ let worker: Worker<DownloadJobData> | undefined = undefined;
  * Initializes the download worker.
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
- * @param config The Medplum server config to use.
+ * @param config - The Medplum server config to use.
  */
 export function initDownloadWorker(config: MedplumServerConfig): void {
   const defaultOptions: QueueBaseOptions = {
@@ -99,7 +99,7 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * at that moment in time.  For each matching download, we enqueue the job.
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the download.
- * @param resource The resource that was created or updated.
+ * @param resource - The resource that was created or updated.
  */
 export async function addDownloadJobs(resource: Resource): Promise<void> {
   for (const attachment of getAttachments(resource)) {
@@ -120,7 +120,7 @@ export async function addDownloadJobs(resource: Resource): Promise<void> {
  *  1) They refer to a fully qualified fhir/R4/Binary/ endpoint.
  *  2) They refer to the Medplum storage URL.
  *  3) They refer to a Binary in canonical form (i.e., "Binary/123").
- * @param url The Media content URL.
+ * @param url - The Media content URL.
  * @returns True if the URL is an external URL.
  */
 function isExternalUrl(url: string | undefined): url is string {
@@ -134,7 +134,7 @@ function isExternalUrl(url: string | undefined): url is string {
 
 /**
  * Adds a download job to the queue.
- * @param job The download job details.
+ * @param job - The download job details.
  */
 async function addDownloadJobData(job: DownloadJobData): Promise<void> {
   const ctx = getRequestContext();
@@ -148,7 +148,7 @@ async function addDownloadJobData(job: DownloadJobData): Promise<void> {
 
 /**
  * Executes a download job.
- * @param job The download job details.
+ * @param job - The download job details.
  */
 export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> {
   const ctx = getRequestContext();

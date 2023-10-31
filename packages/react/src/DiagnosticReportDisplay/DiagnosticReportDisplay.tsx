@@ -9,16 +9,15 @@ import {
   Reference,
   Specimen,
 } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import React, { useEffect, useState } from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { NoteDisplay } from '../NoteDisplay/NoteDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
-import { useResource } from '../useResource/useResource';
 
 const useStyles = createStyles((theme) => ({
   table: {
@@ -337,7 +336,7 @@ function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {
 /**
  * Returns true if the observation is critical.
  * See: https://www.hl7.org/fhir/valueset-observation-interpretation.html
- * @param observation The FHIR observation.
+ * @param observation - The FHIR observation.
  * @returns True if the FHIR observation is a critical value.
  */
 function isCritical(observation: Observation): boolean {

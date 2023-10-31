@@ -115,9 +115,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Encounter>
 /**
  * Authenticates into the Candid Health API using API key and API secret, and posts the CodedEncounter object to
  * Candid's /v1/coded_encounters endpoint
- * @param candidCodedEncounter A JS representation of the CodedEncounter object
- * @param apiKey  Candid Health API Key
- * @param apiSecret Candid Health API Secret
+ * @param candidCodedEncounter - A JS representation of the CodedEncounter object
+ * @param apiKey - Candid Health API Key
+ * @param apiSecret - Candid Health API Secret
  * @returns The Candid Health API response
  */
 async function submitCandidEncounter(candidCodedEncounter: any, apiKey: string, apiSecret: string): Promise<any> {
@@ -146,7 +146,7 @@ async function submitCandidEncounter(candidCodedEncounter: any, apiKey: string, 
 
 /**
  * Converts a FHIR patient to a Candid Health patient
- * @param patient The FHIR patient.
+ * @param patient - The FHIR patient.
  * @returns The Candid Health patient.
  */
 function convertPatient(patient: Patient | undefined): any {

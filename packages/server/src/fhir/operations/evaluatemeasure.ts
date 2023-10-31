@@ -36,8 +36,8 @@ interface EvaluateMeasureParameters {
  * 4. location parameter
  *
  * See: https://hl7.org/fhir/measure-operation-evaluate-measure.html
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 export async function evaluateMeasureHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
@@ -56,8 +56,8 @@ export async function evaluateMeasureHandler(req: Request, res: Response): Promi
 /**
  * Parses and validates the operation parameters.
  * See: https://hl7.org/fhir/plandefinition-operation-apply.html
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  * @returns The operation parameters if available; otherwise, undefined.
  */
 async function validateParameters(req: Request, res: Response): Promise<EvaluateMeasureParameters | undefined> {
@@ -92,9 +92,9 @@ async function validateParameters(req: Request, res: Response): Promise<Evaluate
 
 /**
  * Evaluates a Measure and returns a MeasureReport.
- * @param repo The current user repository.
- * @param params Validated parameters to the evaluate-measure operation.
- * @param measure The Measure resource.
+ * @param repo - The current user repository.
+ * @param params - Validated parameters to the evaluate-measure operation.
+ * @param measure - The Measure resource.
  * @returns The MeasureReport resource.
  */
 async function evaluateMeasure(
@@ -123,9 +123,9 @@ async function evaluateMeasure(
 
 /**
  * Evaluates a Measure group and returns a MeasureReport group.
- * @param repo The current user repository.
- * @param params Validated parameters to the evaluate-measure operation.
- * @param groupDefinition A group definition from the Measure resource.
+ * @param repo - The current user repository.
+ * @param params - Validated parameters to the evaluate-measure operation.
+ * @param groupDefinition - A group definition from the Measure resource.
  * @returns The populated group element for the MeasureReport resource.
  */
 async function evaluateMeasureGroup(
@@ -146,9 +146,9 @@ async function evaluateMeasureGroup(
 
 /**
  * Evaluates a Measure population and returns a MeasureReport population.
- * @param repo The current user repository.
- * @param params Validated parameters to the evaluate-measure operation.
- * @param populationDefinition A population definition from the Measure resource.
+ * @param repo - The current user repository.
+ * @param params - Validated parameters to the evaluate-measure operation.
+ * @param populationDefinition - A population definition from the Measure resource.
  * @returns The populated population element for the MeasureReport resource.
  */
 async function evaluatePopulation(
@@ -167,9 +167,9 @@ async function evaluatePopulation(
 
 /**
  * Evaluates a FHIR query and returns the count of matching resources.
- * @param repo The current user repository.
- * @param criteria The criteria expression.
- * @param params Validated parameters to the evaluate-measure operation.
+ * @param repo - The current user repository.
+ * @param criteria - The criteria expression.
+ * @param params - Validated parameters to the evaluate-measure operation.
  * @returns The count of matching resources if available; otherwise, undefined.
  */
 async function evaluateCount(

@@ -134,8 +134,8 @@ const PREFIX_OPERATORS: Record<string, Operator> = {
 
 /**
  * Parses a search URL into a search request.
- * @param resourceType The FHIR resource type.
- * @param query The collection of query string parameters.
+ * @param resourceType - The FHIR resource type.
+ * @param query - The collection of query string parameters.
  * @returns A parsed SearchRequest.
  */
 export function parseSearchRequest<T extends Resource = Resource>(
@@ -157,7 +157,7 @@ export function parseSearchRequest<T extends Resource = Resource>(
 
 /**
  * Parses a search URL into a search request.
- * @param url The search URL.
+ * @param url - The search URL.
  * @returns A parsed SearchRequest.
  */
 export function parseSearchUrl<T extends Resource = Resource>(url: URL): SearchRequest<T> {
@@ -172,7 +172,7 @@ export function parseSearchUrl<T extends Resource = Resource>(url: URL): SearchR
 
 /**
  * Parses a URL string into a SearchRequest.
- * @param url The URL to parse.
+ * @param url - The URL to parse.
  * @returns Parsed search definition.
  */
 export function parseSearchDefinition<T extends Resource = Resource>(url: string): SearchRequest<T> {
@@ -182,7 +182,7 @@ export function parseSearchDefinition<T extends Resource = Resource>(url: string
 /**
  * Parses a FHIR criteria string into a SearchRequest.
  * FHIR criteria strings are found on resources such as Subscription.
- * @param criteria The FHIR criteria string.
+ * @param criteria - The FHIR criteria string.
  * @returns Parsed search definition.
  */
 export function parseCriteriaAsSearchRequest(criteria: string): SearchRequest {
@@ -497,8 +497,8 @@ const subexpressionPattern = /{{([^{}]+)}}/g;
  * any embedded FHIRPath subexpressions (e.g. `{{ %patient.id }}`) with the provided variables.
  *
  * @see https://hl7.org/fhir/fhir-xquery.html
- * @param query The X-Fhir-Query string to parse
- * @param variables Values to pass into embedded FHIRPath expressions
+ * @param query - The X-Fhir-Query string to parse
+ * @param variables - Values to pass into embedded FHIRPath expressions
  * @returns The parsed search request
  */
 export function parseXFhirQuery(query: string, variables: Record<string, TypedValue>): SearchRequest {
@@ -515,7 +515,7 @@ export function parseXFhirQuery(query: string, variables: Record<string, TypedVa
 /**
  * Formats a search definition object into a query string.
  * Note: The return value does not include the resource type.
- * @param definition The search definition.
+ * @param definition - The search definition.
  * @returns Formatted URL.
  */
 export function formatSearchQuery(definition: SearchRequest): string {

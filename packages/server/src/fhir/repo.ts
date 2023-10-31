@@ -335,8 +335,8 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Results are sorted with oldest versions last
    *
    * See: https://www.hl7.org/fhir/http.html#history
-   * @param resourceType The FHIR resource type.
-   * @param id The FHIR resource ID.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The FHIR resource ID.
    * @returns Operation outcome and a history bundle.
    */
   async readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
@@ -606,7 +606,7 @@ export class Repository extends BaseRepository implements FhirRepository {
   /**
    * Writes the resource to the database.
    * This is a single atomic operation inside of a transaction.
-   * @param resource The resource to write to the database.
+   * @param resource - The resource to write to the database.
    */
   private async writeToDatabase<T extends Resource>(resource: T): Promise<void> {
     // Note: We don't try/catch this because if connecting throws an exception.
@@ -634,9 +634,9 @@ export class Repository extends BaseRepository implements FhirRepository {
    *  - Previous version was deleted, and user is restoring it
    *  - Previous version does not exist, and user does not have permission to create by ID
    *  - Previous version does not exist, and user does have permission to create by ID
-   * @param resourceType The FHIR resource type.
-   * @param id The resource ID.
-   * @param create Flag for "creating" vs "updating".
+   * @param resourceType - The FHIR resource type.
+   * @param id - The resource ID.
+   * @param create - Flag for "creating" vs "updating".
    * @returns The existing resource, if found.
    */
   private async checkExistingResource<T extends Resource>(
@@ -665,9 +665,9 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Returns true if the resource has too many versions within the specified time period.
-   * @param resourceType The resource type.
-   * @param id The resource ID.
-   * @param create If true, then the resource is being created.
+   * @param resourceType - The resource type.
+   * @param id - The resource ID.
+   * @param create - If true, then the resource is being created.
    * @returns True if the resource has too many versions within the specified time period.
    */
   private async isTooManyVersions(resourceType: string, id: string, create: boolean): Promise<boolean> {
@@ -687,8 +687,8 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Returns true if the resource is not modified from the existing resource.
-   * @param existing The existing resource.
-   * @param updated The updated resource.
+   * @param existing - The existing resource.
+   * @param updated - The updated resource.
    * @returns True if the resource is not modified.
    */
   private isNotModified(existing: Resource | undefined, updated: Resource): boolean {
@@ -706,7 +706,7 @@ export class Repository extends BaseRepository implements FhirRepository {
   /**
    * Rebuilds compartments for all resources of the specified type.
    * This is only available to super admins.
-   * @param resourceType The resource type.
+   * @param resourceType - The resource type.
    */
   async rebuildCompartmentsForResourceType(resourceType: string): Promise<void> {
     if (!this.isSuperAdmin()) {
@@ -734,7 +734,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Reindexes all resources of the specified type.
    * This is only available to the system account.
    * This should not result in any change to resources or history.
-   * @param resourceType The resource type.
+   * @param resourceType - The resource type.
    */
   async reindexResourceType(resourceType: string): Promise<void> {
     if (!this.isSuperAdmin()) {
@@ -758,8 +758,8 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Reindexes the resource.
    * This is only available to the system and super admin accounts.
    * This should not result in any change to the resource or its history.
-   * @param resourceType The resource type.
-   * @param id The resource ID.
+   * @param resourceType - The resource type.
+   * @param id - The resource ID.
    * @returns Promise to complete.
    */
   async reindexResource<T extends Resource>(resourceType: string, id: string): Promise<void> {
@@ -775,7 +775,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Internal implementation of reindexing a resource.
    * This accepts a resource as a parameter, rather than a resource type and ID.
    * When doing a bulk reindex, this will be more efficient because it avoids unnecessary reads.
-   * @param resource The resource.
+   * @param resource - The resource.
    * @returns The reindexed resource.
    */
   private async reindexResourceImpl<T extends Resource>(resource: T): Promise<void> {
@@ -802,8 +802,8 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Resends subscriptions for the resource.
    * This is only available to the admin accounts.
    * This should not result in any change to the resource or its history.
-   * @param resourceType The resource type.
-   * @param id The resource ID.
+   * @param resourceType - The resource type.
+   * @param id - The resource ID.
    * @returns Promise to complete.
    */
   async resendSubscriptions<T extends Resource>(resourceType: string, id: string): Promise<void> {
@@ -889,8 +889,8 @@ export class Repository extends BaseRepository implements FhirRepository {
   /**
    * Permanently deletes the specified resource and all of its history.
    * This is only available to the system and super admin accounts.
-   * @param resourceType The FHIR resource type.
-   * @param id The resource ID.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The resource ID.
    */
   async expungeResource(resourceType: string, id: string): Promise<void> {
     if (!this.isSuperAdmin()) {
@@ -904,8 +904,8 @@ export class Repository extends BaseRepository implements FhirRepository {
   /**
    * Permanently deletes the specified resources and all of its history.
    * This is only available to the system and super admin accounts.
-   * @param resourceType The FHIR resource type.
-   * @param ids The resource IDs.
+   * @param resourceType - The FHIR resource type.
+   * @param ids - The resource IDs.
    */
   async expungeResources(resourceType: string, ids: string[]): Promise<void> {
     if (!this.isSuperAdmin()) {
@@ -919,8 +919,8 @@ export class Repository extends BaseRepository implements FhirRepository {
   /**
    * Purges resources of the specified type that were last updated before the specified date.
    * This is only available to the system and super admin accounts.
-   * @param resourceType The FHIR resource type.
-   * @param before The date before which resources should be purged.
+   * @param resourceType - The FHIR resource type.
+   * @param before - The date before which resources should be purged.
    */
   async purgeResources(resourceType: ResourceType, before: string): Promise<void> {
     if (!this.isSuperAdmin()) {
@@ -952,7 +952,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Adds filters to ignore soft-deleted resources.
-   * @param builder The select query builder.
+   * @param builder - The select query builder.
    */
   addDeletedFilter(builder: SelectQuery): void {
     builder.where('deleted', 'EQUALS', false);
@@ -960,8 +960,8 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Adds security filters to the select query.
-   * @param builder The select query builder.
-   * @param resourceType The resource type for compartments.
+   * @param builder - The select query builder.
+   * @param resourceType - The resource type for compartments.
    */
   addSecurityFilters(builder: SelectQuery, resourceType: string): void {
     if (this.isSuperAdmin()) {
@@ -975,7 +975,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Adds the "project" filter to the select query.
-   * @param builder The select query builder.
+   * @param builder - The select query builder.
    */
   private addProjectFilters(builder: SelectQuery): void {
     if (this.context.project) {
@@ -985,8 +985,8 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Adds access policy filters to the select query.
-   * @param builder The select query builder.
-   * @param resourceType The resource type being searched.
+   * @param builder - The select query builder.
+   * @param resourceType - The resource type being searched.
    */
   private addAccessPolicyFilters(builder: SelectQuery, resourceType: string): void {
     if (!this.context.accessPolicy?.resource) {
@@ -1025,8 +1025,8 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Writes the resource to the resource table.
    * This builds all search parameter columns.
    * This does *not* write the version to the history table.
-   * @param client The database client inside the transaction.
-   * @param resource The resource.
+   * @param client - The database client inside the transaction.
+   * @param resource - The resource.
    */
   private async writeResource(client: PoolClient, resource: Resource): Promise<void> {
     const resourceType = resource.resourceType;
@@ -1055,8 +1055,8 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Writes a version of the resource to the resource history table.
-   * @param client The database client inside the transaction.
-   * @param resource The resource.
+   * @param client - The database client inside the transaction.
+   * @param resource - The resource.
    */
   private async writeResourceVersion(client: PoolClient, resource: Resource): Promise<void> {
     const resourceType = resource.resourceType;
@@ -1078,7 +1078,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * FHIR compartments are used for two purposes.
    * 1) Search narrowing (i.e., /Patient/123/Observation searches within the patient compartment).
    * 2) Access controls.
-   * @param resource The resource.
+   * @param resource - The resource.
    * @returns The list of compartments for the resource.
    */
   private getCompartments(resource: Resource): Reference[] {
@@ -1112,9 +1112,9 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Builds the columns to write for a given resource and search parameter.
    * If nothing to write, then no columns will be added.
    * Some search parameters can result in multiple columns (for example, Reference objects).
-   * @param resource The resource to write.
-   * @param columns The output columns to write.
-   * @param searchParam The search parameter definition.
+   * @param resource - The resource to write.
+   * @param columns - The output columns to write.
+   * @param searchParam - The search parameter definition.
    */
   private buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
     if (
@@ -1145,9 +1145,9 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Builds a single value for a given search parameter.
    * If the search parameter is an array, then this method will be called for each element.
    * If the search parameter is not an array, then this method will be called for the value.
-   * @param searchParam The search parameter definition.
-   * @param details The extra search parameter details.
-   * @param value The FHIR resource value.
+   * @param searchParam - The search parameter definition.
+   * @param details - The extra search parameter details.
+   * @param value - The FHIR resource value.
    * @returns The column value.
    */
   private buildColumnValue(searchParam: SearchParameter, details: SearchParameterDetails, value: any): any {
@@ -1182,7 +1182,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Builds the column value for a date parameter.
    * Tries to parse the date string.
    * Silently ignores failure.
-   * @param value The FHIRPath result.
+   * @param value - The FHIRPath result.
    * @returns The date string if parsed; undefined otherwise.
    */
   private buildDateColumn(value: any): string | undefined {
@@ -1204,7 +1204,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Builds the column value for a date/time parameter.
    * Tries to parse the date string.
    * Silently ignores failure.
-   * @param value The FHIRPath result.
+   * @param value - The FHIRPath result.
    * @returns The date/time string if parsed; undefined otherwise.
    */
   private buildDateTimeColumn(value: any): string | undefined {
@@ -1228,7 +1228,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Builds the columns to write for a Reference value.
-   * @param value The property value of the reference.
+   * @param value - The property value of the reference.
    * @returns The reference column value.
    */
   private buildReferenceColumns(value: any): string | undefined {
@@ -1252,7 +1252,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    *  1) The property value is a string, so return directly.
    *  2) The property value is a CodeableConcept.
    *  3) Otherwise fallback to stringify.
-   * @param value The property value of the code.
+   * @param value - The property value of the code.
    * @returns The value to write to the database column.
    */
   private buildTokenColumn(value: any): string | undefined {
@@ -1278,7 +1278,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Builds a CodeableConcept column value.
-   * @param value The property value of the code.
+   * @param value - The property value of the code.
    * @returns The value to write to the database column.
    */
   private buildCodeableConceptColumn(value: any): string | undefined {
@@ -1309,7 +1309,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Builds a Quantity column value.
-   * @param value The property value of the quantity.
+   * @param value - The property value of the quantity.
    * @returns The numeric value if available; undefined otherwise.
    */
   private buildQuantityColumn(value: any): number | undefined {
@@ -1326,8 +1326,8 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Writes resources values to the lookup tables.
-   * @param client The database client inside the transaction.
-   * @param resource The resource to index.
+   * @param client - The database client inside the transaction.
+   * @param resource - The resource to index.
    */
   private async writeLookupTables(client: PoolClient, resource: Resource): Promise<void> {
     for (const lookupTable of lookupTables) {
@@ -1337,8 +1337,8 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Deletes values from lookup tables.
-   * @param client The database client inside the transaction.
-   * @param resource The resource to delete.
+   * @param client - The database client inside the transaction.
+   * @param resource - The resource to delete.
    */
   private async deleteFromLookupTables(client: Pool | PoolClient, resource: Resource): Promise<void> {
     for (const lookupTable of lookupTables) {
@@ -1350,8 +1350,8 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Returns the last updated timestamp for the resource.
    * During historical data migration, some client applications are allowed
    * to override the timestamp.
-   * @param existing Existing resource if one exists.
-   * @param resource The FHIR resource.
+   * @param existing - Existing resource if one exists.
+   * @param resource - The FHIR resource.
    * @returns The last updated date.
    */
   private getLastUpdated(existing: Resource | undefined, resource: Resource): string {
@@ -1375,7 +1375,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * If it is a public resource type, then returns the public project ID.
    * If it is a protected resource type, then returns the Medplum project ID.
    * Otherwise, by default, return the current context project ID.
-   * @param resource The FHIR resource.
+   * @param resource - The FHIR resource.
    * @returns The project ID.
    */
   private getProjectId(resource: Resource): string | undefined {
@@ -1408,7 +1408,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * and the provided resource includes an author reference,
    * then use the provided value.
    * Otherwise uses the current context profile.
-   * @param resource The FHIR resource.
+   * @param resource - The FHIR resource.
    * @returns The author value.
    */
   private getAuthor(resource: Resource): Reference {
@@ -1427,9 +1427,9 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Returns the author reference string (resourceType/id).
    * If the current context is a ClientApplication, handles "on behalf of".
    * Otherwise uses the current context profile.
-   * @param existing Existing resource if one exists.
-   * @param updated The incoming updated resource.
-   * @param create Flag for when "creating" vs "updating".
+   * @param existing - Existing resource if one exists.
+   * @param updated - The incoming updated resource.
+   * @param create - Flag for when "creating" vs "updating".
    * @returns The account value.
    */
   private async getAccount(
@@ -1491,7 +1491,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Determines if the current user can read the specified resource type.
-   * @param resourceType The resource type.
+   * @param resourceType - The resource type.
    * @returns True if the current user can read the specified resource type.
    */
   canReadResourceType(resourceType: string): boolean {
@@ -1511,7 +1511,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Determines if the current user can write the specified resource type.
    * This is a preliminary check before evaluating a write operation in depth.
    * If a user cannot write a resource type at all, then don't bother looking up previous versions.
-   * @param resourceType The resource type.
+   * @param resourceType - The resource type.
    * @returns True if the current user can write the specified resource type.
    */
   private canWriteResourceType(resourceType: string): boolean {
@@ -1530,7 +1530,7 @@ export class Repository extends BaseRepository implements FhirRepository {
   /**
    * Determines if the current user can write to the specified resource.
    * This is a more in-depth check after building the candidate result of a write operation.
-   * @param resource The resource.
+   * @param resource - The resource.
    * @returns True if the current user can write the specified resource type.
    */
   private canWriteToResource(resource: Resource): boolean {
@@ -1548,8 +1548,8 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Check that a resource can be written in its current form.
-   * @param previous The resource before updates were applied.
-   * @param current The resource as it will be written.
+   * @param previous - The resource before updates were applied.
+   * @param current - The resource as it will be written.
    * @returns True if the current user can write the specified resource type.
    */
   private isResourceWriteable(previous: Resource | undefined, current: Resource): boolean {
@@ -1576,7 +1576,7 @@ export class Repository extends BaseRepository implements FhirRepository {
   /**
    * Returns true if the resource is "cache only" and not written to the database.
    * This is a highly specialized use case for internal system resources.
-   * @param resource The candidate resource.
+   * @param resource - The candidate resource.
    * @returns True if the resource should be cached only and not written to the database.
    */
   private isCacheOnly(resource: Resource): boolean {
@@ -1586,7 +1586,7 @@ export class Repository extends BaseRepository implements FhirRepository {
   /**
    * Removes hidden fields from a resource as defined by the access policy.
    * This should be called for any "read" operation.
-   * @param input The input resource.
+   * @param input - The input resource.
    * @returns The resource with hidden fields removed.
    */
   removeHiddenFields<T extends Resource>(input: T): T {
@@ -1610,8 +1610,8 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Overwrites readonly fields from a resource as defined by the access policy.
    * If no original (i.e., this is the first version), then blank them out.
    * This should be called for any "write" operation.
-   * @param input The input resource.
-   * @param original The previous version, if it exists.
+   * @param input - The input resource.
+   * @param original - The previous version, if it exists.
    * @returns The resource with restored hidden fields.
    */
   private restoreReadonlyFields<T extends Resource>(input: T, original: T | undefined): T {
@@ -1633,8 +1633,8 @@ export class Repository extends BaseRepository implements FhirRepository {
   /**
    * Removes a field from the input resource.
    * Uses JSONPatch to process the remove operation, which supports nested fields.
-   * @param input The input resource.
-   * @param path The path to the field to remove.
+   * @param input - The input resource.
+   * @param path - The path to the field to remove.
    * @returns The new document with the field removed.
    */
   private removeField<T extends Resource>(input: T, path: string): T {
@@ -1666,11 +1666,11 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Logs an AuditEvent for a restful operation.
-   * @param subtype The AuditEvent subtype.
-   * @param outcome The AuditEvent outcome.
-   * @param description The description.  Can be a string, object, or Error.  Will be normalized to a string.
-   * @param resource Optional resource to associate with the AuditEvent.
-   * @param search Optional search parameters to associate with the AuditEvent.
+   * @param subtype - The AuditEvent subtype.
+   * @param outcome - The AuditEvent outcome.
+   * @param description - The description.  Can be a string, object, or Error.  Will be normalized to a string.
+   * @param resource - Optional resource to associate with the AuditEvent.
+   * @param search - Optional search parameters to associate with the AuditEvent.
    */
   private logEvent(
     subtype: AuditEventSubtype,
@@ -1724,8 +1724,8 @@ export function getLookupTable(resourceType: string, searchParam: SearchParamete
 
 /**
  * Tries to read a cache entry from Redis by resource type and ID.
- * @param resourceType The resource type.
- * @param id The resource ID.
+ * @param resourceType - The resource type.
+ * @param id - The resource ID.
  * @returns The cache entry if found; otherwise, undefined.
  */
 async function getCacheEntry<T extends Resource>(resourceType: string, id: string): Promise<CacheEntry<T> | undefined> {
@@ -1735,7 +1735,7 @@ async function getCacheEntry<T extends Resource>(resourceType: string, id: strin
 
 /**
  * Performs a bulk read of cache entries from Redis.
- * @param references Array of FHIR references.
+ * @param references - Array of FHIR references.
  * @returns Array of cache entries or undefined.
  */
 async function getCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
@@ -1751,7 +1751,7 @@ async function getCacheEntries(references: Reference[]): Promise<(CacheEntry | u
 
 /**
  * Writes a cache entry to Redis.
- * @param resource The resource to cache.
+ * @param resource - The resource to cache.
  */
 async function setCacheEntry(resource: Resource): Promise<void> {
   await getRedis().set(
@@ -1764,8 +1764,8 @@ async function setCacheEntry(resource: Resource): Promise<void> {
 
 /**
  * Deletes a cache entry from Redis.
- * @param resourceType The resource type.
- * @param id The resource ID.
+ * @param resourceType - The resource type.
+ * @param id - The resource ID.
  */
 async function deleteCacheEntry(resourceType: string, id: string): Promise<void> {
   await getRedis().del(getCacheKey(resourceType, id));
@@ -1773,8 +1773,8 @@ async function deleteCacheEntry(resourceType: string, id: string): Promise<void>
 
 /**
  * Deletes cache entries from Redis.
- * @param resourceType The resource type.
- * @param ids The resource IDs.
+ * @param resourceType - The resource type.
+ * @param ids - The resource IDs.
  */
 async function deleteCacheEntries(resourceType: string, ids: string[]): Promise<void> {
   const cacheKeys = ids.map((id) => {
@@ -1786,8 +1786,8 @@ async function deleteCacheEntries(resourceType: string, ids: string[]): Promise<
 
 /**
  * Returns the redis cache key for the given resource type and resource ID.
- * @param resourceType The resource type.
- * @param id The resource ID.
+ * @param resourceType - The resource type.
+ * @param id - The resource ID.
  * @returns The Redis cache key.
  */
 function getCacheKey(resourceType: string, id: string): string {

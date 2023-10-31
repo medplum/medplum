@@ -3,7 +3,7 @@ import { BaseLoginRequest, LoginAuthenticationResponse, normalizeErrorString } f
 import { ProjectMembership } from '@medplum/fhirtypes';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+import { useMedplum } from '@medplum/react-hooks';
 import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
 import { ChooseScopeForm } from './ChooseScopeForm';
@@ -31,7 +31,7 @@ export interface SignInFormProps extends BaseLoginRequest {
  * 3) Choose profile - If the user has multiple profiles, prompt to choose one
  * 4) Choose scope - If the user has multiple scopes, prompt to choose one
  * 5) Success - Return to the caller with either a code or a redirect
- * @param props The SignInForm React props.
+ * @param props - The SignInForm React props.
  * @returns The SignInForm React node.
  */
 export function SignInForm(props: SignInFormProps): JSX.Element {

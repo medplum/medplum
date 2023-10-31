@@ -78,7 +78,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 /**
  * Returns a practitioner resource.
  * Creates the practitioner if one does not already exist.
- * @param medplum The medplum client.
+ * @param medplum - The medplum client.
  * @returns The practitioner resource.
  */
 async function ensureQuestionnaire(medplum: MedplumClient): Promise<void> {
@@ -142,7 +142,7 @@ async function ensureQuestionnaire(medplum: MedplumClient): Promise<void> {
 /**
  * Returns a practitioner resource.
  * Creates the practitioner if one does not already exist.
- * @param medplum The medplum client.
+ * @param medplum - The medplum client.
  * @returns The practitioner resource.
  */
 async function getPractitioner(medplum: MedplumClient): Promise<Practitioner> {
@@ -179,8 +179,8 @@ async function getPractitioner(medplum: MedplumClient): Promise<Practitioner> {
 
 /**
  * Ensures that the practitioner has a schedule, and that the schedule has slots.
- * @param medplum The medplum client.
- * @param practitioner The practitioner.
+ * @param medplum - The medplum client.
+ * @param practitioner - The practitioner.
  */
 async function ensureSchedule(medplum: MedplumClient, practitioner: Practitioner): Promise<void> {
   // Try to get the schedule
@@ -204,9 +204,9 @@ async function ensureSchedule(medplum: MedplumClient, practitioner: Practitioner
 
 /**
  * Ensures that the schedule has slots for the given date.
- * @param medplum The medplum client.
- * @param schedule The practitioner's schedule.
- * @param slotDate The day of slots.
+ * @param medplum - The medplum client.
+ * @param schedule - The practitioner's schedule.
+ * @param slotDate - The day of slots.
  */
 async function ensureSlots(medplum: MedplumClient, schedule: Schedule, slotDate: Date): Promise<void> {
   const existingSlots = await medplum.search(
@@ -235,8 +235,8 @@ async function ensureSlots(medplum: MedplumClient, schedule: Schedule, slotDate:
 
 /**
  * Creates a CarePlan that was completed in the past.
- * @param medplum The medplum client
- * @param patient The patient.
+ * @param medplum - The medplum client
+ * @param patient - The patient.
  */
 async function createCompletedCarePlan(medplum: MedplumClient, patient: Patient): Promise<void> {
   const tasks: Task[] = [
@@ -275,8 +275,8 @@ async function createCompletedCarePlan(medplum: MedplumClient, patient: Patient)
 
 /**
  * Creates an active CarePlan that starts today.
- * @param medplum The medplum client
- * @param patient The patient.
+ * @param medplum - The medplum client
+ * @param patient - The patient.
  */
 async function createActiveCarePlan(medplum: MedplumClient, patient: Patient): Promise<void> {
   const tasks: Task[] = [
@@ -301,9 +301,9 @@ async function createActiveCarePlan(medplum: MedplumClient, patient: Patient): P
 
 /**
  * Creates a Care Plan based on the tasks for the given patient
- * @param medplum The medplum client
- * @param patient The patient
- * @param tasks The set of tasks to complete for the care plan
+ * @param medplum - The medplum client
+ * @param patient - The patient
+ * @param tasks - The set of tasks to complete for the care plan
  * @returns The created care plan
  */
 async function createCarePlan(medplum: MedplumClient, patient: Patient, tasks: Task[]): Promise<CarePlan> {
@@ -367,8 +367,8 @@ function createA1CObservation(patient: Patient): Observation {
 
 /**
  * Creates a DiagnosticReport with an A1C observation.
- * @param patient The patient.
- * @param a1c The A1C observation.
+ * @param patient - The patient.
+ * @param a1c - The A1C observation.
  * @returns The DiagnosticReport.
  */
 function createDiagnosticReport(patient: Patient, a1c: Observation): DiagnosticReport {

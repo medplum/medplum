@@ -1,8 +1,8 @@
 import { CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { CodeableConceptInput } from './CodeableConceptInput';
 
 const medplum = new MockClient();

@@ -1,10 +1,10 @@
 import { createStyles, Group, Text } from '@mantine/core';
 import { formatHumanName, getDisplayString, getReferenceString, isUUID } from '@medplum/core';
 import { Patient, ServiceRequest } from '@medplum/fhirtypes';
+import { useMedplum, useMedplumNavigate } from '@medplum/react-hooks';
 import { IconSearch } from '@tabler/icons-react';
 import React, { forwardRef, useCallback } from 'react';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
-import { useMedplum, useMedplumNavigate } from '../MedplumProvider/MedplumProvider.context';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 
 export type HeaderSearchTypes = Patient | ServiceRequest;
@@ -201,8 +201,8 @@ function buildGraphQLQuery(input: string): string {
  * Returns a de-duped and sorted list of resources from the search response.
  * The search request is actually 3+ separate searches, which can include duplicates.
  * This function combines the results, de-dupes, and sorts by relevance.
- * @param response The response from a search query.
- * @param query The user entered search query.
+ * @param response - The response from a search query.
+ * @param query - The user entered search query.
  * @returns The resources to display in the autocomplete.
  */
 function getResourcesFromResponse(response: SearchGraphQLResponse, query: string): HeaderSearchTypes[] {
@@ -221,7 +221,7 @@ function getResourcesFromResponse(response: SearchGraphQLResponse, query: string
 
 /**
  * Removes duplicate resources from an array by ID.
- * @param resources The array of resources with possible duplicates.
+ * @param resources - The array of resources with possible duplicates.
  * @returns The array of resources with no duplicates.
  */
 function dedupeResources(resources: HeaderSearchTypes[]): HeaderSearchTypes[] {
@@ -240,8 +240,8 @@ function dedupeResources(resources: HeaderSearchTypes[]): HeaderSearchTypes[] {
 
 /**
  * Sorts an array of resources by relevance.
- * @param resources The candidate resources.
- * @param query The user entered search string.
+ * @param resources - The candidate resources.
+ * @param query - The user entered search string.
  * @returns The sorted array of resources.
  */
 function sortByRelevance(resources: HeaderSearchTypes[], query: string): HeaderSearchTypes[] {
@@ -253,8 +253,8 @@ function sortByRelevance(resources: HeaderSearchTypes[], query: string): HeaderS
 /**
  * Calculates a relevance score of a candidate resource.
  * Higher scores are better.
- * @param resource The candidate resource.
- * @param query The user entered search string.
+ * @param resource - The candidate resource.
+ * @param query - The user entered search string.
  * @returns The relevance score of the candidate resource.
  */
 function getResourceScore(resource: HeaderSearchTypes, query: string): number {
@@ -278,8 +278,8 @@ function getResourceScore(resource: HeaderSearchTypes, query: string): number {
 /**
  * Calculates a relevance score of a candidate display string.
  * Higher scores are better.
- * @param str The candidate display string.
- * @param query The user entered search string.
+ * @param str - The candidate display string.
+ * @param query - The user entered search string.
  * @returns The relevance score of the candidate string.
  */
 function getStringScore(str: string | undefined, query: string): number {

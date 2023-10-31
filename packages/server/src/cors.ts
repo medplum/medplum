@@ -6,8 +6,8 @@ const exposedHeaders = ['Content-Location', 'ETag', 'Last-Modified', 'Location']
 
 /**
  * CORS configuration.
- * @param req The express request.
- * @param callback The cors plugin callback.
+ * @param req - The express request.
+ * @param callback - The cors plugin callback.
  */
 export const corsOptions: cors.CorsOptionsDelegate<Request> = (req, callback) => {
   const origin = req.header('Origin');

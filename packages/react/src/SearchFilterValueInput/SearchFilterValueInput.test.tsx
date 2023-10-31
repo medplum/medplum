@@ -4,7 +4,7 @@ import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { convertIsoToLocal } from '../DateTimeInput/DateTimeInput.utils';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
 
 const medplum = new MockClient();

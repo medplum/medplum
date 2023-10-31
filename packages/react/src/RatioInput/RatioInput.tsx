@@ -12,7 +12,7 @@ export interface RatioInputProps {
 /**
  * Renders a Ratio input.
  * See: https://www.hl7.org/fhir/datatypes.html#Ratio
- * @param props Ratio input properties.
+ * @param props - Ratio input properties.
  * @returns Ratio input element.
  */
 export function RatioInput(props: RatioInputProps): JSX.Element {

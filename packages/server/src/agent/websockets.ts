@@ -12,8 +12,8 @@ import { getRedis } from '../redis';
 /**
  * Handles a new WebSocket connection to the agent service.
  * The agent service executes a bot and returns the result.
- * @param socket The WebSocket connection.
- * @param request The HTTP request.
+ * @param socket - The WebSocket connection.
+ * @param request - The HTTP request.
  */
 export async function handleAgentConnection(socket: ws.WebSocket, request: IncomingMessage): Promise<void> {
   const remoteAddress = request.socket.remoteAddress;
@@ -53,7 +53,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
    * Handles a connect command.
    * This command is sent by the agent to connect to the server.
    * The command includes the access token and bot ID.
-   * @param command The connect command.
+   * @param command - The connect command.
    */
   async function handleConnect(command: any): Promise<void> {
     if (!command.accessToken) {
@@ -87,7 +87,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
   /**
    * Handles a transit command.
    * This command is sent by the agent to transmit a message.
-   * @param command The transmit command.
+   * @param command - The transmit command.
    */
   async function handleTransmit(command: any): Promise<void> {
     if (!agentId) {

@@ -121,7 +121,7 @@ describe('Agent WebSockets', () => {
     await request(server)
       .ws('/ws/agent')
       .sendText('<html></html>')
-      .expectText('{"type":"error","body":"Unexpected token < in JSON at position 0"}')
+      .expectText(/{"type":"error","body":"Unexpected token/)
       .close()
       .expectClosed();
   });

@@ -10,8 +10,8 @@ type SearchFn = 'search' | 'searchOne' | 'searchResources';
  *
  * This is a convenience hook for calling the MedplumClient.search() method.
  *
- * @param resourceType The FHIR resource type to search.
- * @param query Optional search parameters.
+ * @param resourceType - The FHIR resource type to search.
+ * @param query - Optional search parameters.
  * @returns A 3-element tuple containing the search result, loading flag, and operation outcome.
  */
 export function useSearch<K extends ResourceType>(
@@ -26,8 +26,8 @@ export function useSearch<K extends ResourceType>(
  *
  * This is a convenience hook for calling the MedplumClient.searchOne() method.
  *
- * @param resourceType The FHIR resource type to search.
- * @param query Optional search parameters.
+ * @param resourceType - The FHIR resource type to search.
+ * @param query - Optional search parameters.
  * @returns A 3-element tuple containing the search result, loading flag, and operation outcome.
  */
 export function useSearchOne<K extends ResourceType>(
@@ -42,8 +42,8 @@ export function useSearchOne<K extends ResourceType>(
  *
  * This is a convenience hook for calling the MedplumClient.searchResources() method.
  *
- * @param resourceType The FHIR resource type to search.
- * @param query Optional search parameters.
+ * @param resourceType - The FHIR resource type to search.
+ * @param query - Optional search parameters.
  * @returns A 3-element tuple containing the search result, loading flag, and operation outcome.
  */
 export function useSearchResources<K extends ResourceType>(

@@ -156,8 +156,8 @@ function buildGrid(startDate: Date, slots: Slot[]): OptionalCalendarCell[][] {
 
 /**
  * Returns true if the given date is available for booking.
- * @param day The day to check.
- * @param slots The list of available slots.
+ * @param day - The day to check.
+ * @param slots - The list of available slots.
  * @returns True if there are any available slots for the day.
  */
 function isDayAvailable(day: Date, slots: Slot[]): boolean {

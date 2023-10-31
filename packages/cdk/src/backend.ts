@@ -1,6 +1,7 @@
 import { MedplumInfraConfig } from '@medplum/core';
 import {
   Duration,
+  RemovalPolicy,
   aws_ec2 as ec2,
   aws_ecs as ecs,
   aws_elasticache as elasticache,
@@ -8,7 +9,6 @@ import {
   aws_iam as iam,
   aws_logs as logs,
   aws_rds as rds,
-  RemovalPolicy,
   aws_route53 as route53,
   aws_s3 as s3,
   aws_secretsmanager as secretsmanager,
@@ -462,8 +462,8 @@ export class BackEnd extends Construct {
    * Returns a container image for the given image name.
    * If the image name is an ECR image, then the image will be pulled from ECR.
    * Otherwise, the image name is assumed to be a Docker Hub image.
-   * @param config The config settings (account number and region).
-   * @param imageName The image name.
+   * @param config - The config settings (account number and region).
+   * @param imageName - The image name.
    * @returns The container image.
    */
   private getContainerImage(config: MedplumInfraConfig, imageName: string): ecs.ContainerImage {

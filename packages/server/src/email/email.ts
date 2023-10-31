@@ -13,8 +13,8 @@ import { globalLogger } from '../logger';
  * Sends an email using the AWS SES service.
  * Builds the email using nodemailer MailComposer.
  * See options here: https://nodemailer.com/extras/mailcomposer/
- * @param repo The user repository.
- * @param options The MailComposer options.
+ * @param repo - The user repository.
+ * @param options - The MailComposer options.
  */
 export async function sendEmail(repo: Repository, options: Mail.Options): Promise<void> {
   const config = getConfig();
@@ -44,7 +44,7 @@ export async function sendEmail(repo: Repository, options: Mail.Options): Promis
 
 /**
  * Converts nodemailer addresses to an array of strings.
- * @param input nodemailer address input.
+ * @param input - nodemailer address input.
  * @returns Array of string addresses.
  */
 function buildAddresses(input: string | Address | (string | Address)[] | undefined): string[] | undefined {
@@ -59,7 +59,7 @@ function buildAddresses(input: string | Address | (string | Address)[] | undefin
 
 /**
  * Converts a nodemailer address to a string.
- * @param address nodemailer address input.
+ * @param address - nodemailer address input.
  * @returns String address.
  */
 function addressToString(address: Address | string | undefined): string | undefined {
@@ -76,7 +76,7 @@ function addressToString(address: Address | string | undefined): string | undefi
 
 /**
  * Builds a raw email message using nodemailer MailComposer.
- * @param options The nodemailer options.
+ * @param options - The nodemailer options.
  * @returns The raw email message.
  */
 function buildRawMessage(options: Mail.Options): Promise<Uint8Array> {
@@ -94,8 +94,8 @@ function buildRawMessage(options: Mail.Options): Promise<Uint8Array> {
 
 /**
  * Validates an array of nodemailer attachments.
- * @param repo The user repository.
- * @param attachments Optional array of nodemailer attachments.
+ * @param repo - The user repository.
+ * @param attachments - Optional array of nodemailer attachments.
  */
 async function processAttachments(repo: Repository, attachments: Mail.Attachment[] | undefined): Promise<void> {
   if (attachments) {
@@ -107,8 +107,8 @@ async function processAttachments(repo: Repository, attachments: Mail.Attachment
 
 /**
  * Validates a nodemailer attachment.
- * @param repo The user repository.
- * @param attachment The nodemailer attachment.
+ * @param repo - The user repository.
+ * @param attachment - The nodemailer attachment.
  */
 async function processAttachment(repo: Repository, attachment: Mail.Attachment): Promise<void> {
   // MailComposer/nodemailer has many different ways to specify attachments.
@@ -137,8 +137,8 @@ async function processAttachment(repo: Repository, attachment: Mail.Attachment):
 
 /**
  * Sends an email via SMTP.
- * @param smtpConfig The SMTP configuration.
- * @param options The nodemailer options.
+ * @param smtpConfig - The SMTP configuration.
+ * @param options - The nodemailer options.
  */
 async function sendEmailViaSmpt(smtpConfig: MedplumSmtpConfig, options: Mail.Options): Promise<void> {
   const transport = createTransport({
@@ -154,7 +154,7 @@ async function sendEmailViaSmpt(smtpConfig: MedplumSmtpConfig, options: Mail.Opt
 
 /**
  * Sends an email via AWS SES.
- * @param options The nodemailer options.
+ * @param options - The nodemailer options.
  */
 async function sendEmailViaSes(options: Mail.Options): Promise<void> {
   const config = getConfig();

@@ -19,8 +19,8 @@ const FACILITY_CODE = '52054';
  *
  * See: https://hl7-definition.caristix.com/v2/HL7v2.3/TriggerEvents/ORM_O01
  *
- * @param medplum The Medplum Client object
- * @param event The BotEvent object
+ * @param medplum - The Medplum Client object
+ * @param event - The BotEvent object
  * @returns The data returned by the `list` command
  */
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<any> {

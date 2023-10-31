@@ -1,7 +1,12 @@
 import { ContentType, MedplumClient, createReference, getStatus, isOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Patient, PatientLink, ServiceRequest } from '@medplum/fhirtypes';
 import { Mock, vi } from 'vitest';
-import { linkPatientRecords, mergePatientRecords, updateResourceReferences } from './merge-matching-patients';
+import {
+  linkPatientRecords,
+  mergePatientRecords,
+  unlinkPatientRecords,
+  updateResourceReferences,
+} from './merge-matching-patients';
 
 function mockFetch(
   status: number,
@@ -66,7 +71,7 @@ describe('Deduplication', () => {
       resourceType: 'Patient',
       id: 'target',
       name: [{ given: ['Lisa'], family: 'Simpson' }],
-      link: [{ other: createReference({ resourceType: 'Patient', id: '123' }), type: 'seeAlso' }] as PatientLink,
+      link: [{ other: createReference({ resourceType: 'Patient', id: '123' }), type: 'seealso' }] as PatientLink,
     } as Patient;
 
     const result = linkPatientRecords(srcPatient, targetPatient);
@@ -77,6 +82,30 @@ describe('Deduplication', () => {
       other: { display: 'Homer Simpson', reference: 'Patient/src' },
       type: 'replaces',
     });
+  });
+
+  test('should unlink patients', () => {
+    const srcPatient = {
+      resourceType: 'Patient',
+      id: 'src',
+      active: false,
+      name: [{ given: ['Homer'], family: 'Simpson' }],
+      link: [{ other: { reference: 'Patient/target' }, type: 'replaced-by' }],
+    } as Patient;
+
+    const targetPatient = {
+      resourceType: 'Patient',
+      id: 'target',
+      active: true,
+      name: [{ given: ['Lisa'], family: 'Simpson' }],
+      link: [{ other: createReference(srcPatient), type: 'replaces' }],
+    } as Patient;
+
+    const result = unlinkPatientRecords(srcPatient, targetPatient);
+
+    expect(result.src.link?.length).toBe(0);
+    expect(result.target.link?.length).toBe(0);
+    expect(result.src.active).toBe(true);
   });
 
   test('should merge contact info correctly', () => {

@@ -2,8 +2,8 @@ import { Resource } from '@medplum/fhirtypes';
 
 /**
  * Sorts an array of resources in place by meta.lastUpdated ascending.
- * @param resources Array of resources.
- * @param timelineResource Optional primary resource of a timeline view. If specified, the primary resource will be sorted by meta.lastUpdated descending.
+ * @param resources - Array of resources.
+ * @param timelineResource - Optional primary resource of a timeline view. If specified, the primary resource will be sorted by meta.lastUpdated descending.
  */
 export function sortByDateAndPriority(resources: Resource[], timelineResource?: Resource): void {
   resources.sort((a: Resource, b: Resource): number => {

@@ -16,11 +16,11 @@ import { applySmartScopes } from './smart';
  * Individual instances of the Repository class manage access rights to resources.
  * Login instances contain details about user compartments.
  * This method ensures that the repository is setup correctly.
- * @param login The user login.
- * @param membership The active project membership.
- * @param strictMode Optional flag to enable strict mode for in-depth FHIR schema validation.
- * @param extendedMode Optional flag to enable extended mode for custom Medplum properties.
- * @param checkReferencesOnWrite Optional flag to enable reference checking on write.
+ * @param login - The user login.
+ * @param membership - The active project membership.
+ * @param strictMode - Optional flag to enable strict mode for in-depth FHIR schema validation.
+ * @param extendedMode - Optional flag to enable extended mode for custom Medplum properties.
+ * @param checkReferencesOnWrite - Optional flag to enable reference checking on write.
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(
@@ -47,8 +47,8 @@ export async function getRepoForLogin(
 
 /**
  * Returns the access policy for the login.
- * @param login The user login.
- * @param membership The user membership.
+ * @param login - The user login.
+ * @param membership - The user membership.
  * @returns The finalized access policy.
  */
 export async function getAccessPolicyForLogin(
@@ -77,7 +77,7 @@ export async function getAccessPolicyForLogin(
 
 /**
  * Builds a parameterized compound access policy.
- * @param membership The user project membership.
+ * @param membership - The user project membership.
  * @returns The parameterized compound access policy.
  */
 async function buildAccessPolicy(membership: ProjectMembership): Promise<AccessPolicy> {
@@ -118,8 +118,8 @@ async function buildAccessPolicy(membership: ProjectMembership): Promise<AccessP
 
 /**
  * Reads an access policy and replaces all variables.
- * @param access The access policy and parameters.
- * @param profile The user profile.
+ * @param access - The access policy and parameters.
+ * @param profile - The user profile.
  * @returns The AccessPolicy with variables resolved.
  */
 async function buildAccessPolicyResources(
@@ -147,9 +147,9 @@ async function buildAccessPolicyResources(
 /**
  * Updates the access policy to include project admin rules.
  * This includes ensuring no admin rights for non-admins and restricted access for admins.
- * @param login The user login.
- * @param membership The active project membership.
- * @param accessPolicy The existing access policy.
+ * @param login - The user login.
+ * @param membership - The active project membership.
+ * @param accessPolicy - The existing access policy.
  * @returns Updated access policy with all project admin rules applied.
  */
 function applyProjectAdminAccessPolicy(

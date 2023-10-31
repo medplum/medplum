@@ -191,9 +191,9 @@ export default function PricingPage(): JSX.Element {
                   GitHub
                 </td>
                 <td>
-                  Slack
+                  Discord (SLA)
                   <br />
-                  Email
+                  Github (SLA)
                 </td>
                 <td>Contact us</td>
                 <td>

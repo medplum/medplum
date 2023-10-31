@@ -1,13 +1,23 @@
 {
   "name": "foomedical",
-  "version": "2.1.7",
+  "version": "2.1.10",
   "scripts": {
-    "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview",
+    "coverage": "jest --coverage",
+    "dev": "vite",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --fix src",
-    "test": "jest",
-    "coverage": "jest --coverage"
+    "preview": "vite preview",
+    "test": "jest"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
   },
   "devDependencies": {
     "@babel/core": "7.23.2",
@@ -18,11 +28,11 @@
     "@mantine/core": "6.0.21",
     "@mantine/hooks": "6.0.21",
     "@mantine/notifications": "6.0.21",
-    "@medplum/core": "2.1.7",
-    "@medplum/eslint-config": "2.1.7",
-    "@medplum/fhirtypes": "2.1.7",
-    "@medplum/mock": "2.1.7",
-    "@medplum/react": "2.1.7",
+    "@medplum/core": "2.1.10",
+    "@medplum/eslint-config": "2.1.10",
+    "@medplum/fhirtypes": "2.1.10",
+    "@medplum/mock": "2.1.10",
+    "@medplum/react": "2.1.10",
     "@tabler/icons-react": "2.39.0",
     "@testing-library/jest-dom": "6.1.4",
     "@testing-library/react": "14.0.0",
@@ -46,15 +56,5 @@
     "react-router-dom": "6.16.0",
     "typescript": "5.2.2",
     "vite": "4.4.11"
-  },
-  "prettier": {
-    "printWidth": 120,
-    "singleQuote": true,
-    "trailingComma": "es5"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
   }
 }

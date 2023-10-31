@@ -30,7 +30,7 @@ export function getPatientCompartments(): CompartmentDefinition {
  * Returns the list of patient compartment search parameters, if the resource type is in a patient compartment.
  * Returns undefined otherwise.
  * See: https://www.hl7.org/fhir/compartmentdefinition-patient.html
- * @param resourceType The resource type.
+ * @param resourceType - The resource type.
  * @returns List of property names if in patient compartment; undefined otherwise.
  */
 export function getPatientCompartmentParams(resourceType: string): string[] | undefined {
@@ -49,7 +49,7 @@ export function getPatientCompartmentParams(resourceType: string): string[] | un
  * then return the patient ID.
  * If the resource is not in a patient compartment (i.e., a StructureDefinition),
  * then return undefined.
- * @param resource The resource to inspect.
+ * @param resource - The resource to inspect.
  * @returns The patient ID if found; undefined otherwise.
  */
 export function getPatients(resource: Resource): Reference<Patient>[] {
@@ -79,7 +79,7 @@ export function getPatients(resource: Resource): Reference<Patient>[] {
 
 /**
  * Tries to return a patient reference from an unknown value.
- * @param value The unknown value.
+ * @param value - The unknown value.
  * @returns The patient reference if found; undefined otherwise.
  */
 function getPatientFromUnknownValue(value: unknown): string | undefined {
@@ -91,7 +91,7 @@ function getPatientFromUnknownValue(value: unknown): string | undefined {
 
 /**
  * Tries to return a patient reference from a FHIR reference.
- * @param reference A FHIR reference.
+ * @param reference - A FHIR reference.
  * @returns The patient reference if found; undefined otherwise.
  */
 function getPatientIdFromReference(reference: Reference): string | undefined {

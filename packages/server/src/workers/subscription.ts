@@ -56,7 +56,7 @@ let worker: Worker<SubscriptionJobData> | undefined = undefined;
  * Initializes the subscription worker.
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
- * @param config The Medplum server config to use.
+ * @param config - The Medplum server config to use.
  */
 export function initSubscriptionWorker(config: MedplumServerConfig): void {
   const defaultOptions: QueueBaseOptions = {
@@ -120,8 +120,8 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  * at that moment in time.  For each matching subscription, we enqueue the job.
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the subscription.
- * @param resource The resource that was created or updated.
- * @param context The background job context.
+ * @param resource - The resource that was created or updated.
+ * @param context - The background job context.
  */
 export async function addSubscriptionJobs(resource: Resource, context: BackgroundJobContext): Promise<void> {
   const ctx = getRequestContext();
@@ -146,9 +146,9 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
 
 /**
  * Determines if the resource matches the subscription criteria.
- * @param resource The resource that was created or updated.
- * @param subscription The subscription.
- * @param context Background job context.
+ * @param resource - The resource that was created or updated.
+ * @param subscription - The subscription.
+ * @param context - Background job context.
  * @returns True if the resource matches the subscription criteria.
  */
 async function matchesCriteria(
@@ -203,7 +203,7 @@ async function matchesCriteria(
 
 /**
  * Returns true if the subscription channel type is ok to execute.
- * @param subscription The subscription resource.
+ * @param subscription - The subscription resource.
  * @returns True if the subscription channel type is ok to execute.
  */
 function matchesChannelType(subscription: Subscription): boolean {
@@ -224,7 +224,7 @@ function matchesChannelType(subscription: Subscription): boolean {
 
 /**
  * Adds a subscription job to the queue.
- * @param job The subscription job details.
+ * @param job - The subscription job details.
  */
 async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
   const ctx = getRequestContext();
@@ -238,7 +238,7 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
 
 /**
  * Loads the list of all subscriptions in this repository.
- * @param resource The resource that was created or updated.
+ * @param resource - The resource that was created or updated.
  * @returns The list of all subscriptions in this repository.
  */
 async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
@@ -266,7 +266,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
 
 /**
  * Executes a subscription job.
- * @param job The subscription job details.
+ * @param job - The subscription job details.
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
   const { subscriptionId, resourceType, id, versionId } = job.data;
@@ -335,9 +335,9 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
 
 /**
  * Sends a rest-hook subscription.
- * @param job The subscription job details.
- * @param subscription The subscription.
- * @param resource The resource that triggered the subscription.
+ * @param job - The subscription job details.
+ * @param subscription - The subscription.
+ * @param resource - The resource that triggered the subscription.
  */
 async function sendRestHook(
   job: Job<SubscriptionJobData>,
@@ -393,8 +393,8 @@ async function sendRestHook(
 
 /**
  * Builds a collection of HTTP request headers for the rest-hook subscription.
- * @param subscription The subscription resource.
- * @param resource The trigger resource.
+ * @param subscription - The subscription resource.
+ * @param resource - The trigger resource.
  * @returns The HTTP request headers.
  */
 function buildRestHookHeaders(subscription: Subscription, resource: Resource): HeadersInit {
@@ -425,8 +425,8 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
 
 /**
  * Executes a Bot subscription.
- * @param subscription The subscription.
- * @param resource The resource that triggered the subscription.
+ * @param subscription - The subscription.
+ * @param resource - The resource that triggered the subscription.
  */
 async function execBot(subscription: Subscription, resource: Resource): Promise<void> {
   const url = subscription.channel?.endpoint as string;
@@ -462,9 +462,9 @@ async function execBot(subscription: Subscription, resource: Resource): Promise<
 
 /**
  * Sends a rest-hook subscription for deleted resource. Extra header is passed and the body is empty.
- * @param job The subscription job details.
- * @param subscription The subscription.
- * @param resource The resource that triggered the subscription to add to the Audit Event.
+ * @param job - The subscription job details.
+ * @param subscription - The subscription.
+ * @param resource - The resource that triggered the subscription to add to the Audit Event.
  */
 async function sendDeleteRestHook(
   job: Job<SubscriptionJobData>,

@@ -95,7 +95,7 @@ export function ResourcePage(): JSX.Element | null {
 
   /**
    * Handles a tab change event.
-   * @param newTabName The new tab name.
+   * @param newTabName - The new tab name.
    */
   function onTabChange(newTabName: string): void {
     setCurrentTab(newTabName);

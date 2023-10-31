@@ -1,40 +1,7 @@
 {
   "name": "@medplum/fhir-router",
-  "version": "2.1.7",
+  "version": "2.1.10",
   "description": "Medplum FHIR Router",
-  "author": "Medplum <hello@medplum.com>",
-  "license": "Apache-2.0",
-  "homepage": "https://www.medplum.com/",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/medplum/medplum.git",
-    "directory": "packages/fhir-router"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "scripts": {
-    "clean": "rimraf dist",
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
-    "test": "jest"
-  },
-  "dependencies": {
-    "@medplum/core": "*",
-    "@medplum/definitions": "*",
-    "@medplum/fhirtypes": "*",
-    "dataloader": "2.2.2",
-    "graphql": "16.8.1",
-    "rfc6902": "5.0.1"
-  },
-  "main": "dist/cjs/index.cjs",
-  "module": "dist/esm/index.mjs",
-  "types": "dist/types/index.d.ts",
-  "exports": {
-    "types": "./dist/types/index.d.ts",
-    "require": "./dist/cjs/index.cjs",
-    "import": "./dist/esm/index.mjs"
-  },
-  "sideEffects": false,
   "keywords": [
     "medplum",
     "fhir",
@@ -49,5 +16,38 @@
     "stu3",
     "r4",
     "normative"
-  ]
+  ],
+  "homepage": "https://www.medplum.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/medplum/medplum.git",
+    "directory": "packages/fhir-router"
+  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "sideEffects": false,
+  "exports": {
+    "types": "./dist/types.d.ts",
+    "require": "./dist/cjs/index.cjs",
+    "import": "./dist/esm/index.mjs"
+  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/types.d.ts",
+  "scripts": {
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && api-extractor run --local",
+    "clean": "rimraf dist",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@medplum/core": "*",
+    "@medplum/definitions": "*",
+    "@medplum/fhirtypes": "*",
+    "dataloader": "2.2.2",
+    "graphql": "16.8.1",
+    "rfc6902": "5.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

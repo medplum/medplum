@@ -15,8 +15,8 @@ export interface UpdateAppOptions {
 
 /**
  * The AWS "update-app" command updates the Medplum app in a Medplum CloudFormation stack to the latest version.
- * @param tag The Medplum stack tag.
- * @param options The update options.
+ * @param tag - The Medplum stack tag.
+ * @param options - The update options.
  */
 export async function updateAppCommand(tag: string, options: UpdateAppOptions): Promise<void> {
   const config = readConfig(tag);
@@ -60,8 +60,8 @@ export async function updateAppCommand(tag: string, options: UpdateAppOptions): 
 /**
  * Returns NPM package metadata for a given package name.
  * See: https://github.com/npm/registry/blob/master/docs/REGISTRY-API.md#getpackageversion
- * @param packageName The npm package name.
- * @param version The npm package version string.
+ * @param packageName - The npm package name.
+ * @param version - The npm package version string.
  * @returns The package.json metadata content.
  */
 async function getNpmPackageMetadata(packageName: string, version: string): Promise<any> {
@@ -72,8 +72,8 @@ async function getNpmPackageMetadata(packageName: string, version: string): Prom
 
 /**
  * Downloads and extracts an NPM package.
- * @param packageName The NPM package name.
- * @param version The NPM package version or "latest".
+ * @param packageName - The NPM package name.
+ * @param version - The NPM package version or "latest".
  * @returns Path to temporary directory where the package was downloaded and extracted.
  */
 async function downloadNpmPackage(packageName: string, version: string): Promise<string> {
@@ -93,8 +93,8 @@ async function downloadNpmPackage(packageName: string, version: string): Promise
 
 /**
  * Replaces variables in all JS files in the given folder.
- * @param folderName The folder name of the files.
- * @param replacements The collection of variable placeholders and replacements.
+ * @param folderName - The folder name of the files.
+ * @param replacements - The collection of variable placeholders and replacements.
  */
 function replaceVariables(folderName: string, replacements: Record<string, string>): void {
   for (const item of readdirSync(folderName, { withFileTypes: true })) {
@@ -109,8 +109,8 @@ function replaceVariables(folderName: string, replacements: Record<string, strin
 
 /**
  * Replaces variables in the JS file.
- * @param fileName The file name.
- * @param replacements The collection of variable placeholders and replacements.
+ * @param fileName - The file name.
+ * @param replacements - The collection of variable placeholders and replacements.
  */
 function replaceVariablesInFile(fileName: string, replacements: Record<string, string>): void {
   let contents = readFileSync(fileName, 'utf-8');
@@ -123,9 +123,9 @@ function replaceVariablesInFile(fileName: string, replacements: Record<string, s
 /**
  * Uploads the app to S3.
  * Ensures correct content-type and cache-control for each file.
- * @param tmpDir The temporary directory where the app is located.
- * @param bucketName The destination S3 bucket name.
- * @param options The update options.
+ * @param tmpDir - The temporary directory where the app is located.
+ * @param bucketName - The destination S3 bucket name.
+ * @param options - The update options.
  */
 async function uploadAppToS3(tmpDir: string, bucketName: string, options: UpdateAppOptions): Promise<void> {
   // Manually iterate and upload files
@@ -162,13 +162,13 @@ async function uploadAppToS3(tmpDir: string, bucketName: string, options: Update
 
 /**
  * Uploads a directory of files to S3.
- * @param options The upload options such as bucket name, content type, and cache control.
- * @param options.rootDir The root directory of the upload.
- * @param options.bucketName The destination bucket name.
- * @param options.fileNamePattern The glob file pattern to upload.
- * @param options.contentType The content type MIME type.
- * @param options.cached True to mark as public and cached forever.
- * @param options.dryrun True to skip the upload.
+ * @param options - The upload options such as bucket name, content type, and cache control.
+ * @param options.rootDir - The root directory of the upload.
+ * @param options.bucketName - The destination bucket name.
+ * @param options.fileNamePattern - The glob file pattern to upload.
+ * @param options.contentType - The content type MIME type.
+ * @param options.cached - True to mark as public and cached forever.
+ * @param options.dryrun - True to skip the upload.
  */
 async function uploadFolderToS3(options: {
   rootDir: string;
@@ -186,13 +186,13 @@ async function uploadFolderToS3(options: {
 
 /**
  * Uploads a file to S3.
- * @param filePath The file path.
- * @param options The upload options such as bucket name, content type, and cache control.
- * @param options.rootDir The root directory of the upload.
- * @param options.bucketName The destination bucket name.
- * @param options.contentType The content type MIME type.
- * @param options.cached True to mark as public and cached forever.
- * @param options.dryrun True to skip the upload.
+ * @param filePath - The file path.
+ * @param options - The upload options such as bucket name, content type, and cache control.
+ * @param options.rootDir - The root directory of the upload.
+ * @param options.bucketName - The destination bucket name.
+ * @param options.contentType - The content type MIME type.
+ * @param options.cached - True to mark as public and cached forever.
+ * @param options.dryrun - True to skip the upload.
  */
 async function uploadFileToS3(
   filePath: string,
