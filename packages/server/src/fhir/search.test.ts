@@ -1847,6 +1847,7 @@ describe('FHIR Search', () => {
 
   test('Chained search on singlet columns', () =>
     withTestContext(async () => {
+      const observationCode = randomUUID();
       // Create linked resources
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
@@ -1859,7 +1860,7 @@ describe('FHIR Search', () => {
       const observation = await systemRepo.createResource<Observation>({
         resourceType: 'Observation',
         status: 'final',
-        code: { text: 'Throat culture' },
+        code: { coding: [{ system: 'http://example.com/lab-tests', code: observationCode }], text: 'Throat culture' },
         subject: createReference(patient),
         encounter: createReference(encounter),
       });
@@ -1873,7 +1874,7 @@ describe('FHIR Search', () => {
 
       const result = await systemRepo.search(
         parseSearchDefinition(
-          `Patient?_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status=final`
+          `Patient?_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.code=${observationCode}`
         )
       );
       expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
