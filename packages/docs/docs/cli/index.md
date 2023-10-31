@@ -60,6 +60,10 @@ By default, the `medplum` command uses the Medplum hosted API at "https://api.me
 - `--authorizeUrl <authorizeUrl>`
   - FHIR server authorize url
 
+```bash
+medplum get --base-url https://api.example.com 'Patient/homer-simpson'
+```
+
 ### Auth
 
 #### `login`
