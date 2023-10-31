@@ -462,7 +462,9 @@ function parseReverseChainLink(param: string, targetResourceType: string): Chain
   if (!searchParam) {
     throw new Error(`Invalid search parameter in chain: ${resourceType}?${code}`);
   } else if (!searchParam.target?.includes(targetResourceType as ResourceType)) {
-    throw new Error(`Unable to identify next resource type for search parameter: ${resourceType}?${code}`);
+    throw new Error(
+      `Invalid reverse chain link: search parameter ${resourceType}?${code} does not refer to ${targetResourceType}`
+    );
   }
   const details = getSearchParameterDetails(resourceType, searchParam);
   return { resourceType, searchParam, details, reverse: true };

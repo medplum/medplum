@@ -170,6 +170,27 @@ describe('Search Utils', () => {
     });
   });
 
+  test('Invalid chained search parameters', () => {
+    expect(() => parseSearchDefinition('Patient?organization.invalid=true')).toThrowError(
+      new Error('Invalid search parameter in chain: Organization?invalid')
+    );
+    expect(() => parseSearchDefinition('Patient?organization.invalid.name=Kaiser')).toThrowError(
+      new Error('Invalid search parameter in chain: Organization?invalid')
+    );
+    expect(() => parseSearchDefinition('Patient?general-practitioner.qualification-period=2023')).toThrowError(
+      new Error('Unable to identify next resource type for search parameter: Patient?general-practitioner')
+    );
+    expect(() => parseSearchDefinition('Patient?_has:Observation:invalid:status=active')).toThrowError(
+      new Error('Invalid search parameter in chain: Observation?invalid')
+    );
+    expect(() => parseSearchDefinition('Patient?_has:Observation:encounter:status=active')).toThrowError(
+      new Error('Invalid reverse chain link: search parameter Observation?encounter does not refer to Patient')
+    );
+    expect(() => parseSearchDefinition('Patient?_has:Observation:status=active')).toThrowError(
+      new Error('Invalid search chain: _has:Observation:status')
+    );
+  });
+
   test('Format Patient search', () => {
     const result = formatSearchQuery({
       resourceType: 'Patient',
