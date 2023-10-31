@@ -25,7 +25,7 @@ describe('Seed', () => {
     // Make sure the first project is a super admin
     const rows = await new SelectQuery('Project')
       .column('content')
-      .where('name', 'EQUALS', 'Super Admin')
+      .where('name', '=', 'Super Admin')
       .execute(getClient());
     expect(rows.length).toBe(1);
 
