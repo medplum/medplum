@@ -426,7 +426,7 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
       const [code, modifier] = part.split(':', 2);
       const searchParam = getSearchParameter(currentResourceType, part);
       if (!searchParam) {
-        throw new Error(`Invalid search parameter in chain: ${currentResourceType}?${code}`);
+        throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
       }
       param.chain[param.chain.length - 1].filter = parseParameter(searchParam, modifier, value);
     } else {

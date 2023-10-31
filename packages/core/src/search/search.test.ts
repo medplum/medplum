@@ -171,11 +171,11 @@ describe('Search Utils', () => {
   });
 
   test('Invalid chained search parameters', () => {
-    expect(() => parseSearchDefinition('Patient?organization.invalid=true')).toThrowError(
-      new Error('Invalid search parameter in chain: Organization?invalid')
-    );
     expect(() => parseSearchDefinition('Patient?organization.invalid.name=Kaiser')).toThrowError(
       new Error('Invalid search parameter in chain: Organization?invalid')
+    );
+    expect(() => parseSearchDefinition('Patient?organization.invalid=true')).toThrowError(
+      new Error('Invalid search parameter at end of chain: Organization?invalid')
     );
     expect(() => parseSearchDefinition('Patient?general-practitioner.qualification-period=2023')).toThrowError(
       new Error('Unable to identify next resource type for search parameter: Patient?general-practitioner')

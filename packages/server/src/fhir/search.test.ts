@@ -1805,7 +1805,7 @@ describe('FHIR Search', () => {
       expect(searchResult.entry?.[0]?.resource?.id).toEqual(observation.id);
     }));
 
-  test('Chained search', () =>
+  test('Chained search on array columns', () =>
     withTestContext(async () => {
       // Create Practitioner
       const pcp = await systemRepo.createResource<Practitioner>({
@@ -1843,6 +1843,51 @@ describe('FHIR Search', () => {
         )
       );
       expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+    }));
+
+  test('Chained search on singlet columns', () =>
+    withTestContext(async () => {
+      // Create linked resources
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+      });
+      const encounter = await systemRepo.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'finished',
+        class: { system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'AMB' },
+      });
+      const observation = await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'Throat culture' },
+        subject: createReference(patient),
+        encounter: createReference(encounter),
+      });
+      await systemRepo.createResource<DiagnosticReport>({
+        resourceType: 'DiagnosticReport',
+        status: 'final',
+        code: { text: 'Strep test' },
+        encounter: createReference(encounter),
+        result: [createReference(observation)],
+      });
+
+      const result = await systemRepo.search(
+        parseSearchDefinition(
+          `Patient?_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status=final`
+        )
+      );
+      expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
+    }));
+
+  test('Rejects too long chained search', () =>
+    withTestContext(async () => {
+      await expect(() =>
+        systemRepo.search(
+          parseSearchDefinition(
+            `Patient?_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.specimen.parent.collected=2023`
+          )
+        )
+      ).rejects.toEqual(new Error('Search chains longer than five links are not supported'));
     }));
 
   test('Include references success', () =>
