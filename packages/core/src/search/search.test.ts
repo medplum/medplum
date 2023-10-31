@@ -1,8 +1,7 @@
 import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { formatSearchQuery, Operator, parseSearchDefinition, parseXFhirQuery, SearchRequest } from './search';
-import { getSearchParameter, indexSearchParameterBundle } from '../types';
+import { indexSearchParameterBundle } from '../types';
 import { readJson } from '@medplum/definitions';
-import { getSearchParameterDetails } from './details';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 
 describe('Search Utils', () => {
@@ -134,59 +133,22 @@ describe('Search Utils', () => {
     const searchReq = parseSearchDefinition(
       'Patient?organization.name=Kaiser%20Permanente&_has:Observation:subject:performer:Practitioner.name=Alice'
     );
-    const patientOrganization = getSearchParameter('Patient', 'organization') as SearchParameter;
-    const observationSubject = getSearchParameter('Observation', 'subject') as SearchParameter;
-    const observationPerformer = getSearchParameter('Observation', 'performer') as SearchParameter;
 
     expect(searchReq).toMatchObject<SearchRequest>({
       resourceType: 'Patient',
-      chains: [
+      filters: [
         {
-          chain: [
-            {
-              resourceType: 'Organization',
-              details: getSearchParameterDetails('Patient', patientOrganization),
-              filter: { code: 'name', operator: Operator.EQUALS, value: 'Kaiser Permanente' },
-            },
-          ],
+          code: 'organization.name',
+          operator: Operator.EQUALS,
+          value: 'Kaiser Permanente',
         },
         {
-          chain: [
-            {
-              resourceType: 'Observation',
-              details: getSearchParameterDetails('Observation', observationSubject),
-              reverse: true,
-            },
-            {
-              resourceType: 'Practitioner',
-              details: getSearchParameterDetails('Observation', observationPerformer),
-              filter: { code: 'name', operator: Operator.EQUALS, value: 'Alice' },
-            },
-          ],
+          code: '_has:Observation:subject:performer:Practitioner.name',
+          operator: Operator.EQUALS,
+          value: 'Alice',
         },
       ],
     });
-  });
-
-  test('Invalid chained search parameters', () => {
-    expect(() => parseSearchDefinition('Patient?organization.invalid.name=Kaiser')).toThrowError(
-      new Error('Invalid search parameter in chain: Organization?invalid')
-    );
-    expect(() => parseSearchDefinition('Patient?organization.invalid=true')).toThrowError(
-      new Error('Invalid search parameter at end of chain: Organization?invalid')
-    );
-    expect(() => parseSearchDefinition('Patient?general-practitioner.qualification-period=2023')).toThrowError(
-      new Error('Unable to identify next resource type for search parameter: Patient?general-practitioner')
-    );
-    expect(() => parseSearchDefinition('Patient?_has:Observation:invalid:status=active')).toThrowError(
-      new Error('Invalid search parameter in chain: Observation?invalid')
-    );
-    expect(() => parseSearchDefinition('Patient?_has:Observation:encounter:status=active')).toThrowError(
-      new Error('Invalid reverse chain link: search parameter Observation?encounter does not refer to Patient')
-    );
-    expect(() => parseSearchDefinition('Patient?_has:Observation:status=active')).toThrowError(
-      new Error('Invalid search chain: _has:Observation:status')
-    );
   });
 
   test('Format Patient search', () => {

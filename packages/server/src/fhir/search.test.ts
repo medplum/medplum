@@ -1891,6 +1891,23 @@ describe('FHIR Search', () => {
       ).rejects.toEqual(new Error('Search chains longer than five links are not supported'));
     }));
 
+  test.each([
+    ['Patient?organization.invalid.name=Kaiser', 'Invalid search parameter in chain: Organization?invalid'],
+    ['Patient?organization.invalid=true', 'Invalid search parameter at end of chain: Organization?invalid'],
+    [
+      'Patient?general-practitioner.qualification-period=2023',
+      'Unable to identify next resource type for search parameter: Patient?general-practitioner',
+    ],
+    ['Patient?_has:Observation:invalid:status=active', 'Invalid search parameter in chain: Observation?invalid'],
+    [
+      'Patient?_has:Observation:encounter:status=active',
+      'Invalid reverse chain link: search parameter Observation?encounter does not refer to Patient',
+    ],
+    ['Patient?_has:Observation:status=active', 'Invalid search chain: _has:Observation:status'],
+  ])('Invalid chained search parameters: %s', (searchString: string, errorMsg: string) => {
+    return expect(systemRepo.search(parseSearchDefinition(searchString))).rejects.toEqual(new Error(errorMsg));
+  });
+
   test('Include references success', () =>
     withTestContext(async () => {
       const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });

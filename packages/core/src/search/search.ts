@@ -1,15 +1,12 @@
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { badRequest, OperationOutcomeError } from '../outcomes';
-import { TypedValue, stringifyTypedValue, globalSchema, getSearchParameter } from '../types';
+import { TypedValue, stringifyTypedValue, globalSchema } from '../types';
 import { evalFhirPathTyped } from '../fhirpath/parse';
-import { SearchParameterDetails, getSearchParameterDetails } from './details';
-import { splitN } from '../utils';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 
 export interface SearchRequest<T extends Resource = Resource> {
   readonly resourceType: T['resourceType'];
-  chains?: ChainedSearchParameter[];
   filters?: Filter[];
   sortRules?: SortRule[];
   offset?: number;
@@ -38,17 +35,6 @@ export interface IncludeTarget {
   searchParam: string;
   targetType?: string;
   modifier?: string;
-}
-
-export interface ChainedSearchLink {
-  resourceType: string;
-  details: SearchParameterDetails;
-  reverse?: boolean;
-  filter?: Filter;
-}
-
-export interface ChainedSearchParameter {
-  chain: ChainedSearchLink[];
 }
 
 /**
@@ -208,16 +194,6 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
   let code;
   let modifier;
 
-  if (key.startsWith('_has') || key.includes('.')) {
-    const chain = parseChainedParameter(searchRequest.resourceType, key, value);
-    if (!searchRequest.chains) {
-      searchRequest.chains = [chain];
-    } else {
-      searchRequest.chains.push(chain);
-    }
-    return;
-  }
-
   const colonIndex = key.indexOf(':');
   if (colonIndex >= 0) {
     code = key.substring(0, colonIndex);
@@ -225,6 +201,11 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
   } else {
     code = key;
     modifier = '';
+  }
+
+  if (code === '_has' || key.includes('.')) {
+    addFilter(searchRequest, { code: key, operator: Operator.EQUALS, value });
+    return;
   }
 
   switch (code) {
@@ -312,7 +293,7 @@ function parseSortRule(searchRequest: SearchRequest, value: string): void {
   }
 }
 
-function parseParameter(searchParam: SearchParameter, modifier: string, value: string): Filter {
+export function parseParameter(searchParam: SearchParameter, modifier: string, value: string): Filter {
   if (modifier === 'missing') {
     return {
       code: searchParam.code as string,
@@ -407,91 +388,6 @@ function parseIncludeTarget(input: string): IncludeTarget {
   } else {
     throw new OperationOutcomeError(badRequest(`Invalid include value '${input}'`));
   }
-}
-
-function parseChainedParameter(resourceType: string, key: string, value: string): ChainedSearchParameter {
-  const param: ChainedSearchParameter = {
-    chain: [],
-  };
-  let currentResourceType = resourceType;
-
-  const parts = splitChainedSearch(key);
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
-    if (part.startsWith('_has')) {
-      const link = parseReverseChainLink(part, currentResourceType);
-      param.chain.push(link);
-      currentResourceType = link.resourceType;
-    } else if (i === parts.length - 1) {
-      const [code, modifier] = splitN(part, ':', 2);
-      const searchParam = getSearchParameter(currentResourceType, part);
-      if (!searchParam) {
-        throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
-      }
-      param.chain[param.chain.length - 1].filter = parseParameter(searchParam, modifier, value);
-    } else {
-      const link = parseChainLink(part, currentResourceType);
-      param.chain.push(link);
-      currentResourceType = link.resourceType;
-    }
-  }
-  return param;
-}
-
-function parseChainLink(param: string, currentResourceType: string): ChainedSearchLink {
-  const [code, modifier] = splitN(param, ':', 2);
-  const searchParam = getSearchParameter(currentResourceType, code);
-  if (!searchParam) {
-    throw new Error(`Invalid search parameter in chain: ${currentResourceType}?${code}`);
-  }
-  let resourceType: string;
-  if (searchParam.target?.length === 1) {
-    resourceType = searchParam.target[0];
-  } else if (searchParam.target?.includes(modifier as ResourceType)) {
-    resourceType = modifier;
-  } else {
-    throw new Error(`Unable to identify next resource type for search parameter: ${currentResourceType}?${code}`);
-  }
-  const details = getSearchParameterDetails(currentResourceType, searchParam);
-  return { resourceType, details };
-}
-
-function parseReverseChainLink(param: string, targetResourceType: string): ChainedSearchLink {
-  const [, resourceType, code] = splitN(param, ':', 3);
-  const searchParam = getSearchParameter(resourceType, code);
-  if (!searchParam) {
-    throw new Error(`Invalid search parameter in chain: ${resourceType}?${code}`);
-  } else if (!searchParam.target?.includes(targetResourceType as ResourceType)) {
-    throw new Error(
-      `Invalid reverse chain link: search parameter ${resourceType}?${code} does not refer to ${targetResourceType}`
-    );
-  }
-  const details = getSearchParameterDetails(resourceType, searchParam);
-  return { resourceType, details, reverse: true };
-}
-
-function splitChainedSearch(chain: string): string[] {
-  const params: string[] = [];
-  while (chain) {
-    const peek = chain.slice(0, 5);
-    if (peek === '_has:') {
-      const resourceTypeDelim = chain.indexOf(':', 5);
-      const codeDelim = chain.indexOf(':', resourceTypeDelim + 1);
-      if (resourceTypeDelim < 0 || resourceTypeDelim >= codeDelim) {
-        throw new Error('Invalid search chain: ' + chain);
-      }
-      params.push(chain.slice(0, codeDelim));
-      chain = chain.slice(codeDelim + 1);
-    } else {
-      let nextDot = chain.indexOf('.');
-      if (nextDot === -1) {
-        nextDot = chain.length;
-      }
-      params.push(chain.slice(0, nextDot));
-      chain = chain.slice(nextDot + 1);
-    }
-  }
-  return params;
 }
 
 function addFilter(searchRequest: SearchRequest, filter: Filter): void {
