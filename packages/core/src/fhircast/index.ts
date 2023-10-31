@@ -155,6 +155,7 @@ export type FhircastEventPayload<EventName extends FhircastEventName = FhircastE
   'hub.topic': string;
   'hub.event': EventName;
   context: FhircastEventContext<EventName>[];
+  'context.versionId'?: string;
 };
 
 export type FhircastMessagePayload<EventName extends FhircastEventName = FhircastEventName> = {
