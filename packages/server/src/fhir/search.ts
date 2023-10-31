@@ -576,7 +576,7 @@ function buildNormalSearchFilterExpression(
       .split(',')
       .map((v) => new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), v));
     const expr = new Disjunction(values);
-    return details.array ? new ArraySubquery(details.columnName, expr) : expr;
+    return details.array ? new ArraySubquery(new Column(undefined, details.columnName), expr) : expr;
   }
 }
 
@@ -684,7 +684,7 @@ function buildStringSearchFilter(details: SearchParameterDetails, operator: Oper
 
   const expression = new Disjunction(conditions);
   if (details.array) {
-    return new ArraySubquery(details.columnName, expression);
+    return new ArraySubquery(new Column(undefined, details.columnName), expression);
   }
   return expression;
 }
@@ -873,11 +873,29 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
     const nextTable = selectQuery.getNextJoinAlias();
     let joinCondition: Expression;
     if (link.reverse) {
-      // TODO: Handle array case
-      joinCondition = new Condition(
-        new Column(nextTable, link.details.columnName),
-        'REVERSE_LINK',
-        new Condition(new Column(currentTable, 'id'), 'PREFIX', currentResourceType + '/')
+      if (link.details.array) {
+        joinCondition = new ArraySubquery(
+          new Column(nextTable, link.details.columnName),
+          new Condition(
+            new Column(undefined, link.details.columnName),
+            'REVERSE_LINK',
+            new Column(currentTable, 'id'),
+            currentResourceType
+          )
+        );
+      } else {
+        joinCondition = new Condition(
+          new Column(nextTable, link.details.columnName),
+          'REVERSE_LINK',
+          new Column(currentTable, 'id'),
+          currentResourceType
+        );
+      }
+    } else if (link.details.array) {
+      joinCondition = new ArraySubquery(
+        // link.details.columnName,
+        new Column(currentTable, link.details.columnName),
+        new Condition(new Column(nextTable, 'id'), 'LINK', new Column(undefined, link.details.columnName))
       );
     } else {
       joinCondition = new Condition(

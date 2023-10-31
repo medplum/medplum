@@ -131,7 +131,7 @@ function crawlSearchParameterDetails(
     nextIndex++;
   }
 
-  if (elementDefinition.max > 1 && !hasArrayIndex) {
+  if (elementDefinition.isArray && !hasArrayIndex) {
     details.array = true;
   }
 

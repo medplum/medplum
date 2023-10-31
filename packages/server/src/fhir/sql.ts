@@ -94,19 +94,15 @@ export const Operator = {
   },
   LINK: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.appendColumn(column);
-    sql.append(' = SPLIT_PART(');
+    sql.append('::TEXT = SPLIT_PART(');
     sql.appendColumn(parameter as Column);
-    sql.append(`, '/', 2)`);
+    sql.append(`,'/',2)`);
   },
-  REVERSE_LINK: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+  REVERSE_LINK: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
     sql.appendColumn(column);
-    sql.append(' = ');
-    (parameter as Expression).buildSql(sql);
-  },
-  PREFIX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
-    sql.param(parameter);
+    sql.append(` = '${paramType}/'`);
     sql.append('||');
-    sql.appendColumn(column);
+    sql.appendColumn(parameter as Column);
   },
 };
 
@@ -555,18 +551,18 @@ export class SelectQuery extends BaseQuery {
 
 export class ArraySubquery implements Expression {
   private filter: Expression;
-  private columnName: string;
+  private column: Column;
 
-  constructor(columnName: string, filter: Expression) {
+  constructor(column: Column, filter: Expression) {
     this.filter = filter;
-    this.columnName = columnName;
+    this.column = column;
   }
 
   buildSql(sql: SqlBuilder): void {
     sql.append('EXISTS(SELECT 1 FROM unnest(');
-    sql.appendIdentifier(this.columnName);
+    sql.appendColumn(this.column);
     sql.append(') AS ');
-    sql.appendIdentifier(this.columnName);
+    sql.appendIdentifier(this.column.columnName);
     sql.append(' WHERE ');
     this.filter.buildSql(sql);
     sql.append(' LIMIT 1');

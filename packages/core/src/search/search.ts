@@ -215,6 +215,7 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
     } else {
       searchRequest.chains.push(chain);
     }
+    return;
   }
 
   const colonIndex = key.indexOf(':');
@@ -449,7 +450,7 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
       } else {
         throw new Error(`Unable to identify next resource type for search parameter: ${currentResourceType}?${code}`);
       }
-      const details = getSearchParameterDetails(resourceType, searchParam);
+      const details = getSearchParameterDetails(currentResourceType, searchParam);
       param.chain.push({ resourceType, searchParam, details });
       currentResourceType = resourceType;
     }

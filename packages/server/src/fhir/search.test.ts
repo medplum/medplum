@@ -1807,7 +1807,7 @@ describe('FHIR Search', () => {
 
   test('Chained search', () =>
     withTestContext(async () => {
-      // Create Patient
+      // Create Practitioner
       const pcp = await systemRepo.createResource<Practitioner>({
         resourceType: 'Practitioner',
       });
@@ -1818,14 +1818,16 @@ describe('FHIR Search', () => {
       });
 
       // Create CareTeam
+      const code = randomUUID();
+      const categorySystem = 'http://example.com/care-team-category';
       await systemRepo.createResource<CareTeam>({
         resourceType: 'CareTeam',
         category: [
           {
             coding: [
               {
-                system: 'http://loinc.org',
-                code: 'LA28867-2',
+                system: categorySystem,
+                code,
                 display: 'Public health-focused care team',
               },
             ],
@@ -1837,7 +1839,7 @@ describe('FHIR Search', () => {
       // Search chain
       const searchResult = await systemRepo.search(
         parseSearchDefinition(
-          'Patient?general-practitioner:Practitioner._has:CareTeam:participant:category=http://loinc.org|LA28867-2'
+          `Patient?general-practitioner:Practitioner._has:CareTeam:participant:category=${categorySystem}|${code}`
         )
       );
       expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
