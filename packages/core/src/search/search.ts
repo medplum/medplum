@@ -421,7 +421,7 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
     if (part.startsWith('_has')) {
       const link = parseReverseChainLink(part, currentResourceType);
       param.chain.push(link);
-      currentResourceType = resourceType;
+      currentResourceType = link.resourceType;
     } else if (i === parts.length - 1) {
       const [code, modifier] = part.split(':', 2);
       const searchParam = getSearchParameter(currentResourceType, part);
@@ -432,7 +432,7 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
     } else {
       const link = parseChainLink(part, currentResourceType);
       param.chain.push(link);
-      currentResourceType = resourceType;
+      currentResourceType = link.resourceType;
     }
   }
   return param;
