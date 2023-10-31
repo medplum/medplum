@@ -1264,13 +1264,13 @@ describe('QuestionnaireForm', () => {
           {
             linkId: 'group1',
             type: 'group',
-            text: 'group1',
+            text: 'Outside Group',
             repeats: true,
             item: [
               {
                 linkId: 'group2',
                 type: 'group',
-                text: 'group2',
+                text: 'Inside Group',
                 repeats: true,
                 item: [
                   {
@@ -1287,18 +1287,20 @@ describe('QuestionnaireForm', () => {
       onSubmit,
     });
 
-    expect(screen.getByText('group1')).toBeInTheDocument();
+    expect(screen.getByText('Outside Group')).toBeInTheDocument();
 
-    const addGroupButtons = screen.getAllByText('Add Group');
+    const outsideGroupButton = screen.getAllByText('Add Group: Outside Group');
+    const insideGroupButton = screen.getAllByText('Add Group: Inside Group');
 
-    expect(addGroupButtons).toHaveLength(2);
+    expect(outsideGroupButton).toHaveLength(1);
+    expect(insideGroupButton).toHaveLength(1);
 
     await act(async () => {
-      fireEvent.click(addGroupButtons[1]);
+      fireEvent.click(outsideGroupButton[0]);
     });
 
-    expect(screen.getAllByText('group1').length).toBe(2);
-    expect(screen.getAllByText('group2').length).toBe(2);
+    expect(screen.getAllByText('Outside Group').length).toBe(2);
+    expect(screen.getAllByText('Inside Group').length).toBe(2);
 
     const stringInputs = screen.getAllByText('question1');
     expect(stringInputs).toHaveLength(2);
@@ -1332,7 +1334,7 @@ describe('QuestionnaireForm', () => {
           },
           {
             linkId: 'group1',
-            text: 'Group',
+            text: 'Question Group',
             type: 'group',
             repeats: true,
             item: [
@@ -1353,10 +1355,10 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Add Group'));
+      fireEvent.click(screen.getByText('Add Group: Question Group'));
     });
 
-    expect(screen.getAllByText('Group').length).toBe(2);
+    expect(screen.getAllByText('Question Group').length).toBe(2);
 
     expect(screen.getAllByText('Question 2').length).toBe(2);
   });
