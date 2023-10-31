@@ -25,6 +25,7 @@ import { QuantityInput } from '../../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
 import { ResourcePropertyDisplay } from '../../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import {
+  formatReferenceString,
   getNewMultiSelectValues,
   getQuestionnaireItemReferenceTargetTypes,
   QuestionnaireItemType,
@@ -412,6 +413,9 @@ function typedValueToString(typedValue: TypedValue | undefined): string | undefi
   }
   if (typedValue.type === 'Coding') {
     return formatCoding(typedValue.value);
+  }
+  if (typedValue.type === 'Reference') {
+    return formatReferenceString(typedValue);
   }
   return typedValue.value.toString();
 }
