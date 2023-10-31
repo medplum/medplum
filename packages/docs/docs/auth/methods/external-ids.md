@@ -49,4 +49,4 @@ You can then use the external auth provider as described in [External Identity P
 
 This will also work with the example repo:
 
-> <https://github.com/medplum/medplum-client-external-idp-demo>
+> [https://github.com/medplum/medplum-client-external-idp-demo](https://github.com/medplum/medplum-client-external-idp-demo)

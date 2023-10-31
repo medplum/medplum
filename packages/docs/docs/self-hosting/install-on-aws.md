@@ -181,7 +181,7 @@ Run CDK bootstrap:
 npx cdk bootstrap -c config=medplum.demo.config.json
 ```
 
-Learn more about bootstrapping: <https://docs.aws.amazon.com/cdk/latest/guide/bootstrapping.html>
+Learn more about bootstrapping: [https://docs.aws.amazon.com/cdk/latest/guide/bootstrapping.html](https://docs.aws.amazon.com/cdk/latest/guide/bootstrapping.html)
 
 ### CDK Synth
 

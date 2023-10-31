@@ -19,7 +19,7 @@ The first step is to set up your test framework in your Bots package. Medplum Bo
 Next you'll want to index the FHIR schema definitions. To keep the client small, the `MockClient` class only ships with a subset of the FHIR schema. Index the full schema as shown below, either in a [`beforeAll` function](https://vitest.dev/api/#beforeall) or [setup file](https://vitest.dev/config/#setupfiles), to make sure your [test queries](##query-the-results) work.
 
 <MedplumCodeBlock language="ts" selectBlocks="index-schema">
-{ExampleCode}
+  {ExampleCode}
 </MedplumCodeBlock>
 
 Our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots) repo also contains recommended [eslintrc](https://github.com/medplum/medplum-demo-bots/blob/main/.eslintrc.json), [tsconfig](https://github.com/medplum/medplum-demo-bots/blob/main/tsconfig.json), and [vite.config](https://github.com/medplum/medplum-demo-bots/blob/main/vite.config.ts) settings for a faster developer feedback cycle.
@@ -50,7 +50,7 @@ The [finalize-report tests](https://github.com/medplum/medplum-demo-bots/blob/ma
 The Medplum `MockClient` class extends the `MedplumClient` class, but stores resources in local memory rather than persisting them to the server. This presents a type-compatible interface to the Bot's handler function, which makes it ideal for unit tests.
 
 <MedplumCodeBlock language="ts" selectBlocks="create-client">
-{ExampleCode}
+  {ExampleCode}
 </MedplumCodeBlock>
 
 We recommend creating a `MockClient` at the beginning of each test, to avoid any cross-talk between tests.
@@ -85,7 +85,7 @@ The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main
 After setting up your mock resources, you can invoke your bot by calling your bot's handler function. See the ["Bot Basics" tutorial](/docs/bots/bot-basics#editing-a-bot) for more information about the arguments to `handler`
 
 <MedplumCodeBlock language="ts" selectBlocks="invoke-bot">
-{ExampleCode}
+  {ExampleCode}
 </MedplumCodeBlock>
 
 ### Query the results
@@ -99,7 +99,7 @@ The after running the Bot, the [finalize-report bot's tests](https://github.com/
 <details>
   <summary>Example: Query the results</summary>
   <MedplumCodeBlock language="ts" selectBlocks="query-results">
-  {ExampleCode}
+    {ExampleCode}
   </MedplumCodeBlock>
 </details>
 
