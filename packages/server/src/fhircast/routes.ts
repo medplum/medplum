@@ -1,4 +1,4 @@
-import { badRequest } from '@medplum/core';
+import { FhircastMessagePayload, badRequest } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
@@ -19,6 +19,7 @@ publicRoutes.get('/.well-known/fhircast-configuration', (_req: Request, res: Res
   res.status(200).json({
     eventsSupported: [
       'syncerror',
+      'heartbeat',
       'userlogout',
       'userhibernate',
       'patient-open',
@@ -30,6 +31,7 @@ publicRoutes.get('/.well-known/fhircast-configuration', (_req: Request, res: Res
       'diagnosticreport-open',
       'diagnosticreport-close',
     ],
+    getCurrentSupport: true,
     websocketSupport: true,
     webhookSupport: false,
     fhircastVersion: 'STU3',
@@ -92,13 +94,28 @@ protectedRoutes.post(
       return;
     }
 
-    await getRedis().publish(req.params.topic as string, JSON.stringify(req.body));
+    const { event } = req.body as FhircastMessagePayload;
+    const stringifiedBody = JSON.stringify(req.body);
+    // Check if this an open event
+    if (event['hub.event'].endsWith('-open')) {
+      // NOTE: We get the topic from the event since per the spec, the URL should eventually NOT contain the topic but another slug linked to topic
+      await getRedis().set(`${event['hub.topic']}-latest`, stringifiedBody);
+    }
+    await getRedis().publish(req.params.topic as string, stringifiedBody);
     res.status(201).json({ success: true, event: body });
   })
 );
 
 // Get the current subscription status
-// Non-standard FHIRCast extension to support Nuance PowerCast Hub
-protectedRoutes.get('/:topic', (req: Request, res: Response) => {
-  res.status(200).json([]);
-});
+protectedRoutes.get(
+  '/:topic',
+  asyncWrap(async (req: Request, res: Response) => {
+    const latestEvent = await getRedis().get(`${req.params.topic}-latest`);
+    // Non-standard FHIRCast extension to support Nuance PowerCast Hub
+    if (!latestEvent) {
+      res.status(200).json([]);
+      return;
+    }
+    res.status(200).json(JSON.parse(latestEvent).event.context);
+  })
+);
