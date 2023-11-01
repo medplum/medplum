@@ -12,16 +12,17 @@ FHIR allows users to create batch requests to bundle multiple API calls into a s
 
 Batch requests are modeled using the `Bundle` resource by setting `Bundle.type` to `"batch"`.
 
-Batch requests are performed by sending a POST request to [baseURL]/ with a FHIR Bundle. The Medplum SDK provides the `executeBatch` helper function to simplify this operation.
+Batch requests are performed by sending a POST request to `[baseURL]/` with a FHIR Bundle. The Medplum SDK provides the `executeBatch` helper function to simplify this operation.
 
 The details of your request will be in the `entry` field of the `Bundle`, which is an array of `BundleEntry` objects. Each `BundleEntry` should have the details of the resource you are working with, as well as additional information about the request you are making.
 
-| Element               | Description                                                                                                                                                                                                                               |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `request.method`      | The type of HTTP request you are making. Can be one of the following: <ul><li>GET: Used to read resources</li><li>POST: Used to create resources</li><li>PUT: Used to update resources</li><li>DELETE: Used to delete resources</li></ul> |
-| `request.ifNoneExist` | [See below](#conditional-batch-actions)                                                                                                                                                                                                   |
-| `resource`            | The details of the FHIR resource that is being created/updated.                                                                                                                                                                           |
-| `fullUrl`             | [See below](#creating-internal-references)                                                                                                                                                                                                |
+| Element               | Description                                                                                                                                                                                                                  |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `request.url`         | The URL to send your request to. This is relative to the base R4 FHIR URL (e.g. https://api.medplum.com/fhir/R4).                                                                                                            |
+| `request.method`      | The type of HTTP request you are making. Can be one of the following: <ul><li>GET: Read a resource or perform a search</li><li>POST: Create a resource</li><li>PUT: Update a resource</li><li>DELETE: Delete a URL</li></ul> |
+| `request.ifNoneExist` | [See below](#conditional-batch-actions)                                                                                                                                                                                      |
+| `resource`            | The details of the FHIR resource that is being created/updated.                                                                                                                                                              |
+| `fullUrl`             | [See below](#creating-internal-references)                                                                                                                                                                                   |
 
 <details><summary>Example: A simple batch request to simultaneously search for two patients</summary>
 <Tabs groupId="language">
@@ -103,8 +104,13 @@ To allow the queue to be created, you must make sure that the main thread contin
 
 Instead you should create the queue of `Promise` requests and then use `Promise.all()` to resolve all of them at once.
 
-<details><summary>Example: Resolving Promises with autobatching</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="autobatching">
+<details><summary>Resolving Promises with autobatching</summary>
+  ❌ WRONG
+  <MedplumCodeBlock language="ts" selectBlocks="autobatchingWrong">
+    {ExampleCode}
+  </MedplumCodeBlock>
+  ✅ CORRECT
+  <MedplumCodeBlock language="ts" selectBlocks="autobatchingCorrect">
     {ExampleCode}
   </MedplumCodeBlock>
 </details>

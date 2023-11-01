@@ -314,8 +314,7 @@ const conditional: Bundle =
   };
 // end-block conditionalCreate
 
-// start-block autobatching
-// WRONG
+// start-block autobatchingWrong
 // Main thread pauses and waits for Promise to resolve. This request cannot be added to a batch
 await medplum.createResource({
   resourceType: 'Patient',
@@ -337,8 +336,9 @@ await medplum.createResource({
     },
   ],
 });
+// end-block autobatchingWrong
 
-// CORRECT
+// start-block autobatchingCorrect
 const patientsToCreate = [];
 
 // Main thread continues
@@ -369,6 +369,6 @@ patientsToCreate.push(
 
 // Both promises are resolved simultaneously
 await Promise.all(patientsToCreate);
-// end-block autobatching
+// end-block autobatchingCorrect
 
 console.log(batchCreate, createThenUpdate, history, internalReference, conditional);
