@@ -1239,8 +1239,15 @@ export class Repository extends BaseRepository implements FhirRepository {
         return value;
       }
       if (typeof value === 'object') {
-        // Handle normal "reference" properties
-        return (value as Reference).reference;
+        if (value.reference) {
+          // Handle normal "reference" properties
+          return value.reference;
+        } else if (typeof value.identifier === 'object') {
+          // Handle logical (identifier-only) references by putting a placeholder in the column
+          // NOTE(mattwiller 2023-11-01): This is done to enable searches using the :missing modifier;
+          // actual identifier search matching is handled by the `<ResourceType>_Token` lookup tables
+          return `identifier:${value.identifier.system}|${value.identifier.value}`;
+        }
       }
     }
     return undefined;
