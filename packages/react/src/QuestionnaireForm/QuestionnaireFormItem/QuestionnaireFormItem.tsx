@@ -204,7 +204,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       );
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
-      if (isDropDownChoice(item)) {
+      if (isDropDownChoice(item) && !item.answerValueSet) {
         return (
           <QuestionnaireChoiceDropDownInput
             name={name}
@@ -240,19 +240,23 @@ interface QuestionnaireChoiceInputProps {
 
 function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, response } = props;
+
+  if (!item.answerOption?.length) {
+    return <NoAnswerDisplay />;
+  }
+
   const initialValue = getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value') as
     | TypedValue
     | undefined;
 
   const data = [''];
-  if (item.answerOption) {
-    for (const option of item.answerOption) {
-      const optionValue = getTypedPropertyValue(
-        { type: 'QuestionnaireItemAnswerOption', value: option },
-        'value'
-      ) as TypedValue;
-      data.push(typedValueToString(optionValue) as string);
-    }
+
+  for (const option of item.answerOption) {
+    const optionValue = getTypedPropertyValue(
+      { type: 'QuestionnaireItemAnswerOption', value: option },
+      'value'
+    ) as TypedValue;
+    data.push(typedValueToString(optionValue) as string);
   }
 
   const defaultValue = getCurrentAnswer(response) ?? initialValue;
@@ -301,6 +305,11 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
 
 function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, onChangeAnswer, response } = props;
+
+  if (!item.answerOption?.length && !item.answerValueSet) {
+    return <NoAnswerDisplay />;
+  }
+
   if (item.answerValueSet) {
     return (
       <CodingInput
@@ -379,6 +388,10 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
       ))}
     </Radio.Group>
   );
+}
+
+function NoAnswerDisplay(): JSX.Element {
+  return <TextInput disabled placeholder="No Answers Defined" />;
 }
 
 function getItemValue(answer: QuestionnaireResponseItemAnswer): TypedValue {
