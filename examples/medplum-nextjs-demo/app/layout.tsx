@@ -15,9 +15,7 @@ export default function RootLayout(props: { children: React.ReactNode }): JSX.El
   return (
     <html lang="en">
       <body>
-        <Root>
-          {children}
-        </Root>
+        <Root>{children}</Root>
       </body>
     </html>
   );

@@ -20,5 +20,5 @@ export default function Root(props: { children: React.ReactNode }): JSX.Element 
     <MantineProvider withGlobalStyles withNormalizeCSS>
       <MedplumProvider medplum={medplum}>{props.children}</MedplumProvider>
     </MantineProvider>
-  )
+  );
 }
