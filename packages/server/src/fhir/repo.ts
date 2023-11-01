@@ -195,7 +195,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       this.logEvent(CreateInteraction, AuditEventOutcome.Success, undefined, result);
       return result;
     } catch (err) {
-      this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err);
+      this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, resource);
       throw err;
     }
   }
@@ -440,7 +440,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       this.logEvent(UpdateInteraction, AuditEventOutcome.Success, undefined, result);
       return result;
     } catch (err) {
-      this.logEvent(UpdateInteraction, AuditEventOutcome.MinorFailure, err);
+      this.logEvent(UpdateInteraction, AuditEventOutcome.MinorFailure, err, resource);
       throw err;
     }
   }
