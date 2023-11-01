@@ -54,8 +54,8 @@ export class FhirReferenceValidator<T extends Resource> {
       for (const item of value) {
         await this.checkPropertyValue(path, item);
       }
-    } else {
-      await this.checkPropertyValue(path, value as TypedValue);
+    } else if (value) {
+      await this.checkPropertyValue(path, value);
     }
   }
 
