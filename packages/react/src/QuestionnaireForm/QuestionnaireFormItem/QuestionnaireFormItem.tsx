@@ -251,7 +251,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
 
   const data = [''];
 
-  for (const option of item.answerOption ?? []) {
+  for (const option of item.answerOption) {
     const optionValue = getTypedPropertyValue(
       { type: 'QuestionnaireItemAnswerOption', value: option },
       'value'
