@@ -1,19 +1,13 @@
-'use client';
+import type { Metadata } from 'next';
+import Root from './root';
 
-import { MantineProvider } from '@mantine/core';
-import { MedplumClient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/react';
-
-const medplum = new MedplumClient({
-  // Uncomment this to run against the server on your localhost
-  // baseUrl: 'http://localhost:8103/',
-
-  // Handle unauthenticated requests
-  onUnauthenticated: () => (window.location.href = '/'),
-
-  // Use Next.js fetch
-  fetch: (url: string, options?: any) => fetch(url, options),
-});
+// eslint-disable-next-line react-refresh/only-export-components
+export const metadata: Metadata = {
+  title: 'Medplum Next.js Demo',
+  icons: {
+    icon: '/favicon.svg',
+  },
+};
 
 export default function RootLayout(props: { children: React.ReactNode }): JSX.Element {
   const { children } = props;
@@ -21,9 +15,9 @@ export default function RootLayout(props: { children: React.ReactNode }): JSX.El
   return (
     <html lang="en">
       <body>
-        <MantineProvider withGlobalStyles withNormalizeCSS>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MantineProvider>
+        <Root>
+          {children}
+        </Root>
       </body>
     </html>
   );
