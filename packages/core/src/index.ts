@@ -1,6 +1,6 @@
 export * from './access';
-export * from './base64';
 export * from './base-schema';
+export * from './base64';
 export * from './bundle';
 export * from './cache';
 export * from './client';
@@ -11,7 +11,9 @@ export * from './crypto';
 export * from './eventtarget';
 export * from './fhircast';
 export * from './fhirlexer/parse';
+export * from './fhirlexer/tokenize';
 export * from './fhirmapper/parse';
+export * from './fhirpath/atoms';
 export * from './fhirpath/parse';
 export * from './fhirpath/utils';
 export * from './filter/parse';

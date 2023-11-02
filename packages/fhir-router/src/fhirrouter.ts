@@ -18,7 +18,7 @@ export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];
 
 export type FhirRouteHandler = (req: FhirRequest, repo: FhirRepository, router: FhirRouter) => Promise<FhirResponse>;
 
-interface FhirOptions {
+export interface FhirOptions {
   introspectionEnabled?: boolean;
 }
 

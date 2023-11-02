@@ -1,11 +1,11 @@
 import { ActionIcon } from '@mantine/core';
+import { InternalSchemaElement } from '@medplum/core';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
 import React, { useRef, useState } from 'react';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { killEvent } from '../utils/dom';
-import { InternalSchemaElement } from '@medplum/core';
 
-interface ResourceArrayInputProps {
+export interface ResourceArrayInputProps {
   property: InternalSchemaElement;
   name: string;
   defaultValue?: any[];

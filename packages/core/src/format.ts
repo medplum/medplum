@@ -311,7 +311,7 @@ function formatTimingRepeat(builder: string[], repeat: TimingRepeat | undefined)
  * Returns a human-readable string for a FHIR Range datatype, taking into account one-sided ranges
  * @param range - A FHIR Range element
  * @param precision - Number of decimal places to display in the rendered quantity values
- * @param exclusive - If true, one-sided ranges will be rendered with the '>' or '<' bounds rather than '>=' or '<='
+ * @param exclusive - If true, one-sided ranges will be rendered with the `>` or `<` bounds rather than `>=` or `<=`
  * @returns A human-readable string representation of the Range
  */
 export function formatRange(range: Range | undefined, precision?: number, exclusive = false): string {

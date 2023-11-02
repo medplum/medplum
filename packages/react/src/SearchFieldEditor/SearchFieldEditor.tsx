@@ -1,10 +1,10 @@
 import { Button, Modal } from '@mantine/core';
-import { getDataType, getSearchParameters, InternalTypeSchema, SearchRequest, stringify } from '@medplum/core';
+import { InternalTypeSchema, SearchRequest, getDataType, getSearchParameters, stringify } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { buildFieldNameString } from '../SearchControl/SearchUtils';
 
-interface SearchFieldEditorProps {
+export interface SearchFieldEditorProps {
   visible: boolean;
   search: SearchRequest;
   onOk: (search: SearchRequest) => void;

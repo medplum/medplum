@@ -6,9 +6,15 @@
       "tagName": "@category",
       "syntaxKind": "block",
       "allowMultiple": true
+    },
+    {
+      "tagName": "@yields",
+      "syntaxKind": "block",
+      "allowMultiple": false
     }
   ],
   "supportForTags": {
-    "@category": true
+    "@category": true,
+    "@yields": true
   }
 }
