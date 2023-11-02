@@ -454,10 +454,6 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
     await this.validateResource(resource);
 
-    if (this.context.checkReferencesOnWrite) {
-      await validateReferences(this, resource);
-    }
-
     if (!this.canWriteResourceType(resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -499,6 +495,10 @@ export class Repository extends BaseRepository implements FhirRepository {
       resultMeta.account = account;
     }
     resultMeta.compartment = this.getCompartments(result);
+
+    if (this.context.checkReferencesOnWrite) {
+      await validateReferences(result);
+    }
 
     if (this.isNotModified(existing, result)) {
       return existing as T;
