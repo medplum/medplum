@@ -332,9 +332,6 @@ function validateFhircastContext<EventName extends FhircastEventName>(
   keySchema: FhircastEventContextDetails,
   keysSeen: Map<FhircastEventContextKey<EventName>, number>
 ): void {
-  if (!(context.key && typeof context.key === 'string')) {
-    throw new OperationOutcomeError(validationError(`context[${i}] is invalid. Context must contain a key.`));
-  }
   keysSeen.set(context.key, (keysSeen.get(context.key) ?? 0) + 1);
 
   // Cases:
@@ -359,7 +356,9 @@ function validateFhircastContext<EventName extends FhircastEventName>(
     if (!resources) {
       throw new OperationOutcomeError(
         validationError(
-          `context[${i}] is invalid. context[${i}] for the '${event}' with key '${context.key}' should contain an array of resources on the key 'resources'.`
+          `context[${i}] is invalid. context[${i}] for the '${event}' with key '${String(
+            context.key
+          )}' should contain an array of resources on the key 'resources'.`
         )
       );
     }

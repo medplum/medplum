@@ -132,6 +132,21 @@ describe('validateFhircastSubscriptionRequest', () => {
         endpoint: 'http://abc.com/hub',
       })
     ).toBe(false);
+
+    expect(
+      validateFhircastSubscriptionRequest({
+        mode: 'subscribe',
+        // @ts-expect-error Topic needs to be a string
+        topic: 12,
+        channelType: 'websocket',
+        events: ['patient-open'],
+      })
+    ).toBe(false);
+
+    expect(
+      // @ts-expect-error subscriptionRequest must be an object
+      validateFhircastSubscriptionRequest(undefined)
+    ).toBe(false);
   });
 });
 
@@ -284,6 +299,22 @@ describe('createFhircastMessagePayload', () => {
   test('Invalid context', () => {
     expect(() =>
       createFhircastMessagePayload(
+        // @ts-expect-error Topic must be a string
+        12,
+        'imagingstudy-open',
+        { key: 'study', resource: { id: 'imagingstudy-123', resourceType: 'ImagingStudy' } }
+      )
+    ).toThrowError(OperationOutcomeError);
+    expect(() =>
+      createFhircastMessagePayload(
+        'abc-123',
+        'imagingstudy-open',
+        // @ts-expect-error Invalid context, must be an object
+        42
+      )
+    ).toThrowError(OperationOutcomeError);
+    expect(() =>
+      createFhircastMessagePayload(
         'abc-123',
         'imagingstudy-open',
         // @ts-expect-error Invalid context, must be of type FhircastEventContext | FhircastEventContext[]
@@ -352,6 +383,26 @@ describe('createFhircastMessagePayload', () => {
         { key: 'patient', resource: { resourceType: 'Patient', id: 'patient-123' } },
         // @ts-expect-error 'study' is not a valid key on 'patient-open' event
         { key: 'study', resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-456' } },
+      ])
+    ).toThrowError(OperationOutcomeError);
+    expect(() =>
+      createFhircastMessagePayload('abc-123', 'patient-open', [
+        // @ts-expect-error Key 'patient' expects a 'Patient' resource
+        { key: 'patient', resource: { resourceType: 'Bundle', id: 'patient-123' } },
+      ])
+    ).toThrowError(OperationOutcomeError);
+    expect(() =>
+      createFhircastMessagePayload('abc-123', 'patient-open', [
+        { key: 'patient', resource: { resourceType: 'Patient', id: 'patient-123' } },
+        // @ts-expect-error Need a key
+        { resource: { resourceType: 'Encounter', id: 'encounter-456' } },
+      ])
+    ).toThrowError(OperationOutcomeError);
+    expect(() =>
+      createFhircastMessagePayload('abc-123', 'patient-open', [
+        { key: 'patient', resource: { resourceType: 'Patient', id: 'patient-123' } },
+        // @ts-expect-error Resource should be an object
+        { key: 'encounter', resource: 42 },
       ])
     ).toThrowError(OperationOutcomeError);
   });
@@ -483,7 +534,7 @@ describe('FhircastConnection', () => {
     connection.addEventListener('connect', handler);
   });
 
-  test('.addEventListener("message")', (done) => {
+  test('.addEventListener("message") - FhircastMessage', (done) => {
     const message = createFhircastMessagePayload(
       'abc123',
       'patient-open',
@@ -501,6 +552,25 @@ describe('FhircastConnection', () => {
     wsServer.send(message);
   });
 
+  test('.addEventListener("message") - Subscription Confirmation', (done) => {
+    const message = createFhircastMessagePayload(
+      'abc123',
+      'patient-open',
+      createFhircastMessageContext<'patient-open'>('patient', 'Patient', 'patient-123')
+    ) satisfies FhircastMessagePayload<'patient-open'>;
+
+    const handler = (event: FhircastMessageEvent): void => {
+      expect(event).toBeDefined();
+      expect(event.type).toBe('message');
+      expect(event.payload).toEqual(message);
+      connection.removeEventListener('message', handler);
+      done();
+    };
+    connection.addEventListener('message', handler);
+    wsServer.send({ 'hub.topic': generateId() });
+    wsServer.send(message);
+  });
+
   test('.disconnect() / .addEventListener("disconnect")', (done) => {
     const handler = (event: FhircastDisconnectEvent): void => {
       expect(event).toBeDefined();
@@ -510,5 +580,19 @@ describe('FhircastConnection', () => {
     };
     connection.addEventListener('disconnect', handler);
     connection.disconnect();
+  });
+
+  test('Invalid SubscriptionRequest in constructor', () => {
+    expect(
+      () =>
+        new FhircastConnection({
+          topic: 'abc123',
+          mode: 'subscribe',
+          // @ts-expect-error Invalid channelType
+          channelType: 'webhooks',
+          events: ['patient-open'],
+          endpoint: 'ws://localhost:1234',
+        })
+    ).toThrowError(OperationOutcomeError);
   });
 });
