@@ -277,7 +277,7 @@ function getFieldsList(
       if (!keys.has(code) && !names.has(name)) {
         result.push(code);
         keys.add(code);
-        names.add(buildFieldNameString(code));
+        names.add(name);
       }
     }
   }

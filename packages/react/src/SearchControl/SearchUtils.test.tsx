@@ -482,6 +482,9 @@ describe('SearchUtils', () => {
   test('buildFieldName', () => {
     expect(buildFieldNameString('id')).toBe('ID');
     expect(buildFieldNameString('Id')).toBe('ID');
+    expect(buildFieldNameString('_id')).toBe('ID');
+    expect(buildFieldNameString('_Id')).toBe('ID');
+
     expect(buildFieldNameString('meta.versionId')).toBe('Version ID');
     expect(buildFieldNameString('_lastUpdated')).toBe('Last Updated');
     expect(buildFieldNameString('name')).toBe('Name');
