@@ -463,7 +463,7 @@ export interface MailAttachment {
  * Compatible with nodemailer Mail.Options.
  */
 export interface MailOptions {
-  /** The e-mail address of the sender. All e-mail addresses can be plain 'sender@server.com' or formatted 'Sender Name <sender@server.com>' */
+  /** The e-mail address of the sender. All e-mail addresses can be plain `sender@server.com` or formatted `Sender Name <sender@server.com>` */
   readonly from?: string | MailAddress;
   /** An e-mail address that will appear on the Sender: field */
   readonly sender?: string | MailAddress;

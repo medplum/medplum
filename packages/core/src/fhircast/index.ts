@@ -5,7 +5,7 @@ import { OperationOutcomeError, validationError } from '../outcomes';
 
 // We currently try to satisfy both STU2 and STU3. Where STU3 removes a resource / key from STU2, we leave it in as a valid key but don't require it.
 
-const FHIRCAST_EVENT_NAMES = {
+export const FHIRCAST_EVENT_NAMES = {
   'patient-open': 'patient-open',
   'patient-close': 'patient-close',
   'imagingstudy-open': 'imagingstudy-open',
@@ -17,7 +17,7 @@ const FHIRCAST_EVENT_NAMES = {
   syncerror: 'syncerror',
 } as const;
 
-const FHIRCAST_RESOURCE_TYPES = [
+export const FHIRCAST_RESOURCE_TYPES = [
   'Patient',
   'Encounter',
   'ImagingStudy',
@@ -28,14 +28,14 @@ const FHIRCAST_RESOURCE_TYPES = [
 export type FhircastEventName = keyof typeof FHIRCAST_EVENT_NAMES;
 export type FhircastResourceType = (typeof FHIRCAST_RESOURCE_TYPES)[number];
 
-type FhircastEventContextDetails = {
+export type FhircastEventContextDetails = {
   resourceType: FhircastResourceType;
   optional?: boolean; // NOTE: optional here is only referring to the schema, the spec often mentions that these are required if available as references for a given anchor resource
   manyAllowed?: boolean;
 };
 
 // Key value pairs of { [FhircastEventName]: [required_resource1, required_resource2] }
-const FHIRCAST_EVENT_RESOURCES = {
+export const FHIRCAST_EVENT_RESOURCES = {
   'patient-open': {
     patient: { resourceType: 'Patient' },
     /* STU2 only! `encounter` key removed in STU3 */

@@ -53,7 +53,7 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-interface HeaderProps {
+export interface HeaderProps {
   pathname?: string;
   searchParams?: URLSearchParams;
   headerSearchDisabled?: boolean;

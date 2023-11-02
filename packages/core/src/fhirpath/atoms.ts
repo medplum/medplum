@@ -322,7 +322,7 @@ export class AndAtom extends BooleanInfixOperatorAtom {
  * 6.5.2. or
  * Returns false if both operands evaluate to false,
  * true if either operand evaluates to true,
- * and empty ({ }) otherwise:
+ * and empty (`{ }`) otherwise:
  */
 export class OrAtom extends BooleanInfixOperatorAtom {
   constructor(left: Atom, right: Atom) {

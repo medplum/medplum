@@ -28,7 +28,7 @@ export interface ReferenceRangeEditorProps {
 }
 
 // Helper type that groups of qualified intervals by equal filter criteria
-type IntervalGroup = {
+export type IntervalGroup = {
   id: string;
   filters: Record<string, any>;
   intervals: ObservationDefinitionQualifiedInterval[];
