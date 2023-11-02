@@ -2,6 +2,6 @@
   "extends": "../../api-extractor.json",
   "docModel": {
     "enabled": true,
-    "apiJsonFilePath": "./dist/docs/api.json"
+    "apiJsonFilePath": "./dist/docs/core.api.json"
   }
 }
