@@ -6,8 +6,8 @@ sidebar_position: 0
 
 Care Plans are representations of protocols that patients are meant to follow. They exist in two modes:
 
-- **In abstract**, a protocol that could apply to a _hypothetical patient_, which is represented in FHIR as a [PlanDefinition](../api/fhir/resources/plandefinition.mdx).
-- **In concrete**, a protocol that is planned for a _specific patient_, the PlanDefinition is instantiated (in FHIR terms, they call this `$apply`) into an optional [CarePlan](../api/fhir/resources/careplan.mdx) with a linked [RequestGroup](../api/fhir/resources/requestgroup.mdx) representing all the items that need to be done and their status.
+- **In abstract**, a protocol that could apply to a _hypothetical patient_, which is represented in FHIR as a [PlanDefinition](/docs/api/fhir/resources/plandefinition.mdx).
+- **In concrete**, a protocol that is planned for a _specific patient_, the PlanDefinition is instantiated (in FHIR terms, they call this `$apply`) into an optional [CarePlan](/docs/api/fhir/resources/careplan.mdx) with a linked [RequestGroup](/docs/api/fhir/resources/requestgroup.mdx) representing all the items that need to be done and their status.
 
 It can be helpful to think of the historical analogs to these resources in the physical world. A `PlanDefinition` can be thought of as a written manual or protocol document that would be given to staff for training. A `CarePlan`/`RequestGroup` can be thought of a checklist that is added to a patient chart.
 

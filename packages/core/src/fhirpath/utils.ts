@@ -1,5 +1,6 @@
-import { Coding, ElementDefinition, Period, Quantity } from '@medplum/fhirtypes';
-import { getElementDefinition, getElementDefinitionTypeName, isResource, PropertyType, TypedValue } from '../types';
+import { Coding, Period, Quantity } from '@medplum/fhirtypes';
+import { getElementDefinition, isResource, PropertyType, TypedValue } from '../types';
+import { InternalSchemaElement } from '../typeschema/types';
 import { capitalize, isEmpty } from '../utils';
 
 /**
@@ -84,15 +85,15 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
  * Returns the value of the property and the property type using a type schema.
  * @param input The base context (FHIR resource or backbone element).
  * @param path The property path.
- * @param property The property element definition.
+ * @param element The property element definition.
  * @returns The value of the property and the property type.
  */
 function getTypedPropertyValueWithSchema(
   input: TypedValue,
   path: string,
-  property: ElementDefinition
+  element: InternalSchemaElement
 ): TypedValue[] | TypedValue | undefined {
-  const types = property.type;
+  const types = element.type;
   if (!types || types.length === 0) {
     return undefined;
   }
@@ -102,13 +103,13 @@ function getTypedPropertyValueWithSchema(
 
   if (types.length === 1) {
     resultValue = input.value[path];
-    resultType = types[0].code as string;
+    resultType = types[0].code;
   } else {
     for (const type of types) {
-      const path2 = path.replace('[x]', '') + capitalize(type.code as string);
+      const path2 = path.replace('[x]', '') + capitalize(type.code);
       if (path2 in input.value) {
         resultValue = input.value[path2];
-        resultType = type.code as string;
+        resultType = type.code;
         break;
       }
     }
@@ -127,7 +128,7 @@ function getTypedPropertyValueWithSchema(
   }
 
   if (resultType === 'Element' || resultType === 'BackboneElement') {
-    resultType = getElementDefinitionTypeName(property);
+    resultType = element.type[0].code;
   }
 
   if (Array.isArray(resultValue)) {

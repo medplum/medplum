@@ -1,9 +1,10 @@
 import { createStyles } from '@mantine/core';
-import { getPropertyDisplayName, IndexedStructureDefinition, stringify, toTypedValue } from '@medplum/core';
+import { getDataType, getPropertyDisplayName, stringify, toTypedValue } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
-import { getValueAndType, ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { useMedplum } from '@medplum/react-hooks';
+import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 
 const useStyles = createStyles((theme) => ({
   root: {
@@ -38,20 +39,20 @@ export interface ResourceDiffTableProps {
 export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | null {
   const { classes } = useStyles();
   const medplum = useMedplum();
-  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
 
   useEffect(() => {
-    medplum.requestSchema(props.original.resourceType).then(setSchema).catch(console.log);
+    medplum
+      .requestSchema(props.original.resourceType)
+      .then(() => setSchemaLoaded(true))
+      .catch(console.log);
   }, [medplum, props.original.resourceType]);
 
-  if (!schema) {
+  if (!schemaLoaded) {
     return null;
   }
 
-  const typeSchema = schema.types[props.original.resourceType];
-  if (!typeSchema) {
-    return null;
-  }
+  const typeSchema = getDataType(props.original.resourceType);
 
   return (
     <table className={classes.root}>
@@ -68,13 +69,11 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
         </tr>
       </thead>
       <tbody>
-        {Object.entries(typeSchema.properties).map((entry) => {
-          const key = entry[0];
+        {Object.entries(typeSchema.elements).map(([key, property]) => {
           if (key === 'id' || key === 'meta') {
             return null;
           }
 
-          const property = entry[1];
           const [originalPropertyValue, originalPropertyType] = getValueAndType(toTypedValue(props.original), key);
           const [revisedPropertyValue, revisedPropertyType] = getValueAndType(toTypedValue(props.revised), key);
           if (isEmpty(originalPropertyValue) && isEmpty(revisedPropertyValue)) {

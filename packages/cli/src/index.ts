@@ -5,9 +5,10 @@ import { login, whoami } from './auth';
 import { aws } from './aws/index';
 import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
 import { bulk } from './bulk';
+import { hl7 } from './hl7';
+import { profile } from './profiles';
 import { project } from './project';
 import { deleteObject, get, patch, post, put } from './rest';
-import { profile } from './profiles';
 
 export async function main(argv: string[]): Promise<void> {
   try {
@@ -44,6 +45,9 @@ export async function main(argv: string[]): Promise<void> {
 
     // AWS commands
     index.addCommand(aws);
+
+    // HL7 commands
+    index.addCommand(hl7);
 
     await index.parseAsync(argv);
   } catch (err) {

@@ -27,5 +27,27 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/docs/auth/ip-access-rules",
+      "destination": "/docs/access/ip-access-rules"
+    },
+    {
+      "source": "/docs/auth/smart-scopes",
+      "destination": "/docs/access/smart-scopes"
+    },
+    {
+      "source": "/docs/auth/access-control",
+      "destination": "/docs/access/access-policies"
+    },
+    {
+      "source": "/docs/auth/:page(oauth-auth-code|client-credentials|google-auth|external-identity-providers|external-ids|token-exchange)",
+      "destination": "/docs/auth/methods/:page*"
+    },
+    {
+      "source": "/docs/auth/okta-auth",
+      "destination": "/docs/auth/methods/domain-level-identity-providers"
+    }
   ]
 }

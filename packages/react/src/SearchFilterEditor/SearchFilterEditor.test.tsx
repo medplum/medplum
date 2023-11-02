@@ -2,7 +2,7 @@ import { Operator, SearchRequest } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { SearchFilterEditor } from './SearchFilterEditor';
 
 const medplum = new MockClient();
@@ -122,7 +122,7 @@ describe('SearchFilterEditor', () => {
       fireEvent.click(screen.getByText('Edit'));
     });
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getAllByRole('searchbox')[1] as HTMLInputElement;
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
     });

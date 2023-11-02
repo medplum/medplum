@@ -22,6 +22,7 @@ import {
   getIdentifier,
   getImageSrc,
   getQuestionnaireAnswers,
+  getReferenceString,
   isLowerCase,
   isProfileResource,
   isUUID,
@@ -35,6 +36,7 @@ import {
   resolveId,
   ResourceWithCode,
   setCodeBySystem,
+  setIdentifier,
   stringify,
 } from './utils';
 
@@ -72,10 +74,15 @@ describe('Core Utils', () => {
     });
   });
 
+  test('getReferenceString', () => {
+    expect(getReferenceString({ resourceType: 'Patient', id: '123' })).toBe('Patient/123');
+    expect(getReferenceString({ reference: 'Patient/123' })).toBe('Patient/123');
+  });
+
   test('resolveId', () => {
     expect(resolveId(undefined)).toBeUndefined();
     expect(resolveId({})).toBeUndefined();
-    expect(resolveId({ id: '123' })).toBeUndefined();
+    expect(resolveId({ id: '123' })).toBe('123');
     expect(resolveId({ reference: 'Patient' })).toBeUndefined();
     expect(resolveId({ reference: 'Patient/123' })).toBe('123');
   });
@@ -347,6 +354,33 @@ describe('Core Utils', () => {
     expect(
       getIdentifier({ resourceType: 'SpecimenDefinition', identifier: { system: 'y', value: 'y' } }, 'x')
     ).toBeUndefined();
+  });
+
+  test('Set identifier', () => {
+    const r1: Patient = { resourceType: 'Patient' };
+    setIdentifier(r1, 'x', 'y');
+    expect(r1).toEqual({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y' }] });
+
+    const r2: Patient = { resourceType: 'Patient', identifier: [] };
+    setIdentifier(r2, 'x', 'y');
+    expect(r2).toEqual({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y' }] });
+
+    const r3: Patient = { resourceType: 'Patient', identifier: [{ system: 'a', value: 'b' }] };
+    setIdentifier(r3, 'x', 'y');
+    expect(r3).toEqual({
+      resourceType: 'Patient',
+      identifier: [
+        { system: 'a', value: 'b' },
+        { system: 'x', value: 'y' },
+      ],
+    });
+
+    const r4: Patient = { resourceType: 'Patient', identifier: [{ system: 'x', value: 'b' }] };
+    setIdentifier(r4, 'x', 'y');
+    expect(r4).toEqual({
+      resourceType: 'Patient',
+      identifier: [{ system: 'x', value: 'y' }],
+    });
   });
 
   test('Get extension value', () => {

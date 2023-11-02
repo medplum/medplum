@@ -1,7 +1,7 @@
 ---
 id: adoption-strategy
-toc_max_heading_level: 4
-sidebar_position: 4
+toc_max_heading_level: 2
+sidebar_position: 2
 ---
 
 # Adoption Strategy

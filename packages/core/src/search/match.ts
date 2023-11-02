@@ -1,5 +1,5 @@
 import { Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
-import { evalFhirPath } from '../fhirpath';
+import { evalFhirPath } from '../fhirpath/parse';
 import { globalSchema } from '../types';
 import { SearchParameterType, getSearchParameterDetails } from './details';
 import { Filter, Operator, SearchRequest } from './search';
@@ -32,7 +32,7 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
  * @returns True if the resource satisfies the search filter.
  */
 function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
-  const searchParam = globalSchema.types[searchRequest.resourceType].searchParams?.[filter.code];
+  const searchParam = globalSchema.types[searchRequest.resourceType]?.searchParams?.[filter.code];
   if (filter.operator === Operator.MISSING && searchParam) {
     const values = evalFhirPath(searchParam.expression as string, resource);
     return filter.value === 'true' ? !values.length : values.length > 0;

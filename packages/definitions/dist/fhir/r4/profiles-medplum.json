@@ -13,6 +13,7 @@
       "name" : "Project",
       "url" : "https://medplum.com/fhir/StructureDefinition/Project",
       "status" : "active",
+      "description": "Encapsulation of resources for a specific project or organization.",
       "kind" : "resource",
       "abstract" : false,
       "type" : "Project",
@@ -393,6 +394,7 @@
       "name" : "ClientApplication",
       "url" : "https://medplum.com/fhir/StructureDefinition/ClientApplication",
       "status" : "active",
+      "description": "Medplum client application for automated access.",
       "kind" : "resource",
       "abstract" : false,
       "type" : "ClientApplication",
@@ -1986,6 +1988,25 @@
             "type" : [{
               "code" : "code"
             }]
+          },
+          {
+            "id" : "PasswordChangeRequest.type",
+            "path" : "PasswordChangeRequest.type",
+            "definition" : "The type of password change request (invite or reset).",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "PasswordChangeRequest.type",
+              "min" : 0,
+              "max" : "1"
+            },
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/password-change-request-type|4.0.1"
+            }
           },
           {
             "id" : "PasswordChangeRequest.user",
@@ -3963,6 +3984,22 @@
             }]
           },
           {
+            "id" : "Agent.identifier",
+            "path" : "Agent.identifier",
+            "short" : "An identifier for this agent",
+            "definition" : "An identifier for this agent.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Identifier"
+            }],
+            "base" : {
+              "path" : "Agent.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
             "id" : "Agent.name",
             "path" : "Agent.name",
             "short" : "The human readable friendly name of the agent.",
@@ -4083,6 +4120,21 @@
             "type" : [{
               "code" : "BackboneElement"
             }]
+          },
+          {
+            "id" : "Agent.channel.name",
+            "path" : "Agent.channel.name",
+            "definition" : "The channel name.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Agent.channel.name",
+              "min" : 1,
+              "max" : "1"
+            }
           },
           {
             "id" : "Agent.channel.endpoint",

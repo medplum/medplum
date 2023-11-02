@@ -1,4 +1,4 @@
-import { ContentType } from '@medplum/core';
+import { ContentType, LOINC, SNOMED } from '@medplum/core';
 import { OperationOutcome, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -60,7 +60,7 @@ describe('Expand', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body.expansion.contains.length).toBe(10);
-    expect(res.body.expansion.contains[0].system).toBe('http://loinc.org');
+    expect(res.body.expansion.contains[0].system).toBe(LOINC);
   });
 
   test('Invalid filter', async () => {
@@ -84,7 +84,7 @@ describe('Expand', () => {
       )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
-    expect(res.body.expansion.contains[0].system).toBe('http://loinc.org');
+    expect(res.body.expansion.contains[0].system).toBe(LOINC);
     expect(res.body.expansion.contains[0].display).toMatch(/left/i);
   });
 
@@ -99,7 +99,7 @@ describe('Expand', () => {
     expect(res.status).toBe(200);
     expect(res.body.expansion.offset).toBe(1);
     expect(res.body.expansion.contains.length).toBe(1);
-    expect(res.body.expansion.contains[0].system).toBe('http://loinc.org');
+    expect(res.body.expansion.contains[0].system).toBe(LOINC);
     expect(res.body.expansion.contains[0].display).toMatch(/left/i);
   });
 
@@ -162,7 +162,7 @@ describe('Expand', () => {
         offset: 0,
         contains: [
           {
-            system: 'http://snomed.info/sct',
+            system: SNOMED,
             code: '363679005',
             display: 'Imaging',
           },
@@ -212,8 +212,19 @@ describe('Expand', () => {
       )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
-    expect(res.body.expansion.contains[0].system).toBe('http://loinc.org');
+    expect(res.body.expansion.contains[0].system).toBe(LOINC);
     expect(res.body.expansion.contains[0].display).toMatch(/left/i);
+  });
+
+  test('Handle empty string after punctuation', async () => {
+    const res = await request(app)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
+          'http://hl7.org/fhir/ValueSet/observation-codes'
+        )}&filter=${encodeURIComponent('[')}`
+      )
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
   });
 
   test('No null `display` field', async () => {

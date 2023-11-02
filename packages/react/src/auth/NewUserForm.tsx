@@ -3,8 +3,9 @@ import { GoogleCredentialResponse, LoginAuthenticationResponse, normalizeOperati
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
-import { getGoogleClientId, GoogleButton } from '../GoogleButton/GoogleButton';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { GoogleButton } from '../GoogleButton/GoogleButton';
+import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
+import { useMedplum } from '@medplum/react-hooks';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 import { getRecaptcha, initRecaptcha } from '../utils/recaptcha';

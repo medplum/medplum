@@ -191,6 +191,7 @@ describe('Instance Logger', () => {
         level: 'ERROR',
         msg: 'Fatal error',
         error: 'Error: Catastrophe!',
+        stack: expect.arrayContaining(['Error: Catastrophe!']),
       })
     );
   });

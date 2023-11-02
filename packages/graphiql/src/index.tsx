@@ -141,7 +141,7 @@ function tryDecodeBase64(value: string | null): string {
   }
 }
 
-function App(): JSX.Element {
+export function App(): JSX.Element {
   const profile = useMedplumProfile();
   return profile ? (
     <GraphiQL

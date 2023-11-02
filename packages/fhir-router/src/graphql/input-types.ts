@@ -1,11 +1,5 @@
-import {
-  capitalize,
-  getElementDefinition,
-  getElementDefinitionTypeName,
-  getResourceTypeSchema,
-  isResourceType,
-} from '@medplum/core';
-import { ElementDefinition, ElementDefinitionType, ResourceType } from '@medplum/fhirtypes';
+import { InternalSchemaElement, capitalize, getDataType, isResourceType } from '@medplum/core';
+import { ElementDefinitionType, ResourceType } from '@medplum/fhirtypes';
 import {
   GraphQLInputFieldConfig,
   GraphQLInputFieldConfigMap,
@@ -32,7 +26,7 @@ export function getGraphQLInputType(inputType: string, nameSuffix: string): Grap
 }
 
 function buildGraphQLInputType(resourceType: string, nameSuffix: string): GraphQLInputType {
-  const schema = getResourceTypeSchema(resourceType);
+  const schema = getDataType(resourceType);
   return new GraphQLInputObjectType({
     name: resourceType + nameSuffix,
     description: schema.description,
@@ -57,10 +51,8 @@ function buildGraphQLInputFields(resourceType: ResourceType, nameSuffix: string)
 }
 
 function buildInputPropertyFields(resourceType: string, fields: GraphQLInputFieldConfigMap, nameSuffix: string): void {
-  const schema = getResourceTypeSchema(resourceType);
-  const properties = schema.properties;
-  for (const key of Object.keys(properties)) {
-    const elementDefinition = getElementDefinition(resourceType, key) as ElementDefinition;
+  const schema = getDataType(resourceType);
+  for (const [key, elementDefinition] of Object.entries(schema.elements)) {
     for (const type of elementDefinition.type as ElementDefinitionType[]) {
       buildInputPropertyField(fields, key, elementDefinition, type, nameSuffix);
     }
@@ -70,27 +62,30 @@ function buildInputPropertyFields(resourceType: string, fields: GraphQLInputFiel
 function buildInputPropertyField(
   fields: GraphQLInputFieldConfigMap,
   key: string,
-  elementDefinition: ElementDefinition,
+  elementDefinition: InternalSchemaElement,
   elementDefinitionType: ElementDefinitionType,
   nameSuffix: string
 ): void {
   let typeName = elementDefinitionType.code as string;
   if (typeName === 'Element' || typeName === 'BackboneElement') {
-    typeName = getElementDefinitionTypeName(elementDefinition);
+    typeName = elementDefinition.type[0].code;
   }
 
   const fieldConfig: GraphQLInputFieldConfig = {
-    description: elementDefinition.short,
+    description: elementDefinition.description, // TODO: elementDefinition.short
     type: getGraphQLInputType(typeName, nameSuffix),
   };
 
-  if (elementDefinition.max === '*') {
+  if (elementDefinition.max > 1) {
     fieldConfig.type = new GraphQLList(new GraphQLNonNull(getGraphQLInputType(typeName, nameSuffix)));
   }
-  if (elementDefinition.min !== 0 && !elementDefinition.path?.endsWith('[x]')) {
+  if (elementDefinition.min > 0 && !key.endsWith('[x]')) {
     fieldConfig.type = new GraphQLNonNull(fieldConfig.type);
   }
 
-  const propertyName = key.replace('[x]', capitalize(elementDefinitionType.code as string));
+  const propertyName = (key.split('.').pop() as string).replace(
+    '[x]',
+    capitalize(elementDefinitionType.code as string)
+  );
   fields[propertyName] = fieldConfig;
 }

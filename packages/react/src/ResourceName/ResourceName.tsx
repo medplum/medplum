@@ -1,9 +1,9 @@
 import { Text, TextProps } from '@mantine/core';
 import { getDisplayString, isOk, normalizeErrorString } from '@medplum/core';
 import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import { useResource } from '@medplum/react-hooks';
 import React, { useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { useResource } from '../useResource/useResource';
 
 export interface ResourceNameProps extends TextProps {
   value?: Reference | Resource;

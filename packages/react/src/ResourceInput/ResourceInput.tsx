@@ -1,11 +1,10 @@
 import { Group, Text } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import React, { forwardRef, useCallback, useState } from 'react';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
-import { useResource } from '../useResource/useResource';
 
 /**
  * Search parameter overrides for specific resource types.
@@ -76,6 +75,7 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly defaultValue?: T | Reference<T>;
   readonly placeholder?: string;
   readonly loadOnFocus?: boolean;
+  readonly required?: boolean;
   readonly onChange?: (value: T | undefined) => void;
 }
 
@@ -127,6 +127,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
   return (
     <AsyncAutocomplete<T>
       name={props.name}
+      required={props.required}
       itemComponent={ItemComponent}
       defaultValue={defaultValue}
       placeholder={props.placeholder}

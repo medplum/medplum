@@ -1,6 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, Questionnaire } from '@medplum/fhirtypes';
-import { indexStructureDefinitionBundle, PropertyType, TypedValue } from '../types';
+import { PropertyType, TypedValue } from '../types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
 import {
   fhirPathArrayEquals,
   fhirPathArrayEquivalent,

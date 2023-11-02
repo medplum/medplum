@@ -1,6 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { ActivityDefinition, Bundle, Observation, Patient, Practitioner, SearchParameter } from '@medplum/fhirtypes';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '../types';
+import { indexSearchParameterBundle } from '../types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { matchesSearchRequest } from './match';
 import { Operator, parseSearchDefinition, SearchRequest } from './search';
 

@@ -9,16 +9,15 @@ import {
   Reference,
   Specimen,
 } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import React, { useEffect, useState } from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { NoteDisplay } from '../NoteDisplay/NoteDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
-import { useResource } from '../useResource/useResource';
 
 const useStyles = createStyles((theme) => ({
   table: {
@@ -93,7 +92,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
     <Stack>
       <Title>Diagnostic Report</Title>
       <DiagnosticReportHeader value={diagnosticReport} />
-      {!props.hideSpecimenInfo && SpecimenInfo(specimens)}
+      {specimens && !props.hideSpecimenInfo && SpecimenInfo(specimens)}
       {diagnosticReport.result && (
         <ObservationTable hideObservationNotes={props.hideObservationNotes} value={diagnosticReport.result} />
       )}
@@ -186,6 +185,7 @@ function SpecimenInfo(specimens: Specimen[] | undefined): JSX.Element {
 
 export interface ObservationTableProps {
   value?: Observation[] | Reference<Observation>[];
+  ancestorIds?: string[];
   hideObservationNotes?: boolean;
 }
 
@@ -205,7 +205,11 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
         </tr>
       </thead>
       <tbody>
-        <ObservationRowGroup value={props.value} hideObservationNotes={props.hideObservationNotes} />
+        <ObservationRowGroup
+          value={props.value}
+          ancestorIds={props.ancestorIds}
+          hideObservationNotes={props.hideObservationNotes}
+        />
       </tbody>
     </table>
   );
@@ -213,6 +217,7 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
 
 interface ObservationRowGroupProps {
   value?: Observation[] | Reference<Observation>[];
+  ancestorIds?: string[];
   hideObservationNotes?: boolean;
 }
 
@@ -222,8 +227,9 @@ function ObservationRowGroup(props: ObservationRowGroupProps): JSX.Element {
       {props.value?.map((observation) => (
         <ObservationRow
           key={`obs-${isReference(observation) ? observation.reference : observation.id}`}
-          hideObservationNotes={props.hideObservationNotes}
           value={observation}
+          ancestorIds={props.ancestorIds}
+          hideObservationNotes={props.hideObservationNotes}
         />
       ))}
     </>
@@ -232,6 +238,7 @@ function ObservationRowGroup(props: ObservationRowGroupProps): JSX.Element {
 
 interface ObservationRowProps {
   value: Observation | Reference<Observation>;
+  ancestorIds?: string[];
   hideObservationNotes?: boolean;
 }
 
@@ -239,7 +246,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
   const { classes, cx } = useStyles();
   const observation = useResource(props.value);
 
-  if (!observation) {
+  if (!observation || props.ancestorIds?.includes(observation.id as string)) {
     return null;
   }
 
@@ -285,6 +292,9 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
       {observation.hasMember && (
         <ObservationRowGroup
           value={observation.hasMember as Reference<Observation>[]}
+          ancestorIds={
+            props.ancestorIds ? [...props.ancestorIds, observation.id as string] : [observation.id as string]
+          }
           hideObservationNotes={props.hideObservationNotes}
         />
       )}

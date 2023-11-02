@@ -1,9 +1,7 @@
-import { IndexedStructureDefinition } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import React, { useEffect, useState } from 'react';
 import { BackboneElementDisplay } from '../BackboneElementDisplay/BackboneElementDisplay';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
-import { useResource } from '../useResource/useResource';
 
 export interface ResourceTableProps {
   /**
@@ -28,15 +26,18 @@ export interface ResourceTableProps {
 export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
   const medplum = useMedplum();
   const value = useResource(props.value);
-  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
 
   useEffect(() => {
     if (value) {
-      medplum.requestSchema(value.resourceType).then(setSchema).catch(console.log);
+      medplum
+        .requestSchema(value.resourceType)
+        .then(() => setSchemaLoaded(true))
+        .catch(console.log);
     }
   }, [medplum, value]);
 
-  if (!schema || !value) {
+  if (!schemaLoaded || !value) {
     return null;
   }
 

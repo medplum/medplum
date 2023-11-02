@@ -1,10 +1,10 @@
 import { Button, createStyles, Navbar as MantineNavbar, ScrollArea, Space, Text } from '@mantine/core';
+import { useMedplumNavigate } from '@medplum/react-hooks';
 import { IconPlus } from '@tabler/icons-react';
 import React, { useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
-import { CodeInput } from '../CodeInput/CodeInput';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
+import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 
 const useStyles = createStyles((theme) => {
   return {
@@ -75,6 +75,7 @@ export interface NavbarProps {
   menus?: NavbarMenu[];
   closeNavbar: () => void;
   displayAddBookmark?: boolean;
+  resourceTypeSearchDisabled?: boolean;
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
@@ -102,23 +103,16 @@ export function Navbar(props: NavbarProps): JSX.Element {
     <>
       <MantineNavbar width={{ sm: 250 }} p="xs">
         <ScrollArea>
-          <MantineNavbar.Section mb="sm">
-            <CodeInput
-              key={window.location.pathname}
-              name="resourceType"
-              placeholder="Resource Type"
-              property={{
-                binding: {
-                  valueSet: 'https://medplum.com/fhir/ValueSet/resource-types',
-                },
-              }}
-              onChange={(newValue) => navigateResourceType(newValue)}
-              creatable={false}
-              maxSelectedValues={0}
-              clearSearchOnChange={true}
-              clearable={false}
-            />
-          </MantineNavbar.Section>
+          {!props.resourceTypeSearchDisabled && (
+            <MantineNavbar.Section mb="sm">
+              <ResourceTypeInput
+                key={window.location.pathname}
+                name="resourceType"
+                placeholder="Resource Type"
+                onChange={(newValue) => navigateResourceType(newValue)}
+              />
+            </MantineNavbar.Section>
+          )}
           <MantineNavbar.Section grow>
             {props.menus?.map((menu) => (
               <React.Fragment key={`menu-${menu.title}`}>

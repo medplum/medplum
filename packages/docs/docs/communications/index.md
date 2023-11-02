@@ -14,7 +14,7 @@ There are three top level considerations when designing communications:
 
 ## Who should receive communications
 
-Communication FHIR resources have a `sender`, a `recipient`, and a `subject` which should be populated appropriately. When multiple parties are involved [Group](/docs/api/fhir/resources/group.mdx), [CareTeam](../api/fhir/resources/careteam.mdx), or [Organization](/docs/api/fhir/resources/organization.mdx) are involved, they can be linked as resources to the Communication resource for record keeping purposes.
+Communication FHIR resources have a `sender`, a `recipient`, and a `subject` which should be populated appropriately. When multiple parties are involved [Group](/docs/api/fhir/resources/group.mdx), [CareTeam](/docs/api/fhir/resources/careteam.mdx), or [Organization](/docs/api/fhir/resources/organization.mdx) are involved, they can be linked as resources to the Communication resource for record keeping purposes.
 
 A well structured **Communication resource serves as the basis for automation through [subscriptions](/docs/subscriptions/) and [bots](/docs/bots)**. For example, there could be a patient facing application with a messaging interface which creates a Communication FHIR resource with a CareTeam as recipient. A subscription on Communication resources then triggers a bot that sends an email to all `CareTeam.participants` notifying them that a new message is available.
 

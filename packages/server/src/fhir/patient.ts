@@ -1,4 +1,4 @@
-import { evalFhirPath, getReferenceString } from '@medplum/core';
+import { evalFhirPath, getReferenceString, getSearchParameter } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
   CompartmentDefinition,
@@ -8,7 +8,6 @@ import {
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { getSearchParameter } from './structure';
 
 /**
  * Patient compartment definitions.

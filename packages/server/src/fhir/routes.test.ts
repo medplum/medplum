@@ -123,6 +123,9 @@ describe('FHIR Routes', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient' });
     expect(res.status).toBe(201);
+    expect(res.body.resourceType).toEqual('Patient');
+    expect(res.headers.location).toContain('Patient');
+    expect(res.headers.location).toContain(res.body.id);
     const patient = res.body;
     const res2 = await request(app)
       .get(`/fhir/R4/Patient/` + patient.id)
@@ -220,6 +223,10 @@ describe('FHIR Routes', () => {
       .get(`/fhir/R4/Patient/${patientId}/_history/${patientVersionId}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
+
+    // Expect "ETag" header to start with "W/" (weak validator)
+    expect(res.headers.etag).toBeDefined();
+    expect(res.headers.etag).toContain('W/');
   });
 
   test('Read resource version invalid UUID', async () => {

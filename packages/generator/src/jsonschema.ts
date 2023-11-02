@@ -1,12 +1,12 @@
 import {
   capitalize,
-  getElementDefinition,
-  globalSchema,
+  getAllDataTypes,
   indexStructureDefinitionBundle,
-  TypeSchema,
+  InternalSchemaElement,
+  InternalTypeSchema,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, ElementDefinition, ElementDefinitionType } from '@medplum/fhirtypes';
+import { Bundle, ElementDefinitionType, StructureDefinition } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { JSONSchema6, JSONSchema6Definition } from 'json-schema';
 import { resolve } from 'path';
@@ -49,37 +49,30 @@ interface FhirSchema extends JSONSchema6 {
 export function main(): void {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+
+  const medplumBundle = readJson('fhir/r4/profiles-medplum.json') as Bundle<StructureDefinition>;
+  const medplumTypes = medplumBundle.entry?.map((e) => e.id) ?? [];
+  indexStructureDefinitionBundle(medplumBundle);
 
   // Start with the existing schema
   const fhirSchema = readJson('fhir/r4/fhir.schema.json') as FhirSchema;
 
   // Then add element types
-  for (const typeSchema of Object.values(globalSchema.types)) {
-    const typeName = buildTypeName((typeSchema.elementDefinition.path as string).split('.'));
-    if (typeSchema.structureDefinition.url?.startsWith('https://medplum.com/fhir/StructureDefinition/')) {
+  for (const typeSchema of Object.values(getAllDataTypes())) {
+    const typeName = typeSchema.name;
+    if (medplumTypes.includes(typeName)) {
+      if (!fhirSchema.discriminator.mapping[typeName]) {
+        fhirSchema.discriminator.mapping[typeName] = `#/definitions/${typeName}`;
+      }
+      if (!fhirSchema.oneOf.find((x) => typeof x === 'object' && x.$ref === `#/definitions/${typeName}`)) {
+        fhirSchema.oneOf.push({ $ref: `#/definitions/${typeName}` });
+      }
       if (
-        typeName !== 'BackboneElement' &&
-        typeName !== 'Resource' &&
-        typeName !== 'DomainResource' &&
-        typeName !== 'MetadataResource' &&
-        (typeSchema.structureDefinition.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/DomainResource' ||
-          typeSchema.structureDefinition.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/Resource') &&
-        typeSchema.structureDefinition.id === typeSchema.elementDefinition.id
+        !fhirSchema.definitions.ResourceList.oneOf.find(
+          (x) => typeof x === 'object' && x.$ref === `#/definitions/${typeName}`
+        )
       ) {
-        if (!fhirSchema.discriminator.mapping[typeName]) {
-          fhirSchema.discriminator.mapping[typeName] = `#/definitions/${typeName}`;
-        }
-        if (!fhirSchema.oneOf.find((x) => typeof x === 'object' && x.$ref === `#/definitions/${typeName}`)) {
-          fhirSchema.oneOf.push({ $ref: `#/definitions/${typeName}` });
-        }
-        if (
-          !fhirSchema.definitions.ResourceList.oneOf.find(
-            (x) => typeof x === 'object' && x.$ref === `#/definitions/${typeName}`
-          )
-        ) {
-          fhirSchema.definitions.ResourceList.oneOf.push({ $ref: `#/definitions/${typeName}` });
-        }
+        fhirSchema.definitions.ResourceList.oneOf.push({ $ref: `#/definitions/${typeName}` });
       }
       fhirSchema.definitions[typeName] = buildElementSchema(typeSchema);
     }
@@ -96,59 +89,42 @@ export function main(): void {
   );
 }
 
-function buildElementSchema(typeSchema: TypeSchema): JSONSchema6Definition {
+function buildElementSchema(typeSchema: InternalTypeSchema): JSONSchema6Definition {
   const { properties, required } = buildProperties(typeSchema);
   return {
-    description: getDescription(typeSchema),
+    description: typeSchema.description,
     properties,
     additionalProperties: false,
     required,
   };
 }
 
-function getDescription(typeSchema: TypeSchema): string | undefined {
-  return typeSchema.elementDefinition.definition;
-}
-
-function buildProperties(typeSchema: TypeSchema): {
+function buildProperties(typeSchema: InternalTypeSchema): {
   properties: Record<string, JSONSchema6Definition>;
   required: string[] | undefined;
 } {
   const properties: Record<string, JSONSchema6Definition> = {};
   let required: string[] | undefined = undefined;
 
-  if (
-    (typeSchema.structureDefinition.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/DomainResource' ||
-      typeSchema.structureDefinition.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/Resource') &&
-    typeSchema.structureDefinition.id === typeSchema.elementDefinition.id
-  ) {
+  if (typeSchema.kind === 'resource') {
     properties['resourceType'] = {
-      description: `This is a ${typeSchema.structureDefinition.name} resource`,
-      const: typeSchema.structureDefinition.name,
+      description: `This is a ${typeSchema.name} resource`,
+      const: typeSchema.name,
     };
     required = ['resourceType'];
   }
 
-  for (const elementName of Object.keys(typeSchema.properties)) {
-    let elementDefinition = typeSchema.properties[elementName];
-
-    if (elementDefinition.contentReference) {
-      const contentReference = elementDefinition.contentReference.substring(1).split('.');
-      const referencePropertyName = contentReference.pop() as string;
-      const referenceTypeName = buildTypeName(contentReference);
-      elementDefinition = getElementDefinition(referenceTypeName, referencePropertyName) as ElementDefinition;
+  for (const [path, elementDefinition] of Object.entries(typeSchema.elements)) {
+    for (const elementDefinitionType of elementDefinition?.type ?? []) {
+      const propertyName = path.replace('[x]', capitalize(elementDefinitionType.code as string));
+      properties[propertyName] = buildPropertySchema(elementDefinition, elementDefinitionType, path);
     }
 
-    for (const elementDefinitionType of elementDefinition.type ?? []) {
-      const propertyName = elementName.replace('[x]', capitalize(elementDefinitionType.code as string));
-      properties[propertyName] = buildPropertySchema(elementDefinition, elementDefinitionType);
-    }
-
-    if (!elementName.includes('[x]') && elementDefinition.min !== 0) {
+    if (!path.includes('[x]') && elementDefinition?.min) {
       if (!required) {
         required = [];
       }
-      required.push(elementName);
+      required.push(path);
     }
   }
 
@@ -156,40 +132,39 @@ function buildProperties(typeSchema: TypeSchema): {
 }
 
 function buildPropertySchema(
-  elementDefinition: ElementDefinition,
-  elementDefinitionType: ElementDefinitionType
+  elementDefinition: InternalSchemaElement,
+  elementDefinitionType: ElementDefinitionType,
+  path: string
 ): JSONSchema6Definition {
   const result: JSONSchema6Definition = {
-    description: elementDefinition.definition,
+    description: elementDefinition.description,
   };
 
   const enumValues = getEnumValues(elementDefinition);
 
-  if (elementDefinition.max === '*') {
+  if (elementDefinition.max > 1) {
     result.items = {};
     if (enumValues) {
       result.items.enum = enumValues;
     } else {
-      result.items.$ref = `#/definitions/${getTypeName(elementDefinition, elementDefinitionType)}`;
+      result.items.$ref = `#/definitions/${getTypeName(path, elementDefinitionType)}`;
     }
     result.type = 'array';
   } else if (enumValues) {
     result.enum = enumValues;
   } else {
-    result.$ref = `#/definitions/${getTypeName(elementDefinition, elementDefinitionType)}`;
+    result.$ref = `#/definitions/${getTypeName(path, elementDefinitionType)}`;
   }
 
   return result;
 }
 
-function getTypeName(elementDefinition: ElementDefinition, elementDefinitionType: ElementDefinitionType): string {
-  if (elementDefinition.path?.endsWith('.id')) {
+function getTypeName(path: string, elementDefinitionType: ElementDefinitionType): string {
+  if (path.endsWith('.id')) {
     return 'id';
   }
   const code = elementDefinitionType.code as string;
-  return code === 'BackboneElement' || code === 'Element'
-    ? buildTypeName(elementDefinition.path?.split('.') as string[])
-    : code;
+  return code === 'BackboneElement' || code === 'Element' ? buildTypeName(path.split('.') as string[]) : code;
 }
 
 function buildTypeName(components: string[]): string {
@@ -199,14 +174,16 @@ function buildTypeName(components: string[]): string {
   return components.map(capitalize).join('_');
 }
 
-function getEnumValues(elementDefinition: ElementDefinition): string[] | undefined {
-  if (elementDefinition.binding?.valueSet && elementDefinition.binding.strength === 'required') {
-    if (
-      elementDefinition.binding.valueSet !== 'http://hl7.org/fhir/ValueSet/resource-types|4.0.1' &&
-      elementDefinition.binding.valueSet !== 'http://hl7.org/fhir/ValueSet/all-types|4.0.1' &&
-      elementDefinition.binding.valueSet !== 'http://hl7.org/fhir/ValueSet/defined-types|4.0.1'
-    ) {
-      const values = getValueSetValues(elementDefinition.binding.valueSet);
+const excludedValueSets = [
+  'http://hl7.org/fhir/ValueSet/resource-types|4.0.1',
+  'http://hl7.org/fhir/ValueSet/all-types|4.0.1',
+  'http://hl7.org/fhir/ValueSet/defined-types|4.0.1',
+];
+function getEnumValues(elementDefinition: InternalSchemaElement): string[] | undefined {
+  const valueSet = elementDefinition.binding?.valueSet;
+  if (valueSet) {
+    if (excludedValueSets.includes(valueSet)) {
+      const values = getValueSetValues(valueSet);
       if (values && values.length > 0) {
         return values;
       }

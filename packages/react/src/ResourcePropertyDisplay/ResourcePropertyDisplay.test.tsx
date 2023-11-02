@@ -1,4 +1,4 @@
-import { PropertyType } from '@medplum/core';
+import { InternalSchemaElement, PropertyType } from '@medplum/core';
 import {
   Address,
   Annotation,
@@ -19,11 +19,19 @@ import { MockClient } from '@medplum/mock';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 const medplum = new MockClient();
 
+const baseProperty: Omit<InternalSchemaElement, 'type'> = {
+  min: 0,
+  max: 1,
+  description: '',
+  isArray: false,
+  constraints: [],
+  path: '',
+};
 describe('ResourcePropertyDisplay', () => {
   function setup(children: React.ReactNode): void {
     render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
@@ -32,7 +40,7 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders null value', () => {
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'string' }] }}
+        property={{ ...baseProperty, type: [{ code: 'string' }] }}
         propertyType={PropertyType.string}
         value={null}
       />
@@ -42,7 +50,7 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders boolean true', () => {
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'boolean' }] }}
+        property={{ ...baseProperty, type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
         value={true}
       />
@@ -54,7 +62,7 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders boolean false', () => {
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'boolean' }] }}
+        property={{ ...baseProperty, type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
         value={false}
       />
@@ -66,7 +74,7 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders boolean undefined', () => {
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'boolean' }] }}
+        property={{ ...baseProperty, type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
         value={undefined}
       />
@@ -78,7 +86,7 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders string', () => {
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'string' }] }}
+        property={{ ...baseProperty, type: [{ code: 'string' }] }}
         propertyType={PropertyType.string}
         value={'hello'}
       />
@@ -89,7 +97,7 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders string with newline', () => {
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'string' }] }}
+        property={{ ...baseProperty, type: [{ code: 'string' }] }}
         propertyType={PropertyType.string}
         value={'hello\nworld'}
       />
@@ -116,7 +124,7 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders url', () => {
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'url' }] }}
+        property={{ ...baseProperty, type: [{ code: 'url' }] }}
         propertyType={PropertyType.url}
         value="https://example.com"
       />
@@ -127,7 +135,7 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders uri', () => {
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'uri' }] }}
+        property={{ ...baseProperty, type: [{ code: 'uri' }] }}
         propertyType={PropertyType.uri}
         value="https://example.com"
       />
@@ -138,7 +146,7 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders string array', () => {
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'string' }], max: '*' }}
+        property={{ ...baseProperty, type: [{ code: 'string' }], max: Number.POSITIVE_INFINITY }}
         propertyType={PropertyType.string}
         value={['hello', 'world']}
       />
@@ -150,7 +158,7 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders markdown', () => {
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'markdown' }] }}
+        property={{ ...baseProperty, type: [{ code: 'markdown' }] }}
         propertyType={PropertyType.markdown}
         value="hello"
       />
@@ -165,7 +173,7 @@ describe('ResourcePropertyDisplay', () => {
 
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'Address' }] }}
+        property={{ ...baseProperty, type: [{ code: 'Address' }] }}
         propertyType={PropertyType.Address}
         value={value}
       />
@@ -181,7 +189,7 @@ describe('ResourcePropertyDisplay', () => {
 
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'Annotation' }] }}
+        property={{ ...baseProperty, type: [{ code: 'Annotation' }] }}
         propertyType={PropertyType.Annotation}
         value={value}
       />
@@ -199,7 +207,7 @@ describe('ResourcePropertyDisplay', () => {
 
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'Attachment' }] }}
+        property={{ ...baseProperty, type: [{ code: 'Attachment' }] }}
         propertyType={PropertyType.Attachment}
         value={value}
       />
@@ -224,7 +232,7 @@ describe('ResourcePropertyDisplay', () => {
 
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'Attachment' }], max: '*' }}
+        property={{ ...baseProperty, type: [{ code: 'Attachment' }], max: Number.POSITIVE_INFINITY }}
         propertyType={PropertyType.Attachment}
         value={value}
       />
@@ -240,7 +248,7 @@ describe('ResourcePropertyDisplay', () => {
 
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'CodeableConcept' }] }}
+        property={{ ...baseProperty, type: [{ code: 'CodeableConcept' }] }}
         propertyType={PropertyType.CodeableConcept}
         value={value}
       />
@@ -257,7 +265,7 @@ describe('ResourcePropertyDisplay', () => {
 
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'Coding' }] }}
+        property={{ ...baseProperty, type: [{ code: 'Coding' }] }}
         propertyType={PropertyType.Coding}
         value={value}
       />
@@ -274,7 +282,7 @@ describe('ResourcePropertyDisplay', () => {
 
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'ContactPoint' }] }}
+        property={{ ...baseProperty, type: [{ code: 'ContactPoint' }] }}
         propertyType={PropertyType.ContactPoint}
         value={value}
       />
@@ -290,7 +298,7 @@ describe('ResourcePropertyDisplay', () => {
 
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'HumanName' }] }}
+        property={{ ...baseProperty, type: [{ code: 'HumanName' }] }}
         propertyType={PropertyType.HumanName}
         value={value}
       />
@@ -307,7 +315,7 @@ describe('ResourcePropertyDisplay', () => {
 
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'Identifier' }] }}
+        property={{ ...baseProperty, type: [{ code: 'Identifier' }] }}
         propertyType={PropertyType.Identifier}
         value={value}
       />
@@ -324,7 +332,7 @@ describe('ResourcePropertyDisplay', () => {
 
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'Period' }] }}
+        property={{ ...baseProperty, type: [{ code: 'Period' }] }}
         propertyType={PropertyType.Period}
         value={value}
       />
@@ -341,7 +349,7 @@ describe('ResourcePropertyDisplay', () => {
 
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'Quantity' }] }}
+        property={{ ...baseProperty, type: [{ code: 'Quantity' }] }}
         propertyType={PropertyType.Quantity}
         value={value}
       />
@@ -358,7 +366,7 @@ describe('ResourcePropertyDisplay', () => {
 
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'Range' }] }}
+        property={{ ...baseProperty, type: [{ code: 'Range' }] }}
         propertyType={PropertyType.Range}
         value={value}
       />
@@ -375,7 +383,7 @@ describe('ResourcePropertyDisplay', () => {
 
     setup(
       <ResourcePropertyDisplay
-        property={{ type: [{ code: 'Ratio' }] }}
+        property={{ ...baseProperty, type: [{ code: 'Ratio' }] }}
         propertyType={PropertyType.Ratio}
         value={value}
       />
@@ -393,7 +401,7 @@ describe('ResourcePropertyDisplay', () => {
     setup(
       <MemoryRouter>
         <ResourcePropertyDisplay
-          property={{ type: [{ code: 'Reference' }] }}
+          property={{ ...baseProperty, type: [{ code: 'Reference' }] }}
           propertyType={PropertyType.Reference}
           value={value}
         />
@@ -411,7 +419,7 @@ describe('ResourcePropertyDisplay', () => {
 
     setup(
       <ResourcePropertyDisplay
-        property={{ path: 'Subscription.channel', type: [{ code: 'BackboneElement' }] }}
+        property={{ ...baseProperty, path: 'Subscription.channel', type: [{ code: 'SubscriptionChannel' }] }}
         propertyType={PropertyType.BackboneElement}
         value={value}
       />
@@ -421,13 +429,10 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Handles unknown property', () => {
-    expect.assertions(2);
     console.error = jest.fn();
-    try {
-      setup(<ResourcePropertyDisplay propertyType={PropertyType.BackboneElement} value={{}} />);
-    } catch (err) {
-      expect((err as Error).message).toMatch('requires element definition');
-    }
+    expect(() =>
+      setup(<ResourcePropertyDisplay propertyType={PropertyType.BackboneElement} value={{}} />)
+    ).toThrowError(new Error('Displaying property of type BackboneElement requires element schema'));
     expect(console.error).toBeCalled();
   });
 });

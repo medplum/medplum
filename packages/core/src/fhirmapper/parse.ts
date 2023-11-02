@@ -8,8 +8,9 @@ import {
   StructureMapGroupRuleTarget,
   StructureMapStructure,
 } from '@medplum/fhirtypes';
-import { Parser } from '../fhirlexer';
-import { FunctionAtom, initFhirPathParserBuilder, LiteralAtom, OperatorPrecedence, SymbolAtom } from '../fhirpath';
+import { Parser } from '../fhirlexer/parse';
+import { FunctionAtom, LiteralAtom, SymbolAtom } from '../fhirpath/atoms';
+import { initFhirPathParserBuilder, OperatorPrecedence } from '../fhirpath/parse';
 import { tokenize } from './tokenize';
 
 class StructureMapParser {

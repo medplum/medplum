@@ -3,7 +3,7 @@ import { BaseLoginRequest, LoginAuthenticationResponse, normalizeErrorString } f
 import { ProjectMembership } from '@medplum/fhirtypes';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '@medplum/react-hooks';
 import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
 import { ChooseScopeForm } from './ChooseScopeForm';
@@ -45,9 +45,9 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
     ...baseLoginRequest
   } = props;
   const medplum = useMedplum();
-  const [login, setLogin] = useState<string | undefined>(undefined);
+  const [login, setLogin] = useState<string>();
   const [mfaRequired, setAuthenticatorRequired] = useState(false);
-  const [memberships, setMemberships] = useState<ProjectMembership[] | undefined>(undefined);
+  const [memberships, setMemberships] = useState<ProjectMembership[]>();
 
   const handleCode = useCallback(
     (code: string): void => {

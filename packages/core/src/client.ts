@@ -3,6 +3,7 @@
 
 import {
   AccessPolicy,
+  Agent,
   Attachment,
   Binary,
   BulkDataExport,
@@ -37,22 +38,43 @@ import { LRUCache } from './cache';
 import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
+import {
+  FhircastConnection,
+  FhircastEventContext,
+  FhircastEventName,
+  PendingSubscriptionRequest,
+  SubscriptionRequest,
+  createFhircastMessagePayload,
+  serializeFhircastSubscriptionRequest,
+  validateFhircastSubscriptionRequest,
+} from './fhircast';
 import { Hl7Message } from './hl7';
 import { isJwt, isMedplumAccessToken, parseJWTPayload } from './jwt';
 import {
+  OperationOutcomeError,
   badRequest,
   isOk,
   isOperationOutcome,
   normalizeOperationOutcome,
   notFound,
-  OperationOutcomeError,
+  validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
-import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
-import { arrayBufferToBase64, CodeChallengeMethod, createReference, ProfileResource, sleep } from './utils';
+import { indexSearchParameter } from './types';
+import { indexStructureDefinitionBundle, isDataTypeLoaded } from './typeschema/types';
+import {
+  CodeChallengeMethod,
+  ProfileResource,
+  arrayBufferToBase64,
+  createReference,
+  getReferenceString,
+  resolveId,
+  sleep,
+} from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
+export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
@@ -647,10 +669,14 @@ export class MedplumClient extends EventTarget {
       this.autoBatchQueue = undefined;
     }
 
-    const activeLogin = this.getActiveLogin();
-    if (activeLogin) {
-      this.setAccessToken(activeLogin.accessToken, activeLogin.refreshToken);
-      this.refreshProfile().catch(console.log);
+    if (options?.accessToken) {
+      this.setAccessToken(options.accessToken);
+    } else {
+      const activeLogin = this.getActiveLogin();
+      if (activeLogin) {
+        this.setAccessToken(activeLogin.accessToken, activeLogin.refreshToken);
+        this.refreshProfile().catch(console.log);
+      }
     }
 
     this.setupStorageListener();
@@ -1441,27 +1467,15 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * Returns a cached schema for a resource type.
-   * If the schema is not cached, returns undefined.
-   * It is assumed that a client will call requestSchema before using this method.
-   * @category Schema
-   * @returns The schema if immediately available, undefined otherwise.
-   * @deprecated Use globalSchema instead.
-   */
-  getSchema(): IndexedStructureDefinition {
-    return globalSchema;
-  }
-
-  /**
    * Requests the schema for a resource type.
    * If the schema is already cached, the promise is resolved immediately.
    * @category Schema
    * @param resourceType The FHIR resource type.
    * @returns Promise to a schema with the requested resource type.
    */
-  requestSchema(resourceType: string): Promise<IndexedStructureDefinition> {
-    if (resourceType in globalSchema.types) {
-      return Promise.resolve(globalSchema);
+  requestSchema(resourceType: string): Promise<void> {
+    if (isDataTypeLoaded(resourceType)) {
+      return Promise.resolve();
     }
 
     const cacheKey = resourceType + '-requestSchema';
@@ -1470,26 +1484,35 @@ export class MedplumClient extends EventTarget {
       return cached.value;
     }
 
-    const promise = new ReadablePromise<IndexedStructureDefinition>(
+    const promise = new ReadablePromise<void>(
       (async () => {
         const query = `{
       StructureDefinitionList(name: "${resourceType}") {
+        resourceType,
         name,
+        kind,
         description,
         snapshot {
           element {
             id,
             path,
+            definition,
             min,
             max,
+            base {
+              path,
+              min,
+              max
+            },
+            contentReference,
             type {
               code,
               targetProfile
             },
             binding {
+              strength,
               valueSet
-            },
-            definition
+            }
           }
         }
       }
@@ -1504,15 +1527,11 @@ export class MedplumClient extends EventTarget {
 
         const response = (await this.graphql(query)) as SchemaGraphQLResponse;
 
-        for (const structureDefinition of response.data.StructureDefinitionList) {
-          indexStructureDefinition(structureDefinition);
-        }
+        indexStructureDefinitionBundle(response.data.StructureDefinitionList);
 
         for (const searchParameter of response.data.SearchParameterList) {
           indexSearchParameter(searchParameter);
         }
-
-        return globalSchema;
       })()
     );
     this.setCacheEntry(cacheKey, promise);
@@ -1771,7 +1790,7 @@ export class MedplumClient extends EventTarget {
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve(xhr.response);
         } else {
-          reject(new Error(xhr.statusText));
+          reject(new OperationOutcomeError(normalizeOperationOutcome(xhr.response || xhr.statusText)));
         }
       };
 
@@ -2157,7 +2176,6 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   *
    * Executes the $graph operation on this resource to fetch a Bundle of resources linked to the target resource
    * according to a graph definition
    * @category Read
@@ -2177,6 +2195,35 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Pushes a message to an agent.
+   *
+   * @param agent The agent to push to.
+   * @param destination The destination device.
+   * @param body The message body.
+   * @param contentType Optional message content type.
+   * @param options Optional fetch options.
+   * @returns Promise to the operation outcome.
+   */
+  pushToAgent(
+    agent: Agent | Reference<Agent>,
+    destination: Device | Reference<Device>,
+    body: any,
+    contentType?: string,
+    options?: RequestInit
+  ): Promise<OperationOutcome> {
+    return this.post(
+      this.fhirUrl('Agent', resolveId(agent) as string, '$push'),
+      {
+        destination: getReferenceString(destination),
+        body,
+        contentType,
+      },
+      ContentType.FHIR_JSON,
+      options
+    );
+  }
+
+  /**
    * @category Authentication
    * @returns The Login State
    */
@@ -2190,7 +2237,9 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   async setActiveLogin(login: LoginState): Promise<void> {
-    this.clearActiveLogin();
+    if (!this.sessionDetails?.profile || getReferenceString(this.sessionDetails.profile) !== login.profile?.reference) {
+      this.clearActiveLogin();
+    }
     this.setAccessToken(login.accessToken, login.refreshToken);
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
@@ -2243,8 +2292,11 @@ export class MedplumClient extends EventTarget {
       this.get('auth/me')
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
+          const profileChanged = this.sessionDetails?.profile?.id !== result.profile.id;
           this.sessionDetails = result;
-          this.dispatchEvent({ type: 'change' });
+          if (profileChanged) {
+            this.dispatchEvent({ type: 'change' });
+          }
           resolve(result.profile);
         })
         .catch(reject);
@@ -2309,16 +2361,18 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * Returns the current user profile resource if available.
+   * Returns the current user profile resource, retrieving form the server if necessary.
    * This method waits for loading promises.
-   * @returns The current user profile resource if available.
+   * @returns The current user profile resource.
    * @category User Profile
    */
   async getProfileAsync(): Promise<ProfileResource | undefined> {
     if (this.profilePromise) {
-      await this.profilePromise;
+      return this.profilePromise;
+    } else if (this.sessionDetails) {
+      return this.sessionDetails.profile;
     }
-    return this.getProfile();
+    return this.refreshProfile();
   }
 
   /**
@@ -2378,13 +2432,14 @@ export class MedplumClient extends EventTarget {
     const binary = await this.createBinary(contents, filename, contentType);
     return this.createResource(
       {
-        ...additionalFields,
         resourceType: 'Media',
+        status: 'completed',
         content: {
           contentType: contentType,
           url: BINARY_URL_PREFIX + binary.id,
           title: filename,
         },
+        ...additionalFields,
       },
       options
     );
@@ -2705,7 +2760,11 @@ export class MedplumClient extends EventTarget {
       headers = {};
       options.headers = headers;
     }
-    headers['Accept'] = ContentType.FHIR_JSON;
+
+    if (!headers['Accept']) {
+      headers['Accept'] = DEFAULT_ACCEPT;
+    }
+
     headers['X-Medplum'] = 'extended';
 
     if (options.body && !headers['Content-Type']) {
@@ -2956,6 +3015,104 @@ export class MedplumClient extends EventTarget {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.basicAuth = encodeBase64(clientId + ':' + clientSecret);
+  }
+
+  /**
+   * Subscribes to a specified topic, listening for a list of specified events.
+   *
+   * Once you have the `SubscriptionRequest` returned from this method, you can call `fhircastConnect(subscriptionRequest)` to connect to the subscription stream.
+   *
+   * @category FHIRcast
+   * @param topic The topic to publish to. Usually a UUID.
+   * @param events An array of event names to listen for.
+   * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
+   */
+  async fhircastSubscribe(topic: string, events: FhircastEventName[]): Promise<SubscriptionRequest> {
+    if (!(typeof topic === 'string' && topic !== '')) {
+      throw new OperationOutcomeError(validationError('Invalid topic provided. Topic must be a valid string.'));
+    }
+    if (!(typeof events === 'object' && Array.isArray(events) && events.length > 0)) {
+      throw new OperationOutcomeError(
+        validationError(
+          'Invalid events provided. Events must be an array of event names containing at least one event.'
+        )
+      );
+    }
+
+    const subRequest = {
+      channelType: 'websocket',
+      mode: 'subscribe',
+      topic,
+      events,
+    } as PendingSubscriptionRequest;
+
+    const body = (await this.post(
+      '/fhircast/STU2',
+      serializeFhircastSubscriptionRequest(subRequest),
+      ContentType.FORM_URL_ENCODED
+    )) as { 'hub.channel.endpoint': string };
+
+    const endpoint = body['hub.channel.endpoint'];
+    if (!endpoint) {
+      throw new Error('Invalid response!');
+    }
+
+    // Add endpoint to subscription request before returning
+    (subRequest as SubscriptionRequest).endpoint = endpoint;
+    return subRequest as SubscriptionRequest;
+  }
+
+  /**
+   * Unsubscribes from the specified topic.
+   *
+   * @category FHIRcast
+   * @param subRequest A `SubscriptionRequest` representing a subscription to cancel. Mode will be set to `unsubscribe` automatically.
+   * @returns A `Promise` that resolves when request to unsubscribe is completed.
+   */
+  async fhircastUnsubscribe(subRequest: SubscriptionRequest): Promise<void> {
+    if (!validateFhircastSubscriptionRequest(subRequest)) {
+      throw new OperationOutcomeError(
+        validationError('Invalid topic or subscriptionRequest. SubscriptionRequest must be an object.')
+      );
+    }
+    if (!(subRequest.endpoint && typeof subRequest.endpoint === 'string' && subRequest.endpoint.startsWith('ws'))) {
+      throw new OperationOutcomeError(
+        validationError('Provided subscription request must have an endpoint in order to unsubscribe.')
+      );
+    }
+
+    // Turn subRequest -> unsubRequest
+    subRequest.mode = 'unsubscribe';
+    // Send unsub request
+    await this.post('/fhircast/STU2', serializeFhircastSubscriptionRequest(subRequest), ContentType.FORM_URL_ENCODED);
+  }
+
+  /**
+   * Connects to a `FHIRcast` session.
+   *
+   * @category FHIRcast
+   * @param subRequest The `SubscriptionRequest` to use for connecting.
+   * @returns A `FhircastConnection` which emits lifecycle events for the `FHIRcast` WebSocket connection.
+   */
+  fhircastConnect(subRequest: SubscriptionRequest): FhircastConnection {
+    return new FhircastConnection(subRequest);
+  }
+
+  /**
+   * Publishes a new context to a given topic for a specified event type.
+   *
+   * @category FHIRcast
+   * @param topic The topic to publish to. Usually a UUID.
+   * @param event The name of the event to publish an updated context for, ie. `patient-open`.
+   * @param context The updated context containing resources relevant to this event.
+   * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
+   */
+  async fhircastPublish(
+    topic: string,
+    event: FhircastEventName,
+    context: FhircastEventContext | FhircastEventContext[]
+  ): Promise<void> {
+    return this.post(`/fhircast/STU2/${topic}`, createFhircastMessagePayload(topic, event, context), ContentType.JSON);
   }
 
   /**

@@ -1,7 +1,8 @@
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { convertIsoToLocal, convertLocalToIso, DateTimeInput } from './DateTimeInput';
+import { DateTimeInput } from './DateTimeInput';
+import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput.utils';
 
 describe('DateTimeInput', () => {
   test('Renders', () => {

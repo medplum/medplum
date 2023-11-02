@@ -1,5 +1,5 @@
-import { ElementDefinition, ElementDefinitionType, SearchParameter } from '@medplum/fhirtypes';
-import { Atom } from '../fhirlexer';
+import { ElementDefinitionType, SearchParameter } from '@medplum/fhirtypes';
+import { Atom } from '../fhirlexer/parse';
 import {
   AsAtom,
   BooleanInfixOperatorAtom,
@@ -7,10 +7,11 @@ import {
   FunctionAtom,
   IndexerAtom,
   IsAtom,
-  parseFhirPath,
   UnionAtom,
-} from '../fhirpath';
-import { getElementDefinition, getElementDefinitionTypeName, globalSchema, PropertyType } from '../types';
+} from '../fhirpath/atoms';
+import { parseFhirPath } from '../fhirpath/parse';
+import { getElementDefinition, globalSchema, PropertyType } from '../types';
+import { InternalSchemaElement } from '../typeschema/types';
 import { capitalize } from '../utils';
 
 export enum SearchParameterType {
@@ -29,12 +30,12 @@ export enum SearchParameterType {
 export interface SearchParameterDetails {
   readonly columnName: string;
   readonly type: SearchParameterType;
-  readonly elementDefinitions?: ElementDefinition[];
+  readonly elementDefinitions?: InternalSchemaElement[];
   readonly array?: boolean;
 }
 
 interface SearchParameterDetailsBuilder {
-  elementDefinitions: ElementDefinition[];
+  elementDefinitions: InternalSchemaElement[];
   propertyTypes: Set<string>;
   array: boolean;
 }
@@ -54,7 +55,7 @@ interface SearchParameterDetailsBuilder {
  */
 export function getSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   let result: SearchParameterDetails | undefined =
-    globalSchema.types[resourceType].searchParamsDetails?.[searchParam.code as string];
+    globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code as string];
   if (!result) {
     result = buildSearchParameterDetails(resourceType, searchParam);
   }
@@ -130,7 +131,7 @@ function crawlSearchParameterDetails(
     nextIndex++;
   }
 
-  if (elementDefinition.max !== '0' && elementDefinition.max !== '1' && !hasArrayIndex) {
+  if (elementDefinition.max > 1 && !hasArrayIndex) {
     details.array = true;
   }
 
@@ -146,11 +147,11 @@ function crawlSearchParameterDetails(
 
   // This is in the middle of the expression, so we need to keep crawling.
   // "code" is only missing when using "contentReference"
-  // "contentReference" is handled above in "getElementDefinition"
+  // "contentReference" is handled whe parsing StructureDefinition into InternalTypeSchema
   for (const elementDefinitionType of elementDefinition.type as ElementDefinitionType[]) {
     let propertyType = elementDefinitionType.code as string;
     if (isBackboneElement(propertyType)) {
-      propertyType = getElementDefinitionTypeName(elementDefinition);
+      propertyType = elementDefinition.type[0].code;
     }
     crawlSearchParameterDetails(details, atoms, propertyType, nextIndex);
   }

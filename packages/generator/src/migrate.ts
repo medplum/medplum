@@ -1,142 +1,235 @@
 import {
+  getAllDataTypes,
   getSearchParameterDetails,
-  globalSchema,
+  indexSearchParameterBundle,
   indexStructureDefinitionBundle,
+  InternalTypeSchema,
   isResourceTypeSchema,
   PropertyType,
   SearchParameterDetails,
   SearchParameterType,
-  TypeSchema,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
+import { Client } from 'pg';
 import { FileBuilder } from './filebuilder';
 
-const searchParams: SearchParameter[] = [];
-for (const entry of readJson('fhir/r4/search-parameters.json').entry as BundleEntry<SearchParameter>[]) {
-  if (entry.resource) {
-    searchParams.push(entry.resource);
-  }
+interface SchemaDefinition {
+  tables: TableDefinition[];
 }
-for (const entry of readJson('fhir/r4/search-parameters-medplum.json').entry as BundleEntry<SearchParameter>[]) {
-  if (entry.resource) {
-    searchParams.push(entry.resource);
-  }
-}
-const builder = new FileBuilder();
 
-export function main(): void {
+interface TableDefinition {
+  name: string;
+  columns: ColumnDefinition[];
+  indexes: IndexDefinition[];
+}
+
+interface ColumnDefinition {
+  name: string;
+  type: string;
+}
+
+type IndexType = 'btree' | 'gin';
+
+interface IndexDefinition {
+  columns: string[];
+  indexType: IndexType;
+  unique?: boolean;
+}
+
+const searchParams: SearchParameter[] = [];
+
+export async function main(): Promise<void> {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-  writeMigrations();
-}
 
-function writeMigrations(): void {
-  const b = new FileBuilder();
-  buildMigrationUp(b);
-  // writeFileSync(resolve(__dirname, '../../server/src/migrations/init.ts'), b.toString(), 'utf8');
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/v42.ts'), builder.toString(), 'utf8');
-}
+  const searchParamBundle = readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>;
+  indexSearchParameterBundle(searchParamBundle);
 
-function buildMigrationUp(b: FileBuilder): void {
-  b.append("import { PoolClient } from 'pg';");
-  b.newLine();
-  b.append('export async function run(client: PoolClient): Promise<void> {');
-  b.indentCount++;
+  const medplumSearchParamBundle = readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>;
+  indexSearchParameterBundle(medplumSearchParamBundle);
 
-  builder.append("import { PoolClient } from 'pg';");
-  builder.newLine();
-  builder.append('export async function run(client: PoolClient): Promise<void> {');
-  builder.indentCount++;
-
-  for (const [resourceType, typeSchema] of Object.entries(globalSchema.types)) {
-    buildCreateTables(b, resourceType, typeSchema);
+  for (const entry of searchParamBundle.entry as BundleEntry<SearchParameter>[]) {
+    if (entry.resource) {
+      searchParams.push(entry.resource);
+    }
   }
 
-  buildAddressTable(b);
-  buildContactPointTable(b);
-  buildIdentifierTable(b);
-  buildHumanNameTable(b);
-  buildValueSetElementTable(b);
-  b.indentCount--;
-  b.append('}');
+  for (const entry of medplumSearchParamBundle.entry as BundleEntry<SearchParameter>[]) {
+    if (entry.resource) {
+      searchParams.push(entry.resource);
+    }
+  }
 
-  builder.indentCount--;
-  builder.append('}');
+  const startDefinition = await buildStartDefinition();
+  const targetDefinition = buildTargetDefinition();
+  const b = new FileBuilder();
+  writeMigrations(b, startDefinition, targetDefinition);
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/schema/v52.ts'), b.toString(), 'utf8');
 }
 
-function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeSchema): void {
+async function buildStartDefinition(): Promise<SchemaDefinition> {
+  const db = new Client({
+    host: 'localhost',
+    port: 5432,
+    database: 'medplum',
+    user: 'medplum',
+    password: 'medplum',
+  });
+
+  await db.connect();
+
+  const tableNames = await getTableNames(db);
+  const tables: TableDefinition[] = [];
+
+  for (const tableName of tableNames) {
+    tables.push(await getTableDefinition(db, tableName));
+  }
+
+  await db.end();
+  return { tables };
+}
+
+async function getTableNames(db: Client): Promise<string[]> {
+  const rs = await db.query("SELECT * FROM information_schema.tables WHERE table_schema='public'");
+  return rs.rows.map((row) => row.table_name);
+}
+
+async function getTableDefinition(db: Client, name: string): Promise<TableDefinition> {
+  return {
+    name,
+    columns: await getColumns(db, name),
+    indexes: await getIndexes(db, name),
+  };
+}
+
+async function getColumns(db: Client, tableName: string): Promise<ColumnDefinition[]> {
+  const rs = await db.query(`
+    SELECT
+      attname,
+      attnotnull,
+      format_type(atttypid, atttypmod) AS data_type
+    FROM
+      pg_attribute
+      JOIN pg_class ON pg_class.oid = attrelid
+      JOIN pg_namespace ON pg_namespace.oid = pg_class.relnamespace
+    WHERE
+      pg_namespace.nspname = 'public'
+      AND pg_class.relname = '${tableName}'
+      AND attnum > 0
+      AND NOT attisdropped
+    ORDER BY
+      attnum
+  `);
+
+  return rs.rows.map((row) => ({
+    name: row.attname,
+    type: row.data_type.toUpperCase() + (row.attnotnull ? ' NOT NULL' : ''),
+  }));
+}
+
+async function getIndexes(db: Client, tableName: string): Promise<IndexDefinition[]> {
+  const rs = await db.query(`SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='${tableName}'`);
+  return rs.rows.map((row) => parseIndexDefinition(row.indexdef));
+}
+
+function parseIndexDefinition(indexdef: string): IndexDefinition {
+  // Use a regex to get the column names inside the parentheses
+  const matches = indexdef.match(/\(([^)]+)\)/);
+  if (!matches) {
+    throw new Error('Invalid index definition: ' + indexdef);
+  }
+
+  return {
+    columns: matches[1].split(',').map((s) => s.trim().replaceAll('"', '')),
+    indexType: indexdef.includes('USING gin') ? 'gin' : 'btree',
+    unique: indexdef.includes('CREATE UNIQUE INDEX'),
+  };
+}
+
+function buildTargetDefinition(): SchemaDefinition {
+  const result: SchemaDefinition = { tables: [] };
+
+  for (const [resourceType, typeSchema] of Object.entries(getAllDataTypes())) {
+    buildCreateTables(result, resourceType, typeSchema);
+  }
+
+  buildAddressTable(result);
+  buildContactPointTable(result);
+  buildIdentifierTable(result);
+  buildHumanNameTable(result);
+  buildValueSetElementTable(result);
+
+  return result;
+}
+
+function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirType: InternalTypeSchema): void {
   if (!isResourceTypeSchema(fhirType)) {
     // Don't create a table if fhirType is a subtype or not a resource type
     return;
   }
 
-  const columns = [
-    '"id" UUID NOT NULL PRIMARY KEY',
-    '"content" TEXT NOT NULL',
-    '"lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL',
-    '"deleted" BOOLEAN NOT NULL DEFAULT FALSE',
-    '"compartments" UUID[] NOT NULL',
-    '"_source" TEXT[]',
-    '"_tag" TEXT[]',
-    '"_profile" TEXT[]',
-  ];
+  const tableDefinition: TableDefinition = {
+    name: resourceType,
+    columns: [
+      { name: 'id', type: 'UUID NOT NULL PRIMARY KEY' },
+      { name: 'content', type: 'TEXT NOT NULL' },
+      { name: 'lastUpdated', type: 'TIMESTAMPTZ NOT NULL' },
+      { name: 'deleted', type: 'BOOLEAN NOT NULL DEFAULT FALSE' },
+      { name: 'compartments', type: 'UUID[] NOT NULL' },
+      { name: '_source', type: 'TEXT' },
+      { name: '_tag', type: 'TEXT[]' },
+      { name: '_profile', type: 'TEXT[]' },
+    ],
+    indexes: [
+      { columns: ['lastUpdated'], indexType: 'btree' },
+      { columns: ['compartments'], indexType: 'gin' },
+      { columns: ['_source'], indexType: 'btree' },
+      { columns: ['_tag'], indexType: 'gin' },
+      { columns: ['_profile'], indexType: 'gin' },
+    ],
+  };
 
-  columns.push(...buildSearchColumns(resourceType));
+  buildSearchColumns(tableDefinition, resourceType);
+  buildSearchIndexes(tableDefinition, resourceType);
+  result.tables.push(tableDefinition);
 
-  b.newLine();
-  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + resourceType + '" (');
-  b.indentCount++;
-  for (let i = 0; i < columns.length; i++) {
-    b.append(columns[i] + (i !== columns.length - 1 ? ',' : ''));
-  }
-  b.indentCount--;
-  b.append(')`);');
-  b.newLine();
+  result.tables.push({
+    name: resourceType + '_History',
+    columns: [
+      { name: 'versionId', type: 'UUID NOT NULL PRIMARY KEY' },
+      { name: 'id', type: 'UUID NOT NULL' },
+      { name: 'content', type: 'TEXT NOT NULL' },
+      { name: 'lastUpdated', type: 'TIMESTAMPTZ NOT NULL' },
+    ],
+    indexes: [
+      { columns: ['id'], indexType: 'btree' },
+      { columns: ['lastUpdated'], indexType: 'btree' },
+    ],
+  });
 
-  b.append(`await client.query('CREATE INDEX ON "${resourceType}" ("lastUpdated")');`);
-  b.append(`await client.query('CREATE INDEX ON "${resourceType}" USING GIN("compartments")');`);
-  b.newLine();
-
-  buildSearchIndexes(b, resourceType);
-
-  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + resourceType + '_History" (');
-  b.indentCount++;
-  b.append('"versionId" UUID NOT NULL PRIMARY KEY,');
-  b.append('"id" UUID NOT NULL,');
-  b.append('"content" TEXT NOT NULL,');
-  b.append('"lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL');
-  b.indentCount--;
-  b.append(')`);');
-  b.newLine();
-
-  b.append(`await client.query('CREATE INDEX ON "${resourceType}_History" ("id")');`);
-  b.append(`await client.query('CREATE INDEX ON "${resourceType}_History" ("lastUpdated")');`);
-  b.newLine();
-
-  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + resourceType + '_Token" (');
-  b.indentCount++;
-  b.append('"resourceId" UUID NOT NULL,');
-  b.append('"index" INTEGER NOT NULL,');
-  b.append('"code" TEXT NOT NULL,');
-  b.append('"system" TEXT,');
-  b.append('"value" TEXT');
-  b.indentCount--;
-  b.append(')`);');
-  b.newLine();
-
-  b.append(`await client.query('CREATE INDEX ON "${resourceType}_Token" ("resourceId")');`);
-  b.append(`await client.query('CREATE INDEX ON "${resourceType}_Token" ("code")');`);
-  b.append(`await client.query('CREATE INDEX ON "${resourceType}_Token" ("system")');`);
-  b.append(`await client.query('CREATE INDEX ON "${resourceType}_Token" ("value")');`);
-  b.newLine();
+  result.tables.push({
+    name: resourceType + '_Token',
+    columns: [
+      { name: 'resourceId', type: 'UUID NOT NULL' },
+      { name: 'index', type: 'INTEGER NOT NULL' },
+      { name: 'code', type: 'TEXT NOT NULL' },
+      { name: 'system', type: 'TEXT' },
+      { name: 'value', type: 'TEXT' },
+    ],
+    indexes: [
+      { columns: ['resourceId'], indexType: 'btree' },
+      { columns: ['code'], indexType: 'btree' },
+      { columns: ['system'], indexType: 'btree' },
+      { columns: ['value'], indexType: 'btree' },
+    ],
+  });
 }
 
-function buildSearchColumns(resourceType: string): string[] {
-  const result: string[] = [];
+function buildSearchColumns(tableDefinition: TableDefinition, resourceType: string): void {
   for (const searchParam of searchParams) {
     if (!searchParam.base?.includes(resourceType as ResourceType)) {
       continue;
@@ -148,20 +241,9 @@ function buildSearchColumns(resourceType: string): string[] {
     }
 
     const columnName = details.columnName;
-    const newColumnType = getColumnType(details);
-    result.push(`"${columnName}" ${newColumnType}`);
-
-    if (details.array) {
-      builder.append(
-        `await client.query('CREATE INDEX CONCURRENTLY IF NOT EXISTS "${resourceType}_${columnName}_idx" ON "${resourceType}" USING GIN("${columnName}")');`
-      );
-    } else {
-      builder.append(
-        `await client.query('CREATE INDEX CONCURRENTLY IF NOT EXISTS "${resourceType}_${columnName}_idx" ON "${resourceType}" ("${columnName}")');`
-      );
-    }
+    tableDefinition.columns.push({ name: columnName, type: getColumnType(details) });
+    tableDefinition.indexes.push({ columns: [columnName], indexType: details.array ? 'gin' : 'btree' });
   }
-  return result;
 }
 
 function isLookupTableParam(searchParam: SearchParameter, details: SearchParameterDetails): boolean {
@@ -248,7 +330,11 @@ function getColumnType(details: SearchParameterDetails): string {
       break;
     case SearchParameterType.NUMBER:
     case SearchParameterType.QUANTITY:
-      baseColumnType = 'DOUBLE PRECISION';
+      if (details.columnName === 'priorityOrder') {
+        baseColumnType = 'INTEGER';
+      } else {
+        baseColumnType = 'DOUBLE PRECISION';
+      }
       break;
     default:
       baseColumnType = 'TEXT';
@@ -258,63 +344,178 @@ function getColumnType(details: SearchParameterDetails): string {
   return details.array ? baseColumnType + '[]' : baseColumnType;
 }
 
-function buildSearchIndexes(b: FileBuilder, resourceType: string): void {
+function buildSearchIndexes(result: TableDefinition, resourceType: string): void {
   if (resourceType === 'User') {
-    b.append(`await client.query('CREATE UNIQUE INDEX ON "User" ("email")');`);
+    result.indexes.push({ columns: ['email'], indexType: 'btree', unique: true });
   }
 }
 
-function buildAddressTable(b: FileBuilder): void {
-  buildLookupTable(b, 'Address', ['address', 'city', 'country', 'postalCode', 'state', 'use']);
+function buildAddressTable(result: SchemaDefinition): void {
+  buildLookupTable(result, 'Address', ['address', 'city', 'country', 'postalCode', 'state', 'use']);
 }
 
-function buildContactPointTable(b: FileBuilder): void {
-  buildLookupTable(b, 'ContactPoint', ['system', 'value']);
+function buildContactPointTable(result: SchemaDefinition): void {
+  buildLookupTable(result, 'ContactPoint', ['system', 'value']);
 }
 
-function buildIdentifierTable(b: FileBuilder): void {
-  buildLookupTable(b, 'Identifier', ['system', 'value']);
+function buildIdentifierTable(result: SchemaDefinition): void {
+  buildLookupTable(result, 'Identifier', ['system', 'value']);
 }
 
-function buildHumanNameTable(b: FileBuilder): void {
-  buildLookupTable(b, 'HumanName', ['name', 'given', 'family']);
+function buildHumanNameTable(result: SchemaDefinition): void {
+  buildLookupTable(result, 'HumanName', ['name', 'given', 'family']);
 }
 
-function buildLookupTable(b: FileBuilder, tableName: string, columns: string[]): void {
-  b.newLine();
-  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + tableName + '" (');
-  b.indentCount++;
-  b.append('"id" UUID NOT NULL PRIMARY KEY,');
-  b.append('"resourceId" UUID NOT NULL,');
-  b.append('"index" INTEGER NOT NULL,');
-  b.append('"content" TEXT NOT NULL,');
-  for (let i = 0; i < columns.length; i++) {
-    b.append(`"${columns[i]}" TEXT` + (i !== columns.length - 1 ? ',' : ''));
-  }
-  b.indentCount--;
-  b.append(')`);');
-  b.newLine();
+function buildLookupTable(result: SchemaDefinition, tableName: string, columns: string[]): void {
+  const tableDefinition: TableDefinition = {
+    name: tableName,
+    columns: [
+      { name: 'id', type: 'UUID NOT NULL PRIMARY KEY' },
+      { name: 'resourceId', type: 'UUID NOT NULL' },
+      { name: 'index', type: 'INTEGER NOT NULL' },
+      { name: 'content', type: 'TEXT NOT NULL' },
+    ],
+    indexes: [],
+  };
+
   for (const column of columns) {
-    b.append(`await client.query('CREATE INDEX ON "${tableName}" ("${column}")');`);
+    tableDefinition.columns.push({ name: column, type: 'TEXT' });
+    tableDefinition.indexes.push({ columns: [column], indexType: 'btree' });
+  }
+
+  result.tables.push(tableDefinition);
+}
+
+function buildValueSetElementTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'ValueSetElement',
+    columns: [
+      { name: 'id', type: 'UUID NOT NULL PRIMARY KEY' },
+      { name: 'system', type: 'TEXT' },
+      { name: 'code', type: 'TEXT' },
+      { name: 'display', type: 'TEXT' },
+    ],
+    indexes: [
+      { columns: ['system'], indexType: 'btree' },
+      { columns: ['code'], indexType: 'btree' },
+      { columns: ['display'], indexType: 'btree' },
+    ],
+  });
+}
+
+function writeMigrations(b: FileBuilder, startDefinition: SchemaDefinition, targetDefinition: SchemaDefinition): void {
+  b.append("import { PoolClient } from 'pg';");
+  b.newLine();
+  b.append('export async function run(client: PoolClient): Promise<void> {');
+  b.indentCount++;
+
+  for (const targetTable of targetDefinition.tables) {
+    const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
+    migrateTable(b, startTable, targetTable);
+  }
+
+  b.indentCount--;
+  b.append('}');
+}
+
+function migrateTable(b: FileBuilder, startTable: TableDefinition | undefined, targetTable: TableDefinition): void {
+  if (!startTable) {
+    writeCreateTable(b, targetTable);
+  } else {
+    migrateColumns(b, startTable, targetTable);
+    migrateIndexes(b, startTable, targetTable);
   }
 }
 
-function buildValueSetElementTable(b: FileBuilder): void {
+function writeCreateTable(b: FileBuilder, tableDefinition: TableDefinition): void {
   b.newLine();
-  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "ValueSetElement" (');
+  b.appendNoWrap(`await client.query(\`CREATE TABLE IF NOT EXISTS "${tableDefinition.name}" (`);
   b.indentCount++;
-  b.append('"id" UUID NOT NULL PRIMARY KEY,');
-  b.append('"system" TEXT,');
-  b.append('"code" TEXT,');
-  b.append('"display" TEXT');
+  for (let i = 0; i < tableDefinition.columns.length; i++) {
+    b.append(
+      `"${tableDefinition.columns[i].name}" ${tableDefinition.columns[i].type}` +
+        (i !== tableDefinition.columns.length - 1 ? ',' : '')
+    );
+  }
   b.indentCount--;
-  b.append(')`);');
+  b.append('`);');
   b.newLine();
-  b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("system")');`);
-  b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("code")');`);
-  b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("display")');`);
+
+  for (const indexDefinition of tableDefinition.indexes) {
+    b.appendNoWrap(`await client.query('${buildIndexSql(tableDefinition.name, indexDefinition)}');`);
+  }
+  b.newLine();
+}
+
+function migrateColumns(b: FileBuilder, startTable: TableDefinition, targetTable: TableDefinition): void {
+  for (const targetColumn of targetTable.columns) {
+    const startColumn = startTable.columns.find((c) => c.name === targetColumn.name);
+    if (!startColumn) {
+      writeAddColumn(b, targetTable, targetColumn);
+    } else if (normalizeColumnType(startColumn) !== normalizeColumnType(targetColumn)) {
+      writeUpdateColumn(b, targetTable, targetColumn);
+    }
+  }
+}
+
+function normalizeColumnType(column: ColumnDefinition): string {
+  return column.type
+    .replaceAll('TIMESTAMP WITH TIME ZONE', 'TIMESTAMPTZ')
+    .replaceAll(' PRIMARY KEY', '')
+    .replaceAll(' DEFAULT FALSE', '')
+    .trim();
+}
+
+function writeAddColumn(b: FileBuilder, tableDefinition: TableDefinition, columnDefinition: ColumnDefinition): void {
+  b.appendNoWrap(
+    `await client.query('ALTER TABLE "${tableDefinition.name}" ADD COLUMN IF NOT EXISTS "${columnDefinition.name}" ${columnDefinition.type}');`
+  );
+}
+
+function writeUpdateColumn(b: FileBuilder, tableDefinition: TableDefinition, columnDefinition: ColumnDefinition): void {
+  b.appendNoWrap(
+    `await client.query('ALTER TABLE "${tableDefinition.name}" ALTER COLUMN "${columnDefinition.name}" TYPE ${columnDefinition.type}');`
+  );
+}
+
+function migrateIndexes(b: FileBuilder, startTable: TableDefinition, targetTable: TableDefinition): void {
+  for (const targetIndex of targetTable.indexes) {
+    const startIndex = startTable.indexes.find((i) => i.columns.join(',') === targetIndex.columns.join(','));
+    if (!startIndex) {
+      writeAddIndex(b, targetTable, targetIndex);
+    }
+  }
+}
+
+function writeAddIndex(b: FileBuilder, tableDefinition: TableDefinition, indexDefinition: IndexDefinition): void {
+  b.appendNoWrap(`await client.query('${buildIndexSql(tableDefinition.name, indexDefinition)}');`);
+}
+
+function buildIndexSql(tableName: string, index: IndexDefinition): string {
+  let result = 'CREATE ';
+
+  if (index.unique) {
+    result += 'UNIQUE ';
+  }
+
+  result += 'INDEX CONCURRENTLY IF NOT EXISTS ';
+  result += tableName;
+  result += '_';
+  result += index.columns.join('_');
+  result += '_idx ON "';
+  result += tableName;
+  result += '" ';
+
+  if (index.indexType === 'gin') {
+    result += 'USING gin ';
+  }
+
+  result += '(';
+  result += index.columns.map((c) => `"${c}"`).join(', ');
+  result += ')';
+  return result;
 }
 
 if (process.argv[1].endsWith('migrate.ts')) {
-  main();
+  main().catch(console.error);
 }

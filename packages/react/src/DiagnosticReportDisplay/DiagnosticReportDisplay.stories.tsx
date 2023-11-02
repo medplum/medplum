@@ -1,10 +1,10 @@
 import { createReference, deepClone } from '@medplum/core';
 import { Observation, Reference, Specimen } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport } from '@medplum/mock';
+import { useMedplum } from '@medplum/react-hooks';
 import { Meta } from '@storybook/react';
 import React, { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import {
   HealthGorillaDiagnosticReport,
   HealthGorillaObservation1,

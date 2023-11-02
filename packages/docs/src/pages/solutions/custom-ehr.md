@@ -24,7 +24,7 @@ Manage patient [medications](/docs/medications) and refills, and create a pharma
 
 ## API Access
 
-All applications built on Medplum will inherit FHIR API access, which can be given to partners as needed. Control what data partners can see with [access controls](/docs/auth/access-control).
+All applications built on Medplum will inherit FHIR API access, which can be given to partners as needed. Control what data partners can see with [access controls](/docs/access/access-policies).
 
 ## Certification and Scope
 

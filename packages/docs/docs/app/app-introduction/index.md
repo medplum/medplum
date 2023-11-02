@@ -59,7 +59,7 @@ By default, the sidebar is populated with shortcuts to common resources, but you
 The sidebar also contains links to administrative pages, including:
 
 - [Project Admin page](https://app.medplum.com/admin/project)
-- [Access Policies](/docs/auth/access-control)
+- [Access Policies](/docs/access/access-policies)
 - [Subscriptions](/docs/subscriptions)
 - [Batch Upload Tool](/docs/tutorials/importing-sample-data#batch-upload-tool)
 - [Security Settings](https://app.medplum.com/security)

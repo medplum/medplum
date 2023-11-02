@@ -1,0 +1,16 @@
+{
+  "testEnvironment": "jsdom",
+  "testTimeout": 120000,
+  "transform": {
+    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
+  },
+  "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
+  "moduleNameMapper": {
+    "\\.css$": "identity-obj-proxy"
+  },
+  "testMatch": ["**/src/**/*.test.ts", "**/src/**/*.test.tsx"],
+  "setupFilesAfterEnv": ["./src/test.setup.ts"],
+  "coverageDirectory": "coverage",
+  "coverageReporters": ["json", "text"],
+  "collectCoverageFrom": ["**/src/**/*", "!**/stories", "!**/*.stories.tsx"]
+}

@@ -4,14 +4,15 @@ import cp from 'child_process';
 import fs from 'fs';
 import http from 'http';
 import { main } from '.';
-import { createMedplumClient } from './util/client';
 import { FileSystemStorage } from './storage';
+import { createMedplumClient } from './util/client';
 
 jest.mock('child_process');
 jest.mock('http');
 jest.mock('./util/client');
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
+  mkdirSync: jest.fn(),
   readFileSync: jest.fn(),
   writeFileSync: jest.fn(),
   constants: {
@@ -73,6 +74,33 @@ describe('CLI auth', () => {
     expect(res2.writeHead).toBeCalledWith(200, { 'Content-Type': ContentType.TEXT });
     expect(res2.end).toBeCalledWith('Signed in as Alice Smith. You may close this window.');
     expect(medplum.getActiveLogin()).toBeDefined();
+  });
+
+  test('Login unsupported auth type', async () => {
+    await main(['node', 'index.js', 'login', '--auth-type', 'foo']);
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Error: Allowed choices are'));
+  });
+
+  test('Login basic auth', async () => {
+    expect(medplum.getActiveLogin()).toBeUndefined();
+    await main(['node', 'index.js', 'login', '--auth-type', 'basic']);
+    expect(console.log).toHaveBeenCalledWith('Login successful');
+  });
+
+  test('Login client credentials', async () => {
+    expect(medplum.getActiveLogin()).toBeUndefined();
+    await main([
+      'node',
+      'index.js',
+      'login',
+      '--auth-type',
+      'client-credentials',
+      '--client-id',
+      '123',
+      '--client-secret',
+      'abc',
+    ]);
+    expect(console.log).toHaveBeenCalledWith('Login successful');
   });
 
   test('Load credentials from disk', async () => {

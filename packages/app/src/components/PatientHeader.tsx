@@ -3,6 +3,7 @@ import { Patient, Reference } from '@medplum/fhirtypes';
 import { HumanNameDisplay, MedplumLink, ResourceAvatar, useResource } from '@medplum/react';
 import React from 'react';
 import { InfoBar } from './InfoBar';
+import { getDefaultColor } from './PatientHeader.utils';
 
 export interface PatientHeaderProps {
   patient: Patient | Reference<Patient>;
@@ -56,14 +57,4 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
       ))}
     </InfoBar>
   );
-}
-
-export function getDefaultColor(patient: Patient): string | undefined {
-  if (patient.gender === 'male') {
-    return 'blue';
-  }
-  if (patient.gender === 'female') {
-    return 'pink';
-  }
-  return undefined;
 }

@@ -3,7 +3,8 @@ import {
   badRequest,
   ContentType,
   getStatus,
-  indexStructureDefinition,
+  indexSearchParameter,
+  loadDataType,
   LoginState,
   MedplumClient,
   MedplumClientOptions,
@@ -504,11 +505,13 @@ class MockFetchClient {
     }
 
     for (const structureDefinition of StructureDefinitionList as StructureDefinition[]) {
-      indexStructureDefinition(structureDefinition);
+      structureDefinition.kind = 'resource';
+      loadDataType(structureDefinition);
       await this.repo.createResource(structureDefinition);
     }
 
     for (const searchParameter of SearchParameterList) {
+      indexSearchParameter(searchParameter as SearchParameter);
       await this.repo.createResource(searchParameter as SearchParameter);
     }
 

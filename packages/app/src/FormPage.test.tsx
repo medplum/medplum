@@ -37,7 +37,7 @@ describe('FormPage', () => {
     await waitFor(() => screen.getByText('First question'));
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Submit'));
     });
 
     expect(screen.queryByText('First question')).not.toBeInTheDocument();
@@ -51,7 +51,7 @@ describe('FormPage', () => {
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Submit'));
     });
   });
 

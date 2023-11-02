@@ -4,28 +4,10 @@ import { notifications } from '@mantine/notifications';
 import { convertToTransactionBundle, normalizeErrorString } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
-import { IconUpload, IconX, IconCheck } from '@tabler/icons-react';
+import { IconCheck, IconUpload, IconX } from '@tabler/icons-react';
 import React, { useCallback, useState } from 'react';
 
-export const DEFAULT_VALUE = `{
-  "resourceType": "Bundle",
-  "type": "transaction",
-  "entry": [
-    {
-      "resource": {
-        "resourceType": "Patient",
-        "name": [{
-          "given": ["Alice"],
-          "family": "Smith"
-        }]
-      },
-      "request": {
-        "method": "POST",
-        "url": "Patient"
-      }
-    }
-  ]
-}`;
+const DEFAULT_VALUE = `{"resourceType": "Bundle"}`;
 
 interface ShowNotificationProps {
   id: string;
@@ -196,7 +178,7 @@ export function BatchPage(): JSX.Element {
               ))}
             </Tabs.List>
             {Object.keys(output).map((name) => (
-              <Tabs.Panel value={name}>
+              <Tabs.Panel key={name} value={name}>
                 <pre style={{ border: '1px solid #888' }}>{JSON.stringify(output[name], undefined, 2)}</pre>
               </Tabs.Panel>
             ))}

@@ -1,9 +1,9 @@
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { BackboneElementDisplay, BackboneElementDisplayProps } from './BackboneElementDisplay';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 
 const medplum = new MockClient();
 

@@ -90,6 +90,10 @@ export function formatHumanName(name: HumanName, options?: HumanNameFormatOption
     builder.push('[' + name.use + ']');
   }
 
+  if (builder.length === 0 && name.text) {
+    return name.text;
+  }
+
   return builder.join(' ').trim();
 }
 

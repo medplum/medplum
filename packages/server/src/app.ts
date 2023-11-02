@@ -7,34 +7,35 @@ import { rmSync } from 'fs';
 import http from 'http';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { adminRouter } from './admin';
+import { adminRouter } from './admin/routes';
 import { asyncWrap } from './async';
-import { authRouter } from './auth';
+import { authRouter } from './auth/routes';
 import { getConfig, MedplumServerConfig } from './config';
+import { attachRequestContext, AuthenticatedRequestContext, getRequestContext, requestContextStore } from './context';
 import { corsOptions } from './cors';
 import { closeDatabase, initDatabase } from './database';
-import { dicomRouter } from './dicom';
+import { dicomRouter } from './dicom/routes';
 import { emailRouter } from './email/routes';
 import { binaryRouter } from './fhir/binary';
 import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
 import { initBinaryStorage } from './fhir/storage';
-import { getStructureDefinitions } from './fhir/structure';
+import { loadStructureDefinitions } from './fhir/structure';
+import { fhircastRouter } from './fhircast/routes';
 import { healthcheckHandler } from './healthcheck';
 import { hl7BodyParser } from './hl7/parser';
+import { globalLogger } from './logger';
 import { initKeys } from './oauth/keys';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
 import { closeRateLimiter } from './ratelimit';
 import { closeRedis, initRedis } from './redis';
-import { scimRouter } from './scim';
+import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
 import { storageRouter } from './storage';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
-import { attachRequestContext, AuthenticatedRequestContext, getRequestContext, requestContextStore } from './context';
-import { globalLogger } from './logger';
 
 let server: http.Server | undefined = undefined;
 
@@ -163,6 +164,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/dicom/PS3/', dicomRouter);
   apiRouter.use('/email/v1/', emailRouter);
   apiRouter.use('/fhir/R4/', fhirRouter);
+  apiRouter.use('/fhircast/STU2/', fhircastRouter);
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);
   apiRouter.use('/storage/', storageRouter);
@@ -175,13 +177,13 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 
 export function initAppServices(config: MedplumServerConfig): Promise<void> {
   return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
-    getStructureDefinitions();
+    loadStructureDefinitions();
     initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initKeys(config);
     initBinaryStorage(config.binaryStorage);
-    initWorkers(config.redis);
+    initWorkers(config);
   });
 }
 

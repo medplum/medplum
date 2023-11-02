@@ -133,7 +133,7 @@ export async function initStackCommand(): Promise<void> {
   header('STORAGE BUCKET');
   print('Medplum uses an S3 bucket to store binary content such as file uploads.');
   print('Medplum will create a the S3 bucket as part of the CloudFormation stack.');
-  config.storageBucketName = await ask('Enter your storage bucket name:', 'medplum-' + config.name + '-storage');
+  config.storageBucketName = await ask('Enter your storage bucket name:', config.storageDomainName);
   writeConfig(configFileName, config);
 
   header('MAX AVAILABILITY ZONES');

@@ -1,6 +1,7 @@
 import {
   createReference,
   getReferenceString,
+  LOINC,
   normalizeErrorString,
   OperationOutcomeError,
   Operator,
@@ -8,6 +9,7 @@ import {
   parseSearchRequest,
   parseSearchUrl,
   SearchRequest,
+  SNOMED,
 } from '@medplum/core';
 import {
   ActivityDefinition,
@@ -29,6 +31,7 @@ import {
   Questionnaire,
   QuestionnaireResponse,
   Resource,
+  RiskAssessment,
   SearchParameter,
   ServiceRequest,
   StructureDefinition,
@@ -185,7 +188,7 @@ describe('FHIR Search', () => {
       // _summary=text
       const textResults = await systemRepo.search({
         resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
         summary: 'text',
       });
       expect(textResults.entry).toHaveLength(1);
@@ -206,7 +209,7 @@ describe('FHIR Search', () => {
       // _summary=data
       const dataResults = await systemRepo.search({
         resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
         summary: 'data',
       });
       expect(dataResults.entry).toHaveLength(1);
@@ -218,7 +221,7 @@ describe('FHIR Search', () => {
       // _summary=true
       const summaryResults = await systemRepo.search({
         resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
         summary: 'true',
       });
       expect(summaryResults.entry).toHaveLength(1);
@@ -248,7 +251,7 @@ describe('FHIR Search', () => {
 
       const results = await systemRepo.search({
         resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id ?? '' }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
         fields: ['birthDate', 'deceased'],
       });
       expect(results.entry).toHaveLength(1);
@@ -799,6 +802,21 @@ describe('FHIR Search', () => {
 
       expect(searchResult2.entry?.length).toEqual(0);
     }));
+
+  test('Empty _id', async () => {
+    const searchResult1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_id',
+          operator: Operator.EQUALS,
+          value: '',
+        },
+      ],
+    });
+
+    expect(searchResult1.entry?.length).toEqual(0);
+  });
 
   test('Non UUID _id', async () => {
     const searchResult1 = await systemRepo.search({
@@ -2163,7 +2181,7 @@ describe('FHIR Search', () => {
         code: {
           coding: [
             {
-              system: 'http://loinc.org',
+              system: LOINC,
               code: 'fake',
             },
           ],
@@ -2343,7 +2361,7 @@ describe('FHIR Search', () => {
         resourceType: 'DiagnosticReport',
         status: 'final',
         code: { coding: [{ code }] },
-        category: [{ coding: [{ system: 'http://loinc.org', code: 'LP217198-3' }] }],
+        category: [{ coding: [{ system: LOINC, code: 'LP217198-3' }] }],
       });
 
       const bundle = await systemRepo.search({
@@ -2357,7 +2375,7 @@ describe('FHIR Search', () => {
           {
             code: 'category',
             operator: Operator.EQUALS,
-            value: 'http://loinc.org|LP217198-3',
+            value: `${LOINC}|LP217198-3`,
           },
         ],
         count: 1,
@@ -2442,7 +2460,7 @@ describe('FHIR Search', () => {
       const c1 = await systemRepo.createResource<Condition>({
         resourceType: 'Condition',
         subject: createReference(p),
-        code: { coding: [{ system: 'http://snomed.info/sct', code: '165002' }] },
+        code: { coding: [{ system: SNOMED, code: '165002' }] },
       });
 
       const c2 = await systemRepo.createResource<Condition>({
@@ -2462,7 +2480,7 @@ describe('FHIR Search', () => {
           {
             code: 'code',
             operator: Operator.EQUALS,
-            value: 'http://snomed.info/sct|',
+            value: `${SNOMED}|`,
           },
         ],
       });
@@ -2482,7 +2500,7 @@ describe('FHIR Search', () => {
       await systemRepo.createResource<Condition>({
         resourceType: 'Condition',
         subject: createReference(p),
-        code: { coding: [{ system: 'http://snomed.info/sct', code: '165002' }] },
+        code: { coding: [{ system: SNOMED, code: '165002' }] },
       });
 
       await systemRepo.createResource<Condition>({
@@ -2517,7 +2535,7 @@ describe('FHIR Search', () => {
       const c1 = await systemRepo.createResource<Condition>({
         resourceType: 'Condition',
         subject: createReference(p),
-        code: { coding: [{ system: 'http://snomed.info/sct', code: '165002' }] },
+        code: { coding: [{ system: SNOMED, code: '165002' }] },
       });
 
       const c2 = await systemRepo.createResource<Condition>({
@@ -2776,6 +2794,56 @@ describe('FHIR Search', () => {
       expect(result.entry).toHaveLength(2);
     }));
 
+  test('_filter ne', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Eve'] }],
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const result = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'organization',
+            operator: Operator.EQUALS,
+            value: patient.managingOrganization?.reference as string,
+          },
+          {
+            code: '_filter',
+            operator: Operator.EQUALS,
+            value: 'given ne Eve',
+          },
+        ],
+      });
+
+      expect(result.entry).toHaveLength(0);
+    }));
+
+  test('_filter re', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Eve'] }],
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const result = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_filter',
+            operator: Operator.EQUALS,
+            value: 'organization re ' + patient.managingOrganization?.reference,
+          },
+        ],
+      });
+
+      expect(result.entry).toHaveLength(1);
+      expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
+    }));
+
   test('Lookup table exact match with comma disjunction', () =>
     withTestContext(async () => {
       const family = randomUUID();
@@ -2934,7 +3002,7 @@ describe('FHIR Search', () => {
           {
             code: 'name',
             operator: Operator.CONTAINS,
-            value: `${seed}just`,
+            value: `${seed.slice(-3)}just`,
           },
         ],
       });
@@ -2963,5 +3031,61 @@ describe('FHIR Search', () => {
       });
       expect(result2.entry).toHaveLength(2);
       expect(result2.entry?.[0]?.resource?.id?.localeCompare(result2.entry?.[1]?.resource?.id as string)).toBe(1);
+    }));
+
+  test('Numeric parameter', () =>
+    withTestContext(async () => {
+      const ident = randomUUID();
+      const riskAssessment: RiskAssessment = {
+        resourceType: 'RiskAssessment',
+        status: 'final',
+        identifier: [{ value: ident }],
+        subject: {
+          reference: 'Patient/test',
+        },
+        prediction: [
+          {
+            outcome: { text: 'Breast Cancer' },
+            probabilityDecimal: 0.000168,
+            whenRange: {
+              high: { value: 53, unit: 'years' },
+            },
+          },
+          {
+            outcome: { text: 'Breast Cancer' },
+            probabilityDecimal: 0.000368,
+            whenRange: {
+              low: { value: 54, unit: 'years' },
+              high: { value: 57, unit: 'years' },
+            },
+          },
+          {
+            outcome: { text: 'Breast Cancer' },
+            probabilityDecimal: 0.000594,
+            whenRange: {
+              low: { value: 58, unit: 'years' },
+              high: { value: 62, unit: 'years' },
+            },
+          },
+          {
+            outcome: { text: 'Breast Cancer' },
+            probabilityDecimal: 0.000838,
+            whenRange: {
+              low: { value: 63, unit: 'years' },
+              high: { value: 67, unit: 'years' },
+            },
+          },
+        ],
+      };
+
+      await systemRepo.createResource(riskAssessment);
+      const result = await systemRepo.search({
+        resourceType: 'RiskAssessment',
+        filters: [
+          { code: 'identifier', operator: Operator.EQUALS, value: ident },
+          { code: 'probability', operator: Operator.GREATER_THAN, value: '0.0005' },
+        ],
+      });
+      expect(result.entry).toHaveLength(1);
     }));
 });

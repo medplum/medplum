@@ -197,6 +197,10 @@ export function isOk(outcome: OperationOutcome): boolean {
   );
 }
 
+export function isCreated(outcome: OperationOutcome): boolean {
+  return outcome.id === CREATED_ID;
+}
+
 export function isAccepted(outcome: OperationOutcome): boolean {
   return outcome.id === ACCEPTED_ID;
 }
@@ -309,7 +313,18 @@ export function operationOutcomeToString(outcome: OperationOutcome): string {
  * @returns The string representation of the operation outcome issue.
  */
 export function operationOutcomeIssueToString(issue: OperationOutcomeIssue): string {
-  let issueStr = issue.details?.text ?? issue.diagnostics ?? 'Unknown error';
+  let issueStr;
+  if (issue.details?.text) {
+    if (issue.diagnostics) {
+      issueStr = `${issue.details.text} (${issue.diagnostics})`;
+    } else {
+      issueStr = issue.details.text;
+    }
+  } else if (issue.diagnostics) {
+    issueStr = issue.diagnostics;
+  } else {
+    issueStr = 'Unknown error';
+  }
   if (issue.expression?.length) {
     issueStr += ` (${issue.expression.join(', ')})`;
   }

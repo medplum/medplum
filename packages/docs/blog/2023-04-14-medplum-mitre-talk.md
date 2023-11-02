@@ -101,9 +101,9 @@ We support a bunch of data types and we have a [streamlined developer kit](/docs
 
 So there's really no DevOps from the perspective of the developer. They're just writing their code and hooking it up. And this is a big productivity win. And people bring their own code here. We have some partners who have written their own integrations and we also provide some built-in integrations.
 
-So that's part of the customer experience. We also have [access policies](/docs/auth/access-control) and [identity](/docs/auth/user-management-guide), literacy in general on FHIR and [SMART-on-FHIR](/docs/auth/smart-scopes) is growing, and we're part of the message there helping people understand how to use these tools and the scopes and the auth part of what we provide as well.
+So that's part of the customer experience. We also have [access policies](/docs/access/access-policies) and [identity](/docs/auth/user-management-guide), literacy in general on FHIR and [SMART-on-FHIR](/docs/access/smart-scopes) is growing, and we're part of the message there helping people understand how to use these tools and the scopes and the auth part of what we provide as well.
 
-And we just have a built-in implementation as well as allowing people to [bring their own auth](/docs/auth/external-identity-providers) if that's what they want as a developer. And then [subscriptions](/docs/subscriptions), you can think of these as webhooks, you know allow event driven applications to be built, and I'll show some examples of those in the demo.
+And we just have a built-in implementation as well as allowing people to [bring their own auth](/docs/auth/methods/external-identity-providers) if that's what they want as a developer. And then [subscriptions](/docs/subscriptions), you can think of these as webhooks, you know allow event driven applications to be built, and I'll show some examples of those in the demo.
 
 ## Traditional Healthcare Applications
 

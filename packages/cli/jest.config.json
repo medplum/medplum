@@ -5,6 +5,7 @@
   },
   "moduleFileExtensions": ["ts", "js", "json", "node"],
   "testMatch": ["**/src/**/*.test.ts"],
+  "setupFilesAfterEnv": ["./src/test.setup.ts"],
   "coverageDirectory": "coverage",
   "coverageReporters": ["json", "text"],
   "collectCoverageFrom": ["**/src/**/*"]

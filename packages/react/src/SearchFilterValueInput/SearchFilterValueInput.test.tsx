@@ -3,8 +3,8 @@ import { SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { convertIsoToLocal } from '../DateTimeInput/DateTimeInput';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { convertIsoToLocal } from '../DateTimeInput/DateTimeInput.utils';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
 
 const medplum = new MockClient();
@@ -145,7 +145,7 @@ describe('SearchFilterValueInput', () => {
       await waitFor(() => screen.getByText('Test Organization'));
     });
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getAllByRole('searchbox')[1] as HTMLInputElement;
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
     });

@@ -30,7 +30,7 @@ const binary = await medplum.createPdf({
 console.log('Binary result', JSON.stringify(binary, null, 2));
 ```
 
-[`medplum.createPdf()`](../sdk/classes/MedplumClient#createpdf) creates a [`Binary`](../api/fhir/resources/binary) resource and stores it on the Medplum server. Our next step will be to download the resulting PDF data, and convert it to a stream to send to our 3rd party API.
+[`medplum.createPdf()`](../sdk/classes/MedplumClient#createpdf) creates a [`Binary`](/docs/api/fhir/resources/binary) resource and stores it on the Medplum server. Our next step will be to download the resulting PDF data, and convert it to a stream to send to our 3rd party API.
 
 ```ts
 // Download the PDF

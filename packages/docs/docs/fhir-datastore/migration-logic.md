@@ -1,7 +1,7 @@
 ---
 id: migration-logic
-toc_max_heading_level: 4
-sidebar_position: 4
+toc_max_heading_level: 3
+sidebar_position: 3
 ---
 
 # Migration Logic

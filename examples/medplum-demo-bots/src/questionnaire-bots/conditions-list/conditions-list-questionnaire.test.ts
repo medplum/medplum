@@ -1,4 +1,4 @@
-import { createReference, getReferenceString } from '@medplum/core';
+import { SNOMED, createReference, getReferenceString } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { expect, test } from 'vitest';
@@ -26,7 +26,7 @@ test('Success', async () => {
             type: 'boolean',
             code: [
               {
-                system: 'http://snomed.info/sct',
+                system: SNOMED,
                 code: '38341003',
                 display: 'Hypertension',
               },
@@ -38,7 +38,7 @@ test('Success', async () => {
             type: 'boolean',
             code: [
               {
-                system: 'http://snomed.info/sct',
+                system: SNOMED,
                 code: '44054006',
                 display: 'Type 2 diabetes',
               },
@@ -50,7 +50,7 @@ test('Success', async () => {
             type: 'boolean',
             code: [
               {
-                system: 'http://snomed.info/sct',
+                system: SNOMED,
                 code: '414915002',
                 display: 'Obesity',
               },
@@ -62,7 +62,7 @@ test('Success', async () => {
             type: 'boolean',
             code: [
               {
-                system: 'http://snomed.info/sct',
+                system: SNOMED,
                 code: '195967001',
                 display: 'Asthma',
               },

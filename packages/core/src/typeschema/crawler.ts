@@ -1,5 +1,5 @@
 import { Resource } from '@medplum/fhirtypes';
-import { getTypedPropertyValue, toTypedValue } from '../fhirpath';
+import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import { isResource, TypedValue } from '../types';
 import { arrayify, isLowerCase } from '../utils';
 import { getDataType, InternalTypeSchema } from './types';
@@ -65,7 +65,7 @@ class ResourceCrawler {
       this.visitor.onEnterObject(path, obj, schema);
     }
 
-    for (const [key, _propSchema] of Object.entries(schema.fields)) {
+    for (const key of Object.keys(schema.elements)) {
       this.crawlProperty(obj, key, schema, `${path}.${key}`);
     }
 

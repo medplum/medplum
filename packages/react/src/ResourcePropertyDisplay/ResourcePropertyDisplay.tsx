@@ -1,14 +1,5 @@
 import { ActionIcon, Box, CopyButton, Tooltip } from '@mantine/core';
-import {
-  formatDateTime,
-  formatPeriod,
-  formatTiming,
-  getElementDefinitionTypeName,
-  getTypedPropertyValue,
-  PropertyType,
-  TypedValue,
-} from '@medplum/core';
-import { ElementDefinition } from '@medplum/fhirtypes';
+import { formatDateTime, formatPeriod, formatTiming, InternalSchemaElement, PropertyType } from '@medplum/core';
 import { IconCheck, IconCopy } from '@tabler/icons-react';
 import React from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
@@ -29,8 +20,8 @@ import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceArrayDisplay } from '../ResourceArrayDisplay/ResourceArrayDisplay';
 
 export interface ResourcePropertyDisplayProps {
-  property?: ElementDefinition;
-  propertyType: PropertyType;
+  property?: InternalSchemaElement;
+  propertyType: string;
   value: any;
   arrayElement?: boolean;
   maxWidth?: number;
@@ -64,7 +55,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     );
   }
 
-  if (property?.max === '*' && !props.arrayElement) {
+  if (property?.max && property.max > 1 && !props.arrayElement) {
     if (propertyType === PropertyType.Attachment) {
       return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />;
     }
@@ -143,38 +134,15 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
         />
       );
     default:
-      if (!property?.path) {
-        throw Error(`Displaying property of type ${props.propertyType} requires element definition path`);
+      if (!property) {
+        throw Error(`Displaying property of type ${props.propertyType} requires element schema`);
       }
       return (
         <BackboneElementDisplay
-          value={{ type: getElementDefinitionTypeName(property), value }}
+          value={{ type: property.type[0].code, value }}
           compact={true}
           ignoreMissingValues={props.ignoreMissingValues}
         />
       );
   }
-}
-
-/**
- * Returns the value of the property and the property type.
- * Some property definitions support multiple types.
- * For example, "Observation.value[x]" can be "valueString", "valueInteger", "valueQuantity", etc.
- * According to the spec, there can only be one property for a given element definition.
- * This function returns the value and the type.
- * @param context The base context (usually a FHIR resource).
- * @param path The property path.
- * @returns The value of the property and the property type.
- */
-export function getValueAndType(context: TypedValue, path: string): [any, PropertyType] {
-  const typedResult = getTypedPropertyValue(context, path);
-  if (!typedResult) {
-    return [undefined, 'undefined' as PropertyType];
-  }
-
-  if (Array.isArray(typedResult)) {
-    return [typedResult.map((e) => e.value), typedResult[0].type as PropertyType];
-  }
-
-  return [typedResult.value, typedResult.type as PropertyType];
 }

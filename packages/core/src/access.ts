@@ -1,6 +1,6 @@
 import { AccessPolicy, AccessPolicyResource, Resource, ResourceType } from '@medplum/fhirtypes';
-import { parseCriteriaAsSearchRequest } from './search/search';
 import { matchesSearchRequest } from './search/match';
+import { parseCriteriaAsSearchRequest } from './search/search';
 
 const universalAccessPolicy: AccessPolicyResource = {
   resourceType: '*',
@@ -10,13 +10,13 @@ const universalAccessPolicy: AccessPolicyResource = {
  * Protected resource types are in the "medplum" project.
  * Reading and writing is limited to the system account.
  */
-export const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Login', 'User'];
+export const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Login'];
 
 /**
  * Project admin resource types are special resources that are only
  * accessible to project administrators.
  */
-export const projectAdminResourceTypes = ['PasswordChangeRequest', 'Project', 'ProjectMembership'];
+export const projectAdminResourceTypes = ['PasswordChangeRequest', 'Project', 'ProjectMembership', 'User'];
 
 /**
  * Interactions with a resource that can be controlled via an access policy.

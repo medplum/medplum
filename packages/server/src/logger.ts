@@ -70,7 +70,10 @@ export class Logger {
       return;
     }
     if (data instanceof Error) {
-      data = { error: data.toString() };
+      data = {
+        error: data.toString(),
+        stack: data.stack?.split('\n'),
+      };
     }
     this.out.write(
       JSON.stringify({

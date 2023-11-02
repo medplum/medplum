@@ -1,8 +1,9 @@
-import { Group, NativeSelect, TextInput } from '@mantine/core';
+import { Group, NativeSelect } from '@mantine/core';
 import { createReference } from '@medplum/core';
 import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
+import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 
 export interface ReferenceInputProps {
   name: string;
@@ -10,6 +11,7 @@ export interface ReferenceInputProps {
   defaultValue?: Reference;
   targetTypes?: string[];
   autoFocus?: boolean;
+  required?: boolean;
   onChange?: (value: Reference | undefined) => void;
 }
 
@@ -17,13 +19,7 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   const targetTypes = getTargetTypes(props.targetTypes);
   const initialResourceType = getInitialResourceType(props.defaultValue, targetTypes);
   const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
-  const [resourceType, setResourceType] = useState<string | undefined>(initialResourceType);
-
-  const valueRef = useRef<Reference>();
-  valueRef.current = value;
-
-  const resourceTypeRef = useRef<string>();
-  resourceTypeRef.current = resourceType;
+  const [resourceType, setResourceType] = useState<ResourceType | undefined>(initialResourceType);
 
   function setValueHelper(newValue: Reference | undefined): void {
     setValue(newValue);
@@ -34,27 +30,30 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
 
   return (
     <Group spacing="xs" grow noWrap>
-      {targetTypes ? (
+      {targetTypes && targetTypes.length > 1 && (
         <NativeSelect
           data-autofocus={props.autoFocus}
           data-testid="reference-input-resource-type-select"
           defaultValue={resourceType}
           autoFocus={props.autoFocus}
-          onChange={(e) => setResourceType(e.currentTarget.value)}
+          onChange={(e) => setResourceType(e.currentTarget.value as ResourceType)}
           data={targetTypes}
         />
-      ) : (
-        <TextInput
-          data-autofocus={props.autoFocus}
-          data-testid="reference-input-resource-type-input"
-          defaultValue={resourceType}
+      )}
+      {!targetTypes && (
+        <ResourceTypeInput
           autoFocus={props.autoFocus}
-          onChange={(e) => setResourceType(e.currentTarget.value)}
+          testId="reference-input-resource-type-input"
+          defaultValue={resourceType}
+          onChange={setResourceType}
+          name={props.name + '-resourceType'}
+          placeholder="Resource Type"
         />
       )}
       <ResourceInput
         resourceType={resourceType as ResourceType}
         name={props.name + '-id'}
+        required={props.required}
         placeholder={props.placeholder}
         defaultValue={value}
         onChange={(item: Resource | undefined) => {
@@ -75,14 +74,14 @@ function getTargetTypes(targetTypes: string[] | undefined): string[] | undefined
 function getInitialResourceType(
   defaultValue: Reference | undefined,
   targetTypes: string[] | undefined
-): string | undefined {
+): ResourceType | undefined {
   const defaultValueResourceType = defaultValue?.reference?.split('/')[0];
   if (defaultValueResourceType) {
-    return defaultValueResourceType;
+    return defaultValueResourceType as ResourceType;
   }
 
   if (targetTypes && targetTypes.length > 0) {
-    return targetTypes[0];
+    return targetTypes[0] as ResourceType;
   }
 
   return undefined;

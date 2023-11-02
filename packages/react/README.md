@@ -6,15 +6,6 @@ The Medplum SDK can be used with any compliant FHIR server. However, some advanc
 
 Check out a live demo: <https://storybook.medplum.com/>
 
-## Key Features
-
-- SmartText - Detect clinical concepts, tag with SNOMED and ICD codes
-- Chat - FHIR-based chat with real time push events
-- Data Table - For a FHIR search, show the results as a live table
-- SSE for server side push
-- Evaluation of [FhirPath](https://hl7.org/fhirpath/N1/index.html)
-- No external dependencies
-
 ## Installation
 
 Add as a dependency:
@@ -29,6 +20,13 @@ Note the following peer dependencies:
 - [react](https://www.npmjs.com/package/react)
 - [react-dom](https://www.npmjs.com/package/react-dom)
 - [react-router-dom](https://www.npmjs.com/package/react-router-dom)
+
+Note the following optional peer dependencies:
+
+- [@emotion/react](https://www.npmjs.com/package/@emotion/react)
+- [@mantine/core](https://www.npmjs.com/package/@mantine/core)
+- [@mantine/hooks](https://www.npmjs.com/package/@mantine/hooks)
+- [@mantine/notifications](https://www.npmjs.com/package/@mantine/notifications)
 
 ## Basic Usage
 

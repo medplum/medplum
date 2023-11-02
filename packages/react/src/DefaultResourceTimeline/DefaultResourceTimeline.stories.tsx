@@ -1,8 +1,8 @@
 import { DiagnosticReport } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
 import { Meta } from '@storybook/react';
 import React, { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { DefaultResourceTimeline } from './DefaultResourceTimeline';
 
 export default {

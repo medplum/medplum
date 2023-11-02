@@ -1,3 +1,7 @@
+---
+sidebar_position: 4
+---
+
 import ExampleCode from '!!raw-loader!@site/../examples/src/search/paginated-search.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
@@ -6,6 +10,12 @@ import TabItem from '@theme/TabItem';
 # Paginated Search
 
 In this guide, we will explain how to perform paginated search queries using the FHIR specification. Specifically, we will discuss using the `_count` parameter to set the page size, the `_offset` parameter to set the page offset, and the `Bundle.link` field to retrieve subsequent pages.
+
+:::caution Reminder
+
+To get consistent output across pages, always remember to provide a `_sort` parameter to your paginated search. See ["Sorting the Results"](/docs/search/basic-search#sorting-the-results) for more info.
+
+:::
 
 ## Setting the page size with the `_count` parameter
 
@@ -84,6 +94,10 @@ This query will search for patients with the name "smith" and will return a Bund
 <MedplumCodeBlock language="ts" selectBlocks="searchTotalResult">
   {ExampleCode}
 </MedplumCodeBlock>
+
+:::note Note
+The Medplum SDK provides the `searchResources` helper function. This function unwraps the response bundle of your search results and returns an array of the resources that match your parameters. If you want to get the count when using this function, the `.bundle` property is added to the array. You can access the total using `response.bundle.total`.
+:::
 
 ## Navigating pages with the `Bundle.link` element
 

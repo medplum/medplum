@@ -248,24 +248,6 @@ describe('MockClient', () => {
     });
   });
 
-  test('Request schema', async () => {
-    const client = new MockClient();
-    const schema = await client.requestSchema('Patient');
-    expect(schema).toBeDefined();
-    expect(schema.types['Patient']).toBeDefined();
-    expect(schema.types['Patient'].searchParams).toBeDefined();
-  });
-
-  test('Get cached schema', async () => {
-    const client = new MockClient();
-    const schema = await client.requestSchema('Patient');
-    expect(schema).toBeDefined();
-    expect(schema.types['Patient']).toBeDefined();
-
-    const schema2 = await client.requestSchema('Patient');
-    expect(schema2).toEqual(schema);
-  });
-
   test('Debug mode', async () => {
     console.log = jest.fn();
     const client = new MockClient({ debug: true });

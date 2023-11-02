@@ -1,7 +1,7 @@
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { ReferenceInput, ReferenceInputProps } from './ReferenceInput';
 
 const medplum = new MockClient();
@@ -30,7 +30,7 @@ describe('ReferenceInput', () => {
     setup({
       name: 'foo',
     });
-    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Resource Type')).toBeInTheDocument();
   });
 
   test('Renders default value resource type', async () => {
@@ -42,8 +42,8 @@ describe('ReferenceInput', () => {
         },
       });
     });
-    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
-    expect((screen.getByTestId('reference-input-resource-type-input') as HTMLInputElement).value).toBe('Patient');
+    expect(screen.getByText('Patient')).toBeInTheDocument();
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
   test('Change resource type without target types', async () => {
@@ -52,12 +52,12 @@ describe('ReferenceInput', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('reference-input-resource-type-input'), {
+      fireEvent.change(screen.getByPlaceholderText('Resource Type'), {
         target: { value: 'Practitioner' },
       });
     });
 
-    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Practitioner')).toBeInTheDocument();
   });
 
   test('Renders property with target types', () => {
@@ -166,7 +166,7 @@ describe('ReferenceInput', () => {
       name: 'foo',
       targetTypes: [],
     });
-    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Resource Type')).toBeInTheDocument();
     expect(screen.queryByTestId('reference-input-resource-type-select')).not.toBeInTheDocument();
   });
 
@@ -176,7 +176,7 @@ describe('ReferenceInput', () => {
       targetTypes: ['Resource'],
     });
     // "Resource" is a FHIR special case that means "any resource type"
-    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Resource Type')).toBeInTheDocument();
     expect(screen.queryByTestId('reference-input-resource-type-select')).not.toBeInTheDocument();
   });
 });

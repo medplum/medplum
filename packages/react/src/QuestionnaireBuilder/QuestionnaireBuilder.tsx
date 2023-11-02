@@ -1,22 +1,39 @@
-import { Anchor, Box, Button, createStyles, NativeSelect, Space, Textarea, TextInput, Title } from '@mantine/core';
-import { globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
 import {
-  Coding,
+  Anchor,
+  Box,
+  Button,
+  createStyles,
+  Group,
+  NativeSelect,
+  Space,
+  Textarea,
+  TextInput,
+  Title,
+} from '@mantine/core';
+import { getElementDefinition, isResource as isResourceType } from '@medplum/core';
+import {
   Extension,
   Questionnaire,
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
   Reference,
+  ResourceType,
 } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
+import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
-import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
-import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
-import { useResource } from '../useResource/useResource';
-import { killEvent } from '../utils/dom';
-import { isChoiceQuestion, QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
+import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
+import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
+import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
+import { killEvent } from '../utils/dom';
+import {
+  getQuestionnaireItemReferenceTargetTypes,
+  isChoiceQuestion,
+  QuestionnaireItemType,
+  setQuestionnaireItemReferenceTargetTypes,
+} from '../utils/questionnaire';
 
 const useStyles = createStyles((theme) => ({
   section: {
@@ -43,7 +60,7 @@ const useStyles = createStyles((theme) => ({
 
   topActions: {
     position: 'absolute',
-    right: 4,
+    right: 32,
     top: 1,
     padding: 4,
     color: theme.colors.gray[5],
@@ -59,6 +76,27 @@ const useStyles = createStyles((theme) => ({
     '& a': {
       marginLeft: 8,
     },
+  },
+
+  movementActions: {
+    position: 'absolute',
+    right: 8,
+    top: 0,
+    paddingTop: 8,
+    fontSize: theme.fontSizes.xs,
+
+    '& a': {
+      marginLeft: 8,
+    },
+  },
+
+  movementIcons: {
+    color: theme.colors.gray[5],
+  },
+
+  columnAlignment: {
+    display: 'flex',
+    flexDirection: 'column',
   },
 
   linkIdInput: {
@@ -79,7 +117,7 @@ export interface QuestionnaireBuilderProps {
 export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Element | null {
   const medplum = useMedplum();
   const defaultValue = useResource(props.questionnaire);
-  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
   const [value, setValue] = useState<Questionnaire>();
   const [selectedKey, setSelectedKey] = useState<string>();
   const [hoverKey, setHoverKey] = useState<string>();
@@ -93,7 +131,10 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
   }
 
   useEffect(() => {
-    medplum.requestSchema('Questionnaire').then(setSchema).catch(console.log);
+    medplum
+      .requestSchema('Questionnaire')
+      .then(() => setSchemaLoaded(true))
+      .catch(console.log);
   }, [medplum]);
 
   useEffect(() => {
@@ -106,7 +147,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
     };
   }, [defaultValue]);
 
-  if (!schema || !value) {
+  if (!schemaLoaded || !value) {
     return null;
   }
 
@@ -132,10 +173,14 @@ interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
   selectedKey: string | undefined;
   setSelectedKey: (key: string | undefined) => void;
   hoverKey: string | undefined;
+  isFirst?: boolean;
+  isLast?: boolean;
   setHoverKey: (key: string | undefined) => void;
   onChange: (item: T) => void;
   onRemove?: () => void;
   onRepeatable?: (item: QuestionnaireItem) => void;
+  onMoveUp?(): void;
+  onMoveDown?(): void;
 }
 
 function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBuilderProps<T>): JSX.Element {
@@ -204,6 +249,15 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     });
   }
 
+  function moveItem(itemIndex: number, delta: number): void {
+    const updatedItems = reorderItems(props.item.item, itemIndex, delta);
+
+    props.onChange({
+      ...props.item,
+      item: updatedItems,
+    });
+  }
+
   const className = cx(classes.section, {
     [classes.editing]: editing,
     [classes.hovering]: hovering && !editing,
@@ -229,9 +283,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                 onChange={(e) => changeProperty('text', e.currentTarget.value)}
               />
             )}
-            {item.type === 'reference' && (
-              <ReferenceProfiles item={item} onChange={(newOptions) => changeProperty('extension', newOptions)} />
-            )}
+            {item.type === 'reference' && <ReferenceProfiles item={item} onChange={updateItem} />}
             {isChoiceQuestion(item) && <AnswerBuilder item={item} onChange={(item) => updateItem(item)} />}
           </>
         ) : (
@@ -244,17 +296,21 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           </>
         )}
       </div>
-      {item.item?.map((i) => (
-        <div key={i.id}>
+      {item.item?.map((item, i) => (
+        <div key={item.id}>
           <ItemBuilder
-            item={i}
+            item={item}
             selectedKey={props.selectedKey}
             setSelectedKey={props.setSelectedKey}
             hoverKey={props.hoverKey}
+            isFirst={i === 0}
+            isLast={i === (props.item.item ?? []).length - 1}
             setHoverKey={props.setHoverKey}
             onChange={changeItem}
-            onRemove={() => removeItem(i)}
+            onRemove={() => removeItem(item)}
             onRepeatable={toggleRepeatable}
+            onMoveUp={() => moveItem(i, -1)}
+            onMoveDown={() => moveItem(i, 1)}
           />
         </div>
       ))}
@@ -298,6 +354,38 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             <div>{linkId}</div>
           )}
         </div>
+      )}
+      {!isResource && (
+        <Box className={classes.movementActions}>
+          <Box className={classes.columnAlignment}>
+            {!props.isFirst && (
+              <Anchor
+                href="#"
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault();
+                  if (props.onMoveUp) {
+                    props.onMoveUp();
+                  }
+                }}
+              >
+                <IconArrowUp data-testid="up-button" size={15} className={classes.movementIcons} />
+              </Anchor>
+            )}
+            {!props.isLast && (
+              <Anchor
+                href="#"
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault();
+                  if (props.onMoveDown) {
+                    props.onMoveDown();
+                  }
+                }}
+              >
+                <IconArrowDown data-testid="down-button" size={15} className={classes.movementIcons} />
+              </Anchor>
+            )}
+          </Box>
+        </Box>
       )}
       <div className={classes.bottomActions}>
         {isContainer && (
@@ -380,7 +468,7 @@ interface AnswerBuilderProps {
 }
 
 function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
-  const property = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+  const property = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
   const options = props.item.answerOption ?? [];
   return (
     <div>
@@ -499,82 +587,54 @@ function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
 
 interface ReferenceTypeProps {
   item: QuestionnaireItem;
-  onChange: (newOptions: QuestionnaireItemAnswerOption[]) => void;
+  onChange: (updatedItem: QuestionnaireItem) => void;
 }
 
 function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
-  const references = props.item.extension ?? [];
-  const referenceProfiles =
-    references.filter((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource') ?? [];
+  const targetTypes = getQuestionnaireItemReferenceTargetTypes(props.item) ?? [];
   return (
     <>
-      {referenceProfiles.map((reference: Extension) => {
+      {targetTypes.map((targetType: ResourceType, index: number) => {
         return (
-          <div key={reference.id}>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                width: '80%',
+          <Group key={`${targetType}-${index}`}>
+            <ResourceTypeInput
+              name="resourceType"
+              placeholder="Resource Type"
+              defaultValue={targetType}
+              onChange={(newValue: ResourceType | undefined) => {
+                props.onChange(
+                  setQuestionnaireItemReferenceTargetTypes(
+                    props.item,
+                    targetTypes.map((t) => (t === targetType ? (newValue as ResourceType) : t))
+                  )
+                );
+              }}
+            />
+            <Anchor
+              href="#"
+              onClick={(e: React.SyntheticEvent) => {
+                killEvent(e);
+                props.onChange(
+                  setQuestionnaireItemReferenceTargetTypes(
+                    props.item,
+                    targetTypes.filter((t) => t !== targetType)
+                  )
+                );
               }}
             >
-              <div>
-                <TextInput
-                  key={reference.id}
-                  name="value[x]"
-                  value={reference.valueCodeableConcept?.coding?.[0].code ?? ''}
-                  onChange={(e: any) => {
-                    e.preventDefault();
-                    const newReferences = [...references];
-                    const index = newReferences.findIndex((o) => o.id === reference.id);
-                    const coding = newReferences[index].valueCodeableConcept?.coding?.[0] ?? ([] as Coding);
-                    coding.display = e.target.value;
-                    coding.code = e.target.value;
-
-                    props.onChange(newReferences);
-                  }}
-                />
-              </div>
-            </div>
-            <div>
-              <Anchor
-                href="#"
-                onClick={(e: React.SyntheticEvent) => {
-                  killEvent(e);
-                  props.onChange(references.filter((r) => r.id !== reference.id));
-                }}
-              >
-                Remove
-              </Anchor>
-            </div>
-          </div>
+              Remove
+            </Anchor>
+          </Group>
         );
       })}
       <Anchor
         href="#"
         onClick={(e: React.SyntheticEvent) => {
           killEvent(e);
-          props.onChange([
-            ...references,
-            {
-              id: generateId(),
-              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
-              valueCodeableConcept: {
-                coding: [
-                  {
-                    system: 'http://hl7.org/fhir/fhir-types',
-                    display: '',
-                    code: '',
-                  },
-                ],
-              },
-            },
-          ]);
+          props.onChange(setQuestionnaireItemReferenceTargetTypes(props.item, [...targetTypes, '' as ResourceType]));
         }}
       >
-        Add Resource
+        Add Resource Type
       </Anchor>
     </>
   );
@@ -664,4 +724,17 @@ function createPage(): QuestionnaireItem {
       } as Extension,
     ],
   } as QuestionnaireItem;
+}
+
+function reorderItems(items: QuestionnaireItem[] | undefined, itemIndex: number, delta: number): QuestionnaireItem[] {
+  const currentItems = items ?? [];
+  const newIndex = itemIndex + delta;
+  if (newIndex < 0 || newIndex >= currentItems.length) {
+    return currentItems;
+  }
+
+  const updatedItems = [...currentItems];
+  [updatedItems[itemIndex], updatedItems[newIndex]] = [updatedItems[newIndex], updatedItems[itemIndex]];
+
+  return updatedItems;
 }

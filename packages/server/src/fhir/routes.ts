@@ -1,13 +1,15 @@
-import { allOk, ContentType, getStatus, isOk, OperationOutcomeError, validate } from '@medplum/core';
+import { allOk, ContentType, getStatus, isCreated, isOk, OperationOutcomeError, validateResource } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
+import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
+import { agentPushHandler } from './operations/agentpush';
 import { csvHandler } from './operations/csv';
 import { deployHandler } from './operations/deploy';
 import { evaluateMeasureHandler } from './operations/evaluatemeasure';
@@ -22,8 +24,8 @@ import { projectCloneHandler } from './operations/projectclone';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { sendOutcome } from './outcomes';
 import { rewriteAttachments, RewriteMode } from './rewrite';
+import { getFullUrl } from './search';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { getAuthenticatedContext } from '../context';
 
 export const fhirRouter = Router();
 
@@ -93,6 +95,10 @@ protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 // CSV Export
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
 
+// Agent $push operation
+protectedRoutes.post('/Agent/([$]|%24)push', agentPushHandler);
+protectedRoutes.post('/Agent/:id/([$]|%24)push', agentPushHandler);
+
 // Bot $execute operation
 // Allow extra path content after the "$execute" to support external callers who append path info
 const botPaths = [
@@ -142,7 +148,7 @@ protectedRoutes.post(
       res.status(400).send('Unsupported content type');
       return;
     }
-    validate(req.body);
+    validateResource(req.body);
     sendOutcome(res, allOk);
   })
 );
@@ -204,10 +210,13 @@ export function isFhirJsonContentType(req: Request): boolean {
 export async function sendResponse(res: Response, outcome: OperationOutcome, body: Resource): Promise<void> {
   const ctx = getAuthenticatedContext();
   if (body.meta?.versionId) {
-    res.set('ETag', `"${body.meta.versionId}"`);
+    res.set('ETag', `W/"${body.meta.versionId}"`);
   }
   if (body.meta?.lastUpdated) {
     res.set('Last-Modified', new Date(body.meta.lastUpdated).toUTCString());
+  }
+  if (isCreated(outcome)) {
+    res.set('Location', getFullUrl(body.resourceType, body.id as string));
   }
   res.status(getStatus(outcome)).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body));
 }

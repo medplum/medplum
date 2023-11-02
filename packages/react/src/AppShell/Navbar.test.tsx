@@ -1,8 +1,8 @@
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { IconStar } from '@tabler/icons-react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { Navbar } from './Navbar';
 
 const medplum = new MockClient();
@@ -214,7 +214,7 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 
@@ -239,7 +239,7 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 
@@ -259,7 +259,7 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 

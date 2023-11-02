@@ -1,6 +1,7 @@
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { badRequest, OperationOutcomeError } from '../outcomes';
-import { globalSchema } from '../types';
+import { TypedValue, stringifyTypedValue, globalSchema } from '../types';
+import { evalFhirPathTyped } from '../fhirpath/parse';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 
@@ -146,8 +147,13 @@ export function parseSearchRequest<T extends Resource = Resource>(
  * @returns A parsed SearchRequest.
  */
 export function parseSearchUrl<T extends Resource = Resource>(url: URL): SearchRequest<T> {
-  const resourceType = url.pathname.split('/').filter(Boolean).pop() as ResourceType;
-  return parseSearchImpl<T>(resourceType, url.searchParams.entries());
+  let resourceType;
+  for (const part of url.pathname.split('/')) {
+    if (part) {
+      resourceType = part;
+    }
+  }
+  return parseSearchImpl<T>(resourceType as ResourceType, url.searchParams.entries());
 }
 
 /**
@@ -372,11 +378,9 @@ function parseModifier(modifier: string): Operator {
 function parseIncludeTarget(input: string): IncludeTarget {
   const parts = input.split(':');
 
-  parts.forEach((p) => {
-    if (p === '*') {
-      throw new OperationOutcomeError(badRequest(`'*' is not supported as a value for search inclusion parameters`));
-    }
-  });
+  if (parts.includes('*')) {
+    throw new OperationOutcomeError(badRequest(`'*' is not supported as a value for search inclusion parameters`));
+  }
 
   if (parts.length === 1) {
     // Full wildcard, not currently supported
@@ -405,6 +409,28 @@ function addFilter(searchRequest: SearchRequest, filter: Filter): void {
   } else {
     searchRequest.filters = [filter];
   }
+}
+
+const subexpressionPattern = /{{([^{}]+)}}/g;
+
+/**
+ * Parses an extended FHIR search criteria string (i.e. application/x-fhir-query), evaluating
+ * any embedded FHIRPath subexpressions (e.g. `{{ %patient.id }}`) with the provided variables.
+ *
+ * @see https://hl7.org/fhir/fhir-xquery.html
+ * @param query The X-Fhir-Query string to parse
+ * @param variables Values to pass into embedded FHIRPath expressions
+ * @returns The parsed search request
+ */
+export function parseXFhirQuery(query: string, variables: Record<string, TypedValue>): SearchRequest {
+  query = query.replaceAll(subexpressionPattern, (_, expr) => {
+    const replacement = evalFhirPathTyped(expr, [], variables);
+    if (replacement.length !== 1) {
+      return '';
+    }
+    return stringifyTypedValue(replacement[0]);
+  });
+  return parseCriteriaAsSearchRequest(query);
 }
 
 /**

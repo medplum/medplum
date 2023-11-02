@@ -38,6 +38,6 @@ The same launch links will be available on the [Encounter](https://app.medplum.c
 
 ## Related Reading
 
-- [SMART Scopes](/docs/auth/smart-scopes) access control guide
+- [SMART Scopes](/docs/access/smart-scopes) access control guide
 - [Inferno](https://inferno.healthit.gov/) reference application with [source](https://github.com/onc-healthit/inferno-program)
 - [ONC Compliance Documentation](/docs/compliance/onc)

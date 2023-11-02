@@ -6,6 +6,7 @@
 import { Bot } from './Bot';
 import { Device } from './Device';
 import { Endpoint } from './Endpoint';
+import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Reference } from './Reference';
 
@@ -47,6 +48,11 @@ export interface Agent {
   language?: string;
 
   /**
+   * An identifier for this agent.
+   */
+  identifier?: Identifier[];
+
+  /**
    * The human readable friendly name of the agent.
    */
   name?: string;
@@ -78,6 +84,11 @@ export interface Agent {
  * meet the criteria.
  */
 export interface AgentChannel {
+
+  /**
+   * The channel name.
+   */
+  name?: string;
 
   /**
    * The channel endpoint definition including protocol and network binding

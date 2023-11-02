@@ -1,7 +1,8 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, SearchParameter } from '@medplum/fhirtypes';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '../types';
-import { Operator, SearchRequest, parseSearchRequest, parseSearchUrl } from './search';
+import { indexSearchParameterBundle } from '../types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
+import { Operator, parseSearchRequest, parseSearchUrl, SearchRequest } from './search';
 
 describe('Search parser', () => {
   beforeAll(() => {

@@ -1,34 +1,44 @@
-import { Paper, Text } from '@mantine/core';
-import { normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome, Resource } from '@medplum/fhirtypes';
-import { Document, ResourceForm, useMedplum } from '@medplum/react';
+import { Paper, ScrollArea, Tabs, Text } from '@mantine/core';
 import React, { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useNavigate, useParams } from 'react-router-dom';
+
+const tabs = ['Form', 'JSON'];
+const defaultTab = tabs[0].toLowerCase();
 
 export function CreateResourcePage(): JSX.Element {
   const navigate = useNavigate();
   const { resourceType } = useParams();
-  const medplum = useMedplum();
-  const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
+  const tab = window.location.pathname.split('/').pop();
+  const [currentTab, setCurrentTab] = useState<string>(tab ?? defaultTab);
+
+  /**
+   * Handles a tab change event.
+   * @param newTabName The new tab name.
+   */
+  function onTabChange(newTabName: string): void {
+    setCurrentTab(newTabName);
+    navigate(`/${resourceType}/new/${newTabName}`);
+  }
 
   return (
     <>
-      <Paper p="xl" shadow="xs" radius={0}>
-        <Text weight={500}>New&nbsp;{resourceType}</Text>
+      <Paper>
+        <Text p="md" weight={500}>
+          New&nbsp;{resourceType}
+        </Text>
+        <ScrollArea>
+          <Tabs defaultValue="form" value={currentTab} onTabChange={onTabChange}>
+            <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
+              {tabs.map((t) => (
+                <Tabs.Tab key={t} value={t.toLowerCase()} px="md">
+                  {t}
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
+          </Tabs>
+        </ScrollArea>
       </Paper>
-      <Document>
-        <ResourceForm
-          defaultValue={{ resourceType } as Resource}
-          onSubmit={(formData: Resource) => {
-            setOutcome(undefined);
-            medplum
-              .createResource(formData)
-              .then((result) => navigate('/' + result.resourceType + '/' + result.id))
-              .catch((err) => setOutcome(normalizeOperationOutcome(err)));
-          }}
-          outcome={outcome}
-        />
-      </Document>
+      <Outlet />
     </>
   );
 }

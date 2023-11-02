@@ -1,5 +1,5 @@
 import { Quantity } from '@medplum/fhirtypes';
-import { Atom, InfixParselet, Parser, ParserBuilder, PrefixParselet } from '../fhirlexer';
+import { Atom, InfixParselet, Parser, ParserBuilder, PrefixParselet } from '../fhirlexer/parse';
 import { PropertyType, TypedValue } from '../types';
 import {
   AndAtom,

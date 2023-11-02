@@ -1,7 +1,7 @@
 import { Loader, MultiSelect, MultiSelectProps, SelectItem } from '@mantine/core';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 
 export interface AsyncAutocompleteOption<T> extends SelectItem {
@@ -23,7 +23,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const { defaultValue, toKey, toOption, loadOptions, onChange, onCreate, creatable, ...rest } = props;
   const defaultItems = toDefaultItems(defaultValue);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [lastValue, setLastValue] = useState<string | undefined>(undefined);
+  const [lastValue, setLastValue] = useState<string>();
   const [timer, setTimer] = useState<number>();
   const [abortController, setAbortController] = useState<AbortController>();
   const [autoSubmit, setAutoSubmit] = useState<boolean>();

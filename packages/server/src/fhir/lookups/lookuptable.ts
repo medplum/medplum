@@ -9,6 +9,7 @@ import {
   Disjunction,
   Expression,
   InsertQuery,
+  Negation,
   Operator,
   SelectQuery,
 } from '../sql';
@@ -74,8 +75,8 @@ export abstract class LookupTable<T> {
       } else {
         disjunction.expressions.push(
           new Condition(
-            new Column(joinName, columnName + '_tsv'),
-            Operator.TSVECTOR_MATCH,
+            new Column(joinName, columnName),
+            Operator.TSVECTOR_SIMPLE,
             option
               .trim()
               .split(/\s+/)
@@ -87,7 +88,12 @@ export abstract class LookupTable<T> {
       }
     }
 
-    joinOnExpression.expressions.push(disjunction);
+    if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
+      joinOnExpression.expressions.push(new Negation(disjunction));
+    } else {
+      joinOnExpression.expressions.push(disjunction);
+    }
+
     selectQuery.innerJoin(tableName, joinName, joinOnExpression);
     selectQuery.orderBy(new Column(joinName, columnName));
     return new Condition(new Column(joinName, 'resourceId'), Operator.NOT_EQUALS, null);

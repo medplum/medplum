@@ -1,6 +1,6 @@
 {
   "name": "@medplum/hl7",
-  "version": "2.1.1",
+  "version": "2.1.9",
   "description": "Medplum HL7 Utilities",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",

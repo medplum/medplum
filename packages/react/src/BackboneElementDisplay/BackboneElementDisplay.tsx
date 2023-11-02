@@ -1,8 +1,9 @@
-import { getPropertyDisplayName, globalSchema, TypedValue } from '@medplum/core';
+import { getPropertyDisplayName, tryGetDataType, TypedValue } from '@medplum/core';
 import React from 'react';
 import { DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { DescriptionList, DescriptionListEntry } from '../DescriptionList/DescriptionList';
-import { getValueAndType, ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 
 export interface BackboneElementDisplayProps {
   value: TypedValue;
@@ -19,7 +20,7 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
   }
 
   const typeName = typedValue.type;
-  const typeSchema = globalSchema.types[typeName];
+  const typeSchema = tryGetDataType(typeName);
   if (!typeSchema) {
     return <div>{typeName}&nbsp;not implemented</div>;
   }
@@ -38,14 +39,10 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
 
   return (
     <DescriptionList compact={props.compact}>
-      {Object.entries(typeSchema.properties).map((entry) => {
-        const key = entry[0];
+      {Object.entries(typeSchema.elements).map((entry) => {
+        const [key, property] = entry;
         if (DEFAULT_IGNORED_PROPERTIES.includes(key)) {
           return null;
-        }
-        const property = entry[1];
-        if (!property.path) {
-          property.path = typeName + '.' + key;
         }
         const [propertyValue, propertyType] = getValueAndType(typedValue, key);
         if (

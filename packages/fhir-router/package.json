@@ -1,6 +1,6 @@
 {
   "name": "@medplum/fhir-router",
-  "version": "2.1.1",
+  "version": "2.1.9",
   "description": "Medplum FHIR Router",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -23,7 +23,7 @@
     "@medplum/definitions": "*",
     "@medplum/fhirtypes": "*",
     "dataloader": "2.2.2",
-    "graphql": "16.8.0",
+    "graphql": "16.8.1",
     "rfc6902": "5.0.1"
   },
   "main": "dist/cjs/index.cjs",

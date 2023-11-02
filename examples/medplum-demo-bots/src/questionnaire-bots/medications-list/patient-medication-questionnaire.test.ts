@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { RXNORM, createReference } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { expect, test } from 'vitest';
@@ -26,7 +26,7 @@ test('Success', async () => {
             type: 'boolean',
             code: [
               {
-                system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+                system: RXNORM,
                 code: '161',
                 display: 'Acetaminophen',
               },
@@ -38,7 +38,7 @@ test('Success', async () => {
             type: 'boolean',
             code: [
               {
-                system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+                system: RXNORM,
                 code: '1191',
                 display: 'Aspirin',
               },
@@ -50,7 +50,7 @@ test('Success', async () => {
             type: 'boolean',
             code: [
               {
-                system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+                system: RXNORM,
                 code: '81906',
                 display: 'Atorvastatin',
               },
@@ -62,7 +62,7 @@ test('Success', async () => {
             type: 'boolean',
             code: [
               {
-                system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+                system: RXNORM,
                 code: '860258',
                 display: 'Metformin',
               },
@@ -74,7 +74,7 @@ test('Success', async () => {
             type: 'boolean',
             code: [
               {
-                system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+                system: RXNORM,
                 code: '103258',
                 display: 'Lisinopril',
               },

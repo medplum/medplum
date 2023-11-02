@@ -1,21 +1,18 @@
-import { ContentType, normalizeErrorString } from '@medplum/core';
-import { Agent, Bot, ProjectMembership } from '@medplum/fhirtypes';
 import bytes from 'bytes';
 import { randomUUID } from 'crypto';
 import http, { IncomingMessage } from 'http';
 import ws from 'ws';
+import { handleAgentConnection } from './agent/websockets';
 import { getConfig } from './config';
-import { getRepoForLogin } from './fhir/accesspolicy';
-import { executeBot } from './fhir/operations/execute';
-import { globalLogger } from './logger';
-import { getLoginForAccessToken } from './oauth/utils';
-import { getRedis } from './redis';
 import { RequestContext, requestContextStore } from './context';
-import { AsyncLocalStorage } from 'async_hooks';
+import { handleFhircastConnection } from './fhircast/websocket';
+import { globalLogger } from './logger';
+import { getRedis } from './redis';
 
 const handlerMap = new Map<string, (socket: ws.WebSocket, request: IncomingMessage) => Promise<void>>();
-handlerMap.set('/ws/echo', handleEchoConnection);
-handlerMap.set('/ws/agent', handleAgentConnection);
+handlerMap.set('echo', handleEchoConnection);
+handlerMap.set('agent', handleAgentConnection);
+handlerMap.set('fhircast', handleFhircastConnection);
 
 let wsServer: ws.Server | undefined = undefined;
 
@@ -34,21 +31,28 @@ export function initWebSockets(server: http.Server): void {
     // See: https://github.com/websockets/ws/blob/master/doc/ws.md#websocketbinarytype
     socket.binaryType = 'nodebuffer';
 
-    const handler = handlerMap.get(request.url as string);
+    const handler = handlerMap.get(getWebSocketPath(request.url as string));
     if (handler) {
       await requestContextStore.run(RequestContext.empty(), () => handler(socket, request));
+    } else {
+      socket.close();
     }
   });
 
   server.on('upgrade', (request, socket, head) => {
-    if (request.url && handlerMap.has(request.url)) {
+    if (handlerMap.has(getWebSocketPath(request.url as string))) {
       wsServer?.handleUpgrade(request, socket, head, (socket) => {
         wsServer?.emit('connection', socket, request);
       });
     } else {
+      socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
       socket.destroy();
     }
   });
+}
+
+function getWebSocketPath(path: string): string {
+  return path.split('/').filter(Boolean)[1];
 }
 
 /**
@@ -78,77 +82,6 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
   socket.on('close', async () => {
     redisSubscriber.disconnect();
   });
-}
-
-/**
- * Handles a new WebSocket connection to the agent service.
- * The agent service executes a bot and returns the result.
- * @param socket The WebSocket connection.
- * @param request The HTTP request.
- */
-async function handleAgentConnection(socket: ws.WebSocket, request: IncomingMessage): Promise<void> {
-  const remoteAddress = request.socket.remoteAddress;
-  let agent: Agent | undefined = undefined;
-  let bot: Bot | undefined = undefined;
-  let runAs: ProjectMembership | undefined = undefined;
-
-  socket.on(
-    'message',
-    AsyncLocalStorage.bind(async (data: ws.RawData) => {
-      try {
-        const command = JSON.parse((data as Buffer).toString('utf8'));
-        switch (command.type) {
-          case 'connect':
-            await handleConnect(command);
-            break;
-
-          case 'transmit':
-            await handleTransmit(command);
-            break;
-        }
-      } catch (err) {
-        socket.send(JSON.stringify({ type: 'error', message: normalizeErrorString(err) }));
-      }
-    })
-  );
-
-  /**
-   * Handles a connect command.
-   * This command is sent by the agent to connect to the server.
-   * The command includes the access token and bot ID.
-   * @param command The connect command.
-   */
-  async function handleConnect(command: any): Promise<void> {
-    const { accessToken, agentId, botId } = command;
-    const { login, project, membership } = await getLoginForAccessToken(accessToken);
-    const repo = await getRepoForLogin(login, membership, project.strictMode, true, project.checkReferencesOnWrite);
-    agent = await repo.readResource<Agent>('Agent', agentId);
-    bot = await repo.readResource<Bot>('Bot', botId);
-    runAs = membership;
-    socket.send(JSON.stringify({ type: 'connected' }));
-  }
-
-  /**
-   * Handles a transit command.
-   * This command is sent by the agent to transmit a message.
-   * @param command The transmit command.
-   */
-  async function handleTransmit(command: any): Promise<void> {
-    if (!bot || !runAs) {
-      socket.send(JSON.stringify({ type: 'error', message: 'Not connected' }));
-      return;
-    }
-    const result = await executeBot({
-      agent,
-      bot,
-      runAs,
-      contentType: ContentType.HL7_V2,
-      input: command.message,
-      remoteAddress,
-      forwardedFor: command.forwardedFor,
-    });
-    socket.send(JSON.stringify({ type: 'transmit', message: result.returnValue }), { binary: false });
-  }
 }
 
 export function closeWebSockets(): void {

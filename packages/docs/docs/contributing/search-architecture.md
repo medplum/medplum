@@ -188,6 +188,7 @@ WHERE ("Organization"."deleted"=false AND
   EXISTS(SELECT 1 FROM unnest("name") AS "name"
     -- Strings use case-insensitive prefix matching
     WHERE LOWER("name") LIKE 'geneco%'
+    LIMIT 1
   )
 )
 ```
@@ -206,7 +207,7 @@ SELECT "Practitioner"."id", "Practitioner"."content" FROM "Practitioner"
     "Practitioner"."id"="T1"."resourceId" AND
     -- Matching criteria are inserted into the JOIN ON
     -- tsv column is computed when resource is inserted into DB
-    "T1"."name_tsv" @@ to_tsquery('english','Dub:*')
+    "T1"."name_tsv" @@ to_tsquery('simple','Dub:*')
   )
 WHERE ("Practitioner"."deleted"=false AND
   -- Find rows that match the code

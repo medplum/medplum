@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
 import React, { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
-import { getDefaultFields } from './HomePage';
+import { getDefaultFields } from './HomePage.utils';
 
 async function setup(url = '/Patient', medplum = new MockClient()): Promise<void> {
   await act(async () => {

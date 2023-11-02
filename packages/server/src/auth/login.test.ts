@@ -1,5 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { createReference } from '@medplum/core';
+import { createReference, LOINC } from '@medplum/core';
 import { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -318,7 +318,7 @@ describe('Login', () => {
         code: {
           coding: [
             {
-              system: 'http://loinc.org',
+              system: LOINC,
               code: '1',
             },
           ],

@@ -6,16 +6,17 @@ import {
   FhirFilterConnective,
   FhirFilterExpression,
   FhirFilterNegation,
-  Operator,
   Filter,
   forbidden,
   formatSearchQuery,
   getDataType,
   getReferenceString,
+  getSearchParameter,
   getSearchParameterDetails,
   IncludeTarget,
   isResource,
   OperationOutcomeError,
+  Operator,
   parseFilterParameter,
   PropertyType,
   SearchParameterDetails,
@@ -35,6 +36,7 @@ import {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
+import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
@@ -47,11 +49,9 @@ import {
   Disjunction,
   Expression,
   Negation,
-  Operator as SQL,
   SelectQuery,
+  Operator as SQL,
 } from './sql';
-import { getSearchParameter } from './structure';
-import validator from 'validator';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
@@ -255,13 +255,13 @@ async function getSearchIncludeEntries(
   const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, resources.map(toTypedValue));
 
   const references = fhirPathResult
-    .filter((typedValue) => (typedValue.type as PropertyType) === PropertyType.Reference)
+    .filter((typedValue) => typedValue.type === PropertyType.Reference)
     .map((typedValue) => typedValue.value as Reference);
   const readResult = await repo.readReferences(references);
   const includedResources = readResult.filter(isResource);
 
   const canonicalReferences = fhirPathResult
-    .filter((typedValue) => [PropertyType.canonical, PropertyType.uri].includes(typedValue.type as PropertyType))
+    .filter((typedValue) => [PropertyType.canonical, PropertyType.uri].includes(typedValue.type))
     .map((typedValue) => typedValue.value as string);
   if (canonicalReferences.length > 0) {
     const canonicalSearches = (searchParam.target || []).map((resourceType) =>
@@ -552,7 +552,11 @@ function buildNormalSearchFilterExpression(resourceType: string, param: SearchPa
   } else if (param.type === 'quantity') {
     return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
   } else {
-    return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
+    const values = filter.value
+      .split(',')
+      .map((v) => new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), v));
+    const expr = new Disjunction(values);
+    return details.array ? new ArraySubquery(details.columnName, expr) : expr;
   }
 }
 
@@ -675,7 +679,16 @@ function buildIdSearchFilter(
   values: string[]
 ): Expression {
   const column = new Column(resourceType, details.columnName);
-  values = values.map((v) => (v.includes('/') ? (v.split('/').pop() as string) : v)).filter((v) => validator.isUUID(v));
+
+  for (let i = 0; i < values.length; i++) {
+    if (values[i].includes('/')) {
+      values[i] = values[i].split('/').pop() as string;
+    }
+    if (!validator.isUUID(values[i])) {
+      values[i] = '00000000-0000-0000-0000-000000000000';
+    }
+  }
+
   const condition = buildEqualityCondition(details, values, column);
   if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
     return new Negation(condition);
