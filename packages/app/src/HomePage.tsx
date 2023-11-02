@@ -5,7 +5,7 @@ import { ResourceType } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { addSearchValues, canCreate, getTransactionBundle, saveLastSearch } from './HomePage.utils';
+import { addSearchValues, getTransactionBundle, RESOURCE_TYPE_CREATION_PATHS, saveLastSearch } from './HomePage.utils';
 import { exportJsonFile } from './utils';
 
 const useStyles = createStyles((theme) => {
@@ -61,13 +61,9 @@ export function HomePage(): JSX.Element {
         onChange={(e) => {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }}
-        onNew={
-          canCreate(search.resourceType)
-            ? () => {
-                navigate(`/${search.resourceType}/new`);
-              }
-            : undefined
-        }
+        onNew={() => {
+          navigate(RESOURCE_TYPE_CREATION_PATHS[search.resourceType] ?? `/${search.resourceType}/new`);
+        }}
         onExportCsv={() => {
           const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
           medplum
