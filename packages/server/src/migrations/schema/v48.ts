@@ -3,17 +3,24 @@
  * Do not edit manually.
  */
 
-import { Project } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
-import { systemRepo } from '../../fhir/repo';
 import { r4ProjectId } from '../../seed';
+import { Project } from '@medplum/fhirtypes';
 
 export async function run(client: PoolClient): Promise<void> {
-  await systemRepo.updateResource<Project>({
+  const r4Project: Project = {
     resourceType: 'Project',
     id: r4ProjectId,
+    meta: {
+      lastUpdated: new Date().toISOString(),
+    },
     name: 'FHIR R4',
-  });
+  };
+
+  await client.query(
+    `INSERT INTO "Project" (id, content, "lastUpdated", compartments, name) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
+    [r4ProjectId, JSON.stringify(r4Project), r4Project.meta?.lastUpdated, [], r4Project.name]
+  );
   await moveOrphanResourcesIntoProject('StructureDefinition', r4ProjectId, client);
   await moveOrphanResourcesIntoProject('SearchParameter', r4ProjectId, client);
   await moveOrphanResourcesIntoProject('ValueSet', r4ProjectId, client);

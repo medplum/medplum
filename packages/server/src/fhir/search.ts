@@ -63,7 +63,7 @@ const maxSearchResults = 1000;
 
 export interface ChainedSearchLink {
   resourceType: string;
-  details: SearchParameterDetails;
+  code: string;
   reverse?: boolean;
   filter?: Filter;
 }
@@ -883,9 +883,7 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
   let currentResourceType = resourceType;
   let currentTable = resourceType;
   for (const link of param.chain) {
-    const nextTable = selectQuery.getNextJoinAlias();
-    const joinCondition = buildSearchLinkCondition(currentResourceType, link, currentTable, nextTable);
-    selectQuery.innerJoin(link.resourceType, nextTable, joinCondition);
+    const nextTable = linkNextTable(selectQuery, link, currentResourceType, currentTable);
 
     if (link.filter) {
       const endCondition = buildSearchFilterExpression(
@@ -905,33 +903,33 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
   }
 }
 
-function buildSearchLinkCondition(
-  resourceType: string,
+function linkNextTable(
+  selectQuery: SelectQuery,
   link: ChainedSearchLink,
-  currentTable: string,
-  nextTable: string
-): Expression {
-  const linkColumn = new Column(currentTable, link.details.columnName);
-  if (link.reverse) {
-    const nextColumn = new Column(nextTable, link.details.columnName);
-    const currentColumn = new Column(currentTable, 'id');
+  currentResourceType: string,
+  currentTable: string
+): string {
+  const lookupAlias = selectQuery.getNextJoinAlias();
+  const nextTable = selectQuery.getNextJoinAlias();
+  const codeCondition = new Condition(new Column(lookupAlias, 'code'), '=', link.code);
 
-    if (link.details.array) {
-      return new ArraySubquery(
-        nextColumn,
-        new Condition(new Column(undefined, link.details.columnName), 'REVERSE_LINK', currentColumn, resourceType)
-      );
-    } else {
-      return new Condition(nextColumn, 'REVERSE_LINK', currentColumn, resourceType);
-    }
-  } else if (link.details.array) {
-    return new ArraySubquery(
-      linkColumn,
-      new Condition(new Column(nextTable, 'id'), 'LINK', new Column(undefined, link.details.columnName))
-    );
+  if (link.reverse) {
+    const lookupJoin = new Condition(new Column(currentTable, 'id'), '=', new Column(lookupAlias, 'targetId'));
+    selectQuery.innerJoin(`${link.resourceType}_References`, lookupAlias, new Conjunction([lookupJoin, codeCondition]));
+    const nextJoin = new Condition(new Column(lookupAlias, 'resourceId'), '=', new Column(nextTable, 'id'));
+    selectQuery.innerJoin(link.resourceType, nextTable, nextJoin);
   } else {
-    return new Condition(new Column(nextTable, 'id'), 'LINK', linkColumn);
+    const lookupJoin = new Condition(new Column(currentTable, 'id'), '=', new Column(lookupAlias, 'resourceId'));
+    selectQuery.innerJoin(
+      `${currentResourceType}_References`,
+      lookupAlias,
+      new Conjunction([lookupJoin, codeCondition])
+    );
+    const nextJoin = new Condition(new Column(lookupAlias, 'targetId'), '=', new Column(nextTable, 'id'));
+    selectQuery.innerJoin(link.resourceType, nextTable, nextJoin);
   }
+
+  return nextTable;
 }
 
 function parseChainedParameter(resourceType: string, key: string, value: string): ChainedSearchParameter {
@@ -977,8 +975,7 @@ function parseChainLink(param: string, currentResourceType: string): ChainedSear
   } else {
     throw new Error(`Unable to identify next resource type for search parameter: ${currentResourceType}?${code}`);
   }
-  const details = getSearchParameterDetails(currentResourceType, searchParam);
-  return { resourceType, details };
+  return { resourceType, code };
 }
 
 function parseReverseChainLink(param: string, targetResourceType: string): ChainedSearchLink {
@@ -991,8 +988,7 @@ function parseReverseChainLink(param: string, targetResourceType: string): Chain
       `Invalid reverse chain link: search parameter ${resourceType}?${code} does not refer to ${targetResourceType}`
     );
   }
-  const details = getSearchParameterDetails(resourceType, searchParam);
-  return { resourceType, details, reverse: true };
+  return { resourceType, code, reverse: true };
 }
 
 function splitChainedSearch(chain: string): string[] {
