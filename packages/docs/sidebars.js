@@ -165,9 +165,9 @@ const sidebars = {
         { type: 'doc', id: 'fhir-datastore/adoption-strategy' },
         { type: 'doc', id: 'fhir-datastore/migration-logic' },
         { type: 'html', value: '<strong class="menu__link">Data Modeling</strong>' },
-        { type: 'doc', id: 'fhir-datastore/provider-directory' },
-        { type: 'doc', id: 'fhir-datastore/patient-deduplication' },
-        { type: 'doc', id: 'fhir-datastore/family-relationships' },
+        { type: 'doc', id: 'fhir-datastore/provider-directory/index' },
+        { type: 'doc', id: 'fhir-datastore/patient-deduplication/patient-deduplication' },
+        { type: 'doc', id: 'fhir-datastore/family-relationships/family-relationships' },
       ],
     },
     {
