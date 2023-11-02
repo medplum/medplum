@@ -23,31 +23,66 @@ export function MeasureReportDisplay(props: MeasureReportDisplayProps): JSX.Elem
 
 function MeasureReportDisplayGroup(props: any): JSX.Element | null {
   const { group } = props;
-  const unit = group.measureScore?.unit;
   return (
     <Paper withBorder radius="md" p="xs" display="flex" sx={{ alignItems: 'center', justifyContent: 'center' }}>
       <Group>
-        {unit === '%' ? (
-          <RingProgress
-            size={120}
-            thickness={12}
-            roundCaps
-            sections={[{ value: setGroupValue(group), color: setColor(group.measureScore.value) }]}
-            label={
-              <Flex justify="center">
-                <Text fw={700} fz={18}>
-                  <QuantityDisplay value={group.measureScore} />
-                </Text>
-              </Flex>
-            }
-          />
-        ) : (
-          <Title order={3}>
-            <QuantityDisplay value={group.measureScore} />
-          </Title>
-        )}
+        {group.measureScore && <MeasureScore group={group} />}
+        {!group.measureScore && <MeasureReportPopulation group={group} />}
       </Group>
     </Paper>
+  );
+}
+
+function MeasureReportPopulation(props: any): JSX.Element {
+  const { group } = props;
+  const populations = group.population;
+  const numerator = populations?.find((p: any) => p.code?.coding?.[0].code === 'numerator');
+  const denominator = populations?.find((p: any) => p.code?.coding?.[0].code === 'denominator');
+
+  const value = (numerator?.count / denominator?.count) * 100;
+  return (
+    <RingProgress
+      size={120}
+      thickness={12}
+      roundCaps
+      sections={[{ value: value, color: setColor(value) }]}
+      label={
+        <Flex justify="center">
+          <Text fw={700} fz={18}>
+            {numerator.count} / {denominator.count}
+          </Text>
+        </Flex>
+      }
+    />
+  );
+}
+
+function MeasureScore(props: any): JSX.Element {
+  const { group } = props;
+  const unit = group.measureScore?.unit;
+
+  return (
+    <>
+      {unit === '%' ? (
+        <RingProgress
+          size={120}
+          thickness={12}
+          roundCaps
+          sections={[{ value: setGroupValue(group), color: setColor(group.measureScore.value) }]}
+          label={
+            <Flex justify="center">
+              <Text fw={700} fz={18}>
+                <QuantityDisplay value={group.measureScore} />
+              </Text>
+            </Flex>
+          }
+        />
+      ) : (
+        <Title order={3}>
+          <QuantityDisplay value={group.measureScore} />
+        </Title>
+      )}
+    </>
   );
 }
 

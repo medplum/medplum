@@ -54,3 +54,48 @@ export const Multiple = (): JSX.Element => (
     />
   </Document>
 );
+
+export const WithPopulation = (): JSX.Element => (
+  <Document>
+    <MeasureReportDisplay
+      measureReport={{
+        resourceType: 'MeasureReport',
+        id: 'basic-example',
+        group: [
+          {
+            id: 'group-1',
+            population: [
+              {
+                code: {
+                  coding: [
+                    {
+                      code: 'numerator',
+                    },
+                  ],
+                },
+                count: 10,
+              },
+              {
+                code: {
+                  coding: [
+                    {
+                      code: 'denominator',
+                    },
+                  ],
+                },
+                count: 100,
+              },
+            ],
+          },
+          {
+            id: 'group-2',
+            measureScore: {
+              value: 50,
+              unit: 'ml',
+            },
+          },
+        ],
+      }}
+    />
+  </Document>
+);
