@@ -208,24 +208,14 @@ const q: Questionnaire = {
       extension: pageExtension,
       item: [
         {
-          id: 'billing',
-          linkId: 'billing',
-          type: 'choice',
-          text: 'Bill To',
-          required: true,
-          answerOption: [
+          id: 'account',
+          linkId: 'account',
+          type: 'reference',
+          text: 'Account',
+          extension: [
             {
-              valueString: 'Client (our account)',
-            },
-            {
-              valueString: 'Patient',
-              initialSelected: true,
-            },
-            {
-              valueString: 'Guarantor',
-            },
-            {
-              valueString: 'Third Party',
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+              valueCode: 'Account',
             },
           ],
         },

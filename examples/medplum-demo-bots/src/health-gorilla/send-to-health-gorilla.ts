@@ -4,21 +4,22 @@ import {
   encodeBase64,
   getIdentifier,
   getQuestionnaireAnswers,
-  getReferenceString,
   MedplumClient,
+  setIdentifier,
   SNOMED,
 } from '@medplum/core';
 import {
   Account,
   Annotation,
   CodeableConcept,
+  Coverage,
   Organization,
   Patient,
   Practitioner,
   ProjectSecret,
   QuestionnaireResponse,
-  QuestionnaireResponseItemAnswer,
   Reference,
+  RelatedPerson,
   RequestGroup,
   RequestGroupAction,
   Resource,
@@ -114,17 +115,6 @@ const availableDiagnoses: Record<string, string> = {
   'diagnosis-Z34.90': 'Encounter for supervision of normal pregnancy, unspecified trimester',
 };
 
-const billToPatient: CodeableConcept = {
-  coding: [
-    {
-      system: 'https://www.healthgorilla.com/order-billto',
-      code: 'patient',
-      display: 'Patient',
-    },
-  ],
-  text: 'Patient',
-};
-
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<void> {
   // Parse the secrets
   // Make sure all required Health Gorilla config values are present
@@ -137,6 +127,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const patient = answers.patient.valueReference;
   if (!patient) {
     throw new Error('QuestionnaireResponse is missing patient');
+  }
+
+  const account = answers.account.valueReference;
+  if (!account) {
+    throw new Error('QuestionnaireResponse is missing account');
   }
 
   const practitioner = answers.practitioner.valueReference;
@@ -152,10 +147,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     throw new Error('QuestionnaireResponse has invalid performer');
   }
 
-  // Lookup the patient and practitioner resources first
+  // Lookup the patient, account, and practitioner resources first
   // If the questionnaire response is invalid, this will throw and the bot will terminate
   const medplumPatient = await medplum.readReference(patient as Reference<Patient>);
   const medplumPractitioner = await medplum.readReference(practitioner as Reference<Practitioner>);
+  const medplumAccount = await medplum.readReference(account as Reference<Account>);
 
   // Connect to Health Gorilla
   const healthGorilla = await connectToHealthGorilla(config);
@@ -163,15 +159,20 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // Ensure active subscriptions
   await ensureSubscriptions(config, healthGorilla);
 
+  const builder = new HealthGorillaRequestGroupBuilder();
+
   // Synchronize the patient
-  const healthGorillaPatient = await syncPatient(medplum, healthGorilla, medplumPatient);
+  await builder.syncPatient(medplum, healthGorilla, medplumPatient);
 
   // Get the practitioner
-  const healthGorillaPractitioner = await getPractitioner(healthGorilla, medplumPractitioner);
+  await builder.getPractitioner(healthGorilla, medplumPractitioner);
+
+  // Setup the Account, Coverage, and Subscriber
+  await builder.setupAccount(medplum, medplumPatient, medplumAccount);
 
   // Get the tenant organization
   // This is a special organization that is not available in the Health Gorilla API
-  const healthGorillaTenantOrganization: Organization = {
+  builder.authorizedBy = {
     resourceType: 'Organization',
     id: config.tenantId,
     identifier: [
@@ -184,7 +185,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   // Get the subtenant organization
   // This is a special organization that is not available in the Health Gorilla API
-  const healthGorillaSubtenantOrganization: Organization = {
+  builder.practitionerOrganization = {
     resourceType: 'Organization',
     id: config.subtenantId,
     identifier: [
@@ -206,22 +207,17 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
         value: config.subtenantAccountNumber,
       },
     ],
-    partOf: createReference(healthGorillaTenantOrganization),
+    partOf: createReference(builder.authorizedBy),
   };
 
   // Get the performing organization
   // This is a special organization that is not available in the Health Gorilla API
-  const healthGorillaPerformingOrganization: Organization = {
+  builder.performer = {
     resourceType: 'Organization',
     id: availableLabs[performer],
   };
 
-  // Synchronize the account
-  const healthGorillaAccount = await syncAccount(medplum, medplumPatient, healthGorillaPatient, billToPatient);
-
   // Create the service requests
-  const healthGorillaServiceRequests: ServiceRequest[] = [];
-
   // Parse the test answers and create the service requests.
   // If the test is selected, create a service request with the given priority and note.
   // This is another area where you can customize the experience for your users.
@@ -234,24 +230,27 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
       const display = availableTests[testId];
       const priority = answers[testId + '-priority']?.valueCoding?.code ?? 'routine';
       const noteText = answers[testId + '-note']?.valueString;
-      healthGorillaServiceRequests.push(
-        await createServiceRequest(healthGorillaPatient, code, display, priority, noteText)
-      );
+      builder.createServiceRequest(code, display, priority, noteText);
+    }
+  }
+
+  // Create the diagnoses
+  // Parse the diagnosis answers and create the diagnoses.
+  for (const diagnosisId of Object.keys(availableDiagnoses)) {
+    if (answers[diagnosisId]?.valueBoolean) {
+      const code = diagnosisId.substring(diagnosisId.indexOf('-') + 1);
+      const display = availableDiagnoses[diagnosisId];
+      builder.addDiagnosis(code, display);
     }
   }
 
   // Place the order
-  await createRequestGroup(
-    healthGorilla,
-    healthGorillaTenantOrganization,
-    healthGorillaSubtenantOrganization,
-    healthGorillaPerformingOrganization,
-    healthGorillaAccount,
-    healthGorillaPatient,
-    healthGorillaPractitioner,
-    healthGorillaServiceRequests,
-    answers
-  );
+  const requestGroup = builder.buildRequestGroup();
+  await medplum.uploadMedia(JSON.stringify(requestGroup, null, 2), 'application/json', 'requestgroup.json');
+  await healthGorilla.startAsyncRequest(healthGorilla.fhirUrl('RequestGroup').toString(), {
+    method: 'POST',
+    body: JSON.stringify(requestGroup),
+  });
 }
 
 /**
@@ -371,373 +370,6 @@ export async function ensureSubscription(
   console.log(`Created new subscription for "${criteria}": ${newSubscription.id}`);
 }
 
-/**
- * Verifies and synchronizes a patient resource with Health Gorilla.
- *
- * First, verifies that the patient resource has all of the required fields and values.
- * If the patient is invalid, this method will throw and the bot will terminate.
- *
- * Next, searches for an existing patient with the same MRN.
- * If an existing patient is found, the patient resource will be merged into the existing patient.
- * Otherwise, a new patient will be created.
- *
- * Returns the Health Gorilla patient resource.
- *
- * @param medplum - The Medplum FHIR client.
- * @param healthGorilla - The Health Gorilla FHIR client.
- * @param patient - The Medplum patient resource.
- * @returns The Health Gorilla patient resource.
- */
-export async function syncPatient(
-  medplum: MedplumClient,
-  healthGorilla: MedplumClient,
-  patient: Patient
-): Promise<Patient> {
-  // First verify that the patient has all of the required fields
-  assertNotEmpty(patient.gender, 'Patient is missing gender');
-  assertNotEmpty(patient.birthDate, 'Patient is missing birthDate');
-
-  const mrn = patient.identifier?.find(
-    (i) => i.type?.coding?.[0]?.system === 'http://terminology.hl7.org/CodeSystem/v2-0203'
-  );
-  assertNotEmpty(mrn, 'Patient is missing MRN');
-
-  const name = patient.name?.[0];
-  assertNotEmpty(name, 'Patient is missing name');
-  assertNotEmpty(name.family, 'Patient is missing family name');
-  assertNotEmpty(name.given?.[0], 'Patient is missing given name');
-
-  const address = patient.address?.[0];
-  assertNotEmpty(address, 'Patient is missing address');
-  assertNotEmpty(address.line?.[0], 'Patient is missing address line');
-  assertNotEmpty(address.city, 'Patient is missing address city');
-  assertNotEmpty(address.state, 'Patient is missing address state');
-  assertNotEmpty(address.postalCode, 'Patient is missing address postalCode');
-  assertNotEmpty(address.country, 'Patient is missing address country');
-
-  const phone = patient.telecom?.find((t) => t.system === 'phone');
-  assertNotEmpty(phone, 'Patient is missing phone');
-
-  const email = patient.telecom?.find((t) => t.system === 'email');
-  assertNotEmpty(email, 'Patient is missing email');
-
-  const healthGorillaId = getIdentifier(patient, HEALTH_GORILLA_SYSTEM);
-  if (healthGorillaId) {
-    // Merge our patient into the existing patient
-    const existingPatient = await healthGorilla.readResource('Patient', healthGorillaId);
-    await healthGorilla.updateResource<Patient>({
-      ...existingPatient,
-      identifier: patient.identifier,
-      name: patient.name,
-      address: patient.address,
-      telecom: patient.telecom,
-    });
-    return existingPatient;
-  } else {
-    // Create a new patient
-    const createdPatient = await healthGorilla.createResource<Patient>(
-      {
-        ...patient,
-        id: undefined,
-        meta: undefined,
-      },
-      { redirect: 'follow' }
-    );
-    setIdentifier(patient, HEALTH_GORILLA_SYSTEM, createdPatient.id as string);
-    await medplum.updateResource(patient);
-    return createdPatient;
-  }
-}
-
-/**
- * Verifies and synchronizes a patient resource with Health Gorilla.
- *
- * First, verifies that the patient resource has all of the required fields and values.
- * If the patient is invalid, this method will throw and the bot will terminate.
- *
- * Next, searches for an existing patient with the same MRN.
- * If an existing patient is found, the patient resource will be merged into the existing patient.
- * Otherwise, a new patient will be created.
- *
- * Returns the Health Gorilla patient resource.
- *
- * @param medplum - The Medplum FHIR client.
- * @param medplumPatient - The Medplum patient resource.
- * @param healthGorillaPatient - The Health Gorilla patient resource.
- * @param billingType - The Health Gorilla billing type.
- * @returns The Health Gorilla account resource.
- */
-export async function syncAccount(
-  medplum: MedplumClient,
-  medplumPatient: Patient,
-  healthGorillaPatient: Patient,
-  billingType: CodeableConcept
-): Promise<Account> {
-  // const healthGorillaId = getIdentifier(medplumPatient, HEALTH_GORILLA_SYSTEM);
-  // In Health Gorilla, Account connects a Patient and a payment method
-  // So we use the combination of those references as the Account identifier
-  const identifier = getReferenceString(healthGorillaPatient) + '-' + billingType.coding?.[0]?.code;
-
-  // First, make sure there is an Account in Medplum
-  let medplumAccount = await medplum.searchOne('Account', { identifier });
-  if (medplumAccount) {
-    console.log(`Found existing Medplum account: ${medplumAccount.id}`);
-  } else {
-    // Create a new account
-    medplumAccount = await medplum.createResource<Account>({
-      resourceType: 'Account',
-      status: 'active',
-      meta: {
-        profile: ['https://healthgorilla.com/fhir/StructureDefinition/hg-order-account'],
-      },
-      identifier: [
-        {
-          system: HEALTH_GORILLA_SYSTEM,
-          value: identifier,
-        },
-      ],
-      type: billingType,
-      guarantor: [{ party: createReference(medplumPatient) }],
-    });
-    console.log(`Created new Medplum account: ${medplumAccount.id}`);
-  }
-
-  // Health Gorilla does not support creating `Account` resources,
-  // so we always use an in-memory `Account` which is linked to the `Patient` by identifier;
-  return {
-    ...medplumAccount,
-    guarantor: [{ party: createReference(healthGorillaPatient) }],
-  };
-}
-
-/**
- * Verifies and synchronizes a practitioner resource with Health Gorilla.
- *
- * Returns the Health Gorilla practitioner by Health Gorilla ID.
- *
- * If the Medplum Practitioner resource does not have a Health Gorilla ID in `identifier`,
- * this method will throw and the bot will terminate.
- *
- * @param healthGorilla - The Health Gorilla FHIR client.
- * @param practitioner - The Medplum practitioner resource.
- * @returns The Health Gorilla practitioner resource.
- */
-export async function getPractitioner(healthGorilla: MedplumClient, practitioner: Practitioner): Promise<Practitioner> {
-  const healthGorillaId = getIdentifier(practitioner, HEALTH_GORILLA_SYSTEM);
-  if (!healthGorillaId) {
-    throw new Error('Practitioner is missing Health Gorilla ID');
-  }
-
-  return healthGorilla.readResource('Practitioner', healthGorillaId);
-}
-
-export async function createServiceRequest(
-  healthGorillaPatient: Patient,
-  code: string,
-  display: string,
-  priority: string,
-  noteText: string | undefined
-): Promise<ServiceRequest> {
-  return {
-    resourceType: 'ServiceRequest',
-    subject: createReference(healthGorillaPatient),
-    status: 'active',
-    intent: 'order',
-    category: [
-      {
-        coding: [
-          {
-            system: SNOMED,
-            code: '103693007',
-            display: 'Diagnostic procedure',
-          },
-        ],
-      },
-    ],
-    code: {
-      coding: [
-        {
-          code,
-          display,
-        },
-      ],
-      text: `${code} - ${display}`,
-    },
-    note: noteText ? [{ text: noteText }] : undefined,
-    priority: priority as 'routine' | 'urgent' | 'stat' | 'asap',
-  };
-}
-
-/**
- * Creates a new request group in Health Gorilla which creates a new lab order.
- *
- * The FHIR RequestGroup is a combination of the following resources:
- *
- * @param healthGorilla - The Health Gorilla FHIR client.
- * @param healthGorillaTenantOrganization - The authorizing organization resource.
- * @param healthGorillaSubtenantOrganization - The authorizing organization resource.
- * @param healthGorillaPerformingOrganization - The performing organization resource.
- * @param healthGorillaAccount - The account resource.
- * @param healthGorillaPatient - The patient resource.
- * @param healthGorillaPractitioner - The practitioner resource.
- * @param healthGorillaServiceRequests - The service request resources.
- * @param answers - The questionnaire answers.
- */
-export async function createRequestGroup(
-  healthGorilla: MedplumClient,
-  healthGorillaTenantOrganization: Organization,
-  healthGorillaSubtenantOrganization: Organization,
-  healthGorillaPerformingOrganization: Organization,
-  healthGorillaAccount: Account,
-  healthGorillaPatient: Patient,
-  healthGorillaPractitioner: Practitioner,
-  healthGorillaServiceRequests: ServiceRequest[],
-  answers: Record<string, QuestionnaireResponseItemAnswer>
-): Promise<void> {
-  const inputJson = {
-    resourceType: 'RequestGroup',
-    meta: {
-      profile: ['https://healthgorilla.com/fhir/StructureDefinition/hg-order'],
-    },
-    contained: [
-      {
-        ...healthGorillaAccount,
-        id: '1',
-      },
-      {
-        ...healthGorillaPractitioner,
-        id: '2',
-      },
-      {
-        ...healthGorillaSubtenantOrganization,
-        id: 'organization',
-      },
-    ] as Resource[],
-    extension: [
-      {
-        url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-authorizedBy',
-        valueReference: createReference(healthGorillaTenantOrganization),
-      },
-      {
-        url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-account',
-        valueReference: {
-          reference: '#1',
-        },
-      },
-      {
-        url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-performer',
-        valueReference: createReference(healthGorillaPerformingOrganization),
-      },
-      {
-        url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-requester',
-        extension: [
-          {
-            url: 'agent',
-            valueReference: {
-              reference: '#2',
-            },
-          },
-          {
-            url: 'onBehalfOf',
-            valueReference: {
-              reference: '#3',
-            },
-          },
-        ],
-      },
-      {
-        url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-deliveryOptions',
-        extension: [
-          {
-            url: 'electronic',
-            valueBoolean: true,
-          },
-        ],
-      },
-    ],
-    status: 'active',
-    intent: 'order',
-    subject: createReference(healthGorillaPatient),
-    author: createReference(healthGorillaPractitioner),
-    action: [] as RequestGroupAction[],
-    reasonCode: [] as CodeableConcept[],
-    note: [] as Annotation[],
-  } satisfies RequestGroup;
-
-  for (let i = 0; i < healthGorillaServiceRequests.length; i++) {
-    inputJson.contained.push({
-      ...healthGorillaServiceRequests[i],
-      id: 'labtest' + i,
-    });
-    inputJson.action.push({
-      resource: {
-        reference: '#labtest' + i,
-        display: healthGorillaServiceRequests[i].code?.text,
-      },
-    });
-  }
-
-  for (const diagnosisId of Object.keys(availableDiagnoses)) {
-    if (answers[diagnosisId]?.valueBoolean) {
-      const code = diagnosisId.substring(diagnosisId.indexOf('-') + 1);
-      const display = availableDiagnoses[diagnosisId];
-      inputJson.reasonCode.push({
-        coding: [
-          {
-            system: 'http://hl7.org/fhir/sid/icd-10',
-            code,
-            display,
-          },
-        ],
-        text: `${code} - ${display}`,
-      });
-    }
-  }
-
-  if (answers['specimenCollectedDateTime']?.valueDateTime) {
-    const specimen: Specimen = {
-      resourceType: 'Specimen',
-      id: 'specimen',
-      subject: createReference(healthGorillaPatient),
-      collection: {
-        collectedDateTime: answers['specimenCollectedDateTime']?.valueDateTime,
-      },
-    };
-
-    inputJson.contained.push(specimen);
-
-    inputJson.extension.push({
-      url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-specimen',
-      valueReference: {
-        reference: `#${specimen.id}`,
-      },
-    });
-  }
-
-  if (answers['orderNote']?.valueString) {
-    inputJson.note.push({
-      text: answers['orderNote']?.valueString,
-    });
-  }
-
-  await healthGorilla.startAsyncRequest(healthGorilla.fhirUrl('RequestGroup').toString(), {
-    method: 'POST',
-    body: JSON.stringify(inputJson),
-  });
-}
-
-function setIdentifier(resource: Patient | Practitioner, system: string, value: string): void {
-  if (!resource.identifier) {
-    resource.identifier = [];
-  }
-  const existing = resource.identifier.find((i) => i.system === system);
-  if (existing) {
-    existing.value = value;
-  } else {
-    resource.identifier.push({ system, value });
-  }
-}
-
 function requireStringSecret(secrets: Record<string, ProjectSecret>, name: string): string {
   const secret = secrets[name];
   if (!secret?.valueString) {
@@ -749,5 +381,339 @@ function requireStringSecret(secrets: Record<string, ProjectSecret>, name: strin
 function assertNotEmpty<T>(value: T | undefined, message: string): asserts value is T {
   if (!value) {
     throw new Error(message);
+  }
+}
+
+class HealthGorillaRequestGroupBuilder {
+  practitioner?: Practitioner;
+  practitionerOrganization?: Organization;
+  patient?: Patient;
+  account?: Account;
+  coverage?: Coverage;
+  subscriber?: RelatedPerson;
+  authorizedBy?: Organization;
+  performer?: Organization;
+  tests?: ServiceRequest[];
+  diagnoses?: CodeableConcept[];
+  specimenCollectedDateTime?: string;
+  note?: string;
+
+  /**
+   * Verifies and synchronizes a patient resource with Health Gorilla.
+   *
+   * First, verifies that the patient resource has all of the required fields and values.
+   * If the patient is invalid, this method will throw and the bot will terminate.
+   *
+   * Next, searches for an existing patient with the same MRN.
+   * If an existing patient is found, the patient resource will be merged into the existing patient.
+   * Otherwise, a new patient will be created.
+   *
+   * Returns the Health Gorilla patient resource.
+   *
+   * @param medplum - The Medplum FHIR client.
+   * @param healthGorilla - The Health Gorilla FHIR client.
+   * @param patient - The Medplum patient resource.
+   * @returns The Health Gorilla patient resource.
+   */
+  async syncPatient(medplum: MedplumClient, healthGorilla: MedplumClient, patient: Patient): Promise<Patient> {
+    // First verify that the patient has all of the required fields
+    assertNotEmpty(patient.gender, 'Patient is missing gender');
+    assertNotEmpty(patient.birthDate, 'Patient is missing birthDate');
+
+    const mrn = patient.identifier?.find(
+      (i) => i.type?.coding?.[0]?.system === 'http://terminology.hl7.org/CodeSystem/v2-0203'
+    );
+    assertNotEmpty(mrn, 'Patient is missing MRN');
+
+    const name = patient.name?.[0];
+    assertNotEmpty(name, 'Patient is missing name');
+    assertNotEmpty(name.family, 'Patient is missing family name');
+    assertNotEmpty(name.given?.[0], 'Patient is missing given name');
+
+    const address = patient.address?.[0];
+    assertNotEmpty(address, 'Patient is missing address');
+    assertNotEmpty(address.line?.[0], 'Patient is missing address line');
+    assertNotEmpty(address.city, 'Patient is missing address city');
+    assertNotEmpty(address.state, 'Patient is missing address state');
+    assertNotEmpty(address.postalCode, 'Patient is missing address postalCode');
+    assertNotEmpty(address.country, 'Patient is missing address country');
+
+    const phone = patient.telecom?.find((t) => t.system === 'phone');
+    assertNotEmpty(phone, 'Patient is missing phone');
+
+    const email = patient.telecom?.find((t) => t.system === 'email');
+    assertNotEmpty(email, 'Patient is missing email');
+
+    const healthGorillaId = getIdentifier(patient, HEALTH_GORILLA_SYSTEM);
+    if (healthGorillaId) {
+      // Merge our patient into the existing patient
+      const existingPatient = await healthGorilla.readResource('Patient', healthGorillaId);
+      await healthGorilla.updateResource<Patient>({
+        ...existingPatient,
+        identifier: patient.identifier,
+        name: patient.name,
+        address: patient.address,
+        telecom: patient.telecom,
+      });
+      this.patient = existingPatient;
+      return existingPatient;
+    } else {
+      // Create a new patient
+      const createdPatient = await healthGorilla.createResource<Patient>(
+        {
+          ...patient,
+          id: undefined,
+          meta: undefined,
+        },
+        { redirect: 'follow' }
+      );
+      setIdentifier(patient, HEALTH_GORILLA_SYSTEM, createdPatient.id as string);
+      await medplum.updateResource(patient);
+      this.patient = createdPatient;
+      return createdPatient;
+    }
+  }
+
+  /**
+   * Verifies and synchronizes a practitioner resource with Health Gorilla.
+   *
+   * Returns the Health Gorilla practitioner by Health Gorilla ID.
+   *
+   * If the Medplum Practitioner resource does not have a Health Gorilla ID in `identifier`,
+   * this method will throw and the bot will terminate.
+   *
+   * @param healthGorilla - The Health Gorilla FHIR client.
+   * @param practitioner - The Medplum practitioner resource.
+   * @returns The Health Gorilla practitioner resource.
+   */
+  async getPractitioner(healthGorilla: MedplumClient, practitioner: Practitioner): Promise<Practitioner> {
+    const healthGorillaId = getIdentifier(practitioner, HEALTH_GORILLA_SYSTEM);
+    if (!healthGorillaId) {
+      throw new Error('Practitioner is missing Health Gorilla ID');
+    }
+
+    this.practitioner = await healthGorilla.readResource('Practitioner', healthGorillaId);
+    return this.practitioner;
+  }
+
+  async setupAccount(medplum: MedplumClient, medplumPatient: Patient, medplumAccount: Account): Promise<Account> {
+    if (!this.patient) {
+      throw new Error('Missing patient');
+    }
+
+    const result: Account = {
+      ...medplumAccount,
+    };
+
+    if (result.type?.coding?.[0]?.code === 'patient') {
+      result.guarantor = [{ party: createReference(this.patient) }];
+    }
+
+    const coverageRef = result.coverage?.[0]?.coverage;
+    if (coverageRef) {
+      const medplumCoverage = await medplum.readReference(coverageRef);
+      this.coverage = {
+        ...medplumCoverage,
+        id: 'coverage',
+        beneficiary: createReference(this.patient),
+      };
+      result.coverage = [{ coverage: { reference: '#coverage' }, priority: 1 }];
+
+      const subscriberRef = this.coverage.subscriber;
+      if (subscriberRef) {
+        const medplumSubscriber = await medplum.readReference(subscriberRef as Reference<RelatedPerson>);
+        this.subscriber = {
+          ...medplumSubscriber,
+          id: 'subscriber',
+          patient: createReference(this.patient),
+        };
+        this.coverage.subscriber = { reference: '#subscriber' };
+      }
+    }
+
+    this.account = result;
+    return result;
+  }
+
+  createServiceRequest(code: string, display: string, priority: string, noteText: string | undefined): ServiceRequest {
+    if (!this.patient) {
+      throw new Error('Missing patient');
+    }
+
+    const result: ServiceRequest = {
+      resourceType: 'ServiceRequest',
+      subject: createReference(this.patient),
+      status: 'active',
+      intent: 'order',
+      category: [
+        {
+          coding: [
+            {
+              system: SNOMED,
+              code: '103693007',
+              display: 'Diagnostic procedure',
+            },
+          ],
+        },
+      ],
+      code: {
+        coding: [
+          {
+            code,
+            display,
+          },
+        ],
+        text: `${code} - ${display}`,
+      },
+      note: noteText ? [{ text: noteText }] : undefined,
+      priority: priority as 'routine' | 'urgent' | 'stat' | 'asap',
+    };
+
+    if (this.tests) {
+      this.tests.push(result);
+    } else {
+      this.tests = [result];
+    }
+
+    return result;
+  }
+
+  addDiagnosis(code: string, display: string): CodeableConcept {
+    const result: CodeableConcept = {
+      coding: [
+        {
+          system: 'http://hl7.org/fhir/sid/icd-10',
+          code,
+          display,
+        },
+      ],
+      text: `${code} - ${display}`,
+    };
+    if (this.diagnoses) {
+      this.diagnoses.push(result);
+    } else {
+      this.diagnoses = [result];
+    }
+    return result;
+  }
+
+  buildRequestGroup(): RequestGroup {
+    if (!this.account) {
+      throw new Error('Missing account');
+    }
+    if (!this.authorizedBy) {
+      throw new Error('Missing authorizedBy');
+    }
+    if (!this.patient) {
+      throw new Error('Missing patient');
+    }
+    if (!this.performer) {
+      throw new Error('Missing performer');
+    }
+    if (!this.practitioner) {
+      throw new Error('Missing practitioner');
+    }
+    if (!this.practitionerOrganization) {
+      throw new Error('Missing practitionerOrganization');
+    }
+    if (!this.tests) {
+      throw new Error('Missing tests');
+    }
+
+    const contained: Resource[] = [
+      { ...this.account, id: 'account' },
+      { ...this.practitioner, id: 'practitioner' },
+      { ...this.practitionerOrganization, id: 'organization' },
+    ];
+
+    if (this.coverage) {
+      contained.push({ ...this.coverage, id: 'coverage' });
+    }
+
+    if (this.subscriber) {
+      contained.push({ ...this.subscriber, id: 'subscriber' });
+    }
+
+    const result = {
+      resourceType: 'RequestGroup',
+      meta: {
+        profile: ['https://healthgorilla.com/fhir/StructureDefinition/hg-order'],
+      },
+      contained,
+      extension: [
+        {
+          url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-authorizedBy',
+          valueReference: createReference(this.authorizedBy),
+        },
+        {
+          url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-account',
+          valueReference: { reference: '#account' },
+        },
+        {
+          url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-performer',
+          valueReference: createReference(this.performer),
+        },
+        {
+          url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-requester',
+          extension: [
+            {
+              url: 'agent',
+              valueReference: { reference: '#practitioner' },
+            },
+            {
+              url: 'onBehalfOf',
+              valueReference: { reference: '#3' },
+            },
+          ],
+        },
+        {
+          url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-deliveryOptions',
+          extension: [
+            {
+              url: 'electronic',
+              valueBoolean: true,
+            },
+          ],
+        },
+      ],
+      status: 'active',
+      intent: 'order',
+      subject: createReference(this.patient),
+      author: createReference(this.practitioner),
+      reasonCode: this.diagnoses,
+      action: [] as RequestGroupAction[],
+      note: [] as Annotation[],
+    } satisfies RequestGroup;
+
+    for (let i = 0; i < this.tests.length; i++) {
+      result.contained.push({ ...this.tests[i], id: 'labtest' + i });
+      result.action.push({ resource: { reference: '#labtest' + i, display: this.tests[i].code?.text } });
+    }
+
+    if (this.specimenCollectedDateTime) {
+      const specimen: Specimen = {
+        resourceType: 'Specimen',
+        id: 'specimen',
+        subject: createReference(this.patient),
+        collection: {
+          collectedDateTime: this.specimenCollectedDateTime,
+        },
+      };
+
+      result.contained.push(specimen);
+
+      result.extension.push({
+        url: 'https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-specimen',
+        valueReference: {
+          reference: `#${specimen.id}`,
+        },
+      });
+    }
+
+    if (this.note) {
+      result.note.push({ text: this.note });
+    }
+
+    return result;
   }
 }
