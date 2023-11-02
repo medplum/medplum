@@ -381,6 +381,48 @@ describe('createFhircastMessagePayload', () => {
       ])
     ).toThrowError(OperationOutcomeError);
   });
+
+  test('Valid `DiagnosticReport-select` event', () => {
+    const messagePayload = createFhircastMessagePayload('abc-123', 'diagnosticreport-select', [
+      { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-123' } },
+      { key: 'select', resources: [{ resourceType: 'Observation', id: 'observation-123' }] },
+    ]);
+
+    expect(messagePayload).toBeDefined();
+    expect(messagePayload).toEqual<FhircastMessagePayload>({
+      id: expect.any(String),
+      timestamp: expect.any(String),
+      event: { 'hub.topic': 'abc-123', 'hub.event': 'diagnosticreport-select', context: expect.any(Object) },
+    });
+    expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
+    expect(messagePayload.event.context[0]).toBeDefined();
+  });
+
+  test('Using single resource context for multi-resource context', () => {
+    expect(() =>
+      createFhircastMessagePayload('abc-123', 'diagnosticreport-select', [
+        { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-123' } },
+        // @ts-expect-error Should have an array of resources at 'resources'
+        { key: 'select', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
+      ])
+    ).toThrowError(OperationOutcomeError);
+  });
+
+  test('Valid `DiagnosticReport-update` event', () => {
+    const messagePayload = createFhircastMessagePayload('abc-123', 'diagnosticreport-update', [
+      { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-123' } },
+      { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
+    ]);
+
+    expect(messagePayload).toBeDefined();
+    expect(messagePayload).toEqual<FhircastMessagePayload>({
+      id: expect.any(String),
+      timestamp: expect.any(String),
+      event: { 'hub.topic': 'abc-123', 'hub.event': 'diagnosticreport-update', context: expect.any(Object) },
+    });
+    expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
+    expect(messagePayload.event.context[0]).toBeDefined();
+  });
 });
 
 describe('FhircastConnection', () => {

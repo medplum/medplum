@@ -141,25 +141,37 @@ export type FhircastEventResource<
     : Resource & { resourceType: FhircastEventResourceType<EventName, K>; id: string }
   : never;
 
+export type FhircastSingleResourceContext<
+  EventName extends FhircastEventName = FhircastEventName,
+  K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
+> = { key: K; resource: FhircastEventResource<EventName, K> };
+
+export type FhircastMultiResourceContext<
+  EventName extends FhircastEventName = FhircastEventName,
+  K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
+> = { key: K; resources: FhircastEventResource<EventName, K>[] };
+
 export type FhircastEventContext<
   EventName extends FhircastEventName = FhircastEventName,
   K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
 > = FhircastEventContextMap<EventName>[K] extends infer _Ev extends FhircastEventContextDetails
   ? _Ev['isArray'] extends true
-    ? {
-        key: K;
-        resources: FhircastEventResource<EventName, K>[];
-      }
-    : {
-        key: K;
-        resource: FhircastEventResource<EventName, K>;
-      }
+    ? FhircastMultiResourceContext<EventName, K>
+    : FhircastSingleResourceContext<EventName, K>
   : never;
 
-export type FhircastEventPayload<EventName extends FhircastEventName = FhircastEventName> = {
+type ConvertToUnion<T> = T[keyof T];
+export type FhircastValidContextForEvent<EventName extends FhircastEventName = FhircastEventName> = ConvertToUnion<{
+  [key in FhircastEventContextKey<EventName>]: FhircastEventContext<EventName, key>;
+}>;
+
+export type FhircastEventPayload<
+  EventName extends FhircastEventName = FhircastEventName,
+  K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
+> = {
   'hub.topic': string;
   'hub.event': EventName;
-  context: FhircastEventContext<EventName>[];
+  context: FhircastEventContext<EventName, K>[];
   'context.versionId'?: string;
 };
 
@@ -251,7 +263,6 @@ export function validateFhircastSubscriptionRequest(
  * Throws if the context resource type is invalid. Intended as a helper for `validateFhircastContexts` only.
  *
  * @param event - The `FHIRcast` event name associated with the provided contexts.
- * @param key - The `FHIRcast` event context key to validate against.
  * @param resource - The `FHIRcast` event context resource to validate for given key.
  * @param i - The index of the current context in the context list.
  * @param keySchema - Schema for given key for FHIRcast event.
@@ -261,7 +272,6 @@ function validateSingleResourceContext<
   K extends FhircastEventContextKey<EventName>,
 >(
   event: EventName,
-  key: K,
   resource: FhircastEventResource<EventName, K>,
   i: number,
   keySchema: FhircastEventContextDetails
@@ -336,15 +346,22 @@ function validateFhircastContext<EventName extends FhircastEventName>(
 
   if (!keySchema.isArray) {
     // validateSingleResourceKey
-    validateSingleResourceContext(event, context.key, context.resource, i, keySchema);
+    validateSingleResourceContext(event, context.resource, i, keySchema);
   } else {
     // validateMultipleResourceKey
-    const { key, resources } = context as unknown as {
+    const { resources } = context as unknown as {
       key: FhircastEventContextKey<EventName>;
       resources: FhircastEventResource<EventName>[];
     };
+    if (!resources) {
+      throw new OperationOutcomeError(
+        validationError(
+          `context[${i}] is invalid. context[${i}] for the '${event}' with key '${context.key}' should contain an array of resources on the key 'resources'.`
+        )
+      );
+    }
     for (const resource of resources) {
-      validateSingleResourceContext(event, key, resource, i, keySchema);
+      validateSingleResourceContext(event, resource, i, keySchema);
     }
   }
 }
@@ -405,7 +422,7 @@ function validateFhircastContexts<EventName extends FhircastEventName>(
 export function createFhircastMessagePayload<EventName extends FhircastEventName>(
   topic: string,
   event: EventName,
-  context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[]
+  context: FhircastValidContextForEvent<EventName> | FhircastValidContextForEvent<EventName>[]
 ): FhircastMessagePayload<EventName> {
   if (!(topic && typeof topic === 'string')) {
     throw new OperationOutcomeError(validationError('Must provide a topic.'));
