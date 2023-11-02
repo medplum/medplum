@@ -1513,6 +1513,48 @@ describe('FHIR Search', () => {
       expect(bundleContains(bundle4, serviceRequest2)).toEqual(false);
     }));
 
+  test('Missing with logical (identifier) references', () =>
+    withTestContext(async () => {
+      const patientIdentifier = randomUUID();
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [
+          {
+            system: 'http://example.com/guid',
+            value: patientIdentifier,
+          },
+        ],
+        generalPractitioner: [
+          {
+            identifier: {
+              system: 'http://hl7.org/fhir/sid/us-npi',
+              value: '9876543210',
+            },
+          },
+        ],
+        managingOrganization: {
+          identifier: {
+            system: 'http://hl7.org/fhir/sid/us-npi',
+            value: '0123456789',
+          },
+        },
+      });
+
+      // Test singlet reference column
+      let results = await systemRepo.searchResources(
+        parseSearchDefinition(`Patient?identifier=${patientIdentifier}&organization:missing=false`)
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0]?.id).toEqual(patient.id);
+
+      // Test array reference column
+      results = await systemRepo.searchResources(
+        parseSearchDefinition(`Patient?identifier=${patientIdentifier}&general-practitioner:missing=false`)
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0]?.id).toEqual(patient.id);
+    }));
+
   test('Starts after', () =>
     withTestContext(async () => {
       // Create 2 appointments
