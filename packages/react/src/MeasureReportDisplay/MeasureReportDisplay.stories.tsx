@@ -16,6 +16,7 @@ export const Basic = (): JSX.Element => (
         id: 'basic-example',
         group: [
           {
+            id: 'group-1',
             measureScore: {
               value: 67,
               unit: '%',
@@ -23,7 +24,6 @@ export const Basic = (): JSX.Element => (
           },
         ],
       }}
-      title="Basic Example"
     />
   </Document>
 );
@@ -36,12 +36,14 @@ export const Multiple = (): JSX.Element => (
         id: 'basic-example',
         group: [
           {
+            id: 'group-1',
             measureScore: {
               value: 67,
               unit: '%',
             },
           },
           {
+            id: 'group-2',
             measureScore: {
               value: 50,
               unit: 'ml',
@@ -49,7 +51,6 @@ export const Multiple = (): JSX.Element => (
           },
         ],
       }}
-      title="Basic Example"
     />
   </Document>
 );
