@@ -1,3 +1,7 @@
+---
+sidebar_position: 4
+---
+
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
