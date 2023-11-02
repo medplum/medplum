@@ -1,5 +1,7 @@
 import { createScriptTag } from './script';
 
+declare let grecaptcha: undefined | ReCaptchaV2.ReCaptcha;
+
 /**
  * Dynamically loads the recaptcha script.
  * We do not want to load the script on page load unless the user needs it.
@@ -18,9 +20,17 @@ export function initRecaptcha(siteKey: string): void {
  */
 export function getRecaptcha(siteKey: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    grecaptcha.ready(async () => {
+    if (typeof grecaptcha === 'undefined') {
+      reject(new Error('grecaptcha not found'));
+      return;
+    }
+
+    // a strongly typed reference to appease typescript within the ready callback
+    const grecaptchaClient: ReCaptchaV2.ReCaptcha = grecaptcha;
+
+    grecaptchaClient.ready(async () => {
       try {
-        resolve(await grecaptcha.execute(siteKey, { action: 'submit' }));
+        resolve(await grecaptchaClient.execute(siteKey, { action: 'submit' }));
       } catch (err) {
         reject(err);
       }
