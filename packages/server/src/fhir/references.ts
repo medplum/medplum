@@ -9,20 +9,18 @@ import {
 } from '@medplum/core';
 import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Repository } from './repo';
+import { systemRepo } from './repo';
 
-export async function validateReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {
-  return new FhirReferenceValidator(repo, resource).validate();
+export async function validateReferences<T extends Resource>(resource: T): Promise<void> {
+  return new FhirReferenceValidator(resource).validate();
 }
 
 export class FhirReferenceValidator<T extends Resource> {
   private readonly issues: OperationOutcomeIssue[];
-  private readonly repo: Repository;
   private readonly root: T;
 
-  constructor(repo: Repository, root: T) {
+  constructor(root: T) {
     this.issues = [];
-    this.repo = repo;
     this.root = root;
   }
 
@@ -83,9 +81,12 @@ export class FhirReferenceValidator<T extends Resource> {
     }
 
     try {
-      await this.repo.readReference(reference);
+      const existing = await systemRepo.readReference(reference);
+      if (existing.meta?.project && this.root.meta?.project && existing.meta.project !== this.root.meta.project) {
+        this.issues.push(createStructureIssue(path, `Invalid reference (Not found)`));
+      }
     } catch (err) {
-      this.issues.push(createStructureIssue(path, `Invalid reference: ${path} (${normalizeErrorString(err)})`));
+      this.issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(err)})`));
     }
   }
 }

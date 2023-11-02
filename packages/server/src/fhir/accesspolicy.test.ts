@@ -12,6 +12,7 @@ import {
   Login,
   Observation,
   Patient,
+  Practitioner,
   Project,
   ProjectMembership,
   Questionnaire,
@@ -1553,14 +1554,21 @@ describe('AccessPolicy', () => {
         ],
       });
 
-      const membership = await systemRepo.createResource<ProjectMembership>({
-        resourceType: 'ProjectMembership',
-        user: { reference: 'User/' + randomUUID() },
-        project: { reference: 'Project/' + project.id },
-        profile: { reference: 'Practitioner/' + randomUUID() },
-        accessPolicy: createReference(accessPolicy),
-        admin: true,
+      // Create an admin user with access policy
+      const adminInviteResult = await inviteUser({
+        resourceType: 'Practitioner',
+        project,
+        externalId: randomUUID(),
+        firstName: 'X',
+        lastName: 'Y',
+        sendEmail: false,
+        membership: {
+          admin: true,
+          accessPolicy: createReference(accessPolicy),
+        },
       });
+
+      const membership = adminInviteResult.membership;
 
       // Create a project-scoped user
       const inviteResult = await inviteUser({
@@ -1572,7 +1580,7 @@ describe('AccessPolicy', () => {
         sendEmail: false,
       });
 
-      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership);
+      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, true, true, true);
 
       const check1 = await repo2.readResource<Task>('Patient', patient.id as string);
       expect(check1.id).toBe(patient.id);
@@ -1593,6 +1601,11 @@ describe('AccessPolicy', () => {
       } catch (err) {
         expect(normalizeErrorString(err)).toEqual('Forbidden');
       }
+
+      // Update the project membership
+      const check6 = await repo2.updateResource<ProjectMembership>({ ...check3, externalId: randomUUID() });
+      expect(check6.id).toEqual(check3.id);
+      expect(check6.meta?.versionId).not.toEqual(check3.meta?.versionId);
     }));
 
   test('Project admin cannot modify protected fields', () =>
@@ -1722,5 +1735,50 @@ describe('AccessPolicy', () => {
       expect(patient3).toBeDefined();
       expect(patient3.meta?.versionId).toEqual(patient2.meta?.versionId);
       expect(patient3.meta?.account?.reference).toEqual('Organization/' + account2);
+    }));
+
+  test('Project admin check references', () =>
+    withTestContext(async () => {
+      const project1 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
+      const repo1 = new Repository({
+        author: { reference: 'Practitioner/' + randomUUID() },
+        project: project1.id,
+        projectAdmin: true,
+        strictMode: true,
+        extendedMode: true,
+        checkReferencesOnWrite: true,
+      });
+
+      const project2 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
+      const repo2 = new Repository({
+        author: { reference: 'Practitioner/' + randomUUID() },
+        project: project2.id,
+        projectAdmin: true,
+        strictMode: true,
+        extendedMode: true,
+        checkReferencesOnWrite: true,
+      });
+
+      const check1 = await repo1.readResource('Project', project1.id as string);
+      expect(check1).toBeDefined();
+
+      const check2 = await repo2.readResource('Project', project2.id as string);
+      expect(check2).toBeDefined();
+
+      try {
+        await repo1.readResource('Project', project2.id as string);
+        throw new Error('Should not be able to read resource');
+      } catch (err) {
+        expect(normalizeErrorString(err)).toEqual('Not found');
+      }
+
+      // Try to create a Patient in Project2 that references a Practitioner in Project1
+      const practitioner = await repo1.createResource<Practitioner>({ resourceType: 'Practitioner' });
+      try {
+        await repo2.createResource({ resourceType: 'Patient', generalPractitioner: [createReference(practitioner)] });
+        throw new Error('Should have failed reference check');
+      } catch (err) {
+        expect(normalizeErrorString(err)).toEqual('Invalid reference (Not found) (Patient.generalPractitioner)');
+      }
     }));
 });
