@@ -157,6 +157,7 @@ const sidebars = {
         { type: 'doc', id: 'fhir-datastore/deleting-data' },
         { type: 'doc', id: 'fhir-datastore/binary-data' },
         { type: 'doc', id: 'fhir-datastore/resource-history' },
+        { type: 'doc', id: 'fhir-datastore/fhir-batch-requests' },
         { type: 'html', value: '<strong class="menu__link">Data Validation</strong>' },
         { type: 'doc', id: 'fhir-datastore/profiles' },
         { type: 'doc', id: 'fhir-datastore/understanding-uscdi-dataclasses' },
