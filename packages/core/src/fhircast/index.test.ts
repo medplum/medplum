@@ -10,6 +10,7 @@ import {
   serializeFhircastSubscriptionRequest,
   validateFhircastSubscriptionRequest,
 } from '.';
+import { generateId } from '../crypto';
 import { OperationOutcomeError } from '../outcomes';
 import { createFhircastMessageContext } from './test-utils';
 
@@ -409,19 +410,43 @@ describe('createFhircastMessagePayload', () => {
   });
 
   test('Valid `DiagnosticReport-update` event', () => {
-    const messagePayload = createFhircastMessagePayload('abc-123', 'diagnosticreport-update', [
-      { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-123' } },
-      { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
-    ]);
+    const messagePayload = createFhircastMessagePayload(
+      'abc-123',
+      'diagnosticreport-update',
+      [
+        { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-123' } },
+        { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
+      ],
+      generateId()
+    );
 
     expect(messagePayload).toBeDefined();
     expect(messagePayload).toEqual<FhircastMessagePayload>({
       id: expect.any(String),
       timestamp: expect.any(String),
-      event: { 'hub.topic': 'abc-123', 'hub.event': 'diagnosticreport-update', context: expect.any(Object) },
+      event: {
+        'hub.topic': 'abc-123',
+        'hub.event': 'diagnosticreport-update',
+        context: expect.any(Object),
+        'context.versionId': expect.any(String),
+      },
     });
     expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
     expect(messagePayload.event.context[0]).toBeDefined();
+  });
+
+  test('Missing `context.versionId` in `*-update` event', () => {
+    expect(() =>
+      createFhircastMessagePayload(
+        'abc-123',
+        // @ts-expect-error Missing `context.versionId` for test
+        'diagnosticreport-update',
+        [
+          { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-123' } },
+          { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
+        ]
+      )
+    ).toThrowError(OperationOutcomeError);
   });
 });
 

@@ -28,6 +28,9 @@ export const FHIRCAST_RESOURCE_TYPES = [
   'Bundle',
 ] as const;
 
+export const FHIRCAST_EVENT_VERSION_REQUIRED = ['diagnosticreport-update'] as const;
+export type FhircastEventVersionRequired = (typeof FHIRCAST_EVENT_VERSION_REQUIRED)[number];
+
 export type FhircastEventName = keyof typeof FHIRCAST_EVENT_NAMES;
 export type FhircastResourceType = (typeof FHIRCAST_RESOURCE_TYPES)[number];
 
@@ -417,12 +420,30 @@ function validateFhircastContexts<EventName extends FhircastEventName>(
  * @param topic - The topic that this message will be published on. Usually a UUID.
  * @param event - The event name, ie. "patient-open" or "patient-close".
  * @param context - The updated context, containing new versions of resources related to this event.
+ * @param versionId - The current `versionId` of the anchor context. For example, in `DiagnosticReport-update`, it's the `versionId` of the `DiagnosticReport`.
  * @returns A serializable `FhircastMessagePayload`.
  */
+export function createFhircastMessagePayload<EventName extends FhircastEventVersionRequired>(
+  topic: string,
+  event: EventName,
+  context: FhircastValidContextForEvent<EventName> | FhircastValidContextForEvent<EventName>[],
+  versionId: string
+): FhircastMessagePayload<EventName>;
+
+export function createFhircastMessagePayload<
+  EventName extends Exclude<FhircastEventName, FhircastEventVersionRequired>,
+>(
+  topic: string,
+  event: EventName,
+  context: FhircastValidContextForEvent<EventName> | FhircastValidContextForEvent<EventName>[],
+  versionId?: never
+): FhircastMessagePayload<EventName>;
+
 export function createFhircastMessagePayload<EventName extends FhircastEventName>(
   topic: string,
   event: EventName,
-  context: FhircastValidContextForEvent<EventName> | FhircastValidContextForEvent<EventName>[]
+  context: FhircastValidContextForEvent<EventName> | FhircastValidContextForEvent<EventName>[],
+  versionId?: string | undefined
 ): FhircastMessagePayload<EventName> {
   if (!(topic && typeof topic === 'string')) {
     throw new OperationOutcomeError(validationError('Must provide a topic.'));
@@ -437,7 +458,9 @@ export function createFhircastMessagePayload<EventName extends FhircastEventName
   if (typeof context !== 'object') {
     throw new OperationOutcomeError(validationError('context must be a context object or array of context objects.'));
   }
-
+  if ((FHIRCAST_EVENT_VERSION_REQUIRED as readonly string[]).includes(event) && !versionId) {
+    throw new OperationOutcomeError(validationError(`The '${event}' event must contain a 'context.versionId'.`));
+  }
   const normalizedContexts = Array.isArray(context) ? context : [context];
   // This will throw if any context in the array is invalid
   validateFhircastContexts(event, normalizedContexts);
@@ -448,6 +471,7 @@ export function createFhircastMessagePayload<EventName extends FhircastEventName
       'hub.topic': topic,
       'hub.event': event,
       context: normalizedContexts,
+      ...(versionId ? { 'context.versionId': versionId } : {}),
     },
   };
 }
