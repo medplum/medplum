@@ -902,3 +902,19 @@ export const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+
+export function splitN(str: string, delim: string, n: number): string[] {
+  const result: string[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    let delimIndex = str.indexOf(delim);
+    if (delimIndex < 0) {
+      delimIndex = str.length;
+    }
+    result.push(str.slice(0, delimIndex));
+    str = str.slice(delimIndex + delim.length);
+  }
+  if (str) {
+    result.push(str);
+  }
+  return result;
+}

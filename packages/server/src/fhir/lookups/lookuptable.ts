@@ -10,7 +10,6 @@ import {
   Expression,
   InsertQuery,
   Negation,
-  Operator,
   SelectQuery,
 } from '../sql';
 
@@ -55,28 +54,29 @@ export abstract class LookupTable<T> {
    * Builds a "where" condition for the select query builder.
    * @param selectQuery - The select query builder.
    * @param resourceType - The FHIR resource type.
+   * @param table - The resource table.
    * @param filter - The search filter details.
    * @returns The select query where expression.
    */
-  buildWhere(selectQuery: SelectQuery, resourceType: ResourceType, filter: Filter): Expression {
+  buildWhere(selectQuery: SelectQuery, resourceType: ResourceType, table: string, filter: Filter): Expression {
     const tableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(filter.code);
     const joinOnExpression = new Conjunction([
-      new Condition(new Column(resourceType, 'id'), Operator.EQUALS, new Column(joinName, 'resourceId')),
+      new Condition(new Column(table, 'id'), '=', new Column(joinName, 'resourceId')),
     ]);
 
     const disjunction = new Disjunction([]);
     for (const option of filter.value.split(',')) {
       if (filter.operator === FhirOperator.EXACT) {
-        disjunction.expressions.push(new Condition(new Column(joinName, columnName), Operator.EQUALS, option.trim()));
+        disjunction.expressions.push(new Condition(new Column(joinName, columnName), '=', option.trim()));
       } else if (filter.operator === FhirOperator.CONTAINS) {
-        disjunction.expressions.push(new Condition(new Column(joinName, columnName), Operator.LIKE, `%${option}%`));
+        disjunction.expressions.push(new Condition(new Column(joinName, columnName), 'LIKE', `%${option}%`));
       } else {
         disjunction.expressions.push(
           new Condition(
             new Column(joinName, columnName),
-            Operator.TSVECTOR_SIMPLE,
+            'TSVECTOR_SIMPLE',
             option
               .trim()
               .split(/\s+/)
@@ -96,7 +96,7 @@ export abstract class LookupTable<T> {
 
     selectQuery.innerJoin(tableName, joinName, joinOnExpression);
     selectQuery.orderBy(new Column(joinName, columnName));
-    return new Condition(new Column(joinName, 'resourceId'), Operator.NOT_EQUALS, null);
+    return new Condition(new Column(joinName, 'resourceId'), '!=', null);
   }
 
   /**
@@ -109,11 +109,7 @@ export abstract class LookupTable<T> {
     const tableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);
-    const joinOnExpression = new Condition(
-      new Column(resourceType, 'id'),
-      Operator.EQUALS,
-      new Column(joinName, 'resourceId')
-    );
+    const joinOnExpression = new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId'));
     selectQuery.innerJoin(tableName, joinName, joinOnExpression);
     selectQuery.orderBy(new Column(joinName, columnName), sortRule.descending);
   }
@@ -133,7 +129,7 @@ export abstract class LookupTable<T> {
     const tableName = this.getTableName(resourceType);
     return new SelectQuery(tableName)
       .column('content')
-      .where('resourceId', Operator.EQUALS, resourceId)
+      .where('resourceId', '=', resourceId)
       .orderBy('index')
       .execute(client)
       .then((result) => result.map((row) => JSON.parse(row.content) as T));
@@ -165,6 +161,6 @@ export abstract class LookupTable<T> {
   async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
     const tableName = this.getTableName(resource.resourceType);
     const resourceId = resource.id as string;
-    await new DeleteQuery(tableName).where('resourceId', Operator.EQUALS, resourceId).execute(client);
+    await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
   }
 }

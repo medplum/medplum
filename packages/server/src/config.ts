@@ -1,5 +1,6 @@
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { splitN } from '@medplum/core';
 import { KeepJobs } from 'bullmq';
 import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
@@ -100,7 +101,7 @@ export function getConfig(): MedplumServerConfig {
  * @returns The loaded configuration.
  */
 export async function loadConfig(configName: string): Promise<MedplumServerConfig> {
-  const [configType, configPath] = splitOnce(configName, ':');
+  const [configType, configPath] = splitN(configName, ':', 2);
   switch (configType) {
     case 'env':
       cachedConfig = loadEnvConfig();
@@ -190,7 +191,7 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
 async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
   let region = DEFAULT_AWS_REGION;
   if (path.includes(':')) {
-    [region, path] = splitOnce(path, ':');
+    [region, path] = splitN(path, ':', 2);
   }
 
   const client = new SSMClient({ region });
@@ -264,14 +265,6 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.bcryptHashSalt = config.bcryptHashSalt || 10;
   config.bullmq = { removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
   return config;
-}
-
-function splitOnce(value: string, delimiter: string): [string, string] {
-  const index = value.indexOf(delimiter);
-  if (index === -1) {
-    return [value, ''];
-  }
-  return [value.substring(0, index), value.substring(index + 1)];
 }
 
 function isIntegerConfig(key: string): boolean {

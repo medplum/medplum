@@ -203,6 +203,11 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
     modifier = '';
   }
 
+  if (code === '_has' || key.includes('.')) {
+    addFilter(searchRequest, { code: key, operator: Operator.EQUALS, value });
+    return;
+  }
+
   switch (code) {
     case '_sort':
       parseSortRule(searchRequest, value);
@@ -263,9 +268,9 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
     default: {
       const param = globalSchema.types[searchRequest.resourceType]?.searchParams?.[code];
       if (param) {
-        parseParameter(searchRequest, param, modifier, value);
+        addFilter(searchRequest, parseParameter(param, modifier, value));
       } else {
-        parseUnknownParameter(searchRequest, code, modifier, value);
+        addFilter(searchRequest, parseUnknownParameter(code, modifier, value));
       }
     }
   }
@@ -288,60 +293,47 @@ function parseSortRule(searchRequest: SearchRequest, value: string): void {
   }
 }
 
-function parseParameter(
-  searchRequest: SearchRequest,
-  searchParam: SearchParameter,
-  modifier: string,
-  value: string
-): void {
+export function parseParameter(searchParam: SearchParameter, modifier: string, value: string): Filter {
   if (modifier === 'missing') {
-    addFilter(searchRequest, {
+    return {
       code: searchParam.code as string,
       operator: Operator.MISSING,
       value,
-    });
-    return;
+    };
   }
   switch (searchParam.type) {
     case 'number':
     case 'date':
     case 'quantity':
-      parsePrefixType(searchRequest, searchParam, value);
-      break;
+      return parsePrefixType(searchParam, value);
     case 'reference':
     case 'string':
     case 'token':
     case 'uri':
-      parseModifierType(searchRequest, searchParam, modifier, value);
-      break;
+      return parseModifierType(searchParam, modifier, value);
     default:
-      break;
+      throw new Error('Unrecognized search parameter type: ' + searchParam.type);
   }
 }
 
-function parsePrefixType(searchRequest: SearchRequest, param: SearchParameter, input: string): void {
+function parsePrefixType(param: SearchParameter, input: string): Filter {
   const { operator, value } = parsePrefix(input);
-  addFilter(searchRequest, {
+  return {
     code: param.code as string,
     operator,
     value,
-  });
+  };
 }
 
-function parseModifierType(
-  searchRequest: SearchRequest,
-  param: SearchParameter,
-  modifier: string,
-  value: string
-): void {
-  addFilter(searchRequest, {
+function parseModifierType(param: SearchParameter, modifier: string, value: string): Filter {
+  return {
     code: param.code as string,
     operator: parseModifier(modifier),
     value,
-  });
+  };
 }
 
-function parseUnknownParameter(searchRequest: SearchRequest, code: string, modifier: string, value: string): void {
+function parseUnknownParameter(code: string, modifier: string, value: string): Filter {
   let operator = Operator.EQUALS;
   if (modifier) {
     operator = modifier as Operator;
@@ -354,12 +346,7 @@ function parseUnknownParameter(searchRequest: SearchRequest, code: string, modif
       }
     }
   }
-
-  addFilter(searchRequest, {
-    code,
-    operator,
-    value,
-  });
+  return { code, operator, value };
 }
 
 function parsePrefix(input: string): { operator: Operator; value: string } {

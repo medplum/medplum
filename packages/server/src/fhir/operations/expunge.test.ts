@@ -9,7 +9,7 @@ import { getClient } from '../../database';
 import { getRedis } from '../../redis';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { systemRepo } from '../repo';
-import { SelectQuery, Operator as SqlOperator } from '../sql';
+import { SelectQuery } from '../sql';
 import { Expunger } from './expunge';
 
 const app = express();
@@ -184,6 +184,6 @@ async function existsInCache(resourceType: string, id: string | undefined): Prom
 }
 
 async function existsInDatabase(tableName: string, id: string | undefined): Promise<boolean> {
-  const rows = await new SelectQuery(tableName).column('id').where('id', SqlOperator.EQUALS, id).execute(getClient());
+  const rows = await new SelectQuery(tableName).column('id').where('id', '=', id).execute(getClient());
   return rows.length > 0;
 }
