@@ -38,4 +38,4 @@ Log into Medplum and navigate to the [batch create](https://app.medplum.com/batc
 
 ![Batch create tool](/img/tutorials/batch-create.png)
 
-The batch upload tool is a lightweight wrapper around the [batch/transaction api](https://www.hl7.org/fhir/http.html#transaction) and here is the documentation on how to [upload a batch using the SDK](/docs/sdk/classes/MedplumClient#batch).
+The batch upload tool is a lightweight wrapper around the [batch/transaction api](https://www.hl7.org/fhir/http.html#transaction) and here is the documentation on how to [upload a batch using the SDK](/docs/sdk/core.medplumclient.executebatch).

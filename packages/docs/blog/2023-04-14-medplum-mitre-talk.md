@@ -97,7 +97,7 @@ And they don't have to think about the complexities of the data model, and the [
 
 And we think of, integrations are the product so that this is crucial. And we have our infrastructure here called [bots](/docs/bots). You can think of these as like lambdas, you know for example, if you create a new patient, You can invoke one of these lambdas to synchronize that data to a legacy EHR, either via FHIR, HL7.
 
-We support a bunch of data types and we have a [streamlined developer kit](/docs/sdk/modules#interfaces) so that, again one of these developers who don't have a lot of history or training in the domain can be very productive very quickly using this technique. So, and these, we provide the environment, which in which to develop these, and then all the tooling so that you can run them.
+We support a bunch of data types and we have a [streamlined developer kit](/docs/sdk/core) so that, again one of these developers who don't have a lot of history or training in the domain can be very productive very quickly using this technique. So, and these, we provide the environment, which in which to develop these, and then all the tooling so that you can run them.
 
 So there's really no DevOps from the perspective of the developer. They're just writing their code and hooking it up. And this is a big productivity win. And people bring their own code here. We have some partners who have written their own integrations and we also provide some built-in integrations.
 

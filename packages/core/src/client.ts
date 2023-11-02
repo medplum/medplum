@@ -215,6 +215,7 @@ export interface MedplumClientOptions {
    *
    * Default is none, and PDF generation is disabled.
    *
+   * @example
    * In browser environments, import the client-side pdfmake library.
    *
    * ```html
@@ -228,6 +229,7 @@ export interface MedplumClientOptions {
    * </script>
    * ```
    *
+   * @example
    * In Node.js applications:
    *
    * ```ts
@@ -559,14 +561,15 @@ interface SessionDetails {
  * The client can be used in the browser, in a Node.js application, or in a Medplum Bot.
  *
  * The client provides helpful methods for common operations such as:
- *   1) Authenticating
- *   2) Creating resources
- *   2) Reading resources
- *   3) Updating resources
- *   5) Deleting resources
- *   6) Searching
- *   7) Making GraphQL queries
+ *   1. Authenticating
+ *   2. Creating resources
+ *   3. Reading resources
+ *   4. Updating resources
+ *   5. Deleting resources
+ *   6. Searching
+ *   7. Making GraphQL queries
  *
+ * @example
  * Here is a quick example of how to use the client:
  *
  * ```typescript
@@ -574,6 +577,7 @@ interface SessionDetails {
  * const medplum = new MedplumClient();
  * ```
  *
+ * @example
  * Create a `Patient`:
  *
  * ```typescript
@@ -586,6 +590,7 @@ interface SessionDetails {
  * });
  * ```
  *
+ * @example
  * Read a `Patient` by ID:
  *
  * ```typescript
@@ -593,6 +598,7 @@ interface SessionDetails {
  * console.log(patient.name[0].given[0]);
  * ```
  *
+ * @example
  * Search for a `Patient` by name:
  *
  * ```typescript
@@ -1168,6 +1174,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Sends a FHIR search request.
    *
+   * @example
    * Example using a FHIR search string:
    *
    * ```typescript
@@ -1175,6 +1182,7 @@ export class MedplumClient extends EventTarget {
    * console.log(bundle);
    * ```
    *
+   * @example
    * The return value is a FHIR bundle:
    *
    * ```json
@@ -1199,6 +1207,7 @@ export class MedplumClient extends EventTarget {
    * }
    * ```
    *
+   * @example
    * To query the count of a search, use the summary feature like so:
    *
    * ```typescript
@@ -1243,6 +1252,7 @@ export class MedplumClient extends EventTarget {
    *
    * This is a convenience method for `search()` that returns the first resource rather than a `Bundle`.
    *
+   * @example
    * Example using a FHIR search string:
    *
    * ```typescript
@@ -1284,6 +1294,7 @@ export class MedplumClient extends EventTarget {
    *
    * This is a convenience method for `search()` that returns the resources as an array rather than a `Bundle`.
    *
+   * @example
    * Example using a FHIR search string:
    *
    * ```typescript
@@ -1322,6 +1333,7 @@ export class MedplumClient extends EventTarget {
    * over a series of FHIR search requests for paginated search results. Each iteration of the generator yields
    * the array of resources on each page.
    *
+   * @example
    *
    * ```typescript
    * for await (const page of medplum.searchResourcePages('Patient', { _count: 10 })) {
@@ -1330,6 +1342,7 @@ export class MedplumClient extends EventTarget {
    *  }
    * }
    * ```
+   *
    * @category Search
    * @param resourceType - The FHIR resource type.
    * @param query - Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
@@ -1408,6 +1421,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Reads a resource by resource type and ID.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1435,6 +1449,7 @@ export class MedplumClient extends EventTarget {
    *
    * This is a convenience method for `readResource()` that accepts a `Reference` object.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1541,6 +1556,7 @@ export class MedplumClient extends EventTarget {
    *
    * The return value is a bundle of all versions of the resource.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1566,6 +1582,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Reads a specific version of a resource by resource type, ID, and version ID.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1593,6 +1610,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Executes the Patient "everything" operation for a patient.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1615,6 +1633,7 @@ export class MedplumClient extends EventTarget {
    *
    * The return value is the newly created resource, including the ID and meta.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1647,6 +1666,7 @@ export class MedplumClient extends EventTarget {
    *
    * The return value is the existing resource or the newly created resource, including the ID and meta.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1696,6 +1716,7 @@ export class MedplumClient extends EventTarget {
    *
    * A `File` object often comes from a `<input type="file">` element.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1734,6 +1755,7 @@ export class MedplumClient extends EventTarget {
    *
    * A `File` object often comes from a `<input type="file">` element.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1809,6 +1831,7 @@ export class MedplumClient extends EventTarget {
    *
    * The `docDefinition` parameter is a pdfmake document definition.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1887,6 +1910,7 @@ export class MedplumClient extends EventTarget {
    *
    * The return value is the updated resource, including the ID and meta.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1931,6 +1955,7 @@ export class MedplumClient extends EventTarget {
    *
    * The return value is the updated resource, including the ID and meta.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1963,6 +1988,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Deletes a FHIR resource by resource type and ID.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1985,6 +2011,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Executes the validate operation with the provided resource.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -2031,6 +2058,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Executes a batch or transaction of FHIR operations.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -2087,6 +2115,7 @@ export class MedplumClient extends EventTarget {
    *
    * Examples:
    *
+   * @example
    * Send a simple text email:
    *
    * ```typescript
@@ -2098,6 +2127,7 @@ export class MedplumClient extends EventTarget {
    * });
    * ```
    *
+   * @example
    * Send an email with a `Binary` attachment:
    *
    * ```typescript
@@ -2125,6 +2155,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Executes a GraphQL query.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -2140,6 +2171,7 @@ export class MedplumClient extends EventTarget {
    * }`);
    * ```
    *
+   * @example
    * Advanced queries such as named operations and variable substitution are supported:
    *
    * ```typescript
@@ -2928,6 +2960,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Starts a new OAuth2 client credentials flow.
    *
+   * @example
    * ```typescript
    * await medplum.startClientLogin(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_CLIENT_SECRET)
    * // Example Search
@@ -2955,6 +2988,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Starts a new OAuth2 JWT bearer flow.
    *
+   * @example
    * ```typescript
    * await medplum.startJwtBearerLogin(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_JWT_BEARER_ASSERTION, 'openid profile');
    * // Example Search
@@ -3000,6 +3034,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Sets the client ID and secret for basic auth.
    *
+   * @example
    * ```typescript
    * medplum.setBasicAuth(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_CLIENT_SECRET);
    * // Example Search
