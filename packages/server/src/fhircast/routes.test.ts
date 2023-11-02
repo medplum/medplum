@@ -1,4 +1,4 @@
-import { ContentType, FhircastEventContext, createFhircastMessagePayload } from '@medplum/core';
+import { ContentType, FhircastEventContext, FhircastEventPayload, createFhircastMessagePayload } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -173,5 +173,30 @@ describe('FHIRCast routes', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(afterContextRes.status).toBe(200);
     expect(afterContextRes.body).toEqual([]);
+  });
+
+  test('Check for `context.versionId` on `DiagnosticReport-open`', async () => {
+    const context = [
+      { key: 'report', resource: { id: 'abc-123', resourceType: 'DiagnosticReport' } },
+      { key: 'study', resource: { id: 'def-456', resourceType: 'ImagingStudy' } },
+      { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
+    ] as FhircastEventContext<'diagnosticreport-open'>[];
+
+    const payload = createFhircastMessagePayload('my-topic', 'diagnosticreport-open', context);
+
+    const publishRes = await request(app)
+      .post('/fhircast/STU3/my-topic')
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(payload);
+    expect(publishRes.status).toBe(201);
+
+    const latestEventStr = (await getRedis().get('::fhircast::my-topic::latest::')) as string;
+    expect(latestEventStr).toBeTruthy();
+    const latestEvent = JSON.parse(latestEventStr) as FhircastEventPayload<'diagnosticreport-open'>;
+    expect(latestEvent).toMatchObject({
+      ...payload,
+      event: { ...payload.event, 'context.versionId': expect.any(String) },
+    });
   });
 });

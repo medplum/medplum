@@ -1,4 +1,4 @@
-import { FhircastMessagePayload, badRequest } from '@medplum/core';
+import { FhircastMessagePayload, badRequest, generateId } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
@@ -95,9 +95,14 @@ protectedRoutes.post(
     }
 
     const { event } = req.body as FhircastMessagePayload;
-    const stringifiedBody = JSON.stringify(req.body);
+    let stringifiedBody = JSON.stringify(req.body);
     // Check if this an open event
     if (event['hub.event'].endsWith('-open')) {
+      // TODO: Support this as a param for event type: "versionable"?
+      if (event['hub.event'] === 'diagnosticreport-open') {
+        event['context.versionId'] = generateId();
+        stringifiedBody = JSON.stringify(req.body);
+      }
       // TODO: we need to get topic from event and not route param since per spec, the topic shouldn't be the slug like we have it
       await getRedis().set(`::fhircast::${req.params.topic}::latest::`, stringifiedBody);
     } else if (event['hub.event'].endsWith('-close')) {
