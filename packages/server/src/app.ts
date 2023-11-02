@@ -152,6 +152,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
       type: [ContentType.HL7_V2],
     })
   );
+  app.use(loggingMiddleware);
 
   const apiRouter = Router();
   apiRouter.get('/', (_req, res) => res.sendStatus(200));
@@ -204,4 +205,26 @@ export async function shutdownApp(): Promise<void> {
   if (binaryStorage?.startsWith('file:' + join(tmpdir(), 'medplum-temp-storage'))) {
     rmSync(binaryStorage.replace('file:', ''), { recursive: true, force: true });
   }
+}
+
+const loggingMiddleware = (req: Request, res: Response, next: NextFunction):void=>{
+  const ctx = getRequestContext();
+  const start = new Date();
+  next();
+  const afterNext = new Date().getTime(); // Record the time after next() completes
+  const totalTime = afterNext - start.getTime(); // Calculate the time taken including the time spent in next()  
+  let userProfile: string | undefined;
+  if (ctx instanceof AuthenticatedRequestContext) {
+    userProfile = ctx.profile.reference;
+  }
+
+  ctx.logger.info('Request served', 
+  {
+    receivedAt:start,
+    requestMethodAndPath: `${req.method}: ${req.path}`,
+    Duration: `${totalTime} ms`, 
+    IP: req.ip, status: res.statusCode, 
+    UA: req.get('User-Agent'),
+    Profile: userProfile
+  });
 }
