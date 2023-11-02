@@ -183,7 +183,7 @@ describe('createFhircastMessagePayload', () => {
     const topic = 'abc123';
     const event = 'patient-open';
     const resourceId = 'patient-123';
-    const context = createFhircastMessageContext<typeof event>('Patient', resourceId);
+    const context = createFhircastMessageContext<typeof event>('patient', 'Patient', resourceId);
 
     const messagePayload = createFhircastMessagePayload(topic, event, context);
 
@@ -201,9 +201,9 @@ describe('createFhircastMessagePayload', () => {
     const topic = 'abc123';
     const event = 'imagingstudy-open';
     const resourceId1 = 'patient-123';
-    const context1 = createFhircastMessageContext<typeof event>('Patient', resourceId1);
+    const context1 = createFhircastMessageContext<typeof event>('patient', 'Patient', resourceId1);
     const resourceId2 = 'imagingstudy-456';
-    const context2 = createFhircastMessageContext<typeof event>('ImagingStudy', resourceId2);
+    const context2 = createFhircastMessageContext<typeof event>('study', 'ImagingStudy', resourceId2);
 
     const messagePayload = createFhircastMessagePayload(topic, event, [context1, context2]);
 
@@ -222,9 +222,9 @@ describe('createFhircastMessagePayload', () => {
     const topic = 'abc123';
     const event = 'patient-open';
     const resourceId1 = 'patient-123';
-    const context1 = createFhircastMessageContext<typeof event>('Patient', resourceId1);
+    const context1 = createFhircastMessageContext<typeof event>('patient', 'Patient', resourceId1);
     const resourceId2 = 'encounter-456';
-    const context2 = createFhircastMessageContext<typeof event>('Encounter', resourceId2);
+    const context2 = createFhircastMessageContext<typeof event>('encounter', 'Encounter', resourceId2);
 
     const messagePayload = createFhircastMessagePayload(topic, event, [context1, context2]);
 
@@ -259,8 +259,8 @@ describe('createFhircastMessagePayload', () => {
         123,
         'imagingstudy-open',
         [
-          createFhircastMessageContext<'imagingstudy-open'>('Patient', 'patient-123'),
-          createFhircastMessageContext<'imagingstudy-open'>('ImagingStudy', 'imagingstudy-123'),
+          createFhircastMessageContext<'imagingstudy-open'>('patient', 'Patient', 'patient-123'),
+          createFhircastMessageContext<'imagingstudy-open'>('study', 'ImagingStudy', 'imagingstudy-123'),
         ]
       )
     ).toThrowError(OperationOutcomeError);
@@ -273,8 +273,8 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid event, must be one of the enumerated FHIRcast events
         'imagingstudy-create',
         [
-          createFhircastMessageContext<'imagingstudy-open'>('Patient', 'patient-123'),
-          createFhircastMessageContext<'imagingstudy-open'>('ImagingStudy', 'imagingstudy-123'),
+          createFhircastMessageContext<'imagingstudy-open'>('patient', 'Patient', 'patient-123'),
+          createFhircastMessageContext<'imagingstudy-open'>('study', 'ImagingStudy', 'imagingstudy-123'),
         ]
       )
     ).toThrowError(OperationOutcomeError);
@@ -420,7 +420,7 @@ describe('FhircastConnection', () => {
     const message = createFhircastMessagePayload(
       'abc123',
       'patient-open',
-      createFhircastMessageContext<'patient-open'>('Patient', 'patient-123')
+      createFhircastMessageContext<'patient-open'>('patient', 'Patient', 'patient-123')
     ) satisfies FhircastMessagePayload<'patient-open'>;
 
     const handler = (event: FhircastMessageEvent): void => {

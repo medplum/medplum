@@ -14,6 +14,8 @@ export const FHIRCAST_EVENT_NAMES = {
   'encounter-close': 'encounter-close',
   'diagnosticreport-open': 'diagnosticreport-open',
   'diagnosticreport-close': 'diagnosticreport-close',
+  'diagnosticreport-select': 'diagnosticreport-select',
+  'diagnosticreport-update': 'diagnosticreport-update',
   syncerror: 'syncerror',
 } as const;
 
@@ -23,15 +25,17 @@ export const FHIRCAST_RESOURCE_TYPES = [
   'ImagingStudy',
   'DiagnosticReport',
   'OperationOutcome',
+  'Bundle',
 ] as const;
 
 export type FhircastEventName = keyof typeof FHIRCAST_EVENT_NAMES;
 export type FhircastResourceType = (typeof FHIRCAST_RESOURCE_TYPES)[number];
 
 export type FhircastEventContextDetails = {
-  resourceType: FhircastResourceType;
+  resourceType: FhircastResourceType | '*';
   optional?: boolean; // NOTE: optional here is only referring to the schema, the spec often mentions that these are required if available as references for a given anchor resource
   manyAllowed?: boolean;
+  isArray?: boolean;
 };
 
 // Key value pairs of { [FhircastEventName]: [required_resource1, required_resource2] }
@@ -76,6 +80,16 @@ export const FHIRCAST_EVENT_RESOURCES = {
     study: { resourceType: 'ImagingStudy', optional: true, manyAllowed: true },
     patient: { resourceType: 'Patient' },
   },
+  'diagnosticreport-select': {
+    report: { resourceType: 'DiagnosticReport' },
+    select: { resourceType: '*', isArray: true },
+  },
+  'diagnosticreport-update': {
+    report: { resourceType: 'DiagnosticReport' },
+    patient: { resourceType: 'Patient', optional: true },
+    study: { resourceType: 'ImagingStudy', optional: true },
+    updates: { resourceType: 'Bundle' },
+  },
   syncerror: {
     operationoutcome: { resourceType: 'OperationOutcome' },
   },
@@ -106,22 +120,6 @@ export type SubscriptionRequest = {
 
 export type PendingSubscriptionRequest = Omit<SubscriptionRequest, 'endpoint'>;
 
-export const FHIRCAST_CONTEXT_KEY_LOOKUP = {
-  study: 'ImagingStudy',
-  patient: 'Patient',
-  encounter: 'Encounter',
-  report: 'DiagnosticReport',
-  operationoutcome: 'OperationOutcome',
-} as const;
-
-export const FHIRCAST_CONTEXT_KEY_REVERSE_LOOKUP = {
-  ImagingStudy: 'study',
-  Patient: 'patient',
-  Encounter: 'encounter',
-  DiagnosticReport: 'report',
-  OperationOutcome: 'operationoutcome',
-} as const;
-
 export type FhircastEventContextMap<EventName extends FhircastEventName = FhircastEventName> =
   (typeof FHIRCAST_EVENT_RESOURCES)[EventName];
 export type FhircastEventContextKey<EventName extends FhircastEventName = FhircastEventName> =
@@ -130,25 +128,32 @@ export type FhircastEventContextKey<EventName extends FhircastEventName = Fhirca
 export type FhircastEventResourceType<
   EventName extends FhircastEventName = FhircastEventName,
   K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
-> = FhircastEventContextMap<EventName>[K] extends infer Ev extends FhircastEventContextDetails
-  ? Ev['resourceType']
+> = FhircastEventContextMap<EventName>[K] extends infer _Ev extends FhircastEventContextDetails
+  ? _Ev['resourceType']
   : never;
 
 export type FhircastEventResource<
   EventName extends FhircastEventName = FhircastEventName,
   K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
 > = FhircastEventContextMap<EventName>[K] extends infer _Ev extends FhircastEventContextDetails
-  ? Resource & { resourceType: FhircastEventResourceType<EventName, K>; id: string }
+  ? FhircastEventResourceType<EventName, K> extends '*'
+    ? Resource & { id: string }
+    : Resource & { resourceType: FhircastEventResourceType<EventName, K>; id: string }
   : never;
 
 export type FhircastEventContext<
   EventName extends FhircastEventName = FhircastEventName,
   K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
 > = FhircastEventContextMap<EventName>[K] extends infer _Ev extends FhircastEventContextDetails
-  ? {
-      key: K;
-      resource: FhircastEventResource<EventName, K>;
-    }
+  ? _Ev['isArray'] extends true
+    ? {
+        key: K;
+        resources: FhircastEventResource<EventName, K>[];
+      }
+    : {
+        key: K;
+        resource: FhircastEventResource<EventName, K>;
+      }
   : never;
 
 export type FhircastEventPayload<EventName extends FhircastEventName = FhircastEventName> = {
@@ -243,6 +248,62 @@ export function validateFhircastSubscriptionRequest(
 }
 
 /**
+ * Throws if the context resource type is invalid. Intended as a helper for `validateFhircastContexts` only.
+ *
+ * @param event - The `FHIRcast` event name associated with the provided contexts.
+ * @param key - The `FHIRcast` event context key to validate against.
+ * @param resource - The `FHIRcast` event context resource to validate for given key.
+ * @param i - The index of the current context in the context list.
+ * @param keySchema - Schema for given key for FHIRcast event.
+ */
+function validateSingleResourceContext<
+  EventName extends FhircastEventName,
+  K extends FhircastEventContextKey<EventName>,
+>(
+  event: EventName,
+  key: K,
+  resource: FhircastEventResource<EventName, K>,
+  i: number,
+  keySchema: FhircastEventContextDetails
+): void {
+  if (typeof resource !== 'object') {
+    throw new OperationOutcomeError(
+      validationError(
+        `context[${i}] is invalid. Context must contain a single valid FHIR resource! Resource is not an object.`
+      )
+    );
+  }
+  if (!(resource.id && typeof resource.id === 'string')) {
+    throw new OperationOutcomeError(
+      validationError(`context[${i}] is invalid. Resource must contain a valid string ID.`)
+    );
+  }
+  if (!resource.resourceType) {
+    throw new OperationOutcomeError(
+      validationError(`context[${i}] is invalid. Resource must contain a resource type. No resource type found.`)
+    );
+  }
+  const expectedResourceType = keySchema.resourceType;
+  // Make sure that resource is a valid type for this event if expected is not wildcard
+  if (expectedResourceType !== '*') {
+    if (!isFhircastResourceType(resource.resourceType as FhircastResourceType)) {
+      throw new OperationOutcomeError(
+        validationError(
+          `context[${i}] is invalid. Resource must contain a valid FHIRcast resource type. Resource type is not a known resource type.`
+        )
+      );
+    }
+    if (expectedResourceType && resource.resourceType !== expectedResourceType) {
+      throw new OperationOutcomeError(
+        validationError(
+          `context[${i}] is invalid. context[${i}] for the '${event}' event should contain resource of type ${expectedResourceType}.`
+        )
+      );
+    }
+  }
+}
+
+/**
  * Throws if the context is invalid. Intended as a helper for `validateFhircastContexts` only.
  *
  * @param event - The `FHIRcast` event name associated with the provided contexts.
@@ -262,45 +323,29 @@ function validateFhircastContext<EventName extends FhircastEventName>(
     throw new OperationOutcomeError(validationError(`context[${i}] is invalid. Context must contain a key.`));
   }
   keysSeen.set(context.key, (keysSeen.get(context.key) ?? 0) + 1);
-  if (typeof context.resource !== 'object') {
-    throw new OperationOutcomeError(
-      validationError(
-        `context[${i}] is invalid. Context must contain a single valid FHIR resource! Resource is not an object.`
-      )
-    );
-  }
-  if (!(context.resource.id && typeof context.resource.id === 'string')) {
-    throw new OperationOutcomeError(
-      validationError(`context[${i}] is invalid. Resource must contain a valid string ID.`)
-    );
-  }
-  if (!context.resource.resourceType) {
-    throw new OperationOutcomeError(
-      validationError(`context[${i}] is invalid. Resource must contain a resource type. No resource type found.`)
-    );
-  }
-  const resourceType = context.resource.resourceType;
-  if (!isFhircastResourceType(resourceType as FhircastResourceType)) {
-    throw new OperationOutcomeError(
-      validationError(
-        `context[${i}] is invalid. Resource must contain a valid FHIRcast resource type. Resource type is not a known resource type.`
-      )
-    );
-  }
-  // Make sure that resource is a valid type for this event
-  const expectedResourceType = keySchema.resourceType;
-  if (expectedResourceType && resourceType !== expectedResourceType) {
-    throw new OperationOutcomeError(
-      validationError(
-        `context[${i}] is invalid. context[${i}] for the '${event}' event should contain resource of type ${expectedResourceType}.`
-      )
-    );
-  }
-  const expectedKey = FHIRCAST_CONTEXT_KEY_REVERSE_LOOKUP[resourceType as FhircastResourceType];
-  if (expectedKey !== context.key) {
-    throw new OperationOutcomeError(
-      validationError(`context[${i}] is invalid. Context key for type ${resourceType} must be ${expectedKey}.`)
-    );
+
+  // Cases:
+  // 1. isArray, resourceType: *
+  //    Don't validate resource types, just check that they are resources
+  // 2. isArray, resourceType: not *
+  //    Validate all resources match resourceType
+  // 3. not isArray, resourceType: *
+  //    Validate that it is a resource
+  // not isArray, resourceType: not *
+  //    Validate that it matches expected resource type
+
+  if (!keySchema.isArray) {
+    // validateSingleResourceKey
+    validateSingleResourceContext(event, context.key, context.resource, i, keySchema);
+  } else {
+    // validateMultipleResourceKey
+    const { key, resources } = context as unknown as {
+      key: FhircastEventContextKey<EventName>;
+      resources: FhircastEventResource<EventName>[];
+    };
+    for (const resource of resources) {
+      validateSingleResourceContext(event, key, resource, i, keySchema);
+    }
   }
 }
 

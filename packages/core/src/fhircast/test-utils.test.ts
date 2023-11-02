@@ -5,7 +5,7 @@ import { createFhircastMessageContext } from './test-utils';
 describe('FHIRcast Test Utils', () => {
   describe('createFhircastMessageContext', () => {
     test('Valid inputs', () => {
-      expect(createFhircastMessageContext<'patient-open'>('Patient', 'patient-123')).toEqual<
+      expect(createFhircastMessageContext<'patient-open'>('patient', 'Patient', 'patient-123')).toEqual<
         FhircastEventContext<'patient-open'>
       >({
         key: 'patient',
@@ -15,7 +15,7 @@ describe('FHIRcast Test Utils', () => {
         },
       });
 
-      expect(createFhircastMessageContext<'imagingstudy-open'>('ImagingStudy', 'imagingstudy-456')).toEqual<
+      expect(createFhircastMessageContext<'imagingstudy-open'>('study', 'ImagingStudy', 'imagingstudy-456')).toEqual<
         FhircastEventContext<'imagingstudy-open'>
       >({
         key: 'study',
@@ -34,9 +34,13 @@ describe('FHIRcast Test Utils', () => {
         OperationOutcomeError
       );
       // @ts-expect-error Resource ID needs to be a string
-      expect(() => createFhircastMessageContext<'patient-open'>('Patient', 123)).toThrowError(OperationOutcomeError);
+      expect(() => createFhircastMessageContext<'patient-open'>('patient', 'Patient', 123)).toThrowError(
+        OperationOutcomeError
+      );
       // Resource ID needs a length
-      expect(() => createFhircastMessageContext<'patient-open'>('Patient', '')).toThrowError(OperationOutcomeError);
+      expect(() => createFhircastMessageContext<'patient-open'>('patient', 'Patient', '')).toThrowError(
+        OperationOutcomeError
+      );
     });
   });
 });

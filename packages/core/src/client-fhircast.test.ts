@@ -168,7 +168,7 @@ describe('FHIRcast', () => {
         client.fhircastPublish(
           'abc123',
           'patient-open',
-          createFhircastMessageContext<'patient-open'>('Patient', 'patient-123')
+          createFhircastMessageContext<'patient-open'>('patient', 'Patient', 'patient-123')
         )
       ).resolves;
       expect(fetch).toBeCalledWith(
@@ -183,8 +183,8 @@ describe('FHIRcast', () => {
       // Multiple contexts
       await expect(
         client.fhircastPublish('def456', 'imagingstudy-open', [
-          createFhircastMessageContext<'imagingstudy-open'>('Patient', 'patient-123'),
-          createFhircastMessageContext<'imagingstudy-open'>('ImagingStudy', 'imagingstudy-456'),
+          createFhircastMessageContext<'imagingstudy-open'>('patient', 'Patient', 'patient-123'),
+          createFhircastMessageContext<'imagingstudy-open'>('study', 'ImagingStudy', 'imagingstudy-456'),
         ])
       ).resolves;
       expect(fetch).toBeCalledWith(
@@ -199,8 +199,8 @@ describe('FHIRcast', () => {
       // 'diagnosticreport-open' requires both a report and a patient
       await expect(
         client.fhircastPublish('xyz-789', 'diagnosticreport-open', [
-          createFhircastMessageContext<'diagnosticreport-open'>('DiagnosticReport', 'report-987'),
-          createFhircastMessageContext<'diagnosticreport-open'>('Patient', 'patient-123'),
+          createFhircastMessageContext<'diagnosticreport-open'>('report', 'DiagnosticReport', 'report-987'),
+          createFhircastMessageContext<'diagnosticreport-open'>('patient', 'Patient', 'patient-123'),
         ])
       ).resolves;
       expect(fetch).toBeCalledWith(
@@ -221,7 +221,7 @@ describe('FHIRcast', () => {
         client.fhircastPublish(
           '',
           'patient-open',
-          createFhircastMessageContext<'patient-open'>('Patient', 'patient-123')
+          createFhircastMessageContext<'patient-open'>('patient', 'Patient', 'patient-123')
         )
       ).rejects.toBeInstanceOf(OperationOutcomeError);
       await expect(
@@ -229,8 +229,12 @@ describe('FHIRcast', () => {
         client.fhircastPublish('abc123', 'patient-open', {})
       ).rejects.toBeInstanceOf(OperationOutcomeError);
       await expect(
-        // @ts-expect-error Invalid event
-        client.fhircastPublish('abc123', 'random-event', createFhircastMessageContext('Patient', 'patient-123'))
+        client.fhircastPublish(
+          'abc123',
+          // @ts-expect-error Invalid event
+          'random-event',
+          createFhircastMessageContext<'patient-open'>('patient', 'Patient', 'patient-123')
+        )
       ).rejects.toBeInstanceOf(OperationOutcomeError);
 
       // 'diagnosticreport-open' requires both a report and a patient
@@ -238,7 +242,7 @@ describe('FHIRcast', () => {
         client.fhircastPublish(
           'xyz-789',
           'diagnosticreport-open',
-          createFhircastMessageContext<'diagnosticreport-open'>('DiagnosticReport', 'report-987')
+          createFhircastMessageContext<'diagnosticreport-open'>('report', 'DiagnosticReport', 'report-987')
         )
       ).rejects.toBeInstanceOf(OperationOutcomeError);
     });

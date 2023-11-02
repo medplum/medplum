@@ -30,6 +30,8 @@ publicRoutes.get('/.well-known/fhircast-configuration', (_req: Request, res: Res
       'encounter-close',
       'diagnosticreport-open',
       'diagnosticreport-close',
+      'diagnosticreport-select',
+      'diagnosticreport-update',
     ],
     getCurrentSupport: true,
     websocketSupport: true,
