@@ -4,6 +4,7 @@ import { copyFileSync, existsSync } from 'fs';
 import { defineConfig } from 'vite';
 import packageJson from './package.json' assert { type: 'json' };
 import { execSync } from 'child_process';
+import path from 'path';
 
 if (!existsSync('.env')) {
   copyFileSync('.env.defaults', '.env');
@@ -21,5 +22,10 @@ export default defineConfig({
   publicDir: 'static',
   build: {
     sourcemap: true,
+  },
+  resolve: {
+    alias: {
+      '@medplum/react': path.resolve(__dirname, '../react/src'),
+    },
   },
 });
