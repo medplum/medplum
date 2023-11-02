@@ -1889,7 +1889,7 @@ describe('FHIR Search', () => {
 
   test('Chained search on singlet columns', () =>
     withTestContext(async () => {
-      const observationCode = randomUUID();
+      const code = randomUUID();
       // Create linked resources
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
@@ -1897,12 +1897,12 @@ describe('FHIR Search', () => {
       const encounter = await systemRepo.createResource<Encounter>({
         resourceType: 'Encounter',
         status: 'finished',
-        class: { system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'AMB' },
+        class: { system: 'http://example.com/appt-type', code },
       });
       const observation = await systemRepo.createResource<Observation>({
         resourceType: 'Observation',
         status: 'final',
-        code: { coding: [{ system: 'http://example.com/lab-tests', code: observationCode }], text: 'Throat culture' },
+        code: { text: 'Throat culture' },
         subject: createReference(patient),
         encounter: createReference(encounter),
       });
@@ -1915,9 +1915,7 @@ describe('FHIR Search', () => {
       });
 
       const result = await systemRepo.search(
-        parseSearchDefinition(
-          `Patient?_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.code=${observationCode}`
-        )
+        parseSearchDefinition(`Patient?_has:Observation:subject:encounter:Encounter.class=${code}`)
       );
       expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
     }));
@@ -1930,7 +1928,7 @@ describe('FHIR Search', () => {
             `Patient?_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.specimen.parent.collected=2023`
           )
         )
-      ).rejects.toEqual(new Error('Search chains longer than five links are not supported'));
+      ).rejects.toEqual(new Error('Search chains longer than three links are not currently supported'));
     }));
 
   test.each([
