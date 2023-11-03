@@ -1,5 +1,5 @@
 import { MedplumClient } from '@medplum/core';
-import { polyfillMedplumWebAPIs } from '@medplum/expo-medplum-polyfills';
+import { polyfillMedplumWebAPIs } from '@medplum/expo-polyfills';
 import { MedplumProvider } from '@medplum/react-hooks';
 import Home from './Home';
 
