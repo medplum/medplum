@@ -11,7 +11,7 @@ type ExtendedExpoCrypto = typeof expoWebCrypto & {
   };
 };
 
-export function polyfillMedplumWebAPIs(medplum: MedplumClient): void {
+export function polyfillMedplumWebAPIs(): void {
   if (typeof window.crypto === 'undefined') {
     Object.assign(expoWebCrypto, {
       subtle: { digest: polyfilledDigest },
@@ -25,7 +25,7 @@ export function polyfillMedplumWebAPIs(medplum: MedplumClient): void {
   }
 
   if (typeof window.location === 'undefined') {
-    const locationUrl = new URL('/', medplum.getBaseUrl()) as URL & { assign: () => void };
+    const locationUrl = new URL('/', 'http://localhost:80') as URL & { assign: () => void };
     locationUrl.assign = () => {};
     Object.defineProperty(window, 'location', {
       value: locationUrl,

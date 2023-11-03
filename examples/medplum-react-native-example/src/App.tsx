@@ -20,7 +20,7 @@ const medplum = new MedplumClient({
 
 // This is a module to get the Medplum client working on React Native by polyfilling a few Web APIs that are missing from the React Native runtime
 // On web, this is a no-op
-polyfillMedplumWebAPIs(medplum);
+polyfillMedplumWebAPIs();
 
 export default function App(): JSX.Element {
   return (
