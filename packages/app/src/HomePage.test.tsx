@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
 import React, { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
-import { getDefaultFields, getNewResourceEndpoint } from './HomePage.utils';
+import { getDefaultFields, getNewResourceEndpoint, canCreate } from './HomePage.utils';
 
 async function setup(url = '/Patient', medplum = new MockClient()): Promise<void> {
   await act(async () => {
@@ -266,16 +266,25 @@ describe('HomePage', () => {
   });
 
   test.each([
-    ['Patient', false, '/Patient/new'],
-    ['Patient', true, '/Patient/new'],
-    ['Practitioner', false, '/Practitioner/new'],
-    ['Practitioner', true, '/Practitioner/new'],
+    ['Patient', '/Patient/new'],
+    ['Practitioner', '/Practitioner/new'],
 
-    ['Bot', false, ''],
-    ['Bot', true, '/admin/bots/new'],
-    ['ClientApplication', false, ''],
-    ['ClientApplication', true, '/admin/clients/new'],
-  ])('the endpoint for creating a resource %s, user is project admin: %s, should be => %s', (resource, isProjectAdmin, expected) => {
-    expect(getNewResourceEndpoint(resource, isProjectAdmin)).toBe(expected);
+    ['Bot', '/admin/bots/new'],
+    ['ClientApplication', '/admin/clients/new'],
+  ])('the endpoint for creating a resource %s, should be => %s', (resource, expected) => {
+    expect(getNewResourceEndpoint(resource)).toBe(expected);
+  });
+
+  test.each([
+    ['Patient', true, true],
+    ['Patient', false, true],
+    ['Practitioner', true, true],
+
+    ['Bot', true, true],
+    ['Bot', false, false],
+    ['ClientApplication', true, true],
+    ['ClientApplication', false, false],
+  ])('canCreate for Resource: %s, and user isProjectAdmin:%s should return => %s', (resource, isProjectAdmin, expected) => {
+    expect(canCreate(resource, isProjectAdmin)).toBe(expected);
   });
 });

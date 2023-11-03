@@ -114,26 +114,20 @@ export function saveLastSearch(search: SearchRequest): void {
   localStorage.setItem(search.resourceType + '-defaultSearch', JSON.stringify(search));
 }
 
-export function canCreate(resourceType: string): boolean {
-  return resourceType !== 'Bot' && resourceType !== 'ClientApplication';
+export function canCreate(resourceType: string, isProjectAdmin: boolean): boolean {
+  return (resourceType !== 'Bot' && resourceType !== 'ClientApplication') || isProjectAdmin;
 }
 
-export function getNewResourceEndpoint(resourceType: string, isProjectAdmin: boolean): string {
-  if (canCreate(resourceType)) {
-    return `/${resourceType}/new`;
+export function getNewResourceEndpoint(resourceType: string): string {
+  if (resourceType === 'Bot') {
+    return `/admin/bots/new`;
   }
 
-  if (isProjectAdmin) {
-    if (resourceType === 'Bot') {
-      return `/admin/bots/new`;
-    }
-
-    if (resourceType === 'ClientApplication') {
-      return `/admin/clients/new`;
-    }
+  if (resourceType === 'ClientApplication') {
+    return `/admin/clients/new`;
   }
 
-  return '';
+  return `/${resourceType}/new`;
 }
 
 export async function getTransactionBundle(search: SearchRequest, medplum: MedplumClient): Promise<Bundle> {
