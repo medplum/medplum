@@ -1,13 +1,6 @@
 import { Button, createStyles, Grid, Group, JsonInput, NativeSelect, Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
-  ContentType,
-  ContentTypeString,
-  isUUID,
-  MedplumClient,
-  normalizeErrorString,
-  PatchOperation,
-} from '@medplum/core';
+import { ContentType, isUUID, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
@@ -53,7 +46,7 @@ export function BotEditor(): JSX.Element | null {
   const [defaultCode, setDefaultCode] = useState<string>();
   const [fhirInput, setFhirInput] = useState(DEFAULT_FHIR_INPUT);
   const [hl7Input, setHl7Input] = useState(DEFAULT_HL7_INPUT);
-  const [contentType, setContentType] = useState<ContentTypeString>(ContentType.FHIR_JSON);
+  const [contentType, setContentType] = useState<string>(ContentType.FHIR_JSON);
   const { classes } = useStyles();
   const codeFrameRef = useRef<HTMLIFrameElement>(null);
   const outputFrameRef = useRef<HTMLIFrameElement>(null);
@@ -71,11 +64,11 @@ export function BotEditor(): JSX.Element | null {
 
   const getCode = useCallback(() => {
     return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getValue' });
-  }, [codeFrameRef]);
+  }, []);
 
   const getCodeOutput = useCallback(() => {
     return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getOutput' });
-  }, [codeFrameRef]);
+  }, []);
 
   const getSampleInput = useCallback(async () => {
     if (contentType === ContentType.FHIR_JSON) {
@@ -194,7 +187,7 @@ export function BotEditor(): JSX.Element | null {
               { label: 'FHIR', value: ContentType.FHIR_JSON },
               { label: 'HL7', value: ContentType.HL7_V2 },
             ]}
-            onChange={(e) => setContentType(e.currentTarget.value as ContentTypeString)}
+            onChange={(e) => setContentType(e.currentTarget.value)}
           />
           {contentType === ContentType.FHIR_JSON ? (
             <JsonInput value={fhirInput} onChange={(newValue) => setFhirInput(newValue)} minRows={15} />
