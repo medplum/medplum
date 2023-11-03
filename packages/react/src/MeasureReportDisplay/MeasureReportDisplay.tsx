@@ -12,11 +12,10 @@ export function MeasureReportDisplay(props: MeasureReportDisplayProps): JSX.Elem
   const medplum = useMedplum();
   const report = useResource(props.measureReport);
   const [measure, setMeasure] = React.useState<Measure | undefined>();
-
   useEffect(() => {
     medplum
-      .searchOne('Measure', `_id=${report?.measure}`)
-      .then((result) => {
+      .searchOne('Measure', { url: report?.measure })
+      .then((result: Measure) => {
         setMeasure(result);
       })
       .catch(console.log);
@@ -25,7 +24,6 @@ export function MeasureReportDisplay(props: MeasureReportDisplayProps): JSX.Elem
   if (!report) {
     return null;
   }
-
   return (
     <Box>
       {measure && <MeasureTitle measure={measure} />}

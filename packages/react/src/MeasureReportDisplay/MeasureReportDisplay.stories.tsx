@@ -1,59 +1,112 @@
 import { Meta } from '@storybook/react';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Document } from '../Document/Document';
 import { MeasureReportDisplay } from './MeasureReportDisplay';
+import { useMedplum } from '@medplum/react-hooks';
+import { Measure } from '@medplum/fhirtypes';
 
 export default {
   title: 'Medplum/MeasureReportDisplay',
   component: MeasureReportDisplay,
 } as Meta;
 
-export const Basic = (): JSX.Element => (
-  <Document>
-    <MeasureReportDisplay
-      measureReport={{
-        resourceType: 'MeasureReport',
-        id: 'basic-example',
-        group: [
-          {
-            id: 'group-1',
-            measureScore: {
-              value: 67,
-              unit: '%',
-            },
-          },
-        ],
-      }}
-    />
-  </Document>
-);
+function createMeasure(title: string, subtitle?: string): Measure {
+  return {
+    resourceType: 'Measure',
+    url: 'http://example.com',
+    title,
+    subtitle,
+  };
+}
 
-export const Multiple = (): JSX.Element => (
-  <Document>
-    <MeasureReportDisplay
-      measureReport={{
-        resourceType: 'MeasureReport',
-        id: 'basic-example',
-        group: [
-          {
-            id: 'group-1',
-            measureScore: {
-              value: 67,
-              unit: '%',
+export const Basic = (): JSX.Element => {
+  const medplum = useMedplum();
+  const [loaded, setLoaded] = React.useState(false);
+  const [measure, setMeasure] = React.useState<Measure | undefined>();
+
+  useEffect(() => {
+    (async (): Promise<boolean> => {
+      const newMeasure = await medplum.createResource(createMeasure('Test Measure', 'Test Subtitle'));
+      setMeasure(newMeasure);
+      return true;
+    })()
+      .then(setLoaded)
+      .catch(console.log);
+  }, [medplum, measure]);
+
+  if (!loaded) {
+    return <></>;
+  }
+
+  return (
+    <Document>
+      <MeasureReportDisplay
+        measureReport={{
+          resourceType: 'MeasureReport',
+          id: 'basic-example',
+          measure: measure?.url,
+          group: [
+            {
+              id: 'group-1',
+              measureScore: {
+                value: 67,
+                unit: '%',
+              },
             },
-          },
-          {
-            id: 'group-2',
-            measureScore: {
-              value: 50,
-              unit: 'ml',
+          ],
+        }}
+      />
+    </Document>
+  );
+};
+
+export const Multiple = (): JSX.Element => {
+  const medplum = useMedplum();
+  const [loaded, setLoaded] = React.useState(false);
+  const [measure, setMeasure] = React.useState<Measure | undefined>();
+
+  useEffect(() => {
+    (async (): Promise<boolean> => {
+      const newMeasure = await medplum.createResource(createMeasure('Multiple Measures', 'Multiple'));
+      setMeasure(newMeasure);
+      return true;
+    })()
+      .then(setLoaded)
+      .catch(console.log);
+  }, [medplum, measure]);
+
+  if (!loaded) {
+    return <></>;
+  }
+
+  return (
+    <Document>
+      <MeasureReportDisplay
+        measureReport={{
+          resourceType: 'MeasureReport',
+          id: 'basic-example',
+          measure: measure?.url,
+          group: [
+            {
+              id: 'group-1',
+              measureScore: {
+                value: 67,
+                unit: '%',
+              },
             },
-          },
-        ],
-      }}
-    />
-  </Document>
-);
+            {
+              id: 'group-2',
+              measureScore: {
+                value: 50,
+                unit: 'ml',
+              },
+            },
+          ],
+        }}
+      />
+    </Document>
+  );
+};
 
 export const WithPopulation = (): JSX.Element => (
   <Document>

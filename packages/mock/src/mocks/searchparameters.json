@@ -187,5 +187,14 @@
     "base": ["Task"],
     "type": "token",
     "expression": "Task.identifier"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Measure-url",
+    "name": "measure-url",
+    "code": "url",
+    "base": ["Measure"],
+    "type": "uri",
+    "expression": "Measure.url"
   }
 ]
