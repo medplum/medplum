@@ -1,4 +1,4 @@
-import type { MedplumClient } from '@medplum/core';
+import { MemoryStorage } from '@medplum/core';
 import { decode, encode } from 'base-64';
 import { CryptoDigestAlgorithm, digest } from 'expo-crypto';
 import expoWebCrypto from 'expo-standard-web-crypto';
@@ -37,7 +37,7 @@ export function polyfillMedplumWebAPIs(medplum: MedplumClient): void {
     Object.defineProperty(window, 'sessionStorage', {
       configurable: true,
       enumerable: true,
-      get: () => (_sessionStorage ??= new Storage()),
+      get: () => (_sessionStorage ??= new MemoryStorage()),
     });
   }
 
@@ -68,36 +68,4 @@ export function polyfillMedplumWebAPIs(medplum: MedplumClient): void {
 
 async function polyfilledDigest(algorithm: AlgorithmIdentifier, data: BufferSource): Promise<ArrayBuffer> {
   return digest(algorithm as CryptoDigestAlgorithm, data);
-}
-
-class Storage {
-  private data: Map<string, string>;
-
-  constructor() {
-    this.data = new Map<string, string>();
-  }
-
-  public key(n: number): string {
-    return Array.from(this.data.keys())[n];
-  }
-
-  public getItem(key: string): string | null {
-    return this.data.get(key) ?? null;
-  }
-
-  public get length(): number {
-    return this.data.size;
-  }
-
-  public setItem(key: string, value: any): void {
-    this.data.set(key, value.toString());
-  }
-
-  public removeItem(key: string): void {
-    this.data.delete(key);
-  }
-
-  public clear(): void {
-    this.data = new Map<string, string>();
-  }
 }
