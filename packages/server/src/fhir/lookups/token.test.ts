@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { bundleContains, withTestContext } from '../../test.setup';
-import { systemRepo } from '../repo';
+import { systemRepo, shouldCompareTokenValue, shouldTokenRowExist } from '../repo';
 
 describe('Identifier Lookup Table', () => {
   beforeAll(async () => {
@@ -472,4 +472,38 @@ describe('Identifier Lookup Table', () => {
       expect(bundleContains(searchResult1, sr1)).toBe(true);
       expect(bundleContains(searchResult1, sr2)).toBe(false);
     }));
+});
+describe('shouldCompareTokenValue function', () => {
+  test('should return true when both values are equal', () => {
+    expect(shouldCompareTokenValue('test', 'test')).toBe(true);
+  });
+
+  test('should return false when values are not equal', () => {
+    expect(shouldCompareTokenValue('test', 'test1')).toBe(false);
+  });
+
+  test('should return true when both values are undefined', () => {
+    expect(shouldCompareTokenValue(undefined, undefined)).toBe(true);
+  });
+
+  test('should return false when one value is undefined', () => {
+    expect(shouldCompareTokenValue('test', undefined)).toBe(false);
+    expect(shouldCompareTokenValue(undefined, 'test')).toBe(false);
+  });
+});
+
+describe('shouldTokenRowExist function', () => {
+  test('should return true when token row exists', () => {
+    const tokenRow = { code: 'test', system: 'test', value: 'test' };
+    expect(shouldTokenRowExist(tokenRow)).toBe(true);
+  });
+
+  test('should return false when token row does not exist', () => {
+    const tokenRow = { code: 'test', system: 'test', value: undefined };
+    expect(shouldTokenRowExist(tokenRow)).toBe(false);
+  });
+
+  test('should return false when token row is undefined', () => {
+    expect(shouldTokenRowExist(undefined)).toBe(false);
+  });
 });
