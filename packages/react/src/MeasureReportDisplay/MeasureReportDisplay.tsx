@@ -11,13 +11,15 @@ export interface MeasureReportDisplayProps {
 export function MeasureReportDisplay(props: MeasureReportDisplayProps): JSX.Element | null {
   const medplum = useMedplum();
   const report = useResource(props.measureReport);
-
-  const [measure] = React.useState<Measure | undefined>();
+  const [measure, setMeasure] = React.useState<Measure | undefined>();
 
   useEffect(() => {
-    medplum.search('Measure', report?.measure).then((results) => {
-      console.log(results);
-    });
+    medplum
+      .searchOne('Measure', `_id=${report?.measure}`)
+      .then((result) => {
+        setMeasure(result);
+      })
+      .catch(console.log);
   }, [medplum, report]);
 
   if (!report) {
@@ -26,7 +28,7 @@ export function MeasureReportDisplay(props: MeasureReportDisplayProps): JSX.Elem
 
   return (
     <Box>
-      {measure && <Title order={3}>{measure.title}</Title>}
+      {measure && <MeasureTitle measure={measure} />}
       <SimpleGrid cols={3} spacing={'xs'}>
         {report.group?.map((group: MeasureReportGroup) => <MeasureReportDisplayGroup key={group.id} group={group} />)}
       </SimpleGrid>
@@ -119,4 +121,15 @@ function setColor(score: number): string {
     return 'yellow';
   }
   return 'green';
+}
+
+function MeasureTitle(props: { measure: Measure }): JSX.Element {
+  const { measure } = props;
+  return (
+    <>
+      <Title order={3}>{measure.title}</Title>
+      <Title order={4}>{measure.subtitle}</Title>
+      <Text>{measure.date}</Text>
+    </>
+  );
 }
