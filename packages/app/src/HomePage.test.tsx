@@ -80,22 +80,11 @@ describe('HomePage', () => {
   });
 
   test('New button on Bot page', async () => {
-    const medplum = new MockClient();
-    medplum.setActiveLoginOverride({
-      accessToken: '123',
-      refreshToken: '456',
-      profile: {
-        reference: 'Practitioner/123',
-      },
-      project: {
-        reference: 'Project/123',
-      },
-    });
-
     const expectedPath = RESOURCE_TYPE_CREATION_PATHS['Bot'];
+    // check that Bot is still included in RESOURCE_TYPE_CREATION_PATHS
     expect(typeof expectedPath).toBe('string');
 
-    await setup(`/Bot`, medplum);
+    await setup(`/Bot`);
     await waitFor(() => screen.getByText('New...'));
 
     await act(async () => {
