@@ -122,8 +122,6 @@ export class TokenTable extends LookupTable<Token> {
 
     selectQuery.leftJoin(tableName, joinName, joinOnExpression);
 
-    // If the filter is "not equals", then we're looking for ID=null
-    // If the filter is "equals", then we're looking for ID!=null
     const sqlOperator = shouldTokenRowExist(filter) ? '!=' : '=';
     return new Condition(new Column(joinName, 'resourceId'), sqlOperator, null);
   }
@@ -212,7 +210,8 @@ function shouldCompareTokenValue(filter: Filter): boolean {
 function shouldTokenRowExist(filter: Filter): boolean {
   let shouldTokenExist = true;
   if (shouldCompareTokenValue(filter)) {
-    // If we are performing a "not equals" operation, then there will not be a row after performing the join
+    // If the filter is "not equals", then we're looking for ID=null
+    // If the filter is "equals", then we're looking for ID!=null
     if (filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS) {
       shouldTokenExist = false;
     }
