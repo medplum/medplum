@@ -221,10 +221,12 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction):void
   ctx.logger.info('Request served', 
   {
     receivedAt:start,
-    requestMethodAndPath: `${req.method}: ${req.path}`,
-    Duration: `${totalTime} ms`, 
-    IP: req.ip, status: res.statusCode, 
-    UA: req.get('User-Agent'),
-    Profile: userProfile
+    requestMethod: req.method,
+    path:req.path,
+    duration: `${totalTime} ms`, 
+    ip: req.ip, 
+    status: res.statusCode, 
+    ua: req.get('User-Agent'),
+    profile: userProfile
   });
 }
