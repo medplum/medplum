@@ -60,10 +60,9 @@ We recommend creating a `MockClient` at the beginning of each test, to avoid any
 The MockClient does not yet _perfectly_ replicate the functionality of the `MedplumClient` class, as this would require duplicating the entire server codebase. Some advanced functionality does not yet behave the same between `MockClient` and `MedplumClient`, including:
 
 - `medplum.graphql`
-- `medplum.executeBatch`
 - FHIR $ operations
 
-The Medplum team is working on bringing these features to parity as soon as possible. You can join our Github discussion [here](https://github.com/medplum/medplum/discussions/1218)
+The Medplum team is working on bringing these features to parity as soon as possible.
 
 :::
 
@@ -114,3 +113,54 @@ Many times, you'd like to make sure your Bot is [idempotent](https://en.wikipedi
 </details>
 
 :::
+
+### Creating Rich Test Data in Batches
+
+Creating individual test resources can be time consuming and tedious, so the `MockClient` also offers the ability to use batch requests to set up sample data.
+
+Batch requests use `Bundle` resources to make multiple API calls as part of a single HTTP request, and can be used to quickly create rich data for testing. See [here](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/deduplication/patient-data.json) for an example of a `Bundle` that can be used for a batch transaction.
+
+The `MockClient` offers the `executeBatch` helper function to easily execute batch requests and works in the same way that the standard Medplum Client does. For more details on how to make batch requests see the [FHIR Batch Requests docs](docs/fhir-datastore/fhir-batch-requests).
+
+<details><summary>Example: Creating a large set of patient data with a batch request</summary>
+
+```ts
+import patientData from './patient-data.json';
+
+interface TestContext {
+  medplum: MedplumClient;
+}
+
+// ...
+
+beforeEach<TestContext>(async (context) => {
+  context.medplum = new MockClient();
+  await context.medplum.executeBatch(patientData as Bundle);
+});
+
+test<TestContext>('Created RiskAssessment', async ({ medplum }) => {
+  // Read the patient
+  const patients = await medplum.searchResources('Patient', { given: 'Alex' });
+
+  await handler(medplum, { input: patients?.[0] as Patient, contentType: ContentType.FHIR_JSON, secrets: {} });
+
+  // We expect two risk assessments to be created for the two candidate matches
+  const riskAssessments = await medplum.searchResources('RiskAssessment');
+  expect(riskAssessments.length).toBe(2);
+  expect(riskAssessments.every((assessment) => resolveId(assessment.subject) === patients[0].id));
+});
+```
+
+</details>
+
+In this example we import the `patientData`, then create the `MockClient` and test data in the `beforeEach` function. The test data is created by calling `executeBatch` on our `patientData`, allowing us to create it in one HTTP request. The `beforeEach` function is an optimization that will run before each test, so you do not need to create the data as a part of every test.
+
+Once you have created your data, you can write your tests, passing the context in as `{ medplum }` for your argument. This test is checking that a `RiskAssessment` was created when looking for potential duplicate patients.
+
+### Using the Medplum CLI
+
+If you have a dev project that already has rich data, you can use the Mepdlum CLI to easily convert this data into test data.
+
+The Medplum CLI offers the optional `--as-transaction` flag when using the `medplum get` command. A `GET` request returns a 'Bundle' with `type=searchset`, but this flag will convert it to `type=transaction`.
+
+A transaction `Bundle` can be used directly in a batch request, and can be passed as an argument to `executeBatch` on your `MockClient`. This allows you to easily create test resoures from already existing data.
