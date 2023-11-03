@@ -1,7 +1,7 @@
-import { Flex, Group, Paper, RingProgress, SimpleGrid, Text, Title } from '@mantine/core';
-import { MeasureReport, MeasureReportGroup, Reference } from '@medplum/fhirtypes';
-import { useResource } from '@medplum/react-hooks';
-import React from 'react';
+import { Box, Flex, Group, Paper, RingProgress, SimpleGrid, Text, Title } from '@mantine/core';
+import { Measure, MeasureReport, MeasureReportGroup, Reference } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
+import React, { useEffect } from 'react';
 import { QuantityDisplay } from '../QuantityDisplay/QuantityDisplay';
 
 export interface MeasureReportDisplayProps {
@@ -9,15 +9,28 @@ export interface MeasureReportDisplayProps {
 }
 
 export function MeasureReportDisplay(props: MeasureReportDisplayProps): JSX.Element | null {
+  const medplum = useMedplum();
   const report = useResource(props.measureReport);
+
+  const [measure] = React.useState<Measure | undefined>();
+
+  useEffect(() => {
+    medplum.search('Measure', report?.measure).then((results) => {
+      console.log(results);
+    });
+  }, [medplum, report]);
+
   if (!report) {
     return null;
   }
 
   return (
-    <SimpleGrid cols={3} spacing={'xs'}>
-      {report.group?.map((group) => <MeasureReportDisplayGroup key={group.id} group={group} />)}
-    </SimpleGrid>
+    <Box>
+      {measure && <Title order={3}>{measure.title}</Title>}
+      <SimpleGrid cols={3} spacing={'xs'}>
+        {report.group?.map((group: MeasureReportGroup) => <MeasureReportDisplayGroup key={group.id} group={group} />)}
+      </SimpleGrid>
+    </Box>
   );
 }
 
