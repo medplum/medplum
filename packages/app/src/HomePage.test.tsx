@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
 import React, { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
-import { getDefaultFields } from './HomePage.utils';
+import { getDefaultFields, getNewResourceEndpoint } from './HomePage.utils';
 
 async function setup(url = '/Patient', medplum = new MockClient()): Promise<void> {
   await act(async () => {
@@ -79,11 +79,44 @@ describe('HomePage', () => {
     });
   });
 
-  test('New button hidden on Bot page', async () => {
-    await setup('/Bot');
+  test('New button hidden on Bot page for non admins', async () => {
+    const medplum = new MockClient()
+    jest.spyOn(medplum, 'isProjectAdmin').mockImplementation(() => false);
+
+    await setup('/Bot', medplum);
     await waitFor(() => screen.getByTestId('search-control'));
 
     expect(screen.queryByText('New...')).toBeNull();
+  });
+
+  test('New button is shown on Bot page for admins', async () => {
+    const medplum = new MockClient()
+    jest.spyOn(medplum, 'isProjectAdmin').mockImplementation(() => true);
+
+    await setup('/Bot', medplum);
+    await waitFor(() => screen.getByTestId('search-control'));
+
+    expect(screen.queryByText('New...')).not.toBeNull();
+  });
+
+  test('New button hidden on ClientApplication page for non admins', async () => {
+    const medplum = new MockClient()
+    jest.spyOn(medplum, 'isProjectAdmin').mockImplementation(() => false);
+
+    await setup('/ClientApplication', medplum);
+    await waitFor(() => screen.getByTestId('search-control'));
+
+    expect(screen.queryByText('New...')).toBeNull();
+  });
+
+  test('New button is shown on ClientApplication page for admins', async () => {
+    const medplum = new MockClient()
+    jest.spyOn(medplum, 'isProjectAdmin').mockImplementation(() => true);
+
+    await setup('/ClientApplication', medplum);
+    await waitFor(() => screen.getByTestId('search-control'));
+
+    expect(screen.queryByText('New...')).not.toBeNull();
   });
 
   test('Delete button, cancel', async () => {
@@ -230,5 +263,19 @@ describe('HomePage', () => {
 
     // Should still be on the home page
     expect(screen.getByTestId('search-control')).toBeInTheDocument();
+  });
+
+  test.each([
+    ['Patient', false, '/Patient/new'],
+    ['Patient', true, '/Patient/new'],
+    ['Practitioner', false, '/Practitioner/new'],
+    ['Practitioner', true, '/Practitioner/new'],
+
+    ['Bot', false, ''],
+    ['Bot', true, '/admin/bots/new'],
+    ['ClientApplication', false, ''],
+    ['ClientApplication', true, '/admin/clients/new'],
+  ])('the endpoint for creating a resource %s, user is project admin: %s, should be => %s', (resource, isProjectAdmin, expected) => {
+    expect(getNewResourceEndpoint(resource, isProjectAdmin)).toBe(expected);
   });
 });

@@ -118,6 +118,24 @@ export function canCreate(resourceType: string): boolean {
   return resourceType !== 'Bot' && resourceType !== 'ClientApplication';
 }
 
+export function getNewResourceEndpoint(resourceType: string, isProjectAdmin: boolean): string {
+  if (canCreate(resourceType)) {
+    return `/${resourceType}/new`;
+  }
+
+  if (isProjectAdmin) {
+    if (resourceType === 'Bot') {
+      return `/admin/bots/new`;
+    }
+
+    if (resourceType === 'ClientApplication') {
+      return `/admin/clients/new`;
+    }
+  }
+
+  return '';
+}
+
 export async function getTransactionBundle(search: SearchRequest, medplum: MedplumClient): Promise<Bundle> {
   const transactionBundleSearch: SearchRequest = {
     resourceType: search.resourceType,

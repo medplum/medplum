@@ -5,7 +5,7 @@ import { ResourceType } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { addSearchValues, canCreate, getTransactionBundle, saveLastSearch } from './HomePage.utils';
+import { addSearchValues, getNewResourceEndpoint, getTransactionBundle, saveLastSearch } from './HomePage.utils';
 import { exportJsonFile } from './utils';
 
 const useStyles = createStyles((theme) => {
@@ -50,6 +50,8 @@ export function HomePage(): JSX.Element {
     return <Loading />;
   }
 
+  const newEndpoint = getNewResourceEndpoint(search.resourceType, medplum.isProjectAdmin());
+
   return (
     <Paper shadow="xs" m="md" p="xs" className={classes.paper}>
       <MemoizedSearchControl
@@ -61,13 +63,7 @@ export function HomePage(): JSX.Element {
         onChange={(e) => {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }}
-        onNew={
-          canCreate(search.resourceType)
-            ? () => {
-                navigate(`/${search.resourceType}/new`);
-              }
-            : undefined
-        }
+        onNew={(newEndpoint) ? () => navigate(newEndpoint) : undefined}
         onExportCsv={() => {
           const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
           medplum
