@@ -1,12 +1,15 @@
 import WS from 'jest-websocket-mock';
 import {
+  FHIRCAST_EVENT_VERSION_REQUIRED,
   FhircastConnectEvent,
   FhircastConnection,
   FhircastDisconnectEvent,
   FhircastMessageEvent,
   FhircastMessagePayload,
   SubscriptionRequest,
+  assertContextVersionOptional,
   createFhircastMessagePayload,
+  isContextVersionRequired,
   serializeFhircastSubscriptionRequest,
   validateFhircastSubscriptionRequest,
 } from '.';
@@ -594,5 +597,27 @@ describe('FhircastConnection', () => {
           endpoint: 'ws://localhost:1234',
         })
     ).toThrowError(OperationOutcomeError);
+  });
+});
+
+describe('isContextVersionRequired', () => {
+  test('Version required: true', () => {
+    expect(FHIRCAST_EVENT_VERSION_REQUIRED.includes('diagnosticreport-update')).toEqual(true);
+    expect(isContextVersionRequired('diagnosticreport-update')).toEqual(true);
+  });
+  test('Version required: false', () => {
+    expect((FHIRCAST_EVENT_VERSION_REQUIRED as readonly string[]).includes('patient-open')).toEqual(false);
+    expect(isContextVersionRequired('patient-open')).toEqual(false);
+  });
+});
+
+describe('assertContextVersionOptional', () => {
+  test('Version optional: true', () => {
+    expect((FHIRCAST_EVENT_VERSION_REQUIRED as readonly string[]).includes('patient-open')).toEqual(false);
+    expect(() => assertContextVersionOptional('patient-open')).not.toThrow();
+  });
+  test('Version optional: false', () => {
+    expect(FHIRCAST_EVENT_VERSION_REQUIRED.includes('diagnosticreport-update')).toEqual(true);
+    expect(() => assertContextVersionOptional('diagnosticreport-update')).toThrowError(OperationOutcomeError);
   });
 });

@@ -42,9 +42,13 @@ import {
   FhircastConnection,
   FhircastEventContext,
   FhircastEventName,
+  FhircastEventVersionOptional,
+  FhircastEventVersionRequired,
   PendingSubscriptionRequest,
   SubscriptionRequest,
+  assertContextVersionOptional,
   createFhircastMessagePayload,
+  isContextVersionRequired,
   serializeFhircastSubscriptionRequest,
   validateFhircastSubscriptionRequest,
 } from './fhircast';
@@ -3104,14 +3108,42 @@ export class MedplumClient extends EventTarget {
    * @param topic - The topic to publish to. Usually a UUID.
    * @param event - The name of the event to publish an updated context for, ie. `patient-open`.
    * @param context - The updated context containing resources relevant to this event.
+   * @param versionId - The `versionId` of the `anchor context` of the given event. Used for `DiagnosticReport-update` event.
    * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
    */
-  async fhircastPublish<EventName extends FhircastEventName = FhircastEventName>(
+  async fhircastPublish<EventName extends FhircastEventVersionOptional>(
     topic: string,
     event: EventName,
-    context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[]
+    context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
+    versionId?: never
+  ): Promise<void>;
+
+  async fhircastPublish<RequiredVersionEvent extends FhircastEventVersionRequired>(
+    topic: string,
+    event: RequiredVersionEvent,
+    context: FhircastEventContext<RequiredVersionEvent> | FhircastEventContext<RequiredVersionEvent>[],
+    versionId: string
+  ): Promise<void>;
+
+  async fhircastPublish<EventName extends FhircastEventVersionRequired | FhircastEventVersionOptional>(
+    topic: string,
+    event: EventName,
+    context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
+    versionId?: string | undefined
   ): Promise<void> {
-    return this.post(`/fhircast/STU3/${topic}`, createFhircastMessagePayload(topic, event, context), ContentType.JSON);
+    if (isContextVersionRequired(event)) {
+      return this.post(
+        `/fhircast/STU3/${topic}`,
+        createFhircastMessagePayload<typeof event>(topic, event, context, versionId as string),
+        ContentType.JSON
+      );
+    }
+    assertContextVersionOptional(event);
+    return this.post(
+      `/fhircast/STU3/${topic}`,
+      createFhircastMessagePayload<typeof event>(topic, event, context),
+      ContentType.JSON
+    );
   }
 
   /**

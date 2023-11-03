@@ -30,6 +30,15 @@ export const FHIRCAST_RESOURCE_TYPES = [
 
 export const FHIRCAST_EVENT_VERSION_REQUIRED = ['diagnosticreport-update'] as const;
 export type FhircastEventVersionRequired = (typeof FHIRCAST_EVENT_VERSION_REQUIRED)[number];
+export type FhircastEventVersionOptional = Exclude<FhircastEventName, FhircastEventVersionRequired>;
+export function isContextVersionRequired(event: string): event is FhircastEventVersionRequired {
+  return (FHIRCAST_EVENT_VERSION_REQUIRED as readonly string[]).includes(event);
+}
+export function assertContextVersionOptional(event: string): asserts event is FhircastEventVersionOptional {
+  if ((FHIRCAST_EVENT_VERSION_REQUIRED as readonly string[]).includes(event)) {
+    throw new OperationOutcomeError(validationError(`'context.version' is required for '${event}'.`));
+  }
+}
 
 export type FhircastEventName = keyof typeof FHIRCAST_EVENT_NAMES;
 export type FhircastResourceType = (typeof FHIRCAST_RESOURCE_TYPES)[number];
@@ -422,6 +431,13 @@ function validateFhircastContexts<EventName extends FhircastEventName>(
  * @param versionId - The current `versionId` of the anchor context. For example, in `DiagnosticReport-update`, it's the `versionId` of the `DiagnosticReport`.
  * @returns A serializable `FhircastMessagePayload`.
  */
+export function createFhircastMessagePayload<EventName extends FhircastEventVersionOptional>(
+  topic: string,
+  event: EventName,
+  context: FhircastValidContextForEvent<EventName> | FhircastValidContextForEvent<EventName>[],
+  versionId?: never
+): FhircastMessagePayload<EventName>;
+
 export function createFhircastMessagePayload<EventName extends FhircastEventVersionRequired>(
   topic: string,
   event: EventName,
@@ -430,15 +446,8 @@ export function createFhircastMessagePayload<EventName extends FhircastEventVers
 ): FhircastMessagePayload<EventName>;
 
 export function createFhircastMessagePayload<
-  EventName extends Exclude<FhircastEventName, FhircastEventVersionRequired>,
+  EventName extends FhircastEventVersionOptional | FhircastEventVersionRequired,
 >(
-  topic: string,
-  event: EventName,
-  context: FhircastValidContextForEvent<EventName> | FhircastValidContextForEvent<EventName>[],
-  versionId?: never
-): FhircastMessagePayload<EventName>;
-
-export function createFhircastMessagePayload<EventName extends FhircastEventName>(
   topic: string,
   event: EventName,
   context: FhircastValidContextForEvent<EventName> | FhircastValidContextForEvent<EventName>[],
