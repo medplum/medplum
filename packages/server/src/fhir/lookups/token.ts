@@ -1,9 +1,11 @@
 import {
+  badRequest,
   evalFhirPathTyped,
   Operator as FhirOperator,
   Filter,
   getSearchParameterDetails,
   getSearchParameters,
+  OperationOutcomeError,
   PropertyType,
   SortRule,
   toTypedValue,
@@ -113,13 +115,16 @@ export class TokenTable extends LookupTable<Token> {
       new Condition(new Column(table, 'id'), '=', new Column(joinName, 'resourceId')),
       new Condition(new Column(joinName, 'code'), '=', filter.code),
     ]);
-    joinOnExpression.expressions.push(buildWhereExpression(joinName, filter));
+    const compareTokenValue = shouldCompareTokenValue(filter);
+    if (compareTokenValue) {
+      joinOnExpression.expressions.push(buildWhereExpression(joinName, filter));
+    }
+
     selectQuery.leftJoin(tableName, joinName, joinOnExpression);
 
     // If the filter is "not equals", then we're looking for ID=null
     // If the filter is "equals", then we're looking for ID!=null
-    const sqlOperator =
-      filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS ? '=' : '!=';
+    const sqlOperator = shouldTokenRowExist(filter) ? '!=' : '=';
     return new Condition(new Column(joinName, 'resourceId'), sqlOperator, null);
   }
 
@@ -179,6 +184,52 @@ function isIndexed(searchParam: SearchParameter, resourceType: string): boolean 
   // This is a "token" search parameter, but it is only "code", "string", or "boolean"
   // So we can use a simple column on the resource type table.
   return false;
+}
+
+/**
+ * Returns true if the filter value should be compared to the "value" column.
+ * Used to construct the join ON conditions
+ * @param filter - Filter applied to the token field
+ * @returns True if the filter value should be compared to the "value" column.
+ */
+function shouldCompareTokenValue(filter: Filter): boolean {
+  switch (filter.operator) {
+    case FhirOperator.MISSING:
+    case FhirOperator.IN:
+    case FhirOperator.NOT_IN:
+    case FhirOperator.IDENTIFIER:
+      return false;
+  }
+
+  return true;
+}
+
+/**
+ * Returns true if the filter requires a token row to exist AFTER the join has been performed
+ * @param filter - Filter applied to the token field
+ * @returns True if the filter requires a token row to exist AFTER the join has been performed
+ */
+function shouldTokenRowExist(filter: Filter): boolean {
+  let shouldTokenExist = true;
+  if (shouldCompareTokenValue(filter)) {
+    // If we are performing a "not equals" operation, then there will not be a row after performing the join
+    if (filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS) {
+      shouldTokenExist = false;
+    }
+  } else if (filter.operator === FhirOperator.MISSING) {
+    // Missing = true means that there should not be a row
+    switch (filter.value) {
+      case 'true':
+        shouldTokenExist = false;
+        break;
+      case 'false':
+        shouldTokenExist = true;
+        break;
+      default:
+        throw new OperationOutcomeError(badRequest("Search filter ':missing' must have a value of 'true' or 'false'"));
+    }
+  }
+  return shouldTokenExist;
 }
 
 /**
