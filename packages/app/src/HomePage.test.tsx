@@ -23,20 +23,9 @@ async function setup(url = '/Patient', medplum = new MockClient()): Promise<void
   });
 }
 
-const mockedNavigate = jest.fn();
-
 describe('HomePage', () => {
   beforeEach(() => {
     window.localStorage.clear();
-    // jest.spyOn(router, 'useNavigate').mockImplementation(() => navigate);
-    // jest.mock('react-router-dom', () => ({
-    //   ...(jest.requireActual('react-router-dom') as any), // technically it passes without this too, but I'm not sure if its there for other tests to use the real thing so I left it in
-    //   useNavigate: () => mockedNavigate,
-    // }));
-    // jest.mock('react-router-dom', () => ({
-    //   ...(jest.requireActual('react-router-dom') as any), // technically it passes without this too, but I'm not sure if its there for other tests to use the real thing so I left it in
-    //   useNavigate: () => mockedNavigate,
-    // }));
   });
 
   test('Renders default page', async () => {
@@ -103,16 +92,6 @@ describe('HomePage', () => {
       },
     });
 
-    // Object.defineProperty(window, 'location', {
-    //   value: { assign: jest.fn() },
-    //   writable: true,
-    // });
-
-    // jest.mock('react-router-dom', () => ({
-    //   ...(jest.requireActual('react-router-dom') as any), // technically it passes without this too, but I'm not sure if its there for other tests to use the real thing so I left it in
-    //   useNavigate: () => mockedNavigate,
-    // }));
-
     const expectedPath = RESOURCE_TYPE_CREATION_PATHS['Bot'];
     expect(typeof expectedPath).toBe('string');
 
@@ -124,15 +103,6 @@ describe('HomePage', () => {
     });
 
     expect(screen.getByText('Create new Bot')).toBeInTheDocument();
-
-    // await waitFor(() => expect(window.location.assign).toHaveBeenCalled());
-    // expect(window.location.assign).toHaveBeenCalled();
-
-    // expect(location.pathname).toEqual(expectedPath);
-    // expect(window.location.pathname).toEqual(expectedPath);
-
-    // await waitFor(() => expect(mockedNavigate).toHaveBeenCalledWith(expectedPath));
-    // expect(mockedNavigate).toHaveBeenCalledWith(expectedPath);
   });
 
   test('Delete button, cancel', async () => {
