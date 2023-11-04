@@ -1,11 +1,6 @@
-# expo-medplum-polyfills
+# @medplum/expo-polyfills
 
 A module for polyfilling the minimum necessary web APIs for using the Medplum client on React Native
-
-# API documentation
-
-- [Documentation for the main branch](https://github.com/expo/expo/blob/main/docs/pages/versions/unversioned/sdk/medplum-polyfills.md)
-- [Documentation for the latest stable release](https://docs.expo.dev/versions/latest/sdk/medplum-polyfills/)
 
 # Installation in managed Expo projects
 
@@ -18,7 +13,7 @@ For bare React Native projects, you must ensure that you have [installed and con
 ### Add the package to your npm dependencies
 
 ```
-npm install expo-medplum-polyfills
+npm install @medplum/expo-polyfills
 ```
 
 # Contributing
