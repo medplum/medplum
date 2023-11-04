@@ -197,9 +197,9 @@ function shouldCompareTokenValue(filter: Filter): boolean {
     case FhirOperator.NOT_IN:
     case FhirOperator.IDENTIFIER:
       return false;
+    default:
+      return true;
   }
-
-  return true;
 }
 
 /**
