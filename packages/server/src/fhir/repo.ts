@@ -615,9 +615,11 @@ export class Repository extends BaseRepository implements FhirRepository {
     const client = await getClient().connect();
     try {
       await client.query('BEGIN');
-      await this.writeResource(client, resource);
-      await this.writeResourceVersion(client, resource);
-      await this.writeLookupTables(client, resource);
+      await Promise.all([
+        this.writeResource(client, resource),
+        this.writeResourceVersion(client, resource),
+        this.writeLookupTables(client, resource),
+      ]);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
@@ -787,8 +789,10 @@ export class Repository extends BaseRepository implements FhirRepository {
     const client = await getClient().connect();
     try {
       await client.query('BEGIN');
-      await this.writeResource(client, resource);
-      await this.writeLookupTables(client, resource);
+      await Promise.all([
+        this.writeResource(client, resource),
+        this.writeLookupTables(client, resource),
+      ]);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
