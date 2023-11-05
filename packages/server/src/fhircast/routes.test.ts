@@ -199,4 +199,33 @@ describe('FHIRCast routes', () => {
       event: { ...payload.event, 'context.versionId': expect.any(String) },
     });
   });
+
+  test('`DiagnosticReport-update`: `context.priorVersionId` matches prior `context.versionId`', async () => {
+    const context = [
+      { key: 'report', resource: { id: 'abc-123', resourceType: 'DiagnosticReport' } },
+      { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle' } },
+    ] satisfies FhircastEventContext<'diagnosticreport-update'>[];
+
+    const versionId = randomUUID();
+    const payload = createFhircastMessagePayload('my-topic', 'diagnosticreport-update', context, versionId);
+
+    const publishRes = await request(app)
+      .post('/fhircast/STU3/my-topic')
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(payload);
+    expect(publishRes.status).toBe(201);
+
+    const latestEventStr = (await getRedis().get('::fhircast::my-topic::latest::')) as string;
+    expect(latestEventStr).toBeTruthy();
+    const latestEvent = JSON.parse(latestEventStr) as FhircastEventPayload<'diagnosticreport-update'>;
+    expect(latestEvent).toMatchObject({
+      ...payload,
+      event: {
+        ...payload.event,
+        'context.priorVersionId': versionId,
+        'context.versionId': expect.any(String),
+      },
+    });
+  });
 });
