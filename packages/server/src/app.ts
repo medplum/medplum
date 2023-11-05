@@ -207,26 +207,25 @@ export async function shutdownApp(): Promise<void> {
   }
 }
 
-const loggingMiddleware = (req: Request, res: Response, next: NextFunction):void=>{
+const loggingMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const ctx = getRequestContext();
   const start = new Date();
   next();
   const afterNext = new Date().getTime(); // Record the time after next() completes
-  const totalTime = afterNext - start.getTime(); // Calculate the time taken including the time spent in next()  
+  const totalTime = afterNext - start.getTime(); // Calculate the time taken including the time spent in next()
   let userProfile: string | undefined;
   if (ctx instanceof AuthenticatedRequestContext) {
     userProfile = ctx.profile.reference;
   }
 
-  ctx.logger.info('Request served', 
-  {
-    receivedAt:start,
+  ctx.logger.info('Request served', {
+    receivedAt: start,
     requestMethod: req.method,
-    path:req.path,
-    duration: `${totalTime} ms`, 
-    ip: req.ip, 
-    status: res.statusCode, 
+    path: req.path,
+    duration: `${totalTime} ms`,
+    ip: req.ip,
+    status: res.statusCode,
     ua: req.get('User-Agent'),
-    profile: userProfile
+    profile: userProfile,
   });
-}
+};
