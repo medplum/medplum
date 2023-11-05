@@ -11,7 +11,7 @@ import { inflateBaseSchema } from '../base-schema';
 import baseSchema from '../base-schema.json';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, serverError } from '../outcomes';
-import { getElementDefinitionTypeName, isResourceTypeSchema, TypedValue } from '../types';
+import { TypedValue, getElementDefinitionTypeName, isResourceTypeSchema } from '../types';
 import { capitalize, isEmpty } from '../utils';
 
 /**
@@ -183,7 +183,7 @@ class StructureDefinitionParser {
       name: sd.name as ResourceType,
       url: sd.url as string,
       kind: sd.kind,
-      description: sd.description,
+      description: getDescription(sd),
       elements: {},
       constraints: this.parseElementDefinition(this.root).constraints,
       innerTypes: [],
@@ -502,4 +502,18 @@ function hasDefaultExtensionSlice(element: ElementDefinition): boolean {
       discriminators[0].type === 'value' &&
       discriminators[0].path === 'url'
   );
+}
+
+function getDescription(sd: StructureDefinition): string | undefined {
+  let result = sd.description;
+
+  // Many description strings start with an unwanted prefix "Base StructureDefinition for X Type: "
+  // For example:
+  // Base StructureDefinition for Age Type: A duration of time during which an organism (or a process) has existed.
+  // If the description starts with the name of the resource type, remove it.
+  if (result?.startsWith(`Base StructureDefinition for ${sd.name} Type: `)) {
+    result = result.substring(`Base StructureDefinition for ${sd.name} Type: `.length);
+  }
+
+  return result;
 }

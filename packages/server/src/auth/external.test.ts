@@ -1,4 +1,5 @@
-import { ClientApplication, DomainConfiguration, ProjectMembership, User } from '@medplum/fhirtypes';
+import { OAuthTokenAuthMethod } from '@medplum/core';
+import { ClientApplication, DomainConfiguration, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import fetch from 'node-fetch';
@@ -8,8 +9,8 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { registerNew } from './register';
 import { withTestContext } from '../test.setup';
+import { registerNew } from './register';
 
 jest.mock('node-fetch');
 
@@ -19,9 +20,17 @@ const email = `text@${domain}`;
 const domain2 = randomUUID() + '.example.com';
 const redirectUri = `https://${domain}/auth/callback`;
 const externalId = `google-oauth2|${randomUUID()}`;
+const identityProvider = {
+  authorizeUrl: 'https://example.com/oauth2/authorize',
+  tokenUrl: 'https://example.com/oauth2/token',
+  userInfoUrl: 'https://example.com/oauth2/userinfo',
+  clientId: '123',
+  clientSecret: '456',
+};
+
+let project: Project;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
-let subjectAuthClient: ClientApplication;
 
 describe('External', () => {
   beforeAll(() =>
@@ -30,7 +39,7 @@ describe('External', () => {
       await initApp(app, config);
 
       // Create a new project
-      const { project, client } = await registerNew({
+      const registerResult = await registerNew({
         firstName: 'External',
         lastName: 'Text',
         projectName: 'External Test Project',
@@ -39,15 +48,8 @@ describe('External', () => {
         remoteAddress: '5.5.5.5',
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
       });
-      defaultClient = client;
-
-      const identityProvider = {
-        authorizeUrl: 'https://example.com/oauth2/authorize',
-        tokenUrl: 'https://example.com/oauth2/token',
-        userInfoUrl: 'https://example.com/oauth2/userinfo',
-        clientId: '123',
-        clientSecret: '456',
-      };
+      project = registerResult.project;
+      defaultClient = registerResult.client;
 
       // Create a domain configuration with external identity provider
       await systemRepo.createResource<DomainConfiguration>({
@@ -73,22 +75,6 @@ describe('External', () => {
       await systemRepo.updateResource<ClientApplication>({
         ...externalAuthClient,
         identityProvider,
-      });
-
-      // Create a new client application with external subject auth
-      subjectAuthClient = await createClient(systemRepo, {
-        project,
-        name: 'Subject Auth Client',
-        redirectUri,
-      });
-
-      // Update client application with external auth
-      await systemRepo.updateResource<ClientApplication>({
-        ...subjectAuthClient,
-        identityProvider: {
-          ...identityProvider,
-          useSubject: true,
-        },
       });
 
       // Invite user with external ID
@@ -325,6 +311,26 @@ describe('External', () => {
   });
 
   test('Subject auth success', async () => {
+    const subjectAuthClient = await withTestContext(async () => {
+      // Create a new client application with external subject auth
+      const client = await createClient(systemRepo, {
+        project,
+        name: 'Subject Auth Client',
+        redirectUri,
+      });
+
+      // Update client application with external auth
+      await systemRepo.updateResource<ClientApplication>({
+        ...client,
+        identityProvider: {
+          ...identityProvider,
+          useSubject: true,
+        },
+      });
+
+      return client;
+    });
+
     const url = appendQueryParams('/auth/external', {
       code: randomUUID(),
       state: JSON.stringify({
@@ -357,6 +363,62 @@ describe('External', () => {
       code_verifier: 'xyz',
     });
     expect(tokenResponse.body.profile.display).toBe('External User');
+  });
+
+  test('Client secret post', async () => {
+    const clientSecretPostClient = await withTestContext(async () => {
+      // Create a new client application with external subject auth
+      const client = await createClient(systemRepo, {
+        project,
+        name: 'Client secret post Client',
+        redirectUri,
+      });
+
+      // Update client application with external auth
+      await systemRepo.updateResource<ClientApplication>({
+        ...client,
+        identityProvider: {
+          ...identityProvider,
+          tokenAuthMethod: OAuthTokenAuthMethod.ClientSecretPost,
+        },
+      });
+
+      return client;
+    });
+
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      // state: JSON.stringify({ redirectUri, clientId: externalAuthClient.id }),
+      state: JSON.stringify({
+        redirectUri,
+        clientId: clientSecretPostClient.id,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      }),
+    });
+
+    // Mock the external identity provider
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      json: () => buildTokens(email),
+    }));
+
+    // Simulate the external identity provider callback
+    const res = await request(app).get(url);
+    expect(res.status).toBe(302);
+
+    const redirect = new URL(res.header.location);
+    expect(redirect.host).toEqual(domain);
+    expect(redirect.pathname).toEqual('/auth/callback');
+    expect(redirect.searchParams.get('code')).toBeTruthy();
+
+    const code = redirect.searchParams.get('code');
+    const tokenResponse = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code,
+      code_verifier: 'xyz',
+    });
+    expect(tokenResponse.body.profile.display).toBe('External Text');
   });
 
   test('Legacy User.externalId support', async () => {

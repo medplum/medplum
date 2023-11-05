@@ -19,6 +19,13 @@ export interface IdentityProvider {
   tokenUrl?: string;
 
   /**
+   * Client Authentication method used by Clients to authenticate to the
+   * Authorization Server when using the Token Endpoint. If no method is
+   * registered, the default method is client_secret_basic.
+   */
+  tokenAuthMethod?: 'client_secret_basic' | 'client_secret_post';
+
+  /**
    * Remote URL for the external Identity Provider userinfo endpoint.
    */
   userInfoUrl?: string;
