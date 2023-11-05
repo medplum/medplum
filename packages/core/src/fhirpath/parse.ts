@@ -220,7 +220,7 @@ const fhirPathParserBuilder = initFhirPathParserBuilder();
  * The result can be used to evaluate the expression against a resource or other object.
  * This method is useful if you know that you will evaluate the same expression many times
  * against different resources.
- * @param input The FHIRPath expression to parse.
+ * @param input - The FHIRPath expression to parse.
  * @returns The AST representing the expression.
  */
 export function parseFhirPath(input: string): FhirPathAtom {
@@ -229,8 +229,8 @@ export function parseFhirPath(input: string): FhirPathAtom {
 
 /**
  * Evaluates a FHIRPath expression against a resource or other object.
- * @param expression The FHIRPath expression to parse.
- * @param input The resource or object to evaluate the expression against.
+ * @param expression - The FHIRPath expression to parse.
+ * @param input - The resource or object to evaluate the expression against.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
 export function evalFhirPath(expression: string, input: unknown): unknown[] {
@@ -248,9 +248,9 @@ export function evalFhirPath(expression: string, input: unknown): unknown[] {
 
 /**
  * Evaluates a FHIRPath expression against a resource or other object.
- * @param expression The FHIRPath expression to parse.
- * @param input The resource or object to evaluate the expression against.
- * @param variables A map of variables for eval input.
+ * @param expression - The FHIRPath expression to parse.
+ * @param input - The resource or object to evaluate the expression against.
+ * @param variables - A map of variables for eval input.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
 export function evalFhirPathTyped(

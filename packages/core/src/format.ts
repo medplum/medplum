@@ -29,8 +29,8 @@ export interface HumanNameFormatOptions {
 
 /**
  * Formats a FHIR Address as a string.
- * @param address The address to format.
- * @param options Optional address format options.
+ * @param address - The address to format.
+ * @param options - Optional address format options.
  * @returns The formatted address string.
  */
 export function formatAddress(address: Address, options?: AddressFormatOptions): string {
@@ -63,8 +63,8 @@ export function formatAddress(address: Address, options?: AddressFormatOptions):
 
 /**
  * Formats a FHIR HumanName as a string.
- * @param name The name to format.
- * @param options Optional name format options.
+ * @param name - The name to format.
+ * @param options - Optional name format options.
  * @returns The formatted name string.
  */
 export function formatHumanName(name: HumanName, options?: HumanNameFormatOptions): string {
@@ -99,7 +99,7 @@ export function formatHumanName(name: HumanName, options?: HumanNameFormatOption
 
 /**
  * Formats the given name portion of a FHIR HumanName element.
- * @param name The name to format.
+ * @param name - The name to format.
  * @returns The formatted given name string.
  */
 export function formatGivenName(name: HumanName): string {
@@ -112,7 +112,7 @@ export function formatGivenName(name: HumanName): string {
 
 /**
  * Formats the family name portion of a FHIR HumanName element.
- * @param name The name to format.
+ * @param name - The name to format.
  * @returns The formatted family name string.
  */
 export function formatFamilyName(name: HumanName): string {
@@ -122,7 +122,7 @@ export function formatFamilyName(name: HumanName): string {
 /**
  * Returns true if the given date object is a valid date.
  * Dates can be invalid if created by parsing an invalid string.
- * @param date A date object.
+ * @param date - A date object.
  * @returns Returns true if the date is a valid date.
  */
 export function isValidDate(date: Date): boolean {
@@ -132,9 +132,9 @@ export function isValidDate(date: Date): boolean {
 /**
  * Formats a FHIR date string as a human readable string.
  * Handles missing values and invalid dates.
- * @param date The date to format.
- * @param locales Optional locales.
- * @param options Optional date format options.
+ * @param date - The date to format.
+ * @param locales - Optional locales.
+ * @param options - Optional date format options.
  * @returns The formatted date string.
  */
 export function formatDate(
@@ -156,9 +156,9 @@ export function formatDate(
 /**
  * Formats a FHIR time string as a human readable string.
  * Handles missing values and invalid dates.
- * @param time The date to format.
- * @param locales Optional locales.
- * @param options Optional time format options.
+ * @param time - The date to format.
+ * @param locales - Optional locales.
+ * @param options - Optional time format options.
  * @returns The formatted time string.
  */
 export function formatTime(
@@ -179,9 +179,9 @@ export function formatTime(
 /**
  * Formats a FHIR dateTime string as a human readable string.
  * Handles missing values and invalid dates.
- * @param dateTime The dateTime to format.
- * @param locales Optional locales.
- * @param options Optional dateTime format options.
+ * @param dateTime - The dateTime to format.
+ * @param locales - Optional locales.
+ * @param options - Optional dateTime format options.
  * @returns The formatted dateTime string.
  */
 export function formatDateTime(
@@ -201,9 +201,9 @@ export function formatDateTime(
 
 /**
  * Formats a FHIR Period as a human readable string.
- * @param period The period to format.
- * @param locales Optional locales.
- * @param options Optional period format options.
+ * @param period - The period to format.
+ * @param locales - Optional locales.
+ * @param options - Optional period format options.
  * @returns The formatted period string.
  */
 export function formatPeriod(
@@ -249,7 +249,7 @@ const pluralUnits: Record<string, string> = {
 
 /**
  * Formats a FHIR Timing as a human readable string.
- * @param timing The timing to format.
+ * @param timing - The timing to format.
  * @returns The formatted timing string.
  */
 export function formatTiming(timing: Timing | undefined): string {
@@ -269,8 +269,8 @@ export function formatTiming(timing: Timing | undefined): string {
 
 /**
  * Formats a FHIR Timing repeat element as a human readable string.
- * @param builder The output string builder.
- * @param repeat The timing repeat element.
+ * @param builder - The output string builder.
+ * @param repeat - The timing repeat element.
  */
 function formatTimingRepeat(builder: string[], repeat: TimingRepeat | undefined): void {
   if (!repeat?.periodUnit) {
@@ -309,9 +309,9 @@ function formatTimingRepeat(builder: string[], repeat: TimingRepeat | undefined)
 
 /**
  * Returns a human-readable string for a FHIR Range datatype, taking into account one-sided ranges
- * @param range A FHIR Range element
- * @param precision Number of decimal places to display in the rendered quantity values
- * @param exclusive If true, one-sided ranges will be rendered with the '>' or '<' bounds rather than '>=' or '<='
+ * @param range - A FHIR Range element
+ * @param precision - Number of decimal places to display in the rendered quantity values
+ * @param exclusive - If true, one-sided ranges will be rendered with the `>` or `<` bounds rather than `>=` or `<=`
  * @returns A human-readable string representation of the Range
  */
 export function formatRange(range: Range | undefined, precision?: number, exclusive = false): string {
@@ -352,8 +352,8 @@ export function formatRange(range: Range | undefined, precision?: number, exclus
 
 /**
  * Returns a human-readable string for a FHIR Quantity datatype, taking into account units and comparators
- * @param quantity A FHIR Quantity element
- * @param precision Number of decimal places to display in the rendered quantity values
+ * @param quantity - A FHIR Quantity element
+ * @param precision - Number of decimal places to display in the rendered quantity values
  * @returns A human-readable string representation of the Quantity
  */
 export function formatQuantity(quantity: Quantity | undefined, precision?: number): string {
@@ -400,7 +400,7 @@ export function formatMoney(money: Money | undefined): string {
 
 /**
  * Formats a CodeableConcept element as a string.
- * @param codeableConcept A FHIR CodeableConcept element
+ * @param codeableConcept - A FHIR CodeableConcept element
  * @returns The codeable concept as a string.
  */
 export function formatCodeableConcept(codeableConcept: CodeableConcept | undefined): string {
@@ -418,7 +418,7 @@ export function formatCodeableConcept(codeableConcept: CodeableConcept | undefin
 
 /**
  * Formats a Coding element as a string.
- * @param coding A FHIR Coding element
+ * @param coding - A FHIR Coding element
  * @returns The coding as a string.
  */
 export function formatCoding(coding: Coding | undefined): string {
@@ -427,7 +427,7 @@ export function formatCoding(coding: Coding | undefined): string {
 
 /**
  * Formats a FHIR Observation resource value as a string.
- * @param obs A FHIR Observation resource.
+ * @param obs - A FHIR Observation resource.
  * @returns A human-readable string representation of the Observation.
  */
 export function formatObservationValue(obs: Observation | ObservationComponent | undefined): string {
@@ -456,9 +456,9 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
 
 /**
  * Returns the input number increased by the `n` units of the specified precision
- * @param a The input number.
- * @param precision The precision in number of digits.
- * @param n (default 1) The number of units to add.
+ * @param a - The input number.
+ * @param precision - The precision in number of digits.
+ * @param n - (default 1) The number of units to add.
  * @returns The result of the increment.
  */
 function preciseIncrement(a: number, precision: number, n = 1): number {
@@ -467,9 +467,9 @@ function preciseIncrement(a: number, precision: number, n = 1): number {
 
 /**
  * Returns the input number decreased by the `n` units of the specified precision
- * @param a The input number.
- * @param precision The precision in number of digits.
- * @param n (default 1) The number of units to subtract.
+ * @param a - The input number.
+ * @param precision - The precision in number of digits.
+ * @param n - (default 1) The number of units to subtract.
  * @returns The result of the decrement.
  */
 function preciseDecrement(a: number, precision: number, n = 1): number {
@@ -479,8 +479,8 @@ function preciseDecrement(a: number, precision: number, n = 1): number {
 /**
  * Returns an integer representation of the number with the given precision.
  * For example, if precision is 2, then 1.2345 will be returned as 123.
- * @param a The number.
- * @param precision Optional precision in number of digits.
+ * @param a - The number.
+ * @param precision - Optional precision in number of digits.
  * @returns The integer with the given precision.
  */
 function toPreciseInteger(a: number, precision?: number): number {

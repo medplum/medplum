@@ -607,6 +607,51 @@
           ]
         }
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/token-endpoint-auth-methods-supported",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "token-endpoint-auth-methods-supported",
+        "url": "https://medplum.com/fhir/CodeSystem/token-endpoint-auth-methods-supported",
+        "name": "OAuth2TokenEndpointAuthMethodsSupported",
+        "title": "OAuth 2.0 Token Endpoint Authentication Methods",
+        "status": "active",
+        "description": "Client Authentication methods that are used by Clients to authenticate to the Authorization Server when using the Token Endpoint. During Client Registration, the RP (Client) MAY register a Client Authentication method. If no method is registered, the default method is client_secret_basic.",
+        "valueSet": "https://medplum.com/fhir/ValueSet/token-endpoint-auth-methods-supported",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "client_secret_basic",
+            "display": "client_secret_basic",
+            "definition": "Clients that have received a client_secret value from the Authorization Server authenticate with the Authorization Server in accordance with Section 2.3.1 of OAuth 2.0 RFC6749 using the HTTP Basic authentication scheme."
+          },
+          {
+            "code": "client_secret_post",
+            "display": "client_secret_post",
+            "definition": "Clients that have received a client_secret value from the Authorization Server, authenticate with the Authorization Server in accordance with Section 2.3.1 of OAuth 2.0 [RFC6749] by including the Client Credentials in the request body."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/token-endpoint-auth-methods-supported",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "token-endpoint-auth-methods-supported",
+        "url": "https://medplum.com/fhir/ValueSet/token-endpoint-auth-methods-supported",
+        "name": "OAuth2TokenEndpointAuthMethodsSupported",
+        "title": "OAuth 2.0 Token Endpoint Authentication Methods",
+        "status": "active",
+        "description": "Client Authentication methods that are used by Clients to authenticate to the Authorization Server when using the Token Endpoint. During Client Registration, the RP (Client) MAY register a Client Authentication method. If no method is registered, the default method is client_secret_basic.",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/token-endpoint-auth-methods-supported"
+            }
+          ]
+        }
+      }
     }
   ]
 }

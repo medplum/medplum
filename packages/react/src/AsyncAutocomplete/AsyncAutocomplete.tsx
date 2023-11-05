@@ -173,6 +173,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       rightSection={abortController ? <Loader size={16} /> : null}
       filter={handleFilter}
       creatable
+      withinPortal={true}
     />
   );
 }

@@ -27,7 +27,7 @@ export interface FhirRepository {
    * Creates a FHIR resource.
    *
    * See: https://www.hl7.org/fhir/http.html#create
-   * @param resource The FHIR resource to create.
+   * @param resource - The FHIR resource to create.
    * @returns The created resource.
    */
   createResource<T extends Resource>(resource: T): Promise<T>;
@@ -36,8 +36,8 @@ export interface FhirRepository {
    * Reads a FHIR resource by ID.
    *
    * See: https://www.hl7.org/fhir/http.html#read
-   * @param resourceType The FHIR resource type.
-   * @param id The FHIR resource ID.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The FHIR resource ID.
    * @returns The FHIR resource.
    */
   readResource<T extends Resource>(resourceType: string, id: string): Promise<T>;
@@ -46,7 +46,7 @@ export interface FhirRepository {
    * Reads a FHIR resource by reference.
    *
    * See: https://www.hl7.org/fhir/http.html#read
-   * @param reference The FHIR reference.
+   * @param reference - The FHIR reference.
    * @returns The FHIR resource.
    */
   readReference<T extends Resource>(reference: Reference<T>): Promise<T>;
@@ -55,7 +55,7 @@ export interface FhirRepository {
    * Reads a collection of FHIR resources by reference.
    *
    * See: https://www.hl7.org/fhir/http.html#read
-   * @param references The FHIR references.
+   * @param references - The FHIR references.
    * @returns The FHIR resources.
    */
   readReferences(references: readonly Reference[]): Promise<(Resource | Error)[]>;
@@ -66,8 +66,8 @@ export interface FhirRepository {
    * Results are sorted with oldest versions last
    *
    * See: https://www.hl7.org/fhir/http.html#history
-   * @param resourceType The FHIR resource type.
-   * @param id The FHIR resource ID.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The FHIR resource ID.
    * @returns Operation outcome and a history bundle.
    */
   readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>>;
@@ -76,9 +76,9 @@ export interface FhirRepository {
    * Reads a FHIR resource version.
    *
    * See: https://www.hl7.org/fhir/http.html#vread
-   * @param resourceType The FHIR resource type.
-   * @param id The FHIR resource ID.
-   * @param vid The FHIR resource version ID.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The FHIR resource ID.
+   * @param vid - The FHIR resource version ID.
    */
   readVersion<T extends Resource>(resourceType: string, id: string, vid: string): Promise<T>;
 
@@ -86,7 +86,7 @@ export interface FhirRepository {
    * Updates a FHIR resource.
    *
    * See: https://www.hl7.org/fhir/http.html#update
-   * @param resource The FHIR resource to update.
+   * @param resource - The FHIR resource to update.
    * @returns The updated resource.
    */
   updateResource<T extends Resource>(resource: T): Promise<T>;
@@ -95,8 +95,8 @@ export interface FhirRepository {
    * Deletes a FHIR resource.
    *
    * See: https://www.hl7.org/fhir/http.html#delete
-   * @param resourceType The FHIR resource type.
-   * @param id The FHIR resource ID.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The FHIR resource ID.
    */
   deleteResource(resourceType: string, id: string): Promise<void>;
 
@@ -104,9 +104,9 @@ export interface FhirRepository {
    * Patches a FHIR resource.
    *
    * See: https://www.hl7.org/fhir/http.html#patch
-   * @param resourceType The FHIR resource type.
-   * @param id The FHIR resource ID.
-   * @param patch The JSONPatch operations.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The FHIR resource ID.
+   * @param patch - The JSONPatch operations.
    * @returns The patched resource.
    */
   patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource>;
@@ -115,7 +115,7 @@ export interface FhirRepository {
    * Searches for FHIR resources.
    *
    * See: https://www.hl7.org/fhir/http.html#search
-   * @param searchRequest The FHIR search request.
+   * @param searchRequest - The FHIR search request.
    * @returns The search results.
    */
   search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>>;
@@ -128,7 +128,7 @@ export interface FhirRepository {
    * The return value is the resource, if available; otherwise, undefined.
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   * @param searchRequest The FHIR search request.
+   * @param searchRequest - The FHIR search request.
    * @returns Promise to the first search result or undefined.
    */
   searchOne<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T | undefined>;
@@ -141,7 +141,7 @@ export interface FhirRepository {
    * The return value is an array of resources.
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   * @param searchRequest The FHIR search request.
+   * @param searchRequest - The FHIR search request.
    * @returns Promise to the array of search results.
    */
   searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T[]>;
@@ -152,7 +152,7 @@ export abstract class BaseRepository {
    * Searches for FHIR resources.
    *
    * See: https://www.hl7.org/fhir/http.html#search
-   * @param searchRequest The FHIR search request.
+   * @param searchRequest - The FHIR search request.
    * @returns The search results.
    */
   abstract search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>>;
@@ -165,7 +165,7 @@ export abstract class BaseRepository {
    * The return value is the resource, if available; otherwise, undefined.
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   * @param searchRequest The FHIR search request.
+   * @param searchRequest - The FHIR search request.
    * @returns Promise to the first search result or undefined.
    */
   async searchOne<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T | undefined> {
@@ -181,7 +181,7 @@ export abstract class BaseRepository {
    * The return value is an array of resources.
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   * @param searchRequest The FHIR search request.
+   * @param searchRequest - The FHIR search request.
    * @returns Promise to the array of search results.
    */
   async searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T[]> {

@@ -1,0 +1,82 @@
+---
+sidebar_position: 0
+tags: [auth]
+---
+
+# Projects
+
+Medplum [`Projects`](/docs/api/fhir/medplum/project) are the primary mechanism of access control. [`Projects`](/docs/api/fhir/medplum/project) are isolated containers of FHIR resources that are administered separately, and which can have different settings.
+
+Medplum [`Projects`](/docs/api/fhir/medplum/project) enable the following use cases:
+
+- **Development vs. Production:** A common requirement for development teams to have a separate [`Project`](/docs/api/fhir/medplum/project) , with non-protected data, for testing and debugging, before deploying workflow changes to production. A common Medplum usage pattern is to create a "development", "staging", and "production" [`Project`](/docs/api/fhir/medplum/project).
+
+- **Multi-tenancy:** In [B2B2C environments](https://a16z.com/b2c2b-in-digital-health-a-founders-playbook/), a service provider may partner with multiple healthcare organizations to deliver care to patients. [`Projects`](/docs/api/fhir/medplum/project) can provide each of these partners their own isolated environments, that have their own patient data, log-in flows, and project administrators. Medplum uses a multi-tenant instance for our [hosted offering](/pricing).
+
+## Isolation Model
+
+Medplum [`Projects`](/docs/api/fhir/medplum/project) create a hard boundary between FHIR resources, and resources within one project cannot reference resources in another.
+
+Additionally, [`Projects`](/docs/api/fhir/medplum/project) each have their own user administration. A user can be a member of one, or multiple [`Projects`](/docs/api/fhir/medplum/project), with different privileges in each. See our [User Administration Guide](/docs/auth/user-management-guide) for more information.
+
+[`Projects`](/docs/api/fhir/medplum/project) can each be configured with own global settings and secrets (see [Project Settings](#settings) below).
+
+:::tip Server Shared resources
+
+For performance and convenience, the Medplum server provides some system level, read-only resources that are shared between projects. Examples include [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) and [`ValueSets`](/docs/api/fhir/resources/valueset).
+
+While they _do_ cross the [`Project`](/docs/api/fhir/medplum/project) isolation boundary, most application developers will not have to interact these resources.
+
+:::
+
+## The SuperAdmin `Project` {#superadmin}
+
+The main exception to this isolation model is the "Super Admin" project. This is a special project that provides a global view over all the resources on the Medplum server. See our [SuperAdmin Guide](/docs/self-hosting/super-admin-guide) for more information.
+
+:::warning
+
+Logging into the Super Admin project allows for potential dangerous operations and is only intended for server administrators
+
+:::
+
+## Creating a Project
+
+#### Medplum App
+
+- Visit the https://app.medplum.com/register or visit https://app.medplum.com/signin and click the "Register" link
+- Sign in with an existing user, or enter the details for a new user account
+- Enter your project name
+
+## Project Settings {#settings}
+
+You can find the full `Project` resource schema [here](/docs/api/fhir/medplum/project)
+
+| Setting                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Default |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `superAdmin`                 | Whether this project is the super administrator project ([see above](#superadmin)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `false` |
+| `strictMode`                 | Whether this project uses strict FHIR validation, based on [FHIR profiles](/docs/fhir-datastore/profiles). **Strongly recommend setting this to `true`.**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `true`  |
+| `checkReferencesOnWrite`     | If `true`, the the server will reject any create or write operations to a FHIR resource with invalid references.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | `false` |
+| `features`                   | A list of optional features that are enabled for the project. Allowed values are: <ul><li>`bots`: This [`Project`](/docs/api/fhir/medplum/project) is allowed to create and run [Bots](/docs/bots/bot-basics).</li><li>`email`: Bots in this project can [send emails](/docs/sdk/core.medplumclient.sendemail). </li><li>`cron`: This [`Project`](/docs/api/fhir/medplum/project) can run Bots on [CRON timers](https://www.medplum.com/docs/bots/bot-cron-job)</li><li>`google-auth-required`: [Google authentication](/docs/auth/methods/google-auth) is the only method allowed for this [`Project`](/docs/api/fhir/medplum/project)</li></ul> |         |
+| `defaultPatientAccessPolicy` | The default [`AccessPolicy`](/docs/access/access-policies) applied to all [Patient Users](/docs/auth/user-management-guide#project-scoped-users) invited to this [`Project`](/docs/api/fhir/medplum/project). This is required to enable [open patient registration](/docs/auth/open-patient-registration).                                                                                                                                                                                                                                                                                                                                          |         |
+
+## Project Secrets
+
+Each [`Project`](/docs/api/fhir/medplum/project) can store a set of key/value pairs to store configuration values, such as API keys, needed by Bots.
+
+See [Bot Secrets](/docs/bots/bot-secrets) for more information.
+
+## Cloning and Expunging `Projects`
+
+Self-hosted users have two advanced project administration operations available to them:
+
+- `$clone` - Make a copy of an existing [`Project`](/docs/api/fhir/medplum/project) and all its resources.
+- `$expunge` - Perform a "hard delete" of [`Project`](/docs/api/fhir/medplum/project) and all its resources. This will remove all the related resource rows from the database.
+
+For more information, refer to the Super Admin [Project Management guide](/docs/self-hosting/super-admin-cli#project-management)
+
+## See Also
+
+- [User management guide](/docs/auth/user-management-guide)
+- [Super Admin Guide](/docs/self-hosting/super-admin-guide)
+- [Super Admin CLI](/docs/self-hosting/super-admin-cli#project-management)
+- [Project Resource Schema](/docs/api/fhir/medplum/project)

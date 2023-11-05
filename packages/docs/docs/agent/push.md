@@ -93,25 +93,17 @@ PV1|1|I|2000^2012^01||||12345^DOCTOR^DOC||||||||||1234567^DOCTOR^DOC||AMB|||||||
 
 ## End-To-End Example: Pushing Lab Orders
 
-<ol>
-  <li><strong>Objective</strong>: Push lab orders to a remote device using HL7.</li>
-  <li><strong>Trigger</strong>: "Create" or "Update" operations on a FHIR ServiceRequest.</li>
-  <li><strong>Steps</strong>:
-    <ol>
-      <li>Set up a Medplum Bot.
-        <ul>
-          <li>The Bot will receive the FHIR ServiceRequest.</li>
-          <li>It will then convert the required FHIR fields to HL7 using the Medplum HL7 SDK.</li>
-        </ul>
-      </li>
-      <li>Save and deploy your Bot.</li>
-      <li>Create a FHIR Subscription:
-        <ul>
-          <li>Set the criteria to "ServiceRequest".</li>
-          <li>Choose the Bot as the channel target.</li>
-        </ul>
-      </li>
-      <li>Now, any "create" or "update" operation on a FHIR ServiceRequest will trigger the Medplum server to call the Bot. The Bot will process and convert the message to HL7, sending it to the remote device via the Medplum Agent.</li>
-   </ol>
-  </li>
-</ol>
+**Objective**: Push lab orders to a remote device using HL7.
+
+**Trigger**: "Create" or "Update" operations on a FHIR ServiceRequest.
+
+**Steps**:
+
+1. Set up a Medplum Bot.
+   - The Bot will receive the FHIR ServiceRequest.
+   - It will then convert the required FHIR fields to HL7 using the Medplum HL7 SDK.
+2. Save and deploy your Bot.
+3. Create a FHIR Subscription:
+   - Set the criteria to "ServiceRequest".
+   - Choose the Bot as the channel target.
+4. Now, any "create" or "update" operation on a FHIR ServiceRequest will trigger the Medplum server to call the Bot. The Bot will process and convert the message to HL7, sending it to the remote device via the Medplum Agent.

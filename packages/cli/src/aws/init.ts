@@ -276,7 +276,7 @@ export async function initStackCommand(): Promise<void> {
 
 /**
  * Prints to stdout.
- * @param text The text to print.
+ * @param text - The text to print.
  */
 function print(text: string): void {
   terminal.write(text + '\n');
@@ -284,7 +284,7 @@ function print(text: string): void {
 
 /**
  * Prints a header with extra line spacing.
- * @param text The text to print.
+ * @param text - The text to print.
  */
 function header(text: string): void {
   print('\n' + text + '\n');
@@ -292,8 +292,8 @@ function header(text: string): void {
 
 /**
  * Prints a question and waits for user input.
- * @param text The question text to print.
- * @param defaultValue Optional default value.
+ * @param text - The question text to print.
+ * @param defaultValue - Optional default value.
  * @returns The selected value, or default value on empty selection.
  */
 function ask(text: string, defaultValue: string | number = ''): Promise<string> {
@@ -306,9 +306,9 @@ function ask(text: string, defaultValue: string | number = ''): Promise<string> 
 
 /**
  * Prints a question and waits for user to choose one of the provided options.
- * @param text The prompt text to print.
- * @param options The list of options that the user can select.
- * @param defaultValue Optional default value.
+ * @param text - The prompt text to print.
+ * @param options - The list of options that the user can select.
+ * @param defaultValue - Optional default value.
  * @returns The selected value, or default value on empty selection.
  */
 async function choose(text: string, options: (string | number)[], defaultValue = ''): Promise<string> {
@@ -325,9 +325,9 @@ async function choose(text: string, options: (string | number)[], defaultValue =
 
 /**
  * Prints a question and waits for the user to choose a valid integer option.
- * @param text The prompt text to print.
- * @param options The list of options that the user can select.
- * @param defaultValue Default value.
+ * @param text - The prompt text to print.
+ * @param options - The list of options that the user can select.
+ * @param defaultValue - Default value.
  * @returns The selected value, or default value on empty selection.
  */
 async function chooseInt(text: string, options: number[], defaultValue: number): Promise<number> {
@@ -343,7 +343,7 @@ async function chooseInt(text: string, options: number[], defaultValue: number):
 
 /**
  * Prints a question and waits for the user to choose yes or no.
- * @param text The question to print.
+ * @param text - The question to print.
  * @returns true on accept or false on reject.
  */
 async function yesOrNo(text: string): Promise<boolean> {
@@ -352,7 +352,7 @@ async function yesOrNo(text: string): Promise<boolean> {
 
 /**
  * Prints a question and waits for the user to confirm yes. Throws error on no, and exits the program.
- * @param text The prompt text to print.
+ * @param text - The prompt text to print.
  */
 async function checkOk(text: string): Promise<void> {
   if (!(await yesOrNo(text))) {
@@ -363,8 +363,8 @@ async function checkOk(text: string): Promise<void> {
 
 /**
  * Writes a config file to disk.
- * @param configFileName The config file name.
- * @param config The config file contents.
+ * @param configFileName - The config file name.
+ * @param config - The config file contents.
  */
 function writeConfig(configFileName: string, config: MedplumInfraConfig): void {
   writeFileSync(resolve(configFileName), JSON.stringify(config, undefined, 2), 'utf-8');
@@ -373,7 +373,7 @@ function writeConfig(configFileName: string, config: MedplumInfraConfig): void {
 /**
  * Returns the current AWS account ID.
  * This is used as the default value for the "accountNumber" config setting.
- * @param region The AWS region.
+ * @param region - The AWS region.
  * @returns The AWS account ID.
  */
 async function getAccountId(region: string): Promise<string | undefined> {
@@ -392,7 +392,7 @@ async function getAccountId(region: string): Promise<string | undefined> {
  * Returns a list of all AWS certificates.
  * This is used to find existing certificates for the subdomains.
  * If the primary region is not us-east-1, then certificates in us-east-1 will also be returned.
- * @param region The AWS region.
+ * @param region - The AWS region.
  * @returns The list of AWS Certificates.
  */
 async function listAllCertificates(region: string): Promise<CertificateSummary[]> {
@@ -407,7 +407,7 @@ async function listAllCertificates(region: string): Promise<CertificateSummary[]
 /**
  * Returns a list of AWS Certificates.
  * This is used to find existing certificates for the subdomains.
- * @param region The AWS region.
+ * @param region - The AWS region.
  * @returns The list of AWS Certificates.
  */
 async function listCertificates(region: string): Promise<CertificateSummary[]> {
@@ -428,10 +428,10 @@ async function listCertificates(region: string): Promise<CertificateSummary[]> {
  * 1. If the certificate already exists, return the ARN.
  * 2. If the certificate does not exist, and the user wants to create a new certificate, create it and return the ARN.
  * 3. If the certificate does not exist, and the user does not want to create a new certificate, return a placeholder.
- * @param config In-progress config settings.
- * @param allCerts List of all existing certificates.
- * @param region The AWS region where the certificate is needed.
- * @param certName The name of the certificate (api, app, or storage).
+ * @param config - In-progress config settings.
+ * @param allCerts - List of all existing certificates.
+ * @param region - The AWS region where the certificate is needed.
+ * @param certName - The name of the certificate (api, app, or storage).
  * @returns The ARN of the certificate or placeholder if a new certificate is needed.
  */
 async function processCert(
@@ -460,8 +460,8 @@ async function processCert(
 
 /**
  * Requests an AWS Certificate.
- * @param region The AWS region.
- * @param domain The domain name.
+ * @param region - The AWS region.
+ * @param domain - The domain name.
  * @returns The AWS Certificate ARN on success, or undefined on failure.
  */
 async function requestCert(region: string, domain: string): Promise<string> {
@@ -494,7 +494,7 @@ async function requestCert(region: string, domain: string): Promise<string> {
  *   3. It must be a 2048-bit key pair.
  *
  * See: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs
- * @param keyName The key name.
+ * @param keyName - The key name.
  * @returns A new signing key.
  */
 async function generateSigningKey(keyName: string): Promise<{
@@ -538,8 +538,8 @@ async function generateSigningKey(keyName: string): Promise<{
 
 /**
  * Reads a parameter from AWS Parameter Store.
- * @param client The AWS SSM client.
- * @param name The parameter name.
+ * @param client - The AWS SSM client.
+ * @param name - The parameter name.
  * @returns The parameter value, or undefined if not found.
  */
 async function readParameter(client: SSMClient, name: string): Promise<string | undefined> {
@@ -560,9 +560,9 @@ async function readParameter(client: SSMClient, name: string): Promise<string | 
 
 /**
  * Writes a parameter to AWS Parameter Store.
- * @param client The AWS SSM client.
- * @param name The parameter name.
- * @param value The parameter value.
+ * @param client - The AWS SSM client.
+ * @param name - The parameter name.
+ * @param value - The parameter value.
  */
 async function writeParameter(client: SSMClient, name: string, value: string): Promise<void> {
   const command = new PutParameterCommand({
@@ -576,9 +576,9 @@ async function writeParameter(client: SSMClient, name: string, value: string): P
 
 /**
  * Writes a collection of parameters to AWS Parameter Store.
- * @param region The AWS region.
- * @param prefix The AWS Parameter Store prefix.
- * @param params The parameters to write.
+ * @param region - The AWS region.
+ * @param prefix - The AWS Parameter Store prefix.
+ * @param params - The parameters to write.
  */
 async function writeParameters(region: string, prefix: string, params: Record<string, string | number>): Promise<void> {
   const client = new SSMClient({ region });

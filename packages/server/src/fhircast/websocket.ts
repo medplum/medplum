@@ -6,8 +6,8 @@ import { getRedis } from '../redis';
 
 /**
  * Handles a new WebSocket connection to the FHIRCast hub.
- * @param socket The WebSocket connection.
- * @param request The HTTP request.
+ * @param socket - The WebSocket connection.
+ * @param request - The HTTP request.
  */
 export async function handleFhircastConnection(socket: ws.WebSocket, request: IncomingMessage): Promise<void> {
   // TODO: Map URL slug to topic ID

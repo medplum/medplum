@@ -1,21 +1,44 @@
 {
   "name": "@medplum/core",
-  "version": "2.1.9",
+  "version": "2.1.10",
   "description": "Medplum TS/JS Library",
-  "author": "Medplum <hello@medplum.com>",
-  "license": "Apache-2.0",
+  "keywords": [
+    "medplum",
+    "fhir",
+    "healthcare",
+    "interoperability",
+    "json",
+    "serialization",
+    "hl7",
+    "standards",
+    "clinical",
+    "dstu2",
+    "stu3",
+    "r4",
+    "normative"
+  ],
   "homepage": "https://www.medplum.com/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/medplum/medplum.git",
+    "url": "git+https://github.com/medplum/medplum.git",
     "directory": "packages/core"
   },
-  "engines": {
-    "node": ">=18.0.0"
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "sideEffects": false,
+  "exports": {
+    "types": "./dist/types.d.ts",
+    "require": "./dist/cjs/index.cjs",
+    "import": "./dist/esm/index.mjs"
   },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/types.d.ts",
   "scripts": {
+    "api-extractor": "api-extractor run --local",
+    "api-documenter": "api-documenter markdown --input-folder ./dist/api/ --output-folder ./dist/docs/",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor && npm run api-documenter",
     "clean": "rimraf dist",
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
     "test": "jest"
   },
   "devDependencies": {
@@ -31,28 +54,7 @@
       "optional": true
     }
   },
-  "types": "dist/types/index.d.ts",
-  "main": "dist/cjs/index.cjs",
-  "module": "dist/esm/index.mjs",
-  "exports": {
-    "types": "./dist/types/index.d.ts",
-    "require": "./dist/cjs/index.cjs",
-    "import": "./dist/esm/index.mjs"
-  },
-  "sideEffects": false,
-  "keywords": [
-    "medplum",
-    "fhir",
-    "healthcare",
-    "interoperability",
-    "json",
-    "serialization",
-    "hl7",
-    "standards",
-    "clinical",
-    "dstu2",
-    "stu3",
-    "r4",
-    "normative"
-  ]
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

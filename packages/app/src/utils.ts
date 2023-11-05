@@ -3,7 +3,7 @@ import { Patient, Reference, Resource, Specimen } from '@medplum/fhirtypes';
 
 /**
  * Tries to return the patient for the given the resource.
- * @param resource Any FHIR resource.
+ * @param resource - Any FHIR resource.
  * @returns The patient associated with the resource, if available.
  */
 export function getPatient(resource: Resource): Patient | Reference<Patient> | undefined {
@@ -23,7 +23,7 @@ export function getPatient(resource: Resource): Patient | Reference<Patient> | u
 
 /**
  * Tries to return the specimen for the given the resource.
- * @param resource Any FHIR resource.
+ * @param resource - Any FHIR resource.
  * @returns The specimen associated with the resource, if available.
  */
 export function getSpecimen(resource: Resource): Specimen | Reference<Specimen> | undefined {
@@ -44,8 +44,8 @@ export function getSpecimen(resource: Resource): Specimen | Reference<Specimen> 
  *
  * Normally postMessage implies global event listeners. This method uses
  * MessageChannel to create a message channel between the iframe and the parent.
- * @param frame The receiving IFrame.
- * @param command The command to send.
+ * @param frame - The receiving IFrame.
+ * @param command - The command to send.
  * @returns Promise to the response from the IFrame.
  * @see https://advancedweb.hu/how-to-use-async-await-with-postmessage/
  */
@@ -68,7 +68,7 @@ export function sendCommand(frame: HTMLIFrameElement, command: any): Promise<any
 
 /**
  * Returns the current project ID for the given client.
- * @param medplum The Medplum client.
+ * @param medplum - The Medplum client.
  * @returns The current project ID.
  */
 export function getProjectId(medplum: MedplumClient): string {
@@ -77,8 +77,8 @@ export function getProjectId(medplum: MedplumClient): string {
 
 /**
  * Creates a Blob object from the JSON object given and downloads the object.
- * @param jsonString The JSON string.
- * @param fileName Optional file name. Default is based on current timestamp.
+ * @param jsonString - The JSON string.
+ * @param fileName - Optional file name. Default is based on current timestamp.
  */
 export function exportJsonFile(jsonString: string, fileName?: string): void {
   const blobForExport = new Blob([jsonString], { type: ContentType.JSON });

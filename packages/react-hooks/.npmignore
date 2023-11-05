@@ -2,6 +2,7 @@ coverage/
 dist/**/*.test.d.ts
 dist/**/*.test.js
 dist/**/*.test.js.map
+dist/types/
 public/
 src/
 .env

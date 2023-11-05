@@ -1,8 +1,8 @@
 import { Binary, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../config';
+import { getRequestContext } from '../context';
 import { Repository } from './repo';
 import { getPresignedUrl } from './signer';
-import { getRequestContext } from '../context';
 
 /**
  * The target type of the attachment rewrite.
@@ -34,9 +34,9 @@ export enum RewriteMode {
  *
  * Uses the repository to verify that the referenced resources exist and that
  * the current user has permission to read them.
- * @param mode The mode to use when rewriting the attachments.
- * @param repo The repository configured for the current user.
- * @param input The input value (object, array, or primitive).
+ * @param mode - The mode to use when rewriting the attachments.
+ * @param repo - The repository configured for the current user.
+ * @param input - The input value (object, array, or primitive).
  * @returns The rewritten value.
  */
 export async function rewriteAttachments<T>(mode: RewriteMode, repo: Repository, input: T): Promise<T> {
@@ -57,7 +57,7 @@ class Rewriter {
 
   /**
    * Rewrites an object to replace any attachment references with signed URLs.
-   * @param input The input value (object, array, or primitive).
+   * @param input - The input value (object, array, or primitive).
    * @returns The rewritten value.
    */
   async rewriteValue<T>(input: T): Promise<T> {
@@ -94,9 +94,9 @@ class Rewriter {
 
   /**
    * Rewrites an object property.
-   * @param keyValue The key/value pair to rewrite.
-   * @param keyValue."0" The key.
-   * @param keyValue."1" The value.
+   * @param keyValue - The key/value pair to rewrite.
+   * @param keyValue."0" - The key.
+   * @param keyValue."1" - The value.
    * @returns The rewritten key/value pair.
    */
   async rewriteProperty([key, value]: [string, any]): Promise<[string, any]> {
@@ -112,9 +112,9 @@ class Rewriter {
    * Tries to rewrite an attachment URL property.
    * If successful, returns the rewritten URL.
    * Otherwise, returns undefined.
-   * @param keyValue The key/value pair to rewrite.
-   * @param keyValue."0" The key.
-   * @param keyValue."1" The value.
+   * @param keyValue - The key/value pair to rewrite.
+   * @param keyValue."0" - The key.
+   * @param keyValue."1" - The value.
    * @returns The rewritten URL or undefined.
    */
   async rewriteAttachmentUrl([key, value]: [string, any]): Promise<string | boolean | undefined> {
@@ -145,8 +145,8 @@ class Rewriter {
 
   /**
    * Tries to generate a presigned URL for the binary.
-   * @param id The binary ID.
-   * @param versionId Optional binary version ID.
+   * @param id - The binary ID.
+   * @param versionId - Optional binary version ID.
    * @returns The attachment presigned URL.
    */
   async getAttachmentPresignedUrl(id: string, versionId?: string): Promise<string> {
@@ -174,7 +174,7 @@ class Rewriter {
  *   3) Presigned URL (https://storage.medplum.com/binary/123/456?Signature=...)
  *
  * When comparing two binary URLs, we want to compare the binary ID and version ID.
- * @param url The input URL.
+ * @param url - The input URL.
  * @returns The normalized binary ID and version ID.
  */
 function normalizeBinaryUrl(url: string): { id?: string; versionId?: string } {

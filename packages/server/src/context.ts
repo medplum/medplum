@@ -1,7 +1,7 @@
 import { Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Repository, systemRepo } from './fhir/repo';
 import { ProfileResource, isUUID } from '@medplum/core';
-import { Logger } from './logger';
+import { LogLevel, Logger } from './logger';
 import { AsyncLocalStorage } from 'async_hooks';
 import { NextFunction, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
@@ -11,10 +11,10 @@ export class RequestContext {
   readonly traceId: string;
   readonly logger: Logger;
 
-  constructor(requestId: string, traceId: string) {
+  constructor(requestId: string, traceId: string, logger?: Logger) {
     this.requestId = requestId;
     this.traceId = traceId;
-    this.logger = new Logger(process.stdout, { requestId, traceId });
+    this.logger = logger ?? new Logger(process.stdout, { requestId, traceId });
   }
 
   static empty(): RequestContext {
@@ -29,8 +29,15 @@ export class AuthenticatedRequestContext extends RequestContext {
   readonly login: Login;
   readonly profile: Reference<ProfileResource>;
 
-  constructor(ctx: RequestContext, login: Login, project: Project, membership: ProjectMembership, repo: Repository) {
-    super(ctx.requestId, ctx.traceId);
+  constructor(
+    ctx: RequestContext,
+    login: Login,
+    project: Project,
+    membership: ProjectMembership,
+    repo: Repository,
+    logger?: Logger
+  ) {
+    super(ctx.requestId, ctx.traceId, logger);
 
     this.repo = repo;
     this.project = project;
@@ -40,12 +47,14 @@ export class AuthenticatedRequestContext extends RequestContext {
   }
 
   static system(): AuthenticatedRequestContext {
+    const systemLogger = new Logger(process.stdout, undefined, LogLevel.ERROR);
     return new AuthenticatedRequestContext(
       new RequestContext('', ''),
       {} as unknown as Login,
       {} as unknown as Project,
       {} as unknown as ProjectMembership,
-      systemRepo
+      systemRepo,
+      systemLogger
     );
   }
 }

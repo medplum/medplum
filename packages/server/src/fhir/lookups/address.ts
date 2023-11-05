@@ -56,7 +56,7 @@ export class AddressTable extends LookupTable<Address> {
    *   address-postalcode | postalCode
    *   address-state      | state
    *   addrses-use        | use
-   * @param code The search parameter code.
+   * @param code - The search parameter code.
    * @returns The column name.
    */
   getColumnName(code: string): string {
@@ -71,7 +71,7 @@ export class AddressTable extends LookupTable<Address> {
 
   /**
    * Returns true if the search parameter is an Address parameter.
-   * @param searchParam The search parameter.
+   * @param searchParam - The search parameter.
    * @returns True if the search parameter is an Address parameter.
    */
   isIndexed(searchParam: SearchParameter): boolean {
@@ -81,8 +81,8 @@ export class AddressTable extends LookupTable<Address> {
   /**
    * Indexes a resource Address values.
    * Attempts to reuse existing Addresses if they are correct.
-   * @param client The database client.
-   * @param resource The resource to index.
+   * @param client - The database client.
+   * @param resource - The resource to index.
    * @returns Promise on completion.
    */
   async indexResource(client: PoolClient, resource: Resource): Promise<void> {

@@ -29,7 +29,7 @@ export class HumanNameTable extends LookupTable<HumanName> {
 
   /**
    * Returns the column name for the given search parameter.
-   * @param code The search parameter code.
+   * @param code - The search parameter code.
    * @returns The column name.
    */
   getColumnName(code: string): string {
@@ -38,7 +38,7 @@ export class HumanNameTable extends LookupTable<HumanName> {
 
   /**
    * Returns true if the search parameter is an HumanName parameter.
-   * @param searchParam The search parameter.
+   * @param searchParam - The search parameter.
    * @returns True if the search parameter is an HumanName parameter.
    */
   isIndexed(searchParam: SearchParameter): boolean {
@@ -48,8 +48,8 @@ export class HumanNameTable extends LookupTable<HumanName> {
   /**
    * Indexes a resource HumanName values.
    * Attempts to reuse existing identifiers if they are correct.
-   * @param client The database client.
-   * @param resource The resource to index.
+   * @param client - The database client.
+   * @param resource - The resource to index.
    * @returns Promise on completion.
    */
   async indexResource(client: PoolClient, resource: Resource): Promise<void> {
@@ -111,7 +111,7 @@ export class HumanNameTable extends LookupTable<HumanName> {
  *    presentation and use the parts for index/search functionality. For this reason,
  *    applications SHOULD populate the text element for future robustness."
  *
- * @param name The input human name.
+ * @param name - The input human name.
  * @returns A string representation of the human name.
  */
 export function getNameString(name: HumanName): string {

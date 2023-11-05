@@ -5,11 +5,16 @@ import {
   getExtension,
   getTypedPropertyValue,
   TypedValue,
+  getReferenceString,
+  stringify,
 } from '@medplum/core';
 import {
+  Questionnaire,
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
   QuestionnaireItemEnableWhen,
+  QuestionnaireItemInitial,
+  QuestionnaireResponse,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
   ResourceType,
@@ -216,4 +221,66 @@ export function setQuestionnaireItemReferenceTargetTypes(
   }
 
   return result;
+}
+
+export function buildInitialResponse(questionnaire: Questionnaire): QuestionnaireResponse {
+  const response: QuestionnaireResponse = {
+    resourceType: 'QuestionnaireResponse',
+    questionnaire: getReferenceString(questionnaire),
+    item: buildInitialResponseItems(questionnaire.item),
+  };
+
+  return response;
+}
+
+function buildInitialResponseItems(items: QuestionnaireItem[] | undefined): QuestionnaireResponseItem[] {
+  return items?.map(buildInitialResponseItem) ?? [];
+}
+
+export function buildInitialResponseItem(item: QuestionnaireItem): QuestionnaireResponseItem {
+  return {
+    id: generateId(),
+    linkId: item.linkId,
+    text: item.text,
+    item: buildInitialResponseItems(item.item),
+    answer: item.initial?.map(buildInitialResponseAnswer) ?? [],
+  };
+}
+
+let nextId = 1;
+function generateId(): string {
+  return 'id-' + nextId++;
+}
+
+function buildInitialResponseAnswer(answer: QuestionnaireItemInitial): QuestionnaireResponseItemAnswer {
+  // This works because QuestionnaireItemInitial and QuestionnaireResponseItemAnswer
+  // have the same properties.
+  return { ...answer };
+}
+
+export function formatReferenceString(typedValue: TypedValue): string {
+  return typedValue.value.display || typedValue.value.reference || stringify(typedValue.value);
+}
+
+/**
+ * Returns the number of pages in the questionnaire.
+ *
+ * By default, a questionnaire is represented as a simple single page questionnaire,
+ * so the default return value is 1.
+ *
+ * If the questionnaire has a page extension on the first item, then the number of pages
+ * is the number of top level items in the questionnaire.
+ *
+ * @param questionnaire - The questionnaire to get the number of pages for.
+ * @returns The number of pages in the questionnaire. Default is 1.
+ */
+export function getNumberOfPages(questionnaire: Questionnaire): number {
+  const firstItem = questionnaire?.item?.[0];
+  if (firstItem) {
+    const extension = getExtension(firstItem, 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl');
+    if (extension?.valueCodeableConcept?.coding?.[0]?.code === 'page') {
+      return (questionnaire.item as QuestionnaireItem[]).length;
+    }
+  }
+  return 1;
 }

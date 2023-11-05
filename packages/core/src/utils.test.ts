@@ -37,6 +37,7 @@ import {
   ResourceWithCode,
   setCodeBySystem,
   setIdentifier,
+  splitN,
   stringify,
 } from './utils';
 
@@ -988,5 +989,12 @@ describe('Core Utils', () => {
 
     const result = findResourceByCode(observations, codeToFindAsString, system);
     expect(result).toEqual(observations[0]);
+  });
+
+  test('splitN', () => {
+    expect(
+      splitN('_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status', ':', 3)
+    ).toEqual(['_has', 'Observation', 'subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status']);
+    expect(splitN('organization', ':', 2)).toEqual(['organization']);
   });
 });

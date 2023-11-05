@@ -336,7 +336,7 @@ function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {
 /**
  * Returns true if the observation is critical.
  * See: https://www.hl7.org/fhir/valueset-observation-interpretation.html
- * @param observation The FHIR observation.
+ * @param observation - The FHIR observation.
  * @returns True if the FHIR observation is a critical value.
  */
 function isCritical(observation: Observation): boolean {

@@ -1,8 +1,7 @@
+import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/patient-deduplication/matching.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-
-import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/patient-deduplication/matching.ts';
 
 # Matching {#matching-rules}
 
@@ -29,13 +28,14 @@ The likelihood of a candidate being a match can be represented by a `RiskAssessm
 | `subject`            | The patient or other resource that a potential match is being checked against, considered the **source record**. | Patient/homer-simpson                           |
 | `basis`              | The patient or other resource that could be a potential match for the subject, considered the **target record**. | Patient/homer-j-simpson                         |
 
-<details><summary>Example: A `RiskAssessment` for a potential duplicated patient record</summary>
+<details>
+  <summary>Example: A `RiskAssessment` for a potential duplicated patient record</summary>
   <MedplumCodeBlock language="ts" selectBlocks="dupedPatientAssessment">
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
 
-Check out [Medplum's demo bots](https://github.com/medplum/medplum/blob/08d11217b7b399c6232432f04389d4c66ce85f18/examples/medplum-demo-bots/src/deduplication/find-matching-patients.ts#L58-L87) to see an example of how a `RiskAssessment` is created in practice. 
+Check out [Medplum's demo bots](https://github.com/medplum/medplum/blob/08d11217b7b399c6232432f04389d4c66ce85f18/examples/medplum-demo-bots/src/deduplication/find-matching-patients.ts#L58-L87) to see an example of how a `RiskAssessment` is created in practice.
 
 ## Do Not Match Lists
 
@@ -43,7 +43,8 @@ In some cases, it is already known that two similar records should _not_ be matc
 
 To ensure that certain records are not matched, you can create a Do Not Match List for a patient. This should be represented as a `List` resource, with the patient stored in the `subject` field. Any other patients that should not be matched to this patient can be stored as an `entry`. To ensure that records on a Do Not Match List are not merged, see the docs on [disabling merging](/docs/fhir-datastore/patient-deduplication/merging#disabling-merges).
 
-<details><summary>Example: A patient's Do Not Match List</summary>
+<details>
+  <summary>Example: A patient's Do Not Match List</summary>
   <MedplumCodeBlock language="ts" selectBlocks="doNotMatch">
     {ExampleCode}
   </MedplumCodeBlock>

@@ -1,12 +1,12 @@
 import { getQuestionnaireAnswers } from '@medplum/core';
 import { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import each from 'jest-each';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '@medplum/react-hooks';
 import { QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 
@@ -464,6 +464,57 @@ describe('QuestionnaireForm', () => {
     expect((radioButton2 as HTMLInputElement).checked).toBe(true);
   });
 
+  test('Choice valueCoding default value', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            text: 'q1',
+            answerOption: [
+              {
+                valueString: 'a1',
+              },
+              {
+                valueString: 'a2',
+              },
+              {
+                valueCoding: {
+                  code: 'patient',
+                },
+              },
+              {
+                valueCoding: {
+                  code: 'organization',
+                },
+              },
+            ],
+            initial: [
+              {
+                valueCoding: {
+                  code: 'patient',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const radioButton1 = screen.getByLabelText('a1');
+    expect(radioButton1).toBeInTheDocument();
+    expect((radioButton1 as HTMLInputElement).checked).toBe(false);
+
+    const radioButton2 = screen.getByLabelText('patient');
+    expect(radioButton2).toBeInTheDocument();
+    expect((radioButton2 as HTMLInputElement).checked).toBe(true);
+  });
+
   test('Open choice input', async () => {
     await setup({
       questionnaire: {
@@ -784,6 +835,65 @@ describe('QuestionnaireForm', () => {
     expect(dropDown).toBeInTheDocument();
     expect(dropDown).toBeInstanceOf(HTMLSelectElement);
     expect((dropDown as HTMLSelectElement).value).toBe('a2');
+  });
+
+  test('Drop down choice input default reference value', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+            text: 'q1',
+            answerOption: [
+              {
+                valueString: 'a1',
+              },
+              {
+                valueReference: {
+                  reference: 'Organization/123',
+                  display: 'Test Organization',
+                },
+              },
+            ],
+            initial: [
+              {
+                valueReference: {
+                  reference: 'Organization/123',
+                  display: 'Test Organization',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByText('q1')).toBeInTheDocument();
+
+    const dropDown = screen.getByLabelText('q1');
+    expect(dropDown).toBeInTheDocument();
+    expect(dropDown).toBeInstanceOf(HTMLSelectElement);
+    expect((dropDown as HTMLSelectElement).value).toBe('Test Organization');
   });
 
   test('Page Sequence', async () => {
@@ -1248,9 +1358,75 @@ describe('QuestionnaireForm', () => {
 
     expect(screen.getByText('q1')).toBeInTheDocument();
 
-    const searchInput = screen.getByPlaceholderText('Select items');
+    const searchInput = screen.getByPlaceholderText('No Answers Defined');
     expect(searchInput).toBeInTheDocument();
     expect(searchInput).toBeInstanceOf(HTMLInputElement);
+  });
+
+  test('Nested repeat', async () => {
+    const onSubmit = jest.fn();
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'pages-example',
+        title: 'Pages Example',
+        item: [
+          {
+            linkId: 'group1',
+            type: 'group',
+            text: 'Outside Group',
+            repeats: true,
+            item: [
+              {
+                linkId: 'group2',
+                type: 'group',
+                text: 'Inside Group',
+                repeats: true,
+                item: [
+                  {
+                    linkId: 'question1',
+                    type: 'string',
+                    text: 'question1',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByText('Outside Group')).toBeInTheDocument();
+
+    const outsideGroupButton = screen.getAllByText('Add Group: Outside Group');
+    const insideGroupButton = screen.getAllByText('Add Group: Inside Group');
+
+    expect(outsideGroupButton).toHaveLength(1);
+    expect(insideGroupButton).toHaveLength(1);
+
+    await act(async () => {
+      fireEvent.click(outsideGroupButton[0]);
+    });
+
+    expect(screen.getAllByText('Outside Group').length).toBe(2);
+    expect(screen.getAllByText('Inside Group').length).toBe(2);
+
+    const stringInputs = screen.getAllByText('question1');
+    expect(stringInputs).toHaveLength(2);
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('question1'), { target: { value: 'answer1' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toBeCalled();
+
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].item[0].item[0].answer[0].valueString).toEqual('answer1');
   });
 
   test('repeatableQuestion', async () => {
@@ -1268,7 +1444,7 @@ describe('QuestionnaireForm', () => {
           },
           {
             linkId: 'group1',
-            text: 'Group',
+            text: 'Question Group',
             type: 'group',
             repeats: true,
             item: [
@@ -1289,11 +1465,103 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Add Group'));
+      fireEvent.click(screen.getByText('Add Group: Question Group'));
     });
 
-    expect(screen.getAllByText('Group').length).toBe(2);
+    expect(screen.getAllByText('Question Group').length).toBe(2);
 
     expect(screen.getAllByText('Question 2').length).toBe(2);
+  });
+
+  test('No Answers Defined', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'no-answers',
+        title: 'No Answers Example',
+        item: [
+          {
+            linkId: 'choices',
+            text: 'Choices',
+            type: 'choice',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
+  });
+
+  test('Empty Array of Answer Options', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'empty-answers',
+        title: 'Empty Answers Example',
+        item: [
+          {
+            linkId: 'choices',
+            text: 'Choices',
+            type: 'choice',
+            answerOption: [],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
+  });
+
+  test('Empty Answer Options for Radio', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'empty-radio',
+        title: 'Empty Radio Example',
+        item: [
+          {
+            linkId: 'choices',
+            text: 'Choices',
+            type: 'choice',
+            answerOption: [],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
   });
 });

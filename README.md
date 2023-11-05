@@ -103,6 +103,7 @@ medplum/
 │   ├── hl7          # HL7 client and server
 │   ├── mock         # Mock FHIR data for testing
 │   ├── react        # React component library
+│   ├── react-hooks  # React hooks library
 │   └── server       # Backend API server
 └── scripts          # Helper bash scripts
 ```

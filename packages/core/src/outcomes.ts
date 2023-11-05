@@ -239,8 +239,8 @@ export function getStatus(outcome: OperationOutcome): number {
 
 /**
  * Asserts that the operation completed successfully and that the resource is defined.
- * @param outcome The operation outcome.
- * @param resource The resource that may or may not have been returned.
+ * @param outcome - The operation outcome.
+ * @param resource - The resource that may or may not have been returned.
  */
 export function assertOk<T>(outcome: OperationOutcome, resource: T | undefined): asserts resource is T {
   if (!isOk(outcome) || resource === undefined) {
@@ -260,7 +260,7 @@ export class OperationOutcomeError extends Error {
 
 /**
  * Normalizes an error object into an OperationOutcome.
- * @param error The error value which could be a string, Error, OperationOutcome, or other unknown type.
+ * @param error - The error value which could be a string, Error, OperationOutcome, or other unknown type.
  * @returns The normalized OperationOutcome.
  */
 export function normalizeOperationOutcome(error: unknown): OperationOutcome {
@@ -275,7 +275,7 @@ export function normalizeOperationOutcome(error: unknown): OperationOutcome {
 
 /**
  * Normalizes an error object into a displayable error string.
- * @param error The error value which could be a string, Error, OperationOutcome, or other unknown type.
+ * @param error - The error value which could be a string, Error, OperationOutcome, or other unknown type.
  * @returns A display string for the error.
  */
 export function normalizeErrorString(error: unknown): string {
@@ -299,7 +299,7 @@ export function normalizeErrorString(error: unknown): string {
 
 /**
  * Returns a string represenation of the operation outcome.
- * @param outcome The operation outcome.
+ * @param outcome - The operation outcome.
  * @returns The string representation of the operation outcome.
  */
 export function operationOutcomeToString(outcome: OperationOutcome): string {
@@ -309,7 +309,7 @@ export function operationOutcomeToString(outcome: OperationOutcome): string {
 
 /**
  * Returns a string represenation of the operation outcome issue.
- * @param issue The operation outcome issue.
+ * @param issue - The operation outcome issue.
  * @returns The string representation of the operation outcome issue.
  */
 export function operationOutcomeIssueToString(issue: OperationOutcomeIssue): string {

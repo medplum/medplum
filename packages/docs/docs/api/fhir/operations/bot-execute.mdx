@@ -35,7 +35,7 @@ POST [base]/Bot/[id]/$execute
 <Tabs>
   <TabItem value="ts" label="TypeScript">
 
-The [MedplumClient](/docs/sdk/classes/MedplumClient) TypeScript class provides a `executeBot` convenience method
+The [MedplumClient](/docs/sdk/core.medplumclient) TypeScript class provides a `executeBot` convenience method
 
   <MedplumCodeBlock language='ts' selectBlocks='execute-by-id'>
     {ExampleCode}
@@ -112,7 +112,7 @@ POST [base]/Bot/$execute?identifier=[system]|[code]
 <Tabs>
   <TabItem value="ts" label="TypeScript">
 
-The [MedplumClient](/docs/sdk/classes/MedplumClient) `executeBot` convenience method supports both `id: string` and `identifier: Identifier`:
+The [MedplumClient](/docs/sdk/core.medplumclient) `executeBot` convenience method supports both `id: string` and `identifier: Identifier`:
 
   <MedplumCodeBlock language='ts' selectBlocks='execute-by-identifier'>
     {ExampleCode}
@@ -183,6 +183,6 @@ Medplum Bots support a variety of input content types. Specify the input content
 | `application/json`                   | `Record<string, any>`                        | `<INPUT_DATA>` is parsed as JSON-encoded object                                                                                                                     |
 | `application/x-www-form-urlencoded ` | `Record<string, string>`                     | `<INPUT_DATA>` is parsed as URL-encoded string, resulting in a key/value map                                                                                        |
 | `application/fhir+json`              | [`Resource`](/docs/api/fhir/resources)       | `<INPUT_DATA>` is parsed as a [FHIR Resource](/docs/fhir-basics#resources) encoded as JSON                                                                          |
-| `x-application/hl7-v2+er7`           | [`HL7Message`](/docs/sdk/classes/Hl7Message) | `<INPUT_DATA>` is a string that should be parsed as a pipe-delimited HL7v2 message. HL7v2 is a common text-based message protocol used in legacy healthcare systems |
+| `x-application/hl7-v2+er7`           | [`HL7Message`](/docs/sdk/core.hl7message) | `<INPUT_DATA>` is a string that should be parsed as a pipe-delimited HL7v2 message. HL7v2 is a common text-based message protocol used in legacy healthcare systems |
 
 The input data that will be parsed according to `CONTENT_TYPE` and passed into your Bot as `event.input`.

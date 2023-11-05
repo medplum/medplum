@@ -34,8 +34,8 @@ export function blame(history: Bundle): BlameRow[] {
 
 /**
  * For each version, update the blame table with revisions.
- * @param table The output blame table.
- * @param versions The array of versions.
+ * @param table - The output blame table.
+ * @param versions - The array of versions.
  */
 function compareVersions(table: BlameRow[], versions: { meta: Meta; lines: string[] }[]): void {
   for (let i = 1; i < versions.length; i++) {
@@ -68,7 +68,7 @@ function compareVersions(table: BlameRow[], versions: { meta: Meta; lines: strin
 
 /**
  * Combine adjacent rows into spans.
- * @param table The output blame table.
+ * @param table - The output blame table.
  */
 function combineSpans(table: BlameRow[]): void {
   let start = 0;

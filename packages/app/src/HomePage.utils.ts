@@ -9,6 +9,11 @@ import {
 } from '@medplum/core';
 import { Bundle, ResourceType, UserConfiguration } from '@medplum/fhirtypes';
 
+/** Custom navigation paths when the user clicks New... */
+export const RESOURCE_TYPE_CREATION_PATHS: Partial<Record<ResourceType, string>> = {
+  Bot: '/admin/bots/new',
+  ClientApplication: '/admin/clients/new',
+};
 export function addSearchValues(search: SearchRequest, config: UserConfiguration | undefined): SearchRequest {
   const resourceType = search.resourceType || getDefaultResourceType(config);
   const fields = search.fields ?? getDefaultFields(resourceType);
@@ -112,10 +117,6 @@ function getLastSearch(resourceType: string): SearchRequest | undefined {
 export function saveLastSearch(search: SearchRequest): void {
   localStorage.setItem('defaultResourceType', search.resourceType);
   localStorage.setItem(search.resourceType + '-defaultSearch', JSON.stringify(search));
-}
-
-export function canCreate(resourceType: string): boolean {
-  return resourceType !== 'Bot' && resourceType !== 'ClientApplication';
 }
 
 export async function getTransactionBundle(search: SearchRequest, medplum: MedplumClient): Promise<Bundle> {

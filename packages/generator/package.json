@@ -1,26 +1,23 @@
 {
   "name": "@medplum/generator",
-  "version": "2.1.9",
+  "version": "2.1.10",
   "description": "Medplum Code Generator",
-  "author": "Medplum <hello@medplum.com>",
-  "license": "Apache-2.0",
   "homepage": "https://www.medplum.com/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/medplum/medplum.git",
+    "url": "git+https://github.com/medplum/medplum.git",
     "directory": "packages/generator"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
   "scripts": {
-    "clean": "rimraf dist",
-    "build": "npm run clean && tsc",
-    "generate": "ts-node src/index.ts && ts-node src/jsonschema.ts",
     "baseschema": "ts-node src/baseschema.ts",
-    "migrate": "ts-node src/migrate.ts",
-    "docs": "ts-node src/docs.ts",
     "benchmark": "ts-node src/benchmarks.ts",
+    "build": "npm run clean && tsc",
+    "clean": "rimraf dist",
+    "docs": "ts-node src/docs.ts",
+    "generate": "ts-node src/index.ts && ts-node src/jsonschema.ts",
+    "migrate": "ts-node src/migrate.ts",
     "test": "jest"
   },
   "devDependencies": {
@@ -37,5 +34,8 @@
     "pg": "8.11.3",
     "tinybench": "2.5.1",
     "unzipper": "0.10.14"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

@@ -1,29 +1,29 @@
-import { FhircastEventContext, FhircastResourceType } from '.';
+import {
+  FhircastEventContext,
+  FhircastEventContextKey,
+  FhircastEventName,
+  FhircastEventResource,
+  FhircastEventResourceType,
+  FhircastValidContextForEvent,
+} from '.';
 import { OperationOutcomeError, validationError } from '../outcomes';
 
-const FHIRCAST_RESOURCE_TYPES = {
-  patient: 'Patient',
-  imagingstudy: 'ImagingStudy',
-  encounter: 'Encounter',
-} as const;
-
-export function createFhircastMessageContext(
-  resourceType: Lowercase<FhircastResourceType>,
+export function createFhircastMessageContext<
+  EventName extends FhircastEventName = FhircastEventName,
+  K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
+>(
+  key: K,
+  resourceType: FhircastEventResourceType<EventName, K>,
   resourceId: string
-): FhircastEventContext {
-  if (!FHIRCAST_RESOURCE_TYPES[resourceType]) {
-    throw new OperationOutcomeError(
-      validationError(`resourceType must be one of: ${Object.keys(FHIRCAST_RESOURCE_TYPES).join(', ')}`)
-    );
-  }
+): FhircastValidContextForEvent<EventName> {
   if (!(resourceId && typeof resourceId === 'string')) {
     throw new OperationOutcomeError(validationError('Must provide a resourceId.'));
   }
   return {
-    key: resourceType === 'imagingstudy' ? 'study' : resourceType,
+    key,
     resource: {
-      resourceType: FHIRCAST_RESOURCE_TYPES[resourceType],
+      resourceType,
       id: resourceId,
-    },
-  };
+    } as FhircastEventResource<EventName, K>,
+  } as FhircastEventContext<EventName, K>;
 }

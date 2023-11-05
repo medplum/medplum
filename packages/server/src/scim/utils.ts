@@ -10,7 +10,7 @@ import { ScimListResponse, ScimUser } from './types';
  *
  * See SCIM 3.4.2 - Query Resources
  * https://www.rfc-editor.org/rfc/rfc7644#section-3.4.2
- * @param project The project.
+ * @param project - The project.
  * @returns List of SCIM users in the project.
  */
 export async function searchScimUsers(project: Project): Promise<ScimListResponse<ScimUser>> {
@@ -41,9 +41,9 @@ export async function searchScimUsers(project: Project): Promise<ScimListRespons
  *
  * See SCIM 3.3 - Creating Resources
  * https://www.rfc-editor.org/rfc/rfc7644#section-3.3
- * @param invitedBy The user who invited the new user.
- * @param project The project.
- * @param scimUser The new user definition.
+ * @param invitedBy - The user who invited the new user.
+ * @param project - The project.
+ * @param scimUser - The new user definition.
  * @returns The new user.
  */
 export async function createScimUser(
@@ -83,8 +83,8 @@ export async function createScimUser(
  *
  * See SCIM 3.4.1 - Retrieve a Known Resource
  * https://www.rfc-editor.org/rfc/rfc7644#section-3.4.1
- * @param project The project.
- * @param id The user ID.
+ * @param project - The project.
+ * @param id - The user ID.
  * @returns The user.
  */
 export async function readScimUser(project: Project, id: string): Promise<ScimUser> {
@@ -102,8 +102,8 @@ export async function readScimUser(project: Project, id: string): Promise<ScimUs
  *
  * See SCIM 3.5.1 - Replace a Resource
  * https://www.rfc-editor.org/rfc/rfc7644#section-3.5.1
- * @param project The project.
- * @param scimUser The updated user definition.
+ * @param project - The project.
+ * @param scimUser - The updated user definition.
  * @returns The updated user.
  */
 export async function updateScimUser(project: Project, scimUser: ScimUser): Promise<ScimUser> {
@@ -134,8 +134,8 @@ export async function updateScimUser(project: Project, scimUser: ScimUser): Prom
  *
  * See SCIM 3.4.1 - Retrieve a Known Resource
  * https://www.rfc-editor.org/rfc/rfc7644#section-3.4.1
- * @param project The project.
- * @param id The user ID.
+ * @param project - The project.
+ * @param id - The user ID.
  * @returns The user.
  */
 export async function deleteScimUser(project: Project, id: string): Promise<void> {
@@ -153,7 +153,7 @@ export async function deleteScimUser(project: Project, id: string): Promise<void
  * By default, a SCIM User does not have the equivalent of a FHIR resource type.
  *
  * This function looks for the Medplum extension, which contains the resource type.
- * @param scimUser The SCIM user definition.
+ * @param scimUser - The SCIM user definition.
  * @returns The FHIR profile resource type if found; otherwise, undefined.
  */
 export function getScimUserResourceType(scimUser: ScimUser): 'Patient' | 'Practitioner' | 'RelatedPerson' | undefined {
@@ -166,8 +166,8 @@ export function getScimUserResourceType(scimUser: ScimUser): 'Patient' | 'Practi
 
 /**
  * Converts a Medplum user and project membershipt into a SCIM user.
- * @param user The Medplum user.
- * @param membership The Medplum project membership.
+ * @param user - The Medplum user.
+ * @param membership - The Medplum project membership.
  * @returns The SCIM user.
  */
 export function convertToScimUser(user: User, membership: ProjectMembership): ScimUser {
@@ -195,7 +195,7 @@ export function convertToScimUser(user: User, membership: ProjectMembership): Sc
 
 /**
  * Converts an array of resources into a SCIM ListResponse.
- * @param Resources The list of resources.
+ * @param Resources - The list of resources.
  * @returns The SCIM ListResponse object.
  */
 export function convertToScimListResponse<T>(Resources: T[]): ScimListResponse<T> {

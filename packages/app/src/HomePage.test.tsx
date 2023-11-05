@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
 import React, { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
-import { getDefaultFields } from './HomePage.utils';
+import { RESOURCE_TYPE_CREATION_PATHS, getDefaultFields } from './HomePage.utils';
 
 async function setup(url = '/Patient', medplum = new MockClient()): Promise<void> {
   await act(async () => {
@@ -79,11 +79,30 @@ describe('HomePage', () => {
     });
   });
 
-  test('New button hidden on Bot page', async () => {
-    await setup('/Bot');
-    await waitFor(() => screen.getByTestId('search-control'));
+  test('New button on Bot page', async () => {
+    const medplum = new MockClient();
+    medplum.setActiveLoginOverride({
+      accessToken: '123',
+      refreshToken: '456',
+      profile: {
+        reference: 'Practitioner/123',
+      },
+      project: {
+        reference: 'Project/123',
+      },
+    });
 
-    expect(screen.queryByText('New...')).toBeNull();
+    // check that Bot is still included in RESOURCE_TYPE_CREATION_PATHS
+    expect(typeof RESOURCE_TYPE_CREATION_PATHS['Bot']).toBe('string');
+
+    await setup(`/Bot`, medplum);
+    await waitFor(() => screen.getByText('New...'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('New...'));
+    });
+
+    expect(screen.getByText('Create new Bot')).toBeInTheDocument();
   });
 
   test('Delete button, cancel', async () => {

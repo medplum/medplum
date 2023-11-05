@@ -120,8 +120,8 @@ const PREFIX_OPERATORS: Record<string, Operator> = {
 
 /**
  * Parses a search URL into a search request.
- * @param resourceType The FHIR resource type.
- * @param query The collection of query string parameters.
+ * @param resourceType - The FHIR resource type.
+ * @param query - The collection of query string parameters.
  * @returns A parsed SearchRequest.
  */
 export function parseSearchRequest<T extends Resource = Resource>(
@@ -143,7 +143,7 @@ export function parseSearchRequest<T extends Resource = Resource>(
 
 /**
  * Parses a search URL into a search request.
- * @param url The search URL.
+ * @param url - The search URL.
  * @returns A parsed SearchRequest.
  */
 export function parseSearchUrl<T extends Resource = Resource>(url: URL): SearchRequest<T> {
@@ -158,7 +158,7 @@ export function parseSearchUrl<T extends Resource = Resource>(url: URL): SearchR
 
 /**
  * Parses a URL string into a SearchRequest.
- * @param url The URL to parse.
+ * @param url - The URL to parse.
  * @returns Parsed search definition.
  */
 export function parseSearchDefinition<T extends Resource = Resource>(url: string): SearchRequest<T> {
@@ -168,7 +168,7 @@ export function parseSearchDefinition<T extends Resource = Resource>(url: string
 /**
  * Parses a FHIR criteria string into a SearchRequest.
  * FHIR criteria strings are found on resources such as Subscription.
- * @param criteria The FHIR criteria string.
+ * @param criteria - The FHIR criteria string.
  * @returns Parsed search definition.
  */
 export function parseCriteriaAsSearchRequest(criteria: string): SearchRequest {
@@ -201,6 +201,11 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
   } else {
     code = key;
     modifier = '';
+  }
+
+  if (code === '_has' || key.includes('.')) {
+    addFilter(searchRequest, { code: key, operator: Operator.EQUALS, value });
+    return;
   }
 
   switch (code) {
@@ -263,9 +268,9 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
     default: {
       const param = globalSchema.types[searchRequest.resourceType]?.searchParams?.[code];
       if (param) {
-        parseParameter(searchRequest, param, modifier, value);
+        addFilter(searchRequest, parseParameter(param, modifier, value));
       } else {
-        parseUnknownParameter(searchRequest, code, modifier, value);
+        addFilter(searchRequest, parseUnknownParameter(code, modifier, value));
       }
     }
   }
@@ -288,60 +293,47 @@ function parseSortRule(searchRequest: SearchRequest, value: string): void {
   }
 }
 
-function parseParameter(
-  searchRequest: SearchRequest,
-  searchParam: SearchParameter,
-  modifier: string,
-  value: string
-): void {
+export function parseParameter(searchParam: SearchParameter, modifier: string, value: string): Filter {
   if (modifier === 'missing') {
-    addFilter(searchRequest, {
+    return {
       code: searchParam.code as string,
       operator: Operator.MISSING,
       value,
-    });
-    return;
+    };
   }
   switch (searchParam.type) {
     case 'number':
     case 'date':
     case 'quantity':
-      parsePrefixType(searchRequest, searchParam, value);
-      break;
+      return parsePrefixType(searchParam, value);
     case 'reference':
     case 'string':
     case 'token':
     case 'uri':
-      parseModifierType(searchRequest, searchParam, modifier, value);
-      break;
+      return parseModifierType(searchParam, modifier, value);
     default:
-      break;
+      throw new Error('Unrecognized search parameter type: ' + searchParam.type);
   }
 }
 
-function parsePrefixType(searchRequest: SearchRequest, param: SearchParameter, input: string): void {
+function parsePrefixType(param: SearchParameter, input: string): Filter {
   const { operator, value } = parsePrefix(input);
-  addFilter(searchRequest, {
+  return {
     code: param.code as string,
     operator,
     value,
-  });
+  };
 }
 
-function parseModifierType(
-  searchRequest: SearchRequest,
-  param: SearchParameter,
-  modifier: string,
-  value: string
-): void {
-  addFilter(searchRequest, {
+function parseModifierType(param: SearchParameter, modifier: string, value: string): Filter {
+  return {
     code: param.code as string,
     operator: parseModifier(modifier),
     value,
-  });
+  };
 }
 
-function parseUnknownParameter(searchRequest: SearchRequest, code: string, modifier: string, value: string): void {
+function parseUnknownParameter(code: string, modifier: string, value: string): Filter {
   let operator = Operator.EQUALS;
   if (modifier) {
     operator = modifier as Operator;
@@ -354,12 +346,7 @@ function parseUnknownParameter(searchRequest: SearchRequest, code: string, modif
       }
     }
   }
-
-  addFilter(searchRequest, {
-    code,
-    operator,
-    value,
-  });
+  return { code, operator, value };
 }
 
 function parsePrefix(input: string): { operator: Operator; value: string } {
@@ -418,8 +405,8 @@ const subexpressionPattern = /{{([^{}]+)}}/g;
  * any embedded FHIRPath subexpressions (e.g. `{{ %patient.id }}`) with the provided variables.
  *
  * @see https://hl7.org/fhir/fhir-xquery.html
- * @param query The X-Fhir-Query string to parse
- * @param variables Values to pass into embedded FHIRPath expressions
+ * @param query - The X-Fhir-Query string to parse
+ * @param variables - Values to pass into embedded FHIRPath expressions
  * @returns The parsed search request
  */
 export function parseXFhirQuery(query: string, variables: Record<string, TypedValue>): SearchRequest {
@@ -436,7 +423,7 @@ export function parseXFhirQuery(query: string, variables: Record<string, TypedVa
 /**
  * Formats a search definition object into a query string.
  * Note: The return value does not include the resource type.
- * @param definition The search definition.
+ * @param definition - The search definition.
  * @returns Formatted URL.
  */
 export function formatSearchQuery(definition: SearchRequest): string {

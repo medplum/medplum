@@ -41,7 +41,7 @@ let worker: Worker<CronJobData> | undefined = undefined;
  * Initializes the Cron worker.
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
- * @param config The Medplum server config to use.
+ * @param config - The Medplum server config to use.
  */
 export function initCronWorker(config: MedplumServerConfig): void {
   const defaultOptions: QueueBaseOptions = {
@@ -94,7 +94,7 @@ export function getCronQueue(): Queue<CronJobData> | undefined {
 }
 
 /**
- * @param resource The resource that was created or updated.
+ * @param resource - The resource that was created or updated.
  */
 export async function addCronJobs(resource: Resource): Promise<void> {
   const ctx = getRequestContext();
@@ -146,8 +146,8 @@ export async function addCronJobs(resource: Resource): Promise<void> {
 /**
  * Adds a Cron job to the queue, and removes the previous job for bot
  * if it exists
- * @param job The Cron job details.
- * @param repeatable The repeat format that instructs BullMQ when to run the job
+ * @param job - The Cron job details.
+ * @param repeatable - The repeat format that instructs BullMQ when to run the job
  */
 async function addCronJobData(job: CronJobData, repeatable: Repeatable): Promise<void> {
   const ctx = getRequestContext();
@@ -164,7 +164,7 @@ async function addCronJobData(job: CronJobData, repeatable: Repeatable): Promise
 
 /**
  * BullMQ repeat option, which conducts the job has a cron-parser's pattern
- * @param timing The Cron property from the bot, which is a Timing Type.
+ * @param timing - The Cron property from the bot, which is a Timing Type.
  * @returns The cron string.
  */
 export function convertTimingToCron(timing: Timing): string | undefined {

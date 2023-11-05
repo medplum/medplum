@@ -10,22 +10,30 @@ Lab ordering is a multistep process.
 
 ## Prerequisites
 
+### Secrets
+
 The demo bots expect a number of configuration settings in your Medplum Project Secrets. All of these values are available from the Health Gorilla portal.
 
-| Secret Name                             | Description                              | Example                             |
-| --------------------------------------- | ---------------------------------------- | ----------------------------------- |
-| HEALTH_GORILLA_BASE_URL                 | API endpoint                             | `https://sandbox.healthgorilla.com` |
-| HEALTH_GORILLA_CLIENT_ID                | Client ID                                |                                     |
-| HEALTH_GORILLA_CLIENT_SECRET            | Client secret                            |                                     |
-| HEALTH_GORILLA_CLIENT_URI               | Client URI                               | `https://www.medplum.com`           |
-| HEALTH_GORILLA_USER_LOGIN               | User login of the API account            | `medplum.api`                       |
-| HEALTH_GORILLA_PROVIDER_LAB_ACCOUNT     | The ordering provider lab account number |                                     |
-| HEALTH_GORILLA_TENANT_ID                | Your Health Gorilla tenant ID            |                                     |
-| HEALTH_GORILLA_SUBTENANT_ID             | Your Health Gorilla subtenant ID         |                                     |
-| HEALTH_GORILLA_SUBTENANT_ACCOUNT_NUMBER | The subtenant account number             |                                     |
-| HEALTH_GORILLA_SCOPES                   | OAuth scopes                             | `user/_._`                          |
+| Secret Name                             | Description                                                  | Example                                         |
+| --------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------- |
+| HEALTH_GORILLA_BASE_URL                 | API endpoint                                                 | `https://sandbox.healthgorilla.com`             |
+| HEALTH_GORILLA_AUDIENCE_URL             | Audience URL                                                 | `https://sandbox.healthgorilla.com/oauth/token` |
+| HEALTH_GORILLA_CLIENT_ID                | Client ID from Health Gorilla                                |                                                 |
+| HEALTH_GORILLA_CLIENT_SECRET            | Client secret from Health Gorilla                            |                                                 |
+| HEALTH_GORILLA_CLIENT_URI               | Client URI                                                   | `https://www.medplum.com`                       |
+| HEALTH_GORILLA_USER_LOGIN               | User login of the API account                                | `medplum.api`                                   |
+| HEALTH_GORILLA_PROVIDER_LAB_ACCOUNT     | The ordering provider lab account number                     |                                                 |
+| HEALTH_GORILLA_TENANT_ID                | Your Health Gorilla tenant ID                                |                                                 |
+| HEALTH_GORILLA_SUBTENANT_ID             | Your Health Gorilla subtenant ID                             |                                                 |
+| HEALTH_GORILLA_SUBTENANT_ACCOUNT_NUMBER | The subtenant account number                                 |                                                 |
+| HEALTH_GORILLA_SCOPES                   | OAuth scopes                                                 | `user/_._`                                      |
+| HEALTH_GORILLA_CALLBACK_BOT_ID          | The bot ID of your bot with `receive-from-health-gorilla.ts` |                                                 |
+| HEALTH_GORILLA_CALLBACK_CLIENT_ID       | Client ID of the Health Gorilla API user in Medplum          |                                                 |
+| HEALTH_GORILLA_CALLBACK_CLIENT_SECRET   | Client secret of the Health Gorilla API user in Medplum      |                                                 |
 
-You will also need a FHIR `Organization` resource representing the performing lab. For example:
+### Organizations
+
+You will also need a FHIR `Organization` resource representing each performing lab. For example:
 
 ```js
 {
@@ -39,6 +47,8 @@ You will also need a FHIR `Organization` resource representing the performing la
   ]
 }
 ```
+
+If you use multiple performing labs, you will need to create a separate `Organization` resource for each one.
 
 ## Sending Orders
 

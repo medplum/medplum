@@ -195,9 +195,9 @@ function NavLinkIcon(props: NavLinkIconProps): JSX.Element {
  * However, we ignore some search parameters to support pagination.
  * But we cannot ignore all search parameters, to support separate links based on search filters.
  * So in the end, we use a simple scoring system based on the number of matching query search params.
- * @param currentPathname The web browser current pathname.
- * @param currentSearchParams The web browser current search parameters.
- * @param menus Collection of navbar menus and links.
+ * @param currentPathname - The web browser current pathname.
+ * @param currentSearchParams - The web browser current search parameters.
+ * @param menus - Collection of navbar menus and links.
  * @returns The active link if one is found.
  */
 function getActiveLink(
@@ -233,9 +233,9 @@ function getActiveLink(
  * One means "matches the pathname only".
  * Additional increases for each matching search parameter.
  * Ignores pagination parameters "_count" and "_offset".
- * @param currentPathname The web browser current pathname.
- * @param currentSearchParams The web browser current search parameters.
- * @param linkHref A candidate link href.
+ * @param currentPathname - The web browser current pathname.
+ * @param currentSearchParams - The web browser current search parameters.
+ * @param linkHref - A candidate link href.
  * @returns The link score.
  */
 function getLinkScore(currentPathname: string, currentSearchParams: URLSearchParams, linkHref: string): number {

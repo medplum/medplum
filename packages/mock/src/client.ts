@@ -173,7 +173,7 @@ export class MockClient extends MedplumClient {
   }
 }
 
-class MockFetchClient {
+export class MockFetchClient {
   initialized = false;
   initPromise?: Promise<void>;
 

@@ -17,6 +17,7 @@ import {
   Appointment,
   AuditEvent,
   Bundle,
+  CareTeam,
   Coding,
   Communication,
   Condition,
@@ -1512,6 +1513,48 @@ describe('FHIR Search', () => {
       expect(bundleContains(bundle4, serviceRequest2)).toEqual(false);
     }));
 
+  test('Missing with logical (identifier) references', () =>
+    withTestContext(async () => {
+      const patientIdentifier = randomUUID();
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [
+          {
+            system: 'http://example.com/guid',
+            value: patientIdentifier,
+          },
+        ],
+        generalPractitioner: [
+          {
+            identifier: {
+              system: 'http://hl7.org/fhir/sid/us-npi',
+              value: '9876543210',
+            },
+          },
+        ],
+        managingOrganization: {
+          identifier: {
+            system: 'http://hl7.org/fhir/sid/us-npi',
+            value: '0123456789',
+          },
+        },
+      });
+
+      // Test singlet reference column
+      let results = await systemRepo.searchResources(
+        parseSearchDefinition(`Patient?identifier=${patientIdentifier}&organization:missing=false`)
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0]?.id).toEqual(patient.id);
+
+      // Test array reference column
+      results = await systemRepo.searchResources(
+        parseSearchDefinition(`Patient?identifier=${patientIdentifier}&general-practitioner:missing=false`)
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0]?.id).toEqual(patient.id);
+    }));
+
   test('Starts after', () =>
     withTestContext(async () => {
       // Create 2 appointments
@@ -1803,6 +1846,107 @@ describe('FHIR Search', () => {
       });
       expect(searchResult.entry?.[0]?.resource?.id).toEqual(observation.id);
     }));
+
+  test('Chained search on array columns', () =>
+    withTestContext(async () => {
+      // Create Practitioner
+      const pcp = await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+      });
+      // Create Patient
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        generalPractitioner: [createReference(pcp)],
+      });
+
+      // Create CareTeam
+      const code = randomUUID();
+      const categorySystem = 'http://example.com/care-team-category';
+      await systemRepo.createResource<CareTeam>({
+        resourceType: 'CareTeam',
+        category: [
+          {
+            coding: [
+              {
+                system: categorySystem,
+                code,
+                display: 'Public health-focused care team',
+              },
+            ],
+          },
+        ],
+        participant: [{ member: createReference(pcp) }],
+      });
+
+      // Search chain
+      const searchResult = await systemRepo.search(
+        parseSearchDefinition(
+          `Patient?general-practitioner:Practitioner._has:CareTeam:participant:category=${categorySystem}|${code}`
+        )
+      );
+      expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+    }));
+
+  test('Chained search on singlet columns', () =>
+    withTestContext(async () => {
+      const code = randomUUID();
+      // Create linked resources
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+      });
+      const encounter = await systemRepo.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'finished',
+        class: { system: 'http://example.com/appt-type', code },
+      });
+      const observation = await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'Throat culture' },
+        subject: createReference(patient),
+        encounter: createReference(encounter),
+      });
+      await systemRepo.createResource<DiagnosticReport>({
+        resourceType: 'DiagnosticReport',
+        status: 'final',
+        code: { text: 'Strep test' },
+        encounter: createReference(encounter),
+        result: [createReference(observation)],
+      });
+
+      const result = await systemRepo.search(
+        parseSearchDefinition(`Patient?_has:Observation:subject:encounter:Encounter.class=${code}`)
+      );
+      expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
+    }));
+
+  test('Rejects too long chained search', () =>
+    withTestContext(async () => {
+      await expect(() =>
+        systemRepo.search(
+          parseSearchDefinition(
+            `Patient?_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.specimen.parent.collected=2023`
+          )
+        )
+      ).rejects.toEqual(new Error('Search chains longer than three links are not currently supported'));
+    }));
+
+  test.each([
+    ['Patient?organization.invalid.name=Kaiser', 'Invalid search parameter in chain: Organization?invalid'],
+    ['Patient?organization.invalid=true', 'Invalid search parameter at end of chain: Organization?invalid'],
+    [
+      'Patient?general-practitioner.qualification-period=2023',
+      'Unable to identify next resource type for search parameter: Patient?general-practitioner',
+    ],
+    ['Patient?_has:Observation:invalid:status=active', 'Invalid search parameter in chain: Observation?invalid'],
+    [
+      'Patient?_has:Observation:encounter:status=active',
+      'Invalid reverse chain link: search parameter Observation?encounter does not refer to Patient',
+    ],
+    ['Patient?_has:Observation:status=active', 'Invalid search chain: _has:Observation:status'],
+  ])('Invalid chained search parameters: %s', (searchString: string, errorMsg: string) => {
+    return expect(systemRepo.search(parseSearchDefinition(searchString))).rejects.toEqual(new Error(errorMsg));
+  });
 
   test('Include references success', () =>
     withTestContext(async () => {

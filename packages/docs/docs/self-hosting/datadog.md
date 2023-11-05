@@ -46,4 +46,4 @@ Run `deploy` to apply changes:
 npx cdk deploy -c config=my-config-file.json
 ```
 
-For more details about the Datadog / Amazon ECS Fargate integration, refer to the full documentation: <https://docs.datadoghq.com/integrations/ecs_fargate/>
+For more details about the Datadog / Amazon ECS Fargate integration, refer to the full documentation: [https://docs.datadoghq.com/integrations/ecs_fargate/](https://docs.datadoghq.com/integrations/ecs_fargate/)

@@ -1,19 +1,23 @@
 {
-  "type": "module",
   "name": "@medplum/bot-layer",
-  "version": "2.1.9",
+  "version": "2.1.10",
   "description": "Medplum Bot Lambda Layer",
-  "author": "Medplum <hello@medplum.com>",
-  "license": "Apache-2.0",
+  "keywords": [
+    "medplum",
+    "aws",
+    "lambda",
+    "bot",
+    "layer"
+  ],
   "homepage": "https://www.medplum.com/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/medplum/medplum.git",
+    "url": "git+https://github.com/medplum/medplum.git",
     "directory": "packages/bot-layer"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "dependencies": {
     "@medplum/core": "*",
     "form-data": "4.0.0",
@@ -34,11 +38,7 @@
     "ssh2": "^1.11.0",
     "ssh2-sftp-client": "^9.0.4"
   },
-  "keywords": [
-    "medplum",
-    "aws",
-    "lambda",
-    "bot",
-    "layer"
-  ]
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

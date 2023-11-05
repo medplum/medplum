@@ -28,6 +28,7 @@
           "linkId": "practitioner",
           "type": "reference",
           "text": "Ordering Provider",
+          "required": true,
           "extension": [
             {
               "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource",
@@ -40,6 +41,7 @@
           "linkId": "patient",
           "type": "reference",
           "text": "Patient",
+          "required": true,
           "extension": [
             {
               "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource",
@@ -73,6 +75,7 @@
           "linkId": "performer",
           "type": "choice",
           "text": "Performing Lab",
+          "required": true,
           "answerOption": [
             {
               "id": "test",
@@ -1262,60 +1265,132 @@
           "type": "group",
           "item": [
             {
+              "id": "diagnosis-D63.1",
+              "linkId": "diagnosis-D63.1",
+              "type": "boolean",
+              "text": "Anemia in chronic kidney disease [D63.1]"
+            },
+            {
               "id": "diagnosis-D64.9",
               "linkId": "diagnosis-D64.9",
               "type": "boolean",
-              "text": "Anemia, unspecified"
+              "text": "Anemia, unspecified [D64.9]"
             },
             {
-              "id": "diagnosis-E11.9",
-              "linkId": "diagnosis-E11.9",
+              "id": "diagnosis-E04.2",
+              "linkId": "diagnosis-E04.2",
               "type": "boolean",
-              "text": "Diabetes mellitus, unspecified"
-            },
-            {
-              "id": "diagnosis-I10",
-              "linkId": "diagnosis-I10",
-              "type": "boolean",
-              "text": "Essential (primary) hypertension"
-            },
-            {
-              "id": "diagnosis-N18.3",
-              "linkId": "diagnosis-N18.3",
-              "type": "boolean",
-              "text": "Chronic kidney disease, stage 3 (moderate)"
-            },
-            {
-              "id": "diagnosis-E78.2",
-              "linkId": "diagnosis-E78.2",
-              "type": "boolean",
-              "text": "Mixed hyperlipidemia"
+              "text": "Nontoxic multinodular goiter [E04.2]"
             },
             {
               "id": "diagnosis-E05.90",
               "linkId": "diagnosis-E05.90",
               "type": "boolean",
-              "text": "Hyperthyroidism, unspecified"
+              "text": "Hyperthyroidism, unspecified [E05.90]"
             },
             {
-              "id": "diagnosis-K70.30",
-              "linkId": "diagnosis-K70.30",
+              "id": "diagnosis-E11.9",
+              "linkId": "diagnosis-E11.9",
               "type": "boolean",
-              "text": "Alcoholic cirrhosis of liver without ascites"
+              "text": "Diabetes mellitus, unspecified [E11.9]"
             },
             {
-              "id": "diagnosis-K76.0",
-              "linkId": "diagnosis-K76.0",
+              "id": "diagnosis-E11.42",
+              "linkId": "diagnosis-E11.42",
               "type": "boolean",
-              "text": "Fatty (change of) liver, not elsewhere classified"
+              "text": "Type 2 diabetes mellitus with diabetic polyneuropathy [E11.42]"
             },
             {
               "id": "diagnosis-E55.9",
               "linkId": "diagnosis-E55.9",
               "type": "boolean",
-              "text": "Vitamin D deficiency, unspecified"
+              "text": "Vitamin D deficiency, unspecified [E55.9]"
+            },
+            {
+              "id": "diagnosis-E78.2",
+              "linkId": "diagnosis-E78.2",
+              "type": "boolean",
+              "text": "Mixed hyperlipidemia [E78.2]"
+            },
+            {
+              "id": "diagnosis-E88.89",
+              "linkId": "diagnosis-E88.89",
+              "type": "boolean",
+              "text": "Other specified metabolic disorders [E88.89]"
+            },
+            {
+              "id": "diagnosis-F06.8",
+              "linkId": "diagnosis-F06.8",
+              "type": "boolean",
+              "text": "Other specified mental disorders due to known physiological condition [F06.8]"
+            },
+            {
+              "id": "diagnosis-I10",
+              "linkId": "diagnosis-I10",
+              "type": "boolean",
+              "text": "Essential (primary) hypertension [I10]"
+            },
+            {
+              "id": "diagnosis-K70.30",
+              "linkId": "diagnosis-K70.30",
+              "type": "boolean",
+              "text": "Alcoholic cirrhosis of liver without ascites [K70.30]"
+            },
+            {
+              "id": "diagnosis-K76.0",
+              "linkId": "diagnosis-K76.0",
+              "type": "boolean",
+              "text": "Fatty (change of) liver, not elsewhere classified [K76.0]"
+            },
+            {
+              "id": "diagnosis-M10.9",
+              "linkId": "diagnosis-M10.9",
+              "type": "boolean",
+              "text": "Gout, unspecified [M10.9]"
+            },
+            {
+              "id": "diagnosis-N13.5",
+              "linkId": "diagnosis-N13.5",
+              "type": "boolean",
+              "text": "Crossing vessel and stricture of ureter [N13.5]"
+            },
+            {
+              "id": "diagnosis-N18.3",
+              "linkId": "diagnosis-N18.3",
+              "type": "boolean",
+              "text": "Chronic kidney disease, stage 3 (moderate) [N18.3]"
+            },
+            {
+              "id": "diagnosis-R53.83",
+              "linkId": "diagnosis-R53.83",
+              "type": "boolean",
+              "text": "Other fatigue [R53.83]"
+            },
+            {
+              "id": "diagnosis-Z00.00",
+              "linkId": "diagnosis-Z00.00",
+              "type": "boolean",
+              "text": "Encounter for general adult medical examination without abnormal findings [Z00.00]"
+            },
+            {
+              "id": "diagnosis-Z34.90",
+              "linkId": "diagnosis-Z34.90",
+              "type": "boolean",
+              "text": "Encounter for supervision of normal pregnancy, unspecified trimester [Z34.90]"
             }
           ]
+        },
+        {
+          "id": "specimenCollectedDateTime",
+          "linkId": "specimenCollectedDateTime",
+          "type": "dateTime",
+          "text": "Specimen collected date/time"
+        },
+        {
+          "id": "orderNote",
+          "linkId": "orderNote",
+          "type": "string",
+          "text": "Notes"
         }
       ]
     },
@@ -1339,23 +1414,14 @@
       ],
       "item": [
         {
-          "id": "billing",
-          "linkId": "billing",
-          "type": "choice",
-          "text": "Bill To",
-          "answerOption": [
+          "id": "account",
+          "linkId": "account",
+          "type": "reference",
+          "text": "Account",
+          "extension": [
             {
-              "valueString": "Client (our account)"
-            },
-            {
-              "valueString": "Patient",
-              "initialSelected": true
-            },
-            {
-              "valueString": "Guarantor"
-            },
-            {
-              "valueString": "Third Party"
+              "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource",
+              "valueCode": "Account"
             }
           ]
         }

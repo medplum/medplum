@@ -88,20 +88,20 @@ jobs:
           npm run installer
 
       - name: Upload Agent installer
-        uses: actions/github-script@v4
+        uses: actions/github-script@v6
         with:
           script: |
             const fs = require('fs');
             const tag = context.ref.replace("refs/tags/", "");
-            const release = await github.repos.getReleaseByTag({
+            const release = await github.rest.repos.getReleaseByTag({
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag
             });
-            await github.repos.uploadReleaseAsset({
+            await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-win-x64.exe",
+              name: "medplum-agent-installer.exe",
               data: await fs.readFileSync("packages/agent/medplum-agent-installer.exe")
             });

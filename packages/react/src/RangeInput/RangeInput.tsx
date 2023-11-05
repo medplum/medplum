@@ -12,7 +12,7 @@ export interface RangeInputProps {
 /**
  * Renders a Range input.
  * See: https://www.hl7.org/fhir/datatypes.html#Range
- * @param props Range input properties.
+ * @param props - Range input properties.
  * @returns Range input element.
  */
 export function RangeInput(props: RangeInputProps): JSX.Element {

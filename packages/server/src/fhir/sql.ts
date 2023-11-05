@@ -1,8 +1,9 @@
 import { AsyncLocalStorage } from 'async_hooks';
 import { Client, Pool, PoolClient } from 'pg';
 import Cursor from 'pg-cursor';
+import { env } from 'process';
 
-const DEBUG = false;
+const DEBUG = env['SQL_DEBUG'];
 
 export enum ColumnType {
   UUID = 'uuid',
@@ -10,20 +11,107 @@ export enum ColumnType {
   TEXT = 'text',
 }
 
-export enum Operator {
-  EQUALS = '=',
-  NOT_EQUALS = '<>',
-  LIKE = ' LIKE ',
-  NOT_LIKE = ' NOT LIKE ',
-  LESS_THAN = '<',
-  LESS_THAN_OR_EQUALS = '<=',
-  GREATER_THAN = '>',
-  GREATER_THAN_OR_EQUALS = '>=',
-  IN = ' IN ',
-  ARRAY_CONTAINS = 'ARRAY_CONTAINS',
-  TSVECTOR_SIMPLE = ` @@ to_tsquery('simple',`,
-  TSVECTOR_ENGLISH = ` @@ to_tsquery('english',`,
-  IN_SUBQUERY = 'IN_SUBQUERY',
+export type OperatorFunc = (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => void;
+
+export const Operator = {
+  '=': (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
+    if (parameter === null) {
+      sql.append(' IS NULL');
+    } else {
+      sql.append(' = ');
+      sql.appendParameters(parameter, true);
+    }
+  },
+  '!=': (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
+    if (parameter === null) {
+      sql.append(' IS NOT NULL');
+    } else {
+      sql.append(' <> ');
+      sql.appendParameters(parameter, true);
+    }
+  },
+  LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append('LOWER(');
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' LIKE ');
+    sql.param((parameter as string).toLowerCase());
+  },
+  NOT_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append('LOWER(');
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' NOT LIKE ');
+    sql.param((parameter as string).toLowerCase());
+  },
+  '<': simpleBinaryOperator('<'),
+  '<=': simpleBinaryOperator('<='),
+  '>': simpleBinaryOperator('>'),
+  '>=': simpleBinaryOperator('>='),
+  IN: simpleBinaryOperator('IN'),
+  ARRAY_CONTAINS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.append('(');
+    sql.appendColumn(column);
+    sql.append(' IS NOT NULL AND ');
+    sql.appendColumn(column);
+    sql.append(' && ARRAY[');
+    sql.appendParameters(parameter, false);
+    sql.append(']');
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+    sql.append(')');
+  },
+  TSVECTOR_SIMPLE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append(`to_tsvector('simple',`);
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(` @@ to_tsquery('simple',`);
+    sql.param(parameter);
+    sql.append(')');
+  },
+  TSVECTOR_ENGLISH: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append(`to_tsvector('english',`);
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(` @@ to_tsquery('english',`);
+    sql.param(parameter);
+    sql.append(')');
+  },
+  IN_SUBQUERY: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append('=ANY(');
+    if (paramType) {
+      sql.append('(');
+    }
+    (parameter as SelectQuery).buildSql(sql);
+    if (paramType) {
+      sql.append(')::' + paramType);
+    }
+    sql.append(')');
+  },
+  LINK: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append('::TEXT = SPLIT_PART(');
+    sql.appendColumn(parameter as Column);
+    sql.append(`,'/',2)`);
+  },
+  REVERSE_LINK: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(` = '${paramType}/'`);
+    sql.append('||');
+    sql.appendColumn(parameter as Column);
+  },
+};
+
+function simpleBinaryOperator(operator: string): OperatorFunc {
+  return (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(` ${operator} `);
+    sql.appendParameters(parameter, true);
+  };
 }
 
 export class Column {
@@ -52,7 +140,7 @@ export class Condition implements Expression {
   readonly column: Column;
   constructor(
     column: Column | string,
-    readonly operator: Operator,
+    readonly operator: keyof typeof Operator,
     readonly parameter: any,
     readonly parameterType?: string
   ) {
@@ -60,88 +148,11 @@ export class Condition implements Expression {
   }
 
   buildSql(sql: SqlBuilder): void {
-    if (this.operator === Operator.ARRAY_CONTAINS) {
-      this.buildArrayCondition(sql);
-    } else if (this.operator === Operator.IN_SUBQUERY) {
-      this.buildInSubqueryCondition(sql);
-    } else {
-      this.buildSimpleCondition(sql);
+    const operator = Operator[this.operator];
+    if (!operator) {
+      throw new Error('Unrecognized SQL operator: ' + this.operator);
     }
-  }
-
-  protected buildArrayCondition(sql: SqlBuilder): void {
-    sql.append('(');
-    sql.appendColumn(this.column);
-    sql.append(' IS NOT NULL AND ');
-    sql.appendColumn(this.column);
-    sql.append('&&ARRAY[');
-    this.appendParameters(sql, false);
-    sql.append(']');
-    if (this.parameterType) {
-      sql.append('::' + this.parameterType);
-    }
-    sql.append(')');
-  }
-
-  protected buildInSubqueryCondition(sql: SqlBuilder): void {
-    sql.appendColumn(this.column);
-    sql.append('=ANY(');
-    if (this.parameterType) {
-      sql.append('(');
-    }
-    (this.parameter as SelectQuery).buildSql(sql);
-    if (this.parameterType) {
-      sql.append(')::' + this.parameterType);
-    }
-    sql.append(')');
-  }
-
-  protected buildSimpleCondition(sql: SqlBuilder): void {
-    if (this.operator === Operator.LIKE) {
-      sql.append('LOWER(');
-      sql.appendColumn(this.column);
-      sql.append(')');
-      sql.append(this.operator);
-      sql.param((this.parameter as string).toLowerCase());
-    } else if (this.operator === Operator.TSVECTOR_SIMPLE || this.operator === Operator.TSVECTOR_ENGLISH) {
-      sql.append(`to_tsvector('${this.operator === Operator.TSVECTOR_SIMPLE ? 'simple' : 'english'}',`);
-      sql.appendColumn(this.column);
-      sql.append(')');
-      sql.append(this.operator);
-      sql.param(this.parameter);
-      sql.append(')');
-    } else if (this.operator === Operator.EQUALS && this.parameter === null) {
-      sql.appendColumn(this.column);
-      sql.append(' IS NULL');
-    } else if (this.operator === Operator.NOT_EQUALS && this.parameter === null) {
-      sql.appendColumn(this.column);
-      sql.append(' IS NOT NULL');
-    } else {
-      sql.appendColumn(this.column);
-      sql.append(this.operator);
-      this.appendParameters(sql, true);
-    }
-  }
-
-  private appendParameters(sql: SqlBuilder, addParens: boolean): void {
-    if (Array.isArray(this.parameter) || this.parameter instanceof Set) {
-      if (addParens) {
-        sql.append('(');
-      }
-      let first = true;
-      for (const value of this.parameter) {
-        if (!first) {
-          sql.append(',');
-        }
-        sql.param(value);
-        first = false;
-      }
-      if (addParens) {
-        sql.append(')');
-      }
-    } else {
-      sql.param(this.parameter);
-    }
+    operator(sql, this.column, this.parameter, this.parameterType);
   }
 }
 
@@ -156,8 +167,8 @@ export abstract class Connective implements Expression {
     return this;
   }
 
-  where(column: Column | string, operator?: Operator, value?: any, type?: string): this {
-    return this.whereExpr(new Condition(column, operator as Operator, value, type));
+  where(column: Column | string, operator?: keyof typeof Operator, value?: any, type?: string): this {
+    return this.whereExpr(new Condition(column, operator as keyof typeof Operator, value, type));
   }
 
   buildSql(builder: SqlBuilder): void {
@@ -256,6 +267,26 @@ export class SqlBuilder {
     return this;
   }
 
+  appendParameters(parameter: any, addParens: boolean): void {
+    if (Array.isArray(parameter) || parameter instanceof Set) {
+      if (addParens) {
+        this.append('(');
+      }
+      let i = 0;
+      for (const value of parameter) {
+        if (i++) {
+          this.append(',');
+        }
+        this.param(value);
+      }
+      if (addParens) {
+        this.append(')');
+      }
+    } else {
+      this.param(parameter);
+    }
+  }
+
   toString(): string {
     return this.sql.join('');
   }
@@ -276,7 +307,7 @@ export class SqlBuilder {
     if (DEBUG) {
       const endTime = Date.now();
       const duration = endTime - startTime;
-      console.log('duration', duration);
+      console.log(`result: ${result.rows.length} rows (${duration} ms)`);
     }
     return result.rows;
   }
@@ -297,7 +328,7 @@ export abstract class BaseQuery {
     return this;
   }
 
-  where(column: Column | string, operator?: Operator, value?: any, type?: string): this {
+  where(column: Column | string, operator?: keyof typeof Operator, value?: any, type?: string): this {
     this.predicate.where(getColumn(column, this.tableName), operator, value, type);
     return this;
   }
@@ -318,6 +349,7 @@ export class SelectQuery extends BaseQuery {
   readonly orderBys: OrderBy[];
   limit_: number;
   offset_: number;
+  joinCount = 0;
 
   constructor(tableName: string) {
     super(tableName);
@@ -346,11 +378,17 @@ export class SelectQuery extends BaseQuery {
   }
 
   getNextJoinAlias(): string {
-    return `T${this.joins.length + 1}`;
+    this.joinCount++;
+    return `T${this.joinCount}`;
   }
 
   innerJoin(joinItem: string | SelectQuery, joinAlias: string, onExpression: Expression): this {
     this.joins.push(new Join('INNER JOIN', joinItem, joinAlias, onExpression));
+    return this;
+  }
+
+  leftJoin(joinItem: string | SelectQuery, joinAlias: string, onExpression: Expression): this {
+    this.joins.push(new Join('LEFT JOIN', joinItem, joinAlias, onExpression));
     return this;
   }
 
@@ -461,7 +499,7 @@ export class SelectQuery extends BaseQuery {
     sql.appendIdentifier(this.tableName);
 
     for (const join of this.joins) {
-      sql.append(' LEFT JOIN ');
+      sql.append(` ${join.joinType} `);
       if (typeof join.joinItem === 'string') {
         sql.appendIdentifier(join.joinItem);
       } else {
@@ -513,18 +551,18 @@ export class SelectQuery extends BaseQuery {
 
 export class ArraySubquery implements Expression {
   private filter: Expression;
-  private columnName: string;
+  private column: Column;
 
-  constructor(columnName: string, filter: Expression) {
+  constructor(column: Column, filter: Expression) {
     this.filter = filter;
-    this.columnName = columnName;
+    this.column = column;
   }
 
   buildSql(sql: SqlBuilder): void {
     sql.append('EXISTS(SELECT 1 FROM unnest(');
-    sql.appendIdentifier(this.columnName);
+    sql.appendColumn(this.column);
     sql.append(') AS ');
-    sql.appendIdentifier(this.columnName);
+    sql.appendIdentifier(this.column.columnName);
     sql.append(' WHERE ');
     this.filter.buildSql(sql);
     sql.append(' LIMIT 1');

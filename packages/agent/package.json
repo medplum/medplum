@@ -1,25 +1,22 @@
 {
   "name": "@medplum/agent",
-  "version": "2.1.9",
+  "version": "2.1.10",
   "description": "Medplum Agent",
-  "author": "Medplum <hello@medplum.com>",
-  "license": "Apache-2.0",
   "homepage": "https://www.medplum.com/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/medplum/medplum.git",
+    "url": "git+https://github.com/medplum/medplum.git",
     "directory": "packages/agent"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
   "scripts": {
-    "clean": "rimraf dist",
-    "build": "npm run clean && tsc && node esbuild.mjs",
-    "test": "jest",
     "agent": "ts-node src/main.ts",
+    "build": "npm run clean && tsc && node esbuild.mjs",
+    "clean": "rimraf dist",
+    "installer": "makensis installer.nsi",
     "package": "pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output dist/medplum-agent-win-x64.exe --options no-warnings",
-    "installer": "makensis installer.nsi"
+    "test": "jest"
   },
   "dependencies": {
     "@medplum/core": "*",
@@ -34,5 +31,8 @@
     "@types/ws": "8.5.7",
     "mock-socket": "9.3.1",
     "pkg": "5.8.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

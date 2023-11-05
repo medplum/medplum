@@ -290,9 +290,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           <>
             {resource.title && <Title>{resource.title}</Title>}
             {item.text && <div>{item.text}</div>}
-            {!isContainer && (
-              <QuestionnaireFormItem item={item} index={0} allResponses={[]} onChange={() => undefined} />
-            )}
+            {!isContainer && <QuestionnaireFormItem item={item} index={0} onChange={() => undefined} response={{}} />}
           </>
         )}
       </div>
@@ -646,7 +644,7 @@ let nextId = 1;
 /**
  * Generates a link ID for an item.
  * Link IDs are required properties on QuestionnaireItem objects.
- * @param prefix The link ID prefix string.
+ * @param prefix - The link ID prefix string.
  * @returns A unique link ID.
  */
 function generateLinkId(prefix: string): string {

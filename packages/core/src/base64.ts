@@ -1,7 +1,7 @@
 /**
  * Decodes a base64 string.
  * Handles both browser and Node environments.
- * @param data The base-64 encoded input string.
+ * @param data - The base-64 encoded input string.
  * @returns The decoded string.
  */
 export function decodeBase64(data: string): string {
@@ -17,7 +17,7 @@ export function decodeBase64(data: string): string {
 /**
  * Encodes a base64 string.
  * Handles both browser and Node environments.
- * @param data The unencoded input string.
+ * @param data - The unencoded input string.
  * @returns The base-64 encoded string.
  */
 export function encodeBase64(data: string): string {

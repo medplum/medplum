@@ -43,7 +43,7 @@ export interface SearchControlField {
 
 /**
  * Returns the collection of field definitions for the search request.
- * @param search The search request definition.
+ * @param search - The search request definition.
  * @returns An array of field definitions.
  */
 export function getFieldDefinitions(search: SearchRequest): SearchControlField[] {
@@ -59,8 +59,8 @@ export function getFieldDefinitions(search: SearchRequest): SearchControlField[]
 /**
  * Return the field definition for a given field name.
  * Field names can be either property names or search parameter codes.
- * @param resourceType The resource type.
- * @param name The search field name (either property name or search parameter code).
+ * @param resourceType - The resource type.
+ * @param name - The search field name (either property name or search parameter code).
  * @returns The field definition.
  */
 function getFieldDefinition(resourceType: string, name: string): SearchControlField {
@@ -114,8 +114,12 @@ function getFieldDefinition(resourceType: string, name: string): SearchControlFi
     const allSearchParams = getSearchParameters(resourceType);
     let searchParams: SearchParameter[] | undefined = undefined;
     if (allSearchParams) {
-      const path = `${resourceType}.${name.replaceAll('[x]', '')}`;
-      searchParams = Object.values(allSearchParams).filter((p) => p.expression?.includes(path));
+      // To avoid matching names that happen to be prefixes of other names, e.g. id and identifier,
+      // match ${resourceType}.${name} followed by a non-name character OR the end of the string
+      // Name characters include letters, numbers, underscores, and hyphens
+      const pathRegex = new RegExp(`${resourceType}\\.${name.replaceAll('[x]', '')}([^\\w-]|$)`);
+
+      searchParams = Object.values(allSearchParams).filter((p) => !!p.expression && pathRegex.test(p?.expression));
       if (searchParams.length === 0) {
         searchParams = undefined;
       }

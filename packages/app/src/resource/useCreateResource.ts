@@ -5,8 +5,8 @@ import { useNavigate } from 'react-router-dom';
 
 /**
  * React Hook providing helpers to create a FHIR resource.
- * @param resourceType The FHIR resource type.
- * @param setOutcome Optional callback to set the OperationOutcome.
+ * @param resourceType - The FHIR resource type.
+ * @param setOutcome - Optional callback to set the OperationOutcome.
  * @returns An object with `defaultValue` to seed a creation view and `handleSubmit`
  * to create the new resource on submission.
  */

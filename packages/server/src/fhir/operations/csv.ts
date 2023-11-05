@@ -23,8 +23,8 @@ import { sendOutcome } from '../outcomes';
 
 /**
  * Handles a CSV export request.
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 export async function csvHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();

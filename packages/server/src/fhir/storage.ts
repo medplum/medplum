@@ -148,10 +148,10 @@ class S3Storage implements BinaryStorage {
 
   /**
    * Writes a binary blob to S3.
-   * @param binary The binary resource destination.
-   * @param filename Optional binary filename.
-   * @param contentType Optional binary content type.
-   * @param stream The Node.js stream of readable content.
+   * @param binary - The binary resource destination.
+   * @param filename - Optional binary filename.
+   * @param contentType - Optional binary content type.
+   * @param stream - The Node.js stream of readable content.
    * @returns Promise that resolves when the write is complete.
    */
   writeBinary(
@@ -186,9 +186,9 @@ class S3Storage implements BinaryStorage {
    *
    * Learn more:
    * https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Expiration.html
-   * @param key The S3 key.
-   * @param contentType Optional binary content type.
-   * @param stream The Node.js stream of readable content.
+   * @param key - The S3 key.
+   * @param contentType - Optional binary content type.
+   * @param stream - The Node.js stream of readable content.
    */
   async writeFile(key: string, contentType: string | undefined, stream: BinarySource): Promise<void> {
     const upload = new Upload({
@@ -310,8 +310,8 @@ const BLOCKED_CONTENT_TYPES = [
 /**
  * Checks file metadata against blocked lists.
  * Throws an execption if the file metadata is blocked.
- * @param filename The input filename.
- * @param contentType The input content type.
+ * @param filename - The input filename.
+ * @param contentType - The input content type.
  */
 function checkFileMetadata(filename: string | undefined, contentType: string | undefined): void {
   if (checkFileExtension(filename)) {
@@ -324,7 +324,7 @@ function checkFileMetadata(filename: string | undefined, contentType: string | u
 
 /**
  * Checks if the file extension is blocked.
- * @param filename The input filename.
+ * @param filename - The input filename.
  * @returns True if the filename has a blocked file extension.
  */
 function checkFileExtension(filename: string | undefined): boolean {
@@ -342,7 +342,7 @@ function checkFileExtension(filename: string | undefined): boolean {
 
 /**
  * Checks if the content type is blocked.
- * @param contentType The input content type.
+ * @param contentType - The input content type.
  * @returns True if the content type is blocked.
  */
 function checkContentType(contentType: string | undefined): boolean {

@@ -11,7 +11,7 @@ import { inflateBaseSchema } from '../base-schema';
 import baseSchema from '../base-schema.json';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, serverError } from '../outcomes';
-import { getElementDefinitionTypeName, isResourceTypeSchema, TypedValue } from '../types';
+import { TypedValue, getElementDefinitionTypeName, isResourceTypeSchema } from '../types';
 import { capitalize, isEmpty } from '../utils';
 
 /**
@@ -79,7 +79,7 @@ export interface SliceDiscriminator {
 /**
  * Parses a StructureDefinition resource into an internal schema better suited for
  * programmatic validation and usage in internal systems
- * @param sd The StructureDefinition resource to parse
+ * @param sd - The StructureDefinition resource to parse
  * @returns The parsed schema for the given resource type
  * @experimental
  */
@@ -134,12 +134,13 @@ export function getDataType(type: string): InternalTypeSchema {
 /**
  * Returns true if the given string is a valid FHIR resource type.
  *
+ * @example
  * ```ts
  * isResourceType('Patient'); // true
  * isResourceType('XYZ'); // false
  * ```
  *
- * @param resourceType The candidate resource type string.
+ * @param resourceType - The candidate resource type string.
  * @returns True if the resource type is a valid FHIR resource type.
  */
 export function isResourceType(resourceType: string): boolean {
@@ -167,7 +168,7 @@ class StructureDefinitionParser {
   private backboneContext: BackboneContext | undefined;
 
   /**
-   * @param sd The StructureDefinition to parse
+   * @param sd - The StructureDefinition to parse
    * @throws Throws when the StructureDefinition does not have a populated `snapshot` field
    */
   constructor(sd: StructureDefinition) {
@@ -183,7 +184,7 @@ class StructureDefinitionParser {
       name: sd.name as ResourceType,
       url: sd.url as string,
       kind: sd.kind,
-      description: sd.description,
+      description: getDescription(sd),
       elements: {},
       constraints: this.parseElementDefinition(this.root).constraints,
       innerTypes: [],
@@ -415,8 +416,8 @@ class StructureDefinitionParser {
  * Construct the subset of a resource containing a minimum set of fields.  The returned resource is not guaranteed
  * to contain only the provided properties, and may contain others (e.g. `resourceType` and `id`)
  *
- * @param resource The resource to subset
- * @param properties The minimum properties to include in the subset
+ * @param resource - The resource to subset
+ * @param properties - The minimum properties to include in the subset
  * @returns The modified resource, containing the listed properties and possibly other mandatory ones
  */
 export function subsetResource<T extends Resource>(resource: T | undefined, properties: string[]): T | undefined {
@@ -473,8 +474,8 @@ function trimPrefix(str: string | undefined, prefix: string): string {
 
 /**
  * Tests whether two element paths are compatible, i.e. whether the child path is nested under the parent.
- * @param parent The expected parent path, which should be a prefix of the child path.
- * @param child The child path to test for compatibility with the parent path.
+ * @param parent - The expected parent path, which should be a prefix of the child path.
+ * @param child - The child path to test for compatibility with the parent path.
  * @returns True if the given path is a child of the parent.
  */
 function pathsCompatible(parent: string | undefined, child: string | undefined): boolean {
@@ -502,4 +503,18 @@ function hasDefaultExtensionSlice(element: ElementDefinition): boolean {
       discriminators[0].type === 'value' &&
       discriminators[0].path === 'url'
   );
+}
+
+function getDescription(sd: StructureDefinition): string | undefined {
+  let result = sd.description;
+
+  // Many description strings start with an unwanted prefix "Base StructureDefinition for X Type: "
+  // For example:
+  // Base StructureDefinition for Age Type: A duration of time during which an organism (or a process) has existed.
+  // If the description starts with the name of the resource type, remove it.
+  if (result?.startsWith(`Base StructureDefinition for ${sd.name} Type: `)) {
+    result = result.substring(`Base StructureDefinition for ${sd.name} Type: `.length);
+  }
+
+  return result;
 }

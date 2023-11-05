@@ -15,8 +15,8 @@ export const newPatientValidators = [
 /**
  * Handles a HTTP request to /auth/newpatient.
  * Requires a partial login.
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 export async function newPatientHandler(req: Request, res: Response): Promise<void> {
   const errors = validationResult(req);
@@ -54,10 +54,10 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
 
 /**
  * Creates a new patient.
- * @param login The partial login.
- * @param projectId The project ID.
- * @param firstName The patient's first name.
- * @param lastName The patient's last name.
+ * @param login - The partial login.
+ * @param projectId - The project ID.
+ * @param firstName - The patient's first name.
+ * @param lastName - The patient's last name.
  * @returns The new project membership.
  */
 export async function createPatient(

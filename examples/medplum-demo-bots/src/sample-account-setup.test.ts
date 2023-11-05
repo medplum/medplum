@@ -15,6 +15,7 @@ describe('Sample Account Setup', async () => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
     indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
   });
 
   test('New patient', async () => {

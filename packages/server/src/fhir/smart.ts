@@ -3,7 +3,7 @@
  * https://build.fhir.org/ig/HL7/smart-app-launch/scopes-and-launch-context.html
  */
 
-import { ContentType, deepClone, OAuthGrantType } from '@medplum/core';
+import { ContentType, deepClone, OAuthGrantType, OAuthTokenAuthMethod } from '@medplum/core';
 import { AccessPolicy, AccessPolicyResource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../config';
@@ -18,8 +18,8 @@ export interface SmartScope {
  * Handles requests for the SMART configuration.
  * See: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html
  * See: https://build.fhir.org/ig/HL7/smart-app-launch/scopes-and-launch-context.html
- * @param _req The HTTP request.
- * @param res The HTTP response.
+ * @param _req - The HTTP request.
+ * @param res - The HTTP response.
  */
 export function smartConfigurationHandler(_req: Request, res: Response): void {
   const config = getConfig();
@@ -37,7 +37,11 @@ export function smartConfigurationHandler(_req: Request, res: Response): void {
         OAuthGrantType.TokenExchange,
       ],
       token_endpoint: config.tokenUrl,
-      token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post', 'private_key_jwt'],
+      token_endpoint_auth_methods_supported: [
+        OAuthTokenAuthMethod.ClientSecretBasic,
+        OAuthTokenAuthMethod.ClientSecretPost,
+        OAuthTokenAuthMethod.PrivateKeyJwt,
+      ],
       token_endpoint_auth_signing_alg_values_supported: ['RS256', 'RS384', 'ES384'],
       scopes_supported: [
         'patient/*.rs',
@@ -76,8 +80,8 @@ export function smartConfigurationHandler(_req: Request, res: Response): void {
 /**
  * Handles requests for the SMART App Styling.
  * See: https://build.fhir.org/ig/HL7/smart-app-launch/scopes-and-launch-context.html#styling
- * @param _req The HTTP request.
- * @param res The HTTP response.
+ * @param _req - The HTTP request.
+ * @param res - The HTTP response.
  */
 export function smartStylingHandler(_req: Request, res: Response): void {
   res.status(200).contentType(ContentType.JSON).json({
@@ -98,7 +102,7 @@ export function smartStylingHandler(_req: Request, res: Response): void {
 /**
  * Parses an OAuth scope string into a list of SMART scopes.
  * Only includes SMART scopes, all other scopes are ignored.
- * @param scope The OAuth scope string.
+ * @param scope - The OAuth scope string.
  * @returns Array of SMART scopes.
  */
 export function parseSmartScopes(scope: string | undefined): SmartScope[] {
@@ -125,8 +129,8 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
  * If there are no SMART scopes, the AccessPolicy is returned unmodified.
  * If there is no access policy, a new one is created.
  * Otherwise, the AccessPolicy is modified to only include the SMART scopes.
- * @param accessPolicy The original access policy.
- * @param scope The OAuth scope string.
+ * @param accessPolicy - The original access policy.
+ * @param scope - The OAuth scope string.
  * @returns Updated access policy with the OAuth scope applied.
  */
 export function applySmartScopes(

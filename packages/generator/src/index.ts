@@ -26,7 +26,7 @@ export function main(): void {
   writeResourceTypeFile();
 
   for (const type of Object.values(getAllDataTypes())) {
-    if (isResourceTypeSchema(type)) {
+    if (isResourceTypeSchema(type) || type.kind === 'complex-type') {
       writeInterfaceFile(type);
     }
   }
@@ -277,7 +277,7 @@ function getTypeScriptTypeForProperty(
       baseType = 'string';
       binding = property.binding?.valueSet;
       if (binding) {
-        if (binding === 'http://hl7.org/fhir/ValueSet/resource-types|4.0.1') {
+        if (binding.startsWith('http://hl7.org/fhir/ValueSet/resource-types')) {
           baseType = 'ResourceType';
         } else if (
           binding !== 'http://hl7.org/fhir/ValueSet/all-types|4.0.1' &&

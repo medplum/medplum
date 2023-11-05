@@ -1,5 +1,5 @@
 import { QuestionnaireItemEnableWhen } from '@medplum/fhirtypes';
-import { isChoiceQuestion, isQuestionEnabled, getNewMultiSelectValues } from './questionnaire';
+import { isChoiceQuestion, isQuestionEnabled, getNewMultiSelectValues, formatReferenceString } from './questionnaire';
 
 describe('QuestionnaireUtils', () => {
   test('isChoiceQuestion', () => {
@@ -968,5 +968,20 @@ describe('isQuestionEnabled', () => {
     const result = getNewMultiSelectValues(selected, propertyName, item);
 
     expect(result).toEqual([{ nonExistingProperty: undefined }]);
+  });
+
+  test('Reference with display', () => {
+    const reference = { type: 'valueReference', value: { reference: 'Patient/123', display: 'Patient 123' } };
+    expect(formatReferenceString(reference)).toBe('Patient 123');
+  });
+
+  test('Reference with no display', () => {
+    const reference = { type: 'valueReference', value: { reference: 'Patient/123', display: undefined } };
+    expect(formatReferenceString(reference)).toBe('Patient/123');
+  });
+
+  test('Reference String with no display or reference', () => {
+    const reference = { type: 'valueReference', value: { reference: undefined, display: undefined, id: '123' } };
+    expect(formatReferenceString(reference)).toBe('{"id":"123"}');
   });
 });
