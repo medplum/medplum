@@ -1,6 +1,9 @@
 import { createScriptTag } from './script';
 
-declare let grecaptcha: undefined | ReCaptchaV2.ReCaptcha;
+// reCAPTCHA type definitions do not work with Vite project aliasing.
+// Project aliasing is more valuable than type definitions,
+// so cheating and using `any` here.
+declare let grecaptcha: any;
 
 /**
  * Dynamically loads the recaptcha script.
@@ -20,17 +23,9 @@ export function initRecaptcha(siteKey: string): void {
  */
 export function getRecaptcha(siteKey: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    if (typeof grecaptcha === 'undefined') {
-      reject(new Error('grecaptcha not found'));
-      return;
-    }
-
-    // a strongly typed reference to appease typescript within the ready callback
-    const grecaptchaClient: ReCaptchaV2.ReCaptcha = grecaptcha;
-
-    grecaptchaClient.ready(async () => {
+    grecaptcha.ready(async () => {
       try {
-        resolve(await grecaptchaClient.execute(siteKey, { action: 'submit' }));
+        resolve(await grecaptcha.execute(siteKey, { action: 'submit' }));
       } catch (err) {
         reject(err);
       }
