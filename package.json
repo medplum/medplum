@@ -67,7 +67,6 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "trim": "0.0.3"
-<<<<<<< HEAD
   },
   "eslintConfig": {
     "root": true,
@@ -86,7 +85,5 @@
   "packageManager": "npm@9.8.1",
   "dependencies": {
     "@medplum/fhirtypes": "^2.1.9"
-=======
->>>>>>> upstream/main
   }
 }
