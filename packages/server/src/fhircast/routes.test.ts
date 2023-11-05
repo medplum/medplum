@@ -149,7 +149,7 @@ describe('FHIRCast routes', () => {
     const context = [
       { key: 'study', resource: { id: 'def-456', resourceType: 'ImagingStudy' } },
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
-    ] as FhircastEventContext<'imagingstudy-open'>[];
+    ] satisfies FhircastEventContext<'diagnosticreport-open'>[];
 
     const payload = createFhircastMessagePayload('my-topic', 'imagingstudy-open', context);
     // Setup the key as if we have already opened this resource
@@ -180,7 +180,7 @@ describe('FHIRCast routes', () => {
       { key: 'report', resource: { id: 'abc-123', resourceType: 'DiagnosticReport' } },
       { key: 'study', resource: { id: 'def-456', resourceType: 'ImagingStudy' } },
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
-    ] as FhircastEventContext<'diagnosticreport-open'>[];
+    ] satisfies FhircastEventContext<'diagnosticreport-open'>[];
 
     const payload = createFhircastMessagePayload('my-topic', 'diagnosticreport-open', context);
 
