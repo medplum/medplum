@@ -1,21 +1,17 @@
 import { allOk, notFound } from '@medplum/core';
 import { Login } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { body } from 'express-validator';
+import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { revokeLogin } from '../oauth/utils';
 import { getAuthenticatedContext } from '../context';
+import { makeValidator } from '../util/validator';
 
-export const revokeValidators = [body('loginId').isUUID().withMessage('Login ID is required.')];
+export const revokeValidator = makeValidator([body('loginId').isUUID().withMessage('Login ID is required.')]);
 
 export async function revokeHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    sendOutcome(res, invalidRequest(errors));
-    return;
-  }
 
   const login = await systemRepo.readResource<Login>('Login', req.body.loginId);
 

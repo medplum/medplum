@@ -1,10 +1,10 @@
 import { Operator } from '@medplum/core';
 import { DomainConfiguration } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
 import { getConfig } from '../config';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
+import { makeValidator } from '../util/validator';
 
 /*
  * The method handler is used to determine available login methods.
@@ -13,15 +13,9 @@ import { systemRepo } from '../fhir/repo';
  * For example, an unauthenticated user could determine if "foo.com" has a domain configuration.
  */
 
-export const methodValidators = [body('email').isEmail().withMessage('Valid email address is required')];
+export const methodValidator = makeValidator([body('email').isEmail().withMessage('Valid email address is required')]);
 
 export async function methodHandler(req: Request, res: Response): Promise<void> {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    sendOutcome(res, invalidRequest(errors));
-    return;
-  }
-
   const externalAuth = await isExternalAuth(req.body.email);
   if (externalAuth) {
     // Return the authorization URL

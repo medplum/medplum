@@ -5,18 +5,18 @@ import { asyncWrap } from '../async';
 import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
-import { createBotHandler, createBotValidators } from './bot';
-import { createClientHandler, createClientValidators } from './client';
-import { inviteHandler, inviteValidators } from './invite';
+import { createBotHandler, createBotValidator } from './bot';
+import { createClientHandler, createClientValidator } from './client';
+import { inviteHandler, inviteValidator } from './invite';
 import { verifyProjectAdmin } from './utils';
 import { getAuthenticatedContext } from '../context';
 
 export const projectAdminRouter = Router();
 projectAdminRouter.use(authenticateRequest);
 projectAdminRouter.use(verifyProjectAdmin);
-projectAdminRouter.post('/:projectId/bot', createBotValidators, asyncWrap(createBotHandler));
-projectAdminRouter.post('/:projectId/client', createClientValidators, asyncWrap(createClientHandler));
-projectAdminRouter.post('/:projectId/invite', inviteValidators, asyncWrap(inviteHandler));
+projectAdminRouter.post('/:projectId/bot', createBotValidator, asyncWrap(createBotHandler));
+projectAdminRouter.post('/:projectId/client', createClientValidator, asyncWrap(createClientHandler));
+projectAdminRouter.post('/:projectId/invite', inviteValidator, asyncWrap(inviteHandler));
 
 /**
  * Handles requests to "/admin/projects/{projectId}"

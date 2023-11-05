@@ -1,23 +1,17 @@
 import { ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { body } from 'express-validator';
 import { tryLogin } from '../oauth/utils';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
+import { makeValidator } from '../util/validator';
 
-export const loginValidators = [
+export const loginValidator = makeValidator([
   body('email').isEmail().withMessage('Valid email address is required'),
   body('password').isLength({ min: 5 }).withMessage('Invalid password, must be at least 5 characters'),
-];
+]);
 
 export async function loginHandler(req: Request, res: Response): Promise<void> {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    sendOutcome(res, invalidRequest(errors));
-    return;
-  }
-
   // Resource type can optionally be specified.
   // If specified, only memberships of that type will be returned.
   // If not specified, all memberships will be considered.
