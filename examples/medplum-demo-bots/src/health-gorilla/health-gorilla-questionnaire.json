@@ -329,6 +329,98 @@
               ]
             },
             {
+              "id": "labcorp-322755",
+              "linkId": "labcorp-322755",
+              "type": "boolean",
+              "text": "Hepatic Function Panel (7) (322755)"
+            },
+            {
+              "id": "labcorp-322755-details",
+              "linkId": "labcorp-322755-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "labcorp-322755",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "labcorp-322755-priority",
+                  "linkId": "labcorp-322755-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "labcorp-322755-note",
+                  "linkId": "labcorp-322755-note",
+                  "type": "string",
+                  "text": "Notes"
+                },
+                {
+                  "id": "labcorp-322755-aoe-ZCI-4",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-requiredwhenspecimen",
+                      "valueBoolean": true
+                    },
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: In specific testing procedures in calculation of result."
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCI-4"
+                    }
+                  ],
+                  "text": "Fasting",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-322755-aoe-ZCI-4"
+                }
+              ]
+            },
+            {
               "id": "labcorp-008649",
               "linkId": "labcorp-008649",
               "type": "boolean",
@@ -372,6 +464,37 @@
                   "linkId": "labcorp-008649-note",
                   "type": "string",
                   "text": "Notes"
+                },
+                {
+                  "id": "labcorp-008649-aoe-OBR-15",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-requiredwhenspecimen",
+                      "valueBoolean": true
+                    },
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Identification of location specimen was obtained from the patient"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "editableDropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "OBR-15"
+                    }
+                  ],
+                  "text": "Source of Specimen",
+                  "type": "open-choice",
+                  "linkId": "labcorp-008649-aoe-OBR-15"
                 }
               ]
             },
@@ -466,6 +589,37 @@
                   "linkId": "labcorp-008847-note",
                   "type": "string",
                   "text": "Notes"
+                },
+                {
+                  "id": "labcorp-008847-aoe-OBR-15",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-requiredwhenspecimen",
+                      "valueBoolean": true
+                    },
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Identification of location specimen was obtained from the patient"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "OBR-15"
+                    }
+                  ],
+                  "text": "Source of Specimen",
+                  "type": "choice",
+                  "linkId": "labcorp-008847-aoe-OBR-15"
                 }
               ]
             },
