@@ -11,7 +11,7 @@ import { inflateBaseSchema } from '../base-schema';
 import baseSchema from '../base-schema.json';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, serverError } from '../outcomes';
-import { getElementDefinitionTypeName, isResourceTypeSchema, TypedValue } from '../types';
+import { TypedValue, getElementDefinitionTypeName, isResourceTypeSchema } from '../types';
 import { capitalize, isEmpty } from '../utils';
 
 /**
@@ -134,6 +134,7 @@ export function getDataType(type: string): InternalTypeSchema {
 /**
  * Returns true if the given string is a valid FHIR resource type.
  *
+ * @example
  * ```ts
  * isResourceType('Patient'); // true
  * isResourceType('XYZ'); // false

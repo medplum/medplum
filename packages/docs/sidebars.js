@@ -241,13 +241,13 @@ const sidebars = {
       label: 'TypeScript SDK',
       link: { type: 'doc', id: 'sdk/index' },
       items: [
-        { type: 'doc', id: 'sdk/classes/MedplumClient', label: 'MedplumClient' },
-        { type: 'doc', id: 'sdk/modules', label: 'Utilities' },
-        { 'Bot Utilities': ['sdk/classes/Hl7Message', 'sdk/interfaces/BotEvent'] },
+        { type: 'doc', id: 'sdk/core.medplumclient', label: 'MedplumClient' },
+        { type: 'doc', id: 'sdk/core', label: 'Utilities' },
+        { 'Bot Utilities': ['sdk/core.hl7message', 'sdk/core.botevent'] },
         {
           'Media Utilities': {
-            PDF: ['sdk/interfaces/CreatePdfFunction'],
-            Email: ['sdk/interfaces/MailOptions', 'sdk/interfaces/MailAttachment', 'sdk/interfaces/MailAddress'],
+            PDF: ['sdk/core.createpdffunction'],
+            Email: ['sdk/core.mailoptions', 'sdk/core.mailattachment', 'sdk/core.mailaddress'],
           },
         },
       ],

@@ -26,7 +26,7 @@ Secrets are stored on a per-project basis, and you must be a project administrat
 
 ## Using Secrets in Your Bot
 
-Secrets can be accessed from the `event.secret` property, which contains an map from the secret name to the `ProjectSecret` object. [See here](../sdk/interfaces/BotEvent#secrets) for more details about `event.secret`
+Secrets can be accessed from the `event.secret` property, which contains an map from the secret name to the `ProjectSecret` object. [See here](../sdk/core.botevent#secrets) for more details about `event.secret`
 
 ```ts
 import { BotEvent, MedplumClient } from '@medplum/core';

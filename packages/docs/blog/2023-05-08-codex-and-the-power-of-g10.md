@@ -147,5 +147,5 @@ await externalEhrClient.searchResources('Patient?identifier:contains=999-47-5984
 
 ## Related Resources
 
-- [Medplum SDK Constructor](/docs/sdk/classes/MedplumClient#constructor)
-- [Medplum SDK startLogin](docs/sdk/classes/MedplumClient#startclientlogin)
+- [Medplum SDK Constructor](/docs/sdk/core.medplumclient._constructor_)
+- [Medplum SDK startLogin](/docs/sdk/core.medplumclient.startclientlogin)

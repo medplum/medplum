@@ -65,7 +65,7 @@ Creating internal references is done by assigning temporary ids to each bundle e
 Future bundle entries can refer to this resource using the temporary `urn:uuid`.
 
 :::caution Note
-Batches are processed in order, so resources must be created in your bundle prior to being referenced. To assist with this, you can use the [reorderBundle](docs/sdk/modules#reorderBundle) helper function, which performs a topological sort to reorder bundle entries such that a resource is created _before_ references to that resource appear in the bundle.
+Batches are processed in order, so resources must be created in your bundle prior to being referenced. To assist with this, you can use the [reorderBundle](/docs/sdk/core.reorderBundle) helper function, which performs a topological sort to reorder bundle entries such that a resource is created _before_ references to that resource appear in the bundle.
 :::
 
 <details><summary>Example: Create a patient and encounter whose subject is the created patient</summary>

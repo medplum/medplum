@@ -32,8 +32,8 @@ There are four major stages in the login flow: **Domain**, **Credentials**, **Pr
 
 ## Resources and Reference
 
-- See [authentication functions](./sdk/classes/MedplumClient#authentication) in the TypeScript SDK
-- [User profile](./sdk/classes/MedplumClient#user-profile) in the TypeScript SDK
+- See [authentication functions](./sdk/core.medplumclient) in the TypeScript SDK
+- [User profile](./sdk/core.medplumclient.getprofile) in the TypeScript SDK
 - [OAuth endpoints](./api/oauth) reference
 - [Medplum resources](./api/fhir/medplum) related to authentication and authorization
 - [User registration](https://storybook.medplum.com/?path=/docs/medplum-registerform--basic) react component
