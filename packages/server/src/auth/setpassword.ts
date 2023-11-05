@@ -7,9 +7,9 @@ import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { timingSafeEqualStr } from '../oauth/utils';
 import { bcryptHashPassword } from './utils';
-import { makeValidator } from '../util/validator';
+import { makeValidationMiddleware } from '../util/validator';
 
-export const setPasswordValidator = makeValidator([
+export const setPasswordValidator = makeValidationMiddleware([
   body('id').isUUID().withMessage('Invalid request ID'),
   body('secret').notEmpty().withMessage('Missing secret'),
   body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),

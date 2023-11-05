@@ -4,14 +4,14 @@ import { body } from 'express-validator';
 import { systemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { sendLoginCookie } from './utils';
-import { makeValidator } from '../util/validator';
+import { makeValidationMiddleware } from '../util/validator';
 
 /*
  * The profile handler is used during login when a user has multiple profiles.
  * The client will submit the profile id and the server will update the login.
  */
 
-export const profileValidator = makeValidator([
+export const profileValidator = makeValidationMiddleware([
   body('login').exists().withMessage('Missing login'),
   body('profile').exists().withMessage('Missing profile'),
 ]);

@@ -3,11 +3,11 @@ import { ContextRunner, ValidationChain, validationResult } from 'express-valida
 import { Middleware } from "express-validator/src/base";
 import { sendOutcome, invalidRequest } from "../fhir/outcomes";
 
-type MW = ValidationChain|(Middleware&ContextRunner)
+type ExpressValidator = ValidationChain|(Middleware&ContextRunner)
 
-export function makeValidator(validationChains: MW[]): RequestHandler {
+export function makeValidationMiddleware(expressValidators: ExpressValidator[]): RequestHandler {
   return function(req: Request, res: Response, next: NextFunction) {
-    validationChains.forEach(vc => vc(req, res, () => {}));
+    expressValidators.forEach(ev => ev(req, res, () => {}));
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

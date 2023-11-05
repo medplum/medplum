@@ -5,14 +5,14 @@ import { param } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { sendLoginResult } from './utils';
-import { makeValidator } from '../util/validator';
+import { makeValidationMiddleware } from '../util/validator';
 
 /*
  * The status handler gets an in-process login status.
  * This is used when the user returns from an external login.
  */
 
-export const statusValidator = makeValidator([param('login').isUUID().withMessage('Login ID is required')]);
+export const statusValidator = makeValidationMiddleware([param('login').isUUID().withMessage('Login ID is required')]);
 
 export async function statusHandler(req: Request, res: Response): Promise<void> {
   const loginId = req.params.login;

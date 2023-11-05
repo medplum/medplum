@@ -12,9 +12,9 @@ import { body } from 'express-validator';
 import { Repository, systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { getAuthenticatedContext } from '../context';
-import { makeValidator } from '../util/validator';
+import { makeValidationMiddleware } from '../util/validator';
 
-export const createClientValidator = makeValidator([body('name').notEmpty().withMessage('Client name is required')]);
+export const createClientValidator = makeValidationMiddleware([body('name').notEmpty().withMessage('Client name is required')]);
 
 export async function createClientHandler(req: Request, res: Response): Promise<void> {
   let project: Project;

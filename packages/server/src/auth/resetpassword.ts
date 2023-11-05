@@ -9,9 +9,9 @@ import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { isExternalAuth } from './method';
 import { getProjectByRecaptchaSiteKey, verifyRecaptcha } from './utils';
-import { makeValidator } from '../util/validator';
+import { makeValidationMiddleware } from '../util/validator';
 
-export const resetPasswordValidator = makeValidator([body('email').isEmail().withMessage('Valid email address is required')]);
+export const resetPasswordValidator = makeValidationMiddleware([body('email').isEmail().withMessage('Valid email address is required')]);
 
 export async function resetPasswordHandler(req: Request, res: Response): Promise<void> {
   const email = req.body.email.toLowerCase();

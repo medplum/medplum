@@ -11,7 +11,7 @@ import { systemRepo } from '../fhir/repo';
 import { getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth/utils';
 import { isExternalAuth } from './method';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
-import { makeValidator } from '../util/validator';
+import { makeValidationMiddleware } from '../util/validator';
 
 /*
  * Integrating Google Sign-In into your web app
@@ -29,7 +29,7 @@ const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/ce
  * A request to the /auth/google endpoint is expected to satisfy these validators.
  * These values are obtained from the Google Sign-in button.
  */
-export const googleValidator = makeValidator([
+export const googleValidator = makeValidationMiddleware([
   body('googleClientId').notEmpty().withMessage('Missing googleClientId'),
   body('googleCredential').notEmpty().withMessage('Missing googleCredential'),
 ]);

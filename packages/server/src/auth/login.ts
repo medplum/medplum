@@ -4,9 +4,9 @@ import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { tryLogin } from '../oauth/utils';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
-import { makeValidator } from '../util/validator';
+import { makeValidationMiddleware } from '../util/validator';
 
-export const loginValidator = makeValidator([
+export const loginValidator = makeValidationMiddleware([
   body('email').isEmail().withMessage('Valid email address is required'),
   body('password').isLength({ min: 5 }).withMessage('Invalid password, must be at least 5 characters'),
 ]);

@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { makeValidator } from '../util/validator';
+import { makeValidationMiddleware } from '../util/validator';
 
 /*
  * The method handler is used to determine available login methods.
@@ -13,7 +13,7 @@ import { makeValidator } from '../util/validator';
  * For example, an unauthenticated user could determine if "foo.com" has a domain configuration.
  */
 
-export const methodValidator = makeValidator([body('email').isEmail().withMessage('Valid email address is required')]);
+export const methodValidator = makeValidationMiddleware([body('email').isEmail().withMessage('Valid email address is required')]);
 
 export async function methodHandler(req: Request, res: Response): Promise<void> {
   const externalAuth = await isExternalAuth(req.body.email);

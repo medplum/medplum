@@ -19,9 +19,9 @@ import { sendEmail } from '../email/email';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { getUserByEmailInProject, getUserByEmailWithoutProject } from '../oauth/utils';
-import { makeValidator } from '../util/validator';
+import { makeValidationMiddleware } from '../util/validator';
 
-export const inviteValidator = makeValidator([
+export const inviteValidator = makeValidationMiddleware([
   body('resourceType').isIn(['Patient', 'Practitioner', 'RelatedPerson']).withMessage('Resource type is required'),
   body('firstName').notEmpty().withMessage('First name is required'),
   body('lastName').notEmpty().withMessage('Last name is required'),

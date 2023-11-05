@@ -3,14 +3,14 @@ import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { systemRepo } from '../fhir/repo';
 import { setLoginScope } from '../oauth/utils';
-import { makeValidator } from '../util/validator';
+import { makeValidationMiddleware } from '../util/validator';
 
 /*
  * The scope handler is used during login to allow a user to select the scope of the login.
  * The client will submit the desired scope, and the server will update the login.
  */
 
-export const scopeValidator = makeValidator([
+export const scopeValidator = makeValidationMiddleware([
   body('login').exists().withMessage('Missing login'),
   body('scope').exists().withMessage('Missing scope'),
 ]);

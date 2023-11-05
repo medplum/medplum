@@ -6,9 +6,9 @@ import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { createProfile, createProjectMembership } from './utils';
-import { makeValidator } from '../util/validator';
+import { makeValidationMiddleware } from '../util/validator';
 
-export const newPatientValidator = makeValidator([
+export const newPatientValidator = makeValidationMiddleware([
   body('login').notEmpty().withMessage('Missing login'),
   body('projectId').notEmpty().withMessage('Project ID is required'),
 ]);

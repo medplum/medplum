@@ -8,9 +8,9 @@ import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { bcryptHashPassword } from './utils';
 import { getAuthenticatedContext } from '../context';
-import { makeValidator } from '../util/validator';
+import { makeValidationMiddleware } from '../util/validator';
 
-export const changePasswordValidator = makeValidator([
+export const changePasswordValidator = makeValidationMiddleware([
   body('oldPassword').notEmpty().withMessage('Missing oldPassword'),
   body('newPassword').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
 ]);

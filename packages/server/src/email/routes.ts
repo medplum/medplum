@@ -6,12 +6,12 @@ import { sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { sendEmail } from './email';
 import { getAuthenticatedContext } from '../context';
-import { makeValidator } from '../util/validator';
+import { makeValidationMiddleware } from '../util/validator';
 
 export const emailRouter = Router();
 emailRouter.use(authenticateRequest);
 
-const sendEmailValidator = makeValidator([
+const sendEmailValidator = makeValidationMiddleware([
   check('content-type').equals(ContentType.JSON),
   body('to').notEmpty().withMessage('To is required'),
   body('subject').notEmpty().withMessage('Subject is required'),

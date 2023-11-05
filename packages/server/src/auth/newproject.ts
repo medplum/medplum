@@ -8,14 +8,14 @@ import { systemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { createProfile, createProjectMembership } from './utils';
 import { getRequestContext } from '../context';
-import { makeValidator } from '../util/validator';
+import { makeValidationMiddleware } from '../util/validator';
 
 export interface NewProjectRequest {
   readonly loginId: string;
   readonly projectName: string;
 }
 
-export const newProjectValidator = makeValidator([
+export const newProjectValidator = makeValidationMiddleware([
   body('login').notEmpty().withMessage('Missing login'),
   body('projectName').notEmpty().withMessage('Project name is required'),
 ]);
