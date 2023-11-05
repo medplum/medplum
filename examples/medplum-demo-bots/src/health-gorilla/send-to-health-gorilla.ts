@@ -18,6 +18,7 @@ import {
   Practitioner,
   ProjectSecret,
   QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
   Reference,
   RelatedPerson,
   RequestGroup,
@@ -69,6 +70,7 @@ const availableTests: Record<string, string> = {
   'labcorp-001453': 'Hemoglobin A1c',
   'labcorp-010322': 'Prostate-Specific Ag',
   'labcorp-322000': 'Comp. Metabolic Panel (14)',
+  'labcorp-322755': 'Hepatic Function Panel (7)',
   'labcorp-008649': 'Aerobic Bacterial Culture',
   'labcorp-005009': 'CBC With Differential/Platelet',
   'labcorp-008847': 'Urine Culture, Routine',
@@ -226,11 +228,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // The important thing is that you pass the correct code to Health Gorilla.
   for (const testId of Object.keys(availableTests)) {
     if (answers[testId]?.valueBoolean) {
-      const code = testId.substring(testId.indexOf('-') + 1);
-      const display = availableTests[testId];
-      const priority = answers[testId + '-priority']?.valueCoding?.code ?? 'routine';
-      const noteText = answers[testId + '-note']?.valueString;
-      builder.createServiceRequest(code, display, priority, noteText);
+      builder.createServiceRequest(testId, answers);
     }
   }
 
@@ -393,6 +391,7 @@ class HealthGorillaRequestGroupBuilder {
   subscriber?: RelatedPerson;
   authorizedBy?: Organization;
   performer?: Organization;
+  aoes?: QuestionnaireResponse[];
   tests?: ServiceRequest[];
   diagnoses?: CodeableConcept[];
   specimenCollectedDateTime?: string;
@@ -535,9 +534,36 @@ class HealthGorillaRequestGroupBuilder {
     return result;
   }
 
-  createServiceRequest(code: string, display: string, priority: string, noteText: string | undefined): ServiceRequest {
+  createServiceRequest(testId: string, answers: Record<string, QuestionnaireResponseItemAnswer>): ServiceRequest {
     if (!this.patient) {
       throw new Error('Missing patient');
+    }
+
+    const code = testId.substring(testId.indexOf('-') + 1);
+    const display = availableTests[testId];
+    const priority = answers[testId + '-priority']?.valueCoding?.code ?? 'routine';
+    const noteText = answers[testId + '-note']?.valueString;
+
+    // Check for AOE answers
+    const aoePrefix = testId + '-aoe-';
+    const aoeAnswerKeys = Object.keys(answers).filter((k) => k.startsWith(aoePrefix));
+    let aoeResponse: QuestionnaireResponse | undefined = undefined;
+    if (aoeAnswerKeys.length > 0) {
+      aoeResponse = {
+        resourceType: 'QuestionnaireResponse',
+        id: 'aoe-' + code,
+        status: 'completed',
+        item: aoeAnswerKeys.map((k) => ({
+          linkId: k.substring(aoePrefix.length),
+          answer: [answers[k]],
+        })),
+      };
+
+      if (this.aoes) {
+        this.aoes.push(aoeResponse);
+      } else {
+        this.aoes = [aoeResponse];
+      }
     }
 
     const result: ServiceRequest = {
@@ -567,6 +593,7 @@ class HealthGorillaRequestGroupBuilder {
       },
       note: noteText ? [{ text: noteText }] : undefined,
       priority: priority as 'routine' | 'urgent' | 'stat' | 'asap',
+      supportingInfo: aoeResponse ? [{ reference: '#' + aoeResponse.id }] : undefined,
     };
 
     if (this.tests) {
@@ -632,6 +659,10 @@ class HealthGorillaRequestGroupBuilder {
 
     if (this.subscriber) {
       contained.push({ ...this.subscriber, id: 'subscriber' });
+    }
+
+    if (this.aoes) {
+      contained.push(...this.aoes);
     }
 
     const result = {
