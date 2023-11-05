@@ -6,7 +6,7 @@
 import { Extension } from './Extension';
 
 /**
- * The comparator is not used on a SimpleQuantity
+ * A fixed quantity (no comparator)
  */
 export interface SimpleQuantity {
 

@@ -544,6 +544,18 @@ export enum OAuthTokenType {
 
 /**
  * OAuth 2.0 Client Authentication Methods
+ * See: https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication
+ */
+export enum OAuthTokenAuthMethod {
+  ClientSecretBasic = 'client_secret_basic',
+  ClientSecretPost = 'client_secret_post',
+  ClientSecretJwt = 'client_secret_jwt',
+  PrivateKeyJwt = 'private_key_jwt',
+  None = 'none',
+}
+
+/**
+ * OAuth 2.0 Client Authentication Methods
  * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.2
  */
 export enum OAuthClientAssertionType {
