@@ -36,7 +36,6 @@
     "@tabler/icons-react": "2.39.0",
     "@testing-library/jest-dom": "6.1.4",
     "@testing-library/react": "14.0.0",
-    "@types/grecaptcha": "3.0.5",
     "@types/jest": "29.5.5",
     "@types/node": "20.8.6",
     "@types/react": "18.2.28",

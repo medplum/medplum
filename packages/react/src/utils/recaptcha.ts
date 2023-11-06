@@ -1,5 +1,10 @@
 import { createScriptTag } from './script';
 
+// reCAPTCHA type definitions do not work with Vite project aliasing.
+// Project aliasing is more valuable than type definitions,
+// so cheating and using `any` here.
+declare let grecaptcha: any;
+
 /**
  * Dynamically loads the recaptcha script.
  * We do not want to load the script on page load unless the user needs it.

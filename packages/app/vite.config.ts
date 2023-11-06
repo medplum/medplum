@@ -1,9 +1,10 @@
 /// <reference types="vite/client" />
 import react from '@vitejs/plugin-react';
+import { execSync } from 'child_process';
 import { copyFileSync, existsSync } from 'fs';
+import path from 'path';
 import { defineConfig } from 'vite';
 import packageJson from './package.json' assert { type: 'json' };
-import { execSync } from 'child_process';
 
 if (!existsSync('.env')) {
   copyFileSync('.env.defaults', '.env');
@@ -21,5 +22,10 @@ export default defineConfig({
   publicDir: 'static',
   build: {
     sourcemap: true,
+  },
+  resolve: {
+    alias: {
+      '@medplum/react': path.resolve(__dirname, '../react/src'),
+    },
   },
 });
