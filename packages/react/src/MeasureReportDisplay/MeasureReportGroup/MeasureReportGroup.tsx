@@ -30,7 +30,6 @@ export function MeasureTitle(props: { measure: Measure }): JSX.Element {
   );
 }
 
-
 function MeasureReportPopulation(props: any): JSX.Element {
   const { group } = props;
   const populations = group.population;
