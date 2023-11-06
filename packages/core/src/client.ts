@@ -3153,7 +3153,7 @@ export class MedplumClient extends EventTarget {
    *
    * @category FHIRcast
    * @param topic - The topic to publish to. Usually a UUID.
-   * @param event - The name of the event to publish an updated context for, ie. `patient-open`.
+   * @param event - The name of the event to publish an updated context for, ie. `Patient-open`.
    * @param context - The updated context containing resources relevant to this event.
    * @param versionId - The `versionId` of the `anchor context` of the given event. Used for `DiagnosticReport-update` event.
    * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
