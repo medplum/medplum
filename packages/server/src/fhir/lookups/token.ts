@@ -115,9 +115,9 @@ export class TokenTable extends LookupTable<Token> {
       new Condition(new Column(table, 'id'), '=', new Column(joinName, 'resourceId')),
       new Condition(new Column(joinName, 'code'), '=', filter.code),
     ]);
-    const compareTokenValue = shouldCompareTokenValue(filter);
-    if (compareTokenValue) {
-      joinOnExpression.expressions.push(buildWhereExpression(joinName, filter));
+    const whereExpression = buildWhereExpression(joinName, filter);
+    if (whereExpression) {
+      joinOnExpression.expressions.push(whereExpression);
     }
 
     selectQuery.leftJoin(tableName, joinName, joinOnExpression);
@@ -187,11 +187,11 @@ function isIndexed(searchParam: SearchParameter, resourceType: string): boolean 
 /**
  * Returns true if the filter value should be compared to the "value" column.
  * Used to construct the join ON conditions
- * @param filter - Filter applied to the token field
+ * @param operator - Filter operator applied to the token field
  * @returns True if the filter value should be compared to the "value" column.
  */
-function shouldCompareTokenValue(filter: Filter): boolean {
-  switch (filter.operator) {
+function shouldCompareTokenValue(operator: FhirOperator): boolean {
+  switch (operator) {
     case FhirOperator.MISSING:
     case FhirOperator.IN:
     case FhirOperator.NOT_IN:
@@ -209,7 +209,7 @@ function shouldCompareTokenValue(filter: Filter): boolean {
  */
 function shouldTokenRowExist(filter: Filter): boolean {
   let shouldTokenExist = true;
-  if (shouldCompareTokenValue(filter)) {
+  if (shouldCompareTokenValue(filter.operator)) {
     // If the filter is "not equals", then we're looking for ID=null
     // If the filter is "equals", then we're looking for ID!=null
     if (filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS) {
@@ -417,15 +417,21 @@ async function getExistingValues(client: PoolClient, resourceType: ResourceType,
     );
 }
 
-function buildWhereExpression(tableName: string, filter: Filter): Expression {
-  const disjunction = new Disjunction([]);
+function buildWhereExpression(tableName: string, filter: Filter): Expression | undefined {
+  const subExpressions = [];
   for (const option of filter.value.split(',')) {
-    disjunction.expressions.push(buildWhereCondition(tableName, filter.operator, option));
+    const expression = buildWhereCondition(tableName, filter.operator, option);
+    if (expression) {
+      subExpressions.push(expression);
+    }
   }
-  return disjunction;
+  if (subExpressions.length > 0) {
+    return new Disjunction(subExpressions);
+  }
+  return undefined;
 }
 
-function buildWhereCondition(tableName: string, operator: FhirOperator, query: string): Expression {
+function buildWhereCondition(tableName: string, operator: FhirOperator, query: string): Expression | undefined {
   const parts = query.split('|');
   if (parts.length === 2) {
     const systemCondition = new Condition(new Column(tableName, 'system'), '=', parts[0]);
@@ -433,14 +439,17 @@ function buildWhereCondition(tableName: string, operator: FhirOperator, query: s
       ? new Conjunction([systemCondition, buildValueCondition(tableName, operator, parts[1])])
       : systemCondition;
   } else {
-    return buildValueCondition(tableName, operator, query);
+    if (operator === FhirOperator.IN) {
+      return buildInValueSetCondition(tableName, query);
+    }
+    if (shouldCompareTokenValue(operator)) {
+      return buildValueCondition(tableName, operator, query);
+    }
+    return undefined;
   }
 }
 
 function buildValueCondition(tableName: string, operator: FhirOperator, value: string): Expression {
-  if (operator === FhirOperator.IN) {
-    return buildInValueSetCondition(tableName, value);
-  }
   const column = new Column(tableName, 'value');
   if (operator === FhirOperator.TEXT) {
     return new Conjunction([
