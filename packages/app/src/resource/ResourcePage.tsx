@@ -28,7 +28,7 @@ function getTabs(resourceType: string): string[] {
     result.push('Preview', 'Builder', 'Bots', 'Responses');
   }
 
-  if (resourceType === 'DiagnosticReport') {
+  if (resourceType === 'DiagnosticReport' || resourceType === 'MeasureReport') {
     result.push('Report');
   }
 

@@ -12,18 +12,20 @@ export function MeasureReportDisplay(props: MeasureReportDisplayProps): JSX.Elem
   const medplum = useMedplum();
   const report = useResource(props.measureReport);
   const [measure, setMeasure] = React.useState<Measure | undefined>();
+
   useEffect(() => {
     medplum
       .searchOne('Measure', { url: report?.measure })
-      .then((result: Measure) => {
+      .then((result: Measure | undefined) => {
         setMeasure(result);
       })
       .catch(console.log);
-  }, [medplum, report]);
+  }, [medplum, report?.measure]);
 
   if (!report) {
     return null;
   }
+  console.log(measure)
   return (
     <Box>
       {measure && <MeasureTitle measure={measure} />}
@@ -125,9 +127,12 @@ function MeasureTitle(props: { measure: Measure }): JSX.Element {
   const { measure } = props;
   return (
     <>
-      <Title order={3}>{measure.title}</Title>
-      <Title order={4}>{measure.subtitle}</Title>
-      <Text>{measure.date}</Text>
+      <Text fz="md" fw={500} mb={8}>
+        {measure.title}
+      </Text>
+      <Text fz="xs" c="dimmed" mb={8}>
+        {measure.subtitle}
+      </Text>
     </>
   );
 }
