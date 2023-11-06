@@ -42,7 +42,7 @@ On the "Configuration Data" tab:
 
 Next, on the "Subscribe" tab:
 
-1. Enter which events you would like to subscribe to (i.e., "patient-open")
+1. Enter which events you would like to subscribe to (i.e., "Patient-open")
 2. Click "Subscribe"
 
 If all goes well, you should see "Success" messages in the event log:

@@ -41,7 +41,7 @@ describe('FHIRCast routes', () => {
         'hub.channel.type': 'websocket',
         'hub.mode': 'subscribe',
         'hub.topic': 'topic',
-        'hub.events': 'patient-open',
+        'hub.events': 'Patient-open',
       });
     expect(res.status).toBe(202);
     expect(res.body['hub.channel.endpoint']).toBeDefined();
@@ -52,7 +52,7 @@ describe('FHIRCast routes', () => {
       'hub.channel.type': 'websocket',
       'hub.mode': 'subscribe',
       'hub.topic': 'topic',
-      'hub.events': 'patient-open',
+      'hub.events': 'Patient-open',
     });
     expect(res.status).toBe(401);
     expect(res.body.issue[0].details.text).toEqual('Unauthorized');
@@ -66,7 +66,7 @@ describe('FHIRCast routes', () => {
       .send({
         'hub.mode': 'subscribe',
         'hub.topic': 'topic',
-        'hub.events': 'patient-open',
+        'hub.events': 'Patient-open',
       });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toEqual('Missing hub.channel.type');
@@ -81,7 +81,7 @@ describe('FHIRCast routes', () => {
         'hub.channel.type': 'xyz',
         'hub.mode': 'subscribe',
         'hub.topic': 'topic',
-        'hub.events': 'patient-open',
+        'hub.events': 'Patient-open',
       });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toEqual('Invalid hub.channel.type');
@@ -96,7 +96,7 @@ describe('FHIRCast routes', () => {
         'hub.channel.type': 'websocket',
         'hub.mode': 'xyz',
         'hub.topic': 'topic',
-        'hub.events': 'patient-open',
+        'hub.events': 'Patient-open',
       });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toEqual('Invalid hub.mode');
@@ -127,7 +127,7 @@ describe('FHIRCast routes', () => {
   });
 
   test('Get context after *-open event', async () => {
-    const payload = createFhircastMessagePayload('my-topic', 'imagingstudy-open', [
+    const payload = createFhircastMessagePayload('my-topic', 'ImagingStudy-open', [
       { key: 'study', resource: { id: 'def-456', resourceType: 'ImagingStudy' } },
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
     ]);
@@ -149,9 +149,9 @@ describe('FHIRCast routes', () => {
     const context = [
       { key: 'study', resource: { id: 'def-456', resourceType: 'ImagingStudy' } },
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
-    ] satisfies FhircastEventContext<'diagnosticreport-open'>[];
+    ] satisfies FhircastEventContext<'DiagnosticReport-open'>[];
 
-    const payload = createFhircastMessagePayload('my-topic', 'imagingstudy-open', context);
+    const payload = createFhircastMessagePayload('my-topic', 'ImagingStudy-open', context);
     // Setup the key as if we have already opened this resource
     await getRedis().set('::fhircast::my-topic::latest::', JSON.stringify(payload));
 
@@ -165,7 +165,7 @@ describe('FHIRCast routes', () => {
       .post('/fhircast/STU3/my-topic')
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send(createFhircastMessagePayload('my-topic', 'imagingstudy-close', context));
+      .send(createFhircastMessagePayload('my-topic', 'ImagingStudy-close', context));
     expect(publishRes.status).toBe(201);
 
     const afterContextRes = await request(app)
@@ -180,9 +180,9 @@ describe('FHIRCast routes', () => {
       { key: 'report', resource: { id: 'abc-123', resourceType: 'DiagnosticReport' } },
       { key: 'study', resource: { id: 'def-456', resourceType: 'ImagingStudy' } },
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
-    ] satisfies FhircastEventContext<'diagnosticreport-open'>[];
+    ] satisfies FhircastEventContext<'DiagnosticReport-open'>[];
 
-    const payload = createFhircastMessagePayload('my-topic', 'diagnosticreport-open', context);
+    const payload = createFhircastMessagePayload('my-topic', 'DiagnosticReport-open', context);
 
     const publishRes = await request(app)
       .post('/fhircast/STU3/my-topic')
@@ -193,7 +193,7 @@ describe('FHIRCast routes', () => {
 
     const latestEventStr = (await getRedis().get('::fhircast::my-topic::latest::')) as string;
     expect(latestEventStr).toBeTruthy();
-    const latestEvent = JSON.parse(latestEventStr) as FhircastEventPayload<'diagnosticreport-open'>;
+    const latestEvent = JSON.parse(latestEventStr) as FhircastEventPayload<'DiagnosticReport-open'>;
     expect(latestEvent).toMatchObject({
       ...payload,
       event: { ...payload.event, 'context.versionId': expect.any(String) },
@@ -204,10 +204,10 @@ describe('FHIRCast routes', () => {
     const context = [
       { key: 'report', resource: { id: 'abc-123', resourceType: 'DiagnosticReport' } },
       { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle' } },
-    ] satisfies FhircastEventContext<'diagnosticreport-update'>[];
+    ] satisfies FhircastEventContext<'DiagnosticReport-update'>[];
 
     const versionId = randomUUID();
-    const payload = createFhircastMessagePayload('my-topic', 'diagnosticreport-update', context, versionId);
+    const payload = createFhircastMessagePayload('my-topic', 'DiagnosticReport-update', context, versionId);
 
     const publishRes = await request(app)
       .post('/fhircast/STU3/my-topic')
@@ -218,7 +218,7 @@ describe('FHIRCast routes', () => {
 
     const latestEventStr = (await getRedis().get('::fhircast::my-topic::latest::')) as string;
     expect(latestEventStr).toBeTruthy();
-    const latestEvent = JSON.parse(latestEventStr) as FhircastEventPayload<'diagnosticreport-update'>;
+    const latestEvent = JSON.parse(latestEventStr) as FhircastEventPayload<'DiagnosticReport-update'>;
     expect(latestEvent).toMatchObject({
       ...payload,
       event: {

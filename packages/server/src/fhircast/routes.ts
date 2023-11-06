@@ -22,16 +22,16 @@ publicRoutes.get('/.well-known/fhircast-configuration', (_req: Request, res: Res
       'heartbeat',
       'userlogout',
       'userhibernate',
-      'patient-open',
-      'patient-close',
-      'imagingstudy-open',
-      'imagingstudy-close',
-      'encounter-open',
-      'encounter-close',
-      'diagnosticreport-open',
-      'diagnosticreport-close',
-      'diagnosticreport-select',
-      'diagnosticreport-update',
+      'Patient-open',
+      'Patient-close',
+      'ImagingStudy-open',
+      'ImagingStudy-close',
+      'Encounter-open',
+      'Encounter-close',
+      'DiagnosticReport-open',
+      'DiagnosticReport-close',
+      'DiagnosticReport-select',
+      'DiagnosticReport-update',
     ],
     getCurrentSupport: true,
     websocketSupport: true,
@@ -101,7 +101,7 @@ protectedRoutes.post(
     // Check if this an open event
     if (event['hub.event'].endsWith('-open')) {
       // TODO: Support this as a param for event type: "versionable"?
-      if (event['hub.event'] === 'diagnosticreport-open') {
+      if (event['hub.event'] === 'DiagnosticReport-open') {
         event['context.versionId'] = generateId();
         stringifiedBody = JSON.stringify(req.body);
       }
@@ -110,7 +110,7 @@ protectedRoutes.post(
     } else if (event['hub.event'].endsWith('-close')) {
       // We always close the current context, even if the event is not for the original resource... There isn't any mention of checking to see it's the right resource, so it seems it may be assumed to be always valid to do any arbitrary close as long as there is an existing context...
       await getRedis().del(`::fhircast::${req.params.topic}::latest::`);
-    } else if (event['hub.event'] === 'diagnosticreport-update') {
+    } else if (event['hub.event'] === 'DiagnosticReport-update') {
       // See: https://build.fhir.org/ig/HL7/fhircast-docs/3-6-3-DiagnosticReport-update.html#:~:text=The%20Hub%20SHALL,the%20new%20updates.
       event['context.priorVersionId'] = event['context.versionId'];
       event['context.versionId'] = generateId();
