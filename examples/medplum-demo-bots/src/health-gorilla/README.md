@@ -48,7 +48,7 @@ You will also need a FHIR `Organization` resource representing each performing l
 }
 ```
 
-If you use multiple performing labs, you will need to create a separate `Organization` resource for each one.
+If you use multiple performing labs, you will need to create a separate `Organization` resource for each one. There are identifiers on many of the resource types which are noted in [sample data](samples.md).
 
 ## Sending Orders
 
@@ -56,14 +56,14 @@ The `send-to-health-gorilla.ts` demonstrates how to convert a `QuestionnaireResp
 
 The expected answers in the `QuestionnaireResponse` include:
 
-1. `patient` - reference to the `Patient` resource
-2. `practitioner` - reference to the `Practitioner` resource representing the ordering physician
-3. `performer` - referenc to the `Organization` resource representing the performing lab facility
+1. `patient` - reference to the `Patient` resource. For billing to be successful, the `Patient` must have a country
+2. `practitioner` - reference to the `Practitioner` resource representing the ordering physician. For billing to be successful the `Practitioner` must have a
+3. `performer` - reference to the `Organization` resource representing the performing lab facility
 4. TODO: test details
 
 The bot then does the following:
 
-1. Gathers `Patient`, `Practitioner`, and order details
+1. Gathers `Patient`, `Practitioner`, and `Account` order details
 2. Validates the input data
 3. Connects to the Health Gorilla API via JWT bearer token
 4. Synchronizes the `Patient` in Medplum with the `Patient` in Health Gorilla
@@ -74,6 +74,12 @@ Once the `RequestGroup` is accepted, the order is "received". You can now wait f
 
 ## Receiving Results
 
-The `receive-from-health-gorilla.ts` demonstrates how to convert a Health Gorilla webhook into FHIR `DiagnosticReport` and `Observation` resources.
+The `receive-from-health-gorilla.ts` demonstrates how to convert a Health Gorilla webhook into FHIR `DiagnosticReport`, `Observation` and `Media` resources.
 
 TODO
+
+## Ensuring Order and Billing Correctness
+
+When orders are placed, you'll need to ensure that all of the billing data is complete and well-formed. To do that you'll need to have properly constructed FHIR Resources that will be used to generate the correct orders. You can see [samples data](samples.md) with details on how to construct these resources correctly.
+
+There are four types of billing that are enabled by this workflow. With correctly constructed resources you should be able to support billing to Patient, Third Party or a to the organization to whom an diagnostics account (e.g. Labcorp account owner) belongs.
