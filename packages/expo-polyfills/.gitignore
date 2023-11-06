@@ -55,3 +55,5 @@ yarn-error.log
 
 # Expo
 .expo/*
+
+.eslintrc.js
