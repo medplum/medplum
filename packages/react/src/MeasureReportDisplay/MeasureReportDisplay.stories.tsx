@@ -10,10 +10,10 @@ export default {
   component: MeasureReportDisplay,
 } as Meta;
 
-function createMeasure(title: string, subtitle?: string): Measure {
+function createMeasure(title: string, url: string, subtitle?: string): Measure {
   return {
     resourceType: 'Measure',
-    url: 'http://example.com',
+    url,
     title,
     subtitle,
   };
@@ -26,7 +26,9 @@ export const Basic = (): JSX.Element => {
 
   useEffect(() => {
     (async (): Promise<boolean> => {
-      const newMeasure = await medplum.createResource(createMeasure('Test Measure', 'Test Subtitle'));
+      const newMeasure = await medplum.createResource(
+        createMeasure('Test Measure', 'http://example.com', 'Test Subtitle')
+      );
       setMeasure(newMeasure);
       return true;
     })()
@@ -68,7 +70,11 @@ export const Multiple = (): JSX.Element => {
   useEffect(() => {
     (async (): Promise<boolean> => {
       const newMeasure = await medplum.createResource(
-        createMeasure('Multiple Measures', 'Multiple Measures with a % and a volume measurement')
+        createMeasure(
+          'Multiple Measures',
+          'http://example-multiple.com',
+          'Multiple Measures with a % and a volume measurement'
+        )
       );
       setMeasure(newMeasure);
       return true;
@@ -118,7 +124,11 @@ export const WithPopulation = (): JSX.Element => {
   useEffect(() => {
     (async (): Promise<boolean> => {
       const newMeasure = await medplum.createResource(
-        createMeasure('Population Measure', 'Population Measurement with Numerator and Denominator')
+        createMeasure(
+          'Population Measure',
+          'http://example-population.com',
+          'Population Measurement with Numerator and Denominator'
+        )
       );
       setMeasure(newMeasure);
       return true;
@@ -130,7 +140,7 @@ export const WithPopulation = (): JSX.Element => {
   if (!loaded) {
     return <></>;
   }
-  
+
   return (
     <Document>
       <MeasureReportDisplay
