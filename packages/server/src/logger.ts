@@ -1,7 +1,7 @@
 import { AuditEvent } from '@medplum/fhirtypes';
+import { Writable } from 'node:stream';
 import { MedplumServerConfig, getConfig } from './config';
 import { CloudWatchLogger } from './util/cloudwatch';
-import { Writable } from 'node:stream';
 
 /*
  * Once upon a time, we used Winston, and that was fine.
@@ -117,7 +117,10 @@ export const globalLogger = {
 
   log(level: string, msg: string, data?: Record<string, any>): void {
     if (data instanceof Error) {
-      data = { error: data.toString() };
+      data = {
+        error: data.toString(),
+        stack: data.stack?.split('\n'),
+      };
     }
     console.log(
       JSON.stringify({

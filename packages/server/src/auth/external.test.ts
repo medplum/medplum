@@ -137,6 +137,7 @@ describe('External', () => {
 
     // Mock the external identity provider
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
       status: 200,
       json: () => buildTokens('not-found@' + domain),
     }));
@@ -156,6 +157,7 @@ describe('External', () => {
 
     // Mock the external identity provider
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
       status: 200,
       json: () => buildTokens('admin@medplum.com'),
     }));
@@ -178,6 +180,7 @@ describe('External', () => {
 
     // Mock the external identity provider
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
       status: 200,
       json: () => buildTokens(email),
     }));
@@ -200,6 +203,7 @@ describe('External', () => {
 
     // Mock the external identity provider
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
       status: 200,
       json: () => buildTokens(email),
     }));
@@ -222,6 +226,7 @@ describe('External', () => {
 
     // Mock the external identity provider
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
       status: 200,
       json: () => buildTokens(email),
     }));
@@ -244,6 +249,7 @@ describe('External', () => {
 
     // Mock the external identity provider
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
       status: 200,
       json: () => buildTokens(email),
     }));
@@ -262,6 +268,7 @@ describe('External', () => {
 
     // Mock the external identity provider
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
       status: 200,
       json: () => buildTokens(email),
     }));
@@ -280,6 +287,7 @@ describe('External', () => {
 
     // Mock the external identity provider
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
       status: 200,
       json: () => buildTokens(email),
     }));
@@ -298,6 +306,7 @@ describe('External', () => {
 
     // Mock the external identity provider
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
       status: 200,
       json: () => {
         throw new Error('Invalid JSON');
@@ -343,6 +352,7 @@ describe('External', () => {
 
     // Mock the external identity provider
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
       status: 200,
       json: () => buildTokens('', externalId),
     }));
@@ -399,6 +409,7 @@ describe('External', () => {
 
     // Mock the external identity provider
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
       status: 200,
       json: () => buildTokens(email),
     }));
@@ -479,6 +490,7 @@ describe('External', () => {
 
     // Mock the external identity provider
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
       status: 200,
       json: () => buildTokens('', externalId),
     }));
