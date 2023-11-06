@@ -57,7 +57,7 @@ The `send-to-health-gorilla.ts` demonstrates how to convert a `QuestionnaireResp
 The expected answers in the `QuestionnaireResponse` include:
 
 1. `patient` - reference to the `Patient` resource. For billing to be successful, the `Patient` must have a country
-2. `practitioner` - reference to the `Practitioner` resource representing the ordering physician. For billing to be successful the `Practitioner` must have a
+2. `practitioner` - reference to the `Practitioner` resource representing the ordering physician.
 3. `performer` - reference to the `Organization` resource representing the performing lab facility
 4. TODO: test details
 
