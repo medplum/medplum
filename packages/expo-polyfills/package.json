@@ -29,7 +29,7 @@
   "license": "Apache-2.0",
   "homepage": "https://github.com/medplum/medplum#readme",
   "dependencies": {
-    "@medplum/core": "*",
+    "@medplum/core": "2.1.10",
     "base-64": "1.0.0",
     "expo-crypto": "12.4.1",
     "expo-standard-web-crypto": "1.6.0",
