@@ -172,7 +172,7 @@ export type FhircastEventContext<
     : FhircastSingleResourceContext<EventName, K>
   : never;
 
-type ConvertToUnion<T> = T[keyof T];
+export type ConvertToUnion<T> = T[keyof T];
 export type FhircastValidContextForEvent<EventName extends FhircastEventName = FhircastEventName> = ConvertToUnion<{
   [key in FhircastEventContextKey<EventName>]: FhircastEventContext<EventName, key>;
 }>;
@@ -185,6 +185,7 @@ export type FhircastEventPayload<
   'hub.event': EventName;
   context: FhircastEventContext<EventName, K>[];
   'context.versionId'?: string;
+  'context.priorVersionId'?: string;
 };
 
 export type FhircastMessagePayload<EventName extends FhircastEventName = FhircastEventName> = {
