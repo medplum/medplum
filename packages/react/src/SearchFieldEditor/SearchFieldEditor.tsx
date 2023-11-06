@@ -93,6 +93,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
           // not strictly needed since onMouseDownCapture should always precede onClick, but reset the ref
           wasDropdownOpen.current = false;
         },
+        children: <div data-testid="overlay-child" />, // can't specify testid on the overlay itself
       }}
     >
       <Stack>
@@ -109,7 +110,6 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
           maxDropdownHeight={'250px'}
           dropdownPosition="bottom"
           clearButtonProps={{ 'aria-label': 'Clear selection' }}
-          autoFocus
           clearable
           searchable
         />
