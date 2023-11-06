@@ -28,6 +28,7 @@ describe('Link Patient', async () => {
     indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
   });
 
+  // start-block createBatchData
   // Load the sample data from patient-data.json
   beforeEach<TestContext>(async (context) => {
     context.medplum = new MockClient();
@@ -45,6 +46,7 @@ describe('Link Patient', async () => {
     expect(riskAssessments.length).toBe(2);
     expect(riskAssessments.every((assessment) => resolveId(assessment.subject) === patients[0].id));
   });
+  // end-block createBatchData
 
   test<TestContext>('Does not create RiskAssessment due to doNotMatch List', async ({ medplum }) => {
     // Read two patients that should not be matched
