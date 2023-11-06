@@ -123,6 +123,33 @@ describe('QuestionnaireBuilder', () => {
     expect(onSubmit).toBeCalled();
   });
 
+  test('Handles AutoSave', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.string,
+            text: 'q1',
+          },
+        ],
+      },
+      onSubmit,
+      autoSave: true,
+    });
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toBeCalled();
+  });
+
   test('Sets ids', async () => {
     const onSubmit = jest.fn();
 

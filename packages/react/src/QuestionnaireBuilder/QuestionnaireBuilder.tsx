@@ -112,6 +112,7 @@ const useStyles = createStyles((theme) => ({
 export interface QuestionnaireBuilderProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
   onSubmit: (result: Questionnaire) => void;
+  autoSave?: boolean;
 }
 
 export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Element | null {
@@ -147,6 +148,13 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
     };
   }, [defaultValue]);
 
+  const handleChange = (questionnaire: Questionnaire): void => {
+    setValue(questionnaire);
+    if (props.autoSave && props.onSubmit) {
+      props.onSubmit(questionnaire);
+    }
+  }; 
+
   if (!schemaLoaded || !value) {
     return null;
   }
@@ -160,7 +168,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
           setSelectedKey={setSelectedKey}
           hoverKey={hoverKey}
           setHoverKey={setHoverKey}
-          onChange={setValue}
+          onChange={handleChange}
         />
         <Button type="submit">Save</Button>
       </Form>

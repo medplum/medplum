@@ -35,7 +35,7 @@ export function BuilderPage(): JSX.Element | null {
     case 'Questionnaire':
       return (
         <Document>
-          <QuestionnaireBuilder questionnaire={reference} onSubmit={handleSubmit} />
+          <QuestionnaireBuilder questionnaire={reference} onSubmit={handleSubmit} autoSave />
         </Document>
       );
     default:
