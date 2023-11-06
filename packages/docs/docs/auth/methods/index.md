@@ -94,3 +94,27 @@ Device authentication is designed for true machine connectivity, for example con
 For machine connectivity, we encourage use of [ClientCredentials](/docs/auth/methods/client-credentials) with tightly scoped [access controls](/docs/access/access-policies), giving minimal access to the host at the edge.
 
 If OAuth2 client credentials based authentication is not an option due to device limitations, [Basic Authentication](https://www.medplum.com/docs/sdk/core.medplumclient.setbasicauth) can be used to connect to Medplum. In general, OAuth2 is preferred to basic authentication. [Consuming webhooks](/docs/bots/consuming-webhooks) is an example application where Basic Authentication makes sense.
+
+## Security Best Practices
+
+All three implementations types will have tokens or client credentials with system access, and edge systems should follow best practices.
+
+### Client Authentication
+
+- Local disk should be encrypted
+- Workstation should be password locked
+- Consider disabling local storage on device for shared workstations or in accordance with institution policy
+
+### Server Authentication
+
+- Run with as strict an[access policy](/docs/access/access-policies) as possible
+- Encrypt hard disk
+- Restrict access to host via VPC or other mechanism - do not allow access from general internet
+- Use a secrets management to store access keys - do not store credentials on disk
+- Ensure host is patched and has security updates applied regularly
+
+### Host authentication
+
+- Run with extremely an limited [access policy](/docs/access/access-policies). For example: read-only access to a specific Bot
+- Restrict network access to the host - do not allow access from the general internet
+- Ensure host is patched and has security updates applied regularly
