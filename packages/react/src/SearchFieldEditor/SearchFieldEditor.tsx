@@ -1,7 +1,7 @@
-import { Button, Modal } from '@mantine/core';
+import { Button, Group, Modal, MultiSelect, Stack } from '@mantine/core';
 import { InternalTypeSchema, SearchRequest, getDataType, getSearchParameters, stringify } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { buildFieldNameString } from '../SearchControl/SearchUtils';
 
 export interface SearchFieldEditorProps {
@@ -12,238 +12,111 @@ export interface SearchFieldEditorProps {
 }
 
 export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | null {
+  const wasDropdownOpen = useRef(false);
   const [state, setState] = useState({
     search: JSON.parse(stringify(props.search)) as SearchRequest,
   });
 
-  const availableRef = useRef<HTMLSelectElement>(null);
-  const selectedRef = useRef<HTMLSelectElement>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     setState({ search: props.search });
   }, [props.search]);
 
-  /**
-   * Handles a key down event on the "available" field.
-   * If the user presses enter, it is a shortcut for the "Add" button.
-   * @param e - The keyboard event.
-   */
-  function handleAvailableKeyDown(e: React.KeyboardEvent): void {
-    if (e.key === 'Enter') {
-      onAddField();
+  const allFields = useMemo(() => {
+    if (!props.visible) {
+      return [];
     }
-  }
 
-  /**
-   * Handles a double click on the "available" field.
-   * If the user double clicks an entry, it is a shortcut for the "Add" button.
-   */
-  function handleAvailableDoubleClick(): void {
-    onAddField();
-  }
-
-  /**
-   * Handles a key down event on the "available" field.
-   * If the user presses enter, it is a shortcut for the "Add" button.
-   * @param e - The keyboard event.
-   */
-  function handleSelectedKeyDown(e: React.KeyboardEvent): void {
-    if (e.key === 'Enter') {
-      onRemoveField();
-    }
-  }
-
-  /**
-   * Handles a double click on the "available" field.
-   * If the user double clicks an entry, it is a shortcut for the "Add" button.
-   */
-  function handleSelectedDoubleClick(): void {
-    onRemoveField();
-  }
-
-  /**
-   * Handles a click on the "Add" button.
-   * Moves the "available" selection into the "selected" list.
-   */
-  function onAddField(): void {
-    const currentField = state.search.fields ?? [];
-    const key = availableRef.current?.value;
-    if (key) {
-      const newFields = [...currentField, key];
-      setState({
-        search: {
-          ...state.search,
-          fields: newFields,
-        },
+    const resourceType = props.search.resourceType;
+    const typeSchema = getDataType(resourceType);
+    const searchParams = getSearchParameters(resourceType);
+    return getFieldsList(typeSchema, searchParams)
+      .sort((a, b) => a.localeCompare(b))
+      .map((field) => {
+        return { value: field, label: buildFieldNameString(field) };
       });
-    }
-  }
-
-  /**
-   * Handles a click on the "Remove" button.
-   * Moves the "selected" selection into the "available" list.
-   */
-  function onRemoveField(): void {
-    const currentField = state.search.fields ?? [];
-    const key = selectedRef.current?.value;
-    if (key) {
-      const newFields = [...currentField];
-      newFields.splice(newFields.indexOf(key), 1);
-      setState({
-        search: {
-          ...state.search,
-          fields: newFields,
-        },
-      });
-    }
-  }
-
-  /**
-   * Handles a click on the "Up" button.
-   * Moves the selection up one position in the list.
-   */
-  function onMoveUp(): void {
-    const currentFields = state.search.fields ?? [];
-    const field = selectedRef.current?.value;
-    if (!field) {
-      return;
-    }
-
-    const newFields = [...currentFields];
-    const index = newFields.indexOf(field);
-    if (index <= 0) {
-      return;
-    }
-
-    swapFields(newFields, index, index - 1);
-    setState({ search: { ...state.search, fields: newFields } });
-  }
-
-  /**
-   * Handles a click on the "Down" button.
-   * Moves the selection down one position in the list.
-   */
-  function onMoveDown(): void {
-    const currentFields = state.search.fields ?? [];
-    const field = selectedRef.current?.value;
-    if (!field) {
-      return;
-    }
-
-    const newFields = [...currentFields];
-    const index = newFields.indexOf(field);
-    if (index >= newFields.length - 1) {
-      return;
-    }
-
-    swapFields(newFields, index, index + 1);
-    setState({ search: { ...state.search, fields: newFields } });
-  }
-
-  /**
-   * Swaps two fields in the search.
-   * @param fields - The array of fields.
-   * @param i - The index of the first field.
-   * @param j - The index of the second field.
-   */
-  function swapFields(fields: string[], i: number, j: number): void {
-    const temp = fields[i];
-    fields[i] = fields[j];
-    fields[j] = temp;
-  }
+  }, [props.visible, props.search.resourceType]);
 
   if (!props.visible) {
     return null;
   }
 
-  const resourceType = props.search.resourceType;
-  const typeSchema = getDataType(resourceType);
-  const searchParams = getSearchParameters(resourceType);
-
-  const selected = state.search.fields ?? [];
-  const available = getFieldsList(typeSchema, searchParams)
-    .filter((field) => !selected.includes(field))
-    .sort((a, b) => a.localeCompare(b));
+  function handleChange(newFields: string[]): void {
+    setState({ search: { ...state.search, fields: newFields } });
+  }
 
   return (
-    <Modal title="Fields" closeButtonProps={{ 'aria-label': 'Close' }} opened={props.visible} onClose={props.onCancel}>
-      <div>
-        <table style={{ margin: 'auto' }}>
-          <thead>
-            <tr>
-              <th colSpan={2} align="center">
-                Available
-              </th>
-              <th colSpan={2} align="center">
-                Selected
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td colSpan={2} align="center">
-                <select
-                  ref={availableRef}
-                  size={15}
-                  tabIndex={1}
-                  style={{ width: '200px' }}
-                  onKeyDown={(e) => handleAvailableKeyDown(e)}
-                  onDoubleClick={() => handleAvailableDoubleClick()}
-                  data-testid="available"
-                >
-                  {available.map((key) => (
-                    <option key={key} value={key}>
-                      {buildFieldNameString(key)}
-                    </option>
-                  ))}
-                </select>
-              </td>
-              <td colSpan={2} align="center">
-                <select
-                  ref={selectedRef}
-                  size={15}
-                  tabIndex={4}
-                  style={{ width: '200px' }}
-                  onKeyDown={(e) => handleSelectedKeyDown(e)}
-                  onDoubleClick={() => handleSelectedDoubleClick()}
-                  data-testid="selected"
-                >
-                  {selected.map((key) => (
-                    <option key={key} value={key}>
-                      {buildFieldNameString(key)}
-                    </option>
-                  ))}
-                </select>
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr>
-              <td align="center">
-                <Button compact variant="outline" onClick={onAddField}>
-                  Add
-                </Button>
-              </td>
-              <td align="center">
-                <Button compact variant="outline" onClick={onRemoveField}>
-                  Remove
-                </Button>
-              </td>
-              <td align="center">
-                <Button compact variant="outline" onClick={onMoveUp}>
-                  Up
-                </Button>
-              </td>
-              <td align="center">
-                <Button compact variant="outline" onClick={onMoveDown}>
-                  Down
-                </Button>
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      <Button onClick={() => props.onOk(state.search)}>OK</Button>
+    <Modal
+      title="Fields"
+      closeButtonProps={{ 'aria-label': 'Close' }}
+      opened={props.visible}
+      onClose={() => {
+        props.onCancel();
+      }}
+      size="auto"
+      /*
+      By default, the MultiSelect dropdown does not interact well with Modal's closeOnClickOutside:
+      When the MultiSelect's dropdown is opened and the user clicks outside of the dropdown to close it
+      (and outside the modal, i.e. clicks on the Modal's overlay), the Modal is undesirably also closed
+      from the same click.
+
+      Due to the sequencing of the events fired during a click on the overlay and when React
+      rerenders of various components occur, it is not possible to simply do something such as setting
+      closeOnClickOutside={!isDropdownOpened}:
+
+      * user begins a click on the overlay which triggers
+      * mousedown event on the overlay which triggers
+      * blur event on the MultiSelect's input element which invokes
+      * the MultiSelect.onDropdownClose callback which calls setIsDropdownOpen(false) which causes
+      * rerender of SearchFieldEditor with isDropdownOpen set to false
+      * the user ends the click which triggers
+      * click event on the Modal which activates the closeOnClickOutside logic
+      * since isDropdownOpen is false, closeOnClickOutside is true, so the Modal closes
+
+      Instead, emulate closeOnClickOutside's behavior only when the MultiSelect dropdown
+      was not open at the beginning of the click
+      */
+      withOverlay
+      closeOnClickOutside={false}
+      overlayProps={{
+        onMouseDownCapture: () => {
+          // capture whether the MultiSelect dropdown is open when a click on the overlay begins (i.e. mousedown)
+          wasDropdownOpen.current = isDropdownOpen;
+        },
+        onClick: () => {
+          if (!wasDropdownOpen.current) {
+            // invoke onCancel callback since the dropdown wasn't open at the start of the click on the overlay
+            props.onCancel();
+          }
+
+          // not strictly needed since onMouseDownCapture should always precede onClick, but reset the ref
+          wasDropdownOpen.current = false;
+        },
+        children: <div data-testid="overlay-child" />, // can't specify testid on the overlay itself
+      }}
+    >
+      <Stack>
+        <MultiSelect
+          withinPortal={true}
+          style={{ width: 550 }}
+          placeholder="Select fields to display"
+          data={allFields}
+          value={state.search.fields ?? []}
+          onChange={handleChange}
+          onDropdownOpen={() => setIsDropdownOpen(true)}
+          onDropdownClose={() => setIsDropdownOpen(false)}
+          /* shows at most ~6.5 items; the extra half to provide a hint that there are more entries to scroll through */
+          maxDropdownHeight={'250px'}
+          dropdownPosition="bottom"
+          clearButtonProps={{ 'aria-label': 'Clear selection' }}
+          clearable
+          searchable
+        />
+        <Group position="right">
+          <Button onClick={() => props.onOk(state.search)}>OK</Button>
+        </Group>
+      </Stack>
     </Modal>
   );
 }
