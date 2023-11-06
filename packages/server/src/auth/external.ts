@@ -168,7 +168,7 @@ async function verifyExternalCode(
   params.append('redirect_uri', getConfig().baseUrl + 'auth/external');
   params.append('code', code);
 
-  if (codeVerifier) {
+  if (idp.usePkce && codeVerifier) {
     params.append('code_verifier', codeVerifier);
   }
 
