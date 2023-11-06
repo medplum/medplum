@@ -47,6 +47,7 @@ export interface MedplumServerConfig {
   introspectionEnabled?: boolean;
   keepAliveTimeout?: number;
   vmContextBotsEnabled?: boolean;
+  shutdownTimeoutMilliseconds?: number;
 }
 
 /**
@@ -264,6 +265,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.botLambdaLayerName = config.botLambdaLayerName || 'medplum-bot-layer';
   config.bcryptHashSalt = config.bcryptHashSalt || 10;
   config.bullmq = { removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
+  config.shutdownTimeoutMilliseconds = config.shutdownTimeoutMilliseconds ?? 30000;
   return config;
 }
 
