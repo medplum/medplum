@@ -148,12 +148,12 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
     };
   }, [defaultValue]);
 
-  const handleChange = (questionnaire: Questionnaire): void => {
+  const handleChange = (questionnaire: Questionnaire, blockAutoSave?: boolean): void => {
     setValue(questionnaire);
-    if (props.autoSave && props.onSubmit) {
+    if (props.autoSave && !blockAutoSave && props.onSubmit) {
       props.onSubmit(questionnaire);
     }
-  }; 
+  };
 
   if (!schemaLoaded || !value) {
     return null;
@@ -184,7 +184,7 @@ interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
   isFirst?: boolean;
   isLast?: boolean;
   setHoverKey: (key: string | undefined) => void;
-  onChange: (item: T) => void;
+  onChange: (item: T, blockAutoSave?: boolean) => void;
   onRemove?: () => void;
   onRepeatable?: (item: QuestionnaireItem) => void;
   onMoveUp?(): void;
@@ -222,11 +222,14 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     } as T);
   }
 
-  function addItem(addedItem: QuestionnaireItem): void {
-    props.onChange({
-      ...props.item,
-      item: [...(props.item.item ?? []), addedItem],
-    });
+  function addItem(addedItem: QuestionnaireItem, blockAutoSave?: boolean): void {
+    props.onChange(
+      {
+        ...props.item,
+        item: [...(props.item.item ?? []), addedItem],
+      },
+      blockAutoSave
+    );
   }
 
   function removeItem(removedItem: QuestionnaireItem): void {
@@ -414,12 +417,15 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
               href="#"
               onClick={(e: React.MouseEvent) => {
                 e.preventDefault();
-                addItem({
-                  id: generateId(),
-                  linkId: generateLinkId('g'),
-                  type: 'group',
-                  text: 'Group',
-                } as QuestionnaireItem);
+                addItem(
+                  {
+                    id: generateId(),
+                    linkId: generateLinkId('g'),
+                    type: 'group',
+                    text: 'Group',
+                  } as QuestionnaireItem,
+                  true
+                );
               }}
             >
               Add group
@@ -431,7 +437,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             href="#"
             onClick={(e: React.MouseEvent) => {
               e.preventDefault();
-              addItem(createPage());
+              addItem(createPage(), true);
             }}
           >
             Add Page

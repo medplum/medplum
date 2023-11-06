@@ -131,9 +131,9 @@ describe('QuestionnaireBuilder', () => {
         resourceType: 'Questionnaire',
         item: [
           {
-            linkId: 'q1',
             type: QuestionnaireItemType.string,
-            text: 'q1',
+            linkId: 'question1',
+            text: 'Question 1',
           },
         ],
       },
@@ -141,13 +141,28 @@ describe('QuestionnaireBuilder', () => {
       autoSave: true,
     });
 
-    expect(screen.getByText('Save')).toBeDefined();
-
     await act(async () => {
-      fireEvent.click(screen.getByText('Save'));
+      fireEvent.click(screen.getByText('Add item'));
     });
 
     expect(onSubmit).toBeCalled();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Question 1'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByText('Remove')[0]);
+    });
+
+    expect(onSubmit).toBeCalledTimes(2);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add group'));
+    });
+
+    // Shouldn't autosave when adding a group
+    expect(onSubmit).toBeCalledTimes(2);
   });
 
   test('Sets ids', async () => {
@@ -259,6 +274,9 @@ describe('QuestionnaireBuilder', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Add item'));
     });
+
+    // Should not submit without autosave flag
+    expect(onSubmit).not.toBeCalled();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
