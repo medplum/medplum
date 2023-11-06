@@ -41,6 +41,11 @@ export interface IdentityProvider {
   clientSecret?: string;
 
   /**
+   * Optional flag to use PKCE in the token request.
+   */
+  usePkce?: boolean;
+
+  /**
    * Optional flag to use the subject field instead of the email field.
    */
   useSubject?: boolean;
