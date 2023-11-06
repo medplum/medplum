@@ -208,27 +208,24 @@ function shouldCompareTokenValue(operator: FhirOperator): boolean {
  * @returns True if the filter requires a token row to exist AFTER the join has been performed
  */
 function shouldTokenRowExist(filter: Filter): boolean {
-  let shouldTokenExist = true;
   if (shouldCompareTokenValue(filter.operator)) {
     // If the filter is "not equals", then we're looking for ID=null
     // If the filter is "equals", then we're looking for ID!=null
     if (filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS) {
-      shouldTokenExist = false;
+      return false;
     }
   } else if (filter.operator === FhirOperator.MISSING) {
     // Missing = true means that there should not be a row
     switch (filter.value) {
       case 'true':
-        shouldTokenExist = false;
-        break;
+        return false;
       case 'false':
-        shouldTokenExist = true;
-        break;
+        return true;
       default:
         throw new OperationOutcomeError(badRequest("Search filter ':missing' must have a value of 'true' or 'false'"));
     }
   }
-  return shouldTokenExist;
+  return true;
 }
 
 /**
