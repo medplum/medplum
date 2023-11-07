@@ -148,9 +148,9 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
     };
   }, [defaultValue]);
 
-  const handleChange = (questionnaire: Questionnaire, blockAutoSave?: boolean): void => {
+  const handleChange = (questionnaire: Questionnaire, disableSubmit?: boolean): void => {
     setValue(questionnaire);
-    if (props.autoSave && !blockAutoSave && props.onSubmit) {
+    if (props.autoSave && !disableSubmit && props.onSubmit) {
       props.onSubmit(questionnaire);
     }
   };
@@ -184,7 +184,7 @@ interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
   isFirst?: boolean;
   isLast?: boolean;
   setHoverKey: (key: string | undefined) => void;
-  onChange: (item: T, blockAutoSave?: boolean) => void;
+  onChange: (item: T, disableSubmit?: boolean) => void;
   onRemove?: () => void;
   onRepeatable?: (item: QuestionnaireItem) => void;
   onMoveUp?(): void;
@@ -214,21 +214,24 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     props.setHoverKey(props.item.id);
   }
 
-  function changeItem(changedItem: QuestionnaireItem): void {
+  function changeItem(changedItem: QuestionnaireItem, disableSubmit?: boolean): void {
     const curr = itemRef.current as T;
-    props.onChange({
-      ...curr,
-      item: curr.item?.map((i) => (i.id === changedItem.id ? changedItem : i)),
-    } as T);
+    props.onChange(
+      {
+        ...curr,
+        item: curr.item?.map((i) => (i.id === changedItem.id ? changedItem : i)),
+      } as T,
+      disableSubmit
+    );
   }
 
-  function addItem(addedItem: QuestionnaireItem, blockAutoSave?: boolean): void {
+  function addItem(addedItem: QuestionnaireItem, disableSubmit?: boolean): void {
     props.onChange(
       {
         ...props.item,
         item: [...(props.item.item ?? []), addedItem],
       },
-      blockAutoSave
+      disableSubmit
     );
   }
 
@@ -239,11 +242,14 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     });
   }
 
-  function changeProperty(property: string, value: any): void {
-    props.onChange({
-      ...itemRef.current,
-      [property]: value,
-    } as T);
+  function changeProperty(property: string, value: any, disableSubmit?: boolean): void {
+    props.onChange(
+      {
+        ...itemRef.current,
+        [property]: value,
+      } as T,
+      disableSubmit
+    );
   }
 
   function updateItem(updatedItem: QuestionnaireItem): void {
@@ -283,7 +289,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
               <TextInput
                 size="xl"
                 defaultValue={resource.title}
-                onChange={(e) => changeProperty('title', e.currentTarget.value)}
+                onChange={(e) => changeProperty('title', e.currentTarget.value, true)}
               />
             )}
             {!isResource && (
@@ -291,7 +297,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                 autosize
                 minRows={2}
                 defaultValue={item.text}
-                onChange={(e) => changeProperty('text', e.currentTarget.value)}
+                onChange={(e) => changeProperty('text', e.currentTarget.value, true)}
               />
             )}
             {item.type === 'reference' && <ReferenceProfiles item={item} onChange={updateItem} />}
@@ -331,7 +337,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                 size="xs"
                 className={classes.linkIdInput}
                 defaultValue={item.linkId}
-                onChange={(e) => changeProperty('linkId', e.currentTarget.value)}
+                onChange={(e) => changeProperty('linkId', e.currentTarget.value, true)}
               />
               {!isContainer && (
                 <NativeSelect
