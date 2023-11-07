@@ -216,7 +216,7 @@ function shouldTokenRowExist(filter: Filter): boolean {
     }
   } else if (filter.operator === FhirOperator.MISSING) {
     // Missing = true means that there should not be a row
-    switch (filter.value) {
+    switch (filter.value.toLowerCase()) {
       case 'true':
         return false;
       case 'false':
@@ -414,6 +414,16 @@ async function getExistingValues(client: PoolClient, resourceType: ResourceType,
     );
 }
 
+/**
+ *
+ * Returns a Disjunction of filters on the token table based on `filter.operator`, or `undefined` if no filters are required.
+ * The Disjunction will contain one filter for each specified query value.
+ *
+ * @param tableName - The token table name
+ * @param filter - The SearchRequest filter being performed on the token
+ * @returns A Disjunction of filters on the token table based on `filter.operator`, or `undefined` if no filters are
+ * required.
+ */
 function buildWhereExpression(tableName: string, filter: Filter): Expression | undefined {
   const subExpressions = [];
   for (const option of filter.value.split(',')) {
@@ -425,23 +435,39 @@ function buildWhereExpression(tableName: string, filter: Filter): Expression | u
   if (subExpressions.length > 0) {
     return new Disjunction(subExpressions);
   }
+  // filter.operator does not require any WHERE Conditions on the token table (e.g. FhirOperator.MISSING)
   return undefined;
 }
 
+/**
+ *
+ * Returns a WHERE Condition for a specific search query value, if applicable based on the `operator`
+ *
+ * @param tableName - The token table name
+ * @param operator - The SearchRequest operator being performed on the token
+ * @param query - The query value of the operator
+ * @returns A WHERE Condition on the token table, if applicable, else undefined
+ */
 function buildWhereCondition(tableName: string, operator: FhirOperator, query: string): Expression | undefined {
   const parts = query.split('|');
+  // Handle the case where the query value is a system|value pair (e.g. token or identifier search)
   if (parts.length === 2) {
     const systemCondition = new Condition(new Column(tableName, 'system'), '=', parts[0]);
     return parts[1]
       ? new Conjunction([systemCondition, buildValueCondition(tableName, operator, parts[1])])
       : systemCondition;
   } else {
+    // If using the :in operator, build the condition for joining to the Valueset table specified by `query`
     if (operator === FhirOperator.IN) {
       return buildInValueSetCondition(tableName, query);
     }
+    // If we we are searching for a particular token value, build a Condition that filters the lookup table on that
+    //value
     if (shouldCompareTokenValue(operator)) {
       return buildValueCondition(tableName, operator, query);
     }
+    // Otherwise we are just looking for the presence / absence of a token (e.g. when using the FhirOperator.MISSING)
+    // so we don't need to construct a filter Condition on the token table.
     return undefined;
   }
 }
@@ -461,7 +487,7 @@ function buildValueCondition(tableName: string, operator: FhirOperator, value: s
 }
 
 /**
- * Buildes "where" condition for token ":in" operator.
+ * Builds "where" condition for token ":in" operator.
  * @param tableName - The token table name / join alias.
  * @param value - The value of the ":in" operator.
  * @returns The "where" condition.
