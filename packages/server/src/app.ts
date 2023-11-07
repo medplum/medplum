@@ -152,7 +152,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
       type: [ContentType.HL7_V2],
     })
   );
-  app.use(loggingMiddleware);
+
+  if (config.logRequests) {
+    app.use(loggingMiddleware);
+  }
 
   const apiRouter = Router();
   apiRouter.get('/', (_req, res) => res.sendStatus(200));
