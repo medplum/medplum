@@ -66,7 +66,7 @@ The patient must have a `country` in their address and a Medical record number a
 
 ## Practitioner
 
-The Practitioner must have a valid NPI, represented as an identifier as well as a Health Gorilla identifier.
+The integration uses the identifier from the `https://www.healthgorilla.com` system to match identities. You can optionally store NPI for record keeping as shown below.
 
 ```json
 {
@@ -92,7 +92,7 @@ The Practitioner must have a valid NPI, represented as an identifier as well as 
 
 ## Organization
 
-The identifiers and addresses on an organization are crucial for data correctness. Example shown below. You will need a `healthgorilla.com` identifier. `Organizations` can be hierarchical as shown in the example, and the hierarchy should use the Health Gorilla identifiers, not the Medplum ones. The contact details are a nice-to-have, it can be useful to preserve the customer success contacts in your applications for use by your end users.
+The identifiers and addresses on an organization are crucial for data correctness. Example shown below. You will need a `https://www.healthgorilla.com` system identifier as shown in the example that will represent the diagnosics providers. `Organizations` can be hierarchical as shown in the example, and the hierarchy should use the Health Gorilla identifiers. The contact details are a nice-to-have, it can be useful to preserve the customer success contacts in your applications for use by your end users.
 
 ```json
 {
@@ -194,6 +194,8 @@ For `Coverage` the references and coding are important. See the examples below f
 
 ## Account
 
+When orders are placed, you'll need to ensure that all of the billing data is complete and well-formed. To do that you'll need to have properly constructed FHIR Resources that will be used to generate a well formed order set.
+
 Bill to insurance supports the following permutations:
 
 - One or more `Coverage` resources representing multiple insurances that can be billed in priority order
@@ -201,7 +203,7 @@ Bill to insurance supports the following permutations:
 
 For correct billing the the `Coverage` resources should point to to the correct `subscriber` - the patient themselves or another person.
 
-Health Gorilla supports primary and secondary `Coverage` resources. Populate them as follows in priority order.
+Health Gorilla supports primary and secondary `Coverage` resources. Populate them as shown in priority order.
 
 The `Account` resource `meta` should include the Health Gorilla [Account Profile](https://developer.healthgorilla.com/docs/fhir-profiles#health-gorilla-order-billing-account). The Account `type` should match one of the types in the Health Gorilla [`order-billto`` to ValuesSet](https://developer.healthgorilla.com/docs/fhir-value-sets#order-billto)
 
