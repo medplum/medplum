@@ -25,6 +25,7 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "sideEffects": false,
   "exports": {
     "types": "./dist/types.d.ts",

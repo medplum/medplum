@@ -20,8 +20,8 @@ const options = {
   minify: true,
   sourcemap: true,
   define: {
-    'process.env.NODE_ENV': '"production"',
-    'process.env.MEDPLUM_VERSION': `"${medplumVersion}"`,
+    'import.meta.env.NODE_ENV': '"production"',
+    'import.meta.env.MEDPLUM_VERSION': `"${medplumVersion}"`,
   },
 };
 
