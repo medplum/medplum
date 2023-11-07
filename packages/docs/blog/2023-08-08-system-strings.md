@@ -138,7 +138,7 @@ Now if we add the system string to our search, we can do a targeted query for Bo
 GET [base]/Patient?identifier=http://hospital-2.org|12345
 ```
 
-See our [search guide](docs/search/basic-search#token) for more information about searching with `system` strings.
+See our [search guide](/docs/search/basic-search#token) for more information about searching with `system` strings.
 
 ## CodeableConcepts
 
