@@ -48,6 +48,14 @@
     {
       "source": "/docs/auth/okta-auth",
       "destination": "/docs/auth/methods/domain-level-identity-providers"
+    },
+    {
+      "source": "/docs/sdk/modules",
+      "destination": "/docs/sdk/core"
+    },
+    {
+      "source": "/docs/sdk/classes/MedplumClient",
+      "destination": "/docs/sdk/core.medplumclient"
     }
   ]
 }
