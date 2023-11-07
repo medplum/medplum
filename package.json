@@ -34,7 +34,6 @@
     "@babel/preset-react": "7.22.15",
     "@babel/preset-typescript": "7.23.2",
     "@cyclonedx/cyclonedx-npm": "1.14.1",
-    "@microsoft/api-documenter": "7.23.9",
     "@microsoft/api-extractor": "7.38.0",
     "@types/jest": "29.5.5",
     "@types/node": "20.8.6",
@@ -67,23 +66,5 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "trim": "0.0.3"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@medplum/eslint-config"
-    ],
-    "parserOptions": {
-      "project": "./tsconfig.json"
-    }
-  },
-  "prettier": {
-    "printWidth": 120,
-    "singleQuote": true,
-    "trailingComma": "es5"
-  },
-  "packageManager": "npm@9.8.1",
-  "dependencies": {
-    "@medplum/fhirtypes": "^2.1.9"
   }
 }
