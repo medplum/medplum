@@ -214,15 +214,12 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     props.setHoverKey(props.item.id);
   }
 
-  function changeItem(changedItem: QuestionnaireItem, disableSubmit?: boolean): void {
+  function changeItem(changedItem: QuestionnaireItem): void {
     const curr = itemRef.current as T;
-    props.onChange(
-      {
-        ...curr,
-        item: curr.item?.map((i) => (i.id === changedItem.id ? changedItem : i)),
-      } as T,
-      disableSubmit
-    );
+    props.onChange({
+      ...curr,
+      item: curr.item?.map((i) => (i.id === changedItem.id ? changedItem : i)),
+    } as T);
   }
 
   function addItem(addedItem: QuestionnaireItem, disableSubmit?: boolean): void {
@@ -242,14 +239,11 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     });
   }
 
-  function changeProperty(property: string, value: any, disableSubmit?: boolean): void {
-    props.onChange(
-      {
-        ...itemRef.current,
-        [property]: value,
-      } as T,
-      disableSubmit
-    );
+  function changeProperty(property: string, value: any): void {
+    props.onChange({
+      ...itemRef.current,
+      [property]: value,
+    } as T);
   }
 
   function updateItem(updatedItem: QuestionnaireItem): void {
@@ -289,7 +283,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
               <TextInput
                 size="xl"
                 defaultValue={resource.title}
-                onChange={(e) => changeProperty('title', e.currentTarget.value, true)}
+                onBlur={(e) => changeProperty('title', e.currentTarget.value)}
               />
             )}
             {!isResource && (
@@ -297,7 +291,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                 autosize
                 minRows={2}
                 defaultValue={item.text}
-                onChange={(e) => changeProperty('text', e.currentTarget.value, true)}
+                onBlur={(e) => changeProperty('text', e.currentTarget.value)}
               />
             )}
             {item.type === 'reference' && <ReferenceProfiles item={item} onChange={updateItem} />}
@@ -337,7 +331,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                 size="xs"
                 className={classes.linkIdInput}
                 defaultValue={item.linkId}
-                onChange={(e) => changeProperty('linkId', e.currentTarget.value, true)}
+                onBlur={(e) => changeProperty('linkId', e.currentTarget.value)}
               />
               {!isContainer && (
                 <NativeSelect

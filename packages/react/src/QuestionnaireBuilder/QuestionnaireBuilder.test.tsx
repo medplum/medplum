@@ -231,6 +231,7 @@ describe('QuestionnaireBuilder', () => {
         target: { value: 'Renamed' },
       });
     });
+    fireEvent.blur(screen.getByDisplayValue('Renamed'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
@@ -471,6 +472,7 @@ describe('QuestionnaireBuilder', () => {
         target: { value: 'Renamed' },
       });
     });
+    fireEvent.blur(screen.getByDisplayValue('Renamed'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
@@ -562,6 +564,7 @@ describe('QuestionnaireBuilder', () => {
         target: { value: 'myNewLinkId' },
       });
     });
+    fireEvent.blur(screen.getByDisplayValue('myNewLinkId'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
