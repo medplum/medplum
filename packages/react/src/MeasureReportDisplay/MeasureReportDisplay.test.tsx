@@ -20,6 +20,16 @@ async function setup(args: MeasureReportDisplayProps): Promise<void> {
 }
 
 describe('MeasureReportDisplay', () => {
+  beforeAll(async () => {
+    await medplum.createResource({
+      resourceType: 'Measure',
+      id: 'measure-1',
+      title: 'Test Measure',
+      subtitle: 'Test Subtitle',
+      url: 'http://example.com',
+    });
+  });
+
   test('MeasureReport with 1 group', async () => {
     await setup({
       measureReport: {
@@ -64,6 +74,28 @@ describe('MeasureReportDisplay', () => {
 
     expect(screen.getByText('67%')).toBeInTheDocument();
     expect(screen.getByText('24 ml')).toBeInTheDocument();
+  });
+
+  test('Render Measure Title', async () => {
+    await setup({
+      measureReport: {
+        resourceType: 'MeasureReport',
+        measure: 'http://example.com',
+        group: [
+          {
+            id: 'group-1',
+            measureScore: {
+              value: 75,
+              unit: '%',
+            },
+          },
+        ],
+      },
+    });
+
+    expect(screen.getByText('75%')).toBeInTheDocument();
+    expect(screen.getByText('Test Measure')).toBeInTheDocument();
+    expect(screen.getByText('Test Subtitle')).toBeInTheDocument();
   });
 
   test('MeasureReport With Population', async () => {

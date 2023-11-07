@@ -4,7 +4,15 @@ import { Measure, MeasureReportGroup } from '@medplum/fhirtypes';
 import React from 'react';
 import { QuantityDisplay } from '../../QuantityDisplay/QuantityDisplay';
 
-export function MeasureReportDisplayGroup(props: any): JSX.Element | null {
+interface MeasureGroupProps {
+  readonly group: MeasureReportGroup;
+}
+
+interface MeasureProps {
+  readonly measure: Measure;
+}
+
+export function MeasureReportDisplayGroup(props: MeasureGroupProps): JSX.Element | null {
   const { group } = props;
   return (
     <Paper withBorder radius="md" p="xs" display="flex" sx={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -16,7 +24,7 @@ export function MeasureReportDisplayGroup(props: any): JSX.Element | null {
   );
 }
 
-export function MeasureTitle(props: { measure: Measure }): JSX.Element {
+export function MeasureTitle(props: MeasureProps): JSX.Element {
   const { measure } = props;
   return (
     <>
@@ -30,13 +38,16 @@ export function MeasureTitle(props: { measure: Measure }): JSX.Element {
   );
 }
 
-function MeasureReportPopulation(props: any): JSX.Element {
+function MeasureReportPopulation(props: MeasureGroupProps): JSX.Element {
   const { group } = props;
   const populations = group.population;
   const numerator = populations?.find((p: any) => formatCodeableConcept(p.code) === 'numerator');
   const denominator = populations?.find((p: any) => formatCodeableConcept(p.code) === 'denominator');
 
-  const value = (numerator?.count / denominator?.count) * 100;
+  const numeratorCount = numerator?.count ?? 1;
+  const denominatorCount = denominator?.count ?? 1;
+
+  const value = (numeratorCount / denominatorCount) * 100;
   return (
     <RingProgress
       size={120}
@@ -46,7 +57,7 @@ function MeasureReportPopulation(props: any): JSX.Element {
       label={
         <Flex justify="center">
           <Text fw={700} fz={18}>
-            {numerator.count} / {denominator.count}
+            {numeratorCount} / {denominatorCount}
           </Text>
         </Flex>
       }
@@ -54,7 +65,7 @@ function MeasureReportPopulation(props: any): JSX.Element {
   );
 }
 
-function MeasureScore(props: any): JSX.Element {
+function MeasureScore(props: MeasureGroupProps): JSX.Element {
   const { group } = props;
   const unit = group.measureScore?.unit;
 
@@ -65,7 +76,7 @@ function MeasureScore(props: any): JSX.Element {
           size={120}
           thickness={12}
           roundCaps
-          sections={[{ value: setGroupValue(group), color: setColor(group.measureScore.value) }]}
+          sections={[{ value: setGroupValue(group), color: setColor(group?.measureScore?.value ?? 0) }]}
           label={
             <Flex justify="center">
               <Text fw={700} fz={18}>
