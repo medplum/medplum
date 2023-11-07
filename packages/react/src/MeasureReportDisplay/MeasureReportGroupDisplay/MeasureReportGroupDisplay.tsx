@@ -4,7 +4,7 @@ import { Measure, MeasureReportGroup } from '@medplum/fhirtypes';
 import React from 'react';
 import { QuantityDisplay } from '../../QuantityDisplay/QuantityDisplay';
 
-interface MeasureGroupProps {
+interface MeasureReportGroupDisplayProps {
   readonly group: MeasureReportGroup;
 }
 
@@ -12,7 +12,7 @@ interface MeasureProps {
   readonly measure: Measure;
 }
 
-export function MeasureReportGroupDisplay(props: MeasureGroupProps): JSX.Element | null {
+export function MeasureReportGroupDisplay(props: MeasureReportGroupDisplayProps): JSX.Element | null {
   const { group } = props;
   return (
     <Paper withBorder radius="md" p="xs" display="flex" sx={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -38,7 +38,7 @@ export function MeasureTitle(props: MeasureProps): JSX.Element {
   );
 }
 
-function MeasureReportPopulation(props: MeasureGroupProps): JSX.Element {
+function MeasureReportPopulation(props: MeasureReportGroupDisplayProps): JSX.Element {
   const { group } = props;
   const populations = group.population;
   const numerator = populations?.find((p: any) => formatCodeableConcept(p.code) === 'numerator');
@@ -84,7 +84,7 @@ function MeasureReportPopulation(props: MeasureGroupProps): JSX.Element {
   );
 }
 
-function MeasureScore(props: MeasureGroupProps): JSX.Element {
+function MeasureScore(props: MeasureReportGroupDisplayProps): JSX.Element {
   const { group } = props;
   const unit = group.measureScore?.unit ?? group.measureScore?.code;
 

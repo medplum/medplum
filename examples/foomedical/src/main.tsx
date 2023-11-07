@@ -8,6 +8,7 @@ import { App } from './App';
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
+  baseUrl: 'http://localhost:8103/',
 });
 
 const theme: MantineThemeOverride = {
