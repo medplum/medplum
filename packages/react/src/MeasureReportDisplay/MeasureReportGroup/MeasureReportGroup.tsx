@@ -12,7 +12,7 @@ interface MeasureProps {
   readonly measure: Measure;
 }
 
-export function MeasureReportDisplayGroup(props: MeasureGroupProps): JSX.Element | null {
+export function MeasureReportGroupDisplay(props: MeasureGroupProps): JSX.Element | null {
   const { group } = props;
   return (
     <Paper withBorder radius="md" p="xs" display="flex" sx={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -96,9 +96,11 @@ function MeasureScore(props: MeasureGroupProps): JSX.Element {
           }
         />
       ) : (
-        <Title order={3}>
-          <QuantityDisplay value={group.measureScore} />
-        </Title>
+        <Flex h={120} align="center">
+          <Title order={3}>
+            <QuantityDisplay value={group.measureScore} />
+          </Title>
+        </Flex>
       )}
     </>
   );

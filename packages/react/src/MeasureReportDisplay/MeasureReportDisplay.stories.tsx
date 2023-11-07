@@ -181,6 +181,38 @@ export const WithPopulation = (): JSX.Element => {
                 unit: 'ml',
               },
             },
+            {
+              id: 'group-3',
+              population: [
+                {
+                  code: {
+                    coding: [
+                      {
+                        code: 'numerator',
+                      },
+                    ],
+                  },
+                  count: 4,
+                },
+                {
+                  code: {
+                    coding: [
+                      {
+                        code: 'denominator',
+                      },
+                    ],
+                  },
+                  count: 21,
+                },
+              ],
+            },
+            {
+              id: 'group-4',
+              measureScore: {
+                value: 12,
+                unit: 'ml',
+              },
+            },
           ],
         }}
       />
