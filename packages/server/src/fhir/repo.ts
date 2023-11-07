@@ -846,7 +846,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         }
       }
 
-      await new InsertQuery(resourceType, [columns]).mergeOnConflict(true).execute(client);
+      await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
 
       await new InsertQuery(resourceType + '_History', [
         {
@@ -1050,7 +1050,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       }
     }
 
-    await new InsertQuery(resourceType, [columns]).mergeOnConflict(true).execute(client);
+    await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
   }
 
   /**
