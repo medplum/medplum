@@ -202,7 +202,7 @@ export const WithPopulation = (): JSX.Element => {
                       },
                     ],
                   },
-                  count: 21,
+                  count: 5,
                 },
               ],
             },

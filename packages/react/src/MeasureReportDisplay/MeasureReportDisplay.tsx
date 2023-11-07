@@ -10,8 +10,9 @@ export interface MeasureReportDisplayProps {
 }
 
 export function MeasureReportDisplay(props: MeasureReportDisplayProps): JSX.Element | null {
-  const report = useResource(props.measureReport);
+  // Relies on window.matchMedia(), will return false if not available https://mantine.dev/hooks/use-media-query/
   const isMobile = useMediaQuery(`(max-width: ${em(750)})`);
+  const report = useResource(props.measureReport);
   const [measure] = useSearchOne('Measure', { url: report?.measure });
 
   if (!report) {
@@ -21,7 +22,7 @@ export function MeasureReportDisplay(props: MeasureReportDisplayProps): JSX.Elem
   return (
     <Box>
       {measure && <MeasureTitle measure={measure} />}
-      <SimpleGrid cols={isMobile ? 1 : 3} spacing={'xs'}>
+      <SimpleGrid cols={!isMobile ? 3 : 1} spacing={'xs'}>
         {report.group?.map((group: MeasureReportGroup, idx: number) => (
           <MeasureReportGroupDisplay key={group.id ?? idx} group={group} />
         ))}

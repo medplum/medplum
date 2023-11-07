@@ -178,4 +178,33 @@ describe('MeasureReportDisplay', () => {
 
     expect(screen.getByText('Insufficient Data')).toBeInTheDocument();
   });
+
+  test('MeasureReport With 0 in denominator', async () => {
+    await setup({
+      measureReport: {
+        resourceType: 'MeasureReport',
+        id: 'insufficient-example',
+        group: [
+          {
+            id: 'group-1',
+            population: [
+              {
+                code: {
+                  coding: [
+                    {
+                      code: 'denominator',
+                    },
+                  ],
+                },
+                count: 0,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(screen.getByText('Not Applicable')).toBeInTheDocument();
+    expect(screen.getByText('Denominator: 0')).toBeInTheDocument();
+  });
 });

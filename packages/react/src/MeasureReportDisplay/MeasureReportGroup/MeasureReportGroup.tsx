@@ -47,7 +47,16 @@ function MeasureReportPopulation(props: MeasureGroupProps): JSX.Element {
   const numeratorCount = numerator?.count;
   const denominatorCount = denominator?.count;
 
-  if (!numeratorCount || !denominatorCount) {
+  if (denominatorCount === 0) {
+    return (
+      <Box>
+        <Title order={3}>Not Applicable</Title>
+        <Text>{`Denominator: ${denominatorCount}`}</Text>
+      </Box>
+    );
+  }
+
+  if (numeratorCount === undefined || denominatorCount === undefined) {
     return (
       <Box>
         <Title order={3}>Insufficient Data</Title>
