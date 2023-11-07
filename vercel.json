@@ -42,6 +42,10 @@
       "destination": "/docs/access/access-policies"
     },
     {
+      "source": "/docs/auth/authentication-integration-patterns",
+      "destination": "/docs/auth/methods"
+    },
+    {
       "source": "/docs/auth/:page(oauth-auth-code|client-credentials|google-auth|external-identity-providers|external-ids|token-exchange)",
       "destination": "/docs/auth/methods/:page*"
     },
