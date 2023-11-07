@@ -4,6 +4,7 @@ import {
   encodeBase64,
   getIdentifier,
   getQuestionnaireAnswers,
+  isResource,
   MedplumClient,
   setIdentifier,
   SNOMED,
@@ -14,6 +15,7 @@ import {
   CodeableConcept,
   Coverage,
   Organization,
+  Parameters,
   Patient,
   Practitioner,
   ProjectSecret,
@@ -52,7 +54,7 @@ interface HealthGorillaConfig {
 // Available labs Health Gorilla IDs
 // These come from the Health Gorilla Organization resources
 const availableLabs: Record<string, string> = {
-  Test: 'f-4f0235627ac2d59b49e5575c',
+  Testing: 'f-4f0235627ac2d59b49e5575c',
   Labcorp: 'f-388554647b89801ea5e8320b',
   Quest: 'f-7c075564349e1a592e53147a',
 };
@@ -67,6 +69,8 @@ const availableLabs: Record<string, string> = {
 // Ultimately, you just need to make sure you pass the correct code to Health Gorilla in the ServiceRequest resources.
 const availableTests: Record<string, string> = {
   'test-1234-5': 'Test 1',
+  'test-11119': 'ABN TEST REFUSAL',
+  'test-38827': 'INCORRECT ABN SUBMITTED',
   'labcorp-001453': 'Hemoglobin A1c',
   'labcorp-010322': 'Prostate-Specific Ag',
   'labcorp-322000': 'Comp. Metabolic Panel (14)',
@@ -242,13 +246,25 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     }
   }
 
+  // Specimen collected date/time
+  // This is an optional field.  If present, it will create a Specimen resource.
+  builder.specimenCollectedDateTime = answers.specimenCollectedDateTime?.valueDateTime;
+
   // Place the order
   const requestGroup = builder.buildRequestGroup();
   await medplum.uploadMedia(JSON.stringify(requestGroup, null, 2), 'application/json', 'requestgroup.json');
-  await healthGorilla.startAsyncRequest(healthGorilla.fhirUrl('RequestGroup').toString(), {
+
+  const response = await healthGorilla.startAsyncRequest(healthGorilla.fhirUrl('RequestGroup').toString(), {
     method: 'POST',
     body: JSON.stringify(requestGroup),
   });
+
+  // If the Health Gorilla API returns a RequestGroup immediately,
+  // it means that the order may have an ABN (Advanced Beneficiary Notice).
+  // Go through the process of getting the ABN PDF and uploading it to Medplum.
+  if (isResource(response) && response.resourceType === 'RequestGroup' && response.id) {
+    await checkAbn(medplum, healthGorilla, response as RequestGroup & { id: string });
+  }
 }
 
 /**
@@ -379,6 +395,39 @@ function requireStringSecret(secrets: Record<string, ProjectSecret>, name: strin
 function assertNotEmpty<T>(value: T | undefined, message: string): asserts value is T {
   if (!value) {
     throw new Error(message);
+  }
+}
+
+/**
+ * Checks the RequestGroup for an ABN (Advanced Beneficiary Notice).
+ *
+ * See: https://developer.healthgorilla.com/docs/diagnostic-network#abn
+ *
+ * @param medplum - The Medplum FHIR client.
+ * @param healthGorilla - The Health Gorilla FHIR client.
+ * @param requestGroup - The newly created RequestGroup.
+ */
+async function checkAbn(
+  medplum: MedplumClient,
+  healthGorilla: MedplumClient,
+  requestGroup: RequestGroup & { id: string }
+): Promise<void> {
+  // Use the HealthGorilla "$abn" operation to get the PDF URL
+  const abnResult = await healthGorilla.get(healthGorilla.fhirUrl(requestGroup.resourceType, requestGroup.id, '$abn'));
+
+  // Get the ABN PDF URL from the Parameters resource
+  const abnUrl = (abnResult as Parameters).parameter?.find((p) => p.name === 'url')?.valueString;
+  if (abnUrl) {
+    const abnBlob = await healthGorilla.download(abnUrl, { headers: { Accept: 'application/pdf' } });
+
+    // node-fetch does not allow streaming from a Response object
+    // So read the PDF into memory first
+    const abnArrayBuffer = await abnBlob.arrayBuffer();
+    const abnUint8Array = new Uint8Array(abnArrayBuffer);
+
+    // Create a Medplum media resource
+    const media = await medplum.uploadMedia(abnUint8Array, 'application/pdf', 'RequestGroup-ABN.pdf');
+    console.log('Uploaded ABN PDF as media: ' + media.id);
   }
 }
 

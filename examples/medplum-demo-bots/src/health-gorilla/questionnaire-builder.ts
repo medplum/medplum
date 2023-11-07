@@ -21,7 +21,11 @@ const labs: Lab[] = [
   {
     id: 'test',
     name: 'Testing',
-    tests: [{ code: '1234-5', name: 'Test 1' }],
+    tests: [
+      { code: '1234-5', name: 'Test 1' },
+      { code: '11119', name: 'ABN TEST REFUSAL' },
+      { code: '38827', name: 'INCORRECT ABN SUBMITTED' },
+    ],
   },
   {
     id: 'labcorp',
