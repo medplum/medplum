@@ -1,4 +1,4 @@
-import { Flex, Group, Paper, RingProgress, Text, Title } from '@mantine/core';
+import { Box, Flex, Group, Paper, RingProgress, Text, Title } from '@mantine/core';
 import { formatCodeableConcept } from '@medplum/core';
 import { Measure, MeasureReportGroup } from '@medplum/fhirtypes';
 import React from 'react';
@@ -44,8 +44,18 @@ function MeasureReportPopulation(props: MeasureGroupProps): JSX.Element {
   const numerator = populations?.find((p: any) => formatCodeableConcept(p.code) === 'numerator');
   const denominator = populations?.find((p: any) => formatCodeableConcept(p.code) === 'denominator');
 
-  const numeratorCount = numerator?.count ?? 1;
-  const denominatorCount = denominator?.count ?? 1;
+  const numeratorCount = numerator?.count;
+  const denominatorCount = denominator?.count;
+
+  if (!numeratorCount || !denominatorCount) {
+    return (
+      <Box>
+        <Title order={3}>Insufficient Data</Title>
+        <Text>{`Numerator: ${numeratorCount}`}</Text>
+        <Text>{`Denominator: ${denominatorCount}`}</Text>
+      </Box>
+    );
+  }
 
   const value = (numeratorCount / denominatorCount) * 100;
   return (
@@ -53,7 +63,7 @@ function MeasureReportPopulation(props: MeasureGroupProps): JSX.Element {
       size={120}
       thickness={12}
       roundCaps
-      sections={[{ value: value, color: setColor(value) }]}
+      sections={[{ value: value, color: groupColor(value) }]}
       label={
         <Flex justify="center">
           <Text fw={700} fz={18}>
@@ -67,7 +77,7 @@ function MeasureReportPopulation(props: MeasureGroupProps): JSX.Element {
 
 function MeasureScore(props: MeasureGroupProps): JSX.Element {
   const { group } = props;
-  const unit = group.measureScore?.unit;
+  const unit = group.measureScore?.unit ?? group.measureScore?.code;
 
   return (
     <>
@@ -76,7 +86,7 @@ function MeasureScore(props: MeasureGroupProps): JSX.Element {
           size={120}
           thickness={12}
           roundCaps
-          sections={[{ value: setGroupValue(group), color: setColor(group?.measureScore?.value ?? 0) }]}
+          sections={[{ value: groupValue(group), color: groupColor(group?.measureScore?.value ?? 0) }]}
           label={
             <Flex justify="center">
               <Text fw={700} fz={18}>
@@ -94,7 +104,7 @@ function MeasureScore(props: MeasureGroupProps): JSX.Element {
   );
 }
 
-function setGroupValue(group: MeasureReportGroup): number {
+function groupValue(group: MeasureReportGroup): number {
   const score = group.measureScore?.value;
   const unit = group.measureScore?.unit;
   if (!score) {
@@ -106,7 +116,7 @@ function setGroupValue(group: MeasureReportGroup): number {
   return score;
 }
 
-function setColor(score: number): string {
+function groupColor(score: number): string {
   if (score <= 33) {
     return 'red';
   }

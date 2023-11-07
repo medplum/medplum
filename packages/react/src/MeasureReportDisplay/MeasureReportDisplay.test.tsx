@@ -143,4 +143,39 @@ describe('MeasureReportDisplay', () => {
     expect(screen.getByText('10 / 100')).toBeInTheDocument();
     expect(screen.getByText('50 ml')).toBeInTheDocument();
   });
+
+  test('MeasureReport With Insufficient Population Data', async () => {
+    await setup({
+      measureReport: {
+        resourceType: 'MeasureReport',
+        id: 'insufficient-example',
+        group: [
+          {
+            id: 'group-1',
+            population: [
+              {
+                code: {
+                  coding: [
+                    {
+                      code: 'denominator',
+                    },
+                  ],
+                },
+                count: 100,
+              },
+            ],
+          },
+          {
+            id: 'group-2',
+            measureScore: {
+              value: 50,
+              unit: 'ml',
+            },
+          },
+        ],
+      },
+    });
+
+    expect(screen.getByText('Insufficient Data')).toBeInTheDocument();
+  });
 });

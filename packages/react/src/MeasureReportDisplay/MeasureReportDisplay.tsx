@@ -20,7 +20,7 @@ export function MeasureReportDisplay(props: MeasureReportDisplayProps): JSX.Elem
         setMeasure(result);
       })
       .catch(console.log);
-  }, [medplum, report?.measure]);
+  }, [medplum, report]);
 
   if (!report) {
     return null;
@@ -30,7 +30,7 @@ export function MeasureReportDisplay(props: MeasureReportDisplayProps): JSX.Elem
     <Box>
       {measure && <MeasureTitle measure={measure} />}
       <SimpleGrid cols={3} spacing={'xs'}>
-        {report.group?.map((group: MeasureReportGroup) => <MeasureReportDisplayGroup key={group.id} group={group} />)}
+        {report.group?.map((group: MeasureReportGroup, idx: number) => <MeasureReportDisplayGroup key={group.id ?? idx} group={group} />)}
       </SimpleGrid>
     </Box>
   );
