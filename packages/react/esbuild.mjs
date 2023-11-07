@@ -19,9 +19,9 @@ const options = {
   minify: true,
   sourcemap: true,
   define: {
-    'process.env.NODE_ENV': '"production"',
-    'process.env.GOOGLE_AUTH_ORIGINS': `"${process.env.GOOGLE_AUTH_ORIGINS}"`,
-    'process.env.GOOGLE_CLIENT_ID': `"${process.env.GOOGLE_CLIENT_ID}"`,
+    'import.meta.env.NODE_ENV': '"production"',
+    'import.meta.env.GOOGLE_AUTH_ORIGINS': `"${process.env.GOOGLE_AUTH_ORIGINS}"`,
+    'import.meta.env.GOOGLE_CLIENT_ID': `"${process.env.GOOGLE_CLIENT_ID}"`,
   },
   external: [
     '@mantine/core',

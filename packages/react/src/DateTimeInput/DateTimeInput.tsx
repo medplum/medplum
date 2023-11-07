@@ -52,5 +52,5 @@ export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
  * @returns The input type for the current environment.
  */
 function getInputType(): string {
-  return process.env.NODE_ENV === 'test' ? 'text' : 'datetime-local';
+  return import.meta.env.NODE_ENV === 'test' ? 'text' : 'datetime-local';
 }
