@@ -37,7 +37,7 @@ export class ReferenceTable extends LookupTable<Reference> {
     if (existing.length > 0) {
       await this.deleteValuesForResource(client, resource);
     }
-    await this.insertValuesForResource(client, resource.resourceType, values);
+    await this.insertValuesForResource(client, resource.resourceType, values, true);
   }
 }
 
