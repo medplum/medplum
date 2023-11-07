@@ -1,9 +1,7 @@
 {
-  "extends": "expo-module-scripts/tsconfig.base",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "./build",
-    "forceConsistentCasingInFileNames": true
+    "lib": ["esnext", "dom"]
   },
-  "include": ["./src"],
-  "exclude": ["**/__mocks__/*", "**/__tests__/*", "**/__stories__/*"]
+  "include": ["src/**/*.ts"]
 }
