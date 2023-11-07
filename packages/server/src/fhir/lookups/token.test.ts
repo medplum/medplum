@@ -279,6 +279,42 @@ describe('Identifier Lookup Table', () => {
       expect(bundleContains(searchResult1, patient2)).toBe(true);
     }));
 
+  test('Missing', () =>
+    withTestContext(async () => {
+      const identifier = randomUUID();
+      const name = randomUUID();
+
+      const patient1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: name }],
+      });
+
+      const patient2 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Bob'], family: name }],
+        telecom: [{ system: 'email', value: identifier + 'xyz' }],
+      });
+
+      const searchResult1 = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'email',
+            operator: Operator.MISSING,
+            value: 'true',
+          },
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: name,
+          },
+        ],
+      });
+      expect(searchResult1.entry?.length).toEqual(1);
+      expect(bundleContains(searchResult1, patient1)).toBe(true);
+      expect(bundleContains(searchResult1, patient2)).toBe(false);
+    }));
+
   test('Search comma separated identifier exact', () =>
     withTestContext(async () => {
       const identifier1 = randomUUID();
