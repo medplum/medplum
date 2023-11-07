@@ -1,0 +1,15 @@
+/* globals module */
+
+module.exports = {
+  preset: 'react-native',
+  moduleFileExtensions: ['ts', 'tsx', 'js'],
+  moduleDirectories: ['node_modules', 'src'],
+  transform: {
+    '^.+\\.(js)$': 'babel-jest',
+    '\\.(ts|tsx)$': 'ts-jest',
+  },
+  testMatch: ['**/src/**/*.test.ts'],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['json', 'text'],
+  collectCoverageFrom: ['**/src/**/*', '!**/src/__mocks__/**/*.ts'],
+};

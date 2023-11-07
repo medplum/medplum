@@ -2,10 +2,10 @@ import { MemoryStorage } from '@medplum/core';
 import { decode, encode } from 'base-64';
 import { CryptoDigestAlgorithm, digest } from 'expo-crypto';
 import expoWebCrypto from 'expo-standard-web-crypto';
-import 'react-native-url-polyfill/auto';
-import { TextEncoder } from 'text-encoding';
+import { setupURLPolyfill } from 'react-native-url-polyfill';
+import { TextDecoder, TextEncoder } from 'text-encoding';
 
-type ExtendedExpoCrypto = typeof expoWebCrypto & {
+export type ExtendedExpoCrypto = typeof expoWebCrypto & {
   subtle: {
     digest: (algorithm: AlgorithmIdentifier, data: BufferSource) => Promise<ArrayBuffer>;
   };
@@ -30,7 +30,8 @@ export function polyfillMedplumWebAPIs(): void {
   }
 
   if (typeof window.location === 'undefined') {
-    const locationUrl = new URL('/', 'http://localhost:80') as URL & { assign: () => void };
+    setupURLPolyfill();
+    const locationUrl = new URL('/', 'http://localhost') as URL & { assign: () => void };
     locationUrl.assign = () => {};
     Object.defineProperty(window, 'location', {
       value: locationUrl,
@@ -51,6 +52,14 @@ export function polyfillMedplumWebAPIs(): void {
       configurable: true,
       enumerable: true,
       get: () => TextEncoder,
+    });
+  }
+
+  if (typeof window.TextDecoder === 'undefined') {
+    Object.defineProperty(window, 'TextDecoder', {
+      configurable: true,
+      enumerable: true,
+      get: () => TextDecoder,
     });
   }
 

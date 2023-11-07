@@ -11,6 +11,7 @@
   "module": "dist/esm/index.mjs",
   "types": "dist/types/index.d.ts",
   "scripts": {
+    "test": "jest --runInBand",
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
     "clean": "rimraf ./build"
   },
@@ -39,8 +40,10 @@
     "@types/react": "18.0.25",
     "@types/text-encoding": "0.0.36",
     "esbuild": "0.19.4",
-    "esbuild-node-externals": "^1.9.0",
-    "rimraf": "5.0.5"
+    "esbuild-node-externals": "1.9.0",
+    "jest": "29.7.0",
+    "rimraf": "5.0.5",
+    "ts-jest": "29.1.1"
   },
   "peerDependencies": {
     "@medplum/core": "*",

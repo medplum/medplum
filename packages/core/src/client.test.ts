@@ -70,6 +70,10 @@ describe('Client', () => {
     Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
   });
 
+  afterAll(() => {
+    Object.defineProperty(globalThis.window, 'sessionStorage', { value: undefined });
+  });
+
   test('Constructor', () => {
     expect(
       () =>
@@ -250,6 +254,7 @@ describe('Client', () => {
   test('Clear', () => {
     const client = new MedplumClient({ fetch: mockFetch(200, {}) });
     expect(() => client.clear()).not.toThrow();
+    expect(sessionStorage.length).toEqual(0);
   });
 
   test('SignOut', async () => {
