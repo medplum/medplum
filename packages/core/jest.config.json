@@ -8,5 +8,5 @@
   "coverageDirectory": "coverage",
   "coverageReporters": ["json", "text"],
   "collectCoverageFrom": ["**/src/**/*.ts"],
-  "setupFilesAfterEnv": ["./test.setup.js"]
+  "setupFilesAfterEnv": ["./test.setup.cjs"]
 }
