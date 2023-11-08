@@ -752,6 +752,7 @@ export class MedplumClient extends EventTarget {
    */
   clear(): void {
     this.storage.clear();
+    sessionStorage.clear();
     this.clearActiveLogin();
   }
 

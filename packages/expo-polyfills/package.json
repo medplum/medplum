@@ -1,0 +1,54 @@
+{
+  "name": "@medplum/expo-polyfills",
+  "version": "2.1.10",
+  "description": "A module for polyfilling the minimum necessary web APIs for using the Medplum client on React Native",
+  "exports": {
+    "types": "./dist/types/index.d.ts",
+    "require": "./dist/cjs/index.cjs",
+    "import": "./dist/esm/index.mjs"
+  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/types/index.d.ts",
+  "scripts": {
+    "test": "jest --runInBand",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
+    "clean": "rimraf ./build"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "@medplum/expo-polyfills"
+  ],
+  "repository": "https://github.com/medplum/medplum",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
+  "author": "Medplum <dev@medplum.com> (https://github.com/medplum)",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/medplum/medplum#readme",
+  "dependencies": {
+    "base-64": "1.0.0",
+    "expo-crypto": "12.4.1",
+    "expo-standard-web-crypto": "1.6.0",
+    "react-native-url-polyfill": "2.0.0",
+    "text-encoding": "0.7.0"
+  },
+  "devDependencies": {
+    "@medplum/core": "*",
+    "@types/base-64": "1.0.0",
+    "@types/react": "18.0.25",
+    "@types/text-encoding": "0.0.36",
+    "esbuild": "0.19.4",
+    "esbuild-node-externals": "1.9.0",
+    "jest": "29.7.0",
+    "rimraf": "5.0.5",
+    "ts-jest": "29.1.1"
+  },
+  "peerDependencies": {
+    "@medplum/core": "*",
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  }
+}
