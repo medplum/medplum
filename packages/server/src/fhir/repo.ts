@@ -789,10 +789,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     const client = await getClient().connect();
     try {
       await client.query('BEGIN');
-      await Promise.all([
-        this.writeResource(client, resource),
-        this.writeLookupTables(client, resource),
-      ]);
+      await Promise.all([this.writeResource(client, resource), this.writeLookupTables(client, resource)]);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
