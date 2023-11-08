@@ -885,6 +885,7 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
   for (const link of param.chain) {
     const nextTable = linkNextTable(selectQuery, link, currentResourceType, currentTable);
 
+    // Check for the terminal chain link, which includes a condition on a field of the linked resource type
     if (link.filter) {
       const endCondition = buildSearchFilterExpression(
         selectQuery,
@@ -913,12 +914,17 @@ function linkNextTable(
   const nextTable = selectQuery.getNextJoinAlias();
   const codeCondition = new Condition(new Column(lookupAlias, 'code'), '=', link.code);
 
+  // Link from the current resource table to the next one through a references lookup table
   if (link.reverse) {
+    // JOIN {LookupTable} ON {CurrentTable}.id = {LookupTable}.targetId
+    // JOIN {NextTable} ON {LookupTable}.resourceId = {NextTable}.id
     const lookupJoin = new Condition(new Column(currentTable, 'id'), '=', new Column(lookupAlias, 'targetId'));
     selectQuery.innerJoin(`${link.resourceType}_References`, lookupAlias, new Conjunction([lookupJoin, codeCondition]));
     const nextJoin = new Condition(new Column(lookupAlias, 'resourceId'), '=', new Column(nextTable, 'id'));
     selectQuery.innerJoin(link.resourceType, nextTable, nextJoin);
   } else {
+    // JOIN {LookupTable} ON {CurrentTable}.id = {LookupTable}.resourceId
+    // JOIN {NextTable} ON {LookupTable}.targetId = {NextTable}.id
     const lookupJoin = new Condition(new Column(currentTable, 'id'), '=', new Column(lookupAlias, 'resourceId'));
     selectQuery.innerJoin(
       `${currentResourceType}_References`,
@@ -967,6 +973,7 @@ function parseChainLink(param: string, currentResourceType: string): ChainedSear
   if (!searchParam) {
     throw new Error(`Invalid search parameter in chain: ${currentResourceType}?${code}`);
   }
+
   let resourceType: string;
   if (searchParam.target?.length === 1) {
     resourceType = searchParam.target[0];
@@ -991,11 +998,19 @@ function parseReverseChainLink(param: string, targetResourceType: string): Chain
   return { resourceType, code, reverse: true };
 }
 
+/**
+ * Split a chained search parameter string into component parts representing discrete links in the reference chain.
+ * @param chain - The chained search parameter string.
+ * @returns An array of parts split from the original string.
+ */
 function splitChainedSearch(chain: string): string[] {
   const params: string[] = [];
   while (chain) {
     const peek = chain.slice(0, 5);
     if (peek === '_has:') {
+      // Handle reverse chain segment
+      // Read the first two components of the `_has` parameter: the next resource type and the linking parameter
+      // Leave the final part (the next search parameter) to be consumed in the next loop iteration
       const resourceTypeDelim = chain.indexOf(':', 5);
       const codeDelim = chain.indexOf(':', resourceTypeDelim + 1);
       if (resourceTypeDelim < 0 || resourceTypeDelim >= codeDelim) {
@@ -1004,6 +1019,7 @@ function splitChainedSearch(chain: string): string[] {
       params.push(chain.slice(0, codeDelim));
       chain = chain.slice(codeDelim + 1);
     } else {
+      // Handle forward chain segment by consuming the entire next search parameter
       let nextDot = chain.indexOf('.');
       if (nextDot === -1) {
         nextDot = chain.length;
