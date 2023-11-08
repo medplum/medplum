@@ -83,8 +83,9 @@ describe('polyfillMedplumWebAPIs', () => {
     });
 
     test('Should be able to hash a message', async () => {
-      const digest = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode('Medplum_is_cool'));
-      expect(digest).toEqual(
+      await expect(
+        window.crypto.subtle.digest('SHA-256', new TextEncoder().encode('Medplum_is_cool'))
+      ).resolves.toEqual(
         new Uint8Array([
           0x97, 0xe9, 0xb0, 0xd6, 0x96, 0xa6, 0xcd, 0x12, 0xd2, 0xf5, 0x61, 0x56, 0x07, 0x16, 0x8b, 0x49, 0xe6, 0x07,
           0xb1, 0xbe, 0x52, 0x73, 0xe7, 0x87, 0x2e, 0x2c, 0x7e, 0x02, 0x3d, 0x99, 0x95, 0xc9,
