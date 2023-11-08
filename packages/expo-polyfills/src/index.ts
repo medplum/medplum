@@ -12,7 +12,7 @@ export type ExtendedExpoCrypto = typeof expoWebCrypto & {
 };
 
 export function polyfillMedplumWebAPIs(): void {
-  if (typeof window.crypto === 'undefined') {
+  if (typeof window.crypto?.subtle?.digest === 'undefined' || typeof window.crypto.getRandomValues === 'undefined') {
     // eslint-disable-next-line no-inner-declarations
     async function polyfilledDigest(algorithm: AlgorithmIdentifier, data: BufferSource): Promise<ArrayBuffer> {
       return digest(algorithm as CryptoDigestAlgorithm, data);
