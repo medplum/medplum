@@ -94,3 +94,37 @@ Device authentication is designed for true machine connectivity, for example con
 For machine connectivity, we encourage use of [ClientCredentials](/docs/auth/methods/client-credentials) with tightly scoped [access controls](/docs/access/access-policies), giving minimal access to the host at the edge.
 
 If OAuth2 client credentials based authentication is not an option due to device limitations, [Basic Authentication](https://www.medplum.com/docs/sdk/core.medplumclient.setbasicauth) can be used to connect to Medplum. In general, OAuth2 is preferred to basic authentication. [Consuming webhooks](/docs/bots/consuming-webhooks) is an example application where Basic Authentication makes sense.
+
+## Security Best Practices
+
+All three implementations types will have tokens or client credentials with system access, and edge systems should follow best practices. Below are examples of security best practices for each implementation type.
+
+:::warning Compliance Note
+
+**The practices below are only suggestions**. Please consult your compliance and legal team to ensure that your devices are HIPAA compliant.
+
+:::
+
+### Client Authentication
+
+- Use strong passwords - [NIST Guidelines](https://pages.nist.gov/800-63-3/sp800-63b.html#appA) suggest passwords should be a minimum of 8 characters that are easy to remember and which have been tested against a "blocked list" of unacceptable passwords.
+- When possible, users should set up two-factor authentication on their devices.
+- Local disk should be encrypted.
+- Workstation should be password locked.
+- Consider disabling local storage on device for shared workstations or in accordance with institution policy.
+- Organizations with mobile devices or laptops should enable a Mobile Device Management (MDM) solution for workstations
+- [IP restrictions](/docs/access/ip-access-rules) can be enabled when especially sensitive data, such as personal health information (PHI), is being accessed.
+
+### Server Authentication
+
+- Run with as strict an [access policy](/docs/access/access-policies) as possible. following the [principle of least privileges](https://en.wikipedia.org/wiki/Principle_of_least_privilege).
+- Encrypt hard disk.
+- Restrict access to host via VPC or other mechanism - do not allow access from general internet.
+- Use a secrets management to store access keys - do not store credentials on disk.
+- Ensure host is patched and has security updates applied regularly.
+
+### Host authentication
+
+- Run with extremely an limited [access policy](/docs/access/access-policies). For example: read-only access to a specific Bot.
+- Restrict network access to the host - do not allow access from the general internet.
+- Ensure host is patched and has security updates applied regularly.
