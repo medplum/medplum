@@ -15,7 +15,6 @@ const options = {
   minify: true,
   sourcemap: true,
   plugins: [nodeExternalsPlugin()],
-  external: ['expo-crypto', 'expo-standard-web-crypto'],
 };
 
 esbuild
