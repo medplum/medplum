@@ -25,9 +25,12 @@ export async function main(configName: string): Promise<void> {
   globalLogger.info('Server started', { port: config.port });
   gracefulShutdown(server, {
     timeout: config.shutdownTimeoutMilliseconds,
-    development: process.env.NODE_ENV !== "production",
+    development: process.env.NODE_ENV !== 'production',
     preShutdown: async (signal) => {
-      globalLogger.info(`Shutdown signal received... allowing graceful shutdown for up to ${config.shutdownTimeoutMilliseconds} milliseconds`, { signal });
+      globalLogger.info(
+        `Shutdown signal received... allowing graceful shutdown for up to ${config.shutdownTimeoutMilliseconds} milliseconds`,
+        { signal }
+      );
     },
     onShutdown: () => shutdownApp(),
     finally: () => {
