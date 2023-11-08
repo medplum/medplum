@@ -444,7 +444,6 @@ class HealthGorillaRequestGroupBuilder {
   patient?: Patient;
   account?: Account;
   coverages: Coverage[] = [];
-  payors: Organization[] = [];
   subscribers: RelatedPerson[] = [];
   authorizedBy?: Organization;
   performer?: Organization;
@@ -508,6 +507,7 @@ class HealthGorillaRequestGroupBuilder {
         ...existingPatient,
         identifier: patient.identifier,
         name: patient.name,
+        birthDate: patient.birthDate,
         gender: patient.gender,
         address: patient.address,
         telecom: patient.telecom,
@@ -560,7 +560,6 @@ class HealthGorillaRequestGroupBuilder {
 
     const resultAccount: Account = {
       ...medplumAccount,
-      meta: undefined,
       coverage: undefined,
     };
 
@@ -576,7 +575,6 @@ class HealthGorillaRequestGroupBuilder {
           const resultCoverage: Coverage = {
             ...medplumCoverage,
             id: 'coverage' + this.coverages.length,
-            meta: undefined,
             beneficiary: createReference(this.patient),
             payor: undefined,
             subscriber: undefined,
@@ -591,14 +589,11 @@ class HealthGorillaRequestGroupBuilder {
 
           if (medplumCoverage.payor) {
             for (const payorRef of medplumCoverage.payor) {
+              // Payors must be Organizations with Health Gorilla identifiers
               const medplumPayor = await medplum.readReference(payorRef as Reference<Organization>);
-              const resultPayor = {
-                ...medplumPayor,
-                id: 'payor' + this.payors.length,
-                meta: undefined,
-              };
-              resultCoverage.payor = append(resultCoverage.payor, { reference: '#' + resultPayor.id });
-              this.payors = append(this.payors, resultPayor);
+              resultCoverage.payor = append(resultCoverage.payor, {
+                reference: 'Organization/' + getIdentifier(medplumPayor, HEALTH_GORILLA_SYSTEM),
+              });
             }
           }
 
@@ -608,7 +603,6 @@ class HealthGorillaRequestGroupBuilder {
             const resultSubscriber = {
               ...medplumSubscriber,
               id: 'subscriber' + this.subscribers.length,
-              meta: undefined,
               patient: createReference(this.patient),
             };
             resultCoverage.subscriber = { reference: '#' + resultSubscriber.id };
@@ -729,10 +723,6 @@ class HealthGorillaRequestGroupBuilder {
 
     if (this.coverages) {
       contained.push(...this.coverages);
-    }
-
-    if (this.payors) {
-      contained.push(...this.payors);
     }
 
     if (this.subscribers) {

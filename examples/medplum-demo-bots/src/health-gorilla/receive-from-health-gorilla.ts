@@ -15,6 +15,7 @@ import {
   DiagnosticReport,
   Observation,
   OperationOutcome,
+  Organization,
   Parameters,
   Patient,
   Practitioner,
@@ -46,6 +47,7 @@ type HealthGorillaResource =
   | Account
   | DiagnosticReport
   | Observation
+  | Organization
   | Patient
   | Practitioner
   | PractitionerRole
@@ -233,7 +235,11 @@ function touchUpBundle(bundle: Bundle<HealthGorillaResource>): void {
       request.ifNoneExist = 'identifier=' + identifier;
     }
 
-    if (resource.resourceType === 'RequestGroup' || resource.resourceType === 'DiagnosticReport') {
+    if (
+      resource.resourceType === 'DiagnosticReport' ||
+      resource.resourceType === 'RequestGroup' ||
+      resource.resourceType === 'Organization'
+    ) {
       const identifier = getIdentifier(resource, HEALTH_GORILLA_SYSTEM);
       if (identifier) {
         request.ifNoneExist = 'identifier=' + identifier;
