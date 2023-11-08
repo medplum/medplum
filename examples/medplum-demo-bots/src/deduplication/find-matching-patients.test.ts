@@ -11,7 +11,10 @@ import { readJson } from '@medplum/definitions';
 import { Bundle, List, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { handler } from './find-matching-patients';
+// start-block importPatientData
+// import a Bundle of test data from 'patient-data.json'
 import patientData from './patient-data.json';
+// end-block importPatientData
 
 interface TestContext {
   medplum: MedplumClient;
@@ -36,7 +39,7 @@ describe('Link Patient', async () => {
   });
 
   test<TestContext>('Created RiskAssessment', async ({ medplum }) => {
-    // Read the patient
+    // Read the patient. The `medplum` mock client has already been pre-populated with test data in `beforeEach`
     const patients = await medplum.searchResources('Patient', { given: 'Alex' });
 
     await handler(medplum, { input: patients?.[0] as Patient, contentType: ContentType.FHIR_JSON, secrets: {} });
