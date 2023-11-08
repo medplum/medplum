@@ -11,7 +11,9 @@ import { isExternalAuth } from './method';
 import { getProjectByRecaptchaSiteKey, verifyRecaptcha } from './utils';
 import { makeValidationMiddleware } from '../util/validator';
 
-export const resetPasswordValidator = makeValidationMiddleware([body('email').isEmail().withMessage('Valid email address is required')]);
+export const resetPasswordValidator = makeValidationMiddleware([
+  body('email').isEmail().withMessage('Valid email address is required'),
+]);
 
 export async function resetPasswordHandler(req: Request, res: Response): Promise<void> {
   const email = req.body.email.toLowerCase();

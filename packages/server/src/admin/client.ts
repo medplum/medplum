@@ -14,7 +14,9 @@ import { generateSecret } from '../oauth/keys';
 import { getAuthenticatedContext } from '../context';
 import { makeValidationMiddleware } from '../util/validator';
 
-export const createClientValidator = makeValidationMiddleware([body('name').notEmpty().withMessage('Client name is required')]);
+export const createClientValidator = makeValidationMiddleware([
+  body('name').notEmpty().withMessage('Client name is required'),
+]);
 
 export async function createClientHandler(req: Request, res: Response): Promise<void> {
   let project: Project;

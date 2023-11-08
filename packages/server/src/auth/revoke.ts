@@ -8,7 +8,9 @@ import { revokeLogin } from '../oauth/utils';
 import { getAuthenticatedContext } from '../context';
 import { makeValidationMiddleware } from '../util/validator';
 
-export const revokeValidator = makeValidationMiddleware([body('loginId').isUUID().withMessage('Login ID is required.')]);
+export const revokeValidator = makeValidationMiddleware([
+  body('loginId').isUUID().withMessage('Login ID is required.'),
+]);
 
 export async function revokeHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();

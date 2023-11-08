@@ -8,7 +8,9 @@ import { getBinaryStorage } from '../fhir/storage';
 import { getAuthenticatedContext } from '../context';
 import { makeValidationMiddleware } from '../util/validator';
 
-export const createBotValidator = makeValidationMiddleware([body('name').notEmpty().withMessage('Bot name is required')]);
+export const createBotValidator = makeValidationMiddleware([
+  body('name').notEmpty().withMessage('Bot name is required'),
+]);
 
 const defaultBotCode = `import { BotEvent, MedplumClient } from '@medplum/core';
 
