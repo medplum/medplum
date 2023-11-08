@@ -9,6 +9,7 @@ PACKAGES=(
   "core"
   "definitions"
   "eslint-config"
+  "expo-polyfills"
   "fhir-router"
   "fhirtypes"
   "hl7"
