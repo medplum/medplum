@@ -1,6 +1,6 @@
 import { getPropertyDisplayName, tryGetDataType, TypedValue } from '@medplum/core';
 import React from 'react';
-import { DEFAULT_IGNORED_PROPERTIES } from '../constants';
+import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { DescriptionList, DescriptionListEntry } from '../DescriptionList/DescriptionList';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
@@ -42,6 +42,9 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
       {Object.entries(typeSchema.elements).map((entry) => {
         const [key, property] = entry;
         if (DEFAULT_IGNORED_PROPERTIES.includes(key)) {
+          return null;
+        }
+        if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && property.path.split('.').length === 2) {
           return null;
         }
         const [propertyValue, propertyType] = getValueAndType(typedValue, key);
