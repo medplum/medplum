@@ -50,6 +50,17 @@ jobs:
             cat prettier-fmt.err >> "${GITHUB_OUTPUT}"
             cat prettier-fmt1.err >> "${GITHUB_OUTPUT}"
             echo "${delimiter}" >> "${GITHUB_OUTPUT}"
+            echo "❌`prettier` reported errors
+
+            To one-off fix this manually, run:
+
+            npm run prettier
+
+
+            You might need to run `npm install` locally and configure your text editor to auto-format on save. 
+            See: https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode
+
+            https://github.com/medplum/medplum/commits/${{github.sha}}"
           fi
       - name: Comment on PR
         if: steps.fmt.outputs.prettier_fmt_errs != ''
