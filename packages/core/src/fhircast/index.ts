@@ -1,4 +1,4 @@
-import { Resource } from '@medplum/fhirtypes';
+import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { generateId } from '../crypto';
 import { TypedEventTarget } from '../eventtarget';
 import { OperationOutcomeError, validationError } from '../outcomes';
@@ -41,6 +41,7 @@ export function assertContextVersionOptional(event: string): asserts event is Fh
 }
 
 export type FhircastEventName = keyof typeof FHIRCAST_EVENT_NAMES;
+export type FhircastResourceEventName = Exclude<FhircastEventName, 'syncerror'>;
 export type FhircastResourceType = (typeof FHIRCAST_RESOURCE_TYPES)[number];
 
 export type FhircastEventContextDetails = {
@@ -128,6 +129,12 @@ export type SubscriptionRequest = {
   events: FhircastEventName[];
   topic: string;
   endpoint: string;
+};
+
+export type CurrentContext<EventName extends FhircastResourceEventName = FhircastResourceEventName> = {
+  'context.type': ResourceType | '';
+  'context.versionId'?: string;
+  context: FhircastEventContext<EventName>[];
 };
 
 export type PendingSubscriptionRequest = Omit<SubscriptionRequest, 'endpoint'>;

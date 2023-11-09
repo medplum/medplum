@@ -39,6 +39,7 @@ import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import {
+  CurrentContext,
   FhircastConnection,
   FhircastEventContext,
   FhircastEventName,
@@ -3192,6 +3193,17 @@ export class MedplumClient extends EventTarget {
       createFhircastMessagePayload<typeof event>(topic, event, context),
       ContentType.JSON
     );
+  }
+
+  /**
+   * Gets the current context of the given FHIRcast `topic`.
+   *
+   * @category FHIRcast
+   * @param topic - The topic to get the current context for. Usually a UUID.
+   * @returns A Promise which resolves to the `CurrentContext` for the given topic.
+   */
+  async fhircastGetContext(topic: string): Promise<CurrentContext> {
+    return this.get(`/fhircast/STU3/${topic}`);
   }
 
   /**
