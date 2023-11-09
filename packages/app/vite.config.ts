@@ -25,6 +25,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      '@medplum/core': path.resolve(__dirname, '../core/src'),
       '@medplum/react': path.resolve(__dirname, '../react/src'),
     },
   },

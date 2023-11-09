@@ -5,6 +5,7 @@
     "lib": ["esnext", "dom", "dom.iterable"],
     "types": ["vite/client"],
     "paths": {
+      "@medplum/core": ["../core/src"],
       "@medplum/react": ["../react/src"]
     }
   },
