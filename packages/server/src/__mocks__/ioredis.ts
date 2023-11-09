@@ -23,8 +23,16 @@ class Redis {
     return keys.map((key) => this.values.get(key));
   }
 
-  async set(key: string, value: string): Promise<void> {
+  async set(key: string, value: string, ...args: (string | number)[]): Promise<undefined | null | string> {
+    let oldValue;
+    if (args.includes('GET')) {
+      oldValue = this.values.get(key) ?? null; // `ioredis` returns `null` when key didn't previously exist
+    }
+    if (args.includes('NX') && this.values.has(key)) {
+      return oldValue;
+    }
     this.values.set(key, value);
+    return oldValue;
   }
 
   async del(key: string | string[]): Promise<void> {
