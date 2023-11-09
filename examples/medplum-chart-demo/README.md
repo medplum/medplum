@@ -28,7 +28,7 @@ The Patient Chart has 3 distinct panels
     - Vitals 
 
 2. Tasks
-  The center panel shows list of the Task resource with a different focus resource. See our [Tasks Guide](https://www.medplum.com/docs/careplans/tasks) for more details
+  The center panel shows list of the Task resource with a different focus resource. See our [Tasks Guide](https://www.medplum.com/docs/careplans/tasks) for more details.
     - Each focus is interactive to either review or fill out
     - This example project demonstrates interactions of the following resources:
       - Questionnaire
