@@ -1,4 +1,10 @@
-import { ContentType, FhircastEventContext, FhircastEventPayload, createFhircastMessagePayload } from '@medplum/core';
+import {
+  ContentType,
+  FhircastEventContext,
+  FhircastEventPayload,
+  createFhircastMessagePayload,
+  generateId,
+} from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -9,6 +15,9 @@ import { initTestAuth } from '../test.setup';
 
 const app = express();
 let accessToken: string;
+
+const STU2_BASE_ROUTE = '/fhircast/STU2/';
+const STU3_BASE_ROUTE = '/fhircast/STU3/';
 
 describe('FHIRCast routes', () => {
   beforeAll(async () => {
@@ -22,7 +31,18 @@ describe('FHIRCast routes', () => {
   });
 
   test('Get well known', async () => {
-    const res = await request(app).get('/fhircast/STU3/.well-known/fhircast-configuration');
+    let res;
+
+    res = await request(app).get(`${STU2_BASE_ROUTE}.well-known/fhircast-configuration`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.eventsSupported).toBeDefined();
+    expect(res.body.getCurrentSupport).toBeUndefined();
+    expect(res.body.websocketSupport).toBe(true);
+    expect(res.body.webhookSupport).toBe(false);
+    expect(res.body.fhircastVersion).toBe('STU2');
+
+    res = await request(app).get(`${STU3_BASE_ROUTE}.well-known/fhircast-configuration`);
 
     expect(res.status).toBe(200);
     expect(res.body.eventsSupported).toBeDefined();
@@ -33,146 +53,197 @@ describe('FHIRCast routes', () => {
   });
 
   test('New subscription success', async () => {
-    const res = await request(app)
-      .post('/fhircast/STU3/')
-      .set('Content-Type', ContentType.JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        'hub.channel.type': 'websocket',
-        'hub.mode': 'subscribe',
-        'hub.topic': 'topic',
-        'hub.events': 'Patient-open',
-      });
-    expect(res.status).toBe(202);
-    expect(res.body['hub.channel.endpoint']).toBeDefined();
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const res = await request(app)
+        .post(route)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          'hub.channel.type': 'websocket',
+          'hub.mode': 'subscribe',
+          'hub.topic': 'topic',
+          'hub.events': 'Patient-open',
+        });
+      expect(res.status).toBe(202);
+      expect(res.body['hub.channel.endpoint']).toBeDefined();
+    }
   });
 
   test('New subscription no auth', async () => {
-    const res = await request(app).post('/fhircast/STU3/').set('Content-Type', ContentType.JSON).send({
-      'hub.channel.type': 'websocket',
-      'hub.mode': 'subscribe',
-      'hub.topic': 'topic',
-      'hub.events': 'Patient-open',
-    });
-    expect(res.status).toBe(401);
-    expect(res.body.issue[0].details.text).toEqual('Unauthorized');
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const res = await request(app).post(route).set('Content-Type', ContentType.JSON).send({
+        'hub.channel.type': 'websocket',
+        'hub.mode': 'subscribe',
+        'hub.topic': 'topic',
+        'hub.events': 'Patient-open',
+      });
+      expect(res.status).toBe(401);
+      expect(res.body.issue[0].details.text).toEqual('Unauthorized');
+    }
   });
 
   test('New subscription missing channel type', async () => {
-    const res = await request(app)
-      .post('/fhircast/STU3/')
-      .set('Content-Type', ContentType.JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        'hub.mode': 'subscribe',
-        'hub.topic': 'topic',
-        'hub.events': 'Patient-open',
-      });
-    expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Missing hub.channel.type');
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const res = await request(app)
+        .post(route)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          'hub.mode': 'subscribe',
+          'hub.topic': 'topic',
+          'hub.events': 'Patient-open',
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toEqual('Missing hub.channel.type');
+    }
   });
 
   test('New subscription invalid channel type', async () => {
-    const res = await request(app)
-      .post('/fhircast/STU3/')
-      .set('Content-Type', ContentType.JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        'hub.channel.type': 'xyz',
-        'hub.mode': 'subscribe',
-        'hub.topic': 'topic',
-        'hub.events': 'Patient-open',
-      });
-    expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Invalid hub.channel.type');
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const res = await request(app)
+        .post(route)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          'hub.channel.type': 'xyz',
+          'hub.mode': 'subscribe',
+          'hub.topic': 'topic',
+          'hub.events': 'Patient-open',
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toEqual('Invalid hub.channel.type');
+    }
   });
 
   test('New subscription invalid mode', async () => {
-    const res = await request(app)
-      .post('/fhircast/STU3/')
-      .set('Content-Type', ContentType.JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        'hub.channel.type': 'websocket',
-        'hub.mode': 'xyz',
-        'hub.topic': 'topic',
-        'hub.events': 'Patient-open',
-      });
-    expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Invalid hub.mode');
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const res = await request(app)
+        .post(route)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          'hub.channel.type': 'websocket',
+          'hub.mode': 'xyz',
+          'hub.topic': 'topic',
+          'hub.events': 'Patient-open',
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toEqual('Invalid hub.mode');
+    }
   });
 
   test('Publish event missing timestamp', async () => {
     const topic = randomUUID();
-    const res = await request(app)
-      .post('/fhircast/STU3/' + topic)
-      .set('Content-Type', ContentType.JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        id: randomUUID(),
-        event: {},
-      });
-    expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Missing event timestamp');
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const res = await request(app)
+        .post(route + topic)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          id: randomUUID(),
+          event: {},
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toEqual('Missing event timestamp');
+    }
   });
 
   test('Get context', async () => {
-    // Get the current subscription status
+    let res;
     // Non-standard FHIRCast extension to support Nuance PowerCast Hub
-    const res = await request(app)
-      .get('/fhircast/STU3/my-topic')
+    res = await request(app)
+      .get(`${STU2_BASE_ROUTE}my-topic`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
+
+    res = await request(app)
+      .get(`${STU3_BASE_ROUTE}my-topic`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ 'context.type': '', context: [] });
   });
 
   test('Get context after *-open event', async () => {
-    const payload = createFhircastMessagePayload('my-topic', 'ImagingStudy-open', [
-      { key: 'study', resource: { id: 'def-456', resourceType: 'ImagingStudy' } },
+    let contextRes;
+
+    const payload = createFhircastMessagePayload('my-topic', 'DiagnosticReport-open', [
+      { key: 'report', resource: { id: 'def-456', resourceType: 'DiagnosticReport' } },
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
     ]);
     const publishRes = await request(app)
-      .post('/fhircast/STU3/my-topic')
+      .post(`${STU3_BASE_ROUTE}my-topic`)
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(payload);
     expect(publishRes.status).toBe(201);
 
-    const contextRes = await request(app)
-      .get('/fhircast/STU3/my-topic')
+    contextRes = await request(app)
+      .get(`${STU2_BASE_ROUTE}my-topic`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(contextRes.status).toBe(200);
     expect(contextRes.body).toEqual(payload.event.context);
+
+    contextRes = await request(app)
+      .get(`${STU3_BASE_ROUTE}my-topic`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(contextRes.status).toBe(200);
+    expect(contextRes.body).toMatchObject({
+      'context.type': 'DiagnosticReport',
+      'context.versionId': expect.any(String),
+      context: payload.event.context,
+    });
   });
 
   test('Get context after *-close event', async () => {
+    let beforeContextRes;
+    let afterContextRes;
+
     const context = [
-      { key: 'study', resource: { id: 'def-456', resourceType: 'ImagingStudy' } },
+      { key: 'report', resource: { id: 'def-456', resourceType: 'DiagnosticReport' } },
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
     ] satisfies FhircastEventContext<'DiagnosticReport-open'>[];
 
-    const payload = createFhircastMessagePayload('my-topic', 'ImagingStudy-open', context);
+    const payload = createFhircastMessagePayload('my-topic', 'DiagnosticReport-open', context);
+    payload.event['context.versionId'] = generateId();
+
     // Setup the key as if we have already opened this resource
     await getRedis().set('::fhircast::my-topic::latest::', JSON.stringify(payload));
 
-    const beforeContextRes = await request(app)
-      .get('/fhircast/STU3/my-topic')
+    beforeContextRes = await request(app)
+      .get(`${STU2_BASE_ROUTE}my-topic`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(beforeContextRes.status).toBe(200);
     expect(beforeContextRes.body).toEqual(context);
 
+    beforeContextRes = await request(app)
+      .get(`${STU3_BASE_ROUTE}my-topic`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(beforeContextRes.status).toBe(200);
+    expect(beforeContextRes.body).toEqual({
+      'context.type': 'DiagnosticReport',
+      'context.versionId': expect.any(String),
+      context,
+    });
+
     const publishRes = await request(app)
-      .post('/fhircast/STU3/my-topic')
+      .post(`${STU3_BASE_ROUTE}my-topic`)
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send(createFhircastMessagePayload('my-topic', 'ImagingStudy-close', context));
+      .send(createFhircastMessagePayload('my-topic', 'DiagnosticReport-close', context));
     expect(publishRes.status).toBe(201);
 
-    const afterContextRes = await request(app)
-      .get('/fhircast/STU3/my-topic')
+    afterContextRes = await request(app)
+      .get(`${STU2_BASE_ROUTE}my-topic`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(afterContextRes.status).toBe(200);
     expect(afterContextRes.body).toEqual([]);
+
+    afterContextRes = await request(app)
+      .get(`${STU3_BASE_ROUTE}my-topic`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(afterContextRes.status).toBe(200);
+    expect(afterContextRes.body).toEqual({ 'context.type': '', context: [] });
   });
 
   test('Check for `context.versionId` on `DiagnosticReport-open`', async () => {
@@ -185,7 +256,7 @@ describe('FHIRCast routes', () => {
     const payload = createFhircastMessagePayload('my-topic', 'DiagnosticReport-open', context);
 
     const publishRes = await request(app)
-      .post('/fhircast/STU3/my-topic')
+      .post(`${STU3_BASE_ROUTE}my-topic`)
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(payload);
@@ -210,7 +281,7 @@ describe('FHIRCast routes', () => {
     const payload = createFhircastMessagePayload('my-topic', 'DiagnosticReport-update', context, versionId);
 
     const publishRes = await request(app)
-      .post('/fhircast/STU3/my-topic')
+      .post(`${STU3_BASE_ROUTE}my-topic`)
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(payload);
