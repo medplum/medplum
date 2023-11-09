@@ -1,7 +1,8 @@
 import express from 'express';
-import { initApp } from './app';
+import { initApp, shutdownApp } from './app';
 import { loadConfig } from './config';
 import { globalLogger, parseLogLevel } from './logger';
+import gracefulShutdown from 'http-graceful-shutdown';
 
 export async function main(configName: string): Promise<void> {
   process.on('unhandledRejection', (err: any) => {
@@ -22,6 +23,20 @@ export async function main(configName: string): Promise<void> {
   const server = app.listen(config.port);
   server.keepAliveTimeout = config.keepAliveTimeout ?? 90000;
   globalLogger.info('Server started', { port: config.port });
+  gracefulShutdown(server, {
+    timeout: config.shutdownTimeoutMilliseconds,
+    development: process.env.NODE_ENV !== 'production',
+    preShutdown: async (signal) => {
+      globalLogger.info(
+        `Shutdown signal received... allowing graceful shutdown for up to ${config.shutdownTimeoutMilliseconds} milliseconds`,
+        { signal }
+      );
+    },
+    onShutdown: () => shutdownApp(),
+    finally: () => {
+      globalLogger.info('Shutdown complete');
+    },
+  });
 }
 
 if (require.main === module) {
