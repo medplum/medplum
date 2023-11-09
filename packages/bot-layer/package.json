@@ -21,14 +21,14 @@
   "dependencies": {
     "@medplum/core": "*",
     "form-data": "4.0.0",
-    "jose": "4.15.4",
+    "jose": "5.1.0",
     "node-fetch": "2.7.0",
-    "pdfmake": "0.2.7",
+    "pdfmake": "0.2.8",
     "ssh2": "1.14.0",
     "ssh2-sftp-client": "9.1.0"
   },
   "devDependencies": {
-    "@types/node-fetch": "2.6.6"
+    "@types/node-fetch": "2.6.9"
   },
   "peerDependencies": {
     "@medplum/core": "*",
