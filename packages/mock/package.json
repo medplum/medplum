@@ -1,6 +1,6 @@
 {
   "name": "@medplum/mock",
-  "version": "2.1.10",
+  "version": "2.1.11",
   "description": "Medplum Mock Client",
   "keywords": [
     "medplum",
