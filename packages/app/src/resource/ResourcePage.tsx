@@ -52,9 +52,10 @@ export function ResourcePage(): JSX.Element | null {
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const value = useResource(reference, setOutcome);
   const tabs = getTabs(resourceType);
-  const defaultTab = tabs[0].toLowerCase();
-  const tab = window.location.pathname.split('/').pop();
-  const [currentTab, setCurrentTab] = useState<string>(tab ?? defaultTab);
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    const tab = window.location.pathname.split('/').pop();
+    return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
+  });
 
   async function restoreResource(): Promise<void> {
     const historyBundle = await medplum.readHistory(resourceType, id);
