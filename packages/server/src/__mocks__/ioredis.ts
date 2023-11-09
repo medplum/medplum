@@ -26,7 +26,7 @@ class Redis {
   async set(key: string, value: string, ...args: (string | number)[]): Promise<undefined | null | string> {
     let oldValue;
     if (args.includes('GET')) {
-      oldValue = this.values.get(key);
+      oldValue = this.values.get(key) ?? null; // `ioredis` returns `null` when key didn't previously exist
     }
     if (args.includes('NX') && this.values.has(key)) {
       return oldValue;
