@@ -6,8 +6,8 @@ import { sendOutcome, invalidRequest } from '../fhir/outcomes';
 type ExpressValidator = ValidationChain | (Middleware & ContextRunner);
 
 export function makeValidationMiddleware(expressValidators: ExpressValidator[]): RequestHandler {
-  return function (req: Request, res: Response, next: NextFunction) {
-    expressValidators.forEach((ev) => ev(req, res, () => {}));
+  return async function (req: Request, res: Response, next: NextFunction) {
+    await Promise.all(expressValidators.map(ev => ev.run(req)));
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
