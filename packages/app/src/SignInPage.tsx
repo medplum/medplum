@@ -1,11 +1,11 @@
 import { Title } from '@mantine/core';
-import { Logo, SignInForm, useMedplum } from '@medplum/react';
+import { Logo, SignInForm, useMedplumProfile } from '@medplum/react';
 import React, { useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getConfig, isRegisterEnabled } from './config';
 
 export function SignInPage(): JSX.Element {
-  const medplum = useMedplum();
+  const profile = useMedplumProfile();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const config = getConfig();
@@ -18,10 +18,10 @@ export function SignInPage(): JSX.Element {
   }, [searchParams, navigate]);
 
   useEffect(() => {
-    if (medplum.getProfile()) {
+    if (profile) {
       navigateToNext();
     }
-  }, [medplum, navigateToNext]);
+  }, [profile, navigateToNext]);
 
   return (
     <SignInForm

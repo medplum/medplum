@@ -1,4 +1,4 @@
-import { MockClient } from '@medplum/mock';
+import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import crypto from 'crypto';
@@ -7,14 +7,16 @@ import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
 import { getConfig } from './config';
+import { type MedplumClient } from '@medplum/core';
 
-const medplum = new MockClient();
+// logged out
+const medplum = new MockClient({ profile: null });
 
 describe('SignInPage', () => {
-  function setup(url = '/signin'): void {
+  function setup(url = '/signin', medplumClient: MedplumClient = medplum): void {
     render(
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <MedplumProvider medplum={medplum}>
+        <MedplumProvider medplum={medplumClient}>
           <AppRoutes />
         </MedplumProvider>
       </MemoryRouter>
@@ -113,5 +115,44 @@ describe('SignInPage', () => {
 
     await waitFor(() => screen.getByText('Batch Create'));
     expect(screen.getByText('Batch Create')).toBeInTheDocument();
+  });
+
+  test('Redirects to homepage if bad next', async () => {
+    setup('/signin?next=https%3A%2F%2Fevil.com');
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email *'), { target: { value: 'admin@example.com' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Password *'), { target: { value: 'password' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    });
+
+    // should redirect to the homepage
+    await waitFor(() => screen.getByTestId('search-control'));
+    expect(screen.getByTestId('search-control')).toBeDefined();
+  });
+
+  test('Automatically redirects to next if logged in', async () => {
+    setup('/signin?next=/batch', new MockClient({ profile: DrAliceSmith }));
+
+    await waitFor(() => screen.getByText('Batch Create'));
+    expect(screen.getByText('Batch Create')).toBeInTheDocument();
+  });
+
+  test('Automatically redirects to homepage if bad next', async () => {
+    setup('/signin?next=https%3A%2F%2Fevil.com', new MockClient({ profile: DrAliceSmith }));
+
+    // should redirect to the homepage
+    await waitFor(() => screen.getByTestId('search-control'));
+    expect(screen.getByTestId('search-control')).toBeDefined();
   });
 });
