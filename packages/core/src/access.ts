@@ -30,7 +30,8 @@ export enum AccessPolicyInteraction {
   PATCH = 'patch',
   DELETE = 'delete',
   HISTORY = 'history',
-  HISTORY_INSTANCE = 'history-instance',
+  HISTORY_INSTANCE = 
+  'history-instance',
   HISTORY_TYPE = 'history-type',
   HISTORY_SYSTEM = 'history-system',
   CREATE = 'create',
