@@ -171,6 +171,100 @@
                   "text": "Notes"
                 }
               ]
+            },
+            {
+              "id": "test-11119",
+              "linkId": "test-11119",
+              "type": "boolean",
+              "text": "ABN TEST REFUSAL (11119)"
+            },
+            {
+              "id": "test-11119-details",
+              "linkId": "test-11119-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "test-11119",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "test-11119-priority",
+                  "linkId": "test-11119-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "test-11119-note",
+                  "linkId": "test-11119-note",
+                  "type": "string",
+                  "text": "Notes"
+                }
+              ]
+            },
+            {
+              "id": "test-38827",
+              "linkId": "test-38827",
+              "type": "boolean",
+              "text": "INCORRECT ABN SUBMITTED (38827)"
+            },
+            {
+              "id": "test-38827-details",
+              "linkId": "test-38827-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "test-38827",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "test-38827-priority",
+                  "linkId": "test-38827-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "test-38827-note",
+                  "linkId": "test-38827-note",
+                  "type": "string",
+                  "text": "Notes"
+                }
+              ]
             }
           ]
         },

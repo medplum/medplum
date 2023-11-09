@@ -4,6 +4,7 @@ import {
   encodeBase64,
   getIdentifier,
   getQuestionnaireAnswers,
+  isResource,
   MedplumClient,
   setIdentifier,
   SNOMED,
@@ -14,6 +15,7 @@ import {
   CodeableConcept,
   Coverage,
   Organization,
+  Parameters,
   Patient,
   Practitioner,
   ProjectSecret,
@@ -52,7 +54,7 @@ interface HealthGorillaConfig {
 // Available labs Health Gorilla IDs
 // These come from the Health Gorilla Organization resources
 const availableLabs: Record<string, string> = {
-  Test: 'f-4f0235627ac2d59b49e5575c',
+  Testing: 'f-4f0235627ac2d59b49e5575c',
   Labcorp: 'f-388554647b89801ea5e8320b',
   Quest: 'f-7c075564349e1a592e53147a',
 };
@@ -67,6 +69,8 @@ const availableLabs: Record<string, string> = {
 // Ultimately, you just need to make sure you pass the correct code to Health Gorilla in the ServiceRequest resources.
 const availableTests: Record<string, string> = {
   'test-1234-5': 'Test 1',
+  'test-11119': 'ABN TEST REFUSAL',
+  'test-38827': 'INCORRECT ABN SUBMITTED',
   'labcorp-001453': 'Hemoglobin A1c',
   'labcorp-010322': 'Prostate-Specific Ag',
   'labcorp-322000': 'Comp. Metabolic Panel (14)',
@@ -242,13 +246,25 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     }
   }
 
+  // Specimen collected date/time
+  // This is an optional field.  If present, it will create a Specimen resource.
+  builder.specimenCollectedDateTime = answers.specimenCollectedDateTime?.valueDateTime;
+
   // Place the order
   const requestGroup = builder.buildRequestGroup();
   await medplum.uploadMedia(JSON.stringify(requestGroup, null, 2), 'application/json', 'requestgroup.json');
-  await healthGorilla.startAsyncRequest(healthGorilla.fhirUrl('RequestGroup').toString(), {
+
+  const response = await healthGorilla.startAsyncRequest(healthGorilla.fhirUrl('RequestGroup').toString(), {
     method: 'POST',
     body: JSON.stringify(requestGroup),
   });
+
+  // If the Health Gorilla API returns a RequestGroup immediately,
+  // it means that the order may have an ABN (Advanced Beneficiary Notice).
+  // Go through the process of getting the ABN PDF and uploading it to Medplum.
+  if (isResource(response) && response.resourceType === 'RequestGroup' && response.id) {
+    await checkAbn(medplum, healthGorilla, response as RequestGroup & { id: string });
+  }
 }
 
 /**
@@ -382,13 +398,53 @@ function assertNotEmpty<T>(value: T | undefined, message: string): asserts value
   }
 }
 
+/**
+ * Checks the RequestGroup for an ABN (Advanced Beneficiary Notice).
+ *
+ * See: https://developer.healthgorilla.com/docs/diagnostic-network#abn
+ *
+ * @param medplum - The Medplum FHIR client.
+ * @param healthGorilla - The Health Gorilla FHIR client.
+ * @param requestGroup - The newly created RequestGroup.
+ */
+async function checkAbn(
+  medplum: MedplumClient,
+  healthGorilla: MedplumClient,
+  requestGroup: RequestGroup & { id: string }
+): Promise<void> {
+  // Use the HealthGorilla "$abn" operation to get the PDF URL
+  const abnResult = await healthGorilla.get(healthGorilla.fhirUrl(requestGroup.resourceType, requestGroup.id, '$abn'));
+
+  // Get the ABN PDF URL from the Parameters resource
+  const abnUrl = (abnResult as Parameters).parameter?.find((p) => p.name === 'url')?.valueString;
+  if (abnUrl) {
+    const abnBlob = await healthGorilla.download(abnUrl, { headers: { Accept: 'application/pdf' } });
+
+    // node-fetch does not allow streaming from a Response object
+    // So read the PDF into memory first
+    const abnArrayBuffer = await abnBlob.arrayBuffer();
+    const abnUint8Array = new Uint8Array(abnArrayBuffer);
+
+    // Create a Medplum media resource
+    const media = await medplum.uploadMedia(abnUint8Array, 'application/pdf', 'RequestGroup-ABN.pdf');
+    console.log('Uploaded ABN PDF as media: ' + media.id);
+  }
+}
+
+function append<T>(array: T[] | undefined, value: T): T[] {
+  if (!array) {
+    return [value];
+  }
+  return [...array, value];
+}
+
 class HealthGorillaRequestGroupBuilder {
   practitioner?: Practitioner;
   practitionerOrganization?: Organization;
   patient?: Patient;
   account?: Account;
-  coverage?: Coverage;
-  subscriber?: RelatedPerson;
+  coverages: Coverage[] = [];
+  subscribers: RelatedPerson[] = [];
   authorizedBy?: Organization;
   performer?: Organization;
   aoes?: QuestionnaireResponse[];
@@ -451,6 +507,8 @@ class HealthGorillaRequestGroupBuilder {
         ...existingPatient,
         identifier: patient.identifier,
         name: patient.name,
+        birthDate: patient.birthDate,
+        gender: patient.gender,
         address: patient.address,
         telecom: patient.telecom,
       });
@@ -500,38 +558,62 @@ class HealthGorillaRequestGroupBuilder {
       throw new Error('Missing patient');
     }
 
-    const result: Account = {
+    const resultAccount: Account = {
       ...medplumAccount,
+      coverage: undefined,
     };
 
-    if (result.type?.coding?.[0]?.code === 'patient') {
-      result.guarantor = [{ party: createReference(this.patient) }];
+    if (resultAccount.type?.coding?.[0]?.code === 'patient') {
+      resultAccount.guarantor = [{ party: createReference(this.patient) }];
     }
 
-    const coverageRef = result.coverage?.[0]?.coverage;
-    if (coverageRef) {
-      const medplumCoverage = await medplum.readReference(coverageRef);
-      this.coverage = {
-        ...medplumCoverage,
-        id: 'coverage',
-        beneficiary: createReference(this.patient),
-      };
-      result.coverage = [{ coverage: { reference: '#coverage' }, priority: 1 }];
+    if (medplumAccount.coverage) {
+      for (const accountCoverage of medplumAccount.coverage) {
+        const coverageRef = accountCoverage?.coverage;
+        if (coverageRef) {
+          const medplumCoverage = await medplum.readReference(coverageRef);
+          const resultCoverage: Coverage = {
+            ...medplumCoverage,
+            id: 'coverage' + this.coverages.length,
+            beneficiary: createReference(this.patient),
+            payor: undefined,
+            subscriber: undefined,
+          };
 
-      const subscriberRef = this.coverage.subscriber;
-      if (subscriberRef) {
-        const medplumSubscriber = await medplum.readReference(subscriberRef as Reference<RelatedPerson>);
-        this.subscriber = {
-          ...medplumSubscriber,
-          id: 'subscriber',
-          patient: createReference(this.patient),
-        };
-        this.coverage.subscriber = { reference: '#subscriber' };
+          resultAccount.coverage = append(resultAccount.coverage, {
+            coverage: { reference: '#' + resultCoverage.id },
+            priority: 1,
+          });
+
+          this.coverages = append(this.coverages, resultCoverage);
+
+          if (medplumCoverage.payor) {
+            for (const payorRef of medplumCoverage.payor) {
+              // Payors must be Organizations with Health Gorilla identifiers
+              const medplumPayor = await medplum.readReference(payorRef as Reference<Organization>);
+              resultCoverage.payor = append(resultCoverage.payor, {
+                reference: 'Organization/' + getIdentifier(medplumPayor, HEALTH_GORILLA_SYSTEM),
+              });
+            }
+          }
+
+          const subscriberRef = medplumCoverage.subscriber;
+          if (subscriberRef) {
+            const medplumSubscriber = await medplum.readReference(subscriberRef as Reference<RelatedPerson>);
+            const resultSubscriber = {
+              ...medplumSubscriber,
+              id: 'subscriber' + this.subscribers.length,
+              patient: createReference(this.patient),
+            };
+            resultCoverage.subscriber = { reference: '#' + resultSubscriber.id };
+            this.subscribers = append(this.subscribers, resultSubscriber);
+          }
+        }
       }
     }
 
-    this.account = result;
-    return result;
+    this.account = resultAccount;
+    return resultAccount;
   }
 
   createServiceRequest(testId: string, answers: Record<string, QuestionnaireResponseItemAnswer>): ServiceRequest {
@@ -558,12 +640,7 @@ class HealthGorillaRequestGroupBuilder {
           answer: [answers[k]],
         })),
       };
-
-      if (this.aoes) {
-        this.aoes.push(aoeResponse);
-      } else {
-        this.aoes = [aoeResponse];
-      }
+      this.aoes = append(this.aoes, aoeResponse);
     }
 
     const result: ServiceRequest = {
@@ -596,12 +673,7 @@ class HealthGorillaRequestGroupBuilder {
       supportingInfo: aoeResponse ? [{ reference: '#' + aoeResponse.id }] : undefined,
     };
 
-    if (this.tests) {
-      this.tests.push(result);
-    } else {
-      this.tests = [result];
-    }
-
+    this.tests = append(this.tests, result);
     return result;
   }
 
@@ -616,11 +688,7 @@ class HealthGorillaRequestGroupBuilder {
       ],
       text: `${code} - ${display}`,
     };
-    if (this.diagnoses) {
-      this.diagnoses.push(result);
-    } else {
-      this.diagnoses = [result];
-    }
+    this.diagnoses = append(this.diagnoses, result);
     return result;
   }
 
@@ -653,12 +721,12 @@ class HealthGorillaRequestGroupBuilder {
       { ...this.practitionerOrganization, id: 'organization' },
     ];
 
-    if (this.coverage) {
-      contained.push({ ...this.coverage, id: 'coverage' });
+    if (this.coverages) {
+      contained.push(...this.coverages);
     }
 
-    if (this.subscriber) {
-      contained.push({ ...this.subscriber, id: 'subscriber' });
+    if (this.subscribers) {
+      contained.push(...this.subscribers);
     }
 
     if (this.aoes) {

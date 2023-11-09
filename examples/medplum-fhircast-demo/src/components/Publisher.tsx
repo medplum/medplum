@@ -4,7 +4,7 @@ import { Document, useMedplum } from '@medplum/react';
 import { useState } from 'react';
 import TopicGenerator from './TopicGenerator';
 
-function createFhircastMessageContext(patientId: string): FhircastEventContext<'patient-open'> {
+function createFhircastMessageContext(patientId: string): FhircastEventContext<'Patient-open'> {
   if (!patientId) {
     throw new Error('Must provide a patientId!');
   }
@@ -39,7 +39,7 @@ export default function Publisher(): JSX.Element {
     const patientId = crypto.randomUUID();
     if (topic) {
       medplum
-        .fhircastPublish(topic, 'patient-open', createFhircastMessageContext(patientId))
+        .fhircastPublish(topic, 'Patient-open', createFhircastMessageContext(patientId))
         .then(() => setCurrentPatientId(patientId))
         .catch((err) => console.error(err));
     } else {

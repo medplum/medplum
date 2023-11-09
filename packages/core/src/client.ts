@@ -752,6 +752,7 @@ export class MedplumClient extends EventTarget {
    */
   clear(): void {
     this.storage.clear();
+    sessionStorage.clear();
     this.clearActiveLogin();
   }
 
@@ -1093,16 +1094,23 @@ export class MedplumClient extends EventTarget {
    * @param clientId - The external client ID.
    * @param redirectUri - The external identity provider redirect URI.
    * @param baseLogin - The Medplum login request.
+   * @param pkceEnabled - Whether `PKCE` should be enabled for this external auth request. Defaults to `true`.
    * @category Authentication
    */
   async signInWithExternalAuth(
     authorizeUrl: string,
     clientId: string,
     redirectUri: string,
-    baseLogin: BaseLoginRequest
+    baseLogin: BaseLoginRequest,
+    pkceEnabled = true
   ): Promise<void> {
-    const loginRequest = await this.ensureCodeChallenge(baseLogin);
-    window.location.assign(this.getExternalAuthRedirectUri(authorizeUrl, clientId, redirectUri, loginRequest));
+    let loginRequest = baseLogin;
+    if (pkceEnabled) {
+      loginRequest = await this.ensureCodeChallenge(baseLogin);
+    }
+    window.location.assign(
+      this.getExternalAuthRedirectUri(authorizeUrl, clientId, redirectUri, loginRequest, pkceEnabled)
+    );
   }
 
   /**
@@ -1132,6 +1140,7 @@ export class MedplumClient extends EventTarget {
    * @param clientId - The external client ID.
    * @param redirectUri - The external identity provider redirect URI.
    * @param loginRequest - The Medplum login request.
+   * @param pkceEnabled - Whether `PKCE` should be enabled for this external auth request. Defaults to `true`.
    * @returns The external identity provider redirect URI.
    * @category Authentication
    */
@@ -1139,24 +1148,28 @@ export class MedplumClient extends EventTarget {
     authorizeUrl: string,
     clientId: string,
     redirectUri: string,
-    loginRequest: BaseLoginRequest
+    loginRequest: BaseLoginRequest,
+    pkceEnabled = true
   ): string {
-    const { codeChallenge, codeChallengeMethod } = loginRequest;
-    if (!codeChallengeMethod) {
-      throw new Error('`LoginRequest` for external auth must include a `codeChallengeMethod`.');
-    }
-    if (!codeChallenge) {
-      throw new Error('`LoginRequest` for external auth must include a `codeChallenge`.');
-    }
-
     const url = new URL(authorizeUrl);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('client_id', clientId);
     url.searchParams.set('redirect_uri', redirectUri);
     url.searchParams.set('scope', 'openid profile email');
     url.searchParams.set('state', JSON.stringify(loginRequest));
-    url.searchParams.set('code_challenge_method', codeChallengeMethod);
-    url.searchParams.set('code_challenge', codeChallenge);
+
+    if (pkceEnabled) {
+      const { codeChallenge, codeChallengeMethod } = loginRequest;
+      if (!codeChallengeMethod) {
+        throw new Error('`LoginRequest` for external auth must include a `codeChallengeMethod`.');
+      }
+      if (!codeChallenge) {
+        throw new Error('`LoginRequest` for external auth must include a `codeChallenge`.');
+      }
+      url.searchParams.set('code_challenge_method', codeChallengeMethod);
+      url.searchParams.set('code_challenge', codeChallenge);
+    }
+
     return url.toString();
   }
 
@@ -3153,7 +3166,7 @@ export class MedplumClient extends EventTarget {
    *
    * @category FHIRcast
    * @param topic - The topic to publish to. Usually a UUID.
-   * @param event - The name of the event to publish an updated context for, ie. `patient-open`.
+   * @param event - The name of the event to publish an updated context for, ie. `Patient-open`.
    * @param context - The updated context containing resources relevant to this event.
    * @param versionId - The `versionId` of the `anchor context` of the given event. Used for `DiagnosticReport-update` event.
    * @returns A `Promise` that resolves once the request completes, or rejects if it fails.

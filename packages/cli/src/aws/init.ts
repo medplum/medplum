@@ -142,8 +142,8 @@ export async function initStackCommand(): Promise<void> {
   print('However, it also increases the cost of the deployment.');
   print('If you want to use all availability zones, choose a large number such as 99.');
   print('If you want to restrict the number, for example to manage EIP limits,');
-  print('then choose a small number such as 1 or 2.');
-  config.maxAzs = await chooseInt('Enter the maximum number of availability zones:', [1, 2, 3, 99], 2);
+  print('then choose a small number such as 2 or 3.');
+  config.maxAzs = await chooseInt('Enter the maximum number of availability zones:', [2, 3, 99], 2);
 
   header('DATABASE INSTANCES');
   print('Medplum uses a relational database to store data.');

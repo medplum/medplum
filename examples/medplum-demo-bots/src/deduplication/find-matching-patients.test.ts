@@ -11,7 +11,10 @@ import { readJson } from '@medplum/definitions';
 import { Bundle, List, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { handler } from './find-matching-patients';
+// start-block importPatientData
+// import a Bundle of test data from 'patient-data.json'
 import patientData from './patient-data.json';
+// end-block importPatientData
 
 interface TestContext {
   medplum: MedplumClient;
@@ -28,6 +31,7 @@ describe('Link Patient', async () => {
     indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
   });
 
+  // start-block createBatchData
   // Load the sample data from patient-data.json
   beforeEach<TestContext>(async (context) => {
     context.medplum = new MockClient();
@@ -35,7 +39,7 @@ describe('Link Patient', async () => {
   });
 
   test<TestContext>('Created RiskAssessment', async ({ medplum }) => {
-    // Read the patient
+    // Read the patient. The `medplum` mock client has already been pre-populated with test data in `beforeEach`
     const patients = await medplum.searchResources('Patient', { given: 'Alex' });
 
     await handler(medplum, { input: patients?.[0] as Patient, contentType: ContentType.FHIR_JSON, secrets: {} });
@@ -45,6 +49,7 @@ describe('Link Patient', async () => {
     expect(riskAssessments.length).toBe(2);
     expect(riskAssessments.every((assessment) => resolveId(assessment.subject) === patients[0].id));
   });
+  // end-block createBatchData
 
   test<TestContext>('Does not create RiskAssessment due to doNotMatch List', async ({ medplum }) => {
     // Read two patients that should not be matched

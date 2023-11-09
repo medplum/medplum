@@ -9,7 +9,7 @@ import TopicLoader from './TopicLoader';
 
 type FhircastMessageDisplayProps = {
   eventNo: number;
-  message: FhircastMessagePayload<'patient-open'>;
+  message: FhircastMessagePayload<'Patient-open'>;
 };
 
 function FhircastMessageLabel(props: FhircastMessageDisplayProps): JSX.Element {
@@ -74,7 +74,7 @@ export default function Subscriber(): JSX.Element {
   const [currentPatientId, setCurrentPatientId] = useState<string>();
   const [topic, setTopic] = useState<string>();
   const [subRequest, setSubRequest] = useState<SubscriptionRequest>();
-  const [fhircastMessages, setFhircastMessages] = useState<FhircastMessagePayload<'patient-open'>[]>([]);
+  const [fhircastMessages, setFhircastMessages] = useState<FhircastMessagePayload<'Patient-open'>[]>([]);
   const [eventCount, setEventCount] = useState(0);
 
   const clientId = useClientId();
@@ -83,7 +83,7 @@ export default function Subscriber(): JSX.Element {
     if (topic) {
       // sub
       medplum
-        .fhircastSubscribe(topic, ['patient-open'])
+        .fhircastSubscribe(topic, ['Patient-open'])
         .then((subRequest) => {
           setSubRequest(subRequest);
         })
@@ -95,18 +95,18 @@ export default function Subscriber(): JSX.Element {
   }, [topic, medplum]);
 
   const handleFhircastMessage = useCallback((fhircastMessage: FhircastMessagePayload) => {
-    if (fhircastMessage.event['hub.event'] !== 'patient-open') {
-      console.error("Received unexpected event type! Ignoring all events except for 'patient-open'");
+    if (fhircastMessage.event['hub.event'] !== 'Patient-open') {
+      console.error("Received unexpected event type! Ignoring all events except for 'Patient-open'");
       return;
     }
 
     // Get the patient ID from the first context of the event
-    const patientId = (fhircastMessage as FhircastMessagePayload<'patient-open'>).event.context[0].resource
+    const patientId = (fhircastMessage as FhircastMessagePayload<'Patient-open'>).event.context[0].resource
       .id as string;
 
     setCurrentPatientId(patientId);
-    setFhircastMessages((s: FhircastMessagePayload<'patient-open'>[]) => [
-      fhircastMessage as FhircastMessagePayload<'patient-open'>,
+    setFhircastMessages((s: FhircastMessagePayload<'Patient-open'>[]) => [
+      fhircastMessage as FhircastMessagePayload<'Patient-open'>,
       ...s,
     ]);
     setEventCount((s) => s + 1);

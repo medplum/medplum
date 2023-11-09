@@ -47,7 +47,7 @@ describe('FHIRCast WebSocket', () => {
             id: randomUUID(),
             event: {
               'hub.topic': topic,
-              'hub.event': 'patient-open',
+              'hub.event': 'Patient-open',
               context: [
                 {
                   key: 'patient',
@@ -65,7 +65,7 @@ describe('FHIRCast WebSocket', () => {
       .expectJson((obj) => {
         // Event message
         expect(obj.event['hub.topic']).toBe(topic);
-        expect(obj.event['hub.event']).toBe('patient-open');
+        expect(obj.event['hub.event']).toBe('Patient-open');
       })
       .sendJson({ ok: true })
       .close()

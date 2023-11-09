@@ -1,27 +1,28 @@
 import {
   ContentType,
+  OAuthClientAssertionType,
+  OAuthGrantType,
+  OAuthTokenType,
+  Operator,
+  ProfileResource,
   createReference,
   getStatus,
   isJwt,
   normalizeErrorString,
   normalizeOperationOutcome,
-  OAuthClientAssertionType,
-  OAuthGrantType,
-  OAuthTokenType,
-  Operator,
   parseJWTPayload,
-  ProfileResource,
   resolveId,
 } from '@medplum/core';
 import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { createHash, randomUUID } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
-import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
+import { JWTVerifyOptions, createRemoteJWKSet, jwtVerify } from 'jose';
 import { asyncWrap } from '../async';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
+import { getTopicForUser } from '../fhircast/utils';
+import { MedplumRefreshTokenClaims, generateSecret, verifyJwt } from './keys';
 import {
   getAuthTokens,
   getClient,
@@ -34,6 +35,7 @@ import {
 } from './utils';
 
 type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
+type FhircastProps = { 'hub.topic': string; 'hub.url': string };
 
 /**
  * Handles the OAuth/OpenID Token Endpoint.
@@ -553,6 +555,14 @@ async function sendTokenResponse(res: Response, login: Login, membership: Projec
     patient = membership.profile.reference.replace('Patient/', '');
   }
 
+  const fhircastProps = {} as FhircastProps;
+  if (login.scope?.includes('fhircast/')) {
+    const userId = resolveId(login.user) as string;
+    const topic = await getTopicForUser(userId);
+    fhircastProps['hub.url'] = config.baseUrl + 'fhircast/STU3/'; // TODO: Figure out how to handle the split between STU2 and STU3...
+    fhircastProps['hub.topic'] = topic;
+  }
+
   res.status(200).json({
     token_type: 'Bearer',
     expires_in: 3600,
@@ -566,6 +576,7 @@ async function sendTokenResponse(res: Response, login: Login, membership: Projec
     encounter,
     smart_style_url: config.baseUrl + 'fhir/R4/.well-known/smart-styles.json',
     need_patient_banner: !!patient,
+    ...fhircastProps, // Spreads no props when FHIRcast scopes not present
   });
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/generator",
-  "version": "2.1.10",
+  "version": "2.1.12",
   "description": "Medplum Code Generator",
   "homepage": "https://www.medplum.com/",
   "repository": {
@@ -16,7 +16,7 @@
     "build": "npm run clean && tsc",
     "clean": "rimraf dist",
     "docs": "ts-node src/docs.ts",
-    "generate": "ts-node src/index.ts && ts-node src/jsonschema.ts",
+    "generate": "ts-node src/index.ts && ts-node src/jsonschema.ts && ts-node src/baseschema.ts",
     "migrate": "ts-node src/migrate.ts",
     "test": "jest"
   },
