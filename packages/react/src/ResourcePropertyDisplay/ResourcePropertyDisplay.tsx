@@ -1,5 +1,12 @@
 import { ActionIcon, Box, CopyButton, Tooltip } from '@mantine/core';
-import { formatDateTime, formatPeriod, formatTiming, InternalSchemaElement, PropertyType } from '@medplum/core';
+import {
+  formatDateTime,
+  formatPeriod,
+  formatTiming,
+  InternalSchemaElement,
+  isEmpty,
+  PropertyType,
+} from '@medplum/core';
 import { IconCheck, IconCopy } from '@tabler/icons-react';
 import React from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
@@ -42,15 +49,17 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     return (
       <Box component="div" sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
         {value}
-        <CopyButton value={value} timeout={2000}>
-          {({ copied, copy }) => (
-            <Tooltip label={copied ? 'Copied' : 'Copy'} withArrow position="right">
-              <ActionIcon color={copied ? 'teal' : 'gray'} onClick={copy}>
-                {copied ? <IconCheck size="1rem" /> : <IconCopy size="1rem" />}
-              </ActionIcon>
-            </Tooltip>
-          )}
-        </CopyButton>
+        {!isEmpty(value) && (
+          <CopyButton value={value} timeout={2000}>
+            {({ copied, copy }) => (
+              <Tooltip label={copied ? 'Copied' : 'Copy'} withArrow position="right">
+                <ActionIcon color={copied ? 'teal' : 'gray'} onClick={copy}>
+                  {copied ? <IconCheck size="1rem" /> : <IconCopy size="1rem" />}
+                </ActionIcon>
+              </Tooltip>
+            )}
+          </CopyButton>
+        )}
       </Box>
     );
   }
