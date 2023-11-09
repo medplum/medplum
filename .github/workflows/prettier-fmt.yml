@@ -50,17 +50,6 @@ jobs:
             cat prettier-fmt.err >> "${GITHUB_OUTPUT}"
             cat prettier-fmt1.err >> "${GITHUB_OUTPUT}"
             echo "${delimiter}" >> "${GITHUB_OUTPUT}"
-            echo "❌`prettier` reported errors
-
-            To one-off fix this manually, run:
-
-            npm run prettier
-
-
-            You might need to run `npm install` locally and configure your text editor to auto-format on save. 
-            See: https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode
-
-            https://github.com/medplum/medplum/commits/${{github.sha}}"
           fi
       - name: Comment on PR
         if: steps.fmt.outputs.prettier_fmt_errs != ''
@@ -95,4 +84,17 @@ jobs:
             <sup>[#${{github.sha}}](https://github.com/medplum/medplum/commits/${{github.sha}})</sup>
       - name: Fail the job
         if: steps.fmt.outputs.prettier_fmt_errs != ''
-        run: exit 1
+        run: |
+          echo "❌ \"prettier\" reported errors"
+          echo ""
+          echo "To one-off fix this manually, run:"
+          echo ""
+          echo "npm run prettier"
+          echo ""
+          echo ""
+          echo "You might need to run \"npm install\" locally and configure your text editor to auto-format on save."
+          echo "See: https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode"
+          echo ""
+          echo "https://github.com/medplum/medplum/commits/${{github.sha}}"
+          
+          exit 1
