@@ -80,7 +80,7 @@ You may want to use environment variables. Check your build tool for instruction
 
 To add Google auth to a [`@medplum/app`](/docs/app) deployment, modify the corresponding configuration file:
 
-```json
+```js
 {
   // ...
   "googleClientId": "<Google API key>",
