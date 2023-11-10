@@ -4,7 +4,7 @@ import { sendOutcome, invalidRequest } from '../fhir/outcomes';
 
 export function makeValidationMiddleware(runners: ContextRunner[]): RequestHandler {
   return async function (req: Request, res: Response, next: NextFunction) {
-    await Promise.all(runners.map(runner => runner.run(req)));
+    await Promise.all(runners.map((runner) => runner.run(req)));
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
