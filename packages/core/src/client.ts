@@ -78,7 +78,7 @@ import {
   sleep,
 } from './utils';
 
-export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
+export const MEDPLUM_VERSION = import.meta.env.MEDPLUM_VERSION ?? '';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
@@ -2992,7 +2992,7 @@ export class MedplumClient extends EventTarget {
    *
    * @example
    * ```typescript
-   * await medplum.startClientLogin(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_CLIENT_SECRET)
+   * await medplum.startClientLogin(import.meta.env.MEDPLUM_CLIENT_ID, import.meta.env.MEDPLUM_CLIENT_SECRET)
    * // Example Search
    * await medplum.searchResources('Patient')
    * ```
@@ -3020,7 +3020,7 @@ export class MedplumClient extends EventTarget {
    *
    * @example
    * ```typescript
-   * await medplum.startJwtBearerLogin(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_JWT_BEARER_ASSERTION, 'openid profile');
+   * await medplum.startJwtBearerLogin(import.meta.env.MEDPLUM_CLIENT_ID, import.meta.env.MEDPLUM_JWT_BEARER_ASSERTION, 'openid profile');
    * // Example Search
    * await medplum.searchResources('Patient')
    * ```
@@ -3066,7 +3066,7 @@ export class MedplumClient extends EventTarget {
    *
    * @example
    * ```typescript
-   * medplum.setBasicAuth(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_CLIENT_SECRET);
+   * medplum.setBasicAuth(import.meta.env.MEDPLUM_CLIENT_ID, import.meta.env.MEDPLUM_CLIENT_SECRET);
    * // Example Search
    * await medplum.searchResources('Patient');
    * ```
