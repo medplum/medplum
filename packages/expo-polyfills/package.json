@@ -29,17 +29,17 @@
   "homepage": "https://github.com/medplum/medplum#readme",
   "dependencies": {
     "base-64": "1.0.0",
-    "expo-crypto": "12.4.1",
-    "expo-standard-web-crypto": "1.6.0",
+    "expo-crypto": "12.6.0",
+    "expo-standard-web-crypto": "1.7.0",
     "react-native-url-polyfill": "2.0.0",
     "text-encoding": "0.7.0"
   },
   "devDependencies": {
     "@medplum/core": "*",
-    "@types/base-64": "1.0.0",
-    "@types/react": "18.0.25",
-    "@types/text-encoding": "0.0.36",
-    "esbuild": "0.19.4",
+    "@types/base-64": "1.0.2",
+    "@types/react": "18.2.37",
+    "@types/text-encoding": "0.0.39",
+    "esbuild": "0.19.5",
     "esbuild-node-externals": "1.9.0",
     "jest": "29.7.0",
     "rimraf": "5.0.5",

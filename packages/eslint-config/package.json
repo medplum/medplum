@@ -19,13 +19,13 @@
   "author": "Medplum <hello@medplum.com>",
   "main": "index.cjs",
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "6.7.5",
-    "@typescript-eslint/parser": "6.7.5",
-    "eslint": "8.51.0",
+    "@typescript-eslint/eslint-plugin": "6.10.0",
+    "@typescript-eslint/parser": "6.10.0",
+    "eslint": "8.53.0",
     "eslint-plugin-jsdoc": "46.8.2",
-    "eslint-plugin-json-files": "3.0.0",
+    "eslint-plugin-json-files": "4.1.0",
     "eslint-plugin-react-hooks": "4.6.0",
-    "eslint-plugin-react-refresh": "0.4.3"
+    "eslint-plugin-react-refresh": "0.4.4"
   },
   "peerDependencies": {
     "@typescript-eslint/eslint-plugin": "^6",

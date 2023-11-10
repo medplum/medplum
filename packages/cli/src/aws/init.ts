@@ -1,4 +1,10 @@
-import { ACMClient, CertificateSummary, ListCertificatesCommand, RequestCertificateCommand } from '@aws-sdk/client-acm';
+import {
+  ACMClient,
+  CertificateSummary,
+  ListCertificatesCommand,
+  RequestCertificateCommand,
+  ValidationMethod,
+} from '@aws-sdk/client-acm';
 import { CloudFrontClient, CreatePublicKeyCommand } from '@aws-sdk/client-cloudfront';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
@@ -474,7 +480,7 @@ async function requestCert(region: string, domain: string): Promise<string> {
     const client = new ACMClient({ region });
     const command = new RequestCertificateCommand({
       DomainName: domain,
-      ValidationMethod: validationMethod.toUpperCase(),
+      ValidationMethod: validationMethod.toUpperCase() as ValidationMethod,
     });
     const response = await client.send(command);
     return response.CertificateArn as string;
