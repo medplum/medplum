@@ -33,11 +33,15 @@ describe('SignInPage', () => {
     });
   });
 
+  function expectSigninPageRendered(): void {
+    expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
+  }
+
   test('Renders', async () => {
     setup();
 
-    expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
+    expectSigninPageRendered();
   });
 
   test('Success', async () => {
@@ -91,10 +95,12 @@ describe('SignInPage', () => {
   test('Register disabled', async () => {
     getConfig().registerEnabled = false;
     setup();
+
+    expectSigninPageRendered();
     expect(screen.queryByText('Register')).not.toBeInTheDocument();
   });
 
-  test('Redirect to next', async () => {
+  test('Redirect to next after login', async () => {
     setup('/signin?next=/batch');
 
     await act(async () => {
@@ -117,7 +123,7 @@ describe('SignInPage', () => {
     expect(screen.getByText('Batch Create')).toBeInTheDocument();
   });
 
-  test('Redirects to homepage if bad next', async () => {
+  test('Redirects to homepage after login if bad next', async () => {
     setup('/signin?next=https%3A%2F%2Fevil.com');
 
     await act(async () => {
@@ -141,14 +147,20 @@ describe('SignInPage', () => {
     expect(screen.getByTestId('search-control')).toBeDefined();
   });
 
-  test('Automatically redirects to next if logged in', async () => {
+  test('Does NOT automatically redirect to next if logged in and next NOT present', async () => {
+    setup('/signin', new MockClient({ profile: DrAliceSmith }));
+
+    expectSigninPageRendered();
+  });
+
+  test('Automatically redirects to next if logged in and next present', async () => {
     setup('/signin?next=/batch', new MockClient({ profile: DrAliceSmith }));
 
     await waitFor(() => screen.getByText('Batch Create'));
     expect(screen.getByText('Batch Create')).toBeInTheDocument();
   });
 
-  test('Automatically redirects to homepage if bad next', async () => {
+  test('Automatically redirects to homepage if logged with bad next', async () => {
     setup('/signin?next=https%3A%2F%2Fevil.com', new MockClient({ profile: DrAliceSmith }));
 
     // should redirect to the homepage

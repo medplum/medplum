@@ -18,10 +18,10 @@ export function SignInPage(): JSX.Element {
   }, [searchParams, navigate]);
 
   useEffect(() => {
-    if (profile) {
+    if (profile && searchParams.has('next')) {
       navigateToNext();
     }
-  }, [profile, navigateToNext]);
+  }, [profile, searchParams, navigateToNext]);
 
   return (
     <SignInForm
