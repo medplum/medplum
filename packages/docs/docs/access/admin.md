@@ -1,4 +1,4 @@
-## Admin Users
+# Admin Users
 
 Certain operations require Medplum [Users](/docs/api/fhir/medplum/user), [`Bots`](/docs/api/fhir/medplum/bot), or [`ClientApplications`](/docs/api/fhir/medplum/clientapplication) to have administrative privileges. Users can be granted admin rights on a per-project basis: a given user can be an admin for one project, but not another.
 
