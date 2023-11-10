@@ -6,7 +6,8 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "turbo run build",
+    "build": "turbo run build --filter=@medplum/app --filter=@medplum/server",
+    "build:all": "turbo run build",
     "clean": "turbo run clean",
     "cyclonedx": "cyclonedx-npm --omit dev --omit optional --omit peer",
     "lint": "eslint .",
