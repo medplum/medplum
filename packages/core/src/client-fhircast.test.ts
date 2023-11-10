@@ -2,7 +2,9 @@ import WS from 'jest-websocket-mock';
 import { MedplumClient } from './client';
 import { mockFetch } from './client-test-utils';
 import { ContentType } from './contenttype';
+import { generateId } from './crypto';
 import {
+  CurrentContext,
   FhircastConnection,
   FhircastEventName,
   PendingSubscriptionRequest,
@@ -245,6 +247,37 @@ describe('FHIRcast', () => {
           createFhircastMessageContext<'DiagnosticReport-open'>('report', 'DiagnosticReport', 'report-987')
         )
       ).rejects.toBeInstanceOf(OperationOutcomeError);
+    });
+  });
+
+  describe('fhircastGetContext', () => {
+    let client: MedplumClient;
+    let topic: string;
+    let topicContext: CurrentContext<'DiagnosticReport-open'>;
+
+    beforeAll(() => {
+      topic = generateId();
+      topicContext = {
+        'context.type': 'DiagnosticReport',
+        'context.versionId': generateId(),
+        context: [createFhircastMessageContext<'DiagnosticReport-open'>('report', 'DiagnosticReport', generateId())],
+      };
+      const fetch = mockFetch(200, (url: string) => {
+        if (url.endsWith(`/${topic}`)) {
+          return topicContext;
+        } else {
+          return { 'context.type': '', context: [] };
+        }
+      });
+      client = new MedplumClient({ fetch });
+    });
+
+    test('Get context for topic with context', async () => {
+      await expect(client.fhircastGetContext(topic)).resolves.toEqual(topicContext);
+    });
+
+    test('Get context for topic without context', async () => {
+      await expect(client.fhircastGetContext('abc-123')).resolves.toEqual({ 'context.type': '', context: [] });
     });
   });
 });
