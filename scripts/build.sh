@@ -19,7 +19,7 @@ npm --version
 [ ! -d "node_modules" ] && npm ci
 
 # Build
-npx turbo run build:all
+npm run build:all
 
 # Lint
 npm run lint
