@@ -78,7 +78,7 @@ You may want to use environment variables. Check your build tool for instruction
 
 ### Update app deployment with auth keys
 
-To add Google auth to a [`@medplum/app`][app] deployment, modify the corresponding configuration file:
+To add Google auth to a [`@medplum/app`](/docs/app) deployment, modify the corresponding configuration file:
 
 ```json
 {
@@ -88,11 +88,8 @@ To add Google auth to a [`@medplum/app`][app] deployment, modify the correspondi
 }
 ```
 
-Then, [re-deploy the app][deploy-app] using the CLI:
+Then, [re-deploy the app](/docs/self-hosting/install-on-aws#deploy-the-app) using the CLI:
 
 ```
 npx medplum aws update-app <environment>
 ```
-
-[app]: https://www.medplum.com/docs/app
-[deploy-app]: https://www.medplum.com/docs/self-hosting/install-on-aws#deploy-the-app
