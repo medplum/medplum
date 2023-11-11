@@ -108,7 +108,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   }
 
   const signInPage = login.launch ? 'oauth' : 'signin';
-  const redirectUrl = new URL(getConfig().appBaseUrl + signInPage);
+  const redirectUrl = new URL(signInPage, getConfig().appBaseUrl);
   redirectUrl.searchParams.set('login', login.id as string);
   redirectUrl.searchParams.set('scope', login.scope as string);
   redirectUrl.searchParams.set('nonce', login.nonce as string);
