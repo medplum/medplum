@@ -81,7 +81,6 @@ export function polyfillMedplumWebAPIs(): void {
   }
 }
 
-
 class SyncSecureStorage implements Storage {
   private readonly storage: Map<string, string>;
   private readonly initPromise: Promise<void>;
