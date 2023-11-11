@@ -10,8 +10,8 @@ import { stringify } from './utils';
 export class ClientStorage {
   private readonly storage: Storage;
 
-  constructor() {
-    this.storage = typeof localStorage !== 'undefined' ? localStorage : new MemoryStorage();
+  constructor(storage?: Storage) {
+    this.storage = storage ?? (typeof localStorage !== 'undefined' ? localStorage : new MemoryStorage());
   }
 
   clear(): void {
@@ -38,6 +38,13 @@ export class ClientStorage {
   setObject<T>(key: string, value: T): void {
     this.setString(key, value ? stringify(value) : undefined);
   }
+}
+
+/**
+ * This interface guarantees a synchronous interface for a storage backed by an async storage mechanism that must be asynchronously synchronized on initialization.
+ */
+export interface AsyncBackedClientStorage extends ClientStorage {
+  initialized: Promise<void>;
 }
 
 /**

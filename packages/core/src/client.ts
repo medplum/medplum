@@ -65,7 +65,7 @@ import {
   validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
-import { ClientStorage } from './storage';
+import { AsyncBackedClientStorage, ClientStorage } from './storage';
 import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded } from './typeschema/types';
 import {
@@ -652,6 +652,7 @@ export class MedplumClient extends EventTarget {
   private profilePromise?: Promise<any>;
   private sessionDetails?: SessionDetails;
   private basicAuth?: string;
+  private initPromise: Promise<void>;
 
   constructor(options?: MedplumClientOptions) {
     super();
@@ -692,15 +693,35 @@ export class MedplumClient extends EventTarget {
 
     if (options?.accessToken) {
       this.setAccessToken(options.accessToken);
+      this.initPromise = Promise.resolve();
+    } else if ((this.storage as AsyncBackedClientStorage).initialized) {
+      const initPromise = (this.storage as AsyncBackedClientStorage).initialized;
+      initPromise
+        .then(() => {
+          this.attemptResumeActiveLogin().catch((err) => console.error(err));
+        })
+        .catch((err) => console.error(err));
+      this.initPromise = initPromise;
     } else {
-      const activeLogin = this.getActiveLogin();
-      if (activeLogin) {
-        this.setAccessToken(activeLogin.accessToken, activeLogin.refreshToken);
-        this.refreshProfile().catch(console.log);
-      }
+      this.attemptResumeActiveLogin().catch((err) => console.error(err));
+      this.initPromise = Promise.resolve();
     }
 
     this.setupStorageListener();
+  }
+
+  get initialized(): Promise<void> {
+    return this.initPromise;
+  }
+
+  async attemptResumeActiveLogin(): Promise<void> {
+    const activeLogin = this.getActiveLogin();
+    console.log('activeLogin', activeLogin);
+    if (!activeLogin) {
+      return;
+    }
+    this.setAccessToken(activeLogin.accessToken, activeLogin.refreshToken);
+    await this.refreshProfile();
   }
 
   /**

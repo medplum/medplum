@@ -32,7 +32,8 @@
     "expo-crypto": "12.6.0",
     "expo-standard-web-crypto": "1.7.0",
     "react-native-url-polyfill": "2.0.0",
-    "text-encoding": "0.7.0"
+    "text-encoding": "0.7.0",
+    "expo-secure-store": "12.3.1"
   },
   "devDependencies": {
     "@medplum/core": "*",

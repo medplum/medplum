@@ -1,15 +1,16 @@
-import { LoginAuthenticationResponse, ProfileResource, getDisplayString } from '@medplum/core';
-import { useMedplum } from '@medplum/react-hooks';
+import { LoginAuthenticationResponse, getDisplayString } from '@medplum/core';
+import { useMedplum, useMedplumContext, useMedplumProfile } from '@medplum/react-hooks';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
 import CustomButton from './CustomButton';
 
 export default function Home(): JSX.Element {
   const medplum = useMedplum();
+  const profile = useMedplumProfile();
+  const { loading } = useMedplumContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [profile, setProfile] = useState<ProfileResource | undefined>(undefined);
 
   function startLogin(): void {
     medplum.startLogin({ email, password }).then(handleAuthResponse).catch(console.error);
@@ -17,7 +18,7 @@ export default function Home(): JSX.Element {
 
   function handleAuthResponse(response: LoginAuthenticationResponse): void {
     if (response.code) {
-      handleCode(response.code);
+      medplum.processCode(response.code).catch((err) => console.error(err));
     }
     if (response.memberships) {
       // TODO: Handle multiple memberships
@@ -33,46 +34,47 @@ export default function Home(): JSX.Element {
     }
   }
 
-  function handleCode(code: string): void {
-    medplum.processCode(code).then(setProfile).catch(console.error);
-  }
-
   function signOut(): void {
-    setProfile(undefined);
     medplum.signOut().catch(console.error);
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Medplum React Native Example</Text>
-      {!profile ? (
-        <View style={styles.formWrapper}>
-          <View>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor="#003f5c"
-              onChangeText={(email) => setEmail(email)}
-            />
-          </View>
-          <View>
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor="#003f5c"
-              secureTextEntry={true}
-              onChangeText={(password) => setPassword(password)}
-            />
-          </View>
-          <CustomButton onPress={startLogin} title="Sign in" />
-        </View>
+      {loading ? (
+        <ActivityIndicator />
       ) : (
-        <View style={styles.authedWrapper}>
-          <Text style={styles.loginText}>Logged in as {getDisplayString(profile)}</Text>
-          <CustomButton onPress={signOut} title="Sign out" />
-        </View>
+        <>
+          <Text style={styles.title}>Medplum React Native Example</Text>
+          {!profile ? (
+            <View style={styles.formWrapper}>
+              <View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor="#003f5c"
+                  onChangeText={(email) => setEmail(email)}
+                />
+              </View>
+              <View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor="#003f5c"
+                  secureTextEntry={true}
+                  onChangeText={(password) => setPassword(password)}
+                />
+              </View>
+              <CustomButton onPress={startLogin} title="Sign in" />
+            </View>
+          ) : (
+            <View style={styles.authedWrapper}>
+              <Text style={styles.loginText}>Logged in as {getDisplayString(profile)}</Text>
+              <CustomButton onPress={signOut} title="Sign out" />
+            </View>
+          )}
+          <StatusBar style="auto" />
+        </>
       )}
-      <StatusBar style="auto" />
     </View>
   );
 }
