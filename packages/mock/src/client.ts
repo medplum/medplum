@@ -65,6 +65,11 @@ import {
 
 export interface MockClientOptions extends MedplumClientOptions {
   readonly debug?: boolean;
+  /**
+   * Override currently logged in user. Specifying null results in
+   * MedplumContext.profile returning undefined as if no one were logged in.
+   */
+  readonly profile?: ReturnType<MedplumClient['getProfile']> | null;
 }
 
 export class MockClient extends MedplumClient {
@@ -73,6 +78,7 @@ export class MockClient extends MedplumClient {
   readonly client: MockFetchClient;
   readonly debug: boolean;
   activeLoginOverride?: LoginState;
+  private readonly profile: ReturnType<MedplumClient['getProfile']>;
 
   constructor(clientOptions?: MockClientOptions) {
     const router = new FhirRouter();
@@ -96,6 +102,8 @@ export class MockClient extends MedplumClient {
     this.router = router;
     this.repo = repo;
     this.client = client;
+    // if null is specified, treat it as if no one is logged in
+    this.profile = clientOptions?.profile === null ? undefined : clientOptions?.profile ?? DrAliceSmith;
     this.debug = !!clientOptions?.debug;
   }
 
@@ -104,8 +112,8 @@ export class MockClient extends MedplumClient {
     this.activeLoginOverride = undefined;
   }
 
-  getProfile(): ProfileResource {
-    return DrAliceSmith;
+  getProfile(): ProfileResource | undefined {
+    return this.profile;
   }
 
   getUserConfiguration(): UserConfiguration | undefined {
