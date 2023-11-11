@@ -7,7 +7,7 @@ import { authenticateRequest } from './middleware';
 import { tokenHandler } from './token';
 import { userInfoHandler } from './userinfo';
 
-export const createOauthRouter = (): Router =>  {
+export const createOauthRouter = (): Router => {
   const oauthRouter = Router();
   oauthRouter.use(getRateLimiter());
   oauthRouter.get('/authorize', cookieParser(), authorizeGetHandler);
@@ -18,4 +18,4 @@ export const createOauthRouter = (): Router =>  {
   oauthRouter.get('/logout', authenticateRequest, logoutHandler);
   oauthRouter.post('/logout', authenticateRequest, logoutHandler);
   return oauthRouter;
-}
+};

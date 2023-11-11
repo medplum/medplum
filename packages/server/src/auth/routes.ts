@@ -41,4 +41,4 @@ export const createAuthRouter = (): Router => {
   authRouter.post('/revoke', authenticateRequest, revokeValidators, asyncWrap(revokeHandler));
   authRouter.get('/login/:login', statusValidators, asyncWrap(statusHandler));
   return authRouter;
-}
+};
