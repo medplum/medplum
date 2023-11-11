@@ -149,10 +149,11 @@ class SyncSecureStorage implements Storage {
     this.assertInitialized();
     // Start clearing out each key in background
     for (const key of this.storage.keys()) {
-      this.removeItem(key);
+      this.removeItem(key, false);
     }
     // Clear map
     this.storage.clear();
+    this.setKeys();
   }
 
   private setKeys(): void {
@@ -191,12 +192,15 @@ class SyncSecureStorage implements Storage {
   /**
    * Removes the key/value pair with the given key, if a key/value pair with the given key exists.
    * @param key - The storage key.
+   * @param setKeys - Whether to call `this.setKeys()` after deleting the key. Defaults to `true`.
    */
-  removeItem(key: string): void {
+  removeItem(key: string, setKeys = true): void {
     this.assertInitialized();
     SecureStore.deleteItemAsync(key).catch((err) => console.error(err));
     this.storage.delete(key);
-    this.setKeys();
+    if (setKeys) {
+      this.setKeys();
+    }
   }
 
   /**
