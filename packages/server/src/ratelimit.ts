@@ -1,21 +1,23 @@
 import { tooManyRequests } from '@medplum/core';
 import { Request } from 'express';
-import rateLimit, { MemoryStore, RateLimitRequestHandler } from 'express-rate-limit';
+import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
+import RedisStore from 'rate-limit-redis';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
-
-/*
- * MemoryStore must be shutdown to cleanly stop the server.
- */
+import { getRedis } from './redis';
 
 const DEFAULT_RATE_LIMIT_PER_15_MINUTES = 15 * 60 * 1000; // 1000 requests per second
 const DEFAULT_AUTH_RATE_LIMIT_PER_15_MINUTES = 600;
 
 let handler: RateLimitRequestHandler | undefined = undefined;
-let store: MemoryStore | undefined = undefined;
+let store: RedisStore | undefined = undefined;
 
 export function getRateLimiter(): RateLimitRequestHandler {
   if (!handler) {
-    store = new MemoryStore();
+    const client = getRedis();
+    store = new RedisStore({
+      // @ts-expect-error - Known issue: the `call` function is not present in @types/ioredis
+      sendCommand: (...args: string[]): unknown => client.call(...args),
+    });
     handler = rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
       limit: getRateLimitForRequest,
@@ -29,7 +31,6 @@ export function getRateLimiter(): RateLimitRequestHandler {
 
 export function closeRateLimiter(): void {
   if (handler) {
-    store?.shutdown();
     store = undefined;
     handler = undefined;
   }
