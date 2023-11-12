@@ -28,6 +28,9 @@ Note the following optional peer dependencies:
 - [@mantine/hooks](https://www.npmjs.com/package/@mantine/hooks)
 - [@mantine/notifications](https://www.npmjs.com/package/@mantine/notifications)
 
+Note [`SensitiveTextarea`](./src/SensitiveTextarea/SensitiveTextarea.tsx) expects a "PasswordDots" font-face to be defined. [passworddots.woff](./public/fonts/passworddots.woff) [passworddots.woff2](./public/fonts/passworddots.woff2)
+
+
 ## Basic Usage
 
 ```tsx

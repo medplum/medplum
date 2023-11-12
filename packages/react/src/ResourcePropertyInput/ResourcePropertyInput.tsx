@@ -25,6 +25,7 @@ import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
 import { ResourceArrayInput } from '../ResourceArrayInput/ResourceArrayInput';
 import { TimingInput } from '../TimingInput/TimingInput';
 import { getErrorsForInput } from '../utils/outcomes';
+import { SensitiveTextarea } from '../SensitiveTextarea/SensitiveTextarea';
 
 export interface ResourcePropertyInputProps {
   property: InternalSchemaElement;
@@ -122,6 +123,24 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.time:
     case PropertyType.uri:
     case PropertyType.url:
+      if (props.property.path === "Project.secret.value[x]") {
+        return (
+          <SensitiveTextarea
+            id={name}
+            name={name}
+            data-testid={name}
+            defaultValue={value}
+            required={required}
+            onChange={(e) => {
+              if (props.onChange) {
+                props.onChange(e.currentTarget.value);
+              }
+            }}
+            error={getErrorsForInput(props.outcome, name)}
+          />
+        );
+      }
+
       return (
         <TextInput
           id={name}
