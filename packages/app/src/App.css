@@ -10,3 +10,8 @@ body,
 .grecaptcha-badge {
   visibility: hidden;
 }
+
+@font-face {
+  font-family: 'PasswordDots';
+  src: url(/fonts/passworddots.woff2) format('woff2');
+}

@@ -23,6 +23,7 @@ import { RangeInput } from '../RangeInput/RangeInput';
 import { RatioInput } from '../RatioInput/RatioInput';
 import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
 import { ResourceArrayInput } from '../ResourceArrayInput/ResourceArrayInput';
+import { SensitiveTextarea } from '../SensitiveTextarea/SensitiveTextarea';
 import { TimingInput } from '../TimingInput/TimingInput';
 import { getErrorsForInput } from '../utils/outcomes';
 import { ComplexTypeInputProps } from './ResourcePropertyInput.utils';
@@ -174,6 +175,24 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.time:
     case PropertyType.uri:
     case PropertyType.url:
+      if (props.path === 'Project.secret.value[x]') {
+        return (
+          <SensitiveTextarea
+            id={name}
+            name={name}
+            data-testid={name}
+            defaultValue={defaultValue}
+            required={required}
+            onChange={(e) => {
+              if (props.onChange) {
+                props.onChange(e.currentTarget.value);
+              }
+            }}
+            error={getErrorsForInput(props.outcome, name)}
+          />
+        );
+      }
+
       return (
         <TextInput
           id={name}
