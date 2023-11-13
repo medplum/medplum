@@ -1,4 +1,4 @@
-import ExampleCode from '!!raw-loader!@site/..//examples/src/search/advanced-search-parameters.ts';
+import ExampleCode from '!!raw-loader!@site/..//examples/src/search/chained-search.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
