@@ -149,6 +149,7 @@ module.exports = {
     'node_modules',
     'packages/**/dist/',
     'packages/docs/build/',
+    'packages/docs/markdown-to-mdx.cjs',
     'packages/docs/docusaurus.config.js',
     'packages/docs/sidebars.js',
     'packages/eslint-config/index.cjs',
