@@ -50,7 +50,7 @@ Lastly, _some_ search parameters rename/alias the target element. For example, t
 
 To search for resources, you can simply add search parameters and values as query parameters in your `GET` request.
 
-The [Medplum Client SDK](/docs/sdk/classes/MedplumClient) also provides the `search` helper method, which accepts a `string` or `object`.
+The [Medplum Client SDK](/docs/sdk/core.medplumclient) also provides the `search` helper method, which accepts a `string` or `object`.
 
 <Tabs groupId="language">
   <TabItem value="ts" label="TypeScript">
@@ -81,7 +81,7 @@ The array returned by `searchResources` also includes a `bundle` property that c
 
 ## Searching Multiple Criteria
 
-You can perform and AND search by specifying multiple query parameters
+You can perform an AND search by specifying multiple query parameters
 
 <Tabs groupId="language">
   <TabItem value="ts" label="TypeScript">
@@ -115,7 +115,7 @@ Specifying comma separated values performs an OR operation for that search param
 
 You can use `reference` search parameters to search for resources based on the resources they refer to.
 
-The syntax for this kind of search is `[parameter]=[resourceType]/[id]`. You can use the [`getReferenceString()`](/docs/sdk/modules#getreferencestring) utility method to help with construct your query.
+The syntax for this kind of search is `[parameter]=[resourceType]/[id]`. You can use the [`getReferenceString()`](/docs/sdk/core.getreferencestring) utility method to help with construct your query.
 
 For example, to search for all `Observation` resources that reference a `Patient` with the ID `"1234"`:
 

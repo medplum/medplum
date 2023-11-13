@@ -61,7 +61,7 @@ In case of server errors you can expect [HTTP Status codes](https://en.wikipedia
 
 ## SDK
 
-Our [**TypeScript SDK**](./sdk/classes/MedplumClient) provides a powerful, type-safe library to create and store healthcare data in Medplum. The SDK can be used in standalone applications and is used by [bots](/docs/bots).
+Our [**TypeScript SDK**](./sdk/core.medplumclient) provides a powerful, type-safe library to create and store healthcare data in Medplum. The SDK can be used in standalone applications and is used by [bots](/docs/bots).
 
 ## Prebuilt UI
 

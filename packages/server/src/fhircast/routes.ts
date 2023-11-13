@@ -1,4 +1,4 @@
-import { FhircastMessagePayload, badRequest, generateId } from '@medplum/core';
+import { FhircastMessagePayload, FhircastResourceType, badRequest, generateId } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
@@ -7,30 +7,54 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { getRedis } from '../redis';
 
-export const fhircastRouter = Router();
+export const fhircastSTU2Router = Router();
+export const fhircastSTU3Router = Router();
 
-const publicRoutes = Router();
-fhircastRouter.use(publicRoutes);
+const publicSTU2Routes = Router();
+const publicSTU3Routes = Router();
 
-const protectedRoutes = Router().use(authenticateRequest);
-fhircastRouter.use(protectedRoutes);
+fhircastSTU2Router.use(publicSTU2Routes);
+fhircastSTU3Router.use(publicSTU3Routes);
 
-publicRoutes.get('/.well-known/fhircast-configuration', (_req: Request, res: Response) => {
+const protectedCommonRoutes = Router().use(authenticateRequest);
+fhircastSTU2Router.use(protectedCommonRoutes);
+fhircastSTU3Router.use(protectedCommonRoutes);
+
+const protectedSTU2Routes = Router();
+const protectedSTU3Routes = Router();
+
+fhircastSTU2Router.use(protectedSTU2Routes);
+fhircastSTU3Router.use(protectedSTU3Routes);
+
+const eventsSupported = [
+  'syncerror',
+  'heartbeat',
+  'userlogout',
+  'userhibernate',
+  'Patient-open',
+  'Patient-close',
+  'ImagingStudy-open',
+  'ImagingStudy-close',
+  'Encounter-open',
+  'Encounter-close',
+  'DiagnosticReport-open',
+  'DiagnosticReport-close',
+  'DiagnosticReport-select',
+  'DiagnosticReport-update',
+];
+
+publicSTU2Routes.get('/.well-known/fhircast-configuration', (_req: Request, res: Response) => {
   res.status(200).json({
-    eventsSupported: [
-      'syncerror',
-      'heartbeat',
-      'userlogout',
-      'userhibernate',
-      'patient-open',
-      'patient-close',
-      'imagingstudy-open',
-      'imagingstudy-close',
-      'encounter-open',
-      'encounter-close',
-      'diagnosticreport-open',
-      'diagnosticreport-close',
-    ],
+    eventsSupported,
+    websocketSupport: true,
+    webhookSupport: false,
+    fhircastVersion: 'STU2',
+  });
+});
+
+publicSTU3Routes.get('/.well-known/fhircast-configuration', (_req: Request, res: Response) => {
+  res.status(200).json({
+    eventsSupported,
     getCurrentSupport: true,
     websocketSupport: true,
     webhookSupport: false,
@@ -39,7 +63,7 @@ publicRoutes.get('/.well-known/fhircast-configuration', (_req: Request, res: Res
 });
 
 // Register a new subscription
-protectedRoutes.post(
+protectedCommonRoutes.post(
   '/',
   [
     body('hub.channel.type').notEmpty().withMessage('Missing hub.channel.type'),
@@ -80,7 +104,7 @@ protectedRoutes.post(
 );
 
 // Publish an event to the hub topic
-protectedRoutes.post(
+protectedCommonRoutes.post(
   '/:topic',
   [
     body('id').notEmpty().withMessage('Missing event ID'),
@@ -99,7 +123,7 @@ protectedRoutes.post(
     // Check if this an open event
     if (event['hub.event'].endsWith('-open')) {
       // TODO: Support this as a param for event type: "versionable"?
-      if (event['hub.event'] === 'diagnosticreport-open') {
+      if (event['hub.event'] === 'DiagnosticReport-open') {
         event['context.versionId'] = generateId();
         stringifiedBody = JSON.stringify(req.body);
       }
@@ -108,6 +132,13 @@ protectedRoutes.post(
     } else if (event['hub.event'].endsWith('-close')) {
       // We always close the current context, even if the event is not for the original resource... There isn't any mention of checking to see it's the right resource, so it seems it may be assumed to be always valid to do any arbitrary close as long as there is an existing context...
       await getRedis().del(`::fhircast::${req.params.topic}::latest::`);
+    } else if (event['hub.event'] === 'DiagnosticReport-update') {
+      // See: https://build.fhir.org/ig/HL7/fhircast-docs/3-6-3-DiagnosticReport-update.html#:~:text=The%20Hub%20SHALL,the%20new%20updates.
+      event['context.priorVersionId'] = event['context.versionId'];
+      event['context.versionId'] = generateId();
+      stringifiedBody = JSON.stringify(req.body);
+      // TODO: Make sure this is actually supposed to be stored / overwrite open context? (ambiguous from docs, see: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html)
+      await getRedis().set(`::fhircast::${req.params.topic}::latest::`, stringifiedBody);
     }
     await getRedis().publish(req.params.topic as string, stringifiedBody);
     res.status(201).json({ success: true, event: body });
@@ -115,7 +146,7 @@ protectedRoutes.post(
 );
 
 // Get the current subscription status
-protectedRoutes.get(
+protectedSTU2Routes.get(
   '/:topic',
   asyncWrap(async (req: Request, res: Response) => {
     const latestEventStr = await getRedis().get(`::fhircast::${req.params.topic}::latest::`);
@@ -125,5 +156,27 @@ protectedRoutes.get(
       return;
     }
     res.status(200).json(JSON.parse(latestEventStr).event.context);
+  })
+);
+
+protectedSTU3Routes.get(
+  '/:topic',
+  asyncWrap(async (req: Request, res: Response) => {
+    const latestEventStr = await getRedis().get(`::fhircast::${req.params.topic}::latest::`);
+    if (!latestEventStr) {
+      // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#:~:text=The%20following%20example%20shows%20the%20returned%20structure%20when%20no%20context%20is%20established%3A
+      res.status(200).json({
+        'context.type': '',
+        context: [],
+      });
+      return;
+    }
+    const { event } = JSON.parse(latestEventStr) as FhircastMessagePayload;
+    const anchorResource = event['hub.event'].split('-')[0] as FhircastResourceType;
+    res.status(200).json({
+      'context.type': anchorResource,
+      'context.versionId': event['context.versionId'] as string,
+      context: event.context,
+    });
   })
 );

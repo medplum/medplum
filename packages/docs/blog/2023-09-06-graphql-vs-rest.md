@@ -178,7 +178,7 @@ Additionally, when requesting linked resources using `_include` and `_revinclude
 
 So which should you choose? Your choice between REST and GraphQL will largely hinge on your specific use-case. Here are three potential paths to consider:
 
-**Both (recommended):** For those not committed to a specific toolset, blending the best of both worlds is our recommended strategy. GraphQL is great for reading linked resources, and REST offers advanced write, batch, and history management functionality. Using the [Medplum Client](https://www.medplum.com/docs/sdk/classes/MedplumClient) makes it easy to shift between these two query modalities, and it's [what we used when building the Medplum App](https://github.com/medplum/medplum/blob/47d62035b20e4cda75beb5bc57e088583b388feb/packages/react/src/AppShell/HeaderSearchInput.tsx#L129-L198).
+**Both (recommended):** For those not committed to a specific toolset, blending the best of both worlds is our recommended strategy. GraphQL is great for reading linked resources, and REST offers advanced write, batch, and history management functionality. Using the [Medplum Client](https://www.medplum.com/docs/sdk/core.medplumclient) makes it easy to shift between these two query modalities, and it's [what we used when building the Medplum App](https://github.com/medplum/medplum/blob/47d62035b20e4cda75beb5bc57e088583b388feb/packages/react/src/AppShell/HeaderSearchInput.tsx#L129-L198).
 
 **REST API:** Using REST is our recommendation if your tasks involve complex searches or filters. Similarly, if you are performing queries that delve into resource history or necessitate targeted updates using PATCH, REST is the way to go. Lastly, REST is the de-facto standard when interacting with multiple FHIR systems.
 

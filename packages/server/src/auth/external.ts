@@ -1,4 +1,12 @@
-import { badRequest, ContentType, OAuthGrantType, OperationOutcomeError, parseJWTPayload } from '@medplum/core';
+import {
+  badRequest,
+  ContentType,
+  encodeBase64,
+  OAuthGrantType,
+  OAuthTokenAuthMethod,
+  OperationOutcomeError,
+  parseJWTPayload,
+} from '@medplum/core';
 import { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
@@ -48,7 +56,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     return;
   }
 
-  const userInfo = await verifyCode(idp, code);
+  const userInfo = await verifyExternalCode(idp, code, body.codeChallenge);
 
   let email: string | undefined = undefined;
   let externalId: string | undefined = undefined;
@@ -100,7 +108,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   }
 
   const signInPage = login.launch ? 'oauth' : 'signin';
-  const redirectUrl = new URL(getConfig().appBaseUrl + signInPage);
+  const redirectUrl = new URL(signInPage, getConfig().appBaseUrl);
   redirectUrl.searchParams.set('login', login.id as string);
   redirectUrl.searchParams.set('scope', login.scope as string);
   redirectUrl.searchParams.set('nonce', login.nonce as string);
@@ -142,31 +150,53 @@ async function getIdentityProvider(
  * Returns ID token claims for the authorization code.
  * @param idp - The identity provider configuration.
  * @param code - The authorization code.
+ * @param codeVerifier - The code verifier.
  * @returns ID token claims.
  */
-async function verifyCode(idp: IdentityProvider, code: string): Promise<Record<string, unknown>> {
-  const auth = Buffer.from(idp.clientId + ':' + idp.clientSecret).toString('base64');
+async function verifyExternalCode(
+  idp: IdentityProvider,
+  code: string,
+  codeVerifier: string | undefined
+): Promise<Record<string, unknown>> {
+  const headers: HeadersInit = {
+    Accept: ContentType.JSON,
+    'Content-Type': ContentType.FORM_URL_ENCODED,
+  };
 
   const params = new URLSearchParams();
   params.append('grant_type', OAuthGrantType.AuthorizationCode);
   params.append('redirect_uri', getConfig().baseUrl + 'auth/external');
   params.append('code', code);
 
+  if (idp.usePkce && codeVerifier) {
+    params.append('code_verifier', codeVerifier);
+  }
+
+  if (idp.tokenAuthMethod === OAuthTokenAuthMethod.ClientSecretPost) {
+    params.append('client_id', idp.clientId as string);
+    params.append('client_secret', idp.clientSecret as string);
+  } else {
+    // Default to client_secret_basic
+    headers.Authorization = `Basic ${encodeBase64(idp.clientId + ':' + idp.clientSecret)}`;
+  }
+
   try {
     const response = await fetch(idp.tokenUrl as string, {
       method: 'POST',
-      headers: {
-        Accept: ContentType.JSON,
-        Authorization: `Basic ${auth}`,
-        'Content-Type': ContentType.FORM_URL_ENCODED,
-      },
+      headers,
       body: params.toString(),
     });
 
-    const tokens = await response.json();
-    return parseJWTPayload(tokens.id_token);
+    const responseBody = await response.json();
+
+    if (!response.ok) {
+      globalLogger.warn('Bad response from external auth check', { status: response.status, body: responseBody });
+      throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
+    }
+
+    return parseJWTPayload(responseBody.id_token);
   } catch (err: any) {
-    globalLogger.warn('Failed to verify authorization code', err);
+    globalLogger.warn('Unhandled error in external auth check', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 }

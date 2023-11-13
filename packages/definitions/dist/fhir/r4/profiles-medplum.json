@@ -3672,6 +3672,25 @@
             }
           },
           {
+            "id" : "IdentityProvider.tokenAuthMethod",
+            "path" : "IdentityProvider.tokenAuthMethod",
+            "definition" : "Client Authentication method used by Clients to authenticate to the Authorization Server when using the Token Endpoint. If no method is registered, the default method is client_secret_basic.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "IdentityProvider.tokenAuthMethod",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/token-endpoint-auth-methods-supported|4.0.1"
+            }
+          },
+          {
             "id" : "IdentityProvider.userInfoUrl",
             "path" : "IdentityProvider.userInfoUrl",
             "definition" : "Remote URL for the external Identity Provider userinfo endpoint.",
@@ -3713,6 +3732,22 @@
             "base" : {
               "path" : "IdentityProvider.clientSecret",
               "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "IdentityProvider.usePkce",
+            "path" : "IdentityProvider.usePkce",
+            "short" : "Optional flag to use PKCE in the token request.",
+            "definition" : "Optional flag to use PKCE in the token request.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "base" : {
+              "path" : "IdentityProvider.usePkce",
+              "min" : 0,
               "max" : "1"
             }
           },

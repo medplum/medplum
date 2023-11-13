@@ -238,7 +238,7 @@ medplum bulk export -p bcda-sandbox -e Group/all
 
 ## Next Steps
 
-The Medplum CLI uses Medplum [TypescriptSDK](/docs/sdk) to power the functionality. Once the external connection is working and you have tested some of the basic scenarios, it is recommended to build out your integration as a [bot](docs/bots) to enable your event driven or [cron-based](/docs/bots/bot-cron-job) workflow.
+The Medplum CLI uses Medplum [TypescriptSDK](/docs/sdk) to power the functionality. Once the external connection is working and you have tested some of the basic scenarios, it is recommended to build out your integration as a [bot](/docs/bots) to enable your event driven or [cron-based](/docs/bots/bot-cron-job) workflow.
 
 ## Related Resources
 

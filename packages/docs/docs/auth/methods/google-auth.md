@@ -56,7 +56,7 @@ When you successfully create the OAuth client, you will receive a **Client ID** 
 
 Go to the [sites](https://app.medplum.com/admin/sites) section of your admin console to set up your domain.
 
-## Add Google Client ID to your SignInForm
+### Add Google Client ID to your SignInForm
 
 If using the Medplum React Component library, add your Google Client ID:
 
@@ -74,4 +74,22 @@ You may want to use environment variables. Check your build tool for instruction
   <Logo size={32} />
   <h1>Sign in to Foo Medical</h1>
 </SignInForm>
+```
+
+### Update app deployment with auth keys
+
+To add Google auth to a [`@medplum/app`](/docs/app) deployment, modify the corresponding configuration file:
+
+```js
+{
+  // ...
+  "googleClientId": "<Google API key>",
+  "recaptchaSiteKey": "<ReCAPTCHA API key>"
+}
+```
+
+Then, [re-deploy the app](/docs/self-hosting/install-on-aws#deploy-the-app) using the CLI:
+
+```
+npx medplum aws update-app <environment>
 ```

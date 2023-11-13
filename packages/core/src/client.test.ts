@@ -70,6 +70,10 @@ describe('Client', () => {
     Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
   });
 
+  afterAll(() => {
+    Object.defineProperty(globalThis.window, 'sessionStorage', { value: undefined });
+  });
+
   test('Constructor', () => {
     expect(
       () =>
@@ -250,6 +254,7 @@ describe('Client', () => {
   test('Clear', () => {
     const client = new MedplumClient({ fetch: mockFetch(200, {}) });
     expect(() => client.clear()).not.toThrow();
+    expect(sessionStorage.length).toEqual(0);
   });
 
   test('SignOut', async () => {
@@ -357,6 +362,31 @@ describe('Client', () => {
     );
     expect(result).toBeUndefined();
     expect(assign).toBeCalledWith(expect.stringMatching(/authorize\?.+scope=/));
+    expect(assign).toBeCalledWith(expect.stringContaining('code_challenge'));
+    expect(assign).toBeCalledWith(expect.stringContaining('code_challenge_method'));
+  });
+
+  test('Sign in with external auth -- disabled PKCE', async () => {
+    const assign = jest.fn();
+    Object.defineProperty(window, 'location', {
+      value: { assign },
+      writable: true,
+    });
+
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.signInWithExternalAuth(
+      'https://auth.example.com/authorize',
+      'external-client-123',
+      'https://me.example.com',
+      {
+        clientId: 'medplum-client-123',
+      },
+      false
+    );
+    expect(result).toBeUndefined();
+    expect(assign).not.toBeCalledWith(expect.stringContaining('code_challenge'));
+    expect(assign).not.toBeCalledWith(expect.stringContaining('code_challenge_method'));
   });
 
   test('External auth token exchange', async () => {
@@ -444,19 +474,46 @@ describe('Client', () => {
 
       const { searchParams } = new URL(result);
       expect(searchParams.get('response_type')).toBe('code');
-      expect(searchParams.get('code_challenge')).toBeDefined();
+      expect(searchParams.get('code_challenge')).not.toBeNull();
       expect(typeof searchParams.get('code_challenge')).toBe('string');
       expect(searchParams.get('code_challenge_method')).toBe('S256');
       expect(searchParams.get('client_id')).toBe('external-client-123');
       expect(searchParams.get('redirect_uri')).toBe('https://me.example.com');
-      expect(searchParams.get('scope')).toBeDefined();
+      expect(searchParams.get('scope')).not.toBeNull();
       expect(typeof searchParams.get('scope')).toBe('string');
-      expect(searchParams.get('state')).toBeDefined();
+      expect(searchParams.get('state')).not.toBeNull();
       expect(typeof searchParams.get('state')).toBe('string');
       expect(() => JSON.parse(searchParams.get('state') as string)).not.toThrow();
       expect(JSON.parse(searchParams.get('state') as string)?.codeChallengeMethod).toBe('S256');
       expect(typeof JSON.parse(searchParams.get('state') as string)?.codeChallenge).toBe('string');
-      expect(searchParams.get('audience')).toBeDefined();
+    });
+
+    test('PKCE disabled - should give a valid url without fields for PKCE', async () => {
+      const result = client.getExternalAuthRedirectUri(
+        'https://auth.example.com/authorize',
+        'external-client-123',
+        'https://me.example.com',
+        {
+          clientId: 'medplum-client-123',
+        },
+        false
+      );
+      expect(result).toMatch(/https:\/\/auth\.example\.com\/authorize\?.+scope=/);
+
+      const { searchParams } = new URL(result);
+      expect(searchParams.get('response_type')).toBe('code');
+      expect(searchParams.get('client_id')).toBe('external-client-123');
+      expect(searchParams.get('redirect_uri')).toBe('https://me.example.com');
+      expect(searchParams.get('scope')).not.toBeNull();
+      expect(typeof searchParams.get('scope')).toBe('string');
+      expect(searchParams.get('state')).not.toBeNull();
+      expect(typeof searchParams.get('state')).toBe('string');
+      expect(() => JSON.parse(searchParams.get('state') as string)).not.toThrow();
+
+      expect(searchParams.get('code_challenge')).toBeNull();
+      expect(searchParams.get('code_challenge_method')).toBeNull();
+      expect(JSON.parse(searchParams.get('state') as string)?.codeChallenge).toBeUndefined();
+      expect(JSON.parse(searchParams.get('state') as string)?.codeChallengeMethod).toBeUndefined();
     });
 
     test('should throw if no `codeChallenge` is given', async () => {

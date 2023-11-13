@@ -471,11 +471,6 @@ export function buildFieldNameString(key: string): string {
     tmp = tmp.split('.').pop() as string;
   }
 
-  // Special case for ID
-  if (tmp === 'id' || tmp === 'Id') {
-    return 'ID';
-  }
-
   // Special case for Version ID
   if (tmp === 'versionId') {
     return 'Version ID';
@@ -495,6 +490,11 @@ export function buildFieldNameString(key: string): string {
 
   // Trim
   tmp = tmp.trim();
+
+  // Special case for ID
+  if (tmp.toLowerCase() === 'id') {
+    return 'ID';
+  }
 
   // Capitalize the first letter of each word
   return tmp.split(/\s/).map(capitalize).join(' ');

@@ -9,7 +9,7 @@ import TopicLoader from './TopicLoader';
 
 type FhircastMessageDisplayProps = {
   eventNo: number;
-  message: FhircastMessagePayload;
+  message: FhircastMessagePayload<'Patient-open'>;
 };
 
 function FhircastMessageLabel(props: FhircastMessageDisplayProps): JSX.Element {
@@ -74,7 +74,7 @@ export default function Subscriber(): JSX.Element {
   const [currentPatientId, setCurrentPatientId] = useState<string>();
   const [topic, setTopic] = useState<string>();
   const [subRequest, setSubRequest] = useState<SubscriptionRequest>();
-  const [fhirCastMessages, setFhircastMessages] = useState<FhircastMessagePayload[]>([]);
+  const [fhircastMessages, setFhircastMessages] = useState<FhircastMessagePayload<'Patient-open'>[]>([]);
   const [eventCount, setEventCount] = useState(0);
 
   const clientId = useClientId();
@@ -83,7 +83,7 @@ export default function Subscriber(): JSX.Element {
     if (topic) {
       // sub
       medplum
-        .fhircastSubscribe(topic, ['patient-open'])
+        .fhircastSubscribe(topic, ['Patient-open'])
         .then((subRequest) => {
           setSubRequest(subRequest);
         })
@@ -92,13 +92,23 @@ export default function Subscriber(): JSX.Element {
       // unset subRequest (closing WS connection) when the topic is unset (cannot reuse websocket anyways since endpoint contains a slug)
       setSubRequest(undefined);
     }
-  }, [topic, clientId, medplum]);
+  }, [topic, medplum]);
 
   const handleFhircastMessage = useCallback((fhircastMessage: FhircastMessagePayload) => {
+    if (fhircastMessage.event['hub.event'] !== 'Patient-open') {
+      console.error("Received unexpected event type! Ignoring all events except for 'Patient-open'");
+      return;
+    }
+
     // Get the patient ID from the first context of the event
-    const patientId = fhircastMessage.event.context[0].resource.id as string;
+    const patientId = (fhircastMessage as FhircastMessagePayload<'Patient-open'>).event.context[0].resource
+      .id as string;
+
     setCurrentPatientId(patientId);
-    setFhircastMessages((s: FhircastMessagePayload[]) => [fhircastMessage, ...s]);
+    setFhircastMessages((s: FhircastMessagePayload<'Patient-open'>[]) => [
+      fhircastMessage as FhircastMessagePayload<'Patient-open'>,
+      ...s,
+    ]);
     setEventCount((s) => s + 1);
   }, []);
 
@@ -123,7 +133,7 @@ export default function Subscriber(): JSX.Element {
         <Text>Current topic: {topic ?? 'No topic'}</Text>
         <Text>Current patient: {currentPatientId ?? 'No current patient'}</Text>
       </Stack>
-      {fhirCastMessages.length ? (
+      {fhircastMessages.length ? (
         <>
           <Divider />
           <Stack pt={20}>
@@ -131,7 +141,7 @@ export default function Subscriber(): JSX.Element {
               Events
             </Title>
             <Accordion title="Events">
-              {fhirCastMessages.slice(0, 5).map((message, i) => {
+              {fhircastMessages.slice(0, 5).map((message, i) => {
                 return <FhircastMessageDisplay key={message.id} message={message} eventNo={eventCount - i} />;
               })}
             </Accordion>

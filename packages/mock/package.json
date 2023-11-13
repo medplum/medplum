@@ -1,6 +1,6 @@
 {
   "name": "@medplum/mock",
-  "version": "2.1.10",
+  "version": "2.1.12",
   "description": "Medplum Mock Client",
   "keywords": [
     "medplum",
@@ -48,7 +48,7 @@
     "rfc6902": "5.0.1"
   },
   "devDependencies": {
-    "@types/pdfmake": "0.2.5"
+    "@types/pdfmake": "0.2.8"
   },
   "engines": {
     "node": ">=18.0.0"

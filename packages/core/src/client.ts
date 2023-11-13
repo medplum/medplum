@@ -39,12 +39,17 @@ import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import {
+  CurrentContext,
   FhircastConnection,
   FhircastEventContext,
   FhircastEventName,
+  FhircastEventVersionOptional,
+  FhircastEventVersionRequired,
   PendingSubscriptionRequest,
   SubscriptionRequest,
+  assertContextVersionOptional,
   createFhircastMessagePayload,
+  isContextVersionRequired,
   serializeFhircastSubscriptionRequest,
   validateFhircastSubscriptionRequest,
 } from './fhircast';
@@ -73,7 +78,7 @@ import {
   sleep,
 } from './utils';
 
-export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
+export const MEDPLUM_VERSION = import.meta.env.MEDPLUM_VERSION ?? '';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
@@ -215,6 +220,7 @@ export interface MedplumClientOptions {
    *
    * Default is none, and PDF generation is disabled.
    *
+   * @example
    * In browser environments, import the client-side pdfmake library.
    *
    * ```html
@@ -228,6 +234,7 @@ export interface MedplumClientOptions {
    * </script>
    * ```
    *
+   * @example
    * In Node.js applications:
    *
    * ```ts
@@ -463,7 +470,7 @@ export interface MailAttachment {
  * Compatible with nodemailer Mail.Options.
  */
 export interface MailOptions {
-  /** The e-mail address of the sender. All e-mail addresses can be plain 'sender@server.com' or formatted 'Sender Name <sender@server.com>' */
+  /** The e-mail address of the sender. All e-mail addresses can be plain `sender@server.com` or formatted `Sender Name <sender@server.com>` */
   readonly from?: string | MailAddress;
   /** An e-mail address that will appear on the Sender: field */
   readonly sender?: string | MailAddress;
@@ -538,6 +545,18 @@ export enum OAuthTokenType {
 
 /**
  * OAuth 2.0 Client Authentication Methods
+ * See: https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication
+ */
+export enum OAuthTokenAuthMethod {
+  ClientSecretBasic = 'client_secret_basic',
+  ClientSecretPost = 'client_secret_post',
+  ClientSecretJwt = 'client_secret_jwt',
+  PrivateKeyJwt = 'private_key_jwt',
+  None = 'none',
+}
+
+/**
+ * OAuth 2.0 Client Authentication Methods
  * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.2
  */
 export enum OAuthClientAssertionType {
@@ -559,14 +578,15 @@ interface SessionDetails {
  * The client can be used in the browser, in a Node.js application, or in a Medplum Bot.
  *
  * The client provides helpful methods for common operations such as:
- *   1) Authenticating
- *   2) Creating resources
- *   2) Reading resources
- *   3) Updating resources
- *   5) Deleting resources
- *   6) Searching
- *   7) Making GraphQL queries
+ *   1. Authenticating
+ *   2. Creating resources
+ *   3. Reading resources
+ *   4. Updating resources
+ *   5. Deleting resources
+ *   6. Searching
+ *   7. Making GraphQL queries
  *
+ * @example
  * Here is a quick example of how to use the client:
  *
  * ```typescript
@@ -574,6 +594,7 @@ interface SessionDetails {
  * const medplum = new MedplumClient();
  * ```
  *
+ * @example
  * Create a `Patient`:
  *
  * ```typescript
@@ -586,6 +607,7 @@ interface SessionDetails {
  * });
  * ```
  *
+ * @example
  * Read a `Patient` by ID:
  *
  * ```typescript
@@ -593,6 +615,7 @@ interface SessionDetails {
  * console.log(patient.name[0].given[0]);
  * ```
  *
+ * @example
  * Search for a `Patient` by name:
  *
  * ```typescript
@@ -730,6 +753,7 @@ export class MedplumClient extends EventTarget {
    */
   clear(): void {
     this.storage.clear();
+    sessionStorage.clear();
     this.clearActiveLogin();
   }
 
@@ -1071,16 +1095,23 @@ export class MedplumClient extends EventTarget {
    * @param clientId - The external client ID.
    * @param redirectUri - The external identity provider redirect URI.
    * @param baseLogin - The Medplum login request.
+   * @param pkceEnabled - Whether `PKCE` should be enabled for this external auth request. Defaults to `true`.
    * @category Authentication
    */
   async signInWithExternalAuth(
     authorizeUrl: string,
     clientId: string,
     redirectUri: string,
-    baseLogin: BaseLoginRequest
+    baseLogin: BaseLoginRequest,
+    pkceEnabled = true
   ): Promise<void> {
-    const loginRequest = await this.ensureCodeChallenge(baseLogin);
-    window.location.assign(this.getExternalAuthRedirectUri(authorizeUrl, clientId, redirectUri, loginRequest));
+    let loginRequest = baseLogin;
+    if (pkceEnabled) {
+      loginRequest = await this.ensureCodeChallenge(baseLogin);
+    }
+    window.location.assign(
+      this.getExternalAuthRedirectUri(authorizeUrl, clientId, redirectUri, loginRequest, pkceEnabled)
+    );
   }
 
   /**
@@ -1110,6 +1141,7 @@ export class MedplumClient extends EventTarget {
    * @param clientId - The external client ID.
    * @param redirectUri - The external identity provider redirect URI.
    * @param loginRequest - The Medplum login request.
+   * @param pkceEnabled - Whether `PKCE` should be enabled for this external auth request. Defaults to `true`.
    * @returns The external identity provider redirect URI.
    * @category Authentication
    */
@@ -1117,24 +1149,28 @@ export class MedplumClient extends EventTarget {
     authorizeUrl: string,
     clientId: string,
     redirectUri: string,
-    loginRequest: BaseLoginRequest
+    loginRequest: BaseLoginRequest,
+    pkceEnabled = true
   ): string {
-    const { codeChallenge, codeChallengeMethod } = loginRequest;
-    if (!codeChallengeMethod) {
-      throw new Error('`LoginRequest` for external auth must include a `codeChallengeMethod`.');
-    }
-    if (!codeChallenge) {
-      throw new Error('`LoginRequest` for external auth must include a `codeChallenge`.');
-    }
-
     const url = new URL(authorizeUrl);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('client_id', clientId);
     url.searchParams.set('redirect_uri', redirectUri);
     url.searchParams.set('scope', 'openid profile email');
     url.searchParams.set('state', JSON.stringify(loginRequest));
-    url.searchParams.set('code_challenge_method', codeChallengeMethod);
-    url.searchParams.set('code_challenge', codeChallenge);
+
+    if (pkceEnabled) {
+      const { codeChallenge, codeChallengeMethod } = loginRequest;
+      if (!codeChallengeMethod) {
+        throw new Error('`LoginRequest` for external auth must include a `codeChallengeMethod`.');
+      }
+      if (!codeChallenge) {
+        throw new Error('`LoginRequest` for external auth must include a `codeChallenge`.');
+      }
+      url.searchParams.set('code_challenge_method', codeChallengeMethod);
+      url.searchParams.set('code_challenge', codeChallenge);
+    }
+
     return url.toString();
   }
 
@@ -1168,6 +1204,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Sends a FHIR search request.
    *
+   * @example
    * Example using a FHIR search string:
    *
    * ```typescript
@@ -1175,6 +1212,7 @@ export class MedplumClient extends EventTarget {
    * console.log(bundle);
    * ```
    *
+   * @example
    * The return value is a FHIR bundle:
    *
    * ```json
@@ -1199,6 +1237,7 @@ export class MedplumClient extends EventTarget {
    * }
    * ```
    *
+   * @example
    * To query the count of a search, use the summary feature like so:
    *
    * ```typescript
@@ -1243,6 +1282,7 @@ export class MedplumClient extends EventTarget {
    *
    * This is a convenience method for `search()` that returns the first resource rather than a `Bundle`.
    *
+   * @example
    * Example using a FHIR search string:
    *
    * ```typescript
@@ -1284,6 +1324,7 @@ export class MedplumClient extends EventTarget {
    *
    * This is a convenience method for `search()` that returns the resources as an array rather than a `Bundle`.
    *
+   * @example
    * Example using a FHIR search string:
    *
    * ```typescript
@@ -1322,6 +1363,7 @@ export class MedplumClient extends EventTarget {
    * over a series of FHIR search requests for paginated search results. Each iteration of the generator yields
    * the array of resources on each page.
    *
+   * @example
    *
    * ```typescript
    * for await (const page of medplum.searchResourcePages('Patient', { _count: 10 })) {
@@ -1330,6 +1372,7 @@ export class MedplumClient extends EventTarget {
    *  }
    * }
    * ```
+   *
    * @category Search
    * @param resourceType - The FHIR resource type.
    * @param query - Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
@@ -1408,6 +1451,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Reads a resource by resource type and ID.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1435,6 +1479,7 @@ export class MedplumClient extends EventTarget {
    *
    * This is a convenience method for `readResource()` that accepts a `Reference` object.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1541,6 +1586,7 @@ export class MedplumClient extends EventTarget {
    *
    * The return value is a bundle of all versions of the resource.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1566,6 +1612,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Reads a specific version of a resource by resource type, ID, and version ID.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1593,6 +1640,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Executes the Patient "everything" operation for a patient.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1615,6 +1663,7 @@ export class MedplumClient extends EventTarget {
    *
    * The return value is the newly created resource, including the ID and meta.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1647,6 +1696,7 @@ export class MedplumClient extends EventTarget {
    *
    * The return value is the existing resource or the newly created resource, including the ID and meta.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1696,6 +1746,7 @@ export class MedplumClient extends EventTarget {
    *
    * A `File` object often comes from a `<input type="file">` element.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1734,6 +1785,7 @@ export class MedplumClient extends EventTarget {
    *
    * A `File` object often comes from a `<input type="file">` element.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1809,6 +1861,7 @@ export class MedplumClient extends EventTarget {
    *
    * The `docDefinition` parameter is a pdfmake document definition.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1887,6 +1940,7 @@ export class MedplumClient extends EventTarget {
    *
    * The return value is the updated resource, including the ID and meta.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1931,6 +1985,7 @@ export class MedplumClient extends EventTarget {
    *
    * The return value is the updated resource, including the ID and meta.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1963,6 +2018,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Deletes a FHIR resource by resource type and ID.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -1985,6 +2041,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Executes the validate operation with the provided resource.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -2031,6 +2088,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Executes a batch or transaction of FHIR operations.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -2087,6 +2145,7 @@ export class MedplumClient extends EventTarget {
    *
    * Examples:
    *
+   * @example
    * Send a simple text email:
    *
    * ```typescript
@@ -2098,6 +2157,7 @@ export class MedplumClient extends EventTarget {
    * });
    * ```
    *
+   * @example
    * Send an email with a `Binary` attachment:
    *
    * ```typescript
@@ -2125,6 +2185,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Executes a GraphQL query.
    *
+   * @example
    * Example:
    *
    * ```typescript
@@ -2140,6 +2201,7 @@ export class MedplumClient extends EventTarget {
    * }`);
    * ```
    *
+   * @example
    * Advanced queries such as named operations and variable substitution are supported:
    *
    * ```typescript
@@ -2928,8 +2990,9 @@ export class MedplumClient extends EventTarget {
   /**
    * Starts a new OAuth2 client credentials flow.
    *
+   * @example
    * ```typescript
-   * await medplum.startClientLogin(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_CLIENT_SECRET)
+   * await medplum.startClientLogin(import.meta.env.MEDPLUM_CLIENT_ID, import.meta.env.MEDPLUM_CLIENT_SECRET)
    * // Example Search
    * await medplum.searchResources('Patient')
    * ```
@@ -2955,8 +3018,9 @@ export class MedplumClient extends EventTarget {
   /**
    * Starts a new OAuth2 JWT bearer flow.
    *
+   * @example
    * ```typescript
-   * await medplum.startJwtBearerLogin(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_JWT_BEARER_ASSERTION, 'openid profile');
+   * await medplum.startJwtBearerLogin(import.meta.env.MEDPLUM_CLIENT_ID, import.meta.env.MEDPLUM_JWT_BEARER_ASSERTION, 'openid profile');
    * // Example Search
    * await medplum.searchResources('Patient')
    * ```
@@ -3000,8 +3064,9 @@ export class MedplumClient extends EventTarget {
   /**
    * Sets the client ID and secret for basic auth.
    *
+   * @example
    * ```typescript
-   * medplum.setBasicAuth(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_CLIENT_SECRET);
+   * medplum.setBasicAuth(import.meta.env.MEDPLUM_CLIENT_ID, import.meta.env.MEDPLUM_CLIENT_SECRET);
    * // Example Search
    * await medplum.searchResources('Patient');
    * ```
@@ -3102,16 +3167,55 @@ export class MedplumClient extends EventTarget {
    *
    * @category FHIRcast
    * @param topic - The topic to publish to. Usually a UUID.
-   * @param event - The name of the event to publish an updated context for, ie. `patient-open`.
+   * @param event - The name of the event to publish an updated context for, ie. `Patient-open`.
    * @param context - The updated context containing resources relevant to this event.
+   * @param versionId - The `versionId` of the `anchor context` of the given event. Used for `DiagnosticReport-update` event.
    * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
    */
-  async fhircastPublish<EventName extends FhircastEventName = FhircastEventName>(
+  async fhircastPublish<EventName extends FhircastEventVersionOptional>(
     topic: string,
     event: EventName,
-    context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[]
+    context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
+    versionId?: never
+  ): Promise<void>;
+
+  async fhircastPublish<RequiredVersionEvent extends FhircastEventVersionRequired>(
+    topic: string,
+    event: RequiredVersionEvent,
+    context: FhircastEventContext<RequiredVersionEvent> | FhircastEventContext<RequiredVersionEvent>[],
+    versionId: string
+  ): Promise<void>;
+
+  async fhircastPublish<EventName extends FhircastEventVersionRequired | FhircastEventVersionOptional>(
+    topic: string,
+    event: EventName,
+    context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
+    versionId?: string | undefined
   ): Promise<void> {
-    return this.post(`/fhircast/STU3/${topic}`, createFhircastMessagePayload(topic, event, context), ContentType.JSON);
+    if (isContextVersionRequired(event)) {
+      return this.post(
+        `/fhircast/STU3/${topic}`,
+        createFhircastMessagePayload<typeof event>(topic, event, context, versionId as string),
+        ContentType.JSON
+      );
+    }
+    assertContextVersionOptional(event);
+    return this.post(
+      `/fhircast/STU3/${topic}`,
+      createFhircastMessagePayload<typeof event>(topic, event, context),
+      ContentType.JSON
+    );
+  }
+
+  /**
+   * Gets the current context of the given FHIRcast `topic`.
+   *
+   * @category FHIRcast
+   * @param topic - The topic to get the current context for. Usually a UUID.
+   * @returns A Promise which resolves to the `CurrentContext` for the given topic.
+   */
+  async fhircastGetContext(topic: string): Promise<CurrentContext> {
+    return this.get(`/fhircast/STU3/${topic}`);
   }
 
   /**

@@ -42,12 +42,24 @@
       "destination": "/docs/access/access-policies"
     },
     {
+      "source": "/docs/auth/authentication-integration-patterns",
+      "destination": "/docs/auth/methods"
+    },
+    {
       "source": "/docs/auth/:page(oauth-auth-code|client-credentials|google-auth|external-identity-providers|external-ids|token-exchange)",
       "destination": "/docs/auth/methods/:page*"
     },
     {
       "source": "/docs/auth/okta-auth",
       "destination": "/docs/auth/methods/domain-level-identity-providers"
+    },
+    {
+      "source": "/docs/sdk/modules",
+      "destination": "/docs/sdk/core"
+    },
+    {
+      "source": "/docs/sdk/classes/MedplumClient",
+      "destination": "/docs/sdk/core.medplumclient"
     }
   ]
 }

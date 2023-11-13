@@ -199,6 +199,48 @@ export function mergePatientRecords(src: Patient, target: Patient, fields?: Part
 }
 // end-block mergeIdentifiers
 
+/**
+ * Returns true if both the source and target patients are part of the same merged "cluster" of records.
+ * There are three cases to handle:
+ *   1. Both the source and target patients share the same master record (i.e. both replaced by the same record)
+ *   2. The target record is the master record (i.e. target 'replaces' source)
+ *   3. The source record is the master record (i.e. source 'replaces' target)
+ *
+ * @param src - The source patient record
+ * @param target - The target patient record
+ * @returns true if both the source and target patients are part of the same merged "cluster" of records.
+ */
+export function patientsAlreadyMerged(src: Patient, target: Patient): boolean {
+  const srcMaster = src.link?.find((link) => link.type === 'replaced-by')?.other;
+  const targetMaster = target.link?.find((link) => link.type === 'replaced-by')?.other;
+
+  // Case 1: Both patients share the same master record
+  if (srcMaster && targetMaster && resolveId(srcMaster) === resolveId(targetMaster)) {
+    return true;
+  }
+
+  // Case 2: The target record is the master record
+  if (resolveId(srcMaster) === target.id) {
+    if (!target.link?.find((link) => link.type === 'replaces' && resolveId(link.other) === src.id)) {
+      throw new Error(
+        `Target Patient ${getReferenceString(target)} missing a 'replaces' link to ${getReferenceString(src)}`
+      );
+    }
+    return true;
+  }
+
+  if (resolveId(targetMaster) === src.id) {
+    if (!src.link?.find((link) => link.type === 'replaces' && resolveId(link.other) === target.id)) {
+      throw new Error(
+        `Source Patient ${getReferenceString(target)} missing a 'replaces' link to ${getReferenceString(src)}`
+      );
+    }
+    return true;
+  }
+
+  return false;
+}
+
 // start-block updateReferences
 /**
  * Rewrites all references to source patient to the target patient, for the given resource type.

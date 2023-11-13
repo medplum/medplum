@@ -70,10 +70,6 @@ jobs:
         env:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
-      - name: Coveralls GitHub Action
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload code coverage
         uses: actions/upload-artifact@v3
         with:

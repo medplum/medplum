@@ -456,10 +456,6 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
     await this.validateResource(resource);
 
-    if (this.context.checkReferencesOnWrite) {
-      await validateReferences(this, resource);
-    }
-
     if (!this.canWriteResourceType(resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -501,6 +497,10 @@ export class Repository extends BaseRepository implements FhirRepository {
       resultMeta.account = account;
     }
     resultMeta.compartment = this.getCompartments(result);
+
+    if (this.context.checkReferencesOnWrite) {
+      await validateReferences(result);
+    }
 
     if (this.isNotModified(existing, result)) {
       return existing as T;
@@ -617,9 +617,11 @@ export class Repository extends BaseRepository implements FhirRepository {
     const client = await getClient().connect();
     try {
       await client.query('BEGIN');
-      await this.writeResource(client, resource);
-      await this.writeResourceVersion(client, resource);
-      await this.writeLookupTables(client, resource);
+      await Promise.all([
+        this.writeResource(client, resource),
+        this.writeResourceVersion(client, resource),
+        this.writeLookupTables(client, resource),
+      ]);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
@@ -789,8 +791,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     const client = await getClient().connect();
     try {
       await client.query('BEGIN');
-      await this.writeResource(client, resource);
-      await this.writeLookupTables(client, resource);
+      await Promise.all([this.writeResource(client, resource), this.writeLookupTables(client, resource)]);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');

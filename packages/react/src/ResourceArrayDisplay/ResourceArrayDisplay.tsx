@@ -2,7 +2,7 @@ import { InternalSchemaElement } from '@medplum/core';
 import React from 'react';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 
-interface ResourceArrayDisplayProps {
+export interface ResourceArrayDisplayProps {
   property: InternalSchemaElement;
   values: any[];
   arrayElement?: boolean;

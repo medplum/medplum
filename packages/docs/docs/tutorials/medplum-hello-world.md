@@ -80,4 +80,4 @@ Medplum Hello World is a very simple app intended to help developers learn the M
 Medplum also maintains more feature-rich example applications that companies can use as a starting point for building their own experiences:
 
 - [**Foo Medical**](https://github.com/medplum/foomedical): An example patient portal, complete with messaging, vital signs, and vaccination records.
-- [**Foo Provider**](https://github.com/medplum/foomedical-provider) _(under construction)_: An example provider portal, with Patient records, task lists, questionnaires, and care plans.
+- [**Charting Demo**](https://github.com/medplum/medplum-chart-demo) _(under construction)_: An example provider-facing application, with Patient records, clinical profile, task lists, questionnaires, and care plans.

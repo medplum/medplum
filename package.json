@@ -1,12 +1,13 @@
 {
   "name": "root",
-  "version": "2.1.10",
+  "version": "2.1.12",
   "workspaces": [
     "packages/*",
     "examples/*"
   ],
   "scripts": {
-    "build": "turbo run build",
+    "build": "turbo run build --filter=@medplum/app --filter=@medplum/server",
+    "build:all": "turbo run build",
     "clean": "turbo run clean",
     "cyclonedx": "cyclonedx-npm --omit dev --omit optional --omit peer",
     "lint": "eslint .",
@@ -29,19 +30,20 @@
     "root": true
   },
   "devDependencies": {
-    "@babel/core": "7.23.2",
-    "@babel/preset-env": "7.23.2",
-    "@babel/preset-react": "7.22.15",
-    "@babel/preset-typescript": "7.23.2",
-    "@cyclonedx/cyclonedx-npm": "1.14.1",
-    "@microsoft/api-extractor": "7.38.0",
-    "@types/jest": "29.5.5",
-    "@types/node": "20.8.6",
+    "@babel/core": "7.23.3",
+    "@babel/preset-env": "7.23.3",
+    "@babel/preset-react": "7.23.3",
+    "@babel/preset-typescript": "7.23.3",
+    "@cyclonedx/cyclonedx-npm": "1.14.2",
+    "@microsoft/api-documenter": "7.23.11",
+    "@microsoft/api-extractor": "7.38.2",
+    "@types/jest": "29.5.8",
+    "@types/node": "20.9.0",
     "babel-jest": "29.7.0",
     "babel-preset-vite": "1.1.0",
     "cross-env": "7.0.3",
     "danger": "11.3.0",
-    "esbuild": "0.19.4",
+    "esbuild": "0.19.5",
     "identity-obj-proxy": "3.0.0",
     "jest": "29.7.0",
     "jest-environment-jsdom": "29.7.0",
@@ -53,7 +55,7 @@
     "source-map-explorer": "2.5.3",
     "ts-node": "10.9.1",
     "tslib": "2.6.2",
-    "turbo": "1.10.15",
+    "turbo": "1.10.16",
     "typescript": "5.2.2"
   },
   "packageManager": "npm@9.8.1",
@@ -61,7 +63,7 @@
     "node": ">=18.0.0"
   },
   "overrides": {
-    "esbuild": "0.19.4",
+    "esbuild": "0.19.5",
     "got": "11.8.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",

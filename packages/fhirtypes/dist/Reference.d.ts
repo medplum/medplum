@@ -6,6 +6,7 @@
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Resource } from './Resource';
+import { ResourceType } from './ResourceType';
 
 /**
  * A reference from one resource to another.
@@ -51,7 +52,7 @@ export interface Reference<T extends Resource = Resource> {
    * only allowed for logical models (and can only be used in references in
    * logical models, not resources).
    */
-  type?: string;
+  type?: ResourceType;
 
   /**
    * An identifier for the target resource. This is used when there is no

@@ -2,7 +2,9 @@ import WS from 'jest-websocket-mock';
 import { MedplumClient } from './client';
 import { mockFetch } from './client-test-utils';
 import { ContentType } from './contenttype';
+import { generateId } from './crypto';
 import {
+  CurrentContext,
   FhircastConnection,
   FhircastEventName,
   PendingSubscriptionRequest,
@@ -19,7 +21,7 @@ describe('FHIRcast', () => {
       const client = new MedplumClient({ fetch });
 
       const topic = 'abc123';
-      const events = ['patient-open'] as FhircastEventName[];
+      const events = ['Patient-open'] as FhircastEventName[];
       const expectedSubRequest = {
         mode: 'subscribe',
         channelType: 'websocket',
@@ -46,11 +48,11 @@ describe('FHIRcast', () => {
       const fetch = mockFetch(500, { error: 'how did we make it here?' });
       const client = new MedplumClient({ fetch });
 
-      await expect(client.fhircastSubscribe('', ['patient-open'])).rejects.toBeInstanceOf(OperationOutcomeError);
+      await expect(client.fhircastSubscribe('', ['Patient-open'])).rejects.toBeInstanceOf(OperationOutcomeError);
       // @ts-expect-error Topic must be a string
-      await expect(client.fhircastSubscribe(123, ['patient-open'])).rejects.toBeInstanceOf(OperationOutcomeError);
+      await expect(client.fhircastSubscribe(123, ['Patient-open'])).rejects.toBeInstanceOf(OperationOutcomeError);
       // @ts-expect-error Events must be an array of events
-      await expect(client.fhircastSubscribe('abc123', 'patient-open')).rejects.toBeInstanceOf(OperationOutcomeError);
+      await expect(client.fhircastSubscribe('abc123', 'Patient-open')).rejects.toBeInstanceOf(OperationOutcomeError);
       // @ts-expect-error Events must be an array of valid events
       await expect(client.fhircastSubscribe('abc123', ['random-event'])).rejects.toBeInstanceOf(OperationOutcomeError);
     });
@@ -59,7 +61,7 @@ describe('FHIRcast', () => {
       const fetch = mockFetch(500, { error: 'how did we make it here?' });
       const client = new MedplumClient({ fetch });
 
-      await expect(client.fhircastSubscribe('abc123', ['patient-open'])).rejects.toBeInstanceOf(Error);
+      await expect(client.fhircastSubscribe('abc123', ['Patient-open'])).rejects.toBeInstanceOf(Error);
     });
   });
 
@@ -72,7 +74,7 @@ describe('FHIRcast', () => {
         mode: 'subscribe', // you should be able to pass a sub request with mode still set to `subscribe`
         channelType: 'websocket',
         topic: 'abc123',
-        events: ['patient-open'],
+        events: ['Patient-open'],
         endpoint: 'wss://api.medplum.com/ws/fhircast/def456',
       } satisfies SubscriptionRequest;
       const serializedSubRequest = serializeFhircastSubscriptionRequest({ ...subRequest, mode: 'unsubscribe' });
@@ -97,7 +99,7 @@ describe('FHIRcast', () => {
         client.fhircastUnsubscribe({
           channelType: 'websocket',
           topic: 'abc123',
-          events: ['patient-open'],
+          events: ['Patient-open'],
           endpoint: 'wss://api.medplum.com/ws/fhircast/def456',
         })
       ).rejects.toBeInstanceOf(OperationOutcomeError);
@@ -106,7 +108,7 @@ describe('FHIRcast', () => {
         client.fhircastUnsubscribe({
           mode: 'subscribe',
           topic: 'abc123',
-          events: ['patient-open'],
+          events: ['Patient-open'],
           endpoint: 'wss://api.medplum.com/ws/fhircast/def456',
         })
       ).rejects.toBeInstanceOf(OperationOutcomeError);
@@ -116,7 +118,7 @@ describe('FHIRcast', () => {
           channelType: 'websocket',
           mode: 'subscribe',
           topic: 'abc123',
-          events: ['patient-open'],
+          events: ['Patient-open'],
         })
       ).rejects.toBeInstanceOf(OperationOutcomeError);
     });
@@ -141,7 +143,7 @@ describe('FHIRcast', () => {
         channelType: 'websocket',
         mode: 'subscribe',
         topic: 'abc123',
-        events: ['patient-open'],
+        events: ['Patient-open'],
         endpoint: 'wss://api.medplum.com/ws/fhircast/abc123',
       });
       expect(connection).toBeInstanceOf(FhircastConnection);
@@ -154,7 +156,7 @@ describe('FHIRcast', () => {
           channelType: 'websocket',
           mode: 'subscribe',
           topic: 'abc123',
-          events: ['patient-open'],
+          events: ['Patient-open'],
         })
       ).toThrowError(OperationOutcomeError);
     });
@@ -167,8 +169,8 @@ describe('FHIRcast', () => {
       await expect(
         client.fhircastPublish(
           'abc123',
-          'patient-open',
-          createFhircastMessageContext<'patient-open'>('Patient', 'patient-123')
+          'Patient-open',
+          createFhircastMessageContext<'Patient-open'>('patient', 'Patient', 'patient-123')
         )
       ).resolves;
       expect(fetch).toBeCalledWith(
@@ -182,9 +184,9 @@ describe('FHIRcast', () => {
 
       // Multiple contexts
       await expect(
-        client.fhircastPublish('def456', 'imagingstudy-open', [
-          createFhircastMessageContext<'imagingstudy-open'>('Patient', 'patient-123'),
-          createFhircastMessageContext<'imagingstudy-open'>('ImagingStudy', 'imagingstudy-456'),
+        client.fhircastPublish('def456', 'ImagingStudy-open', [
+          createFhircastMessageContext<'ImagingStudy-open'>('patient', 'Patient', 'patient-123'),
+          createFhircastMessageContext<'ImagingStudy-open'>('study', 'ImagingStudy', 'imagingstudy-456'),
         ])
       ).resolves;
       expect(fetch).toBeCalledWith(
@@ -196,11 +198,11 @@ describe('FHIRcast', () => {
         })
       );
 
-      // 'diagnosticreport-open' requires both a report and a patient
+      // 'DiagnosticReport-open' requires both a report and a patient
       await expect(
-        client.fhircastPublish('xyz-789', 'diagnosticreport-open', [
-          createFhircastMessageContext<'diagnosticreport-open'>('DiagnosticReport', 'report-987'),
-          createFhircastMessageContext<'diagnosticreport-open'>('Patient', 'patient-123'),
+        client.fhircastPublish('xyz-789', 'DiagnosticReport-open', [
+          createFhircastMessageContext<'DiagnosticReport-open'>('report', 'DiagnosticReport', 'report-987'),
+          createFhircastMessageContext<'DiagnosticReport-open'>('patient', 'Patient', 'patient-123'),
         ])
       ).resolves;
       expect(fetch).toBeCalledWith(
@@ -220,27 +222,62 @@ describe('FHIRcast', () => {
         // Topic needs to be a string with a length
         client.fhircastPublish(
           '',
-          'patient-open',
-          createFhircastMessageContext<'patient-open'>('Patient', 'patient-123')
+          'Patient-open',
+          createFhircastMessageContext<'Patient-open'>('patient', 'Patient', 'patient-123')
         )
       ).rejects.toBeInstanceOf(OperationOutcomeError);
       await expect(
         // @ts-expect-error Invalid context object
-        client.fhircastPublish('abc123', 'patient-open', {})
+        client.fhircastPublish('abc123', 'Patient-open', {})
       ).rejects.toBeInstanceOf(OperationOutcomeError);
       await expect(
-        // @ts-expect-error Invalid event
-        client.fhircastPublish('abc123', 'random-event', createFhircastMessageContext('Patient', 'patient-123'))
+        client.fhircastPublish(
+          'abc123',
+          // @ts-expect-error Invalid event
+          'random-event',
+          createFhircastMessageContext<'Patient-open'>('patient', 'Patient', 'patient-123')
+        )
       ).rejects.toBeInstanceOf(OperationOutcomeError);
 
-      // 'diagnosticreport-open' requires both a report and a patient
+      // 'DiagnosticReport-open' requires both a report and a patient
       await expect(
         client.fhircastPublish(
           'xyz-789',
-          'diagnosticreport-open',
-          createFhircastMessageContext<'diagnosticreport-open'>('DiagnosticReport', 'report-987')
+          'DiagnosticReport-open',
+          createFhircastMessageContext<'DiagnosticReport-open'>('report', 'DiagnosticReport', 'report-987')
         )
       ).rejects.toBeInstanceOf(OperationOutcomeError);
+    });
+  });
+
+  describe('fhircastGetContext', () => {
+    let client: MedplumClient;
+    let topic: string;
+    let topicContext: CurrentContext<'DiagnosticReport-open'>;
+
+    beforeAll(() => {
+      topic = generateId();
+      topicContext = {
+        'context.type': 'DiagnosticReport',
+        'context.versionId': generateId(),
+        context: [createFhircastMessageContext<'DiagnosticReport-open'>('report', 'DiagnosticReport', generateId())],
+      };
+      const fetch = mockFetch(200, (url: string) => {
+        if (url.endsWith(`/${topic}`)) {
+          return topicContext;
+        } else {
+          return { 'context.type': '', context: [] };
+        }
+      });
+      client = new MedplumClient({ fetch });
+    });
+
+    test('Get context for topic with context', async () => {
+      await expect(client.fhircastGetContext(topic)).resolves.toEqual(topicContext);
+    });
+
+    test('Get context for topic without context', async () => {
+      await expect(client.fhircastGetContext('abc-123')).resolves.toEqual({ 'context.type': '', context: [] });
     });
   });
 });

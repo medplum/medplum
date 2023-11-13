@@ -1,6 +1,6 @@
 {
   "name": "@medplum/agent",
-  "version": "2.1.10",
+  "version": "2.1.12",
   "description": "Medplum Agent",
   "homepage": "https://www.medplum.com/",
   "repository": {
@@ -27,8 +27,8 @@
   "devDependencies": {
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
-    "@types/node-windows": "0.1.4",
-    "@types/ws": "8.5.7",
+    "@types/node-windows": "0.1.6",
+    "@types/ws": "8.5.9",
     "mock-socket": "9.3.1",
     "pkg": "5.8.1"
   },

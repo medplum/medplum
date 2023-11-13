@@ -2,7 +2,8 @@ import { LoginAuthenticationResponse, ProfileResource, getDisplayString } from '
 import { useMedplum } from '@medplum/react-hooks';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
+import CustomButton from './CustomButton';
 
 export default function Home(): JSX.Element {
   const medplum = useMedplum();
@@ -43,9 +44,9 @@ export default function Home(): JSX.Element {
 
   return (
     <View style={styles.container}>
-      <Text>Medplum React Native Example</Text>
+      <Text style={styles.title}>Medplum React Native Example</Text>
       {!profile ? (
-        <>
+        <View style={styles.formWrapper}>
           <View>
             <TextInput
               style={styles.input}
@@ -63,13 +64,13 @@ export default function Home(): JSX.Element {
               onChangeText={(password) => setPassword(password)}
             />
           </View>
-          <Button onPress={startLogin} title="Sign in" />
-        </>
+          <CustomButton onPress={startLogin} title="Sign in" />
+        </View>
       ) : (
-        <>
-          <Text>Logged in as {getDisplayString(profile)}</Text>
-          <Button onPress={signOut} title="Sign out" />
-        </>
+        <View style={styles.authedWrapper}>
+          <Text style={styles.loginText}>Logged in as {getDisplayString(profile)}</Text>
+          <CustomButton onPress={signOut} title="Sign out" />
+        </View>
       )}
       <StatusBar style="auto" />
     </View>
@@ -79,15 +80,31 @@ export default function Home(): JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    backgroundColor: '#ecf0f1',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  loginText: {
+    marginBottom: 10,
+  },
+  formWrapper: {
+    marginTop: 10,
+  },
+  authedWrapper: {
+    marginTop: 10,
   },
   input: {
-    height: 50,
-    flex: 1,
+    width: 200,
+    height: 40,
     padding: 10,
-    marginLeft: 20,
+    borderWidth: 1.5,
+    borderColor: '#ced4da',
+    color: '#212529',
+    marginBottom: 10,
+    borderRadius: 6,
   },
 });

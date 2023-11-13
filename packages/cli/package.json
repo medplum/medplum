@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cli",
-  "version": "2.1.10",
+  "version": "2.1.12",
   "description": "Medplum Command Line Interface",
   "keywords": [
     "medplum",
@@ -35,28 +35,28 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aws-sdk/client-acm": "3.428.0",
-    "@aws-sdk/client-cloudformation": "3.428.0",
-    "@aws-sdk/client-cloudfront": "3.428.0",
-    "@aws-sdk/client-ecs": "3.428.0",
-    "@aws-sdk/client-s3": "3.428.0",
-    "@aws-sdk/client-ssm": "3.428.0",
-    "@aws-sdk/client-sts": "3.428.0",
-    "@aws-sdk/types": "3.428.0",
+    "@aws-sdk/client-acm": "3.445.0",
+    "@aws-sdk/client-cloudformation": "3.445.0",
+    "@aws-sdk/client-cloudfront": "3.445.0",
+    "@aws-sdk/client-ecs": "3.445.0",
+    "@aws-sdk/client-s3": "3.445.0",
+    "@aws-sdk/client-ssm": "3.445.0",
+    "@aws-sdk/client-sts": "3.445.0",
+    "@aws-sdk/types": "3.433.0",
     "@medplum/core": "*",
     "@medplum/hl7": "*",
     "aws-sdk-client-mock": "3.0.0",
     "commander": "11.1.0",
     "dotenv": "16.3.1",
-    "fast-glob": "3.3.1",
+    "fast-glob": "3.3.2",
     "node-fetch": "2.7.0",
     "tar": "6.2.0"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
-    "@types/node-fetch": "2.6.6",
-    "@types/tar": "6.1.6"
+    "@types/node-fetch": "2.6.9",
+    "@types/tar": "6.1.8"
   },
   "engines": {
     "node": ">=18.0.0"
