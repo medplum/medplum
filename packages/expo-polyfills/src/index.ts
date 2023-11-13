@@ -106,7 +106,7 @@ class SyncSecureStorage implements Storage {
                 .then((val) => {
                   resolve([key, val]);
                 })
-                .catch((err) => console.error(err));
+                .catch(console.error);
             });
           });
           Promise.all(promises)
@@ -120,9 +120,9 @@ class SyncSecureStorage implements Storage {
               this.isInitialized = true;
               resolve();
             })
-            .catch((err) => console.error(err));
+            .catch(console.error);
         })
-        .catch((err) => console.error(err));
+        .catch(console.error);
     });
   }
 
@@ -156,9 +156,7 @@ class SyncSecureStorage implements Storage {
   }
 
   private setKeys(): void {
-    SecureStore.setItemAsync('___keys___', JSON.stringify(Array.from(this.storage.keys()))).catch((err) =>
-      console.error(err)
-    );
+    SecureStore.setItemAsync('___keys___', JSON.stringify(Array.from(this.storage.keys()))).catch(console.error);
   }
 
   /**
@@ -182,7 +180,7 @@ class SyncSecureStorage implements Storage {
     if (!value) {
       this.removeItem(key);
     } else {
-      SecureStore.setItemAsync(key, value).catch((err) => console.error(err));
+      SecureStore.setItemAsync(key, value).catch(console.error);
       this.storage.set(key, value);
     }
     this.setKeys();
@@ -195,7 +193,7 @@ class SyncSecureStorage implements Storage {
    */
   removeItem(key: string, setKeys = true): void {
     this.assertInitialized();
-    SecureStore.deleteItemAsync(key).catch((err) => console.error(err));
+    SecureStore.deleteItemAsync(key).catch(console.error);
     this.storage.delete(key);
     if (setKeys) {
       this.setKeys();

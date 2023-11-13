@@ -698,12 +698,12 @@ export class MedplumClient extends EventTarget {
       const initPromise = (this.storage as AsyncBackedClientStorage).initialized;
       initPromise
         .then(() => {
-          this.attemptResumeActiveLogin().catch((err) => console.error(err));
+          this.attemptResumeActiveLogin().catch(console.error);
         })
-        .catch((err) => console.error(err));
+        .catch(console.error);
       this.initPromise = initPromise;
     } else {
-      this.attemptResumeActiveLogin().catch((err) => console.error(err));
+      this.attemptResumeActiveLogin().catch(console.error);
       this.initPromise = Promise.resolve();
     }
 
@@ -716,7 +716,6 @@ export class MedplumClient extends EventTarget {
 
   async attemptResumeActiveLogin(): Promise<void> {
     const activeLogin = this.getActiveLogin();
-    console.log('activeLogin', activeLogin);
     if (!activeLogin) {
       return;
     }
