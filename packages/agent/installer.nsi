@@ -124,8 +124,8 @@ Function UpgradeApp
 
     # Stop the service
     DetailPrint "Stopping service..."
-    ExecWait "winsw.exe stop --force" $1
-    DetailPrint "Stop service returned $1"
+    ExecWait "sc.exe stop ${SERVICE_NAME}" $1
+    DetailPrint "Exit code $1"
 
     # Sleep for 3 seconds to let the service fully stop
     # We cannot write the new version of the exe while the process is running
@@ -138,7 +138,7 @@ Function UpgradeApp
 
     # Start the service
     DetailPrint "Starting service..."
-    ExecWait "winsw.exe start" $1
+    ExecWait "sc.exe start ${SERVICE_NAME}" $1
     DetailPrint "Start service returned $1"
 
 FunctionEnd
@@ -154,32 +154,25 @@ Function InstallApp
     DetailPrint "Agent ID: $agentId"
 
     # Copy the service files to the root directory
-    File ..\..\node_modules\node-windows\bin\winsw\winsw.exe
+    File bin\shawl.exe
+    File bin\srvany-ng.exe
     File dist\medplum-agent-win-x64.exe
     File README.md
 
-    # Create the winsw.xml config file
-    # See config file format: https://github.com/winsw/winsw/blob/v3/docs/xml-config-file.md
-    FileOpen $9 winsw.xml w
-    FileWrite $9 "<service>$\r$\n"
-    FileWrite $9 "<id>${SERVICE_NAME}</id>$\r$\n"
-    FileWrite $9 "<name>${APP_NAME}</name>$\r$\n"
-    FileWrite $9 "<description>Securely connects local devices to ${COMPANY_NAME} cloud</description>$\r$\n"
-    FileWrite $9 "<executable>$INSTDIR\medplum-agent-win-x64.exe</executable>$\r$\n"
-    FileWrite $9 "<arguments>$\"$baseUrl$\" $\"$clientId$\" $\"$clientSecret$\" $\"$agentId$\"</arguments>$\r$\n"
-    FileWrite $9 "<startmode>Automatic</startmode>$\r$\n"
-    FileWrite $9 "</service>$\r$\n"
-    FileClose $9
+    # Create the service
+    DetailPrint "Creating service..."
+    ExecWait "shawl.exe add --name $\"${SERVICE_NAME}$\" -- $\"$INSTDIR\medplum-agent-win-x64.exe$\" $\"$baseUrl$\" $\"$clientId$\" $\"$clientSecret$\" $\"$agentId$\"" $1
+    DetailPrint "Exit code $1"
 
-    # Install the service
-    DetailPrint "Installing service..."
-    ExecWait "winsw.exe install" $1
-    DetailPrint "Install returned $1"
+    # Set service description
+    DetailPrint "Setting service description..."
+    ExecWait "sc.exe description $\"${SERVICE_NAME}$\" $\"Securely connects local devices to ${COMPANY_NAME} cloud$\"" $1
+    DetailPrint "Exit code $1"
 
     # Start the service
     DetailPrint "Starting service..."
-    ExecWait "winsw.exe start" $1
-    DetailPrint "Start service returned $1"
+    ExecWait "sc.exe start $\"${SERVICE_NAME}$\"" $1
+    DetailPrint "Exit code $1"
 
     # Create the uninstaller
     DetailPrint "Creating the uninstaller..."
@@ -203,11 +196,20 @@ FunctionEnd
 # Start the uninstaller
 Section Uninstall
 
-    # Uninstall the service
-    DetailPrint "Uninstalling service..."
-    SetOutPath "$INSTDIR"
-    ExecWait "winsw.exe uninstall" $1
-    DetailPrint "Uninstall returned $1"
+    # Stop the service
+    DetailPrint "Stopping service..."
+    ExecWait "sc.exe stop ${SERVICE_NAME}" $1
+    DetailPrint "Exit code $1"
+
+    # Sleep for 3 seconds to let the service fully stop
+    # We cannot delete the file until the service is fully stopped
+    DetailPrint "Sleeping..."
+    Sleep 3000
+
+    # Deleting the service
+    DetailPrint "Deleting service..."
+    ExecWait "sc.exe delete ${SERVICE_NAME}" $1
+    DetailPrint "Exit code $1"
 
     # Get out of the service directory so we can delete it
     SetOutPath "$PROGRAMFILES64"
@@ -219,6 +221,7 @@ Section Uninstall
     RMDir /r /REBOOTOK "$INSTDIR"
 
     # Unregister the program
+    DeleteRegKey HKLM "SYSTEM\CurrentControlSet\Services\${SERVICE_NAME}"
     DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${SERVICE_NAME}"
 
 SectionEnd

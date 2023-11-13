@@ -83,9 +83,7 @@ jobs:
 
       - name: Build Agent installer
         working-directory: ./packages/agent
-        run: |
-          npm run package
-          npm run installer
+        run: npm run build:all
 
       - name: Upload Agent installer
         uses: actions/github-script@v6
