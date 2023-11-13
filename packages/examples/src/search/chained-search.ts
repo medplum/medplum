@@ -11,7 +11,7 @@ await medplum.searchResources('Observation', {
 /*
 // start-block chainedSearchCli
 medplum get 'Observation?subject:Patient.name=homer'
-// end-block chainedSearchCLi
+// end-block chainedSearchCli
 
 // start-block chainedSearchCurl
 curl 'https://api.medplum.com/fhir/R4/Observation?subject:Patient.name=homer' \
