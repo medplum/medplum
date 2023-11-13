@@ -85,7 +85,7 @@ describe('polyfillMedplumWebAPIs', () => {
       expect(window.crypto.subtle.digest).toBeDefined();
     });
 
-    // // TODO: Get this test to pass on CI
+    // TODO: Get this test to pass on CI
     // test('Should be able to hash a message', async () => {
     //   await expect(
     //     window.crypto.subtle.digest('SHA-256', new TextEncoder().encode('Medplum_is_cool'))
