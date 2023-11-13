@@ -116,7 +116,6 @@ class SyncSecureStorage implements Storage {
                   continue;
                 }
                 this.storage.set(key, value);
-                console.log(this.storage.get(key));
               }
               this.isInitialized = true;
               resolve();
@@ -224,5 +223,8 @@ export class ExpoClientStorage extends ClientStorage implements AsyncBackedClien
   }
   get initialized(): Promise<void> {
     return this.secureStorage.initialized;
+  }
+  get length(): number {
+    return this.secureStorage.length;
   }
 }

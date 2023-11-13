@@ -1,36 +1,39 @@
-import { CryptoDigestAlgorithm, digest } from 'expo-crypto';
-import { URL as NodeURL, URLSearchParams as NodeURLSearchParams } from 'node:url';
-import { TextDecoder } from 'text-encoding';
-import { polyfillMedplumWebAPIs } from '.';
+import { ExpoClientStorage, polyfillMedplumWebAPIs } from '.';
 
-jest.mock(
-  'expo-crypto',
-  () =>
-    ({
-      digest: async function (algorithm: CryptoDigestAlgorithm, data: BufferSource): Promise<ArrayBuffer> {
-        const dataStr = new TextDecoder().decode(data);
-        if ((algorithm as string) === 'SHA-256' && dataStr === 'Medplum_is_cool') {
-          return Promise.resolve(
-            new Uint8Array([
-              0x97, 0xe9, 0xb0, 0xd6, 0x96, 0xa6, 0xcd, 0x12, 0xd2, 0xf5, 0x61, 0x56, 0x07, 0x16, 0x8b, 0x49, 0xe6,
-              0x07, 0xb1, 0xbe, 0x52, 0x73, 0xe7, 0x87, 0x2e, 0x2c, 0x7e, 0x02, 0x3d, 0x99, 0x95, 0xc9,
-            ])
-          );
-        }
-        throw new Error('Invalid input!');
-      },
-    }) satisfies { digest: typeof digest }
-);
+// Commented out because test this mock was designed for is not working properly
+// jest.mock(
+//   'expo-crypto',
+//   () =>
+//     ({
+//       digest: async function (algorithm: CryptoDigestAlgorithm, data: BufferSource): Promise<ArrayBuffer> {
+//         const dataStr = new TextDecoder().decode(data);
+//         if ((algorithm as string) === 'SHA-256' && dataStr === 'Medplum_is_cool') {
+//           return Promise.resolve(
+//             new Uint8Array([
+//               0x97, 0xe9, 0xb0, 0xd6, 0x96, 0xa6, 0xcd, 0x12, 0xd2, 0xf5, 0x61, 0x56, 0x07, 0x16, 0x8b, 0x49, 0xe6,
+//               0x07, 0xb1, 0xbe, 0x52, 0x73, 0xe7, 0x87, 0x2e, 0x2c, 0x7e, 0x02, 0x3d, 0x99, 0x95, 0xc9,
+//             ])
+//           );
+//         }
+//         throw new Error('Invalid input!');
+//       },
+//     }) satisfies { digest: typeof digest }
+// );
 
-jest.mock('expo-standard-web-crypto', () => ({}));
-jest.mock('react-native-url-polyfill', () => ({
-  setupURLPolyfill: () => {
-    // @ts-expect-error Just for testing
-    window.URL = NodeURL;
-    // @ts-expect-error Just for testing
-    window.URLSearchParams = NodeURLSearchParams;
-  },
-}));
+jest.mock('expo-secure-store', () => {
+  const store = new Map<string, string>();
+  return {
+    setItemAsync: async (key: string, value: string): Promise<void> => {
+      store.set(key, value);
+    },
+    getItemAsync: async (key: string): Promise<string | null> => {
+      return Promise.resolve(store.get(key) ?? null);
+    },
+    deleteItemAsync: async (key: string): Promise<void> => {
+      store.delete(key);
+    },
+  };
+});
 
 describe('polyfillMedplumWebAPIs', () => {
   beforeAll(() => {
@@ -82,7 +85,7 @@ describe('polyfillMedplumWebAPIs', () => {
       expect(window.crypto.subtle.digest).toBeDefined();
     });
 
-    // TODO: Get this test to pass on CI
+    // // TODO: Get this test to pass on CI
     // test('Should be able to hash a message', async () => {
     //   await expect(
     //     window.crypto.subtle.digest('SHA-256', new TextEncoder().encode('Medplum_is_cool'))
@@ -120,6 +123,59 @@ describe('polyfillMedplumWebAPIs', () => {
     test('Should be able to be set and read from', () => {
       expect(() => window.sessionStorage.setItem('med', 'plum')).not.toThrow();
       expect(window.sessionStorage.getItem('med')).toBe('plum');
+    });
+  });
+
+  describe('ExpoClientStorage', () => {
+    let clientStorage: ExpoClientStorage;
+
+    test('Using storage before initialized should throw', () => {
+      clientStorage = new ExpoClientStorage();
+      expect(() => clientStorage.getObject('test')).toThrow();
+    });
+
+    test('Waiting for initialized', async () => {
+      await clientStorage.initialized;
+      expect(() => clientStorage.getObject('test')).not.toThrow();
+    });
+
+    test('Setting an string', async () => {
+      clientStorage.setString('bestEhr', 'medplum');
+      expect(clientStorage.length).toBeDefined();
+      expect(clientStorage.length).toBe(1);
+    });
+
+    test('Getting a string', () => {
+      expect(clientStorage.getString('bestEhr')).toEqual('medplum');
+    });
+
+    test('Setting an object', async () => {
+      clientStorage.setObject('bestEhr', { med: 'plum' });
+      expect(clientStorage.length).toBeDefined();
+      expect(clientStorage.length).toBe(1);
+    });
+
+    test('Getting an object', () => {
+      expect(clientStorage.getObject('bestEhr')).toEqual({ med: 'plum' });
+    });
+
+    test('Making a new storage should fetch existing keys', async () => {
+      const newStorage = new ExpoClientStorage();
+      await newStorage.initialized;
+      // Assert size
+      expect(newStorage.length).toEqual(1);
+    });
+
+    test('Clearing storage should empty it', () => {
+      clientStorage.clear();
+      expect(clientStorage.length).toEqual(0);
+    });
+
+    test('After clearing, new storages should not get previous keys', async () => {
+      const newStorage = new ExpoClientStorage();
+      await newStorage.initialized;
+      // Assert size is 0
+      expect(newStorage.length).toEqual(0);
     });
   });
 });

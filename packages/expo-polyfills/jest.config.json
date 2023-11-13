@@ -1,5 +1,5 @@
 {
-  "preset": "react-native",
+  "projects": [{ "preset": "jest-expo/ios" }, { "preset": "jest-expo/android" }],
   "moduleFileExtensions": ["ts", "tsx", "js"],
   "moduleDirectories": ["node_modules", "src"],
   "transform": {

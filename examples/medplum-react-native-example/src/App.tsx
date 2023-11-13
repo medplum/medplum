@@ -6,7 +6,7 @@ import Home from './Home';
 const medplum = new MedplumClient({
   // Enter your Medplum connection details here
   // See MedplumClient docs for more details
-  baseUrl: 'http://localhost:8103',
+  baseUrl: 'http://172.16.102.3:8103',
   // ------------------------------------------------------------------------------
   // If you are testing this out with your physical Android / iOS device and not an emulator,
   // you will need to put your computer's local IP address here, for example:
@@ -24,15 +24,6 @@ const medplum = new MedplumClient({
 polyfillMedplumWebAPIs();
 
 export default function App(): JSX.Element {
-  // useEffect(() => {
-  //   async function test(): Promise<void> {
-  //     await storage.initialized;
-  //     console.log(storage.getItem('testing'));
-  //     storage.setItem('testing', 'Hello, world!');
-  //     console.log(storage.getItem('testing'));
-  //   }
-  //   test().catch((err) => console.error(err));
-  // }, []);
   return (
     <MedplumProvider medplum={medplum}>
       <Home />
