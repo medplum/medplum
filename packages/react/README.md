@@ -30,7 +30,6 @@ Note the following optional peer dependencies:
 
 Note [`SensitiveTextarea`](./src/SensitiveTextarea/SensitiveTextarea.tsx) expects a "PasswordDots" font-face to be defined. [passworddots.woff](./public/fonts/passworddots.woff) [passworddots.woff2](./public/fonts/passworddots.woff2)
 
-
 ## Basic Usage
 
 ```tsx

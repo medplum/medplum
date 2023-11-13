@@ -123,7 +123,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.time:
     case PropertyType.uri:
     case PropertyType.url:
-      if (props.property.path === "Project.secret.value[x]") {
+      if (props.property.path === 'Project.secret.value[x]') {
         return (
           <SensitiveTextarea
             id={name}
