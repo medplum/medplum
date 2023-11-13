@@ -694,7 +694,7 @@ export class MedplumClient extends EventTarget {
     if (options?.accessToken) {
       this.setAccessToken(options.accessToken);
       this.initPromise = Promise.resolve();
-    } else if ((this.storage as AsyncBackedClientStorage).initialized) {
+    } else if ((this.storage as AsyncBackedClientStorage).initialized !== undefined) {
       const initPromise = (this.storage as AsyncBackedClientStorage).initialized;
       initPromise
         .then(() => {
