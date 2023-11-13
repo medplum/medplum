@@ -121,7 +121,7 @@ export const PropertyType = {
  *   PropertySchema - one per property/field
  */
 export interface IndexedStructureDefinition {
-  types: { [resourceType: string]: TypeInfo };
+  types: Record<string, TypeInfo>;
 }
 
 /**
@@ -134,8 +134,8 @@ export interface IndexedStructureDefinition {
  *   4) Patient_Link
  */
 export interface TypeInfo {
-  searchParams?: { [code: string]: SearchParameter };
-  searchParamsDetails?: { [code: string]: SearchParameterDetails };
+  searchParams?: Record<string, SearchParameter>;
+  searchParamsDetails?: Record<string, SearchParameterDetails>;
 }
 
 /**

@@ -3,14 +3,9 @@ import { isStringArray } from './utils';
 /**
  * The Hl7Context class represents the parsing context for an HL7 message.
  *
- * MSH-1:
- * https://hl7-definition.caristix.com/v2/HL7v2.6/Fields/MSH.1
- *
- * MSH-2:
- * https://hl7-definition.caristix.com/v2/HL7v2.6/Fields/MSH.2
- *
- * See this tutorial on MSH, and why it's a bad idea to use anything other than the default values:
- * https://www.hl7soup.com/HL7TutorialMSH.html
+ * @see MSH-1: https://hl7-definition.caristix.com/v2/HL7v2.6/Fields/MSH.1
+ * @see MSH-2: https://hl7-definition.caristix.com/v2/HL7v2.6/Fields/MSH.2
+ * @see See this tutorial on MSH, and why it's a bad idea to use anything other than the default values: https://www.hl7soup.com/HL7TutorialMSH.html
  */
 export class Hl7Context {
   constructor(
