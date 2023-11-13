@@ -1,4 +1,4 @@
-import { AsyncBackedClientStorage, ClientStorage, MemoryStorage } from '@medplum/core';
+import { AsyncBackedClientStorage, ClientStorage, MemoryStorage, OperationOutcomeError } from '@medplum/core';
 import { decode, encode } from 'base-64';
 import { CryptoDigestAlgorithm, digest } from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
@@ -132,7 +132,20 @@ class SyncSecureStorage implements Storage {
 
   assertInitialized(): void {
     if (!this.isInitialized) {
-      throw new Error('Not initialized!');
+      throw new OperationOutcomeError({
+        id: 'not-initialized',
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            severity: 'error',
+            code: 'exception',
+            details: {
+              text: 'Not initialized',
+            },
+            diagnostics: 'Storage not initialized',
+          },
+        ],
+      });
     }
   }
 
