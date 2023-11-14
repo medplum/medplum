@@ -13,7 +13,7 @@ Medplum stores healthcare data using the FHIR standard. Storing data according t
 - **Interoperability**: Increasingly, healthcare partners are exposing their data via FHIR APIs. Storing your data according to FHIR spec smooths the path to interoperating with multiple partners
 - **Future Proofing**: The healthcare ecosystem is complex and fragmented. As they encounter these complexities, many digital health companies end up performing costly data migrations. The FHIR spec anticipates many of the complexities that arise in the healthcare domain, helping teams avoid these backend rewrites.
 
-While FHIR is quite powerful, it can have a bit of a learning curve. The page will go over the basic concepts for understanding FHIR data in Medplum. For more information, you can check out the [official FHIR documentation](#http://hl7.org/fhir/).
+While FHIR is quite powerful, it can have a bit of a learning curve. The page will go over the basic concepts for understanding FHIR data in Medplum. For more information, you can check out the [official FHIR documentation](http://hl7.org/fhir/).
 
 ## Resources
 
