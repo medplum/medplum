@@ -9,19 +9,19 @@ import {
 } from '@medplum/core';
 import { Practitioner, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { body, oneOf, validationResult } from 'express-validator';
+import { body, oneOf } from 'express-validator';
 import Mail from 'nodemailer/lib/mailer';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProfile, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { getUserByEmailInProject, getUserByEmailWithoutProject } from '../oauth/utils';
+import { makeValidationMiddleware } from '../util/validator';
 
-export const inviteValidators = [
+export const inviteValidator = makeValidationMiddleware([
   body('resourceType').isIn(['Patient', 'Practitioner', 'RelatedPerson']).withMessage('Resource type is required'),
   body('firstName').notEmpty().withMessage('First name is required'),
   body('lastName').notEmpty().withMessage('Last name is required'),
@@ -32,15 +32,10 @@ export const inviteValidators = [
     ],
     { message: 'Either email or externalId is required' }
   ),
-];
+]);
 
 export async function inviteHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    sendOutcome(res, invalidRequest(errors));
-    return;
-  }
 
   const inviteRequest = { ...req.body } as ServerInviteRequest;
   const { projectId } = req.params;

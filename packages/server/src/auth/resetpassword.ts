@@ -1,24 +1,21 @@
 import { allOk, badRequest, createReference, Operator, resolveId } from '@medplum/core';
 import { PasswordChangeRequest, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
 import { getConfig } from '../config';
 import { sendEmail } from '../email/email';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { isExternalAuth } from './method';
 import { getProjectByRecaptchaSiteKey, verifyRecaptcha } from './utils';
+import { makeValidationMiddleware } from '../util/validator';
 
-export const resetPasswordValidators = [body('email').isEmail().withMessage('Valid email address is required')];
+export const resetPasswordValidator = makeValidationMiddleware([
+  body('email').isEmail().withMessage('Valid email address is required'),
+]);
 
 export async function resetPasswordHandler(req: Request, res: Response): Promise<void> {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    sendOutcome(res, invalidRequest(errors));
-    return;
-  }
-
   const email = req.body.email.toLowerCase();
   if (await isExternalAuth(email)) {
     sendOutcome(res, badRequest('Cannot reset password for external auth. Contact your system administrator.'));
