@@ -39,7 +39,8 @@ Var agentId
 # The onInit handler is called when the installer is nearly finished initializing.
 # See: https://nsis.sourceforge.io/Reference/.onInit
 Function .onInit
-    ${If} ${FileExists} "$INSTDIR\winsw.xml"
+    ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\Services\${SERVICE_NAME}" "ImagePath"
+    ${If} $0 != ""
         StrCpy $alreadyInstalled 1
     ${EndIf}
 FunctionEnd
@@ -154,14 +155,14 @@ Function InstallApp
     DetailPrint "Agent ID: $agentId"
 
     # Copy the service files to the root directory
-    File bin\shawl.exe
-    File bin\srvany-ng.exe
+    File ..\..\node_modules\node-shawl\bin\shawl-v1.3.0-legal.txt
+    File ..\..\node_modules\node-shawl\bin\shawl-v1.3.0-win64.exe
     File dist\medplum-agent-win-x64.exe
     File README.md
 
     # Create the service
     DetailPrint "Creating service..."
-    ExecWait "shawl.exe add --name $\"${SERVICE_NAME}$\" -- $\"$INSTDIR\medplum-agent-win-x64.exe$\" $\"$baseUrl$\" $\"$clientId$\" $\"$clientSecret$\" $\"$agentId$\"" $1
+    ExecWait "shawl-v1.3.0-win64.exe add --name $\"${SERVICE_NAME}$\" -- $\"$INSTDIR\medplum-agent-win-x64.exe$\" $\"$baseUrl$\" $\"$clientId$\" $\"$clientSecret$\" $\"$agentId$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service description
