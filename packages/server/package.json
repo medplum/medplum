@@ -1,6 +1,6 @@
 {
   "name": "@medplum/server",
-  "version": "2.1.13",
+  "version": "2.1.14",
   "description": "Medplum Server",
   "homepage": "https://www.medplum.com/",
   "repository": {
