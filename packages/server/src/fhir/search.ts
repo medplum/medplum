@@ -876,7 +876,7 @@ function buildEqualityCondition(
 }
 
 function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, param: ChainedSearchParameter): void {
-  if (param.chain.length > 3) {
+  if (param.chain.length > 5) {
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
   }
 
