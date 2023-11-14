@@ -56,28 +56,27 @@ interface ReferenceRow {
 function getSearchReferences(resource: Resource): ReferenceRow[] {
   const typedResource = [toTypedValue(resource)];
   const searchParams = getSearchParameters(resource.resourceType);
+  if (!searchParams) {
+    return [];
+  }
   const result: ReferenceRow[] = [];
-  if (searchParams) {
-    for (const searchParam of Object.values(searchParams)) {
-      if (isIndexed(searchParam)) {
-        const typedValues = evalFhirPathTyped(searchParam.expression as string, typedResource);
-        for (const value of typedValues) {
-          if (value.type === PropertyType.Reference) {
-            const reference = value.value;
-            if (!reference.reference) {
-              continue;
-            }
-            const [_targetType, targetId] = reference.reference.split('/', 2);
-            if (!isUUID(targetId)) {
-              continue;
-            }
-            result.push({
-              resourceId: resource.id as string,
-              targetId: targetId,
-              code: searchParam.code as string,
-            });
-          }
-        }
+  for (const searchParam of Object.values(searchParams)) {
+    if (!isIndexed(searchParam)) {
+      continue;
+    }
+
+    const typedValues = evalFhirPathTyped(searchParam.expression as string, typedResource);
+    for (const value of typedValues) {
+      if (value.type !== PropertyType.Reference || !value.value.reference) {
+        continue;
+      }
+      const [_targetType, targetId] = value.value.reference.split('/', 2);
+      if (isUUID(targetId)) {
+        result.push({
+          resourceId: resource.id as string,
+          targetId: targetId,
+          code: searchParam.code as string,
+        });
       }
     }
   }
