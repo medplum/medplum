@@ -1,6 +1,6 @@
 {
   "name": "@medplum/bot-layer",
-  "version": "2.1.12",
+  "version": "2.1.13",
   "description": "Medplum Bot Lambda Layer",
   "keywords": [
     "medplum",
