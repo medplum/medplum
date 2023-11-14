@@ -16,8 +16,9 @@ import {
 import { mockFetch } from './client-test-utils';
 import { ContentType } from './contenttype';
 import { OperationOutcomeError, notFound, unauthorized } from './outcomes';
+import { AsyncBackedClientStorage, ClientStorage } from './storage';
 import { isDataTypeLoaded } from './typeschema/types';
-import { ProfileResource, createReference } from './utils';
+import { ProfileResource, createReference, sleep } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -57,6 +58,27 @@ const schemaResponse = {
 
 const originalWindow = globalThis.window;
 const originalBuffer = globalThis.Buffer;
+
+class AsyncClientStorage extends ClientStorage implements AsyncBackedClientStorage {
+  #isInitialized: boolean;
+  constructor() {
+    super();
+    this.#isInitialized = false;
+  }
+  get isInitialized(): boolean {
+    return this.#isInitialized;
+  }
+  get initialized(): Promise<void> {
+    return new Promise((resolve) => {
+      sleep(0)
+        .then(() => {
+          this.#isInitialized = true;
+          resolve();
+        })
+        .catch(console.error);
+    });
+  }
+}
 
 describe('Client', () => {
   beforeAll(() => {
@@ -2612,6 +2634,23 @@ describe('Client', () => {
     expect(console.log).toBeCalledWith('> X-Medplum: extended');
     expect(console.log).toBeCalledWith('< 200 OK');
     expect(console.log).toBeCalledWith('< foo: bar');
+  });
+});
+
+describe('Passed in `AsyncBackedClientStorage`', () => {
+  test('MedplumClient resolves initialized after storage is initialized', async () => {
+    const fetch = mockFetch(200, { success: true });
+    const storage = new AsyncClientStorage();
+    const medplum = new MedplumClient({ fetch, storage });
+    expect(storage.isInitialized).toEqual(false);
+    await medplum.initialized;
+    expect(storage.isInitialized).toEqual(true);
+  });
+
+  test('MedplumClient should resolve initialized when sync storage used', async () => {
+    const fetch = mockFetch(200, { success: true });
+    const medplum = new MedplumClient({ fetch });
+    await expect(medplum.initialized).resolves;
   });
 });
 
