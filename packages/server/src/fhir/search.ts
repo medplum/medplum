@@ -881,16 +881,23 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
   }
 
   let currentResourceType = resourceType;
-  let currentTable = resourceType;
+  let currentColumn = new Column(resourceType, 'id');
   for (const link of param.chain) {
-    const nextTable = linkNextTable(selectQuery, link, currentResourceType, currentTable);
+    const nextColumn = linkNextTable(selectQuery, link, currentResourceType, currentColumn);
 
     // Check for the terminal chain link, which includes a condition on a field of the linked resource type
     if (link.filter) {
+      const resourceTableAlias = selectQuery.getNextJoinAlias();
+      selectQuery.innerJoin(
+        link.resourceType,
+        resourceTableAlias,
+        new Condition(nextColumn, '=', new Column(resourceTableAlias, 'id'))
+      );
+
       const endCondition = buildSearchFilterExpression(
         selectQuery,
         link.resourceType as ResourceType,
-        nextTable,
+        resourceTableAlias,
         link.filter
       );
       if (!endCondition) {
@@ -899,7 +906,7 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
       selectQuery.whereExpr(endCondition);
     }
 
-    currentTable = nextTable;
+    currentColumn = nextColumn;
     currentResourceType = link.resourceType;
   }
 }
@@ -908,34 +915,29 @@ function linkNextTable(
   selectQuery: SelectQuery,
   link: ChainedSearchLink,
   currentResourceType: string,
-  currentTable: string
-): string {
+  currentColumn: Column
+): Column {
   const lookupAlias = selectQuery.getNextJoinAlias();
-  const nextTable = selectQuery.getNextJoinAlias();
   const codeCondition = new Condition(new Column(lookupAlias, 'code'), '=', link.code);
 
   // Link from the current resource table to the next one through a references lookup table
   if (link.reverse) {
     // JOIN {LookupTable} ON {CurrentTable}.id = {LookupTable}.targetId
     // JOIN {NextTable} ON {LookupTable}.resourceId = {NextTable}.id
-    const lookupJoin = new Condition(new Column(currentTable, 'id'), '=', new Column(lookupAlias, 'targetId'));
+    const lookupJoin = new Condition(currentColumn, '=', new Column(lookupAlias, 'targetId'));
     selectQuery.innerJoin(`${link.resourceType}_References`, lookupAlias, new Conjunction([lookupJoin, codeCondition]));
-    const nextJoin = new Condition(new Column(lookupAlias, 'resourceId'), '=', new Column(nextTable, 'id'));
-    selectQuery.innerJoin(link.resourceType, nextTable, nextJoin);
+    return new Column(lookupAlias, 'resourceId');
   } else {
     // JOIN {LookupTable} ON {CurrentTable}.id = {LookupTable}.resourceId
     // JOIN {NextTable} ON {LookupTable}.targetId = {NextTable}.id
-    const lookupJoin = new Condition(new Column(currentTable, 'id'), '=', new Column(lookupAlias, 'resourceId'));
+    const lookupJoin = new Condition(currentColumn, '=', new Column(lookupAlias, 'resourceId'));
     selectQuery.innerJoin(
       `${currentResourceType}_References`,
       lookupAlias,
       new Conjunction([lookupJoin, codeCondition])
     );
-    const nextJoin = new Condition(new Column(lookupAlias, 'targetId'), '=', new Column(nextTable, 'id'));
-    selectQuery.innerJoin(link.resourceType, nextTable, nextJoin);
+    return new Column(lookupAlias, 'targetId');
   }
-
-  return nextTable;
 }
 
 function parseChainedParameter(resourceType: string, key: string, value: string): ChainedSearchParameter {
