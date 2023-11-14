@@ -883,7 +883,8 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
   let currentResourceType = resourceType;
   let currentColumn = new Column(resourceType, 'id');
   for (const link of param.chain) {
-    const nextColumn = linkNextTable(selectQuery, link, currentResourceType, currentColumn);
+    currentColumn = linkNextTable(selectQuery, link, currentResourceType, currentColumn);
+    currentResourceType = link.resourceType;
 
     // Check for the terminal chain link, which includes a condition on a field of the linked resource type
     if (link.filter) {
@@ -891,7 +892,7 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
       selectQuery.innerJoin(
         link.resourceType,
         resourceTableAlias,
-        new Condition(nextColumn, '=', new Column(resourceTableAlias, 'id'))
+        new Condition(currentColumn, '=', new Column(resourceTableAlias, 'id'))
       );
 
       const endCondition = buildSearchFilterExpression(
@@ -905,9 +906,6 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
       }
       selectQuery.whereExpr(endCondition);
     }
-
-    currentColumn = nextColumn;
-    currentResourceType = link.resourceType;
   }
 }
 
