@@ -128,7 +128,7 @@ One issue in healthcare applications is that **the same resource can have many d
 
 FHIR anticipates this complexity by allowing each resource to have multiple identfiers.
 
-**Each identifier is defined by a** `(system, value)` ** pair.** The `system` acts as _namespace_ for the identifier, and _must be specified as an absolute URL_ to ensure that it is globally unique.
+**Each identifier is defined by a** `(system, value)` **pair.** The `system` acts as _namespace_ for the identifier, and _must be specified as an absolute URL_ to ensure that it is globally unique.
 
 **Using the identifier system allows you to simplify your healthcare applications** by consolidating data in a single resource, while allowing different systems to access the data by different ID schemes.
 
