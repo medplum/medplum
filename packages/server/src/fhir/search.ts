@@ -920,16 +920,11 @@ function linkNextTable(
   const lookupAlias = selectQuery.getNextJoinAlias();
   const codeCondition = new Condition(new Column(lookupAlias, 'code'), '=', link.code);
 
-  // Link from the current resource table to the next one through a references lookup table
   if (link.reverse) {
-    // JOIN {LookupTable} ON {CurrentTable}.id = {LookupTable}.targetId
-    // JOIN {NextTable} ON {LookupTable}.resourceId = {NextTable}.id
     const lookupJoin = new Condition(currentColumn, '=', new Column(lookupAlias, 'targetId'));
     selectQuery.innerJoin(`${link.resourceType}_References`, lookupAlias, new Conjunction([lookupJoin, codeCondition]));
     return new Column(lookupAlias, 'resourceId');
   } else {
-    // JOIN {LookupTable} ON {CurrentTable}.id = {LookupTable}.resourceId
-    // JOIN {NextTable} ON {LookupTable}.targetId = {NextTable}.id
     const lookupJoin = new Condition(currentColumn, '=', new Column(lookupAlias, 'resourceId'));
     selectQuery.innerJoin(
       `${currentResourceType}_References`,
