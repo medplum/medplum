@@ -24,20 +24,20 @@ export function mockFetch(
 }
 
 export class MockAsyncClientStorage extends ClientStorage {
-  #isInitialized: boolean;
+  #initialized: boolean;
   #initPromise: Promise<void>;
   #initResolve: () => void = () => undefined;
 
   constructor() {
     super();
-    this.#isInitialized = false;
+    this.#initialized = false;
     this.#initPromise = new Promise((resolve) => {
       this.#initResolve = resolve;
     });
   }
 
   setInitialized(): void {
-    this.#isInitialized = true;
+    this.#initialized = true;
     this.#initResolve();
   }
 
@@ -46,6 +46,6 @@ export class MockAsyncClientStorage extends ClientStorage {
   }
 
   get isInitialized(): boolean {
-    return this.#isInitialized;
+    return this.#initialized;
   }
 }

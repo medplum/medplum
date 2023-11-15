@@ -84,7 +84,7 @@ export function polyfillMedplumWebAPIs(): void {
 class SyncSecureStorage implements Storage {
   private readonly storage: Map<string, string>;
   private readonly initPromise: Promise<void>;
-  private isInitialized = false;
+  private initialized = false;
 
   constructor() {
     this.storage = new Map<string, string>();
@@ -94,7 +94,7 @@ class SyncSecureStorage implements Storage {
         .then((keysStr) => {
           if (!keysStr) {
             // No keys currently, just resolve
-            this.isInitialized = true;
+            this.initialized = true;
             resolve();
             return;
           }
@@ -117,7 +117,7 @@ class SyncSecureStorage implements Storage {
                 }
                 this.storage.set(key, value);
               }
-              this.isInitialized = true;
+              this.initialized = true;
               resolve();
             })
             .catch(console.error);
@@ -131,7 +131,7 @@ class SyncSecureStorage implements Storage {
   }
 
   assertInitialized(): void {
-    if (!this.isInitialized) {
+    if (!this.initialized) {
       throw new OperationOutcomeError({
         id: 'not-initialized',
         resourceType: 'OperationOutcome',
