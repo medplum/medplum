@@ -1,6 +1,6 @@
 import { Title } from '@mantine/core';
 import { allOk, GoogleCredentialResponse, MedplumClient } from '@medplum/core';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { randomUUID, webcrypto } from 'crypto';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';

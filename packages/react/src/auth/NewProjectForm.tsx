@@ -31,11 +31,11 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
         }
       }}
     >
-      <Center sx={{ flexDirection: 'column' }}>
+      <Center style={{ flexDirection: 'column' }}>
         <Logo size={32} />
         <Title>Create project</Title>
       </Center>
-      <Stack spacing="xl">
+      <Stack gap="xl">
         <TextInput
           name="projectName"
           label="Project Name"
@@ -44,14 +44,14 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
           autoFocus={true}
           error={getErrorsForInput(outcome, 'firstName')}
         />
-        <Text color="dimmed" size="xs">
+        <Text c="dimmed" size="xs">
           By clicking submit you agree to the Medplum{' '}
           <Anchor href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</Anchor>
           {' and '}
           <Anchor href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</Anchor>.
         </Text>
       </Stack>
-      <Group position="right" mt="xl" noWrap>
+      <Group justify="flex-end" mt="xl" wrap="nowrap">
         <Button type="submit">Create project</Button>
       </Group>
     </Form>

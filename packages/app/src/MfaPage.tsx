@@ -64,7 +64,7 @@ export function MfaPage(): JSX.Element | null {
           <img src={qrCodeUrl as string} />
         </Center>
         <TextInput name="token" label="Code" />
-        <Group position="right" mt="xl">
+        <Group justify="flex-end" mt="xl">
           <Button type="submit">Enroll</Button>
         </Group>
       </Form>

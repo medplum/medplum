@@ -19,7 +19,7 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
       <InfoBar.Entry>
         <InfoBar.Key>Name</InfoBar.Key>
         <InfoBar.Value>
-          <MedplumLink to={patient}>
+          <MedplumLink to={patient} fw={500}>
             {patient.name ? <HumanNameDisplay value={patient.name[0]} options={{ use: false }} /> : '[blank]'}
           </MedplumLink>
         </InfoBar.Value>

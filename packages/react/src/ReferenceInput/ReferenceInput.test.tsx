@@ -1,8 +1,8 @@
+import { indexStructureDefinitionBundle } from '@medplum/core';
 import { FishPatientResources, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { ReferenceInput, ReferenceInputProps } from './ReferenceInput';
-import { indexStructureDefinitionBundle } from '@medplum/core';
 
 const medplum = new MockClient();
 

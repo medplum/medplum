@@ -1,4 +1,4 @@
-import { Button, Input, Stack } from '@mantine/core';
+import { Button, Stack, TextInput } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { usePrevious } from '../hooks';
 
@@ -36,17 +36,10 @@ export default function TopicGenerator(props: TopicGeneratorProps): JSX.Element 
 
   return (
     <Stack align="center">
-      <Button onClick={toggleSyncing} radius="xl" mb={20}>
+      <Button onClick={toggleSyncing} mb={20}>
         {!syncing ? 'Sync subscribers' : 'Stop syncing subscribers'}
       </Button>
-
-      {topic ? (
-        <>
-          <Input.Wrapper label="Topic" w={350}>
-            <Input value={topic ?? 'No topic'} />
-          </Input.Wrapper>
-        </>
-      ) : null}
+      {topic ? <TextInput label="Topic" value={topic ?? 'No topic'} readOnly w={350} /> : null}
     </Stack>
   );
 }

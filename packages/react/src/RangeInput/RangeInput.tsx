@@ -26,7 +26,7 @@ export function RangeInput(props: RangeInputProps): JSX.Element {
   }
 
   return (
-    <Group spacing="xs" grow noWrap>
+    <Group gap="xs" grow wrap="nowrap">
       <QuantityInput
         name={props.name + '-low'}
         defaultValue={value?.low}

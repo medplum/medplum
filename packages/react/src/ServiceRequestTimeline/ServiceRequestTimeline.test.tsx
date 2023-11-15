@@ -1,7 +1,7 @@
 import { createReference, getReferenceString } from '@medplum/core';
 import { Communication } from '@medplum/fhirtypes';
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { randomUUID } from 'crypto';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '@medplum/react-hooks';

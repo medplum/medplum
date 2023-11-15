@@ -1,9 +1,10 @@
-import { AppShell as MantineAppShell, useMantineTheme } from '@mantine/core';
+import { AppShell as MantineAppShell } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import { ReactNode, Suspense, useEffect, useState } from 'react';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { Loading } from '../Loading/Loading';
+import classes from './AppShell.module.css';
 import { Header } from './Header';
 import { Navbar, NavbarMenu } from './Navbar';
 
@@ -20,7 +21,6 @@ export interface AppShellProps {
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
-  const theme = useMantineTheme();
   const [navbarOpen, setNavbarOpen] = useState(localStorage['navbarOpen'] === 'true');
   const medplum = useMedplum();
   const profile = useMedplumProfile();
@@ -52,41 +52,42 @@ export function AppShell(props: AppShellProps): JSX.Element {
 
   return (
     <MantineAppShell
-      styles={{
-        main: {
-          background: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0],
+      header={{ height: 60 }}
+      navbar={{
+        width: 250,
+        breakpoint: 'sm',
+        collapsed: {
+          desktop: !profile || !navbarOpen,
+          mobile: !profile || !navbarOpen,
         },
       }}
       padding={0}
-      fixed={true}
-      header={
-        profile && (
-          <Header
-            pathname={props.pathname}
-            searchParams={props.searchParams}
-            headerSearchDisabled={props.headerSearchDisabled}
-            logo={props.logo}
-            version={props.version}
-            navbarToggle={toggleNavbar}
-          />
-        )
-      }
-      navbar={
-        profile && navbarOpen ? (
-          <Navbar
-            pathname={props.pathname}
-            searchParams={props.searchParams}
-            menus={props.menus}
-            closeNavbar={closeNavbar}
-            displayAddBookmark={props.displayAddBookmark}
-            resourceTypeSearchDisabled={props.resourceTypeSearchDisabled}
-          />
-        ) : undefined
-      }
     >
-      <ErrorBoundary>
-        <Suspense fallback={<Loading />}>{props.children}</Suspense>
-      </ErrorBoundary>
+      {profile && (
+        <Header
+          pathname={props.pathname}
+          searchParams={props.searchParams}
+          headerSearchDisabled={props.headerSearchDisabled}
+          logo={props.logo}
+          version={props.version}
+          navbarToggle={toggleNavbar}
+        />
+      )}
+      {profile && navbarOpen ? (
+        <Navbar
+          pathname={props.pathname}
+          searchParams={props.searchParams}
+          menus={props.menus}
+          closeNavbar={closeNavbar}
+          displayAddBookmark={props.displayAddBookmark}
+          resourceTypeSearchDisabled={props.resourceTypeSearchDisabled}
+        />
+      ) : undefined}
+      <MantineAppShell.Main className={classes.main}>
+        <ErrorBoundary>
+          <Suspense fallback={<Loading />}>{props.children}</Suspense>
+        </ErrorBoundary>
+      </MantineAppShell.Main>
     </MantineAppShell>
   );
 }

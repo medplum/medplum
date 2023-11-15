@@ -1,6 +1,6 @@
 import { stringify } from '@medplum/core';
 import { ContactPoint } from '@medplum/fhirtypes';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ContactPointInput } from './ContactPointInput';
 
 describe('ContactPointInput', () => {

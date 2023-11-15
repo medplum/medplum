@@ -1,39 +1,11 @@
-import { createStyles } from '@mantine/core';
+import { Table } from '@mantine/core';
 import { capitalize, evalFhirPathTyped, getSearchParameterDetails, toTypedValue } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
 import { createPatch } from 'rfc6902';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
-
-const useStyles = createStyles((theme) => ({
-  root: {
-    borderCollapse: 'collapse',
-    width: '100%',
-
-    '& tr': {
-      borderTop: `0.1px solid ${theme.colors.gray[3]}`,
-    },
-
-    '& th, & td': {
-      padding: `${theme.spacing.sm} ${theme.spacing.sm}`,
-      verticalAlign: 'top',
-    },
-  },
-
-  removed: {
-    color: theme.colors.red[7],
-    fontFamily: 'monospace',
-    textDecoration: 'line-through',
-    whiteSpace: 'pre-wrap',
-  },
-
-  added: {
-    color: theme.colors.green[7],
-    fontFamily: 'monospace',
-    whiteSpace: 'pre-wrap',
-  },
-}));
+import classes from './ResourceDiffTable.module.css';
 
 export interface ResourceDiffTableProps {
   original: Resource;
@@ -41,7 +13,6 @@ export interface ResourceDiffTableProps {
 }
 
 export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | null {
-  const { classes } = useStyles();
   const medplum = useMedplum();
   const [schemaLoaded, setSchemaLoaded] = useState(false);
 
@@ -61,15 +32,15 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
   const typedRevised = [toTypedValue(props.revised)];
 
   return (
-    <table className={classes.root}>
-      <thead>
-        <tr>
-          <th />
-          <th>Before</th>
-          <th>After</th>
-        </tr>
-      </thead>
-      <tbody>
+    <Table className={classes.root}>
+      <Table.Thead>
+        <Table.Tr>
+          <Table.Th />
+          <Table.Th>Before</Table.Th>
+          <Table.Th>After</Table.Th>
+        </Table.Tr>
+      </Table.Thead>
+      <Table.Tbody>
         {patch.map((op) => {
           if (op.path.startsWith('/meta')) {
             return null;
@@ -89,11 +60,11 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
           const revisedValue = op.op === 'remove' ? undefined : evalFhirPathTyped(fhirPath, typedRevised)?.[0];
 
           return (
-            <tr key={`op-${op.op}-${op.path}`}>
-              <td>
+            <Table.Tr key={`op-${op.op}-${op.path}`}>
+              <Table.Td>
                 {capitalize(op.op)} {fhirPath}
-              </td>
-              <td className={classes.removed}>
+              </Table.Td>
+              <Table.Td className={classes.removed}>
                 {originalValue && (
                   <ResourcePropertyDisplay
                     property={property}
@@ -102,8 +73,8 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
                     ignoreMissingValues={true}
                   />
                 )}
-              </td>
-              <td className={classes.added}>
+              </Table.Td>
+              <Table.Td className={classes.added}>
                 {revisedValue && (
                   <ResourcePropertyDisplay
                     property={property}
@@ -112,12 +83,12 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
                     ignoreMissingValues={true}
                   />
                 )}
-              </td>
-            </tr>
+              </Table.Td>
+            </Table.Tr>
           );
         })}
-      </tbody>
-    </table>
+      </Table.Tbody>
+    </Table>
   );
 }
 

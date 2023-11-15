@@ -6,17 +6,18 @@ import {
   Center,
   Collapse,
   Container,
-  createStyles,
   Divider,
   Drawer,
   Group,
-  Header as MantineHeader,
   HoverCard,
+  AppShell,
   ScrollArea,
   SimpleGrid,
   Text,
   ThemeIcon,
   UnstyledButton,
+  useMantineTheme,
+  rem,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -30,76 +31,7 @@ import {
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../../components/Logo';
-
-const useStyles = createStyles((theme) => ({
-  logoButton: {
-    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
-    borderRadius: theme.radius.sm,
-    transition: 'background-color 100ms ease',
-
-    '&:hover': {
-      backgroundColor: theme.fn.lighten(
-        theme.fn.variant({ variant: 'filled', color: theme.primaryColor }).background as string,
-        0.95
-      ),
-    },
-  },
-
-  link: {
-    display: 'flex',
-    alignItems: 'center',
-    height: '100%',
-    paddingLeft: theme.spacing.md,
-    paddingRight: theme.spacing.md,
-    textDecoration: 'none',
-    color: theme.colorScheme === 'dark' ? theme.white : theme.colors.gray[7],
-    fontSize: theme.fontSizes.xl,
-
-    [theme.fn.smallerThan('sm')]: {
-      height: 42,
-      display: 'flex',
-      alignItems: 'center',
-      width: '100%',
-    },
-
-    ...theme.fn.hover({
-      backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[0],
-    }),
-  },
-
-  subLink: {
-    width: '100%',
-    padding: `${theme.spacing.xs} ${theme.spacing.md}`,
-    borderRadius: theme.radius.md,
-
-    ...theme.fn.hover({
-      backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.colors.gray[0],
-    }),
-
-    '&:active': theme.activeStyles,
-  },
-
-  dropdownFooter: {
-    backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.colors.gray[0],
-    margin: -theme.spacing.md,
-    marginTop: theme.spacing.sm,
-    padding: `${theme.spacing.md} 2rem`,
-    paddingBottom: theme.spacing.xl,
-    borderTop: `1px solid ${theme.colorScheme === 'dark' ? theme.colors.dark[5] : theme.colors.gray[1]}`,
-  },
-
-  hiddenMobile: {
-    [theme.fn.smallerThan('sm')]: {
-      display: 'none',
-    },
-  },
-
-  hiddenDesktop: {
-    [theme.fn.largerThan('sm')]: {
-      display: 'none',
-    },
-  },
-}));
+import classes from './Header.module.css';
 
 const mockdata = [
   {
@@ -138,19 +70,19 @@ export function Header(): JSX.Element {
   const navigate = useNavigate();
   const [drawerOpened, { toggle: toggleDrawer, close: closeDrawer }] = useDisclosure(false);
   const [linksOpened, { toggle: toggleLinks }] = useDisclosure(false);
-  const { classes, theme } = useStyles();
+  const theme = useMantineTheme();
 
   const links = mockdata.map((item) => (
     <UnstyledButton className={classes.subLink} key={item.title}>
-      <Group noWrap align="flex-start">
+      <Group wrap="nowrap" align="flex-start">
         <ThemeIcon size={34} variant="default" radius="md">
-          <item.icon size={22} color={theme.fn.primaryColor()} />
+          <item.icon style={{ width: rem(22), height: rem(22) }} color={theme.primaryColor} />
         </ThemeIcon>
         <div>
-          <Text size="sm" weight={500}>
+          <Text size="sm" fw={500}>
             {item.title}
           </Text>
-          <Text size="xs" color="dimmed">
+          <Text size="xs" c="dimmed">
             {item.description}
           </Text>
         </div>
@@ -160,14 +92,14 @@ export function Header(): JSX.Element {
 
   return (
     <>
-      <MantineHeader height={100} px="md">
-        <Container py={20}>
-          <Group position="apart">
+      <AppShell.Header px="md">
+        <Container h="100%">
+          <Group justify="space-between" h="100%">
             <UnstyledButton className={classes.logoButton} onClick={() => navigate('/')}>
               <Logo width={240} />
             </UnstyledButton>
 
-            <Group sx={{ height: '100%' }} spacing={0} className={classes.hiddenMobile}>
+            <Group style={{ height: '100%' }} gap={0} className={classes.hiddenMobile}>
               <HoverCard width={600} position="bottom" radius="md" shadow="md" withinPortal>
                 <HoverCard.Target>
                   <a href="#" className={classes.link}>
@@ -175,29 +107,29 @@ export function Header(): JSX.Element {
                       <Box component="span" mr={5}>
                         Services
                       </Box>
-                      <IconChevronDown size={16} color={theme.fn.primaryColor()} />
+                      <IconChevronDown size={16} />
                     </Center>
                   </a>
                 </HoverCard.Target>
 
-                <HoverCard.Dropdown sx={{ overflow: 'hidden' }}>
-                  <Group position="apart" px="md">
-                    <Text weight={500}>Services</Text>
+                <HoverCard.Dropdown style={{ overflow: 'hidden' }}>
+                  <Group justify="space-between" px="md">
+                    <Text fw={500}>Services</Text>
                     <Anchor href="#" size="xs">
                       View all
                     </Anchor>
                   </Group>
 
-                  <Divider my="sm" mx="-md" color={theme.colorScheme === 'dark' ? 'dark.5' : 'gray.1'} />
+                  <Divider my="sm" mx="-md" />
 
                   <SimpleGrid cols={2} spacing={0}>
                     {links}
                   </SimpleGrid>
 
                   <div className={classes.dropdownFooter}>
-                    <Group position="apart">
+                    <Group justify="space-between">
                       <div>
-                        <Text weight={500} size="sm">
+                        <Text fw={500} size="sm">
                           Get started
                         </Text>
                         <Text size="xs" color="dimmed">
@@ -230,7 +162,7 @@ export function Header(): JSX.Element {
             <Burger opened={drawerOpened} onClick={toggleDrawer} className={classes.hiddenDesktop} />
           </Group>
         </Container>
-      </MantineHeader>
+      </AppShell.Header>
 
       <Drawer
         opened={drawerOpened}
@@ -241,8 +173,8 @@ export function Header(): JSX.Element {
         className={classes.hiddenDesktop}
         zIndex={1000000}
       >
-        <ScrollArea sx={{ height: 'calc(100vh - 60px)' }} mx="-md">
-          <Divider my="sm" color={theme.colorScheme === 'dark' ? 'dark.5' : 'gray.1'} />
+        <ScrollArea style={{ height: 'calc(100vh - 60px)' }} mx="-md">
+          <Divider my="sm" />
 
           <a href="#" className={classes.link}>
             Home
@@ -252,7 +184,7 @@ export function Header(): JSX.Element {
               <Box component="span" mr={5}>
                 Features
               </Box>
-              <IconChevronDown size={16} color={theme.fn.primaryColor()} />
+              <IconChevronDown size={16} />
             </Center>
           </UnstyledButton>
           <Collapse in={linksOpened}>{links}</Collapse>
@@ -263,9 +195,9 @@ export function Header(): JSX.Element {
             Academy
           </a>
 
-          <Divider my="sm" color={theme.colorScheme === 'dark' ? 'dark.5' : 'gray.1'} />
+          <Divider my="sm" />
 
-          <Group position="center" grow pb="xl" px="md">
+          <Group justify="center" grow pb="xl" px="md">
             <Button variant="default" onClick={() => navigate('/signin')}>
               Log in
             </Button>

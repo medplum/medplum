@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
 import { useCallback, useEffect, useState } from 'react';
+import { render, screen } from '../test-utils/render';
 import { ErrorBoundary } from './ErrorBoundary';
 
 function ErrorComponent(): JSX.Element {

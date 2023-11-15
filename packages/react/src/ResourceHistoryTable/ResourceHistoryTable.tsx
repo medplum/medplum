@@ -30,15 +30,17 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Elem
   }
 
   return (
-    <Table withBorder withColumnBorders>
-      <thead>
-        <tr>
-          <th>Author</th>
-          <th>Date</th>
-          <th>Version</th>
-        </tr>
-      </thead>
-      <tbody>{value.entry?.map((entry, index) => <HistoryRow key={'entry-' + index} entry={entry} />)}</tbody>
+    <Table withTableBorder withRowBorders withColumnBorders>
+      <Table.Thead>
+        <Table.Tr>
+          <Table.Th>Author</Table.Th>
+          <Table.Th>Date</Table.Th>
+          <Table.Th>Version</Table.Th>
+        </Table.Tr>
+      </Table.Thead>
+      <Table.Tbody>
+        {value.entry?.map((entry, index) => <HistoryRow key={'entry-' + index} entry={entry} />)}
+      </Table.Tbody>
     </Table>
   );
 }
@@ -51,21 +53,21 @@ function HistoryRow(props: HistoryRowProps): JSX.Element {
   const { response, resource } = props.entry;
   if (resource) {
     return (
-      <tr>
-        <td>
+      <Table.Tr>
+        <Table.Td>
           <ResourceBadge value={resource.meta?.author} link={true} />
-        </td>
-        <td>{formatDateTime(resource.meta?.lastUpdated)}</td>
-        <td>
+        </Table.Td>
+        <Table.Td>{formatDateTime(resource.meta?.lastUpdated)}</Table.Td>
+        <Table.Td>
           <MedplumLink to={getVersionUrl(resource)}>{resource.meta?.versionId}</MedplumLink>
-        </td>
-      </tr>
+        </Table.Td>
+      </Table.Tr>
     );
   } else {
     return (
-      <tr>
-        <td colSpan={3}>{normalizeErrorString(response?.outcome)}</td>
-      </tr>
+      <Table.Tr>
+        <Table.Td colSpan={3}>{normalizeErrorString(response?.outcome)}</Table.Td>
+      </Table.Tr>
     );
   }
 }

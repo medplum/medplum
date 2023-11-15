@@ -7,7 +7,7 @@ export function ClientsPage(): JSX.Element {
     <>
       <Title>Clients</Title>
       <MemberTable resourceType="ClientApplication" fields={['user', 'profile', 'admin', '_lastUpdated']} />
-      <Group position="right">
+      <Group justify="flex-end">
         <MedplumLink to={`/admin/clients/new`}>Create new client</MedplumLink>
       </Group>
     </>

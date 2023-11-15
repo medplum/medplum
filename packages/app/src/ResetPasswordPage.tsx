@@ -45,11 +45,11 @@ export function ResetPasswordPage(): JSX.Element {
             .catch((err) => setOutcome(normalizeOperationOutcome(err)));
         }}
       >
-        <Stack spacing="lg" mb="xl" align="center">
+        <Stack gap="lg" mb="xl" align="center">
           <Logo size={32} />
           <Title>Medplum Password Reset</Title>
         </Stack>
-        <Stack spacing="xl">
+        <Stack gap="xl">
           <OperationOutcomeAlert issues={getIssuesForExpression(outcome, undefined)} />
           {!success && (
             <>
@@ -61,7 +61,7 @@ export function ResetPasswordPage(): JSX.Element {
                 autoFocus={true}
                 error={getErrorsForInput(outcome, 'email')}
               />
-              <Group position="apart" mt="xl" noWrap>
+              <Group justify="space-between" mt="xl" wrap="nowrap">
                 <Anchor component="button" type="button" color="dimmed" onClick={() => navigate('/register')} size="xs">
                   Register
                 </Anchor>

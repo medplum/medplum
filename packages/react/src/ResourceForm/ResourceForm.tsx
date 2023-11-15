@@ -79,7 +79,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         onChange={setValue}
         profileUrl={props.profileUrl}
       />
-      <Group position="right" mt="xl">
+      <Group justify="flex-end" mt="xl">
         <Button type="submit">OK</Button>
         {props.onDelete && (
           <Button

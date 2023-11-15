@@ -1,9 +1,9 @@
 import { Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { render, screen } from '@testing-library/react';
 import { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { render, screen } from '../test-utils/render';
 import { ReferenceDisplay } from './ReferenceDisplay';
 
 const medplum = new MockClient();

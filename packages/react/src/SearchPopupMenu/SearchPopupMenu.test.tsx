@@ -2,7 +2,7 @@ import { Button, Menu } from '@mantine/core';
 import { Filter, globalSchema, Operator, SearchRequest } from '@medplum/core';
 import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { getFieldDefinitions } from '../SearchControl/SearchControlField';

@@ -1,5 +1,5 @@
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ResourceInput, ResourceInputProps } from './ResourceInput';
 

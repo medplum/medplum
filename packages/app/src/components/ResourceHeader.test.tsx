@@ -1,9 +1,9 @@
 import { Coding, Identifier, Reference, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import { MemoryRouter } from 'react-router-dom';
+import { act, render, screen, waitFor } from '../test-utils/render';
 import { ResourceHeader } from './ResourceHeader';
 
 const medplum = new MockClient();

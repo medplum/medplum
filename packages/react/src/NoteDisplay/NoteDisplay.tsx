@@ -1,30 +1,24 @@
-import { Blockquote, createStyles, Stack } from '@mantine/core';
+import { Blockquote, Stack } from '@mantine/core';
 import { Annotation } from '@medplum/fhirtypes';
-
-const useStyles = createStyles((theme) => ({
-  noteBody: { fontSize: theme.fontSizes.sm },
-  noteCite: { fontSize: theme.fontSizes.xs, marginBlockStart: 3 },
-  noteRoot: { padding: 5 },
-}));
+import classes from './NoteDisplay.module.css';
 
 export interface NoteDisplayProps {
   value?: Annotation[];
 }
 
 export function NoteDisplay({ value }: NoteDisplayProps): JSX.Element | null {
-  const { classes } = useStyles();
   if (!value) {
     return null;
   }
 
   return (
-    <Stack justify="flex-start" spacing="xs">
+    <Stack justify="flex-start" gap="xs">
       {value.map(
         (note) =>
           note.text && (
             <Blockquote
               key={`note-${note.text}`}
-              classNames={{ cite: classes.noteCite, body: classes.noteBody, root: classes.noteRoot }}
+              classNames={{ cite: classes.noteCite, root: classes.noteRoot }}
               cite={note.authorReference?.display || note.authorString}
               icon={null}
             >

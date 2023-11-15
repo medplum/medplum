@@ -1,0 +1,8 @@
+.hl7Input {
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  padding: 10px 12px;
+  white-space: nowrap;
+  width: 100%;
+}

@@ -6,7 +6,7 @@ tags:
 
 # Introduction
 
-The Medplum App is a user-facing web application available at [https://app.medplum.com/](https://app.medplum.com/) and is targeted towards developers and project administrators. This administrative app is developed from the [Medplum React Components](/docs/ui-components), meaning that many of these views and functionality can be embedded into your own custom apps.
+The Medplum App is a user-facing web application available at [https://app.medplum.com/](https://app.medplum.com/) and is targeted towards developers and project administrators. This administrative app is developed from the [Medplum React Components](/docs/react), meaning that many of these views and functionality can be embedded into your own custom apps.
 
 This guide will go over how to navigate the basic functionality of the Medplum App.
 

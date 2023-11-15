@@ -1,8 +1,8 @@
-import { createStyles } from '@mantine/core';
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconMessage2Down, IconMessage2Plus, IconSquareRoundedArrowRight } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
+import classes from './App.module.css';
 import DemoInstructionsPage from './components/DemoInstructionsPage';
 import LandingPage from './components/LandingPage';
 import Publisher from './components/Publisher';
@@ -10,18 +10,9 @@ import Redirect from './components/Redirect';
 import SignInPage from './components/SignInPage';
 import Subscriber from './components/Subscriber';
 
-const useStyles = createStyles((theme) => ({
-  root: {
-    padding: '15px 30px',
-    background: theme.white,
-  },
-}));
-
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-
-  const { classes } = useStyles();
 
   if (medplum.isLoading()) {
     return null;

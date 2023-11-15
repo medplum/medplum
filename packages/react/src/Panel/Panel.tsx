@@ -1,50 +1,30 @@
-import { createStyles, Paper, PaperProps, useComponentDefaultProps } from '@mantine/core';
+import { Paper, PaperProps } from '@mantine/core';
+import cx from 'clsx';
+import classes from './Panel.module.css';
 
 export interface PanelStylesParams {
   width?: number;
   fill?: boolean;
 }
 
-const useStyles = createStyles((theme, { width, fill }: PanelStylesParams) => ({
-  paper: {
-    maxWidth: width,
-    margin: `${theme.spacing.xl} auto`,
-    padding: fill ? 0 : theme.spacing.md,
-    '@media (max-width: 800px)': {
-      padding: fill ? 0 : 8,
-    },
-    '& img': {
-      width: '100%',
-      maxWidth: '100%',
-    },
-    '& video': {
-      width: '100%',
-      maxWidth: '100%',
-    },
-  },
-}));
-
 export interface PanelProps extends PaperProps {
   width?: number;
   fill?: boolean;
+  children?: React.ReactNode;
 }
 
-const defaultProps: Partial<PanelProps> = {
-  shadow: 'xs',
-  radius: 'md',
-  withBorder: true,
-};
-
 export function Panel(props: PanelProps): JSX.Element {
-  const { className, children, width, fill, unstyled, ...others } = useComponentDefaultProps(
-    'Panel',
-    defaultProps,
-    props
-  );
-  const { classes, cx } = useStyles({ width, fill }, { name: 'Panel', unstyled });
-
+  const { width, fill, className, children, ...rest } = props;
+  const style = width ? { width } : undefined;
   return (
-    <Paper className={cx(classes.paper, className)} {...others}>
+    <Paper
+      className={cx(classes.paper, fill && classes.fill, className)}
+      style={style}
+      shadow="sm"
+      radius="sm"
+      withBorder
+      {...rest}
+    >
       {children}
     </Paper>
   );

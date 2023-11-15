@@ -1,5 +1,5 @@
-import { act, screen, waitFor } from '@testing-library/react';
 import { initApp } from './index';
+import { act, screen, waitFor } from './test-utils/render';
 
 describe('App Index', () => {
   beforeAll(() => {

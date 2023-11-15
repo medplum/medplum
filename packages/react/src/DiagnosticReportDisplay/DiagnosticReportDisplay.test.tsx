@@ -2,7 +2,7 @@ import { createReference } from '@medplum/core';
 import { DiagnosticReport } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen } from '../test-utils/render';
 import { MemoryRouter } from 'react-router-dom';
 import {
   HealthGorillaDiagnosticReport,
@@ -99,7 +99,7 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.getByText('Critical high')).toHaveStyle('background:');
     expect(screen.getAllByText('final')).toHaveLength(7);
     expect(screen.getAllByText('corrected')).toHaveLength(1);
-    screen.getAllByText('final').forEach((badge) => expect(badge).toHaveClass('mantine-Badge-inner'));
+    screen.getAllByText('final').forEach((badge) => expect(badge).toHaveClass('mantine-Badge-label'));
   });
 
   test('Renders by reference', async () => {

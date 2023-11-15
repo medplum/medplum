@@ -42,7 +42,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
               {task?.status === 'completed' ? <IconCheckbox /> : <IconSquare color="gray" />}
             </Grid.Col>
             <Grid.Col span={9} p="xs">
-              <Text weight={500}>{action.title}</Text>
+              <Text fw={500}>{action.title}</Text>
               {action.description && <div>{action.description}</div>}
               <div>
                 Last edited by&nbsp;

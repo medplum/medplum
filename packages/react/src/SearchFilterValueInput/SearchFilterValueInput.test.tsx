@@ -2,9 +2,9 @@ import { globalSchema } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ReactNode } from 'react';
 import { convertIsoToLocal } from '../DateTimeInput/DateTimeInput.utils';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
 
 const medplum = new MockClient();

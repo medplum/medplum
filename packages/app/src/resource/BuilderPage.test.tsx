@@ -1,12 +1,12 @@
 import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
+import { Notifications, notifications } from '@mantine/notifications';
 import { PlanDefinition, Questionnaire } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -29,6 +29,10 @@ describe('BuilderPage', () => {
       );
     });
   }
+
+  afterEach(async () => {
+    await act(async () => notifications.clean());
+  });
 
   test('PlanDefinition builder', async () => {
     const planDefinition = await medplum.createResource<PlanDefinition>({

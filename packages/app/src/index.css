@@ -1,0 +1,12 @@
+html {
+  height: 100%;
+}
+
+body,
+#root {
+  min-height: 100vh;
+}
+
+.grecaptcha-badge {
+  visibility: hidden;
+}

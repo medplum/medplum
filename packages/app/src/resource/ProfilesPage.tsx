@@ -54,7 +54,7 @@ export function ProfilesPage(): JSX.Element | null {
         <>
           <Tabs
             value={currentProfile?.url}
-            onTabChange={(newProfileUrl) => setCurrentProfile(availableProfiles?.find((p) => p.url === newProfileUrl))}
+            onChange={(newProfileUrl) => setCurrentProfile(availableProfiles?.find((p) => p.url === newProfileUrl))}
           >
             <Tabs.List>
               {availableProfiles?.map((profile) => {
@@ -69,7 +69,7 @@ export function ProfilesPage(): JSX.Element | null {
                     title={title}
                     rightSection={
                       isActive && (
-                        <ThemeIcon variant="outline" color="green" size="xs" sx={{ borderStyle: 'none' }}>
+                        <ThemeIcon variant="outline" color="green" size="xs" style={{ borderStyle: 'none' }}>
                           <IconCircleFilled size="90%" />
                         </ThemeIcon>
                       )
@@ -153,7 +153,7 @@ const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resource, onReso
             handleSubmit(resource);
           }}
         >
-          <Group position="right" mt="xl">
+          <Group justify="flex-end" mt="xl">
             <Button type="submit">OK</Button>
           </Group>
         </form>
