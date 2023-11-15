@@ -52,6 +52,7 @@ import { SubscriptionsPage } from './resource/SubscriptionsPage';
 import { TimelinePage } from './resource/TimelinePage';
 import { FormCreatePage } from './resource/FormCreatePage';
 import { JsonCreatePage } from './resource/JsonCreatePage';
+import { ProfilesPage } from './resource/ProfilesPage';
 
 export function AppRoutes(): JSX.Element {
   return (
@@ -114,6 +115,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="ranges" element={<ReferenceRangesPage />} />
           <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="timeline" element={<TimelinePage />} />
+          <Route path="profiles" element={<ProfilesPage />} />
         </Route>
         <Route path="/:resourceType" element={<HomePage />} />
         <Route path="/" element={<HomePage />} />

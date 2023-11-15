@@ -40,7 +40,7 @@ function getTabs(resourceType: string): string[] {
     result.push('Ranges');
   }
 
-  result.push('Details', 'Edit', 'Event', 'History', 'Blame', 'JSON', 'Apps');
+  result.push('Details', 'Edit', 'Event', 'History', 'Blame', 'JSON', 'Apps', 'Profiles');
   return result;
 }
 
