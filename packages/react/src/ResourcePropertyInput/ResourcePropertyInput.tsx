@@ -37,19 +37,23 @@ export interface ResourcePropertyInputProps {
 }
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
-  const property = props.property;
-  const propertyType = props.defaultPropertyType ?? property.type[0].code;
-  const name = props.name;
-  const value = props.defaultValue;
-
-  if (property.max > 1 && !props.arrayElement) {
-    if (propertyType === PropertyType.Attachment) {
-      return <AttachmentArrayInput name={name} defaultValue={value} onChange={props.onChange} />;
-    }
-    return <ResourceArrayInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
-  }
+  const { property, name, defaultValue, onChange } = props;
+  const defaultPropertyType = props.defaultPropertyType ?? property.type[0].code;
 
   const propertyTypes = property.type as ElementDefinitionType[];
+
+  //TODO{mattlong} can an extension have more than one type?
+  // if (propertyTypes[0]?.code === PropertyType.Extension) {
+  //   return <ExtensionInputNew property={property} name={name} defaultValue={defaultValue} onChange={onChange} />;
+  // }
+
+  if (property.max > 1 && !props.arrayElement) {
+    if (defaultPropertyType === PropertyType.Attachment) {
+      return <AttachmentArrayInput name={name} defaultValue={defaultValue} onChange={onChange} />;
+    }
+    return <ResourceArrayInput property={property} name={name} defaultValue={defaultValue} onChange={onChange} />;
+  }
+
   if (propertyTypes.length > 1) {
     return <ElementDefinitionInputSelector elementDefinitionTypes={propertyTypes} {...props} />;
   } else {

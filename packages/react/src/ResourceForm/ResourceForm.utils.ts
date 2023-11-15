@@ -1,4 +1,5 @@
 import { capitalize, InternalSchemaElement } from '@medplum/core';
+import React from 'react';
 
 export function setPropertyValue(
   obj: any,
@@ -19,3 +20,11 @@ export function setPropertyValue(
   obj[propName] = value;
   return obj;
 }
+
+export type ResourceFormContextType = {
+  includeExtensions: boolean;
+};
+
+export const ResourceFormContext = React.createContext<ResourceFormContextType>({
+  includeExtensions: true,
+});

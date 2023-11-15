@@ -21,6 +21,7 @@ export interface InternalTypeSchema {
   name: string;
   url?: string;
   kind?: string;
+  type?: string;
   description?: string;
   elements: Record<string, InternalSchemaElement>;
   constraints?: Constraint[];
@@ -47,6 +48,7 @@ export interface InternalSchemaElement {
 export interface ElementType {
   code: string;
   targetProfile?: string[];
+  profile?: string[];
 }
 
 export interface Constraint {
@@ -87,7 +89,9 @@ export function parseStructureDefinition(sd: StructureDefinition): InternalTypeS
   return new StructureDefinitionParser(sd).parse();
 }
 
+// TODO{mattlong} inflateBaseSchema should return values for DATA_TYPES and DATA_TYPES_BY_URL
 const DATA_TYPES: Record<string, InternalTypeSchema> = inflateBaseSchema(baseSchema);
+const DATA_TYPES_BY_URL: Record<string, InternalTypeSchema> = {};
 
 export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | Bundle): void {
   const sds = Array.isArray(bundle) ? bundle : bundle.entry?.map((e) => e.resource as StructureDefinition) ?? [];
@@ -105,9 +109,16 @@ export function loadDataType(sd: StructureDefinition): void {
   }
   const schema = parseStructureDefinition(sd);
   DATA_TYPES[sd.name] = schema;
+  if (sd.url) {
+    DATA_TYPES_BY_URL[sd.url] = schema;
+  }
+
   for (const inner of schema.innerTypes) {
     inner.parentType = schema;
     DATA_TYPES[inner.name] = inner;
+    if (inner.url) {
+      DATA_TYPES_BY_URL[inner.url] = schema;
+    }
   }
 }
 
@@ -121,6 +132,10 @@ export function isDataTypeLoaded(type: string): boolean {
 
 export function tryGetDataType(type: string): InternalTypeSchema | undefined {
   return DATA_TYPES[type];
+}
+
+export function tryGetDataTypeByUrl(url: string): InternalTypeSchema | undefined {
+  return DATA_TYPES_BY_URL[url];
 }
 
 export function getDataType(type: string): InternalTypeSchema {
@@ -175,6 +190,7 @@ class StructureDefinitionParser {
     if (!sd.snapshot?.element || sd.snapshot.element.length === 0) {
       throw new Error(`No snapshot defined for StructureDefinition '${sd.name}'`);
     }
+    console.debug({ snapshot: sd.snapshot });
 
     this.root = sd.snapshot.element[0];
     this.elements = sd.snapshot.element.slice(1);
@@ -182,6 +198,7 @@ class StructureDefinitionParser {
     this.index = 0;
     this.resourceSchema = {
       name: sd.name as ResourceType,
+      type: sd.type,
       url: sd.url as string,
       kind: sd.kind,
       description: getDescription(sd),
@@ -197,6 +214,7 @@ class StructureDefinitionParser {
   parse(): InternalTypeSchema {
     let element = this.next();
     while (element) {
+      console.debug({ id: element.id, sliceName: element.sliceName, element });
       if (element.sliceName) {
         // Start of slice: this ElementDefinition defines the top-level element of a slice value
         this.parseSliceStart(element);
@@ -376,7 +394,8 @@ class StructureDefinitionParser {
     }
     this.slicingContext.current = {
       name: element.sliceName ?? '',
-      type: element.type?.map((t) => ({ code: t.code ?? '', targetProfile: t.targetProfile })),
+      // TODO{mattlong} what to do with type.profile here?
+      type: element.type?.map((t) => ({ code: t.code ?? '', targetProfile: t.targetProfile, profile: t.profile })),
       elements: {},
       min: element.min ?? 0,
       max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string, 10),

@@ -1,6 +1,17 @@
 import { JsonInput } from '@mantine/core';
-import { stringify } from '@medplum/core';
+import { InternalSchemaElement, stringify } from '@medplum/core';
 import { Extension } from '@medplum/fhirtypes';
+
+export interface ExtensionInputNewProps {
+  property: InternalSchemaElement;
+  name: string;
+  defaultValue?: Extension;
+  onChange?: (value: Extension) => void;
+}
+
+export function ExtensionInputNew(props: ExtensionInputNewProps): JSX.Element {
+  return <div>ITS AN Extension {props.name}</div>;
+}
 
 export interface ExtensionInputProps {
   name: string;

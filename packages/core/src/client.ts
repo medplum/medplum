@@ -492,10 +492,16 @@ export interface MailOptions {
   readonly attachments?: MailAttachment[];
 }
 
-interface SchemaGraphQLResponse {
+interface ResourceSchemaGraphQLResponse {
   readonly data: {
     readonly StructureDefinitionList: StructureDefinition[];
     readonly SearchParameterList: SearchParameter[];
+  };
+}
+
+interface ProfileSchemaGraphQLResponse {
+  readonly data: {
+    readonly StructureDefinitionList: StructureDefinition[];
   };
 }
 
@@ -1566,33 +1572,7 @@ export class MedplumClient extends EventTarget {
       (async () => {
         const query = `{
       StructureDefinitionList(name: "${resourceType}") {
-        resourceType,
-        name,
-        kind,
-        description,
-        snapshot {
-          element {
-            id,
-            path,
-            definition,
-            min,
-            max,
-            base {
-              path,
-              min,
-              max
-            },
-            contentReference,
-            type {
-              code,
-              targetProfile
-            },
-            binding {
-              strength,
-              valueSet
-            }
-          }
-        }
+        ${SCHEMA_STRUCTURE_DEFINITION_FIELDS}
       }
       SearchParameterList(base: "${resourceType}", _count: 100) {
         base,
@@ -1603,13 +1583,55 @@ export class MedplumClient extends EventTarget {
       }
     }`.replace(/\s+/g, ' ');
 
-        const response = (await this.graphql(query)) as SchemaGraphQLResponse;
+        const response = (await this.graphql(query)) as ResourceSchemaGraphQLResponse;
 
         indexStructureDefinitionBundle(response.data.StructureDefinitionList);
 
         for (const searchParameter of response.data.SearchParameterList) {
           indexSearchParameter(searchParameter);
         }
+      })()
+    );
+    this.setCacheEntry(cacheKey, promise);
+    return promise;
+  }
+
+  /**
+   * Requests the schema for a profile.
+   * If the schema is already cached, the promise is resolved immediately.
+   * @category Schema
+   * @param profileUrl - The FHIR URL of the profile
+   * @param resourceType - The FHIR resource type.
+   * @returns Promise to a schema with the requested profile.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  requestProfileSchema(profileUrl: string, resourceType: string = 'TODO'): Promise<void> {
+    if (isDataTypeLoaded(profileUrl)) {
+      return Promise.resolve();
+    }
+
+    const cacheKey = profileUrl + '-requestSchema';
+    const cached = this.getCacheEntry(cacheKey, undefined);
+    if (cached) {
+      return cached.value;
+    }
+
+    const promise = new ReadablePromise<void>(
+      (async () => {
+        const query = `{
+      StructureDefinitionList(url: "${profileUrl}") {
+        ${SCHEMA_STRUCTURE_DEFINITION_FIELDS}
+      }
+    }`.replace(/\s+/g, ' ');
+
+        const response = (await this.graphql(query)) as ProfileSchemaGraphQLResponse;
+
+        if (response.data.StructureDefinitionList.length === 0) {
+          console.warn(`No SDs found for ${profileUrl}!`);
+        } else {
+          indexStructureDefinitionBundle(response.data.StructureDefinitionList);
+        }
+        // TODO{mattlong} search parameters
       })()
     );
     this.setCacheEntry(cacheKey, promise);
@@ -3483,3 +3505,45 @@ function bundleToResourceArray<T extends Resource>(bundle: Bundle<T>): ResourceA
   const array = bundle.entry?.map((e) => e.resource as T) ?? [];
   return Object.assign(array, { bundle });
 }
+
+const SCHEMA_STRUCTURE_DEFINITION_FIELDS = `
+    resourceType,
+    name,
+    type,
+    kind,
+    url,
+    description,
+    snapshot {
+      element {
+        id,
+        path,
+        slicing {
+          discriminator {
+            path,
+            type
+          }
+          ordered,
+          rules
+        }
+        sliceName,
+        definition,
+        min,
+        max,
+        base {
+          path,
+          min,
+          max
+        },
+        contentReference,
+        type {
+          code,
+          profile,
+          targetProfile
+        },
+        binding {
+          strength,
+          valueSet
+        }
+      }
+    }
+  `;

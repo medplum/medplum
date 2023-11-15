@@ -1,22 +1,33 @@
 import { Stack } from '@mantine/core';
 import { getPropertyDisplayName, tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { FormSection } from '../FormSection/FormSection';
-import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
+import { ResourceFormContext, setPropertyValue } from '../ResourceForm/ResourceForm.utils';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 
+const EXTENSION_KEYS = ['extension', 'modifierExtension'];
+
 export interface BackboneElementInputProps {
   typeName: string;
+  type?: string;
   defaultValue?: any;
   outcome?: OperationOutcome;
   onChange?: (value: any) => void;
 }
 
+interface IBackboneElementContext {
+  inExtension: boolean;
+}
+
+const BackboneElementContext = createContext(undefined as IBackboneElementContext | undefined);
+
 export function BackboneElementInput(props: BackboneElementInputProps): JSX.Element {
+  const { typeName } = props;
+  const { includeExtensions } = useContext(ResourceFormContext);
   const [value, setValue] = useState<any>(props.defaultValue ?? {});
 
   function setValueWrapper(newValue: any): void {
@@ -26,8 +37,11 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
     }
   }
 
-  const typeName = props.typeName;
-  const typeSchema = tryGetDataType(typeName);
+  const typeSchema = useMemo(() => tryGetDataType(typeName), [typeName]);
+  useEffect(() => {
+    console.log(typeSchema?.name, { typeSchema });
+  }, [typeSchema]);
+
   if (!typeSchema) {
     return <div>{typeName}&nbsp;not implemented</div>;
   }
@@ -35,53 +49,63 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   const typedValue = { type: typeName, value };
 
   return (
-    <Stack>
-      {Object.entries(typeSchema.elements).map(([key, property]) => {
-        if (key === 'id' || DEFAULT_IGNORED_PROPERTIES.includes(key)) {
-          return null;
-        }
-        if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && property.path.split('.').length === 2) {
-          return null;
-        }
-        if (!property.type) {
-          return null;
-        }
+    <BackboneElementContext.Provider value={{ inExtension: false }}>
+      <Stack>
+        {Object.entries(typeSchema.elements).map(([key, property]) => {
+          if (includeExtensions && EXTENSION_KEYS.includes(key)) {
+            console.debug(`including extension '${key}'`);
+          } else if (key === 'id' || DEFAULT_IGNORED_PROPERTIES.includes(key)) {
+            return null;
+          } else if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && property.path.split('.').length === 2) {
+            return null;
+          }
+          // console.log({path: property.path, type: property.type});
+          if (!property.type) {
+            return null;
+          }
 
-        const [propertyValue, propertyType] = getValueAndType(typedValue, key);
-        const required = property.min !== undefined && property.min > 0;
+          const [propertyValue, propertyType] = getValueAndType(typedValue, key);
+          const required = property.min !== undefined && property.min > 0;
 
-        if (property.type.length === 1 && property.type[0].code === 'boolean') {
-          return (
-            <CheckboxFormSection
-              key={key}
-              title={getPropertyDisplayName(key)}
-              description={property.description}
-              htmlFor={key}
-            >
-              <ResourcePropertyInput
-                property={property}
-                name={key}
-                defaultValue={propertyValue}
-                defaultPropertyType={propertyType}
-                outcome={props.outcome}
-                onChange={(newValue: any, propName?: string) => {
-                  setValueWrapper(setPropertyValue(value, key, propName ?? key, property, newValue));
-                }}
-              />
-            </CheckboxFormSection>
-          );
-        }
+          // An extension SHALL have either a value (i.e. a value[x] element) or sub-extensions, but not both. If present, the value[x] element SHALL have content (value attribute or other elements)
+          if (property.max === 0) {
+            console.log(`skipping key ${key} since max === 0`, { path: property.path });
+            return null;
+          }
 
-        return (
-          <FormSection
-            key={key}
-            title={getPropertyDisplayName(key)}
-            description={property.description}
-            withAsterisk={required}
-            htmlFor={key}
-            outcome={props.outcome}
-          >
+          if (props.type === 'Extension' && key === 'url') {
+            // console.log({ type: props.type, key, property });
+            //TODO this should recurse
+            return null;
+          }
+
+          if (property.type.length === 1 && property.type[0].code === 'boolean') {
+            return (
+              <CheckboxFormSection
+                key={key}
+                title={getPropertyDisplayName(key)}
+                description={property.description}
+                htmlFor={key}
+                fhirPath={property.path}
+                withAsterisk={required}
+              >
+                <ResourcePropertyInput
+                  property={property}
+                  name={key}
+                  defaultValue={propertyValue}
+                  defaultPropertyType={propertyType}
+                  outcome={props.outcome}
+                  onChange={(newValue: any, propName?: string) => {
+                    setValueWrapper(setPropertyValue(value, key, propName ?? key, property, newValue));
+                  }}
+                />
+              </CheckboxFormSection>
+            );
+          }
+
+          const resourcePropertyInput = (
             <ResourcePropertyInput
+              key={key}
               property={property}
               name={key}
               defaultValue={propertyValue}
@@ -90,9 +114,28 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
                 setValueWrapper(setPropertyValue(value, key, propName ?? key, property, newValue));
               }}
             />
-          </FormSection>
-        );
-      })}
-    </Stack>
+          );
+          //TODO{mattlong} don't wrap in FormSection if path ends in extension?
+
+          if (property.path.endsWith('.extension')) {
+            return resourcePropertyInput;
+          }
+
+          return (
+            <FormSection
+              key={key}
+              title={getPropertyDisplayName(key)}
+              description={property.description}
+              withAsterisk={required}
+              htmlFor={key}
+              outcome={props.outcome}
+              fhirPath={property.path}
+            >
+              {resourcePropertyInput}
+            </FormSection>
+          );
+        })}
+      </Stack>
+    </BackboneElementContext.Provider>
   );
 }
