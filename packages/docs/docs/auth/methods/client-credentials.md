@@ -66,6 +66,8 @@ On success, the response will be a JSON object with the following properties:
 
 The value of "access_token" can then be used in future requests for authentication.
 
+Alternatively, you can initiate the process in the Medplum Client by using the [`startClientLogin`](/docs/sdk/core.medplumclient.startclientlogin) helper function.
+
 For more details about OAuth2 Client Credentials Flow:
 
 - https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
