@@ -697,11 +697,7 @@ export class MedplumClient extends EventTarget {
       this.initPromise = Promise.resolve();
     } else if (this.storage.getInitPromise !== undefined) {
       const initPromise = this.storage.getInitPromise();
-      initPromise
-        .then(() => {
-          this.attemptResumeActiveLogin().catch(console.error);
-        })
-        .catch(console.error);
+      initPromise.then(() => this.attemptResumeActiveLogin()).catch(console.error);
       this.initPromise = initPromise;
       this.initComplete = false;
     } else {
