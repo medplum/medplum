@@ -18,7 +18,7 @@ export default function Home(): JSX.Element {
 
   function handleAuthResponse(response: LoginAuthenticationResponse): void {
     if (response.code) {
-      medplum.processCode(response.code).catch((err) => console.error(err));
+      medplum.processCode(response.code).catch(console.error);
     }
     if (response.memberships) {
       // TODO: Handle multiple memberships
