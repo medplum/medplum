@@ -100,6 +100,7 @@ export interface MedplumInfraConfig {
   rdsInstances: number;
   rdsInstanceType: string;
   rdsSecretsArn?: string;
+  postgresVersion?: string;
   cacheNodeType?: string;
   desiredServerCount: number;
   serverImage: string;
