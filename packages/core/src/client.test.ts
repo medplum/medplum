@@ -2615,20 +2615,21 @@ describe('Client', () => {
   });
 });
 
-describe('Passed in `AsyncBackedClientStorage`', () => {
+describe('Passed in async-backed `ClientStorage`', () => {
   test('MedplumClient resolves initialized after storage is initialized', async () => {
     const fetch = mockFetch(200, { success: true });
     const storage = new MockAsyncClientStorage();
     const medplum = new MedplumClient({ fetch, storage });
     expect(storage.isInitialized).toEqual(false);
-    await medplum.initialized;
+    storage.setInitialized();
+    await medplum.getInitPromise();
     expect(storage.isInitialized).toEqual(true);
   });
 
   test('MedplumClient should resolve initialized when sync storage used', async () => {
     const fetch = mockFetch(200, { success: true });
     const medplum = new MedplumClient({ fetch });
-    await expect(medplum.initialized).resolves;
+    await expect(medplum.getInitPromise()).resolves;
   });
 });
 

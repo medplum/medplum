@@ -135,7 +135,7 @@ describe('polyfillMedplumWebAPIs', () => {
     });
 
     test('Waiting for initialized', async () => {
-      await clientStorage.initialized;
+      await clientStorage.getInitPromise();
       expect(() => clientStorage.getObject('test')).not.toThrow();
     });
 
@@ -161,7 +161,7 @@ describe('polyfillMedplumWebAPIs', () => {
 
     test('Making a new storage should fetch existing keys', async () => {
       const newStorage = new ExpoClientStorage();
-      await newStorage.initialized;
+      await newStorage.getInitPromise();
       // Assert size
       expect(newStorage.length).toEqual(1);
     });
@@ -173,7 +173,7 @@ describe('polyfillMedplumWebAPIs', () => {
 
     test('After clearing, new storages should not get previous keys', async () => {
       const newStorage = new ExpoClientStorage();
-      await newStorage.initialized;
+      await newStorage.getInitPromise();
       // Assert size is 0
       expect(newStorage.length).toEqual(0);
     });

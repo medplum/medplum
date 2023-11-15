@@ -65,7 +65,7 @@ import {
   validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
-import { AsyncBackedClientStorage, ClientStorage } from './storage';
+import { ClientStorage, IClientStorage } from './storage';
 import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded } from './typeschema/types';
 import {
@@ -631,7 +631,7 @@ export class MedplumClient extends EventTarget {
   private readonly options: MedplumClientOptions;
   private readonly fetch: FetchLike;
   private readonly createPdfImpl?: CreatePdfFunction;
-  private readonly storage: ClientStorage;
+  private readonly storage: IClientStorage;
   private readonly requestCache: LRUCache<RequestCacheEntry> | undefined;
   private readonly cacheTime: number;
   private readonly baseUrl: string;
@@ -695,8 +695,8 @@ export class MedplumClient extends EventTarget {
     if (options?.accessToken) {
       this.setAccessToken(options.accessToken);
       this.initPromise = Promise.resolve();
-    } else if ((this.storage as AsyncBackedClientStorage).initialized !== undefined) {
-      const initPromise = (this.storage as AsyncBackedClientStorage).initialized;
+    } else if (this.storage.getInitPromise !== undefined) {
+      const initPromise = this.storage.getInitPromise();
       initPromise
         .then(() => {
           this.attemptResumeActiveLogin().catch(console.error);
@@ -719,7 +719,7 @@ export class MedplumClient extends EventTarget {
     return this.initComplete;
   }
 
-  get initialized(): Promise<void> {
+  getInitPromise(): Promise<void> {
     return this.initPromise;
   }
 

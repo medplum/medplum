@@ -2,8 +2,7 @@ import { OperationOutcome } from '@medplum/fhirtypes';
 import { FetchLike } from './client';
 import { ContentType } from './contenttype';
 import { getStatus, isOperationOutcome } from './outcomes';
-import { AsyncBackedClientStorage, ClientStorage } from './storage';
-import { sleep } from './utils';
+import { ClientStorage } from './storage';
 
 export function mockFetch(
   status: number,
@@ -24,23 +23,29 @@ export function mockFetch(
   });
 }
 
-export class MockAsyncClientStorage extends ClientStorage implements AsyncBackedClientStorage {
+export class MockAsyncClientStorage extends ClientStorage {
   #isInitialized: boolean;
+  #initPromise: Promise<void>;
+  #initResolve: () => void = () => undefined;
+
   constructor() {
     super();
     this.#isInitialized = false;
+    this.#initPromise = new Promise((resolve) => {
+      this.#initResolve = resolve;
+    });
   }
+
+  setInitialized(): void {
+    this.#isInitialized = true;
+    this.#initResolve();
+  }
+
+  getInitPromise(): Promise<void> {
+    return this.#initPromise;
+  }
+
   get isInitialized(): boolean {
     return this.#isInitialized;
-  }
-  get initialized(): Promise<void> {
-    return new Promise((resolve) => {
-      sleep(0)
-        .then(() => {
-          this.#isInitialized = true;
-          resolve();
-        })
-        .catch(console.error);
-    });
   }
 }

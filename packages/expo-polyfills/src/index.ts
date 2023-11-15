@@ -1,4 +1,4 @@
-import { AsyncBackedClientStorage, ClientStorage, MemoryStorage, OperationOutcomeError } from '@medplum/core';
+import { ClientStorage, IClientStorage, MemoryStorage, OperationOutcomeError } from '@medplum/core';
 import { decode, encode } from 'base-64';
 import { CryptoDigestAlgorithm, digest } from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
@@ -126,7 +126,7 @@ class SyncSecureStorage implements Storage {
     });
   }
 
-  get initialized(): Promise<void> {
+  getInitPromise(): Promise<void> {
     return this.initPromise;
   }
 
@@ -224,7 +224,7 @@ class SyncSecureStorage implements Storage {
   }
 }
 
-export class ExpoClientStorage extends ClientStorage implements AsyncBackedClientStorage {
+export class ExpoClientStorage extends ClientStorage implements IClientStorage {
   // We keep a private reference to the storage we pass in so we can use it within this subclass too...
   private secureStorage: SyncSecureStorage;
   constructor() {
@@ -232,8 +232,8 @@ export class ExpoClientStorage extends ClientStorage implements AsyncBackedClien
     super(storage);
     this.secureStorage = storage;
   }
-  get initialized(): Promise<void> {
-    return this.secureStorage.initialized;
+  getInitPromise(): Promise<void> {
+    return this.secureStorage.getInitPromise();
   }
   get length(): number {
     return this.secureStorage.length;

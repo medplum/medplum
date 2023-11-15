@@ -1,6 +1,6 @@
-import { AsyncBackedClientStorage, ClientStorage } from '@medplum/core';
+import { ClientStorage, IClientStorage } from '@medplum/core';
 
-export class MockAsyncClientStorage extends ClientStorage implements AsyncBackedClientStorage {
+export class MockAsyncClientStorage extends ClientStorage implements IClientStorage {
   #isInitialized: boolean;
   #initPromise: Promise<void>;
   #initResolve: (value: void | PromiseLike<void>) => void;
@@ -15,7 +15,7 @@ export class MockAsyncClientStorage extends ClientStorage implements AsyncBacked
   get isInitialized(): boolean {
     return this.#isInitialized;
   }
-  get initialized(): Promise<void> {
+  getInitPromise(): Promise<void> {
     return this.#initPromise;
   }
   setInitialized(): void {

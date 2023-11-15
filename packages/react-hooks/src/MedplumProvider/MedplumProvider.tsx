@@ -32,7 +32,10 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
     }
     if (!medplum.isInitialized) {
       setState((s) => ({ ...s, loading: true }));
-      medplum.initialized.then(() => setState((s) => ({ ...s, loading: false }))).catch(console.error);
+      medplum
+        .getInitPromise()
+        .then(() => setState((s) => ({ ...s, loading: false })))
+        .catch(console.error);
     }
   }, [medplum, medplum.isInitialized]);
 
