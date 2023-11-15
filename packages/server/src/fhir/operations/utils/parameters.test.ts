@@ -24,6 +24,6 @@ describe('FHIR Operation Parameters parsing', () => {
   test('Read JSON', () => {
     const input = { x: 'y', a: 'b' };
     const result = parseParameters(input);
-    expect(result).toMatchObject({ x: 'y', a: 'b' });
+    expect(result).toMatchObject(input);
   });
 });

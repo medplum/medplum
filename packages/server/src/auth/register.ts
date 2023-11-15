@@ -1,10 +1,10 @@
 import { createReference, ProfileResource } from '@medplum/core';
-import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { ClientApplication, Login, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { systemRepo } from '../fhir/repo';
 import { getAuthTokens, tryLogin } from '../oauth/utils';
-import { createProject } from './newproject';
 import { bcryptHashPassword } from './utils';
+import { createProject } from '../fhir/operations/projectinit';
 
 /*
  * This is a utility method for creating a Project, Profile, and ProjectMembership.
@@ -60,11 +60,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     allowNoMembership: true,
   });
 
-  const { membership, client } = await createProject(login, projectName, firstName, lastName);
-
-  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
-
-  const profile = await systemRepo.readReference<ProfileResource>(membership.profile as Reference<ProfileResource>);
+  const { membership, client, project, profile } = await createProject(projectName, user);
 
   const token = await getAuthTokens(
     {
