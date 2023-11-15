@@ -1,25 +1,5 @@
 import { ExpoClientStorage, polyfillMedplumWebAPIs } from '.';
 
-// Commented out because test this mock was designed for is not working properly
-// jest.mock(
-//   'expo-crypto',
-//   () =>
-//     ({
-//       digest: async function (algorithm: CryptoDigestAlgorithm, data: BufferSource): Promise<ArrayBuffer> {
-//         const dataStr = new TextDecoder().decode(data);
-//         if ((algorithm as string) === 'SHA-256' && dataStr === 'Medplum_is_cool') {
-//           return Promise.resolve(
-//             new Uint8Array([
-//               0x97, 0xe9, 0xb0, 0xd6, 0x96, 0xa6, 0xcd, 0x12, 0xd2, 0xf5, 0x61, 0x56, 0x07, 0x16, 0x8b, 0x49, 0xe6,
-//               0x07, 0xb1, 0xbe, 0x52, 0x73, 0xe7, 0x87, 0x2e, 0x2c, 0x7e, 0x02, 0x3d, 0x99, 0x95, 0xc9,
-//             ])
-//           );
-//         }
-//         throw new Error('Invalid input!');
-//       },
-//     }) satisfies { digest: typeof digest }
-// );
-
 jest.mock('expo-secure-store', () => {
   const store = new Map<string, string>();
   return {
@@ -85,17 +65,7 @@ describe('polyfillMedplumWebAPIs', () => {
       expect(window.crypto.subtle.digest).toBeDefined();
     });
 
-    // TODO: Get this test to pass on CI
-    // test('Should be able to hash a message', async () => {
-    //   await expect(
-    //     window.crypto.subtle.digest('SHA-256', new TextEncoder().encode('Medplum_is_cool'))
-    //   ).resolves.toEqual(
-    //     new Uint8Array([
-    //       0x97, 0xe9, 0xb0, 0xd6, 0x96, 0xa6, 0xcd, 0x12, 0xd2, 0xf5, 0x61, 0x56, 0x07, 0x16, 0x8b, 0x49, 0xe6, 0x07,
-    //       0xb1, 0xbe, 0x52, 0x73, 0xe7, 0x87, 0x2e, 0x2c, 0x7e, 0x02, 0x3d, 0x99, 0x95, 0xc9,
-    //     ])
-    //   );
-    // });
+    // TODO: Add a test for `digest`
   });
 
   describe('Location', () => {
