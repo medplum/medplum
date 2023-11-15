@@ -653,6 +653,7 @@ export class MedplumClient extends EventTarget {
   private sessionDetails?: SessionDetails;
   private basicAuth?: string;
   private initPromise: Promise<void>;
+  private initComplete = true;
 
   constructor(options?: MedplumClientOptions) {
     super();
@@ -702,6 +703,7 @@ export class MedplumClient extends EventTarget {
         })
         .catch(console.error);
       this.initPromise = initPromise;
+      this.initComplete = false;
     } else {
       this.attemptResumeActiveLogin().catch(console.error);
       this.initPromise = Promise.resolve();
@@ -710,11 +712,18 @@ export class MedplumClient extends EventTarget {
     this.setupStorageListener();
   }
 
+  /**
+   * @returns Whether the client has been fully initialized or not.
+   */
+  get isInitialized(): boolean {
+    return this.initComplete;
+  }
+
   get initialized(): Promise<void> {
     return this.initPromise;
   }
 
-  async attemptResumeActiveLogin(): Promise<void> {
+  private async attemptResumeActiveLogin(): Promise<void> {
     const activeLogin = this.getActiveLogin();
     if (!activeLogin) {
       return;

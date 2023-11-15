@@ -13,12 +13,11 @@ import {
   NewProjectRequest,
   NewUserRequest,
 } from './client';
-import { mockFetch } from './client-test-utils';
+import { MockAsyncClientStorage, mockFetch } from './client-test-utils';
 import { ContentType } from './contenttype';
 import { OperationOutcomeError, notFound, unauthorized } from './outcomes';
-import { AsyncBackedClientStorage, ClientStorage } from './storage';
 import { isDataTypeLoaded } from './typeschema/types';
-import { ProfileResource, createReference, sleep } from './utils';
+import { ProfileResource, createReference } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -58,27 +57,6 @@ const schemaResponse = {
 
 const originalWindow = globalThis.window;
 const originalBuffer = globalThis.Buffer;
-
-class AsyncClientStorage extends ClientStorage implements AsyncBackedClientStorage {
-  #isInitialized: boolean;
-  constructor() {
-    super();
-    this.#isInitialized = false;
-  }
-  get isInitialized(): boolean {
-    return this.#isInitialized;
-  }
-  get initialized(): Promise<void> {
-    return new Promise((resolve) => {
-      sleep(0)
-        .then(() => {
-          this.#isInitialized = true;
-          resolve();
-        })
-        .catch(console.error);
-    });
-  }
-}
 
 describe('Client', () => {
   beforeAll(() => {
@@ -2640,7 +2618,7 @@ describe('Client', () => {
 describe('Passed in `AsyncBackedClientStorage`', () => {
   test('MedplumClient resolves initialized after storage is initialized', async () => {
     const fetch = mockFetch(200, { success: true });
-    const storage = new AsyncClientStorage();
+    const storage = new MockAsyncClientStorage();
     const medplum = new MedplumClient({ fetch, storage });
     expect(storage.isInitialized).toEqual(false);
     await medplum.initialized;

@@ -23,20 +23,18 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
 
   const [state, setState] = useState({
     profile: medplum.getProfile(),
-    loading: true,
+    loading: !medplum.isInitialized,
   });
 
   useEffect(() => {
-    medplum.initialized
-      .then(() => {
-        setState((s) => ({ ...s, loading: false }));
-      })
-      .catch((err) => console.error(err));
-
-    return () => {
+    if (!medplum) {
+      return;
+    }
+    if (!medplum.isInitialized) {
       setState((s) => ({ ...s, loading: true }));
-    };
-  }, [medplum]);
+      medplum.initialized.then(() => setState((s) => ({ ...s, loading: false }))).catch(console.error);
+    }
+  }, [medplum, medplum.isInitialized]);
 
   useEffect(() => {
     function eventListener(): void {
