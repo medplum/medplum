@@ -2621,9 +2621,11 @@ describe('Passed in async-backed `ClientStorage`', () => {
     const storage = new MockAsyncClientStorage();
     const medplum = new MedplumClient({ fetch, storage });
     expect(storage.isInitialized).toEqual(false);
+    expect(medplum.isInitialized).toEqual(false);
     storage.setInitialized();
     await medplum.getInitPromise();
     expect(storage.isInitialized).toEqual(true);
+    expect(medplum.isInitialized).toEqual(true);
   });
 
   test('MedplumClient should resolve initialized when sync storage used', async () => {

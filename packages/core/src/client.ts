@@ -696,25 +696,35 @@ export class MedplumClient extends EventTarget {
       this.setAccessToken(options.accessToken);
       this.initPromise = Promise.resolve();
     } else if (this.storage.getInitPromise !== undefined) {
-      const initPromise = this.storage.getInitPromise();
-      initPromise.then(() => this.attemptResumeActiveLogin()).catch(console.error);
+      const storageInitPromise = this.storage.getInitPromise();
+      const initPromise = new Promise<void>((resolve) => {
+        storageInitPromise
+          .then(() => {
+            this.attemptResumeActiveLogin().then(resolve).catch(console.error);
+            this.initComplete = true;
+          })
+          .catch(console.error);
+      });
       this.initPromise = initPromise;
       this.initComplete = false;
     } else {
-      this.attemptResumeActiveLogin().catch(console.error);
-      this.initPromise = Promise.resolve();
+      this.initPromise = this.attemptResumeActiveLogin().catch(console.error);
     }
 
     this.setupStorageListener();
   }
 
   /**
-   * @returns Whether the client has been fully initialized or not.
+   * @returns Whether the client has been fully initialized or not. Should always be true unless a custom asynchronous `ClientStorage` was passed into the constructor.
    */
   get isInitialized(): boolean {
     return this.initComplete;
   }
 
+  /**
+   * Gets a Promise that resolves when async initialization is complete. This is particularly useful for waiting for an async `ClientStorage` and/or authentication to finish.
+   * @returns A Promise that resolves when any async initialization of the client is finished.
+   */
   getInitPromise(): Promise<void> {
     return this.initPromise;
   }
