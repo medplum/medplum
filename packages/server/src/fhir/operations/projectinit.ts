@@ -1,7 +1,7 @@
 import { ClientApplication, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { systemRepo } from '../repo';
-import { OperationOutcomeError, ProfileResource, allOk, badRequest, createReference, forbidden } from '@medplum/core';
+import { OperationOutcomeError, ProfileResource, badRequest, createReference, created, forbidden } from '@medplum/core';
 import { parseParameters } from './utils/parameters';
 import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
@@ -11,6 +11,7 @@ import { createProfile, createProjectMembership } from '../../auth/utils';
 
 interface ProjectInitParameters {
   name: string;
+  owner?: string;
 }
 
 /**
@@ -29,20 +30,25 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
     sendOutcome(res, forbidden);
     return;
   }
-
-  const user = await systemRepo.readReference(ctx.membership.user as Reference);
-  if (user.resourceType !== 'User') {
-    throw new OperationOutcomeError(badRequest('Only Users are permitted to be the admin of a new Project'));
-  }
-
   const params = parseParameters<ProjectInitParameters>(req.body);
   if (!params.name) {
     sendOutcome(res, badRequest('Project name is required', 'Parameters.parameter'));
     return;
   }
 
-  const { project } = await createProject(params.name, user);
-  await sendResponse(res, allOk, project);
+  let ownerRef: Reference;
+  if (params.owner) {
+    ownerRef = { reference: params.owner };
+  } else {
+    ownerRef = login.user as Reference;
+  }
+  const owner = await systemRepo.readReference(ownerRef);
+  if (owner.resourceType !== 'User') {
+    throw new OperationOutcomeError(badRequest('Only Users are permitted to be the owner of a new Project'));
+  }
+
+  const { project } = await createProject(params.name, owner);
+  await sendResponse(res, created, project);
 }
 
 /**
