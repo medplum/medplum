@@ -1,8 +1,7 @@
 import { getDisplayString, MedplumClient, ProfileResource } from '@medplum/core';
-import { MockClient } from '@medplum/mock';
+import { MockAsyncClientStorage, MockClient } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
 import React from 'react';
-import { MockAsyncClientStorage } from '../__mocks__';
 import { MedplumProvider } from './MedplumProvider';
 import { useMedplum, useMedplumContext, useMedplumNavigate, useMedplumProfile } from './MedplumProvider.context';
 
