@@ -39,7 +39,9 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
 
   const typeSchema = useMemo(() => tryGetDataType(typeName), [typeName]);
   useEffect(() => {
-    console.log(typeSchema?.name, { typeSchema });
+    if (typeSchema) {
+      console.log(typeSchema.name, { typeSchema });
+    }
   }, [typeSchema]);
 
   if (!typeSchema) {
@@ -50,34 +52,36 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
 
   return (
     <BackboneElementContext.Provider value={{ inExtension: false }}>
-      <Stack>
+      <Stack style={{ flexGrow: 1 }}>
         {Object.entries(typeSchema.elements).map(([key, property]) => {
           if (includeExtensions && EXTENSION_KEYS.includes(key)) {
-            console.debug(`including extension '${key}'`);
+            // extensions without slices can safely be skipped?
+            if (!property.slicing && property.type.length === 1 && property.type[0].code === 'Extension') {
+              console.debug(`SKIPPING ${property.path} since it is an Extension with no slices`, typeSchema);
+              return null;
+            }
           } else if (key === 'id' || DEFAULT_IGNORED_PROPERTIES.includes(key)) {
             return null;
           } else if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && property.path.split('.').length === 2) {
             return null;
           }
-          // console.log({path: property.path, type: property.type});
           if (!property.type) {
             return null;
           }
 
+          // Extension.url is never user-facing
+          if (props.type === 'Extension' && key === 'url') {
+            return null;
+          }
+
+          if (property.max === 0) {
+            return null;
+          }
+
+          console.debug({ typeName: props.typeName, path: property.path, type: property.type });
+
           const [propertyValue, propertyType] = getValueAndType(typedValue, key);
           const required = property.min !== undefined && property.min > 0;
-
-          // An extension SHALL have either a value (i.e. a value[x] element) or sub-extensions, but not both. If present, the value[x] element SHALL have content (value attribute or other elements)
-          if (property.max === 0) {
-            console.log(`skipping key ${key} since max === 0`, { path: property.path });
-            return null;
-          }
-
-          if (props.type === 'Extension' && key === 'url') {
-            // console.log({ type: props.type, key, property });
-            //TODO this should recurse
-            return null;
-          }
 
           if (property.type.length === 1 && property.type[0].code === 'boolean') {
             return (
@@ -115,9 +119,9 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
               }}
             />
           );
-          //TODO{mattlong} don't wrap in FormSection if path ends in extension?
 
-          if (property.path.endsWith('.extension')) {
+          // skip FormSection wrapper fo extensions
+          if (props.type === 'Extension' || EXTENSION_KEYS.includes(key)) {
             return resourcePropertyInput;
           }
 

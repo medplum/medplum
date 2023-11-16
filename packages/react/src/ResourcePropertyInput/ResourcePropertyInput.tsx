@@ -242,7 +242,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.ContactPoint:
       return <ContactPointInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Extension:
-      return <ExtensionInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <ExtensionInput name={name} defaultValue={value} onChange={props.onChange} property={property} />;
     case PropertyType.HumanName:
       return <HumanNameInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Identifier:

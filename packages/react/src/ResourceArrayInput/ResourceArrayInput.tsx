@@ -1,10 +1,11 @@
 import { ActionIcon, Group, Stack } from '@mantine/core';
-import { InternalSchemaElement, isEmpty } from '@medplum/core';
+import { InternalSchemaElement, SliceDefinition } from '@medplum/core';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
 import { MouseEvent, useRef, useState, useMemo } from 'react';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { killEvent } from '../utils/dom';
 import { ResourceSliceInput } from '../ResourceSliceInput/ResourceSliceInput';
+import { SliceInput } from '../SliceInput/SliceInput';
 
 export interface ResourceArrayInputProps {
   property: InternalSchemaElement;
@@ -14,23 +15,25 @@ export interface ResourceArrayInputProps {
   onChange?: (value: any[]) => void;
 }
 
+// TODO{mattlong} remove disable
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function getSliceValue(arrayValues: any[] | undefined, slice: SliceDefinition): any[] {
+  // temp: just return a single undefined representing an empty entry to be displayed
+  return [undefined];
+}
+
 export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element {
   const { property } = props;
 
-  const [_slices, _unhandledSlices] = useMemo(() => {
+  // TODO{mattlong} remove need of unhandledSlices
+  const [slices, unhandledSlices] = useMemo<[SliceDefinition[], SliceDefinition[]]>(() => {
     if (!property.slicing) {
-      return [];
+      return [[], []];
     }
 
     const results = [];
     const unhandled = [];
     for (const slice of property.slicing.slices) {
-      const sliceName = slice.name;
-
-      if (!isEmpty(slice.elements)) {
-        console.log('WARN slice.elements is NOT empty', slice);
-      }
-
       if (!slice.type) {
         console.log('PANIC slice.type is missing');
         unhandled.push(slice);
@@ -48,86 +51,14 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
         continue;
       }
 
-      if (!sliceType.profile) {
-        console.log('PANIC slice.type[0].profile is missing', sliceType);
-        unhandled.push(slice);
-        continue;
-      } else if (sliceType.profile.length > 1) {
-        console.log('PANIC slice.type[0].profile has more than one item');
-        unhandled.push(slice);
-        continue;
-      }
-
-      const sliceTypeProfileUrl = sliceType.profile[0];
-      console.debug({ sliceName, profileUrl: sliceTypeProfileUrl });
-
       results.push(slice);
     }
     return [results, unhandled];
   }, [property.slicing]);
 
-  const [values, setValues] = useState(() => {
-    const defaultValueArray = props.defaultValue && Array.isArray(props.defaultValue) ? props.defaultValue : [];
-    if (property.slicing) {
-      console.debug({ slicing: property.slicing });
-      const defaultValues = [];
-      for (const slice of property.slicing.slices) {
-        const sliceName = slice.name;
-
-        if (!isEmpty(slice.elements)) {
-          console.log('WARN slice.elements is NOT empty', slice);
-        }
-
-        if (!slice.type) {
-          console.log('WARN slice.type is missing');
-          continue;
-        } else if (slice.type.length > 1) {
-          console.log('WARN slice.type has more than one item');
-          continue;
-        }
-
-        const sliceType = slice.type[0];
-        if (sliceType.code !== 'Extension') {
-          console.log('WARN slice.type[0].code is not Extension', sliceType.code);
-          continue;
-        }
-
-        if (!sliceType.profile) {
-          console.log('WARN slice.type[0].profile is missing', sliceType);
-          continue;
-        } else if (sliceType.profile.length > 1) {
-          console.log('WARN slice.type[0].profile has more than one item');
-          continue;
-        }
-
-        const sliceTypeProfileUrl = sliceType.profile[0];
-
-        console.debug({ sliceName, profileUrl: sliceTypeProfileUrl });
-        const existingValues = defaultValueArray.filter((v) => v.url === sliceTypeProfileUrl);
-        const finalValues = [...existingValues];
-        if (finalValues.length > slice.max) {
-          console.log(`Too many existing values for slice ${sliceName}`, existingValues);
-          continue;
-        }
-
-        const placeholdersToShow = 1;
-
-        for (let i = 0; i < placeholdersToShow - finalValues.length; i++) {
-          finalValues.push({
-            __placeholder: true,
-            sliceName,
-            url: sliceTypeProfileUrl,
-          });
-        }
-        for (const val of finalValues) {
-          defaultValues.push({ ...val });
-        }
-      }
-      return defaultValues;
-    } else {
-      return defaultValueArray;
-    }
-  });
+  const [values, setValues] = useState(
+    props.defaultValue && Array.isArray(props.defaultValue) ? props.defaultValue : []
+  );
 
   const valuesRef = useRef<any[]>();
   valuesRef.current = values;
@@ -139,10 +70,35 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
     }
   }
 
+  if (slices?.length > 0) {
+    return (
+      <Stack style={{ marginTop: '1rem', marginLeft: '1rem' }}>
+        {slices.map((slice) => {
+          return (
+            <SliceInput
+              slice={slice}
+              key={slice.name}
+              property={property}
+              defaultValue={getSliceValue(props.defaultValue, slice)}
+              onChange={(newValue: any[]) => {
+                console.log('SliceInput.onChange', newValue);
+              }}
+            />
+          );
+        })}
+        {unhandledSlices.map((slice) => (
+          <Group key={slice.name} noWrap>
+            Unhandled slice: {slice.name}
+          </Group>
+        ))}
+      </Stack>
+    );
+  }
+
   return (
     <Stack style={{ marginTop: '1rem', marginLeft: '1rem' }}>
       {values.map((v, index) => (
-        <Group key={`${index}-${values.length}`} noWrap>
+        <Group key={`${index}-${values.length}`} noWrap style={{ flexGrow: 1 }}>
           <div style={{ flexGrow: 1 }}>
             {v?.sliceName ? (
               <ResourceSliceInput
