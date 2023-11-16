@@ -1,14 +1,16 @@
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import { AccessPolicy, Binary, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
 import { Readable } from 'stream';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { Repository, systemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { getAuthenticatedContext } from '../context';
+import { makeValidationMiddleware } from '../util/validator';
 
-export const createBotValidators = [body('name').notEmpty().withMessage('Bot name is required')];
+export const createBotValidator = makeValidationMiddleware([
+  body('name').notEmpty().withMessage('Bot name is required'),
+]);
 
 const defaultBotCode = `import { BotEvent, MedplumClient } from '@medplum/core';
 
@@ -19,11 +21,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
 export async function createBotHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    sendOutcome(res, invalidRequest(errors));
-    return;
-  }
 
   const bot = await createBot(ctx.repo, {
     ...req.body,

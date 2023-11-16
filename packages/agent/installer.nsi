@@ -165,9 +165,19 @@ Function InstallApp
     ExecWait "shawl-v1.3.0-win64.exe add --name $\"${SERVICE_NAME}$\" -- $\"$INSTDIR\medplum-agent-win-x64.exe$\" $\"$baseUrl$\" $\"$clientId$\" $\"$clientSecret$\" $\"$agentId$\"" $1
     DetailPrint "Exit code $1"
 
+    # Set service display name
+    DetailPrint "Setting service display name..."
+    ExecWait "sc.exe config $\"${SERVICE_NAME}$\" displayname= $\"${APP_NAME}$\"" $1
+    DetailPrint "Exit code $1"
+
     # Set service description
     DetailPrint "Setting service description..."
     ExecWait "sc.exe description $\"${SERVICE_NAME}$\" $\"Securely connects local devices to ${COMPANY_NAME} cloud$\"" $1
+    DetailPrint "Exit code $1"
+
+    # Set service to start automatically
+    DetailPrint "Setting service to start automatically..."
+    ExecWait "sc.exe config $\"${SERVICE_NAME}$\" start= auto" $1
     DetailPrint "Exit code $1"
 
     # Start the service

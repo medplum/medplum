@@ -1,6 +1,6 @@
 {
   "name": "@medplum/agent",
-  "version": "2.1.12",
+  "version": "2.1.14",
   "description": "Medplum Agent",
   "homepage": "https://www.medplum.com/",
   "repository": {

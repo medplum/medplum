@@ -1,9 +1,10 @@
 import { badRequest, createReference } from '@medplum/core';
 import { Login, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { body } from 'express-validator';
+import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
+import { makeValidationMiddleware } from '../util/validator';
 import { createProject } from '../fhir/operations/projectinit';
 
 export interface NewProjectRequest {
@@ -11,10 +12,10 @@ export interface NewProjectRequest {
   readonly projectName: string;
 }
 
-export const newProjectValidators = [
+export const newProjectValidator = makeValidationMiddleware([
   body('login').notEmpty().withMessage('Missing login'),
   body('projectName').notEmpty().withMessage('Project name is required'),
-];
+]);
 
 /**
  * Handles a HTTP request to /auth/newproject.
@@ -24,12 +25,6 @@ export const newProjectValidators = [
  * @param res - The HTTP response.
  */
 export async function newProjectHandler(req: Request, res: Response): Promise<void> {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    sendOutcome(res, invalidRequest(errors));
-    return;
-  }
-
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   if (login.membership) {
