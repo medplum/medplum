@@ -112,10 +112,10 @@ export class BackEnd extends Construct {
 
       this.rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
         engine: rds.DatabaseClusterEngine.auroraPostgres({
-          version: config.postgresVersion
+          version: config.rdsInstanceVersion
             ? rds.AuroraPostgresEngineVersion.of(
-                config.postgresVersion,
-                config.postgresVersion.slice(0, config.postgresVersion.indexOf('.')),
+                config.rdsInstanceVersion,
+                config.rdsInstanceVersion.slice(0, config.rdsInstanceVersion.indexOf('.')),
                 { s3Import: true, s3Export: true }
               )
             : rds.AuroraPostgresEngineVersion.VER_12_9,
