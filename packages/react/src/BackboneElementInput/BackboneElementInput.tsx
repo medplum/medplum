@@ -1,5 +1,5 @@
 import { Stack } from '@mantine/core';
-import { getPropertyDisplayName, tryGetDataType } from '@medplum/core';
+import { getPathDisplayName, tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
@@ -87,7 +87,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
             return (
               <CheckboxFormSection
                 key={key}
-                title={getPropertyDisplayName(key)}
+                title={getPathDisplayName(key)}
                 description={property.description}
                 htmlFor={key}
                 fhirPath={property.path}
@@ -128,7 +128,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
           return (
             <FormSection
               key={key}
-              title={getPropertyDisplayName(key)}
+              title={getPathDisplayName(key)}
               description={property.description}
               withAsterisk={required}
               htmlFor={key}

@@ -13,7 +13,7 @@ import {
 import { LOINC, UCUM } from './constants';
 import {
   getElementDefinitionTypeName,
-  getPropertyDisplayName,
+  getPathDisplayName,
   isReference,
   isResource,
   stringifyTypedValue,
@@ -21,13 +21,13 @@ import {
 } from './types';
 
 describe('Type Utils', () => {
-  test('getPropertyDisplayName', () => {
-    expect(getPropertyDisplayName('Patient.id')).toEqual('ID');
-    expect(getPropertyDisplayName('Patient.name')).toEqual('Name');
-    expect(getPropertyDisplayName('Patient.birthDate')).toEqual('Birth Date');
-    expect(getPropertyDisplayName('DeviceDefinition.manufacturer[x]')).toEqual('Manufacturer');
-    expect(getPropertyDisplayName('ClientApplication.jwksUri')).toEqual('JWKS URI');
-    expect(getPropertyDisplayName('ClientApplication.redirectUri')).toEqual('Redirect URI');
+  test('getPathDisplayName', () => {
+    expect(getPathDisplayName('Patient.id')).toEqual('ID');
+    expect(getPathDisplayName('Patient.name')).toEqual('Name');
+    expect(getPathDisplayName('Patient.birthDate')).toEqual('Birth Date');
+    expect(getPathDisplayName('DeviceDefinition.manufacturer[x]')).toEqual('Manufacturer');
+    expect(getPathDisplayName('ClientApplication.jwksUri')).toEqual('JWKS URI');
+    expect(getPathDisplayName('ClientApplication.redirectUri')).toEqual('Redirect URI');
   });
 
   test('getElementDefinitionTypeName', () => {
