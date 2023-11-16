@@ -75,7 +75,7 @@ curl 'https://api.medplum.com/fhir/R4/Specimen?_has:DiagnosticReport:specimen:_h
 */
 
 // start-block combinedChainTs
-medplum.searchResources('Patient', {
+await medplum.searchResources('Patient', {
   _has: 'Observation:subject:performer:CareTeam.participant:Practitioner.name=bob',
 });
 // end-block combinedChainTs
