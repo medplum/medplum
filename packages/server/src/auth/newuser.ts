@@ -1,5 +1,5 @@
 import { badRequest, NewUserRequest, normalizeOperationOutcome } from '@medplum/core';
-import { ClientApplication, Project, User } from '@medplum/fhirtypes';
+import { ClientApplication, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -9,7 +9,7 @@ import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
-import { bcryptHashPassword, getProjectByRecaptchaSiteKey, verifyRecaptcha } from './utils';
+import { bcryptHashPassword } from './utils';
 import { makeValidationMiddleware } from '../util/validator';
 
 export const newUserValidator = makeValidationMiddleware([
@@ -32,43 +32,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     return;
   }
 
-  const recaptchaSiteKey = req.body.recaptchaSiteKey;
-  let secretKey: string | undefined = getConfig().recaptchaSecretKey;
   let projectId = req.body.projectId as string | undefined;
-  let project: Project | undefined;
-
-  if (recaptchaSiteKey && recaptchaSiteKey !== getConfig().recaptchaSiteKey) {
-    // If the recaptcha site key is not the main Medplum recaptcha site key,
-    // then it must be associated with a Project.
-    // The user can only authenticate with that project.
-    project = await getProjectByRecaptchaSiteKey(recaptchaSiteKey, projectId);
-    if (!project) {
-      sendOutcome(res, badRequest('Invalid recaptchaSiteKey'));
-      return;
-    }
-    secretKey = project.site?.find((s) => s.recaptchaSiteKey === recaptchaSiteKey)?.recaptchaSecretKey;
-    if (!secretKey) {
-      sendOutcome(res, badRequest('Invalid recaptchaSecretKey'));
-      return;
-    }
-    if (!project.defaultPatientAccessPolicy) {
-      sendOutcome(res, badRequest('Project does not allow open registration'));
-      return;
-    }
-    projectId = project.id;
-  }
-
-  if (secretKey) {
-    if (!req.body.recaptchaToken) {
-      sendOutcome(res, badRequest('Recaptcha token is required'));
-      return;
-    }
-
-    if (!(await verifyRecaptcha(secretKey, req.body.recaptchaToken))) {
-      sendOutcome(res, badRequest('Recaptcha failed'));
-      return;
-    }
-  }
 
   // If the user specifies a client ID, then make sure it is compatible with the project
   const clientId = req.body.clientId;
