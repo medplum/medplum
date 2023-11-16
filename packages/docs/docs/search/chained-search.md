@@ -5,15 +5,20 @@ import TabItem from '@theme/TabItem';
 
 # Chaining Searches
 
-Chained search and reverse-chained search allow you to filter your searches based on the parameters of a referenced resource. This can reduce what might otherwise be a series of searches into just a single action.
+Chaining search parameters allows you to filter your searches based on the parameters of another resource which is related to the target resource through one or more references. This can reduce what might otherwise be a series of searches into just a single action.
 
-Chained searches are similar to using `_include` or `_revinclude` parameters, but it will not return the referenced resources, only filter based on their parameters.
+Chained searches are similar to using [`_include` or `_revinclude` parameters](/docs/search/includes), but it will not return the referenced resources, only filter based on their parameters. The primary benefit of this is it allows for easy pagination since you know you will only receive results of one resource type. See the [paginated search docs](/docs/search/paginated-search) for more details.
 
-## Chained Search
+## Forward Chained Search
 
-Chained search allows you to filter your results based on the search parameters of a referenced resource. This is done by appending the resource type you are chaining after a `:`. Then, a `.` is appended with a search parameter of the chained resource.
+Search parameters with the `reference` type can be chained with others to search on the parameters of the referenced resource. The target resource type for every link in the chain must be unambiguous, so you must include the resource type in your search.
 
-<details><summary>Example: Search for any observations about a patient with the name 'homer'</summary>
+The example below searches for all [`Observation`](/docs/api/fhir/resources/observation) resources linked to a [`Patient`](/docs/api/fhir/resources/patient) with a name of 'homer', using the syntax `subject:Patient.name=homer`. The way to read this is "search for all [`Observation`](/docs/api/fhir/resources/observation) resources whose `subject` parameter is of type [`Patient`](/docs/api/fhir/resources/patient) and has a name 'homer'.
+
+The general syntax for a forward chained search is `<reference searchParam>:<referenced resource type>.<referenced resource searchParam>=<value>`.
+
+<details>
+  <summary>Example: Search for any [`Observations`](/docs/api/fhir/resources/observation) about a [`Patient`](/docs/api/fhir/resources/patient) with the name 'homer'</summary>
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="chainedSearchTs">
@@ -33,13 +38,43 @@ Chained search allows you to filter your results based on the search parameters 
   </Tabs>
 </details>
 
+You can include more than one link in your chained search. In the below example, we search for [`Observation`](/docs/api/fhir/resources/observation) resources that are linked to an [`Encounter`](/docs/api/fhir/resources/encounter) done by a service-provider with the name of 'Kaiser'.
+
+<details>
+  <summary>Example: A chained search that chains multiple parameters</summary>
+  <Tabs groupId="language">
+    <TabItem value="ts" label="Typescript">
+      <MedplumCodeBlock language="ts" selectBlocks="multipleChainsTs">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="cli" label="CLI">
+      <MedplumCodeBlock language="bash" selectBlocks="multipleChainsCli">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="curl" label="cURL">
+      <MedplumCodeBlock language="bash" selectBlocks="multipleChainsCurl">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+  </Tabs>
+</details>
+
 ## Reverse Chained Search
 
-Reverse chained searches allow you to filter your results based on other resources that reference your results. This is done using the `_has` parameter.
+Chained references can also be constructed in reverse, filtering on other resources that reference your target search resource. This is done using the `_has` parameter, which has a special syntax: `_has:<next resource type>:<link parameter>:<next parameter>`.
 
-For example, you may want to search for any `Patient` resources that have had a certain code of an `Observation` made about them.
+For example, `Patient?_has:Observation:subject:status=preliminary` would select [`Patient`](/docs/api/fhir/resources/patient) resources that have an [`Observation`](/docs/api/fhir/resources/observation) pointing to them as the `subject` and are also in preliminary status.
 
-<details><summary>Example: Search for any Patients that have had carbon dioxide observed in their blood</summary>
+:::tip Resource Type Ambiguity
+For reverse chaining, the referenced type of the link parameter is never ambiguous: the previous resource type in the chain is used.
+:::
+
+As another example, you may want to search for any [`Patient`](/docs/api/fhir/resources/patient) resources with a heart rate above 150 ([Loinc Code 8867-4](https://loinc.org/8867-4)) [`Observation`](/docs/api/fhir/resources/observation) made about them.
+
+<details>
+  <summary>Example: Search for any [`Patients`](/docs/api/fhir/resources/patient) that have had an observed heart rate above 150</summary>
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="reverseChainedSearchTs">
@@ -59,37 +94,16 @@ For example, you may want to search for any `Patient` resources that have had a 
   </Tabs>
 </details>
 
-In the above example `_has:Observation` filters for `Patient` resources that have an `Observation`. The `:patient` filters for `Observation` resources that reference a `patient` in the subject field. This is based on the `Observation` resource's `patient` search parameter. Finally, `:code=11557-6` filters for that specific code on the `Observation`.
-
-Reversed chained searches also allow you to to perform an "or" search by including multiple arguments as a comma separated list.
-
-<details><summary>Example: Search for any Patients that have had one of multiple observations</summary>
-  <Tabs groupId="language">
-    <TabItem value="ts" label="Typescript">
-      <MedplumCodeBlock language="ts" selectBlocks="reverseChainedOrSearchTs">
-        {ExampleCode}
-      </MedplumCodeBlock>
-    </TabItem>
-    <TabItem value="cli" label="CLI">
-      <MedplumCodeBlock language="bash" selectBlocks="reverseChainedOrSearchCli">
-        {ExampleCode}
-      </MedplumCodeBlock>
-    </TabItem>
-    <TabItem value="curl" label="cURL">
-      <MedplumCodeBlock language="bash" selectBlocks="reverseChainedOrSearchCurl">
-        {ExampleCode}
-      </MedplumCodeBlock>
-    </TabItem>
-  </Tabs>
-</details>
+In the above example `_has:Observation` filters for [`Patient`](/docs/api/fhir/resources/patient) resources that have an [`Observation`](/docs/api/fhir/resources/observation). The `:subject` filters for [`Observation`](/docs/api/fhir/resources/observation) resources that reference a [`Patient`](/docs/api/fhir/resources/patient) in the subject field. This is based on our initial search for a [`Patient`](/docs/api/fhir/resources/patient). Finally, `:code=11557-6` filters for that specific code on the [`Observation`](/docs/api/fhir/resources/observation).
 
 ### Nesting reverse chained searches
 
 It is also possible to nest the `_has` parameter.
 
-In this example we search for a `Speicmen` that is referenced by a `DiagnosticReport` that originated from a `Procedure` on the date of `2023-11-12`.
+In this example we search for a [`Specimen`](/docs/api/fhir/resources/specimen) that is referenced by a [`DiagnosticReport`](/docs/api/fhir/resources/diagnosticreport) that originated from a [`Procedure`](/docs/api/fhir/resources/procedure) on the date of `2023-11-12`.
 
-<details><summary>Example: Nested reversed chained search</summary>
+<details>
+  <summary>Example: Nested reversed chained search</summary>
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="nestedReverseChainTs">
@@ -103,6 +117,33 @@ In this example we search for a `Speicmen` that is referenced by a `DiagnosticRe
     </TabItem>
     <TabItem value="curl" label="cURL">
       <MedplumCodeBlock language="bash" selectBlocks="nestedReverseChainCurl">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+  </Tabs>
+</details>
+
+### Combining forward and reverse chained search
+
+You can mix and match chained parameters by combining a forward chained search with the `_has` parameter.
+
+In the below example, we search for a [`Patient`](/docs/api/fhir/resources/patient) with an [`Observation`](/docs/api/fhir/resources/observation) that was performed by a [`CareTeam`](/docs/api/fhir/resources/careteam) that has a member with the name of 'bob'.
+
+<details>
+  <summary>Example: Combining reverse and forward chained search</summary>
+  <Tabs groupId="language">
+    <TabItem value="ts" label="Typescript">
+      <MedplumCodeBlock language="ts" selectBlocks="combinedChainTs">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="cli" label="CLI">
+      <MedplumCodeBlock language="bash" selectBlocks="combinedChainCli">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="curl" label="cURL">
+      <MedplumCodeBlock language="bash" selectBlocks="combinedChainCurl">
         {ExampleCode}
       </MedplumCodeBlock>
     </TabItem>

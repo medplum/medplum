@@ -20,40 +20,40 @@ curl 'https://api.medplum.com/fhir/R4/Observation?subject:Patient.name=homer' \
 // end-block chainedSearchCurl
 */
 
+// start-block multipleChainsTs
+await medplum.searchResources('Observation', {
+  'encounter:Encounter.service-provider.name': 'Kaiser',
+});
+// end-block multipleChainsTs
+
+/*
+// start-block multipleChainsCli
+medplum get 'Observation?encounter:Encounter.service-provider.name=Kaiser'
+// end-block multipleChainsCli
+
+// start-block multipleChainsCurl
+curl 'https://api.medplum.com/fhir/R4/Observation?encounter:Encounter.service-provider.name=Kaiser' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+// end-block multipleChainsCurl
+*/
+
 // start-block reverseChainedSearchTs
 await medplum.searchResources('Patient', {
-  _has: 'Observation:patient:code=11557-6',
+  _has: 'Observation:subject:code=8867-4',
 });
 // end-block reverseChainedSearchTs
 
 /*
 // start-block reverseChainedSearchCli
-medplum get 'Patient?_has:Observation:patient:code=11557-6'
+medplum get 'Patient?_has:Observation:subject:code=8867-4'
 // end-block reverseChainedSearchCli
 
 // start-block reverseChainedSearchCurl
-curl 'https://api.medplum.com/fhir/R4/Patient?_has:Observation:patient:code=11557-6' \
+curl 'https://api.medplum.com/fhir/R4/Patient?_has:Observation:subject:code=8867-4' \
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block reverseChainedSearchCurl
-*/
-
-// start-block reverseChainedOrSearchTs
-await medplum.searchResources('Patient', {
-  _has: 'Observation:patient:code=15074-8,70274-6',
-});
-// end-block reverseChainedOrSearchTs
-
-/*
-// start-block reverseChainedOrSearchCli
-medplum get 'Patient?_has:Observation:patient:code=15074-8,70274-6'
-// end-block reverseChainedOrSearchCli
-
-// start-block reverseChainedOrSearchCurl
-curl 'https://api.medplum.com/fhir/R4/Patient?_has:Observation:patient:code=15074-8,70274-6' \
-  -H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json' \
-// end-block reverseChainedOrSearchCurl
 */
 
 // start-block nestedReverseChainTs
@@ -72,4 +72,22 @@ curl 'https://api.medplum.com/fhir/R4/Specimen?_has:DiagnosticReport:specimen:_h
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block nestedReverseChainCurl
+*/
+
+// start-block combinedChainTs
+medplum.searchResources('Patient', {
+  _has: 'Observation:subject:performer:CareTeam.participant:Practitioner.name=bob',
+});
+// end-block combinedChainTs
+
+/*
+// start-block combinedChainCli
+medplum get 'Patient?_has:Observation:subject:performer:CareTeam.participant:Practitioner.name=bob'
+// end-block combinedChainCli
+
+// start-block combinedChainCurl
+curl 'https://api.medplum.com/fhir/R4/Patient?_has:Observation:subject:performer:CareTeam.participant:Practitioner.name=bob' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+// end-block combinedChainCurl
 */
