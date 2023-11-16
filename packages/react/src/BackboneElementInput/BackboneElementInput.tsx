@@ -1,5 +1,5 @@
 import { Stack } from '@mantine/core';
-import { getPathDisplayName, tryGetDataType } from '@medplum/core';
+import { InternalSchemaElement, getPathDisplayName, tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
@@ -19,8 +19,28 @@ export interface BackboneElementInputProps {
   onChange?: (value: any) => void;
 }
 
+// Use a symbol to avoid collisions with 'property' appearing in a path
+const PROPERTY = Symbol('property');
+type WalkedPaths = {
+  [key: string]: WalkedPaths | { [PROPERTY]: InternalSchemaElement };
+};
+
 interface IBackboneElementContext {
   inExtension: boolean;
+  walkedPaths: WalkedPaths;
+  seenKeys: Set<string>;
+}
+
+function splitRight(str: string, delim: string): [string, string] {
+  const lastIndex = str.lastIndexOf(delim);
+  const beginning = str.substring(0, lastIndex);
+  const last = str.substring(lastIndex + 1, str.length);
+
+  return [beginning, last];
+}
+
+function digObject(obj: any, props: string[]) {
+  return props.reduce((prev, curr) => (prev && prev[curr] ? prev[curr] : undefined), obj);
 }
 
 const BackboneElementContext = createContext(undefined as IBackboneElementContext | undefined);
@@ -40,9 +60,34 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   const typeSchema = useMemo(() => tryGetDataType(typeName), [typeName]);
   useEffect(() => {
     if (typeSchema) {
-      console.log(typeSchema.name, { typeSchema });
+      console.debug(typeSchema.name, { typeSchema });
     }
   }, [typeSchema]);
+
+  const [walkedPaths, seenKeys] = useMemo(() => {
+    const result: WalkedPaths = {};
+    const seenKeys = new Set<string>();
+    if (!typeSchema?.elements) {
+      return [result, seenKeys];
+    }
+
+    for (const [key, property] of Object.entries(typeSchema.elements)) {
+      const [beginning, last] = splitRight(key, '.');
+      console.debug({ key, beginning, last, property });
+
+      // assumes paths are hierarchically sorted, e.g. Patient.identifier comes before Patient.identifier.id
+      if (seenKeys.has(beginning)) {
+        let entry: WalkedPaths | undefined = result[beginning];
+        if (entry === undefined) {
+          entry = {};
+          result[beginning] = entry;
+        }
+        entry[last] = { [PROPERTY]: property };
+      }
+      seenKeys.add(key);
+    }
+    return [result, seenKeys];
+  }, [typeSchema?.elements]);
 
   if (!typeSchema) {
     return <div>{typeName}&nbsp;not implemented</div>;
@@ -51,7 +96,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   const typedValue = { type: typeName, value };
 
   return (
-    <BackboneElementContext.Provider value={{ inExtension: false }}>
+    <BackboneElementContext.Provider value={{ inExtension: false, walkedPaths, seenKeys }}>
       <Stack style={{ flexGrow: 1 }}>
         {Object.entries(typeSchema.elements).map(([key, property]) => {
           if (includeExtensions && EXTENSION_KEYS.includes(key)) {
@@ -78,7 +123,17 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
             return null;
           }
 
-          console.debug({ typeName: props.typeName, path: property.path, type: property.type });
+          // Profiles include definitions for nested properties that they have modified in some way
+          // (e.g. restricting cardinality, specifying pattern[x], etc.
+          // Do not render nested elements directly since that would result in them being displayed twice.
+          const [beginning, _last] = splitRight(key, '.');
+          if (seenKeys.has(beginning)) {
+            // TODO {mattlong} walkedElements entries need to be used as nested elements
+            // are rendered to overwrite their (default) InternalSchemaElement
+            return null;
+          }
+
+          console.debug({ typeName: props.typeName, path: property.path, property });
 
           const [propertyValue, propertyType] = getValueAndType(typedValue, key);
           const required = property.min !== undefined && property.min > 0;

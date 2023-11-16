@@ -1,5 +1,5 @@
 import React from 'react';
-import { InternalSchemaElement, SliceDefinition } from '@medplum/core';
+import { InternalSchemaElement, SliceDefinition, getPropertyDisplayName } from '@medplum/core';
 import { FormSection } from '../FormSection/FormSection';
 import { Stack } from '@mantine/core';
 import { ElementDefinitionTypeInput, ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
@@ -47,11 +47,42 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
   const values = props.defaultValue;
   const sliceSchemaElement = sliceToInternalSchemaElement(slice);
 
+  let description: React.ReactNode = slice.definition;
+  if (DEBUG) {
+    let debugDescription;
+    const profileUrls = slice.type[0].profile;
+    if (profileUrls) {
+      debugDescription = (
+        <span>
+          {profileUrls.map((url) => {
+            return (
+              <a key={url} href={url} target="_blank">
+                {url}
+              </a>
+            );
+          })}
+        </span>
+      );
+    } else {
+      debugDescription = `type: ${JSON.stringify(slice.type)}`;
+    }
+
+    description = (
+      <>
+        {debugDescription}
+        <br />
+        {description}
+      </>
+    );
+  }
+
+  const required = property.min !== undefined && property.min > 0;
   // TODO{mattlong}  handle adding/removing values similar to ResourceArrayInput
   return (
     <FormSection
-      title={slice.name}
-      description={`SliceInput.FormSection type: ${JSON.stringify(slice.type)}`}
+      title={getPropertyDisplayName(slice.name)}
+      description={description}
+      withAsterisk={required}
       fhirPath={`${property.path}:${slice.name}`}
     >
       <Stack style={{ marginTop: '1rem', marginLeft: '1rem' }}>
@@ -69,23 +100,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
               return null;
             }
 
-            return (
-              <div key={key}>
-                {DEBUG && (
-                  <>
-                    <div>slice.element[{key}]:</div>
-                    {Object.entries(element).map(([key, val]) => {
-                      return (
-                        <div key={key}>
-                          {key}: {JSON.stringify(val)}
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
-                <ResourcePropertyInput property={element} name={key} />
-              </div>
-            );
+            return <ResourcePropertyInput key={key} property={element} name={key} />;
           });
 
           //TODO{mattlong} handle multiple slice types

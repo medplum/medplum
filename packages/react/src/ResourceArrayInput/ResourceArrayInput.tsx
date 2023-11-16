@@ -4,13 +4,13 @@ import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
 import { MouseEvent, useRef, useState, useMemo } from 'react';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { killEvent } from '../utils/dom';
-import { ResourceSliceInput } from '../ResourceSliceInput/ResourceSliceInput';
 import { SliceInput } from '../SliceInput/SliceInput';
 
 export interface ResourceArrayInputProps {
   property: InternalSchemaElement;
   name: string;
   defaultValue?: any[];
+  indent?: boolean;
   arrayElement?: boolean;
   onChange?: (value: any[]) => void;
 }
@@ -70,9 +70,10 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
     }
   }
 
+  const style = props.indent ? { marginTop: '1rem', marginLeft: '1rem' } : undefined;
   if (slices?.length > 0) {
     return (
-      <Stack style={{ marginTop: '1rem', marginLeft: '1rem' }}>
+      <Stack style={style}>
         {slices.map((slice) => {
           return (
             <SliceInput
@@ -96,36 +97,21 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
   }
 
   return (
-    <Stack style={{ marginTop: '1rem', marginLeft: '1rem' }}>
+    <Stack style={style}>
       {values.map((v, index) => (
         <Group key={`${index}-${values.length}`} noWrap style={{ flexGrow: 1 }}>
           <div style={{ flexGrow: 1 }}>
-            {v?.sliceName ? (
-              <ResourceSliceInput
-                property={props.property}
-                name={props.name}
-                sliceName={v.sliceName}
-                profileUrl={v.url}
-                defaultValue={v}
-                onChange={(newValue: any) => {
-                  const copy = [...(valuesRef.current as any[])];
-                  copy[index] = newValue;
-                  setValuesWrapper(copy);
-                }}
-              />
-            ) : (
-              <ResourcePropertyInput
-                arrayElement={true}
-                property={props.property}
-                name={props.name + '.' + index}
-                defaultValue={v}
-                onChange={(newValue: any) => {
-                  const copy = [...(valuesRef.current as any[])];
-                  copy[index] = newValue;
-                  setValuesWrapper(copy);
-                }}
-              />
-            )}
+            <ResourcePropertyInput
+              arrayElement={true}
+              property={props.property}
+              name={props.name + '.' + index}
+              defaultValue={v}
+              onChange={(newValue: any) => {
+                const copy = [...(valuesRef.current as any[])];
+                copy[index] = newValue;
+                setValuesWrapper(copy);
+              }}
+            />
           </div>
           <div>
             <ActionIcon

@@ -6,7 +6,7 @@ import { getErrorsForInput } from '../utils/outcomes';
 export interface FormSectionProps {
   title?: string;
   htmlFor?: string;
-  description?: string;
+  description?: React.ReactNode;
   withAsterisk?: boolean;
   outcome?: OperationOutcome;
   children?: ReactNode;

@@ -51,7 +51,18 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
     if (defaultPropertyType === PropertyType.Attachment) {
       return <AttachmentArrayInput name={name} defaultValue={defaultValue} onChange={onChange} />;
     }
-    return <ResourceArrayInput property={property} name={name} defaultValue={defaultValue} onChange={onChange} />;
+
+    // Extensions are a special type of array that shouldn't be indented
+    const indent = propertyTypes[0]?.code !== PropertyType.Extension;
+    return (
+      <ResourceArrayInput
+        property={property}
+        name={name}
+        defaultValue={defaultValue}
+        indent={indent}
+        onChange={onChange}
+      />
+    );
   }
 
   if (propertyTypes.length > 1) {

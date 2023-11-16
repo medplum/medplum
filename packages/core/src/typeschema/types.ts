@@ -19,6 +19,7 @@ import { capitalize, isEmpty } from '../utils';
  */
 export interface InternalTypeSchema {
   name: string;
+  title?: string;
   url?: string;
   kind?: string;
   type?: string;
@@ -67,6 +68,7 @@ export interface SlicingRules {
 
 export interface SliceDefinition {
   name: string;
+  definition?: string;
   type?: ElementType[];
   elements: Record<string, InternalSchemaElement>;
   min: number;
@@ -190,7 +192,6 @@ class StructureDefinitionParser {
     if (!sd.snapshot?.element || sd.snapshot.element.length === 0) {
       throw new Error(`No snapshot defined for StructureDefinition '${sd.name}'`);
     }
-    console.debug({ snapshot: sd.snapshot });
 
     this.root = sd.snapshot.element[0];
     this.elements = sd.snapshot.element.slice(1);
@@ -198,6 +199,7 @@ class StructureDefinitionParser {
     this.index = 0;
     this.resourceSchema = {
       name: sd.name as ResourceType,
+      title: sd.title,
       type: sd.type,
       url: sd.url as string,
       kind: sd.kind,
@@ -214,7 +216,6 @@ class StructureDefinitionParser {
   parse(): InternalTypeSchema {
     let element = this.next();
     while (element) {
-      console.debug({ id: element.id, sliceName: element.sliceName, element });
       if (element.sliceName) {
         // Start of slice: this ElementDefinition defines the top-level element of a slice value
         this.parseSliceStart(element);
@@ -287,6 +288,7 @@ class StructureDefinitionParser {
     this.backboneContext = {
       type: {
         name: getElementDefinitionTypeName(element),
+        title: element.label,
         description: element.definition,
         elements: {},
         constraints: this.parseElementDefinition(element).constraints,
@@ -394,7 +396,7 @@ class StructureDefinitionParser {
     }
     this.slicingContext.current = {
       name: element.sliceName ?? '',
-      // TODO{mattlong} what to do with type.profile here?
+      definition: element.definition,
       type: element.type?.map((t) => ({ code: t.code ?? '', targetProfile: t.targetProfile, profile: t.profile })),
       elements: {},
       min: element.min ?? 0,
@@ -423,6 +425,7 @@ class StructureDefinitionParser {
           ? getElementDefinitionTypeName(ed)
           : t.code ?? '',
         targetProfile: t.targetProfile,
+        profile: t.profile,
       })),
       fixed: firstValue(getTypedPropertyValue(typedElementDef, 'fixed')),
       pattern: firstValue(getTypedPropertyValue(typedElementDef, 'pattern')),
