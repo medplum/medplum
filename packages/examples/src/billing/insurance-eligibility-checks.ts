@@ -19,7 +19,7 @@ const eligibilityCheck: CoverageEligibilityRequest =
     insurance: [
       {
         coverage: {
-          reference: 'Coverage/example-coverage',
+          reference: 'Coverage/homer-simpson-coverage',
         },
       },
     ],
@@ -28,7 +28,7 @@ const eligibilityCheck: CoverageEligibilityRequest =
         category: {
           coding: [
             {
-              system: 'http://terminology.hl7.org/CodeSystem/ex-benefitcategory',
+              system: 'https://x12.org/codes/service-type-codes',
               code: '3',
               display: 'Consultation',
             },
@@ -47,6 +47,45 @@ const eligibilityCheck: CoverageEligibilityRequest =
     ],
   };
 // end-block eligibilityRequest
+
+const generalBenefitsCheckRequest: CoverageEligibilityRequest =
+  // start-block generalBenefitsCheckRequest
+  {
+    resourceType: 'CoverageEligibilityRequest',
+    id: 'general-benefits-check',
+    status: 'active',
+    purpose: ['benefits', 'discovery'],
+    patient: {
+      reference: 'Patient/jane-doe',
+    },
+    provider: {
+      reference: 'Organization/example-hospital',
+    },
+    insurer: {
+      reference: 'Organization/kaiser-permanente',
+    },
+    insurance: [
+      {
+        coverage: {
+          reference: 'Coverage/jane-doe-coverage',
+        },
+      },
+    ],
+    item: [
+      {
+        category: {
+          coding: [
+            {
+              system: 'https://x12.org/codes/service-type-codes',
+              code: '30',
+              display: 'Plan Coverage and General Benefits',
+            },
+          ],
+        },
+      },
+    ],
+  };
+// end-block generalBenefitsCheckRequest
 
 const eligibilityResponse: CoverageEligibilityResponse =
   // start-block eligibilityResponse
@@ -68,7 +107,7 @@ const eligibilityResponse: CoverageEligibilityResponse =
     insurance: [
       {
         coverage: {
-          reference: 'Coverage/example-coverage',
+          reference: 'Coverage/homer-simpson-coverage',
         },
         inforce: true,
         item: [
@@ -76,7 +115,7 @@ const eligibilityResponse: CoverageEligibilityResponse =
             category: {
               coding: [
                 {
-                  system: 'http://terminology.hl7.org/CodeSystem/ex-benefitcategory',
+                  system: 'https://x12.org/codes/service-type-codes',
                   code: '3',
                   display: 'Consultation',
                 },
@@ -128,4 +167,98 @@ const eligibilityResponse: CoverageEligibilityResponse =
   };
 // end-block eligibilityResponse
 
-console.log(eligibilityCheck, eligibilityResponse);
+const generalBenefitsCheckResponse: CoverageEligibilityResponse =
+  // start-block generalBenefitsCheckResponse
+  {
+    resourceType: 'CoverageEligibilityResponse',
+    status: 'active',
+    purpose: ['benefits', 'discovery'],
+    patient: {
+      reference: 'Patient/jane-doe',
+    },
+    request: {
+      reference: 'CoverageEligibilityRequest/general-benefits-check',
+    },
+    outcome: 'complete',
+    disposition: 'Coverage is currently in-force',
+    insurer: {
+      reference: 'Organization/kaiser-permanente',
+    },
+    insurance: [
+      {
+        coverage: {
+          reference: 'Coverage/jane-doe-coverage',
+        },
+        inforce: true,
+        item: [
+          {
+            category: {
+              coding: [
+                {
+                  system: 'https://x12.org/codes/service-type-codes',
+                  code: '30',
+                  display: 'Plan Coverage and General Benefits',
+                },
+              ],
+            },
+            network: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/benefit-network',
+                  code: 'in',
+                },
+              ],
+            },
+            unit: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/benefit-unit',
+                  code: 'family',
+                },
+              ],
+            },
+            term: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/benefit-term',
+                  code: 'lifetime',
+                },
+              ],
+            },
+            benefit: [
+              {
+                type: {
+                  coding: [
+                    {
+                      code: 'benefit',
+                    },
+                  ],
+                },
+                allowedMoney: {
+                  value: 100000,
+                  currency: 'USD',
+                },
+                usedMoney: {
+                  value: 1233.4,
+                  currency: 'USD',
+                },
+              },
+              {
+                type: {
+                  coding: [
+                    {
+                      code: 'copay-percent',
+                    },
+                  ],
+                },
+                allowedUnsignedInt: 20,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+// end-block generalBenefitsCheckResponse
+
+console.log(eligibilityCheck, generalBenefitsCheckRequest, eligibilityResponse, generalBenefitsCheckResponse);

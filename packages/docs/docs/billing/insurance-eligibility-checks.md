@@ -7,23 +7,28 @@ Insurance eligibility checks determine whether a patient's insurance is active, 
 
 ## Use Cases
 
-Insurance eligibility checks cover a variety of use cases, but three of the most important are:
+Insurance eligibility checks cover a variety of use cases, but four of the most important are:
 
-1. Requests for prior authorization
-2. Confirmation of benefits
-3. Coordination of care
+1. Requests for general coverage and benefit information
+2. Confirmation that insurance covers a specific service type
+3. Coordinating coverage
+4. Requests for prior authorization
+
+### Requests for general coverage and benefit information
+
+Requests for general coverage and benefit information are not asking for any specific information. Instead they request the insurer to provide comprehensive details about what is covered and what benefits are included in a patient's insurance policy.
+
+### Confirmation that insurance covers a specific service type
+
+Insurance eligibility checks used to confirm that a given service type is covered are simply checking that the proposed service will be covered by the insurer. This is often for elective care and cases where the service does not require authorization from the insurer before being provided.
+
+### Coordinating coverage
+
+In many cases patients can have multiple insurances policies, so eligibility checks are used to coordinate coverage. For example, if multiple policies cover the requested care, it needs to be determined which plan will actually pay for it. Complexity increases with the number of coverages and products/services, so insurance eligibility checks are vital to make sure everything gets paid for.
 
 ### Requests for prior authorization
 
-Requests for prior authorization ensure that the patient is both covered and authorized to receive the requested care. This is used in cases where the insurer must ensure that the care is necessary before it is authorized. Often a patient must have a certain diagnosis or have attempted other care options prior to receiving authorization.
-
-### Confirmation of benefits
-
-Insurance eligibility checks used for a confirmation of benefits are similar to requests for prior authorization, but they are simply checking whether the benefits cover the requested care. This is often for elective care and the check is to ensure that the care will be covered but does not require authorization from the insurer.
-
-### Coordination of care
-
-In many cases patients can have multiple insurances policies, so eligibility checks are used to coordinate care. For example, if multiple policies cover the requested care, it needs to be determined which plan will actually pay for it. Complexity increases with the number of coverages and products/services, so insurance eligibility checks are vital to make sure everything gets paid for.
+Requests for prior authorization ensure that the patient is both covered and authorized to receive the requested care, for example a specific medication or procedure. This is used in cases where the insurer must ensure that the care is necessary before it is authorized. Often a patient must have a certain diagnosis or have attempted other care options prior to receiving authorization.
 
 ## Preparing an Eligibility Check
 
@@ -61,15 +66,23 @@ The `item` field also provides additional data about the procedure, product, or 
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ----------------------------- |
 | `productOrService` | The product, drug, service, etc. that is being provided.                                                                                                          | [CPT Codes](https://www.ama-assn.org/topics/cpt-codes)  | 92340 - Fitting of eyeglasses |
 | `diagnosis`        | The diagnosis for which care is being sought.                                                                                                                     | [ICD-10 Codes](https://www.icd10data.com/ICD10CM/Codes) | Condition/reduced-vision      |
-| `category`         | The general type of the service or product being checked for eligibility.                                                                                         |                                                         | Vision Coverage               |
+| `category`         | The general type of the service or product being checked for eligibility.                                                                                         | [X12 Codes](https://x12.org/codes/service-type-codes)   | Vision Coverage               |
 | `provider`         | A reference to the [`Practitioner`](/docs/api/fhir/resources/practitioner) who is responsible for providing the service.                                          |                                                         | Practitioner/dr-alice-smith   |
 | `quantity`         | The number of repetitions of the service that will be performed.                                                                                                  |                                                         | 2                             |
 | `unitPrice`        | The price charged to the patient for a single unit of the service. This is the price that the provider charges for the service.                                   |                                                         | $200                          |
 | `facility`         | A reference to the [`Location`](/docs/api/fhir/resources/location) or [`Organization`](/docs/api/fhir/resources/organization) where the service will be provided. |                                                         | Organization/example-hospital |
 | `detail`           | A reference to the [`CarePlan`](/docs/api/fhir/resources/careplan) with details describing the service.                                                           |                                                         | CarePlan/improve-vision       |
 
-<details><summary>Example: A coverage eligibility request for a basic consultation</summary>
+<details>
+  <summary>Example: A coverage eligibility request for a consultation</summary>
   <MedplumCodeBlock language="ts" selectBlocks="eligibilityRequest">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+<details>
+  <summary>Example: A plan coverage and general benefits check</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="generalBenefitsCheckRequest">
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
@@ -128,8 +141,21 @@ The `item` field is also an array on the `insurance` element of a [`CoverageElig
 
 :::
 
-<details><summary>Example: A coverage eligibility response for a basic consultation</summary>
+<details>
+  <summary>Example: A coverage eligibility response for a basic consultation</summary>
   <MedplumCodeBlock language="ts" selectBlocks="eligibilityResponse">
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
+
+<details>
+  <summary>Example: A plan coverage and general benefits check response</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="generalBenefitsCheckResponse">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+## See Also
+
+- [Candid Health Eligibility Check Guide](https://docs.joincandidhealth.com/api-reference/eligibility)
+- [Change Healthcare Bare Minimum Check](https://developers.changehealthcare.com/eligibilityandclaims/docs/use-bare-minimum-eligibility-requests)
