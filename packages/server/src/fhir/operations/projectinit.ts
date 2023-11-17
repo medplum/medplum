@@ -1,17 +1,21 @@
 import { ClientApplication, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { systemRepo } from '../repo';
-import { OperationOutcomeError, ProfileResource, badRequest, createReference, created, forbidden } from '@medplum/core';
+import { ProfileResource, badRequest, createReference, created } from '@medplum/core';
 import { parseParameters } from './utils/parameters';
 import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
 import { sendResponse } from '../routes';
 import { createClient } from '../../admin/client';
 import { createProfile, createProjectMembership } from '../../auth/utils';
+import { getUserByEmailWithoutProject } from '../../oauth/utils';
+import { createUser } from '../../auth/newuser';
+import { randomUUID } from 'crypto';
 
 interface ProjectInitParameters {
   name: string;
   owner?: string;
+  ownerEmail?: string;
 }
 
 /**
@@ -26,10 +30,7 @@ interface ProjectInitParameters {
 export async function projectInitHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
   const login = ctx.login;
-  if (!login.superAdmin) {
-    sendOutcome(res, forbidden);
-    return;
-  }
+
   const params = parseParameters<ProjectInitParameters>(req.body);
   if (!params.name) {
     sendOutcome(res, badRequest('Project name is required', 'Parameters.parameter'));
@@ -39,12 +40,28 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
   let ownerRef: Reference;
   if (params.owner) {
     ownerRef = { reference: params.owner };
+  } else if (params.ownerEmail) {
+    let user = await getUserByEmailWithoutProject(params.ownerEmail);
+    if (!user) {
+      user = await createUser({
+        email: params.ownerEmail,
+        password: randomUUID(),
+        firstName: params.name,
+        lastName: 'Admin',
+      });
+    }
+    ownerRef = createReference(user);
   } else {
     ownerRef = login.user as Reference;
   }
   const owner = await systemRepo.readReference(ownerRef);
+
   if (owner.resourceType !== 'User') {
-    throw new OperationOutcomeError(badRequest('Only Users are permitted to be the owner of a new Project'));
+    sendOutcome(res, badRequest('Only Users are permitted to be the owner of a new Project'));
+    return;
+  } else if (owner.project) {
+    sendOutcome(res, badRequest('Project owner must not belong to another Project'));
+    return;
   }
 
   const { project } = await createProject(params.name, owner);

@@ -87,7 +87,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   }
 }
 
-export async function createUser(request: NewUserRequest): Promise<User> {
+export async function createUser(request: Omit<NewUserRequest, 'recaptchaToken'>): Promise<User> {
   const { firstName, lastName, email, password, projectId } = request;
 
   const numPwns = await pwnedPassword(password);
