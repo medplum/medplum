@@ -93,7 +93,7 @@ Once you have created your [`CoverageEligibilityRequest`](/docs/api/fhir/resourc
 
 In addition to sending it directly to the insurer, there are services that simplify the process. Companies such as [Opkit](https://www.opkit.co/), [Availty](https://www.availity.com/), [Change Healthcare](https://www.changehealthcare.com/), [Waystar](https://www.waystar.com/) and [Candid Health](https://www.joincandidhealth.com/) allow you to send them eligibility checks directly.
 
-Unfortunately, these companies format their requests based on [X12 EDI Format](https://x12.org/examples/005010x279) rather than FHIR, so you will need to convert your [`CoverageEligibilityRequest`](/docs/api/fhir/resources/coverageeligibilityrequest) to the correct format. This is a good workflow to implement [Bots](/docs/bots/bot-basics) to convert your request, interface with the company's API, and send the request. Additionally, you can have a [Subscription](/docs/subscriptions/index) to listen for a response and have a bot handle that as well.
+Unfortunately, these companies format their requests based on [X12 EDI Format](https://x12.org/examples/005010x279) rather than FHIR, so you will need to convert your [`CoverageEligibilityRequest`](/docs/api/fhir/resources/coverageeligibilityrequest) to the correct format. This is a good workflow to implement [Bots](/docs/bots/bot-basics) to convert your request, interface with the company's API, and send the request. Additionally, you can have a [Subscription](/docs/subscriptions) to listen for a response and have a bot handle that as well.
 
 ## Receiving a Response
 
