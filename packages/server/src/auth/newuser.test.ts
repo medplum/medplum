@@ -106,6 +106,34 @@ describe('New user', () => {
     expect(res.body.issue[0].details.text).toBe('Recaptcha failed');
   });
 
+  test('Password too short', async () => {
+    const registerRequest = {
+      firstName: 'George',
+      lastName: 'Washington',
+      email: `george${randomUUID()}@example.com`,
+      password: 'xyz',
+      recaptchaToken: 'xyz',
+    };
+
+    const res = await request(app).post('/auth/newuser').type('json').send(registerRequest);
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Password must be between 8 and 72 characters');
+  });
+
+  test('Password too long', async () => {
+    const registerRequest = {
+      firstName: 'George',
+      lastName: 'Washington',
+      email: `george${randomUUID()}@example.com`,
+      password: 'xyz'.repeat(100),
+      recaptchaToken: 'xyz',
+    };
+
+    const res = await request(app).post('/auth/newuser').type('json').send(registerRequest);
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Password must be between 8 and 72 characters');
+  });
+
   test('Breached password', async () => {
     // Mock the pwnedPassword function to return "1", meaning the password is breached.
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 1);
