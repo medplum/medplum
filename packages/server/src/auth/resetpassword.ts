@@ -14,8 +14,9 @@ import { getProjectByRecaptchaSiteKey, verifyRecaptcha } from './utils';
 export const resetPasswordValidator = makeValidationMiddleware([
   body('email')
     .isEmail()
+    .withMessage('Valid email address between 3 and 72 characters is required')
     .isLength({ min: 3, max: 72 })
-    .withMessage('Email must be valid email address between 3 and 72 characters'),
+    .withMessage('Valid email address between 3 and 72 characters is required'),
 ]);
 
 export async function resetPasswordHandler(req: Request, res: Response): Promise<void> {
