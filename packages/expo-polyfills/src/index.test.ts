@@ -1,3 +1,5 @@
+import { MemoryStorage } from '@medplum/core';
+import { Platform } from 'react-native';
 import { ExpoClientStorage, polyfillMedplumWebAPIs } from '.';
 
 jest.mock('expo-secure-store', () => {
@@ -14,6 +16,10 @@ jest.mock('expo-secure-store', () => {
     },
   };
 });
+
+if (Platform.OS === 'web') {
+  globalThis.localStorage = new MemoryStorage();
+}
 
 describe('polyfillMedplumWebAPIs', () => {
   beforeAll(() => {
@@ -76,7 +82,7 @@ describe('polyfillMedplumWebAPIs', () => {
 
     test('Should have a callable .assign() function', () => {
       expect(window.location.assign).toBeDefined();
-      expect(window.location.assign).toBeInstanceOf(Function);
+      expect(window.location.assign.call).toBeDefined();
       expect(() => window.location.assign('http://localhost:80')).not.toThrow();
     });
   });
@@ -101,7 +107,9 @@ describe('polyfillMedplumWebAPIs', () => {
 
     test('Using storage before initialized should throw', () => {
       clientStorage = new ExpoClientStorage();
-      expect(() => clientStorage.getObject('test')).toThrow();
+      if (Platform.OS !== 'web') {
+        expect(() => clientStorage.getObject('test')).toThrow();
+      }
     });
 
     test('Waiting for initialized', async () => {

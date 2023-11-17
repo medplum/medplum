@@ -1,5 +1,5 @@
 {
-  "projects": [{ "preset": "jest-expo/ios" }, { "preset": "jest-expo/android" }],
+  "projects": [{ "preset": "jest-expo/ios" }, { "preset": "jest-expo/android" }, { "preset": "jest-expo/web" }],
   "moduleFileExtensions": ["ts", "tsx", "js"],
   "moduleDirectories": ["node_modules", "src"],
   "transform": {
