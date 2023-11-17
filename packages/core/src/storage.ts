@@ -1,5 +1,14 @@
 import { stringify } from './utils';
 
+export interface IClientStorage {
+  getInitPromise?(): Promise<void>;
+  clear(): void;
+  getString(key: string): string | undefined;
+  setString(key: string, value: string | undefined): void;
+  getObject<T>(key: string): T | undefined;
+  setObject<T>(key: string, value: T): void;
+}
+
 /**
  * The ClientStorage class is a utility class for storing strings and objects.
  *
@@ -7,11 +16,11 @@ import { stringify } from './utils';
  *
  * When Using MedplumClient in the server, it will be backed by the MemoryStorage class.  For example, the Medplum CLI uses `FileSystemStorage`.
  */
-export class ClientStorage {
+export class ClientStorage implements IClientStorage {
   private readonly storage: Storage;
 
-  constructor() {
-    this.storage = typeof localStorage !== 'undefined' ? localStorage : new MemoryStorage();
+  constructor(storage?: Storage) {
+    this.storage = storage ?? (typeof localStorage !== 'undefined' ? localStorage : new MemoryStorage());
   }
 
   clear(): void {

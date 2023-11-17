@@ -1,8 +1,10 @@
 import {
   allOk,
   badRequest,
+  ClientStorage,
   ContentType,
   getStatus,
+  IClientStorage,
   indexSearchParameter,
   loadDataType,
   LoginState,
@@ -561,6 +563,31 @@ export class MockFetchClient {
     } else {
       return result[1];
     }
+  }
+}
+
+export class MockAsyncClientStorage extends ClientStorage implements IClientStorage {
+  #initialized: boolean;
+  #initPromise: Promise<void>;
+  #initResolve: () => void = () => undefined;
+  constructor() {
+    super();
+    this.#initialized = false;
+    this.#initPromise = new Promise((resolve) => {
+      this.#initResolve = resolve;
+    });
+  }
+  setInitialized(): void {
+    if (!this.#initialized) {
+      this.#initResolve();
+      this.#initialized = true;
+    }
+  }
+  getInitPromise(): Promise<void> {
+    return this.#initPromise;
+  }
+  get isInitialized(): boolean {
+    return this.#initialized;
   }
 }
 
