@@ -231,11 +231,11 @@ interface IExpoClientStorage extends IClientStorage {
 }
 
 /**
- * Provides a wrapper around Expo's `SecureStore` package which provides a persistent and secure storage.
+ * Provides a wrapper around Expo's `SecureStore` package which provides a persistent and secure storage on mobile.
  *
  * This class is necessary for use with `MedplumClient` since `MedplumClient` expects `ClientStorage` to use a synchronous interface, and `SecureStore` uses an asynchronous one.
  *
- * On web, this class will instead wrap `localStorage` automatically, so there is no need to conditionally pass this to `MedplumClient` for React Native Web.
+ * On web, this class will instead wrap `localStorage` automatically, so there is no need to conditionally omit passing this to `MedplumClient` for React Native Web.
  */
 export class ExpoClientStorage extends ClientStorage implements IExpoClientStorage {
   // We keep a private reference to the storage we pass in so we can use it within this subclass too...
