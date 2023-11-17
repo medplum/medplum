@@ -82,6 +82,7 @@ import { validateReferences } from './references';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, SelectQuery } from './sql';
+import { ReferenceTable } from './lookups/reference';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -165,6 +166,7 @@ const lookupTables: LookupTable<unknown>[] = [
   new HumanNameTable(),
   new TokenTable(),
   new ValueSetElementTable(),
+  new ReferenceTable(),
 ];
 
 /**
@@ -845,7 +847,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         }
       }
 
-      await new InsertQuery(resourceType, [columns]).mergeOnConflict(true).execute(client);
+      await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
 
       await new InsertQuery(resourceType + '_History', [
         {
@@ -1049,7 +1051,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       }
     }
 
-    await new InsertQuery(resourceType, [columns]).mergeOnConflict(true).execute(client);
+    await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
   }
 
   /**

@@ -572,15 +572,21 @@ export class ArraySubquery implements Expression {
 
 export class InsertQuery extends BaseQuery {
   private readonly values: Record<string, any>[];
-  private merge?: boolean;
+  private onConflict: 'merge' | 'ignore' | 'error';
 
   constructor(tableName: string, values: Record<string, any>[]) {
     super(tableName);
     this.values = values;
+    this.onConflict = 'error';
   }
 
-  mergeOnConflict(merge: boolean): this {
-    this.merge = merge;
+  mergeOnConflict(): this {
+    this.onConflict = 'merge';
+    return this;
+  }
+
+  ignoreConflict(): this {
+    this.onConflict = 'ignore';
     return this;
   }
 
@@ -591,7 +597,11 @@ export class InsertQuery extends BaseQuery {
     const columnNames = Object.keys(this.values[0]);
     this.appendColumns(sql, columnNames);
     this.appendAllValues(sql, columnNames);
-    this.appendMerge(sql);
+    if (this.onConflict === 'merge') {
+      this.appendMerge(sql);
+    } else if (this.onConflict === 'ignore') {
+      sql.append(' ON CONFLICT DO NOTHING ');
+    }
     return sql.execute(conn);
   }
 
@@ -633,10 +643,6 @@ export class InsertQuery extends BaseQuery {
   }
 
   private appendMerge(sql: SqlBuilder): void {
-    if (!this.merge) {
-      return;
-    }
-
     sql.append(' ON CONFLICT ("id") DO UPDATE SET ');
 
     const entries = Object.entries(this.values[0]);

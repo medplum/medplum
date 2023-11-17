@@ -140,17 +140,23 @@ export abstract class LookupTable<T> {
    * @param client - The database client.
    * @param resourceType - The resource type.
    * @param values - The values to insert.
+   * @param ignoreConflict - Whether to ignore conflicts when inserting lookup values.
    */
   protected async insertValuesForResource(
     client: Pool | PoolClient,
     resourceType: ResourceType,
-    values: Record<string, any>[]
+    values: Record<string, any>[],
+    ignoreConflict?: boolean
   ): Promise<void> {
     if (values.length === 0) {
       return;
     }
     const tableName = this.getTableName(resourceType);
-    await new InsertQuery(tableName, values).execute(client);
+    const insert = new InsertQuery(tableName, values);
+    if (ignoreConflict) {
+      insert.ignoreConflict();
+    }
+    await insert.execute(client);
   }
 
   /**
