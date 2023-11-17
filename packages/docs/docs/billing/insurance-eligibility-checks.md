@@ -19,7 +19,10 @@ Adding a second layer is checking if the policy is active and also covers basic 
 
 Because it is so common, these types of requests are defined by the [X12 Service Type Codes](https://x12.org/codes/service-type-codes) in **service code 30**. This service type is "Plan Coverage and General Benefits", and checks for active basic coverage.
 
-Two common use cases for this service type are checking a new patient's coverage is active and has general benefits and checking coverage directly prior to a visit, to ensure that the policy has not changed and the patient is still covered.
+Two common use cases for this service type are:
+
+- Checking that a new patient's coverage is active and has general benefits.
+- Checking coverage directly prior to a visit to ensure that the policy has not changed and the patient is still covered.
 
 Finally, checking that insurance covers a specific service type adds a third layer to an eligibility check. These are done to ensure that a patient is covered for more complex care. It is recommended to use the [X12 Service Type Codes](https://x12.org/codes/service-type-codes) to illustrate the type of care that is being checked.
 
@@ -61,9 +64,9 @@ The `item` field also provides additional data about the procedure, product, or 
 
 | **Property**       | **Description**                                                                                                                                                   | **Code System**                                         | **Example**                   |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ----------------------------- |
+| `category`         | The general type of the service or product being checked for eligibility.                                                                                         | [X12 Codes](https://x12.org/codes/service-type-codes)   | Vision Coverage               |
 | `productOrService` | The product, drug, service, etc. that is being provided.                                                                                                          | [CPT Codes](https://www.ama-assn.org/topics/cpt-codes)  | 92340 - Fitting of eyeglasses |
 | `diagnosis`        | The diagnosis for which care is being sought.                                                                                                                     | [ICD-10 Codes](https://www.icd10data.com/ICD10CM/Codes) | Condition/reduced-vision      |
-| `category`         | The general type of the service or product being checked for eligibility.                                                                                         | [X12 Codes](https://x12.org/codes/service-type-codes)   | Vision Coverage               |
 | `provider`         | A reference to the [`Practitioner`](/docs/api/fhir/resources/practitioner) who is responsible for providing the service.                                          |                                                         | Practitioner/dr-alice-smith   |
 | `quantity`         | The number of repetitions of the service that will be performed.                                                                                                  |                                                         | 2                             |
 | `unitPrice`        | The price charged to the patient for a single unit of the service. This is the price that the provider charges for the service.                                   |                                                         | $200                          |
@@ -90,7 +93,7 @@ Once you have created your [`CoverageEligibilityRequest`](/docs/api/fhir/resourc
 
 In addition to sending it directly to the insurer, there are services that simplify the process. Companies such as [Opkit](https://www.opkit.co/), [Availty](https://www.availity.com/), [Change Healthcare](https://www.changehealthcare.com/), [Waystar](https://www.waystar.com/) and [Candid Health](https://www.joincandidhealth.com/) allow you to send them eligibility checks directly.
 
-Unfortunately, these companies format their requests based on [X12 EDI Format](https://x12.org/examples/005010x279) rather than FHIR, so you will need to convert your [`CoverageEligibilityRequest`](/docs/api/fhir/resources/coverageeligibilityrequest) to the correct format. This is a good workflow to implement [bots](/docs/bots/bot-basics) to convert your request, interface with the company's API, and send the request. Additionally, you can have a subscription to listen for a response and have a bot handle that as well.
+Unfortunately, these companies format their requests based on [X12 EDI Format](https://x12.org/examples/005010x279) rather than FHIR, so you will need to convert your [`CoverageEligibilityRequest`](/docs/api/fhir/resources/coverageeligibilityrequest) to the correct format. This is a good workflow to implement [Bots](/docs/bots/bot-basics) to convert your request, interface with the company's API, and send the request. Additionally, you can have a [Subscription](/docs/subscriptions/index) to listen for a response and have a bot handle that as well.
 
 ## Receiving a Response
 
@@ -131,12 +134,12 @@ This field has some overlap with the request resource, but there are also signif
 | `provider`                | A reference to the [`Practitioner`](/docs/api/fhir/resources/practitioner) who is responsible for providing the service. |                                                                                                                                      | Practitioner/dr-alice-smith              |
 | `category`                | The general type of the service or product being checked for eligibility.                                                |                                                                                                                                      | Vision Coverage                          |
 
-:::note Multiple Insurances
-FHIR makes the `insurance` field on both the request and response an array, allowing for easy modeling of multiple insurance policies.
+:::note Coordination of Benefits
+FHIR makes the `insurance` field on both the request and response an array, allowing for coordination of benefits across multiple insurance policies.
 
 When sending a request, if there are multiple insurances, the `CoverageEligibilityRequest.insurance.focal` field should be set to `true` on the specific coverage being checked.
 
-The `item` field is also an array on the `insurance` element of a [`CoverageEligibilityResponse`](/docs/api/fhir/resources/coverageeligibilityresponse) because it can represent multiple items that are covered under a specific insurance. When [coordinating care among multiple policies](#coordination-of-care), it can be common for multiple items from multiple coverages to be relevant to the check.
+The `item` field is also an array on the `insurance` element of a [`CoverageEligibilityResponse`](/docs/api/fhir/resources/coverageeligibilityresponse) because it can represent multiple items that are covered under a specific insurance. When coordinating care among multiple policies, it can be common for multiple items from multiple coverages to be relevant to the check.
 
 :::
 
