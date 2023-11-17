@@ -11,10 +11,12 @@ import {
   ClientApplication,
   Login,
   Observation,
+  Organization,
   Patient,
   Practitioner,
   Project,
   ProjectMembership,
+  Quantity,
   Questionnaire,
   ServiceRequest,
   Task,
@@ -1735,6 +1737,92 @@ describe('AccessPolicy', () => {
       expect(patient3).toBeDefined();
       expect(patient3.meta?.versionId).toEqual(patient2.meta?.versionId);
       expect(patient3.meta?.account?.reference).toEqual('Organization/' + account2);
+    }));
+
+  test('Mutex resource type policies with hidden fields', () =>
+    withTestContext(async () => {
+      const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
+      const org = await systemRepo.createResource<Organization>({ resourceType: 'Organization' });
+      const orgRef = createReference(org);
+      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: {
+          project: project.id,
+        },
+        name: 'Hidden Fields Test',
+        resource: [
+          {
+            resourceType: 'Observation',
+            hiddenFields: ['valueQuantity', 'valueString', 'interpretation', 'note'],
+            criteria: `Observation?_compartment:not=Organization/${org.id}`,
+          },
+          {
+            resourceType: 'Observation',
+            criteria: `Observation?_compartment=Organization/${org.id}`,
+          },
+        ],
+      });
+      const repo = new Repository({
+        author: { reference: 'Practitioner/' + randomUUID() },
+        project: project.id,
+        projectAdmin: true,
+        strictMode: true,
+        extendedMode: true,
+        accessPolicy,
+      });
+
+      const withHidden = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'entered-in-error',
+        code: {
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: '10164-2',
+            },
+          ],
+        },
+        subject: {
+          reference: 'Patient/' + randomUUID(),
+          display: 'Local Donor2',
+        },
+        valueQuantity: {
+          value: 20,
+          unit: '%',
+        },
+      });
+      const withVisible = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'entered-in-error',
+        code: {
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: '10164-2',
+            },
+          ],
+        },
+        subject: {
+          reference: 'Patient/' + randomUUID(),
+          display: 'Local Donor2',
+        },
+        valueQuantity: {
+          value: 10,
+          unit: '%',
+        },
+        meta: {
+          account: orgRef,
+          compartment: [orgRef],
+        },
+      });
+
+      const results = await repo.searchResources<Observation>({ resourceType: 'Observation' });
+      expect(results).toHaveLength(2);
+      expect(results.find((o) => o.id === withHidden.id)?.valueQuantity).toBeUndefined();
+      expect(results.find((o) => o.id === withVisible.id)?.valueQuantity).toEqual<Quantity>({
+        value: 10,
+        unit: '%',
+      });
     }));
 
   test('Project admin check references', () =>
