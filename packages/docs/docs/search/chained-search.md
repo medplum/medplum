@@ -11,14 +11,41 @@ Chained searches are similar to using [`_include` or `_revinclude` parameters](/
 
 ## Forward Chained Search
 
-Search parameters with the `reference` type can be chained with others to search on the parameters of the referenced resource. The target resource type for every link in the chain must be unambiguous, so you must include the resource type in your search.
+Search parameters with the `reference` type can be chained together to search on the elements of the referenced resource.
 
-The example below searches for all [`Observation`](/docs/api/fhir/resources/observation) resources linked to a [`Patient`](/docs/api/fhir/resources/patient) with a name of 'homer', using the syntax `subject:Patient.name=homer`. The way to read this is "search for all [`Observation`](/docs/api/fhir/resources/observation) resources whose `subject` parameter is of type [`Patient`](/docs/api/fhir/resources/patient) and has a name 'homer'.
+In the below example we search for all [`Observation`](/docs/api/fhir/resources/observation) resources that are linked to a [`Patient`](/docs/api/fhir/resources/patient) with the name of 'homer' using the syntax `patient.name=homer`. The way to read this is "search for all [`Observation`](/docs/api/fhir/resources/observation) resources that reference a [`Patient`](/docs/api/fhir/resources/patient) (using the `patient` search parameter) and has a name of 'homer'.
+
+<details>
+  <summary>Example: Search for any [`Observations`](/docs/api/fhir/resources/observation) about a [`Patient`](/docs/api/fhir/resources/patient) with the name 'homer'</summary>
+  <Tabs groupId="language">
+    <TabItem value="ts" label="Typescript">
+      <MedplumCodeBlock language="ts" selectBlocks="simpleChainedSearchTs">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="cli" label="CLI">
+      <MedplumCodeBlock language="bash" selectBlocks="simpleChainedSearchCli">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="curl" label="cURL">
+      <MedplumCodeBlock language="bash" selectBlocks="simpleChainedSearchCurl">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+  </Tabs>
+</details>
+
+The target resource for every link in the chain must be unambiguous. If a search parameter can reference multiple resource types, you must specify the resource type in your search.
+
+Just like the example above, the below example searches for all [`Observation`](/docs/api/fhir/resources/observation) resources linked to a [`Patient`](/docs/api/fhir/resources/patient) with a name of 'homer', this time using the syntax `subject:Patient.name=homer`. The way to read this is "search for all [`Observation`](/docs/api/fhir/resources/observation) resources whose `subject` parameter is of type [`Patient`](/docs/api/fhir/resources/patient) and has a name 'homer'".
+
+In the above example, the `patient` parameter can only search for [`Patient`](/docs/api/fhir/resources/patient) resources, so it was not necessary to explicityly state which resource type we were searching for.
 
 The general syntax for a forward chained search is `<reference searchParam>:<referenced resource type>.<referenced resource searchParam>=<value>`.
 
 <details>
-  <summary>Example: Search for any [`Observations`](/docs/api/fhir/resources/observation) about a [`Patient`](/docs/api/fhir/resources/patient) with the name 'homer'</summary>
+  <summary>Example: Search for any [`Observations`](/docs/api/fhir/resources/observation) about a subject that is a [`Patient`](/docs/api/fhir/resources/patient) with the name 'homer'</summary>
   <Tabs groupId="language">
     <TabItem value="ts" label="Typescript">
       <MedplumCodeBlock language="ts" selectBlocks="chainedSearchTs">

@@ -2,6 +2,24 @@ import { MedplumClient } from '@medplum/core';
 
 const medplum = new MedplumClient();
 
+// start-block simpleChainedSearchTs
+await medplum.searchResources('Observation', {
+  'patient.name': 'homer',
+});
+// end-block simpleChainedSearchTs
+
+/*
+// start-block simpleChainedSearchCli
+medplum get 'Observation?patient.name=homer'
+// end-block simpleChainedSearchCli
+
+// start-block simpleChainedSearchCurl
+curl 'https://api.medplum.com/fhir/R4/Observation?patient.name=homer' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+// end-block simpleChainedSearchCurl
+*/
+
 // start-block chainedSearchTs
 await medplum.searchResources('Observation', {
   'subject:Patient.name': 'homer',
