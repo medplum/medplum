@@ -7,28 +7,25 @@ Insurance eligibility checks determine whether a patient's insurance is active, 
 
 ## Use Cases
 
-Insurance eligibility checks cover a variety of use cases, but four of the most important are:
+Insurance eligibility checks cover a variety of use cases, but generally they are used to answer three questions:
 
-1. Requests for general coverage and benefit information
-2. Confirmation that insurance covers a specific service type
-3. Coordinating coverage
-4. Requests for prior authorization
+1. Is this insurance active?
+2. Does this insurance cover basic visits to a provider?
+3. Does this insurance cover a specific service type?
 
-### Requests for general coverage and benefit information
+The most basic use case for an eligibility check is simply seeing if the policy is active and inforce.
 
-Requests for general coverage and benefit information are not asking for any specific information. Instead they request the insurer to provide comprehensive details about what is covered and what benefits are included in a patient's insurance policy.
+Adding a second layer is checking if the policy is active and also covers basic visits to a provider. These include appointments like phsyicals and check-ups and is the most common type of eligibility request.
 
-### Confirmation that insurance covers a specific service type
+Because it is so common, these types of requests are defined by the [X12 Service Type Codes](https://x12.org/codes/service-type-codes) in **service code 30**. This service type is "Plan Coverage and General Benefits", and checks for active basic coverage.
 
-Insurance eligibility checks used to confirm that a given service type is covered are simply checking that the proposed service will be covered by the insurer. This is often for elective care and cases where the service does not require authorization from the insurer before being provided.
+Two common use cases for this service type are checking a new patient's coverage is active and has general benefits and checking coverage directly prior to a visit, to ensure that the policy has not changed and the patient is still covered.
 
-### Coordinating coverage
+Finally, checking that insurance covers a specific service type adds a third layer to an eligibility check. These are done to ensure that a patient is covered for more complex care. It is recommended to use the [X12 Service Type Codes](https://x12.org/codes/service-type-codes) to illustrate the type of care that is being checked.
 
-In many cases patients can have multiple insurances policies, so eligibility checks are used to coordinate coverage. For example, if multiple policies cover the requested care, it needs to be determined which plan will actually pay for it. Complexity increases with the number of coverages and products/services, so insurance eligibility checks are vital to make sure everything gets paid for.
+For example, if a patient needs to purchase durable medical equipment, you would use **service code 12**. This code represents "Durable Medical Equipment Purchased".
 
-### Requests for prior authorization
-
-Requests for prior authorization ensure that the patient is both covered and authorized to receive the requested care, for example a specific medication or procedure. This is used in cases where the insurer must ensure that the care is necessary before it is authorized. Often a patient must have a certain diagnosis or have attempted other care options prior to receiving authorization.
+It is important to note that you should be checking the _service type_ to be provided, not the _specific service_, which is exactly what the [X12 Service Type Codes](https://x12.org/codes/service-type-codes) are designed to do.
 
 ## Preparing an Eligibility Check
 
@@ -91,7 +88,9 @@ The `item` field also provides additional data about the procedure, product, or 
 
 Once you have created your [`CoverageEligibilityRequest`](/docs/api/fhir/resources/coverageeligibilityrequest), you need to send it to the insurer.
 
-In addition to sending it directly to the insurer, there are services that simplify the process. Companies such as [Opkit](https://www.opkit.co/), [Availty](https://www.availity.com/), and [Candid Health](https://www.joincandidhealth.com/) allow you to send them eligibility checks directly.
+In addition to sending it directly to the insurer, there are services that simplify the process. Companies such as [Opkit](https://www.opkit.co/), [Availty](https://www.availity.com/), [Change Healthcare](https://www.changehealthcare.com/), [Waystar](https://www.waystar.com/) and [Candid Health](https://www.joincandidhealth.com/) allow you to send them eligibility checks directly.
+
+Unfortunately, these companies format their requests based on [X12 EDI Format](https://x12.org/examples/005010x279) rather than FHIR, so you will need to convert your [`CoverageEligibilityRequest`](/docs/api/fhir/resources/coverageeligibilityrequest) to the correct format. This is a good workflow to implement [bots](/docs/bots/bot-basics) to convert your request, interface with the company's API, and send the request. Additionally, you can have a subscription to listen for a response and have a bot handle that as well.
 
 ## Receiving a Response
 
