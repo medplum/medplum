@@ -1,10 +1,10 @@
 # Sample Data
 
-[Health Gorilla](https://www.healthgorilla.com/) is an interoperability platform providing permitted access to actionable patient data. When placing orders and receiving results from Health Gorilla in FHIR, you'll need to ensure the following data is populated.
+[Health Gorilla](https://www.healthgorilla.com/) is an interoperability platform that supports diagnostics (labs/imaging) orders and results. This guide provides examples of FHIR data that conforms to Health Gorilla requirements.
 
-Apart from standard FHIR fields, there are some specifics with regards to the Health Gorilla integration that are required for an integration to be successful. This guide documents required fields. Health Gorilla publishes a list of requirements on their [FHIR Profile](https://developer.healthgorilla.com/docs/fhir-profiles) page which is more comprehensive, but this material is meant to give you the minimal set of required fields to send orders and receive results.
+Apart from standard FHIR fields, there are specifics in Health Gorilla FHIR that are required for an integration to be successful. This guide documents required fields. Health Gorilla publishes a list of requirements on their [FHIR Profile](https://developer.healthgorilla.com/docs/fhir-profiles) page which is more comprehensive, but this material is meant to give you the minimal set of required fields to send orders and receive results.
 
-Coming soon: Medplum FHIR Profile specifically for Health Gorilla
+Coming soon: FHIR Profile specifically for Health Gorilla
 
 ## Patient
 
@@ -92,7 +92,7 @@ The integration uses the identifier from the `https://www.healthgorilla.com` sys
 
 ## Organization
 
-The identifiers and addresses on an organization are crucial for data correctness. Example shown below. You will need a `https://www.healthgorilla.com` system identifier as shown in the example that will represent the diagnosics providers. `Organizations` can be hierarchical as shown in the example, and the hierarchy should use the Health Gorilla identifiers. The contact details are a nice-to-have, it can be useful to preserve the customer success contacts in your applications for use by your end users.
+The identifiers and addresses on an organization are crucial for data correctness. Example shown below. You will need a `https://www.healthgorilla.com` system identifier as shown in the example that will represent the diagnostics providers. `Organizations` can be hierarchical as shown in the example, and the hierarchy should use the Health Gorilla identifiers. The contact details are a nice-to-have, it can be useful to preserve the customer success contacts in your applications for use by your end users.
 
 ```json
 {
@@ -142,9 +142,13 @@ The identifiers and addresses on an organization are crucial for data correctnes
 }
 ```
 
+TODO: Document how to find and synchronize `Organization` identifiers from Health Gorilla.
+
 ## Coverage
 
-For `Coverage` the references and coding are important. See the examples below for reference. Identifiers are marked with `medplum-uuid` and `healthgorilla-id` where applicable. This is a representation of the insurance card.
+The `Coverage` resource is a representation of the insurance card. For `Coverage` the references and coding are important. Identifiers should point to the Medplum resources, but particularly for payor `Organization`s, for the integration to work it will require the correct production identifier from the `https://www.healthgorilla.com` system.
+
+It's very important that the `Coverage.payor` resource points to the `Organization` that corresponding to the correct payor. Payors can have the same or similar display names.
 
 ```json
 {
@@ -156,7 +160,7 @@ For `Coverage` the references and coding are important. See the examples below f
   },
   "payor": [
     {
-      "reference": "Organization/<healthgorilla-id>",
+      "reference": "Organization/<medplum-uuid>",
       "display": "Medicare Complete"
     }
   ],
@@ -194,12 +198,14 @@ For `Coverage` the references and coding are important. See the examples below f
 
 ## Account
 
-When orders are placed, you'll need to ensure that all of the billing data is complete and well-formed. To do that you'll need to have properly constructed FHIR Resources that will be used to generate a well formed order set.
+When orders are placed, you'll need to ensure that all of the billing data is complete and well-formed. An Account is the primary way to indicate who to bill for an order. The [Health Gorilla Account](https://developer.healthgorilla.com/docs/diagnostic-network#account) documentation spells out the permutations.
 
-Bill to insurance supports the following permutations:
+At a high level, you'll create an `Account` resource attached to the order, which indicates who will pay for that order.
 
-- One or more `Coverage` resources representing multiple insurances that can be billed in priority order
-- Billing the insurance of a related person, for example labs for a child are billed to a parent's insurance.
+If you are billing patient insurance, you'll need to attach the correct `Coverage` resource(s) to the `Account`. Billing insurance supports the following permutations:
+
+- One or more `Coverage` resources representing multiple insurances that can be billed in priority order, representing Primary, Secondary and Tertiary insurances for a patient.
+- Billing the insurance of a related person is supported when linked to an account, for example labs for a child can be billed to a parent's insurance.
 
 For correct billing the the `Coverage` resources should point to to the correct `subscriber` - the patient themselves or another person.
 
@@ -241,3 +247,11 @@ The `Account` resource `meta` should include the Health Gorilla [Account Profile
   ]
 }
 ```
+
+## Scenarios
+
+The following sample test scenarios are useful to understand when preparing for an integration.
+
+- PSC HOLD - in a Quest ordering workflow this refers to an order with no Specimen details. In this case, the order is placed but the patient has to go to a Quest center to have a specimen collection. PSC stands for "Patient Service Center." The requisition form and details will show PSC HOLD on them.
+- Advance Beneficiary Notice (ABN) - this refers to a Medicare or Medicaid workflow where the patient receives notice of their coverage for the lab test before the test is performed. Health Gorilla provides this as a PDF that should be stored for record keeping.
+- Clinical Note - this refers to a note at the test level placed as part of an order, for example if an order is placed for a Free T4 and a TSH test, the Free T4 and TSH test could each have their own clinical note.
