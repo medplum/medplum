@@ -1,8 +1,8 @@
-import React from 'react';
+import { ReactNode } from 'react';
 import styles from './Section.module.css';
 
 export interface SectionProps {
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 export function Section(props: SectionProps): JSX.Element {

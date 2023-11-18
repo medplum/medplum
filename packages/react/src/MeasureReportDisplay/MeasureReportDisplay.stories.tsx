@@ -1,9 +1,9 @@
+import { Measure } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
 import { Meta } from '@storybook/react';
-import React, { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import { MeasureReportDisplay } from './MeasureReportDisplay';
-import { useMedplum } from '@medplum/react-hooks';
-import { Measure } from '@medplum/fhirtypes';
 
 export default {
   title: 'Medplum/MeasureReportDisplay',
@@ -21,8 +21,8 @@ function createMeasure(title: string, url: string, subtitle?: string): Measure {
 
 export const Basic = (): JSX.Element => {
   const medplum = useMedplum();
-  const [loaded, setLoaded] = React.useState(false);
-  const [measure, setMeasure] = React.useState<Measure | undefined>();
+  const [loaded, setLoaded] = useState(false);
+  const [measure, setMeasure] = useState<Measure | undefined>();
 
   useEffect(() => {
     (async (): Promise<boolean> => {
@@ -64,8 +64,8 @@ export const Basic = (): JSX.Element => {
 
 export const Multiple = (): JSX.Element => {
   const medplum = useMedplum();
-  const [loaded, setLoaded] = React.useState(false);
-  const [measure, setMeasure] = React.useState<Measure | undefined>();
+  const [loaded, setLoaded] = useState(false);
+  const [measure, setMeasure] = useState<Measure | undefined>();
 
   useEffect(() => {
     (async (): Promise<boolean> => {
@@ -118,8 +118,8 @@ export const Multiple = (): JSX.Element => {
 
 export const WithPopulation = (): JSX.Element => {
   const medplum = useMedplum();
-  const [loaded, setLoaded] = React.useState(false);
-  const [measure, setMeasure] = React.useState<Measure | undefined>();
+  const [loaded, setLoaded] = useState(false);
+  const [measure, setMeasure] = useState<Measure | undefined>();
 
   useEffect(() => {
     (async (): Promise<boolean> => {

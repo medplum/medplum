@@ -1,6 +1,6 @@
 import { Anchor, Stack, Title } from '@mantine/core';
 import { QuestionnaireItem, QuestionnaireResponseItem } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { QuestionnaireItemType, buildInitialResponseItem } from '../../utils/questionnaire';
 import { QuestionnaireRepeatableItem } from '../QuestionnaireFormItem/QuestionnaireRepeatableItem';
 

@@ -3,7 +3,7 @@ import { formatHumanName, getReferenceString, ProfileResource } from '@medplum/c
 import { HumanName } from '@medplum/fhirtypes';
 import { useMedplumContext } from '@medplum/react-hooks';
 import { IconChevronDown, IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons-react';
-import React, { useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { HeaderSearchInput } from './HeaderSearchInput';
@@ -57,7 +57,7 @@ export interface HeaderProps {
   pathname?: string;
   searchParams?: URLSearchParams;
   headerSearchDisabled?: boolean;
-  logo: React.ReactNode;
+  logo: ReactNode;
   version?: string;
   navbarToggle: () => void;
 }

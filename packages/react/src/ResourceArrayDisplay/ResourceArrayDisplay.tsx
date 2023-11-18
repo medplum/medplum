@@ -1,5 +1,4 @@
 import { InternalSchemaElement } from '@medplum/core';
-import React from 'react';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 
 export interface ResourceArrayDisplayProps {

@@ -1,4 +1,3 @@
-import React from 'react';
 import styles from './LogoScroller.module.css';
 
 export function LogoScroller(): JSX.Element {

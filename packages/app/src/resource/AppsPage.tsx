@@ -3,7 +3,6 @@ import { showNotification } from '@mantine/notifications';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { ClientApplication, Patient, Reference, ResourceType, SmartAppLaunch } from '@medplum/fhirtypes';
 import { Document, Loading, MedplumLink, useMedplum, useResource, useSearchResources } from '@medplum/react';
-import React from 'react';
 import { useParams } from 'react-router-dom';
 
 export function AppsPage(): JSX.Element | null {

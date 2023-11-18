@@ -1,7 +1,7 @@
 import { Operator, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { Document, MemoizedSearchControl } from '@medplum/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 export function AuditEventPage(): JSX.Element | null {

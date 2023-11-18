@@ -1,7 +1,7 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import { capitalize, InternalSchemaElement, PropertyType } from '@medplum/core';
 import { ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
 import { AnnotationInput } from '../AnnotationInput/AnnotationInput';
 import { AttachmentArrayInput } from '../AttachmentArrayInput/AttachmentArrayInput';

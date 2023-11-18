@@ -1,7 +1,6 @@
 import { createStyles, NativeSelect } from '@mantine/core';
 import { Reference, ValueSet } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
-import React from 'react';
 
 const useStyles = createStyles(() => ({
   container: {

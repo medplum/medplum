@@ -1,11 +1,11 @@
 import { MedplumClient } from '@medplum/core';
-import React, { useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { MepdlumNavigateFunction, reactContext } from './MedplumProvider.context';
 
 export interface MedplumProviderProps {
   medplum: MedplumClient;
   navigate?: MepdlumNavigateFunction;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 /**

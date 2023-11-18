@@ -1,6 +1,5 @@
 import { MedplumClient } from '@medplum/core';
 import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import React from 'react';
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface DefaultResourceTimelineProps {

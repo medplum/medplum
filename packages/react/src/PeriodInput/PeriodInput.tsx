@@ -1,6 +1,6 @@
 import { Group } from '@mantine/core';
 import { Period } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 
 export interface PeriodInputProps {

@@ -1,5 +1,5 @@
 import Layout from '@theme/Layout';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Card } from '../Card';
 import { CardButton } from '../CardButton';
 import { CardContainer } from '../CardContainer';

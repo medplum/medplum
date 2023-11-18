@@ -1,6 +1,5 @@
 import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
 import { Attachment, Group, Patient, Reference, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
-import React from 'react';
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface ServiceRequestTimelineProps {

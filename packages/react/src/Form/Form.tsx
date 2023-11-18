@@ -1,10 +1,10 @@
-import React, { CSSProperties } from 'react';
+import { CSSProperties, ReactNode, SyntheticEvent } from 'react';
 import { parseForm } from './FormUtils';
 
 export interface FormProps {
   onSubmit?: (formData: Record<string, string>) => void;
   style?: CSSProperties;
-  children?: React.ReactNode;
+  children?: ReactNode;
   testid?: string;
 }
 
@@ -13,7 +13,7 @@ export function Form(props: FormProps): JSX.Element {
     <form
       style={props.style}
       data-testid={props.testid}
-      onSubmit={(e: React.SyntheticEvent) => {
+      onSubmit={(e: SyntheticEvent) => {
         e.preventDefault();
         const formData = parseForm(e.target as HTMLFormElement);
         if (props.onSubmit) {

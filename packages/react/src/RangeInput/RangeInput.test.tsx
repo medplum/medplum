@@ -1,6 +1,5 @@
 import { Range } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import { RangeInput } from './RangeInput';
 
 describe('RangeInput', () => {

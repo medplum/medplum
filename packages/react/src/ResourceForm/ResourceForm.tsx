@@ -2,7 +2,7 @@ import { Button, Group, Stack, TextInput } from '@mantine/core';
 import { deepClone } from '@medplum/core';
 import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import React, { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
 import { FormSection } from '../FormSection/FormSection';
 
@@ -37,7 +37,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
     <form
       noValidate
       autoComplete="off"
-      onSubmit={(e: React.FormEvent) => {
+      onSubmit={(e: FormEvent) => {
         e.preventDefault();
         if (props.onSubmit) {
           props.onSubmit(value);

@@ -2,7 +2,7 @@ import { PropertyType } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { FhirPathTableField, Loading, MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
 

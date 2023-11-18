@@ -2,7 +2,7 @@ import { Box, Flex, Text } from '@mantine/core';
 import { Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 export function SoapNote(): JSX.Element {

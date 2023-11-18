@@ -2,7 +2,6 @@ import { Title } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Practitioner } from '@medplum/fhirtypes';
 import { Document, ResourceName, SearchControl, useMedplumNavigate, useMedplumProfile } from '@medplum/react';
-import React from 'react';
 import { Outlet } from 'react-router-dom';
 
 /**

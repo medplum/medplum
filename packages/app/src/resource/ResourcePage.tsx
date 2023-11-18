@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { getReferenceString, isGone, normalizeErrorString } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, useMedplum, useResource } from '@medplum/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { PatientHeader } from '../components/PatientHeader';
 import { QuickServiceRequests } from '../components/QuickServiceRequests';

@@ -1,7 +1,6 @@
 import { ActionIcon, Button } from '@mantine/core';
 import { Meta } from '@storybook/react';
 import { IconCloudUpload } from '@tabler/icons-react';
-import React from 'react';
 import { Document } from '../Document/Document';
 import { AttachmentButton } from './AttachmentButton';
 

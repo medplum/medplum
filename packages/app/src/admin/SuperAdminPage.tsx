@@ -11,7 +11,6 @@ import {
   useMedplum,
 } from '@medplum/react';
 import { IconCheck, IconX } from '@tabler/icons-react';
-import React from 'react';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();

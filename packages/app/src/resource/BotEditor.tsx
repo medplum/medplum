@@ -4,7 +4,7 @@ import { ContentType, isUUID, MedplumClient, normalizeErrorString, PatchOperatio
 import { Bot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { sendCommand } from '../utils';
 import { BotRunner } from './BotRunner';
@@ -79,7 +79,7 @@ export function BotEditor(): JSX.Element | null {
   }, [contentType, fhirInput, hl7Input]);
 
   const saveBot = useCallback(
-    async (e: React.SyntheticEvent) => {
+    async (e: SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setLoading(true);
@@ -112,7 +112,7 @@ export function BotEditor(): JSX.Element | null {
   );
 
   const deployBot = useCallback(
-    async (e: React.SyntheticEvent) => {
+    async (e: SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setLoading(true);
@@ -130,7 +130,7 @@ export function BotEditor(): JSX.Element | null {
   );
 
   const executeBot = useCallback(
-    async (e: React.SyntheticEvent) => {
+    async (e: SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setLoading(true);

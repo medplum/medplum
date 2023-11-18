@@ -2,7 +2,7 @@ import { Button, Center, Group, PasswordInput, Stack, Title } from '@mantine/cor
 import { normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, Form, getErrorsForInput, Logo, useMedplum } from '@medplum/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 export function ChangePasswordPage(): JSX.Element {
   const medplum = useMedplum();

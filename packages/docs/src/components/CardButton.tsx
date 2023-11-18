@@ -1,11 +1,11 @@
-import React from 'react';
+import { ReactNode } from 'react';
 import styles from './CardButton.module.css';
 
 export interface CardButtonProps {
   href: string;
   alt: string;
   target?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 export function CardButton(props: CardButtonProps): JSX.Element {

@@ -3,7 +3,7 @@ import { formatHumanName, getDisplayString, getReferenceString, isUUID } from '@
 import { Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumNavigate } from '@medplum/react-hooks';
 import { IconSearch } from '@tabler/icons-react';
-import React, { forwardRef, useCallback } from 'react';
+import { forwardRef, useCallback } from 'react';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 

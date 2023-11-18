@@ -1,15 +1,15 @@
 import { globalSchema } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
-import { convertIsoToLocal } from '../DateTimeInput/DateTimeInput.utils';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { ReactNode } from 'react';
+import { convertIsoToLocal } from '../DateTimeInput/DateTimeInput.utils';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
 
 const medplum = new MockClient();
 
-function setup(child: React.ReactNode): void {
+function setup(child: ReactNode): void {
   render(<MedplumProvider medplum={medplum}>{child}</MedplumProvider>);
 }
 

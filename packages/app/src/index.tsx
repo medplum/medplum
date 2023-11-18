@@ -2,9 +2,9 @@ import { MantineProvider, MantineThemeOverride } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
-import React from 'react';
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { App } from './App';
 import { getConfig } from './config';
 
@@ -62,14 +62,14 @@ export async function initApp(): Promise<void> {
 
   const root = createRoot(document.getElementById('root') as HTMLElement);
   root.render(
-    <React.StrictMode>
+    <StrictMode>
       <MedplumProvider medplum={medplum} navigate={navigate}>
         <MantineProvider theme={theme} withGlobalStyles withNormalizeCSS>
           <Notifications position="bottom-right" />
           <RouterProvider router={router} />
         </MantineProvider>
       </MedplumProvider>
-    </React.StrictMode>
+    </StrictMode>
   );
 }
 

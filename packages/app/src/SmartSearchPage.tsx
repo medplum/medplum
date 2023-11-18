@@ -1,5 +1,5 @@
 import { MemoizedFhirPathTable, FhirPathTableField } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export function SmartSearchPage(): JSX.Element | null {

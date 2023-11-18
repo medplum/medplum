@@ -4,7 +4,7 @@
     "target": "ES2021",
     "module": "commonjs",
     "moduleResolution": "node",
-    "jsx": "react",
+    "jsx": "react-jsx",
     "newLine": "lf",
     "strict": true,
     "declaration": true,

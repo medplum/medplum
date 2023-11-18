@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { formatSearchQuery, normalizeErrorString, parseSearchDefinition, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { addSearchValues, getTransactionBundle, RESOURCE_TYPE_CREATION_PATHS, saveLastSearch } from './HomePage.utils';
 import { exportJsonFile } from './utils';

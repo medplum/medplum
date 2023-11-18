@@ -1,5 +1,4 @@
 import { getPropertyDisplayName, tryGetDataType, TypedValue } from '@medplum/core';
-import React from 'react';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { DescriptionList, DescriptionListEntry } from '../DescriptionList/DescriptionList';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';

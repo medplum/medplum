@@ -2,7 +2,7 @@ import { ActionIcon, Button, createStyles, Divider, Group, NativeSelect, Stack, 
 import { formatRange, getCodeBySystem } from '@medplum/core';
 import { CodeableConcept, ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
-import React, { useEffect, useState } from 'react';
+import { MouseEvent, useEffect, useState } from 'react';
 import { Container } from '../Container/Container';
 import { Form } from '../Form/Form';
 import { RangeInput } from '../RangeInput/RangeInput';
@@ -72,7 +72,7 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
       <ActionIcon
         title="Add Group"
         size="sm"
-        onClick={(e: React.MouseEvent) => {
+        onClick={(e: MouseEvent) => {
           killEvent(e);
           addGroup({ id: `group-id-${groupId}`, filters: {} as IntervalGroup['filters'], intervals: [] });
           setGroupId((id) => id + 1);

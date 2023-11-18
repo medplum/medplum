@@ -1,6 +1,5 @@
 import { Blockquote, createStyles, Stack } from '@mantine/core';
 import { Annotation } from '@medplum/fhirtypes';
-import React from 'react';
 
 const useStyles = createStyles((theme) => ({
   noteBody: { fontSize: theme.fontSizes.sm },
