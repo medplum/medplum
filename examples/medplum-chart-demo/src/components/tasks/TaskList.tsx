@@ -11,7 +11,7 @@ import {
   useResource,
 } from '@medplum/react';
 import { IconFilePencil, IconHeart, IconListCheck, IconReportMedical } from '@tabler/icons-react';
-import React, { useEffect, useState } from 'react';
+import { Fragment, ReactNode, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { DiagnosticReportModal } from './DiagnosticReportTask';
 import { QuestionnaireTask, ResponseDisplay } from './QuestionnaireTask';
@@ -32,7 +32,7 @@ interface TaskItemProps {
   task: Task;
   resource: Resource;
   profile?: Reference;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 export function TaskList(): JSX.Element | null {
@@ -62,10 +62,10 @@ export function TaskList(): JSX.Element | null {
       <Box>
         <Timeline>
           {tasks.map((task, idx) => (
-            <React.Fragment key={idx}>
+            <Fragment key={idx}>
               <FocusTimeline key={task.id} task={task} />
               {idx !== tasks.length - 1 ? <Divider w="100%" /> : null}
-            </React.Fragment>
+            </Fragment>
           ))}
         </Timeline>
       </Box>

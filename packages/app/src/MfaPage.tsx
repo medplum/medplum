@@ -2,7 +2,7 @@ import { Button, Center, Group, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { Document, Form, useMedplum } from '@medplum/react';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export function MfaPage(): JSX.Element | null {
   const medplum = useMedplum();

@@ -1,7 +1,7 @@
 import { Button, Chip, Group, Modal, NativeSelect, Stack, Switch, TextInput } from '@mantine/core';
 import { formatTiming } from '@medplum/core';
 import { Timing, TimingRepeat } from '@medplum/fhirtypes';
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { FormSection } from '../FormSection/FormSection';
 

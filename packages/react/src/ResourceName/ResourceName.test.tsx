@@ -2,7 +2,6 @@ import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { ResourceName, ResourceNameProps } from './ResourceName';
 

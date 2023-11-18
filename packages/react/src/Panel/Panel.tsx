@@ -1,5 +1,4 @@
 import { createStyles, Paper, PaperProps, useComponentDefaultProps } from '@mantine/core';
-import React from 'react';
 
 export interface PanelStylesParams {
   width?: number;

@@ -1,7 +1,7 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import { ReactNode } from 'react';
 import { CodeInput } from './CodeInput';
 
 const medplum = new MockClient();
@@ -19,7 +19,7 @@ describe('CodeInput', () => {
     jest.useRealTimers();
   });
 
-  async function setup(child: React.ReactNode): Promise<void> {
+  async function setup(child: ReactNode): Promise<void> {
     await act(async () => {
       render(<MedplumProvider medplum={medplum}>{child}</MedplumProvider>);
     });

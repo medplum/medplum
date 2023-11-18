@@ -1,20 +1,20 @@
 import { AppShell as MantineAppShell, useMantineTheme } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
-import React, { Suspense, useEffect, useState } from 'react';
+import { ReactNode, Suspense, useEffect, useState } from 'react';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { Loading } from '../Loading/Loading';
 import { Header } from './Header';
 import { Navbar, NavbarMenu } from './Navbar';
 
 export interface AppShellProps {
-  logo: React.ReactNode;
+  logo: ReactNode;
   pathname?: string;
   searchParams?: URLSearchParams;
   headerSearchDisabled?: boolean;
   version?: string;
   menus?: NavbarMenu[];
-  children: React.ReactNode;
+  children: ReactNode;
   displayAddBookmark?: boolean;
   resourceTypeSearchDisabled?: boolean;
 }

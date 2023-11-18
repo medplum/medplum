@@ -1,6 +1,5 @@
 import { Title } from '@mantine/core';
 import { DescriptionList, DescriptionListEntry, useMedplum } from '@medplum/react';
-import React from 'react';
 import { getProjectId } from '../utils';
 
 export function ProjectDetailsPage(): JSX.Element {

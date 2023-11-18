@@ -1,6 +1,6 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconUser } from '@tabler/icons-react';
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';

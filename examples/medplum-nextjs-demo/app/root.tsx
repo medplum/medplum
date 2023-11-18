@@ -3,6 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
+import { ReactNode } from 'react';
 
 const medplum = new MedplumClient({
   // Uncomment this to run against the server on your localhost
@@ -15,7 +16,7 @@ const medplum = new MedplumClient({
   fetch: (url: string, options?: any) => fetch(url, options),
 });
 
-export default function Root(props: { children: React.ReactNode }): JSX.Element {
+export default function Root(props: { children: ReactNode }): JSX.Element {
   return (
     <MantineProvider withGlobalStyles withNormalizeCSS>
       <MedplumProvider medplum={medplum}>{props.children}</MedplumProvider>

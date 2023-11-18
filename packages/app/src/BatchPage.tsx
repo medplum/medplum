@@ -5,7 +5,7 @@ import { convertToTransactionBundle, normalizeErrorString } from '@medplum/core'
 import { Bundle } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import { IconCheck, IconUpload, IconX } from '@tabler/icons-react';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 const DEFAULT_VALUE = `{"resourceType": "Bundle"}`;
 

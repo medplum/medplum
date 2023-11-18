@@ -2,7 +2,7 @@ import { Button, Flex, Modal } from '@mantine/core';
 import { DiagnosticReport, Task } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, DiagnosticReportDisplay, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { TaskCellProps } from './TaskList';
 
 export function DiagnosticReportModal(props: TaskCellProps): JSX.Element {

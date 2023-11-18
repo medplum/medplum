@@ -1,5 +1,3 @@
-import React from 'react';
-
 export interface LogoProps {
   size: number;
   fill?: string;

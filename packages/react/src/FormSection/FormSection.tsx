@@ -1,6 +1,6 @@
 import { Input } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import React from 'react';
+import { ReactNode } from 'react';
 import { getErrorsForInput } from '../utils/outcomes';
 
 export interface FormSectionProps {
@@ -9,7 +9,7 @@ export interface FormSectionProps {
   description?: string;
   withAsterisk?: boolean;
   outcome?: OperationOutcome;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 export function FormSection(props: FormSectionProps): JSX.Element {

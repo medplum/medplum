@@ -3,7 +3,7 @@ import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Bundle, BundleEntry, Reference, RequestGroup, Resource, Task } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconCheckbox, IconSquare } from '@tabler/icons-react';
-import React, { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { ResourceName } from '../ResourceName/ResourceName';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 
@@ -37,7 +37,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
         const taskInput = task?.input?.[0]?.valueReference;
         const taskOutput = task?.output?.[0]?.valueReference;
         return (
-          <React.Fragment key={`action-${index}`}>
+          <Fragment key={`action-${index}`}>
             <Grid.Col span={1} p="md">
               {task?.status === 'completed' ? <IconCheckbox /> : <IconSquare color="gray" />}
             </Grid.Col>
@@ -60,7 +60,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
                 <Button onClick={() => props.onEdit(task, taskInput, taskOutput)}>Edit</Button>
               )}
             </Grid.Col>
-          </React.Fragment>
+          </Fragment>
         );
       })}
     </Grid>

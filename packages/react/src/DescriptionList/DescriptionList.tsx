@@ -1,5 +1,5 @@
 import { createStyles } from '@mantine/core';
-import React from 'react';
+import { ReactNode } from 'react';
 
 const useStyles = createStyles((theme) => ({
   root: {
@@ -25,7 +25,7 @@ const useStyles = createStyles((theme) => ({
 }));
 
 export interface DescriptionListProps {
-  children: React.ReactNode;
+  children: ReactNode;
   compact?: boolean;
 }
 
@@ -37,7 +37,7 @@ export function DescriptionList(props: DescriptionListProps): JSX.Element {
 
 export interface DescriptionListEntryProps {
   term: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function DescriptionListEntry(props: DescriptionListEntryProps): JSX.Element {

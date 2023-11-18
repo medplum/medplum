@@ -1,4 +1,5 @@
 import { createStyles, Group, UnstyledButton } from '@mantine/core';
+import { ReactNode } from 'react';
 
 const useStyles = createStyles((theme) => ({
   button: {
@@ -18,7 +19,7 @@ const useStyles = createStyles((theme) => ({
 
 export interface InfoButtonProps {
   onClick?: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function InfoButton(props: InfoButtonProps): JSX.Element {

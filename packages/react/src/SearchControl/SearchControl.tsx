@@ -20,6 +20,7 @@ import {
   SearchParameter,
   UserConfiguration,
 } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
 import {
   IconAdjustmentsHorizontal,
   IconBoxMultiple,
@@ -30,9 +31,8 @@ import {
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, memo, MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
-import { useMedplum } from '@medplum/react-hooks';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
 import { SearchFieldEditor } from '../SearchFieldEditor/SearchFieldEditor';
 import { SearchFilterEditor } from '../SearchFilterEditor/SearchFilterEditor';
@@ -63,9 +63,9 @@ export class SearchLoadEvent extends Event {
 
 export class SearchClickEvent extends Event {
   readonly resource: Resource;
-  readonly browserEvent: React.MouseEvent;
+  readonly browserEvent: MouseEvent;
 
-  constructor(resource: Resource, browserEvent: React.MouseEvent) {
+  constructor(resource: Resource, browserEvent: MouseEvent) {
     super('click');
     this.resource = resource;
     this.browserEvent = browserEvent;
@@ -200,7 +200,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     loadResults();
   }, [loadResults]);
 
-  function handleSingleCheckboxClick(e: React.ChangeEvent, id: string): void {
+  function handleSingleCheckboxClick(e: ChangeEvent, id: string): void {
     e.stopPropagation();
 
     const el = e.target as HTMLInputElement;
@@ -214,7 +214,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     setState({ ...stateRef.current, selected: newSelected });
   }
 
-  function handleAllCheckboxClick(e: React.ChangeEvent): void {
+  function handleAllCheckboxClick(e: ChangeEvent): void {
     e.stopPropagation();
 
     const el = e.target as HTMLInputElement;
@@ -259,7 +259,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
    * @param e - The click event.
    * @param resource - The FHIR resource.
    */
-  function handleRowClick(e: React.MouseEvent, resource: Resource): void {
+  function handleRowClick(e: MouseEvent, resource: Resource): void {
     if (isCheckboxCell(e.target as Element)) {
       // Ignore clicks on checkboxes
       return;
@@ -599,7 +599,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   );
 }
 
-export const MemoizedSearchControl = React.memo(SearchControl);
+export const MemoizedSearchControl = memo(SearchControl);
 
 interface FilterDescriptionProps {
   readonly resourceType: string;

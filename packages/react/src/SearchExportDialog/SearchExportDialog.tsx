@@ -1,5 +1,4 @@
 import { Box, Button, Modal, Text } from '@mantine/core';
-import React from 'react';
 
 interface SearchExportDialogProps {
   visible: boolean;

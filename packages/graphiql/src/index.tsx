@@ -1,16 +1,16 @@
 import { GraphiQLPlugin } from '@graphiql/react';
 import { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
 import { MantineProvider, MantineThemeOverride, Title } from '@mantine/core';
-import { decodeBase64, encodeBase64, getDisplayString, MedplumClient, ProfileResource } from '@medplum/core';
+import { MedplumClient, ProfileResource, decodeBase64, encodeBase64, getDisplayString } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import GraphiQL from 'graphiql';
-import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { getConfig } from './config';
 
 import 'regenerator-runtime/runtime.js';
 
 import 'graphiql/graphiql.css';
+import { StrictMode } from 'react';
 
 const HELP_TEXT = `# Welcome to Medplum GraphiQL
 #
@@ -165,11 +165,11 @@ export function App(): JSX.Element {
 
 const root = createRoot(document.getElementById('root') as HTMLElement);
 root.render(
-  <React.StrictMode>
+  <StrictMode>
     <MedplumProvider medplum={medplum}>
       <MantineProvider theme={theme} withGlobalStyles withNormalizeCSS>
         <App />
       </MantineProvider>
     </MedplumProvider>
-  </React.StrictMode>
+  </StrictMode>
 );

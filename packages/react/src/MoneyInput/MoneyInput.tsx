@@ -1,7 +1,7 @@
 import { NativeSelect, TextInput } from '@mantine/core';
 import { Money } from '@medplum/fhirtypes';
 import { IconCurrencyDollar } from '@tabler/icons-react';
-import React, { useCallback, useState } from 'react';
+import { ChangeEvent, useCallback, useState } from 'react';
 
 /*
  * Based on: https://github.com/mantinedev/ui.mantine.dev/blob/master/components/CurrencyInput/CurrencyInput.tsx
@@ -43,7 +43,7 @@ export function MoneyInput(props: MoneyInputProps): JSX.Element {
   );
 
   const handleCurrencyChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
+    (e: ChangeEvent<HTMLSelectElement>) => {
       setValueWrapper({
         ...value,
         currency: e.currentTarget.value,
@@ -53,7 +53,7 @@ export function MoneyInput(props: MoneyInputProps): JSX.Element {
   );
 
   const handleValueChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: ChangeEvent<HTMLInputElement>) => {
       setValueWrapper({
         ...value,
         value: e.currentTarget.valueAsNumber,

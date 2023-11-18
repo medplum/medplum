@@ -1,5 +1,4 @@
 import Layout from '@theme/Layout';
-import React from 'react';
 import { Card } from '../components/Card';
 import { CardContainer } from '../components/CardContainer';
 import { Container } from '../components/Container';

@@ -2,7 +2,6 @@ import { Identifier, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { PatientHeader } from './PatientHeader';
 import { getDefaultColor } from './PatientHeader.utils';

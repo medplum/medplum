@@ -1,13 +1,13 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { RequestGroupDisplay } from './RequestGroupDisplay';
 
 const medplum = new MockClient();
 
-async function setup(ui: React.ReactElement): Promise<void> {
+async function setup(ui: ReactElement): Promise<void> {
   await act(async () => {
     render(
       <MemoryRouter>

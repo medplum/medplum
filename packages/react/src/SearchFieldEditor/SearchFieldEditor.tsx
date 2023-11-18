@@ -1,7 +1,7 @@
 import { Button, Group, Modal, MultiSelect, Stack } from '@mantine/core';
 import { InternalTypeSchema, SearchRequest, getDataType, getSearchParameters, stringify } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildFieldNameString } from '../SearchControl/SearchUtils';
 
 export interface SearchFieldEditorProps {

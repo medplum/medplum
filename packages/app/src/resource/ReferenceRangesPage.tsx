@@ -2,7 +2,7 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { ObservationDefinition, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, ReferenceRangeEditor, useMedplum, useResource } from '@medplum/react';
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { cleanResource } from './utils';
 

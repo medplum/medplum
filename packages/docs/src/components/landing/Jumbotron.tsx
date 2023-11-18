@@ -1,8 +1,8 @@
-import React from 'react';
+import { ReactNode } from 'react';
 import styles from './Jumbotron.module.css';
 
 export interface JumbotronProps {
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 export function Jumbotron(props: JumbotronProps): JSX.Element {

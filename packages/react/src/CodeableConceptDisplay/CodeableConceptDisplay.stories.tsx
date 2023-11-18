@@ -1,5 +1,4 @@
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { Document } from '../Document/Document';
 
