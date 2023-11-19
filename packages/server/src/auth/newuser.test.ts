@@ -134,6 +134,23 @@ describe('New user', () => {
     expect(res.body.issue[0].details.text).toBe('Password must be between 8 and 72 characters');
   });
 
+  test('Multibyte password too long', async () => {
+    // Use password with 40 multibyte characters
+    // This is 80 bytes, which is too long
+    // The maximum password length for bcrypt is 72 bytes
+    const registerRequest = {
+      firstName: 'George',
+      lastName: 'Washington',
+      email: `george${randomUUID()}@example.com`,
+      password: '☺️'.repeat(40),
+      recaptchaToken: 'xyz',
+    };
+
+    const res = await request(app).post('/auth/newuser').type('json').send(registerRequest);
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Password must be between 8 and 72 characters');
+  });
+
   test('Breached password', async () => {
     // Mock the pwnedPassword function to return "1", meaning the password is breached.
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 1);

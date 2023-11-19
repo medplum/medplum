@@ -20,7 +20,7 @@ export const newUserValidator = makeValidationMiddleware([
     .withMessage('Valid email address between 3 and 72 characters is required')
     .isLength({ min: 3, max: 72 })
     .withMessage('Valid email address between 3 and 72 characters is required'),
-  body('password').isLength({ min: 8, max: 72 }).withMessage('Password must be between 8 and 72 characters'),
+  body('password').isByteLength({ min: 8, max: 72 }).withMessage('Password must be between 8 and 72 characters'),
 ]);
 
 /**
