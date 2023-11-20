@@ -19,7 +19,7 @@ export function SensitiveTextarea(props: Omit<SensitiveTextareaProps, 'ref'>): J
       styles.input = {};
     }
 
-    styles.input.fontFamily = 'PasswordDots';
+    styles.input['-webkit-text-security'] = 'disc';
   }
 
   return (
