@@ -132,6 +132,10 @@ export function isDataTypeLoaded(type: string): boolean {
   return !!DATA_TYPES[type];
 }
 
+export function isDataTypeLoadedByUrl(url: string): boolean {
+  return !!DATA_TYPES_BY_URL[url];
+}
+
 export function tryGetDataType(type: string): InternalTypeSchema | undefined {
   return DATA_TYPES[type];
 }

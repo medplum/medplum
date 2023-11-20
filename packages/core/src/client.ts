@@ -67,7 +67,7 @@ import {
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage, IClientStorage } from './storage';
 import { indexSearchParameter } from './types';
-import { indexStructureDefinitionBundle, isDataTypeLoaded } from './typeschema/types';
+import { indexStructureDefinitionBundle, isDataTypeLoaded, isDataTypeLoadedByUrl } from './typeschema/types';
 import {
   CodeChallengeMethod,
   ProfileResource,
@@ -496,12 +496,6 @@ interface ResourceSchemaGraphQLResponse {
   readonly data: {
     readonly StructureDefinitionList: StructureDefinition[];
     readonly SearchParameterList: SearchParameter[];
-  };
-}
-
-interface ProfileSchemaGraphQLResponse {
-  readonly data: {
-    readonly StructureDefinitionList: StructureDefinition[];
   };
 }
 
@@ -1601,12 +1595,12 @@ export class MedplumClient extends EventTarget {
    * If the schema is already cached, the promise is resolved immediately.
    * @category Schema
    * @param profileUrl - The FHIR URL of the profile
-   * @param resourceType - The FHIR resource type.
    * @returns Promise to a schema with the requested profile.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  requestProfileSchema(profileUrl: string, resourceType: string = 'TODO'): Promise<void> {
-    if (isDataTypeLoaded(profileUrl)) {
+  requestProfileSchema(profileUrl: string): Promise<void> {
+    // TODO{mattlong} add a guard type and friends to distinguish between urls and other strings?
+    if (isDataTypeLoadedByUrl(profileUrl)) {
       return Promise.resolve();
     }
 
@@ -1618,20 +1612,15 @@ export class MedplumClient extends EventTarget {
 
     const promise = new ReadablePromise<void>(
       (async () => {
-        const query = `{
-      StructureDefinitionList(url: "${profileUrl}") {
-        ${SCHEMA_STRUCTURE_DEFINITION_FIELDS}
-      }
-    }`.replace(/\s+/g, ' ');
+        const profilesQueryParmas = new URLSearchParams([['url', profileUrl]]);
+        const response = await this.searchResources('StructureDefinition', profilesQueryParmas);
 
-        const response = (await this.graphql(query)) as ProfileSchemaGraphQLResponse;
-
-        if (response.data.StructureDefinitionList.length === 0) {
+        if (response.length === 0) {
           console.warn(`No SDs found for ${profileUrl}!`);
         } else {
-          indexStructureDefinitionBundle(response.data.StructureDefinitionList);
+          indexStructureDefinitionBundle(response);
         }
-        // TODO{mattlong} search parameters
+        // TODO{mattlong} search parameters needed?
       })()
     );
     this.setCacheEntry(cacheKey, promise);
@@ -3506,6 +3495,7 @@ function bundleToResourceArray<T extends Resource>(bundle: Bundle<T>): ResourceA
   return Object.assign(array, { bundle });
 }
 
+// TODO{mattlong} revert a lot of changes around this
 const SCHEMA_STRUCTURE_DEFINITION_FIELDS = `
     resourceType,
     name,

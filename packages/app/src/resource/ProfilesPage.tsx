@@ -7,19 +7,21 @@ import { deepClone, isEmpty, normalizeErrorString, normalizeOperationOutcome, va
 import { Anchor, Button, Code, Group, Stack, Tabs } from '@mantine/core';
 import { cleanResource } from './utils';
 
-const DO_ACTIONS = false;
+export type ProfileStructureDefinition = StructureDefinition & {
+  url: NonNullable<StructureDefinition['url']>;
+  name: NonNullable<StructureDefinition['name']>;
+};
 
-type ProfileStructureDefinition = StructureDefinition & { url: string; name: string };
 function isProfileStructureDefinition(profile: StructureDefinition): profile is ProfileStructureDefinition {
   return !isEmpty(profile.url) && !isEmpty(profile.name);
 }
+
+const DO_ACTIONS = true;
 
 export function ProfilesPage(): JSX.Element | null {
   const medplum = useMedplum();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const [resource, setResource] = useState<Resource | undefined>();
-  const [profileSchemaLoaded, _setProfileSchemaLoaded] = useState(false);
-  const [baseSchemaLoaded, _setBaseSchemaLoaded] = useState(false);
   const [profiles, setProfiles] = useState<ProfileStructureDefinition[] | undefined>();
   const [currentProfile, setCurrentProfile] = useState<ProfileStructureDefinition | undefined>();
 
@@ -34,83 +36,29 @@ export function ProfilesPage(): JSX.Element | null {
   }, [medplum, resourceType, id]);
 
   useEffect(() => {
-    const profileUrls = resource?.meta?.profile;
-
-    if (!profileUrls) {
+    if (!resource?.meta?.profile) {
       return;
     }
-
-    // _count=20&_fields=id,_lastUpdated,name,url,version&_offset=0&_sort=-version&url=http%3A%2F%2Fhl7.org%2Ffhir%2Fus%2Fcore%2FStructureDefinition%2Fus-core-patient
-    // _sort=-version&url=http%3A%2F%2Fhl7.org%2Ffhir%2Fus%2Fcore%2FStructureDefinition%2Fus-core-patient
-    const profilesQuery = new URLSearchParams([
-      ...profileUrls.map((u) => ['url', u]),
-      ['_count', '1'],
-      ['_sort', '_lastUpdated'],
-    ]);
+    const profileUrls: string[] = resource.meta.profile;
+    const profilesQueryParmas = new URLSearchParams(profileUrls.map((u) => ['url', u]));
     medplum
-      .searchResources('StructureDefinition', profilesQuery)
+      .searchResources('StructureDefinition', profilesQueryParmas)
       .then((results) => {
-        // for (const profile of results) {
-        //   console.log(profile);
-        // }
-        const profileSDs: ProfileStructureDefinition[] = [];
+        const profiles: ProfileStructureDefinition[] = [];
         for (const result of results) {
           if (isProfileStructureDefinition(result)) {
-            profileSDs.push(result);
+            profiles.push(result);
           } else {
-            console.log('Invalid Profile SD', result);
+            console.warn('Invalid Profile SD', result);
           }
         }
-        setProfiles(profileSDs);
-        if (profileSDs.length > 0) {
-          setCurrentProfile(profileSDs[0]);
+        setProfiles(profiles);
+        if (profiles.length > 0) {
+          setCurrentProfile(profiles[0]);
         }
       })
-      .catch((err) => {
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
-      });
-
-    // medplum
-    //   .requestSchema(resource.resourceType)
-    //   .then(() => {
-    //     _setBaseSchemaLoaded(true);
-    //   })
-    //   .catch((err) => {
-    //     showNotification({ color: 'red', message: normalizeErrorString(err) });
-    //   });
+      .catch(console.error);
   }, [medplum, resource]);
-
-  useEffect(() => {
-    if (!currentProfile) {
-      return;
-    }
-
-    if (!currentProfile.url) {
-      console.error('currentProfile.url is missing');
-    } else {
-      // medplum
-      //   .requestProfileSchema(currentProfile.url)
-      //   .then(() => {
-      //     _setProfileSchemaLoaded(true);
-      //   })
-      //   .catch((err) => {
-      //     showNotification({ color: 'red', message: normalizeErrorString(err) });
-      //   });
-    }
-  }, [medplum, currentProfile]);
-
-  // useEffect(() => {
-  //   if (!profiles) {
-  //     return;
-  //   }
-
-  //   const promises = [];
-  //   for (const profile of profiles) {
-  //     console.log(profile);
-  //     const promise = medplum.readResource(profile.resourceType, profile.url);
-  //     promises.push(promise);
-  //   }
-  // }, [medplum, profiles]);
 
   if (!resource) {
     return null;
@@ -120,11 +68,6 @@ export function ProfilesPage(): JSX.Element | null {
     <>
       <Document>
         <h1>Profiles</h1>
-        {/*<h2>
-          {resourceType}:{id}
-        </h2>
-  <h3>resource.meta.profile: {resource.meta?.profile}</h3>*/}
-
         <Stack>
           {profiles?.map((profile, idx) => (
             <ProfileSummary
@@ -136,14 +79,7 @@ export function ProfilesPage(): JSX.Element | null {
             />
           ))}
           {currentProfile && (
-            <ProfileDetail
-              profile={currentProfile}
-              resourceType={resourceType}
-              resource={resource}
-              id={id}
-              baseSchemaLoaded={baseSchemaLoaded}
-              profileSchemaLoaded={profileSchemaLoaded}
-            />
+            <ProfileDetail profile={currentProfile} resourceType={resourceType} resource={resource} id={id} />
           )}
         </Stack>
       </Document>
@@ -166,17 +102,8 @@ type Props = {
   resourceType: ResourceType;
   resource: Resource;
   id: string;
-  baseSchemaLoaded: boolean;
-  profileSchemaLoaded: boolean;
 };
-const ProfileDetail: React.FC<Props> = ({
-  profile,
-  resourceType,
-  id,
-  resource,
-  baseSchemaLoaded,
-  profileSchemaLoaded,
-}) => {
+const ProfileDetail: React.FC<Props> = ({ profile, resourceType, id, resource }) => {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
@@ -189,7 +116,7 @@ const ProfileDetail: React.FC<Props> = ({
 
   const handleSubmit = useCallback(
     (newResource: Resource): void => {
-      //setOutcome(undefined);
+      setOutcome(undefined);
       console.log('handleSubmit', newResource);
       if (DO_ACTIONS) {
         medplum
@@ -231,10 +158,10 @@ const ProfileDetail: React.FC<Props> = ({
             </Code>
             <Stack py="md" my="md">
               <Group>
-                <Button onClick={() => handleValidate(undefined)} disabled={!baseSchemaLoaded}>
+                <Button onClick={() => handleValidate(undefined)} disabled={true}>
                   Validate Base
                 </Button>
-                <Button onClick={() => handleValidate(profile)} disabled={!profileSchemaLoaded || !profile}>
+                <Button onClick={() => handleValidate(profile)} disabled={true}>
                   Validate Profile
                 </Button>
               </Group>
