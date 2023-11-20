@@ -9,8 +9,9 @@
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
   "scripts": {
+    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.cts && cp dist/types.d.ts dist/esm/index.d.mts",
     "test": "jest --runInBand",
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf ./build"
   },
   "keywords": [

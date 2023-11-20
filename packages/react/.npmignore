@@ -10,8 +10,9 @@ src/
 storybook-static/
 .env
 .env.defaults
-babel.config.json
+api-extractor.json
+babel.config.cjs
 esbuild.mjs
 jest.config.json
-tsconfig.build.json
-tsconfig.json
+tsconfig.*
+tsdoc.json

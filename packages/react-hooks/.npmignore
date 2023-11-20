@@ -8,8 +8,10 @@ public/
 src/
 .env
 .env.defaults
+api-extractor.json
 babel.config.json
 esbuild.mjs
 jest.config.json
 tsconfig.build.json
 tsconfig.json
+tsdoc.json

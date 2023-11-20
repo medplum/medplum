@@ -7,8 +7,11 @@ dist/docs/
 dist/types/
 dist/types.d.ts
 src/
-babel.config.json
+api-extractor.json
+babel.config.cjs
 esbuild.mjs
 jest.config.json
+test.setup.cjs
+tsdoc.json
 tsconfig.build.json
 tsconfig.json
