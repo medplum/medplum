@@ -5,6 +5,7 @@ dist/**/*.test.js.map
 dist/api/
 dist/docs/
 dist/types/
+dist/types.d.ts
 src/
 babel.config.json
 esbuild.mjs
