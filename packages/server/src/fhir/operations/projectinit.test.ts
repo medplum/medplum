@@ -46,7 +46,7 @@ describe('Project $init', () => {
           },
           {
             name: 'owner',
-            valueString: createReference(owner).reference,
+            valueReference: createReference(owner),
           },
         ],
       });

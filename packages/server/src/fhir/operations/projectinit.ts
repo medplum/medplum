@@ -1,20 +1,68 @@
-import { ClientApplication, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import {
+  ClientApplication,
+  OperationDefinition,
+  Project,
+  ProjectMembership,
+  Reference,
+  User,
+} from '@medplum/fhirtypes';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { systemRepo } from '../repo';
 import { ProfileResource, badRequest, createReference, created } from '@medplum/core';
-import { parseParameters } from './utils/parameters';
+import { parseInputParameters, sendOutputParameters } from './utils/parameters';
 import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
-import { sendResponse } from '../routes';
 import { createClient } from '../../admin/client';
 import { createProfile, createProjectMembership } from '../../auth/utils';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import { createUser } from '../../auth/newuser';
 import { randomUUID } from 'crypto';
 
+const projectInitOperation: OperationDefinition = {
+  resourceType: 'OperationDefinition',
+  name: 'project-init',
+  status: 'active',
+  kind: 'operation',
+  code: 'init',
+  resource: ['Project'],
+  system: false,
+  type: true,
+  instance: false,
+  parameter: [
+    {
+      use: 'in',
+      name: 'name',
+      type: 'string',
+      min: 1,
+      max: '1',
+    },
+    {
+      use: 'in',
+      name: 'owner',
+      type: 'Reference',
+      min: 0,
+      max: '1',
+    },
+    {
+      use: 'in',
+      name: 'ownerEmail',
+      type: 'string',
+      min: 0,
+      max: '1',
+    },
+    {
+      use: 'out',
+      name: 'return',
+      type: 'Project',
+      min: 1,
+      max: '1',
+    },
+  ],
+};
+
 interface ProjectInitParameters {
   name: string;
-  owner?: string;
+  owner?: Reference;
   ownerEmail?: string;
 }
 
@@ -31,7 +79,7 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
   const ctx = getAuthenticatedContext();
   const login = ctx.login;
 
-  const params = parseParameters<ProjectInitParameters>(req.body);
+  const params = parseInputParameters<ProjectInitParameters>(projectInitOperation, req);
   if (!params.name) {
     sendOutcome(res, badRequest('Project name is required', 'Parameters.parameter'));
     return;
@@ -39,7 +87,7 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
 
   let ownerRef: Reference;
   if (params.owner) {
-    ownerRef = { reference: params.owner };
+    ownerRef = params.owner;
   } else if (params.ownerEmail) {
     let user = await getUserByEmailWithoutProject(params.ownerEmail);
     if (!user) {
@@ -65,7 +113,7 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
   }
 
   const { project } = await createProject(params.name, owner);
-  await sendResponse(res, created, project);
+  await sendOutputParameters(projectInitOperation, res, created, project);
 }
 
 /**
