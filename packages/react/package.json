@@ -22,6 +22,9 @@
     "react-component"
   ],
   "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
@@ -29,14 +32,17 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
-  "type": "module",
   "sideEffects": false,
+  "type": "module",
   "exports": {
     "require": "./dist/cjs/index.cjs",
     "import": "./dist/esm/index.mjs"
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.cts && cp dist/types.d.ts dist/esm/index.d.mts",
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",

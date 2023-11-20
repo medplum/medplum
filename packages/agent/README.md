@@ -9,6 +9,14 @@ On-prem agent for device connectivity.
 
 ## Building
 
+Build everything:
+
+```bash
+npm run build:all
+```
+
+Or, build individual components:
+
 Build the JS output:
 
 ```bash
@@ -18,11 +26,11 @@ npm run build
 Build the `.exe` file using [Vercel `pkg`](https://github.com/vercel/pkg):
 
 ```bash
-npm run package
+npm run build:exe
 ```
 
 Build the installer using [NSIS](https://nsis.sourceforge.io/) (requires `makensis` on your PATH):
 
 ```bash
-npm run installer
+npm run build:installer
 ```
