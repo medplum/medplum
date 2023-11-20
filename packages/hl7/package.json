@@ -27,15 +27,14 @@
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
   "exports": {
-    "types": "./dist/types.d.ts",
     "require": "./dist/cjs/index.cjs",
     "import": "./dist/esm/index.mjs"
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
-  "types": "dist/types.d.ts",
   "scripts": {
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && api-extractor run --local",
+    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.cts && cp dist/types.d.ts dist/esm/index.d.mts",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "test": "jest"
   },

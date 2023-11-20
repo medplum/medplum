@@ -3,6 +3,7 @@ dist/**/*.test.d.ts
 dist/**/*.test.js
 dist/**/*.test.js.map
 dist/types/
+dist/types.d.ts
 public/
 src/
 .env
