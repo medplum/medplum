@@ -419,7 +419,7 @@ function matchesSpecifiedValue(value: TypedValue | TypedValue[], element: Intern
   return true;
 }
 
-function matchDiscriminant(
+export function matchDiscriminant(
   value: TypedValue | TypedValue[] | undefined,
   discriminator: SliceDiscriminator,
   slice: SliceDefinition

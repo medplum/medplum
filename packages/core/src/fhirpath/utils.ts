@@ -75,7 +75,7 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
 
   const elementDefinition = getElementDefinition(input.type, path);
   if (elementDefinition) {
-    return getTypedPropertyValueWithSchema(input, path, elementDefinition);
+    return getTypedPropertyValueWithSchema(input.value, path, elementDefinition);
   }
 
   return getTypedPropertyValueWithoutSchema(input, path);
@@ -83,13 +83,13 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
 
 /**
  * Returns the value of the property and the property type using a type schema.
- * @param input - The base context (FHIR resource or backbone element).
+ * @param value - The base context (FHIR resource or backbone element).
  * @param path - The property path.
  * @param element - The property element definition.
  * @returns The value of the property and the property type.
  */
-function getTypedPropertyValueWithSchema(
-  input: TypedValue,
+export function getTypedPropertyValueWithSchema(
+  value: TypedValue['value'],
   path: string,
   element: InternalSchemaElement
 ): TypedValue[] | TypedValue | undefined {
@@ -101,20 +101,29 @@ function getTypedPropertyValueWithSchema(
   let resultValue: any = undefined;
   let resultType = 'undefined';
 
-  if (types.length === 1) {
-    resultValue = input.value[path];
+  if (path === 'value[x]') {
+    for (const type of types) {
+      const path2 = 'value' + capitalize(type.code);
+      if (path2 in value) {
+        resultValue = value[path2];
+        resultType = type.code;
+        break;
+      }
+    }
+  } else if (types.length === 1) {
+    resultValue = value[path];
     resultType = types[0].code;
   } else {
     for (const type of types) {
       const path2 = path.replace('[x]', '') + capitalize(type.code);
-      if (path2 in input.value) {
-        resultValue = input.value[path2];
+      if (path2 in value) {
+        resultValue = value[path2];
         resultType = type.code;
         break;
       }
     }
   }
-  const primitiveExtension = input.value['_' + path];
+  const primitiveExtension = value['_' + path];
   if (primitiveExtension) {
     if (Array.isArray(resultValue)) {
       resultValue = resultValue.map((v, i) => (primitiveExtension[i] ? safeAssign(v ?? {}, primitiveExtension[i]) : v));

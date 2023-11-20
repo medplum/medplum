@@ -8,7 +8,7 @@ import { r4ProjectId } from '../seed';
  * Imports all built-in ValueSets and CodeSystems into the database.
  */
 export async function rebuildR4ValueSets(): Promise<void> {
-  const files = ['valuesets.json', 'v3-codesystems.json', 'valuesets-medplum.json'];
+  const files = ['valuesets.json', 'v3-codesystems.json', 'valuesets-medplum.json', 'valuesets-uscore.json'];
   for (const file of files) {
     const bundle = readJson('fhir/r4/' + file) as Bundle<CodeSystem | ValueSet>;
     for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {

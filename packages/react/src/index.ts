@@ -71,6 +71,7 @@ export * from './ResourceBadge/ResourceBadge';
 export * from './ResourceBlame/ResourceBlame';
 export * from './ResourceDiff/ResourceDiff';
 export * from './ResourceForm/ResourceForm';
+export * from './ResourceForm/ResourceForm.utils';
 export * from './ResourceHistoryTable/ResourceHistoryTable';
 export * from './ResourceInput/ResourceInput';
 export * from './ResourceName/ResourceName';

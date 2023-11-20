@@ -1,6 +1,6 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import { capitalize, InternalSchemaElement, PropertyType } from '@medplum/core';
-import { ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
+import { ElementDefinitionBinding, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
 import { useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
 import { AnnotationInput } from '../AnnotationInput/AnnotationInput';
@@ -29,11 +29,11 @@ import { getErrorsForInput } from '../utils/outcomes';
 export interface ResourcePropertyInputProps {
   property: InternalSchemaElement;
   name: string;
-  defaultPropertyType?: string;
-  defaultValue?: any;
-  arrayElement?: boolean;
-  onChange?: (value: any, propName?: string) => void;
-  outcome?: OperationOutcome;
+  defaultPropertyType?: string | undefined;
+  defaultValue: any;
+  arrayElement?: boolean | undefined;
+  onChange: ((value: any, propName?: string) => void) | undefined;
+  outcome?: OperationOutcome | undefined;
 }
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
@@ -41,11 +41,6 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
   const defaultPropertyType = props.defaultPropertyType ?? property.type[0].code;
 
   const propertyTypes = property.type as ElementDefinitionType[];
-
-  //TODO{mattlong} can an extension have more than one type?
-  // if (propertyTypes[0]?.code === PropertyType.Extension) {
-  //   return <ExtensionInputNew property={property} name={name} defaultValue={defaultValue} onChange={onChange} />;
-  // }
 
   if (property.max > 1 && !props.arrayElement) {
     if (defaultPropertyType === PropertyType.Attachment) {
@@ -66,9 +61,29 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
   }
 
   if (propertyTypes.length > 1) {
+    if (propertyTypes.some((type) => type.code === 'Extension')) {
+      console.warn('More than one type for an Extension', propertyTypes);
+    }
     return <ElementDefinitionInputSelector elementDefinitionTypes={propertyTypes} {...props} />;
   } else {
-    return <ElementDefinitionTypeInput elementDefinitionType={propertyTypes[0]} {...props} />;
+    return (
+      <ElementDefinitionTypeInput
+        name={name}
+        defaultValue={defaultValue}
+        onChange={(newValue: any) => {
+          if (props.onChange) {
+            const newPropName = props.name.replace('[x]', capitalize(propertyTypes[0].code as string));
+            console.log('ResourceProperty', newPropName, JSON.stringify(newValue));
+            props.onChange(newValue, newPropName);
+          }
+        }}
+        outcome={undefined}
+        elementDefinitionType={propertyTypes[0]}
+        min={property.min}
+        max={property.min}
+        binding={property.binding}
+      />
+    );
   }
 }
 
@@ -104,28 +119,44 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
         }))}
       />
       <ElementDefinitionTypeInput
-        {...props}
+        name={props.name}
+        defaultValue={props.defaultValue}
+        outcome={props.outcome}
         elementDefinitionType={selectedType}
         onChange={(newValue: any) => {
           if (props.onChange) {
             props.onChange(newValue, props.name.replace('[x]', capitalize(selectedType.code as string)));
           }
         }}
+        min={props.property.min}
+        max={props.property.max}
+        binding={props.property.binding}
       />
     </Group>
   );
 }
 
-export interface ElementDefinitionTypeInputProps extends ResourcePropertyInputProps {
+// Avoiding optional props on lower-level components like to make it more difficult to misuse
+export type ElementDefinitionTypeInputProps = {
+  name: ResourcePropertyInputProps['name'];
+  defaultValue: ResourcePropertyInputProps['defaultValue'];
+  onChange: ResourcePropertyInputProps['onChange'];
+  outcome: ResourcePropertyInputProps['outcome'];
   elementDefinitionType: ElementDefinitionType;
-}
+  min: number;
+  max: number;
+  binding: ElementDefinitionBinding | undefined;
+};
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
-  const property = props.property;
-  const propertyType = props.elementDefinitionType.code;
-  const name = props.name;
-  const value = props.defaultValue;
-  const required = property.min !== undefined && property.min > 0;
+  const { name, defaultValue: value, onChange, outcome, binding } = props;
+  const required = props.min !== undefined && props.min > 0;
+
+  const propertyType = props.elementDefinitionType.code as string;
+
+  if (!propertyType) {
+    return <div>Property type not specified </div>;
+  }
 
   switch (propertyType) {
     // 2.24.0.1 Primitive Types
@@ -145,11 +176,11 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           defaultValue={value}
           required={required}
           onChange={(e) => {
-            if (props.onChange) {
-              props.onChange(e.currentTarget.value);
+            if (onChange) {
+              onChange(e.currentTarget.value);
             }
           }}
-          error={getErrorsForInput(props.outcome, name)}
+          error={getErrorsForInput(outcome, name)}
         />
       );
     case PropertyType.date:
@@ -162,16 +193,16 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           defaultValue={value}
           required={required}
           onChange={(e) => {
-            if (props.onChange) {
-              props.onChange(e.currentTarget.value);
+            if (onChange) {
+              onChange(e.currentTarget.value);
             }
           }}
-          error={getErrorsForInput(props.outcome, name)}
+          error={getErrorsForInput(outcome, name)}
         />
       );
     case PropertyType.dateTime:
     case PropertyType.instant:
-      return <DateTimeInput name={name} defaultValue={value} onChange={props.onChange} outcome={props.outcome} />;
+      return <DateTimeInput name={name} defaultValue={value} onChange={onChange} outcome={outcome} />;
     case PropertyType.decimal:
     case PropertyType.integer:
     case PropertyType.positiveInt:
@@ -186,16 +217,14 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           defaultValue={value}
           required={required}
           onChange={(e) => {
-            if (props.onChange) {
-              props.onChange(e.currentTarget.valueAsNumber);
+            if (onChange) {
+              onChange(e.currentTarget.valueAsNumber);
             }
           }}
         />
       );
     case PropertyType.code:
-      return (
-        <CodeInput binding={property.binding?.valueSet} name={name} defaultValue={value} onChange={props.onChange} />
-      );
+      return <CodeInput binding={binding?.valueSet} name={name} defaultValue={value} onChange={onChange} />;
     case PropertyType.boolean:
       return (
         <Checkbox
@@ -204,8 +233,8 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           data-testid={name}
           defaultChecked={!!value}
           onChange={(e) => {
-            if (props.onChange) {
-              props.onChange(e.currentTarget.checked);
+            if (onChange) {
+              onChange(e.currentTarget.checked);
             }
           }}
         />
@@ -219,8 +248,8 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           defaultValue={value}
           required={required}
           onChange={(e) => {
-            if (props.onChange) {
-              props.onChange(e.currentTarget.value);
+            if (onChange) {
+              onChange(e.currentTarget.value);
             }
           }}
         />
@@ -230,78 +259,78 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     // https://www.hl7.org/fhir/datatypes.html#complex
 
     case PropertyType.Address:
-      return <AddressInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <AddressInput name={name} defaultValue={value} onChange={onChange} />;
     case PropertyType.Annotation:
-      return <AnnotationInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <AnnotationInput name={name} defaultValue={value} onChange={onChange} />;
     case PropertyType.Attachment:
-      return <AttachmentInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <AttachmentInput name={name} defaultValue={value} onChange={onChange} />;
     case PropertyType.CodeableConcept:
+      return <CodeableConceptInput binding={binding?.valueSet} name={name} defaultValue={value} onChange={onChange} />;
+    case PropertyType.Coding:
+      return <CodingInput binding={binding?.valueSet} name={name} defaultValue={value} onChange={onChange} />;
+    case PropertyType.ContactDetail:
+      return <ContactDetailInput name={name} defaultValue={value} onChange={onChange} />;
+    case PropertyType.ContactPoint:
+      return <ContactPointInput name={name} defaultValue={value} onChange={onChange} />;
+    case PropertyType.Extension:
       return (
-        <CodeableConceptInput
-          binding={property.binding?.valueSet}
+        <ExtensionInput
           name={name}
           defaultValue={value}
-          onChange={props.onChange}
+          onChange={onChange}
+          propertyType={props.elementDefinitionType}
         />
       );
-    case PropertyType.Coding:
-      return (
-        <CodingInput binding={property.binding?.valueSet} name={name} defaultValue={value} onChange={props.onChange} />
-      );
-    case PropertyType.ContactDetail:
-      return <ContactDetailInput name={name} defaultValue={value} onChange={props.onChange} />;
-    case PropertyType.ContactPoint:
-      return <ContactPointInput name={name} defaultValue={value} onChange={props.onChange} />;
-    case PropertyType.Extension:
-      return <ExtensionInput name={name} defaultValue={value} onChange={props.onChange} property={property} />;
     case PropertyType.HumanName:
-      return <HumanNameInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <HumanNameInput name={name} defaultValue={value} onChange={onChange} />;
     case PropertyType.Identifier:
-      return <IdentifierInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <IdentifierInput name={name} defaultValue={value} onChange={onChange} />;
     case PropertyType.Money:
-      return <MoneyInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <MoneyInput name={name} defaultValue={value} onChange={onChange} />;
     case PropertyType.Period:
-      return <PeriodInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <PeriodInput name={name} defaultValue={value} onChange={onChange} />;
     case PropertyType.Duration:
     case PropertyType.Quantity:
-      return <QuantityInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <QuantityInput name={name} defaultValue={value} onChange={onChange} />;
     case PropertyType.Range:
-      return <RangeInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <RangeInput name={name} defaultValue={value} onChange={onChange} />;
     case PropertyType.Ratio:
-      return <RatioInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <RatioInput name={name} defaultValue={value} onChange={onChange} />;
     case PropertyType.Reference:
       return (
         <ReferenceInput
           name={name}
           defaultValue={value}
-          targetTypes={getTargetTypes(property)}
-          onChange={props.onChange}
+          targetTypes={getTargetTypes(props.elementDefinitionType)}
+          onChange={onChange}
         />
       );
     case PropertyType.Timing:
-      return <TimingInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <TimingInput name={name} defaultValue={value} onChange={onChange} />;
     case PropertyType.Dosage:
     case PropertyType.UsageContext:
       return (
         <BackboneElementInput
           typeName={propertyType}
           defaultValue={value}
-          onChange={props.onChange}
-          outcome={props.outcome}
+          onChange={onChange}
+          outcome={outcome}
+          type={propertyType}
         />
       );
     default:
       return (
         <BackboneElementInput
-          typeName={property.type[0].code}
+          typeName={propertyType}
           defaultValue={value}
-          onChange={props.onChange}
-          outcome={props.outcome}
+          onChange={onChange}
+          outcome={outcome}
+          type={propertyType}
         />
       );
   }
 }
 
-function getTargetTypes(property?: InternalSchemaElement): string[] | undefined {
-  return property?.type?.[0]?.targetProfile?.map((p) => p.split('/').pop() as string);
+function getTargetTypes(elementDefinitionType?: ElementDefinitionType): string[] | undefined {
+  return elementDefinitionType?.targetProfile?.map((p) => p.split('/').pop() as string);
 }

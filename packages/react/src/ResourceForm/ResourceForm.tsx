@@ -62,7 +62,13 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
             <TextInput name="id" defaultValue={value.id} disabled={true} />
           </FormSection>
         </Stack>
-        <BackboneElementInput typeName={schemaLoaded} defaultValue={value} outcome={outcome} onChange={setValue} />
+        <BackboneElementInput
+          typeName={schemaLoaded}
+          defaultValue={value}
+          outcome={outcome}
+          onChange={setValue}
+          type={undefined}
+        />
         <Group position="right" mt="xl">
           <Button type="submit">OK</Button>
           {props.onDelete && (

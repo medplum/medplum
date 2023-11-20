@@ -9,11 +9,11 @@ import { r4ProjectId } from '../seed';
  * Creates all StructureDefinition resources.
  */
 export async function rebuildR4StructureDefinitions(): Promise<void> {
-  // const client = getClient();
-  // await client.query(`DELETE FROM "StructureDefinition" WHERE "projectId" = $1`, [r4ProjectId]);
-  // await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-  // await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-  // await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-others.json') as Bundle);
+  const client = getClient();
+  await client.query(`DELETE FROM "StructureDefinition" WHERE "projectId" = $1`, [r4ProjectId]);
+  await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+  await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-others.json') as Bundle);
   await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-uscore.json') as Bundle);
 }
 
