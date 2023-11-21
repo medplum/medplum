@@ -28,7 +28,12 @@ describe('Database config', () => {
     configCopy.ssl = sslConfig;
 
     // This throws because the test DB doesn't actually support SSL
-    await expect(initDatabase(configCopy)).rejects.toThrow(/SSL/);
+    try {
+      await initDatabase(configCopy);
+      expect(false).toBeTruthy();
+    } catch (err) {
+      expect((err as Error)?.message).toMatch(/SSL/);
+    }
 
     expect(poolSpy).toHaveBeenCalledTimes(1);
     expect(poolSpy).toHaveBeenCalledWith({
