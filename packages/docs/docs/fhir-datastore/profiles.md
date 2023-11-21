@@ -6,28 +6,42 @@ sidebar_position: 6
 
 # Profiles
 
-FHIR provides a broad variety of resources types to cover as many different types of healthcare data as possible,
-favoring generality over specificity. For example, the `Observation` resource type is used to record many different
-kinds of data: a patient's smoking status might be recorded using the `valueCodeableConcept` field, while the
-measurement data for blood pressure would exist as two separate entries under `component.valueQuantity`. In order to
-allow for "subclassing" a more general resource type to meet a particular use case, FHIR uses [resource profiles][profiling]
-to layer additional validation rules onto the base specification for a resource type.
+FHIR provides a broad variety of resources types to cover as many different types of healthcare data as possible, favoring generality over specificity. For example, the `Observation` resource type is used to record many different kinds of data: a patient's smoking status might be recorded using the `valueCodeableConcept` field, while the measurement data for blood pressure would exist as two separate entries under `component.valueQuantity`.
 
-Profiles are used heavily in FHIR to ensure that resources sent between servers conform to a minimum set of required
-fields. For example, the [US Core Blood Pressure profile][us-core-bp] requires that `component` contains two
+To meet more specific use cases, FHIR allows developers to author [resource profiles][profiling] to layer additional validation rules onto the base specification for a resource type. This is similar to "subclassing" in object oriented programming languages.
+
+Medplum developers can take advantage of FHIR profiles in the following ways:
+
+1. Complying to an certain data quality standard. In the United States,
+   the [US Core profiles][us-core] specify a minimum set of required data (called [USCDI][uscdi]) for interoperating with
+   other US healthcare entities.
+2. Enforcing an internal schema (i.e. an organization's own data quality rules),
+3. Fulfilling data requirements of third-party APIs
+
+For example, the [US Core Blood Pressure profile][us-core-bp] requires that `component` contains two
 correctly-coded entries: one systolic pressure measurement, and one diastolic measurement. If a resource under
 this profile contains just one measurement, or uses an incorrect code for either component, it will be rejected by the
 server. This helps ensure data quality by preventing data that does not match the expected schema from being written.
-
-Profiles can be used both for enforcing an internal schema (i.e. an organization's own data quality rules), or for
-external consumers (i.e. to validate that data will be acceptable to a third-party FHIR API). In the United States,
-the [US Core profiles][us-core] specify a minimum set of required data (called [USCDI][uscdi]) for interoperating with
-other US healthcare entities.
 
 [profiling]: http://hl7.org/fhir/profiling.html
 [us-core-bp]: http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure
 [us-core]: https://www.hl7.org/fhir/us/core/#us-core-profiles
 [uscdi]: https://www.healthit.gov/isa/united-states-core-data-interoperability-uscdi
+
+## Creating Profiles
+
+The schema for each FHIR resource type is defined by a [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource. By default, Medplum ships with [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) for each FHIR base resource type and for Medplum defined resource types. The source data for these [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) can be found the [@medplum/definitions]() package. 
+
+FHIR profiles are also stored as [`StructureDefinÏition`](/docs/api/fhir/resources/structuredefinition) resources that inherit from the base schemas. You can create a new profile in your Medplum project simply by uploading the corresponding [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) to your project. 
+
+Authoring profiles from scratch can be complicated and time consuming. Many organizations publish **implementation guides** with collections for FHIR profiles, tailored to specific healthcare domains. 
+
+For example: 
+
+* [US Core](http://hl7.org/fhir/us/core/index.html): Establishing the “floor” of standards to promote interoperability throughout the US healthcare system.
+* [PDex Payer Networks](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/):  Health insurers' insurance plans, their associated networks, and the organizations and providers that participate in these networks.
+* [US Drug Formulary](http://hl7.org/fhir/us/davinci-drug-formulary/):  Health insurers' drug formulary information for patients/consumers.
+* [Dental Data Exchange](http://hl7.org/fhir/us/dental-data-exchange/): Standards for bi-directional information exchange  dental providers.
 
 ## Profile adoption
 
@@ -105,6 +119,12 @@ plan to use.
 :::
 
 [us-core-patient]: http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient
+
+## Searching by Profile
+
+You can use the `_profile` search parameter to retrieve all resources of a given type that conform to a certain FHIR profile. 
+
+Refer to the [Advanced Search Parameters](/docs/search/advanced-search-parameters#_profile) guide for more information.
 
 ## Handling missing data
 
