@@ -25,7 +25,8 @@
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
   "files": [
-    "dist"
+    "dist/cjs",
+    "dist/esm"
   ],
   "scripts": {
     "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.cts && cp dist/types.d.ts dist/esm/index.d.mts",
