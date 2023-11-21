@@ -214,26 +214,27 @@ export function isGone(outcome: OperationOutcome): boolean {
 }
 
 export function getStatus(outcome: OperationOutcome): number {
-  if (outcome.id === OK_ID) {
-    return 200;
-  } else if (outcome.id === CREATED_ID) {
-    return 201;
-  } else if (outcome.id === ACCEPTED_ID) {
-    return 202;
-  } else if (outcome.id === NOT_MODIFIED_ID) {
-    return 304;
-  } else if (outcome.id === UNAUTHORIZED_ID) {
-    return 401;
-  } else if (outcome.id === FORBIDDEN_ID) {
-    return 403;
-  } else if (outcome.id === NOT_FOUND_ID) {
-    return 404;
-  } else if (outcome.id === GONE_ID) {
-    return 410;
-  } else if (outcome.id === TOO_MANY_REQUESTS_ID) {
-    return 429;
-  } else {
-    return 400;
+  switch (outcome.id) {
+    case OK_ID:
+      return 200;
+    case CREATED_ID:
+      return 201;
+    case ACCEPTED_ID:
+      return 202;
+    case NOT_MODIFIED_ID:
+      return 204;
+    case UNAUTHORIZED_ID:
+      return 401;
+    case FORBIDDEN_ID:
+      return 403;
+    case NOT_FOUND_ID:
+      return 404;
+    case GONE_ID:
+      return 410;
+    case TOO_MANY_REQUESTS_ID:
+      return 429;
+    default:
+      return outcome.issue?.[0]?.code === 'exception' ? 500 : 400;
   }
 }
 

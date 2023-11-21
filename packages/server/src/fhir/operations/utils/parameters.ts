@@ -1,4 +1,12 @@
-import { OperationOutcomeError, badRequest, capitalize, isResource, serverError } from '@medplum/core';
+import {
+  OperationOutcomeError,
+  badRequest,
+  capitalize,
+  getStatus,
+  isEmpty,
+  isResource,
+  serverError,
+} from '@medplum/core';
 import {
   OperationDefinition,
   OperationDefinitionParameter,
@@ -8,6 +16,7 @@ import {
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { sendResponse } from '../../routes';
+import { sendOutcome } from '../../outcomes';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
@@ -37,34 +46,31 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
       // FHIR spec-compliant case: Parameters resource e.g.
       // { resourceType: 'Parameters', parameter: [{ name: 'message', valueString: 'Hello!' }] }
       const inParam = inputParameters.parameter?.filter((p) => p.name === param.name);
-      const n = inParam?.length ?? 0;
-      if (inParam) {
-        if (max === 1) {
-          if (n > 1) {
-            throw new OperationOutcomeError(badRequest(`Multiple values provided for parameter ${paramName}`));
-          }
-          value = inParam[0]?.[('value' + capitalize(param.type ?? 'string')) as keyof ParametersParameter];
-        } else {
-          value = inParam.map((v) => v[('value' + capitalize(param.type ?? 'string')) as keyof ParametersParameter]);
-        }
-      }
+      value = inParam?.map((v) => v[('value' + capitalize(param.type ?? 'string')) as keyof ParametersParameter]);
     } else {
       // Fallback case: Plain JSON Object e.g.
       // { message: 'Hello!' }
       value = input[paramName];
     }
 
+    // Check parameter cardinality (min and max)
     if (Array.isArray(value)) {
       if (value.length < min || value.length > max) {
         throw new OperationOutcomeError(
-          badRequest(`Expected ${min}..${max} values for parameter ${paramName}, but ${value.length} provided`)
+          badRequest(
+            `Expected ${min === max ? max : min + '..' + max} value${
+              min > 1 ? 's' : ''
+            } for input parameter ${paramName}, but ${value.length} provided`
+          )
         );
       }
-    } else if (min > 1) {
-      throw new OperationOutcomeError(badRequest(`Expected at least ${min} values for parameter ${paramName}`));
+    } else if (min > 0 && isEmpty(value)) {
+      throw new OperationOutcomeError(
+        badRequest(`Expected ${min > 1 ? 'at least' + min + ' values for' : 'required'} input parameter ${paramName}`)
+      );
     }
 
-    parsed[paramName] = value;
+    parsed[paramName] = Array.isArray(value) && max === 1 ? value[0] : value;
   }
 
   return parsed;
@@ -79,39 +85,46 @@ export async function sendOutputParameters(
   const outputParameters = operation.parameter?.filter((p) => p.use === 'out');
   const param1 = outputParameters?.[0];
   if (outputParameters?.length === 1 && param1 && param1.name === 'return') {
-    if (!isResource(output)) {
-      throw new OperationOutcomeError(
+    if (!isResource(output) || (param1.type && output.resourceType !== param1.type)) {
+      sendOutcome(
+        res,
         serverError(new Error(`Expected ${param1.type ?? 'Resource'} output, but got unexpected ${typeof output}`))
       );
+    } else {
+      // Send Resource as output directly, instead of using Parameters format
+      await sendResponse(res, outcome, output);
     }
-
-    // Send Resource as output directly, instead of using Parameters format
-    await sendResponse(res, outcome, output);
     return;
   }
   const response: Parameters = {
     resourceType: 'Parameters',
-    parameter: [],
   };
   if (!outputParameters?.length) {
     // Send empty Parameters as response
-    res.json(response);
+    res.status(getStatus(outcome)).json(response);
     return;
   }
 
+  response.parameter = [];
   for (const param of outputParameters) {
     const key = param.name ?? '';
     const value = output[key];
     const count = Array.isArray(value) ? value.length : +(value !== undefined);
 
     if (param.min && param.min > 0 && count < param.min) {
-      throw new OperationOutcomeError(
+      sendOutcome(
+        res,
         serverError(new Error(`Expected ${param.min} or more values for output parameter '${key}', got ${count}`))
       );
+      return;
     } else if (param.max && param.max !== '*' && count > parseInt(param.max, 10)) {
-      throw new OperationOutcomeError(
+      sendOutcome(
+        res,
         serverError(new Error(`Expected at most ${param.max} values for output parameter '${key}', got ${count}`))
       );
+      return;
+    } else if (isEmpty(value)) {
+      continue;
     }
 
     response.parameter?.push(
@@ -119,7 +132,7 @@ export async function sendOutputParameters(
     );
   }
 
-  res.json(response);
+  res.status(getStatus(outcome)).json(response);
 }
 
 function makeParameter(param: OperationDefinitionParameter, value: any): ParametersParameter {
