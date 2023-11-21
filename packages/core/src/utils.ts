@@ -533,11 +533,11 @@ function deepEqualsObject(
 }
 
 /**
- * Checks if object2 includes all fields and values of object1.
- * It doesn't matter if object2 has extra fields.
- * @param value - The object to test if contained in pattern.
- * @param pattern - The object to test against.
- * @returns True if pattern includes all fields and values of value.
+ * Checks if value includes all fields and values of pattern.
+ * It doesn't matter if value has extra fields, values, etc.
+ * @param value - The object being tested against pattern.
+ * @param pattern - The object pattern/shape checked to exist within value.
+ * @returns True if value includes all fields and values of pattern.
  */
 export function deepIncludes(value: any, pattern: any): boolean {
   if (isEmpty(value)) {
