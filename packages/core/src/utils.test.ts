@@ -545,6 +545,17 @@ describe('Core Utils', () => {
     expect(deepIncludes([{ value: 1 }, { value: 2 }], [{ value: 2 }, { value: 1 }, { y: 6 }])).toEqual(true);
     expect(deepIncludes([{ value: 1 }], { value: 1 })).toEqual(false);
     expect(deepIncludes([{ value: 1 }], [{ y: 2, z: 3 }])).toEqual(false);
+
+    const value = {
+      type: 'CodeableConcept',
+      value: {
+        coding: [{ system: 'http://loinc.org', code: '8480-6', display: 'Systolic blood pressure' }],
+        text: 'Systolic blood pressure',
+      },
+    };
+    const pattern = { type: 'CodeableConcept', value: { coding: [{ system: 'http://loinc.org', code: '8480-6' }] } };
+    expect(deepIncludes(value, pattern)).toEqual(true);
+    expect(deepIncludes(pattern, value)).toEqual(false);
   });
 
   test('deepClone', () => {
