@@ -19,6 +19,7 @@ export async function initDatabase(config: MedplumDatabaseConfig): Promise<void>
     database: config.dbname,
     user: config.username,
     password: config.password,
+    ssl: config.ssl,
   });
 
   pool.on('error', (err) => {
