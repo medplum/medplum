@@ -57,16 +57,29 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     }
   }
 
-  const user = await systemRepo.searchOne<User>({
-    resourceType: 'User',
-    filters: [
-      {
-        code: 'email',
-        operator: Operator.EXACT,
-        value: email,
-      },
-    ],
+// Define filters for searching users
+const filters = [
+  {
+    code: 'email',
+    operator: Operator.EXACT,
+    value: email, // Set the email value for exact matching
+  },
+];
+
+// If a specific project is associated with the request, add a project filter
+if (req.body.projectId) {
+  filters.push({
+    code: 'project',
+    operator: Operator.EQUALS,
+    value: 'Project/' + req.body.projectId, // Set the project value for equality matching
   });
+}
+
+// Search for a user based on the defined filters
+const user = await systemRepo.searchOne<User>({
+  resourceType: 'User',
+  filters,
+});
 
   if (!user) {
     // Per OWASP guidelines, send "ok" to prevent account enumeration attack
