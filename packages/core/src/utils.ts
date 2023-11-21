@@ -560,12 +560,14 @@ export function deepIncludes(value: any, pattern: any): boolean {
   return value === pattern;
 }
 
-function deepIncludesArray(array1: any[], array2: any[]): boolean {
-  return array1.every((value1) => array2.some((value2) => deepIncludes(value1, value2)));
+function deepIncludesArray(value: any[], pattern: any[]): boolean {
+  return pattern.every((patternVal) => value.some((valueVal) => deepIncludes(valueVal, patternVal)));
 }
 
-function deepIncludesObject(object1: { [key: string]: unknown }, object2: { [key: string]: unknown }): boolean {
-  return Object.entries(object1).every(([key, value]) => key in object2 && deepIncludes(value, object2[key]));
+function deepIncludesObject(value: { [key: string]: unknown }, pattern: { [key: string]: unknown }): boolean {
+  return Object.entries(pattern).every(
+    ([patternKey, patternVal]) => patternKey in value && deepIncludes(value[patternKey], patternVal)
+  );
 }
 
 /**
