@@ -22,6 +22,7 @@ import { fhirRouter } from './fhir/routes';
 import { initBinaryStorage } from './fhir/storage';
 import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
+import { cleanupHeartbeatTimers } from './fhircast/websocket';
 import { healthcheckHandler } from './healthcheck';
 import { hl7BodyParser } from './hl7/parser';
 import { globalLogger } from './logger';
@@ -195,9 +196,10 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
 export async function shutdownApp(): Promise<void> {
   await closeWorkers();
   await closeDatabase();
+  cleanupHeartbeatTimers();
+  await closeWebSockets();
   closeRedis();
   closeRateLimiter();
-  closeWebSockets();
 
   if (server) {
     server.close();

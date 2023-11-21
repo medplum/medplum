@@ -3,6 +3,27 @@ import { IncomingMessage } from 'http';
 import ws from 'ws';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
+import { setupHeartbeatTimer } from './utils';
+
+const heartbeatTimerCallbacks = new Map<string, () => void>();
+const cleanupPromises = [] as Promise<void>[];
+
+/**
+ * Cleans up heartbeat timers for FHIRcast WebSocket connections.
+ */
+export function cleanupHeartbeatTimers(): void {
+  for (const cleanup of heartbeatTimerCallbacks.values()) {
+    cleanup();
+  }
+}
+
+/**
+ *
+ * @returns Promise that resolves when all registered WebSocket cleanup Promises have resolved or rejected.
+ */
+export async function cleanupWebSockets(): Promise<unknown> {
+  return Promise.allSettled(cleanupPromises);
+}
 
 /**
  * Handles a new WebSocket connection to the FHIRCast hub.
@@ -17,10 +38,18 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   // According to Redis documentation: http://redis.io/commands/subscribe
   // Once the client enters the subscribed state it is not supposed to issue any other commands,
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
-  const redisSubscriber = getRedis().duplicate();
+  const redis = getRedis();
+  const redisSubscriber = redis.duplicate();
 
   // Subscribe to the topic
   await redisSubscriber.subscribe(topic);
+  if (!heartbeatTimerCallbacks.has(topic)) {
+    const [, numOfSubscribers] = (await redis.pubsub('NUMSUB', topic)) as [string, number];
+    if (numOfSubscribers === 1) {
+      // We check if there is exactly one subscriber, ie. we are the first subscriber
+      heartbeatTimerCallbacks.set(topic, setupHeartbeatTimer(topic, 10000));
+    }
+  }
 
   redisSubscriber.on('message', (_channel: string, message: string) => {
     // Forward the message to the client
@@ -36,7 +65,23 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   );
 
   socket.on('close', () => {
-    redisSubscriber.disconnect();
+    const promise = redisSubscriber
+      .unsubscribe(topic)
+      .then(() => {
+        (redis.pubsub('NUMSUB', topic) as Promise<[string, number]>)
+          .then(([, numOfSubscribers]) => {
+            if (numOfSubscribers === 0 && heartbeatTimerCallbacks.has(topic)) {
+              const cb = heartbeatTimerCallbacks.get(topic) as () => void;
+              cb();
+              heartbeatTimerCallbacks.delete(topic);
+            }
+            redisSubscriber.disconnect();
+          })
+          .catch(console.error);
+      })
+      .catch(console.error);
+
+    cleanupPromises.push(promise);
   });
 
   // Send initial connection verification

@@ -13,3 +13,23 @@ export async function getTopicForUser(userId: string): Promise<string> {
   // If topic is null, it means there was no value at the given key, so we should return the new topic
   return topic || newTopic;
 }
+
+export function setupHeartbeatTimer(topic: string, timeoutMs: number): () => void {
+  let currentTimeout: NodeJS.Timeout;
+
+  const callback = (): void => {
+    const heartbeatPayload = {
+      timestamp: new Date().toISOString(),
+      id: generateId(),
+      event: {
+        context: [{ key: 'period', decimal: `${Math.ceil(timeoutMs / 1000)}` }],
+        'hub.topic': topic,
+        'hub.event': 'heartbeat',
+      },
+    };
+    getRedis().publish(topic, JSON.stringify(heartbeatPayload)).catch(console.error);
+    currentTimeout = setTimeout(callback, timeoutMs);
+  };
+  currentTimeout = setTimeout(callback, timeoutMs);
+  return () => clearTimeout(currentTimeout);
+}
