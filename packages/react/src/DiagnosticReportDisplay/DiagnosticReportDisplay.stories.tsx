@@ -3,7 +3,7 @@ import { Observation, Reference, Specimen } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport } from '@medplum/mock';
 import { useMedplum } from '@medplum/react-hooks';
 import { Meta } from '@storybook/react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import {
   HealthGorillaDiagnosticReport,

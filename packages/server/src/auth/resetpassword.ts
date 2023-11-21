@@ -7,11 +7,15 @@ import { sendEmail } from '../email/email';
 import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
-import { isExternalAuth } from './method';
 import { makeValidationMiddleware } from '../util/validator';
+import { isExternalAuth } from './method';
 
 export const resetPasswordValidator = makeValidationMiddleware([
-  body('email').isEmail().withMessage('Valid email address is required'),
+  body('email')
+    .isEmail()
+    .withMessage('Valid email address between 3 and 72 characters is required')
+    .isLength({ min: 3, max: 72 })
+    .withMessage('Valid email address between 3 and 72 characters is required'),
 ]);
 
 export async function resetPasswordHandler(req: Request, res: Response): Promise<void> {

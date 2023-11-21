@@ -1,6 +1,6 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Address } from '@medplum/fhirtypes';
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 function getLine(address: Address, index: number): string {
   return address.line && address.line.length > index ? address.line[index] : '';

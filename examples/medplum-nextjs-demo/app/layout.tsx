@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ReactNode } from 'react';
 import Root from './root';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout(props: { children: React.ReactNode }): JSX.Element {
+export default function RootLayout(props: { children: ReactNode }): JSX.Element {
   const { children } = props;
 
   return (

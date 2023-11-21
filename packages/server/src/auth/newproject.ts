@@ -13,8 +13,8 @@ export interface NewProjectRequest {
 }
 
 export const newProjectValidator = makeValidationMiddleware([
-  body('login').notEmpty().withMessage('Missing login'),
-  body('projectName').notEmpty().withMessage('Project name is required'),
+  body('login').isUUID().withMessage('Login ID is required.'),
+  body('projectName').isLength({ min: 4, max: 72 }).withMessage('Project name must be between 4 and 72 characters'),
 ]);
 
 /**

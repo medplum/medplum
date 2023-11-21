@@ -1,5 +1,5 @@
 import { ValueSetExpansionContains } from '@medplum/fhirtypes';
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import {
   AsyncAutocomplete,
   AsyncAutocompleteOption,

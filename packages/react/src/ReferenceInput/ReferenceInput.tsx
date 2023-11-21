@@ -1,7 +1,7 @@
 import { Group, NativeSelect } from '@mantine/core';
 import { createReference } from '@medplum/core';
 import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 

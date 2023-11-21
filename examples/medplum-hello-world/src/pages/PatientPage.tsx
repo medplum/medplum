@@ -2,7 +2,7 @@ import { Loader, Tabs } from '@mantine/core';
 import { capitalize, getReferenceString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
-import React from 'react';
+import { Fragment } from 'react';
 import { Link, Outlet, useParams } from 'react-router-dom';
 import { PatientHeader } from './PatientHeader';
 
@@ -14,7 +14,7 @@ export function PatientPage(): JSX.Element {
   }
 
   return (
-    <React.Fragment key={getReferenceString(patient)}>
+    <Fragment key={getReferenceString(patient)}>
       <PatientHeader patient={patient} />
       <Tabs>
         <Tabs.List bg="white">
@@ -24,7 +24,7 @@ export function PatientPage(): JSX.Element {
         </Tabs.List>
       </Tabs>
       <Outlet />
-    </React.Fragment>
+    </Fragment>
   );
 }
 

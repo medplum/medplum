@@ -1,6 +1,6 @@
 import { Group } from '@mantine/core';
 import { Ratio } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { QuantityInput } from '../QuantityInput/QuantityInput';
 
 export interface RatioInputProps {

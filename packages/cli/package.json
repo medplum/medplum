@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cli",
-  "version": "2.1.14",
+  "version": "2.1.17",
   "description": "Medplum Command Line Interface",
   "keywords": [
     "medplum",
@@ -18,6 +18,9 @@
     "normative"
   ],
   "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
@@ -28,6 +31,9 @@
   "bin": {
     "medplum": "./dist/cjs/index.cjs"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
     "clean": "rimraf dist",

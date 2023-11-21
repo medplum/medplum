@@ -16,7 +16,7 @@ import {
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
 } from '@medplum/fhirtypes';
-import React, { ChangeEvent } from 'react';
+import { ChangeEvent } from 'react';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
 import { CodingInput } from '../../CodingInput/CodingInput';

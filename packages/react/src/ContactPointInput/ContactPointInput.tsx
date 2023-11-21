@@ -1,6 +1,6 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { ContactPoint } from '@medplum/fhirtypes';
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 export interface ContactPointInputProps {
   name: string;

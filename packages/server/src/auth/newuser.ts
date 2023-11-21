@@ -9,14 +9,18 @@ import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
-import { bcryptHashPassword } from './utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { bcryptHashPassword } from './utils';
 
 export const newUserValidator = makeValidationMiddleware([
-  body('firstName').notEmpty().withMessage('First name is required'),
-  body('lastName').notEmpty().withMessage('Last name is required'),
-  body('email').isEmail().withMessage('Valid email address is required'),
-  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+  body('firstName').isLength({ min: 1, max: 128 }).withMessage('First name must be between 1 and 128 characters'),
+  body('lastName').isLength({ min: 1, max: 128 }).withMessage('Last name must be between 1 and 128 characters'),
+  body('email')
+    .isEmail()
+    .withMessage('Valid email address between 3 and 72 characters is required')
+    .isLength({ min: 3, max: 72 })
+    .withMessage('Valid email address between 3 and 72 characters is required'),
+  body('password').isByteLength({ min: 8, max: 72 }).withMessage('Password must be between 8 and 72 characters'),
 ]);
 
 /**

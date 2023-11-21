@@ -35,7 +35,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build
-        run: npm run build
+        run: npm run build:fast
       - name: Configure AWS Credentials
         if: github.repository == 'medplum/medplum'
         uses: aws-actions/configure-aws-credentials@v2

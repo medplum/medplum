@@ -1,7 +1,6 @@
 import { Table } from '@mantine/core';
 import { ObservationDefinition } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, Loading, useSearchResources } from '@medplum/react';
-import React from 'react';
 
 export function PanelsPage(): JSX.Element {
   const [panels] = useSearchResources('ActivityDefinition', '_count=100');

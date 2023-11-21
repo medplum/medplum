@@ -2,7 +2,6 @@ import { Alert } from '@mantine/core';
 import { operationOutcomeIssueToString } from '@medplum/core';
 import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { IconAlertCircle } from '@tabler/icons-react';
-import React from 'react';
 
 export interface OperationOutcomeAlertProps {
   outcome?: OperationOutcome;

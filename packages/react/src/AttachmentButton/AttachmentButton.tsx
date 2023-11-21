@@ -1,6 +1,6 @@
 import { Attachment, Binary, OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import React, { useRef } from 'react';
+import { ChangeEvent, MouseEvent, ReactNode, useRef } from 'react';
 import { killEvent } from '../utils/dom';
 import { normalizeOperationOutcome } from '@medplum/core';
 
@@ -9,19 +9,19 @@ export interface AttachmentButtonProps {
   onUploadStart?: () => void;
   onUploadProgress?: (e: ProgressEvent) => void;
   onUploadError?: (outcome: OperationOutcome) => void;
-  children(props: { onClick(e: React.MouseEvent): void }): React.ReactNode;
+  children(props: { onClick(e: MouseEvent): void }): ReactNode;
 }
 
 export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
   const medplum = useMedplum();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function onClick(e: React.MouseEvent): void {
+  function onClick(e: MouseEvent): void {
     killEvent(e);
     fileInputRef.current?.click();
   }
 
-  function onFileChange(e: React.ChangeEvent): void {
+  function onFileChange(e: ChangeEvent): void {
     killEvent(e);
     const files = (e.target as HTMLInputElement).files;
     if (files) {

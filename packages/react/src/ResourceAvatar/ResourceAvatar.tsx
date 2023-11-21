@@ -2,7 +2,6 @@ import { Avatar, AvatarProps } from '@mantine/core';
 import { getDisplayString, getImageSrc } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
-import React from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 
 export interface ResourceAvatarProps extends AvatarProps {

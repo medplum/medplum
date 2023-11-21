@@ -1,6 +1,6 @@
 {
   "name": "@medplum/react",
-  "version": "2.1.14",
+  "version": "2.1.17",
   "description": "Medplum React Component Library",
   "keywords": [
     "medplum",
@@ -22,6 +22,9 @@
     "react-component"
   ],
   "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
@@ -29,18 +32,22 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
-  "type": "module",
   "sideEffects": false,
+  "type": "module",
   "exports": {
-    "types": "./dist/types.d.ts",
     "require": "./dist/cjs/index.cjs",
     "import": "./dist/esm/index.mjs"
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
-  "types": "dist/types.d.ts",
+  "files": [
+    ".env.defaults",
+    "dist/cjs",
+    "dist/esm"
+  ],
   "scripts": {
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && api-extractor run --local",
+    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.cts && cp dist/types.d.ts dist/esm/index.d.mts",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist storybook-static",
     "dev": "storybook dev -p 6006",
     "storybook": "storybook build",

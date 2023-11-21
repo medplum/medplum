@@ -56,6 +56,33 @@ export function MyComponent() {
 }
 ```
 
+## `useMedplumContext`
+
+`useMedplumContext` can be used to access the `MedplumContext` provided by the `MedplumProvider` directly. The `MedplumContext` has the following interface:
+
+```ts
+interface MedplumContext {
+  medplum: MedplumClient;
+  navigate: MepdlumNavigateFunction;
+  profile?: ProfileResource;
+  loading: boolean;
+}
+```
+
+### Using `loading` to know when `MedplumClient` initialization is done
+You can use the `loading` property from `useMedplumContext()` to know when `MedplumClient` has finished initialization successfully. `loading` is updated asynchronously so it will usually start as `false` and change to `true` once the client has finished its initialization.
+
+```tsx
+function MyComponent(): JSX.Element {
+  const { loading } = useMedplumContext();
+  return loading ? (
+    <Spinner />
+  ) : (
+    <div>Loaded!</div>
+  );
+}
+```
+
 ## About Medplum
 
 Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications. Medplum includes a FHIR server, React component library, and developer app.

@@ -1,6 +1,5 @@
 import { Period } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import { PeriodInput } from './PeriodInput';
 
 const startDateTime = '2021-01-01T00:00:00.000Z';

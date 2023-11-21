@@ -1,6 +1,5 @@
 import { Button, Center, Checkbox, Group, Stack, Title } from '@mantine/core';
 import { LoginAuthenticationResponse } from '@medplum/core';
-import React from 'react';
 import { Form } from '../Form/Form';
 import { Logo } from '../Logo/Logo';
 import { useMedplum } from '@medplum/react-hooks';

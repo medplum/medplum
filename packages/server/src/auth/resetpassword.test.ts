@@ -46,7 +46,7 @@ describe('Reset Password', () => {
       recaptchaToken: 'xyz',
     });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('Valid email address is required');
+    expect(res.body.issue[0].details.text).toBe('Valid email address between 3 and 72 characters is required');
     expect(res.body.issue[0].expression[0]).toBe('email');
   });
 

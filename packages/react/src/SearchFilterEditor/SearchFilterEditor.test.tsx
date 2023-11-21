@@ -1,13 +1,13 @@
 import { Operator, SearchRequest } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { ReactNode } from 'react';
 import { SearchFilterEditor } from './SearchFilterEditor';
 
 const medplum = new MockClient();
 
-async function setup(child: React.ReactNode): Promise<void> {
+async function setup(child: ReactNode): Promise<void> {
   await act(async () => {
     render(<MedplumProvider medplum={medplum}>{child}</MedplumProvider>);
   });

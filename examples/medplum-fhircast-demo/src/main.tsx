@@ -1,7 +1,7 @@
 import { MantineProvider, MantineThemeOverride } from '@mantine/core';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
-import React from 'react';
+import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
@@ -36,7 +36,7 @@ const medplum = new MedplumClient({
 });
 
 ReactDOM.createRoot(root).render(
-  <React.StrictMode>
+  <StrictMode>
     <BrowserRouter>
       <MedplumProvider medplum={medplum}>
         <MantineProvider theme={theme} withGlobalStyles withNormalizeCSS>
@@ -44,5 +44,5 @@ ReactDOM.createRoot(root).render(
         </MantineProvider>
       </MedplumProvider>
     </BrowserRouter>
-  </React.StrictMode>
+  </StrictMode>
 );

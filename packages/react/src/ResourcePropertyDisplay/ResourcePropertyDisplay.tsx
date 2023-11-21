@@ -8,7 +8,6 @@ import {
   PropertyType,
 } from '@medplum/core';
 import { IconCheck, IconCopy } from '@tabler/icons-react';
-import React from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { AttachmentArrayDisplay } from '../AttachmentArrayDisplay/AttachmentArrayDisplay';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';

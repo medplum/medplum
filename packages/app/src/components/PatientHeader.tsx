@@ -1,7 +1,6 @@
 import { calculateAgeString } from '@medplum/core';
 import { Patient, Reference } from '@medplum/fhirtypes';
 import { HumanNameDisplay, MedplumLink, ResourceAvatar, useResource } from '@medplum/react';
-import React from 'react';
 import { InfoBar } from './InfoBar';
 import { getDefaultColor } from './PatientHeader.utils';
 

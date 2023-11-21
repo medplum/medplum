@@ -1,6 +1,6 @@
 import { Anchor, AppShell, Button, Group, Header, Loader, Text } from '@mantine/core';
 import { ErrorBoundary, Logo, useMedplum } from '@medplum/react';
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import { Link, Route, Routes } from 'react-router-dom';
 import { HomePage } from './HomePage';
 import { LandingPage } from './LandingPage';

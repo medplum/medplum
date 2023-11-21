@@ -15,7 +15,6 @@ import {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';

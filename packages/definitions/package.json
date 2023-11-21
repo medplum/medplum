@@ -1,6 +1,6 @@
 {
   "name": "@medplum/definitions",
-  "version": "2.1.14",
+  "version": "2.1.17",
   "description": "Medplum Data Definitions",
   "keywords": [
     "medplum",
@@ -18,6 +18,9 @@
     "normative"
   ],
   "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
@@ -27,7 +30,9 @@
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "npm run clean && tsc --project tsconfig.build.json",
     "clean": "rimraf dist/index.js dist/index.d.ts",

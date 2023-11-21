@@ -1,6 +1,5 @@
 import { formatMoney } from '@medplum/core';
 import { Money } from '@medplum/fhirtypes';
-import React from 'react';
 
 export interface MoneyDisplayProps {
   value?: Money;

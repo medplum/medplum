@@ -1,4 +1,5 @@
 import { Bot, Bundle, Identifier, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import { MockAsyncClientStorage } from '@medplum/mock';
 import { randomUUID, webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -2612,6 +2613,26 @@ describe('Client', () => {
     expect(console.log).toBeCalledWith('> X-Medplum: extended');
     expect(console.log).toBeCalledWith('< 200 OK');
     expect(console.log).toBeCalledWith('< foo: bar');
+  });
+});
+
+describe('Passed in async-backed `ClientStorage`', () => {
+  test('MedplumClient resolves initialized after storage is initialized', async () => {
+    const fetch = mockFetch(200, { success: true });
+    const storage = new MockAsyncClientStorage();
+    const medplum = new MedplumClient({ fetch, storage });
+    expect(storage.isInitialized).toEqual(false);
+    expect(medplum.isInitialized).toEqual(false);
+    storage.setInitialized();
+    await medplum.getInitPromise();
+    expect(storage.isInitialized).toEqual(true);
+    expect(medplum.isInitialized).toEqual(true);
+  });
+
+  test('MedplumClient should resolve initialized when sync storage used', async () => {
+    const fetch = mockFetch(200, { success: true });
+    const medplum = new MedplumClient({ fetch });
+    await expect(medplum.getInitPromise()).resolves;
   });
 });
 

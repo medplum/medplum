@@ -1,7 +1,6 @@
 import { Button, MultiSelect, NativeSelect, Stack } from '@mantine/core';
 import { HumanName } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { Document } from '../Document/Document';
 import { Form } from '../Form/Form';
 import { HumanNameInput } from '../HumanNameInput/HumanNameInput';

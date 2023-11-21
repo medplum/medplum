@@ -1,4 +1,3 @@
-import React from 'react';
 import GitHubSvg from './github.svg';
 import LinkedInSvg from './linkedin.svg';
 import styles from './ProfileCard.module.css';

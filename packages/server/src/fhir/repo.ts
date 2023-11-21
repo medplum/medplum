@@ -36,7 +36,6 @@ import {
 import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
 import {
   AccessPolicy,
-  AccessPolicyResource,
   Bundle,
   BundleEntry,
   Meta,
@@ -1596,7 +1595,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @returns The resource with hidden fields removed.
    */
   removeHiddenFields<T extends Resource>(input: T): T {
-    const policy = this.getResourceAccessPolicy(input.resourceType);
+    const policy = satisfiedAccessPolicy(input, AccessPolicyInteraction.READ, this.context.accessPolicy);
     if (policy?.hiddenFields) {
       for (const field of policy.hiddenFields) {
         this.removeField(input, field);
@@ -1621,7 +1620,11 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @returns The resource with restored hidden fields.
    */
   private restoreReadonlyFields<T extends Resource>(input: T, original: T | undefined): T {
-    const policy = this.getResourceAccessPolicy(input.resourceType);
+    const policy = satisfiedAccessPolicy(
+      original ?? input,
+      original ? AccessPolicyInteraction.UPDATE : AccessPolicyInteraction.CREATE,
+      this.context.accessPolicy
+    );
     if (policy?.readonlyFields) {
       for (const field of policy.readonlyFields) {
         this.removeField(input, field);
@@ -1649,17 +1652,6 @@ export class Repository extends BaseRepository implements FhirRepository {
     // but we don't care if the value is missing in this case
     applyPatch(input, patch);
     return input;
-  }
-
-  private getResourceAccessPolicy(resourceType: string): AccessPolicyResource | undefined {
-    if (this.context.accessPolicy?.resource) {
-      for (const resourcePolicy of this.context.accessPolicy.resource) {
-        if (resourcePolicy.resourceType === resourceType) {
-          return resourcePolicy;
-        }
-      }
-    }
-    return undefined;
   }
 
   private isSuperAdmin(): boolean {
