@@ -558,7 +558,12 @@ describe('Core Utils', () => {
         text: 'Systolic blood pressure',
       },
     };
-    const pattern = { type: 'CodeableConcept', value: { coding: [{ system: 'http://loinc.org', code: '8480-6' }] } };
+    const pattern = {
+      type: 'CodeableConcept',
+      value: {
+        coding: [{ system: 'http://loinc.org', code: '8480-6' }],
+      },
+    };
     expect(deepIncludes(value, pattern)).toEqual(true);
     expect(deepIncludes(pattern, value)).toEqual(false);
   });
