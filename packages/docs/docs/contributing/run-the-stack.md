@@ -32,7 +32,7 @@ Use Turborepo to build all packages.
 From your root medplum directory run:
 
 ```sh
-npm run build
+npm run build:fast
 ```
 
 ## Background services

@@ -3,6 +3,9 @@
   "version": "2.1.17",
   "description": "Medplum Docs",
   "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
@@ -14,6 +17,7 @@
     "build": "npm run copy-core-docs && docusaurus build",
     "clean": "docusaurus clear",
     "clear": "docusaurus clear",
+    "copy-core-docs": "rm -rf docs/sdk && node markdown-to-mdx.cjs ../core/dist/docs docs/sdk",
     "deploy": "docusaurus deploy",
     "docusaurus": "docusaurus",
     "serve": "docusaurus serve",
@@ -21,8 +25,7 @@
     "swizzle": "docusaurus swizzle",
     "typecheck": "tsc",
     "write-heading-ids": "docusaurus write-heading-ids",
-    "write-translations": "docusaurus write-translations",
-    "copy-core-docs": "rm -rf docs/sdk && node markdown-to-mdx.cjs ../core/dist/docs docs/sdk"
+    "write-translations": "docusaurus write-translations"
   },
   "browserslist": {
     "production": [

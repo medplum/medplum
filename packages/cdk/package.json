@@ -3,6 +3,9 @@
   "version": "2.1.17",
   "description": "Medplum CDK Infra as Code",
   "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
@@ -10,6 +13,9 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
     "cdk": "cdk",

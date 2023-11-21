@@ -18,6 +18,9 @@
     "normative"
   ],
   "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
@@ -32,6 +35,10 @@
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
+  "files": [
+    "dist/cjs",
+    "dist/esm"
+  ],
   "scripts": {
     "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.cts && cp dist/types.d.ts dist/esm/index.d.mts",
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",

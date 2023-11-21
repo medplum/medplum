@@ -3,6 +3,9 @@
   "version": "2.1.17",
   "description": "Medplum App",
   "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
@@ -12,6 +15,7 @@
   "author": "Medplum <hello@medplum.com>",
   "type": "module",
   "files": [
+    ".env.defaults",
     "dist"
   ],
   "scripts": {
