@@ -222,7 +222,7 @@ export function getStatus(outcome: OperationOutcome): number {
     case ACCEPTED_ID:
       return 202;
     case NOT_MODIFIED_ID:
-      return 204;
+      return 304;
     case UNAUTHORIZED_ID:
       return 401;
     case FORBIDDEN_ID:
