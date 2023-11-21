@@ -533,11 +533,11 @@ function deepEqualsObject(
 }
 
 /**
- * Checks if object2 includes all fields and values of object1.
- * It doesn't matter if object2 has extra fields.
- * @param value - The object to test if contained in pattern.
- * @param pattern - The object to test against.
- * @returns True if pattern includes all fields and values of value.
+ * Checks if value includes all fields and values of pattern.
+ * It doesn't matter if value has extra fields, values, etc.
+ * @param value - The object being tested against pattern.
+ * @param pattern - The object pattern/shape checked to exist within value.
+ * @returns True if value includes all fields and values of pattern.
  */
 export function deepIncludes(value: any, pattern: any): boolean {
   if (isEmpty(value)) {
@@ -560,12 +560,14 @@ export function deepIncludes(value: any, pattern: any): boolean {
   return value === pattern;
 }
 
-function deepIncludesArray(array1: any[], array2: any[]): boolean {
-  return array1.every((value1) => array2.some((value2) => deepIncludes(value1, value2)));
+function deepIncludesArray(value: any[], pattern: any[]): boolean {
+  return pattern.every((patternVal) => value.some((valueVal) => deepIncludes(valueVal, patternVal)));
 }
 
-function deepIncludesObject(object1: { [key: string]: unknown }, object2: { [key: string]: unknown }): boolean {
-  return Object.entries(object1).every(([key, value]) => key in object2 && deepIncludes(value, object2[key]));
+function deepIncludesObject(value: { [key: string]: unknown }, pattern: { [key: string]: unknown }): boolean {
+  return Object.entries(pattern).every(
+    ([patternKey, patternVal]) => patternKey in value && deepIncludes(value[patternKey], patternVal)
+  );
 }
 
 /**

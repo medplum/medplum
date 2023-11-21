@@ -218,6 +218,76 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(observation, observationProfile)).not.toThrow();
   });
 
+  test('Valid resource under constraining profile with additional non-constrained fields', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      category: [
+        {
+          coding: [
+            {
+              code: 'vital-signs',
+              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+            },
+          ],
+        },
+      ],
+      code: {
+        coding: [
+          {
+            code: '85354-9',
+            system: LOINC,
+          },
+        ],
+      },
+      subject: {
+        reference: 'Patient/example',
+      },
+      effectiveDateTime: '2023-05-31T17:03:45-07:00',
+      component: [
+        {
+          dataAbsentReason: {
+            coding: [
+              {
+                code: '8480-6',
+                system: LOINC,
+              },
+            ],
+          },
+          code: {
+            coding: [
+              {
+                code: '8480-6',
+                system: LOINC,
+                display: 'Systolic blood pressure', // This is the extra content
+              },
+            ],
+          },
+        },
+        {
+          dataAbsentReason: {
+            coding: [
+              {
+                code: '8480-6',
+                system: LOINC,
+              },
+            ],
+          },
+          code: {
+            coding: [
+              {
+                code: '8462-4',
+                system: LOINC,
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    expect(() => validateResource(observation, observationProfile)).not.toThrow();
+  });
+
   test('Invalid cardinality', () => {
     const observation: Observation = {
       resourceType: 'Observation',
