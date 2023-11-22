@@ -95,5 +95,4 @@ describe('Method', () => {
       .send({ email: 'alice@' + randomUUID() + '.com' });
     expect(res2.status).toBe(200);
   });
-
 });
