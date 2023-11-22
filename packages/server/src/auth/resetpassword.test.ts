@@ -6,6 +6,7 @@ import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import { createReference, resolveId } from '@medplum/core';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
@@ -202,7 +203,7 @@ describe('Reset Password', () => {
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
     const recaptchaSecretKey = 'recaptcha-secret-key-' + randomUUID();
 
-    const project = await withTestContext(async () => {
+    await withTestContext(async () => {
       // Register and create a project
       const { project } = await registerNew({
         firstName: 'Reset',
@@ -227,13 +228,12 @@ describe('Reset Password', () => {
       return project;
     });
 
-    const res2 = await request(app).post('/auth/resetpassword').type('json').send({
+    const res = await request(app).post('/auth/resetpassword').type('json').send({
       email,
-      projectId: project.id,
       recaptchaSiteKey,
       recaptchaToken: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res.status).toBe(200);
     expect(SESv2Client).toHaveBeenCalledTimes(1);
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
 
@@ -312,5 +312,83 @@ describe('Reset Password', () => {
     expect(res.body).toMatchObject({ issue: [{ code: 'invalid', details: { text: 'Invalid recaptchaSiteKey' } }] });
     expect(SESv2Client).not.toHaveBeenCalled();
     expect(SendEmailCommand).not.toHaveBeenCalled();
+  });
+
+  // User is present but project is not assigned to it.
+  test('User without project', async () => {
+    const email = `recaptcha-client${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const project = await withTestContext(async () => {
+      // Register and create a project
+      const { project } = await registerNew({
+        firstName: 'Reset',
+        lastName: 'Reset',
+        projectName: 'Reset Project',
+        email,
+        password,
+      });
+      return project;
+    });
+
+    // Attempt to reset the password for the user without a project
+    const res = await request(app).post('/auth/resetpassword').type('json').send({
+      email,
+      projectId: project.id,
+      recaptchaToken: 'xyz',
+    });
+
+    // Verify the response and expectations
+    expect(res.status).toBe(200);
+    expect(res.body.issue[0].details.text).toBe('All OK');
+    expect(SESv2Client).not.toHaveBeenCalled(); // Ensure SESv2Client is not called
+    expect(SendEmailCommand).not.toHaveBeenCalled(); // Ensure SendEmailCommand is not called
+  });
+
+  test('User with the project success', async () => {
+    const email = `recaptcha-client${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const project = await withTestContext(async () => {
+      // Register and create a project
+      const { project, user } = await registerNew({
+        firstName: 'Reset',
+        lastName: 'Reset',
+        projectName: 'Reset Project',
+        email,
+        password,
+      });
+
+      // Add the project to the user
+      await systemRepo.patchResource('User', resolveId(user) as string, [
+        {
+          path: '/project',
+          op: 'add',
+          value: createReference(project),
+        },
+      ]);
+
+      return project;
+    });
+
+    // Attempt to reset the password for the user with a project
+    const res = await request(app).post('/auth/resetpassword').type('json').send({
+      email,
+      projectId: project.id,
+      recaptchaToken: 'xyz',
+    });
+
+    // Verify the response and expectations
+    expect(res.status).toBe(200);
+    expect(SESv2Client).toHaveBeenCalledTimes(1); // Ensure SESv2Client is called once
+    expect(SendEmailCommand).toHaveBeenCalledTimes(1); // Ensure SendEmailCommand is called once
+
+    // Verify email details
+    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
+    expect(args.Destination.ToAddresses[0]).toBe(email);
+
+    // Verify parsed email content
+    const parsed = await simpleParser(args.Content.Raw.Data);
+    expect(parsed.subject).toBe('Medplum Password Reset');
   });
 });
