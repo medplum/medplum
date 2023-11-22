@@ -97,6 +97,7 @@ describe('FHIRcast WebSocket', () => {
           // Connection verification message
           expect(obj['hub.topic']).toBe(topic);
         })
+        .exec(() => jest.advanceTimersByTime(10001))
         .expectJson((obj) => {
           // Event message
           expect(obj.event['hub.topic']).toBe(topic);
