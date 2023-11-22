@@ -1,8 +1,64 @@
-import pg, { Pool } from 'pg';
+import { EventEmitter } from 'node:events';
+import { Duplex } from 'node:stream';
+import pg, { Pool, PoolClient, PoolConfig, QueryArrayResult } from 'pg';
+import { Readable, Writable } from 'stream';
 import { MedplumDatabaseSslConfig, loadConfig } from './config';
 import { closeDatabase, initDatabase } from './database';
 
-const poolSpy = jest.spyOn(pg, 'Pool').mockImplementation((...args) => new Pool(...args));
+jest.mock('pg');
+const poolSpy = jest.spyOn(pg, 'Pool').mockImplementation((_config?: PoolConfig) => {
+  class MockPoolClient extends Duplex implements PoolClient {
+    release(): void {}
+    async connect(): Promise<void> {}
+    async query(): Promise<QueryArrayResult<any>> {
+      return {
+        command: '',
+        rowCount: null,
+        oid: -1,
+        fields: [],
+        rows: [],
+      };
+    }
+    copyFrom(_queryText: string): Writable {
+      return new Writable();
+    }
+    copyTo(_queryText: string): Readable {
+      return new Readable();
+    }
+    pauseDrain(): void {}
+    resumeDrain(): void {}
+    escapeIdentifier(_str: string): string {
+      return '';
+    }
+    escapeLiteral(_str: string): string {
+      return '';
+    }
+  }
+
+  class MockPool extends EventEmitter implements Pool {
+    totalCount = -1;
+    idleCount = -1;
+    waitingCount = -1;
+    async connect(): Promise<pg.PoolClient> {
+      return new MockPoolClient();
+    }
+    on(): this {
+      return this;
+    }
+    async end(): Promise<void> {}
+    async query(): Promise<QueryArrayResult<any>> {
+      return {
+        command: '',
+        rowCount: null,
+        oid: -1,
+        fields: [],
+        rows: [],
+      };
+    }
+  }
+
+  return new MockPool();
+});
 
 describe('Database config', () => {
   afterEach(() => {});
@@ -27,14 +83,7 @@ describe('Database config', () => {
     } satisfies MedplumDatabaseSslConfig;
     configCopy.ssl = sslConfig;
 
-    // This throws because the test DB doesn't actually support SSL
-    try {
-      await initDatabase(configCopy);
-      expect(false).toBeTruthy();
-    } catch (err) {
-      expect((err as Error)?.message).toMatch(/SSL/);
-    }
-
+    await initDatabase(configCopy, false);
     expect(poolSpy).toHaveBeenCalledTimes(1);
     expect(poolSpy).toHaveBeenCalledWith({
       host: databaseConfig.host,
