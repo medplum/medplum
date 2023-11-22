@@ -12,7 +12,7 @@ import baseSchema from '../base-schema.json';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, serverError } from '../outcomes';
 import { TypedValue, getElementDefinitionTypeName, isResourceTypeSchema } from '../types';
-import { capitalize, isEmpty } from '../utils';
+import { capitalize, getExtension, isEmpty } from '../utils';
 
 /**
  * Internal representation of a non-primitive FHIR type, suitable for use in resource validation
@@ -401,11 +401,36 @@ class StructureDefinitionParser {
     this.slicingContext.current = {
       name: element.sliceName ?? '',
       definition: element.definition,
-      type: element.type?.map((t) => ({ code: t.code ?? '', targetProfile: t.targetProfile, profile: t.profile })),
+      type: this.parseElementDefinitionType(element),
       elements: {},
       min: element.min ?? 0,
       max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string, 10),
     };
+  }
+
+  private parseElementDefinitionType(ed: ElementDefinition): ElementType[] {
+    return (ed.type ?? []).map((type) => {
+      let code: string | undefined;
+
+      if (type.code === 'BackboneElement' || type.code === 'Element') {
+        code = getElementDefinitionTypeName(ed);
+      }
+
+      if (!code) {
+        // This is a low-level extension that we optimize handling for
+        code = getExtension(type, 'http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type')?.valueUrl;
+      }
+
+      if (!code) {
+        code = type.code ?? '';
+      }
+
+      return {
+        code: code satisfies string,
+        targetProfile: type.targetProfile,
+        profile: type.profile,
+      };
+    });
   }
 
   private parseElementDefinition(ed: ElementDefinition): InternalSchemaElement {
@@ -424,13 +449,7 @@ class StructureDefinitionParser {
         expression: c.expression ?? '',
         description: c.human ?? '',
       })),
-      type: (ed.type ?? []).map((t) => ({
-        code: ['BackboneElement', 'Element'].includes(t.code as string)
-          ? getElementDefinitionTypeName(ed)
-          : t.code ?? '',
-        targetProfile: t.targetProfile,
-        profile: t.profile,
-      })),
+      type: this.parseElementDefinitionType(ed),
       fixed: firstValue(getTypedPropertyValue(typedElementDef, 'fixed')),
       pattern: firstValue(getTypedPropertyValue(typedElementDef, 'pattern')),
       binding: ed.binding,
