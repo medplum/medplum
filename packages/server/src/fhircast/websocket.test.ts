@@ -89,7 +89,7 @@ describe('FHIRcast WebSocket', () => {
       jest.useRealTimers();
     });
 
-    test('Check that we only get one heartbeat', async () => {
+    test('Check that we get a heartbeat', async () => {
       const topic = randomUUID();
       await request(server)
         .ws('/ws/fhircast/' + topic)
@@ -97,20 +97,6 @@ describe('FHIRcast WebSocket', () => {
           // Connection verification message
           expect(obj['hub.topic']).toBe(topic);
         })
-        .exec(() => jest.advanceTimersByTime(10001))
-        // .exec(async () => {
-        //   await request(server)
-        //     .ws('/ws/fhircast/' + topic)
-        //     .expectJson((obj) => {
-        //       // Connection verification message
-        //       expect(obj['hub.topic']).toBe(topic);
-        //     })
-        //     .expectJson((obj) => {
-        //       expect(obj.event['hub.topic']).toBe(topic);
-        //       expect(obj.event['hub.event']).toBe('heartbeat');
-        //     })
-        //     .sendJson({ ok: true });
-        // })
         .expectJson((obj) => {
           // Event message
           expect(obj.event['hub.topic']).toBe(topic);
