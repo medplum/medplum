@@ -3,18 +3,16 @@ import { IncomingMessage } from 'http';
 import ws from 'ws';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
-import { setupHeartbeatTimer } from './utils';
+import { HeartbeatStore } from './utils';
 
-const heartbeatTimerCallbacks = new Map<string, () => void>();
 const cleanupPromises = [] as Promise<void>[];
+const heartbeatStore = new HeartbeatStore();
 
 /**
  * Cleans up heartbeat timers for FHIRcast WebSocket connections.
  */
 export function cleanupHeartbeatTimers(): void {
-  for (const cleanup of heartbeatTimerCallbacks.values()) {
-    cleanup();
-  }
+  heartbeatStore.stopAll();
 }
 
 /**
@@ -43,11 +41,11 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
 
   // Subscribe to the topic
   await redisSubscriber.subscribe(topic);
-  if (!heartbeatTimerCallbacks.has(topic)) {
+
+  if (!heartbeatStore.has(topic)) {
     const [, numOfSubscribers] = (await redis.pubsub('NUMSUB', topic)) as [string, number];
     if (numOfSubscribers === 1) {
-      // We check if there is exactly one subscriber, ie. we are the first subscriber
-      heartbeatTimerCallbacks.set(topic, setupHeartbeatTimer(topic, 10000));
+      heartbeatStore.start(topic, 10000);
     }
   }
 
@@ -70,10 +68,8 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
       .then(() => {
         (redis.pubsub('NUMSUB', topic) as Promise<[string, number]>)
           .then(([, numOfSubscribers]) => {
-            if (numOfSubscribers === 0 && heartbeatTimerCallbacks.has(topic)) {
-              const cb = heartbeatTimerCallbacks.get(topic) as () => void;
-              cb();
-              heartbeatTimerCallbacks.delete(topic);
+            if (numOfSubscribers === 0 && heartbeatStore.has(topic)) {
+              heartbeatStore.stop(topic);
             }
             redisSubscriber.disconnect();
           })

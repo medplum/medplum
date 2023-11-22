@@ -6,6 +6,7 @@ import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { MedplumServerConfig, loadTestConfig } from '../config';
 import { initTestAuth } from '../test.setup';
+import { cleanupHeartbeatTimers } from './websocket';
 
 const app = express();
 let config: MedplumServerConfig;
@@ -78,6 +79,10 @@ describe('FHIRcast WebSocket', () => {
     beforeAll(() => {
       jest.useFakeTimers();
       jest.spyOn(global, 'setTimeout');
+    });
+
+    afterEach(() => {
+      cleanupHeartbeatTimers();
     });
 
     afterAll(() => {
