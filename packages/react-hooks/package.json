@@ -34,11 +34,18 @@
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
   "exports": {
-    "require": "./dist/cjs/index.cjs",
-    "import": "./dist/esm/index.mjs"
+    "import": {
+      "types": "./dist/esm/index.d.mts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.cts",
+      "default": "./dist/cjs/index.cjs"
+    }
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
+  "types": "dist/cjs/index.d.cts",
   "files": [
     "dist/cjs",
     "dist/esm"

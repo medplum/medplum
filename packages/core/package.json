@@ -31,9 +31,16 @@
   "sideEffects": false,
   "type": "module",
   "exports": {
-    "require": "./dist/cjs/index.cjs",
-    "import": "./dist/esm/index.mjs"
+    "import": {
+      "types": "./dist/esm/index.d.mts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.cts",
+      "default": "./dist/cjs/index.cjs"
+    }
   },
+  "types": "dist/esm/index.d.mts",
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
   "files": [
