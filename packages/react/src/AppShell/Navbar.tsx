@@ -1,7 +1,7 @@
 import { Button, createStyles, Navbar as MantineNavbar, ScrollArea, Space, Text } from '@mantine/core';
 import { useMedplumNavigate } from '@medplum/react-hooks';
 import { IconPlus } from '@tabler/icons-react';
-import React, { useState } from 'react';
+import { Fragment, MouseEventHandler, ReactNode, SyntheticEvent, useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
@@ -84,7 +84,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
   const activeLink = getActiveLink(props.pathname, props.searchParams, props.menus);
   const [bookmarkDialogVisible, setBookmarkDialogVisible] = useState(false);
 
-  function onLinkClick(e: React.SyntheticEvent, to: string): void {
+  function onLinkClick(e: SyntheticEvent, to: string): void {
     e.stopPropagation();
     e.preventDefault();
     navigate(to);
@@ -115,7 +115,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
           )}
           <MantineNavbar.Section grow>
             {props.menus?.map((menu) => (
-              <React.Fragment key={`menu-${menu.title}`}>
+              <Fragment key={`menu-${menu.title}`}>
                 <Text className={classes.menuTitle}>{menu.title}</Text>
                 {menu.links?.map((link) => (
                   <NavbarLink
@@ -128,7 +128,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                     <span>{link.label}</span>
                   </NavbarLink>
                 ))}
-              </React.Fragment>
+              </Fragment>
             ))}
             {props.displayAddBookmark && (
               <Button
@@ -160,8 +160,8 @@ export function Navbar(props: NavbarProps): JSX.Element {
 interface NavbarLinkProps {
   to: string;
   active: boolean;
-  onClick: React.MouseEventHandler;
-  children: React.ReactNode;
+  onClick: MouseEventHandler;
+  children: ReactNode;
 }
 
 function NavbarLink(props: NavbarLinkProps): JSX.Element {

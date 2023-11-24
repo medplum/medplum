@@ -1,8 +1,8 @@
 import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import React, { useEffect, useState } from 'react';
-import { Document } from '../Document/Document';
 import { useMedplum } from '@medplum/react-hooks';
+import { ReactNode, useEffect, useState } from 'react';
+import { Document } from '../Document/Document';
 import { NewProjectForm } from './NewProjectForm';
 import { NewUserForm } from './NewUserForm';
 
@@ -12,7 +12,7 @@ export interface RegisterFormProps {
   readonly clientId?: string;
   readonly googleClientId?: string;
   readonly recaptchaSiteKey?: string;
-  readonly children?: React.ReactNode;
+  readonly children?: ReactNode;
   readonly onSuccess: () => void;
 }
 

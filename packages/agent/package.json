@@ -1,8 +1,11 @@
 {
   "name": "@medplum/agent",
-  "version": "2.1.10",
+  "version": "2.1.17",
   "description": "Medplum Agent",
   "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
@@ -10,25 +13,30 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "agent": "ts-node src/main.ts",
     "build": "npm run clean && tsc && node esbuild.mjs",
+    "build:all": "npm run build && npm run build:exe && npm run build:installer",
+    "build:exe": "pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output dist/medplum-agent-win-x64.exe --options no-warnings",
+    "build:installer": "makensis installer.nsi",
     "clean": "rimraf dist",
-    "installer": "makensis installer.nsi",
-    "package": "pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output dist/medplum-agent-win-x64.exe --options no-warnings",
     "test": "jest"
   },
   "dependencies": {
     "@medplum/core": "*",
     "@medplum/hl7": "*",
+    "node-shawl": "1.3.0",
     "node-windows": "1.0.0-beta.8",
     "ws": "8.14.2"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
-    "@types/node-windows": "0.1.4",
-    "@types/ws": "8.5.7",
+    "@types/node-windows": "0.1.6",
+    "@types/ws": "8.5.9",
     "mock-socket": "9.3.1",
     "pkg": "5.8.1"
   },

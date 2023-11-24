@@ -1,0 +1,63 @@
+{
+  "name": "@medplum/expo-polyfills",
+  "version": "2.1.17",
+  "description": "A module for polyfilling the minimum necessary web APIs for using the Medplum client on React Native",
+  "keywords": [
+    "react-native",
+    "expo",
+    "@medplum/expo-polyfills"
+  ],
+  "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/medplum/medplum.git",
+    "directory": "packages/expo-polyfills"
+  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "exports": {
+    "require": "./dist/cjs/index.cjs",
+    "import": "./dist/esm/index.mjs"
+  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "files": [
+    "dist/cjs",
+    "dist/esm"
+  ],
+  "scripts": {
+    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.cts && cp dist/types.d.ts dist/esm/index.d.mts",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
+    "clean": "rimraf ./build",
+    "test": "jest --runInBand"
+  },
+  "dependencies": {
+    "base-64": "1.0.0",
+    "react-native-url-polyfill": "2.0.0",
+    "text-encoding": "0.7.0"
+  },
+  "devDependencies": {
+    "@medplum/core": "*",
+    "@types/base-64": "1.0.2",
+    "@types/react": "18.2.37",
+    "@types/text-encoding": "0.0.39",
+    "esbuild": "0.19.5",
+    "esbuild-node-externals": "1.9.0",
+    "jest": "29.7.0",
+    "jest-expo": "49.0.0",
+    "rimraf": "5.0.5",
+    "ts-jest": "29.1.1"
+  },
+  "peerDependencies": {
+    "@medplum/core": "*",
+    "expo": "*",
+    "expo-crypto": "^12.6.0",
+    "expo-secure-store": "^12.3.1",
+    "expo-standard-web-crypto": "^1.7.0",
+    "react": "*",
+    "react-native": "*"
+  }
+}

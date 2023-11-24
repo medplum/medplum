@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString, stringify } from '@medplum/core';
 import { OperationOutcome, ResourceType } from '@medplum/fhirtypes';
 import { Document, Form, OperationOutcomeAlert, useMedplum, useResource } from '@medplum/react';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cleanResource } from './utils';
 

@@ -1,14 +1,14 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import {
-  allOk,
-  badRequest,
   ContentType,
-  createReference,
-  getIdentifier,
   Hl7Message,
   MedplumClient,
-  normalizeErrorString,
   Operator,
+  allOk,
+  badRequest,
+  createReference,
+  getIdentifier,
+  normalizeErrorString,
   resolveId,
 } from '@medplum/core';
 import {
@@ -492,7 +492,7 @@ async function getBotSecrets(bot: Bot): Promise<Record<string, string>> {
 
 function getResponseContentType(req: Request): string {
   const requestContentType = req.get('Content-Type');
-  if (requestContentType && EXECUTE_CONTENT_TYPES.includes(requestContentType)) {
+  if (requestContentType && (EXECUTE_CONTENT_TYPES as string[]).includes(requestContentType)) {
     return requestContentType;
   }
 

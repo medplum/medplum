@@ -3,7 +3,6 @@ import { showNotification } from '@mantine/notifications';
 import { deepClone, normalizeErrorString } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import React from 'react';
 import { Form } from '../Form/Form';
 
 interface BookmarkDialogProps {

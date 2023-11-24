@@ -39,6 +39,7 @@ import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import {
+  CurrentContext,
   FhircastConnection,
   FhircastEventContext,
   FhircastEventName,
@@ -64,7 +65,7 @@ import {
   validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
-import { ClientStorage } from './storage';
+import { ClientStorage, IClientStorage } from './storage';
 import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded } from './typeschema/types';
 import {
@@ -77,7 +78,7 @@ import {
   sleep,
 } from './utils';
 
-export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
+export const MEDPLUM_VERSION = import.meta.env.MEDPLUM_VERSION ?? '';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
@@ -212,7 +213,7 @@ export interface MedplumClientOptions {
    *
    * Default is window.localStorage (if available), this is the common implementation for use in the browser, or an in-memory storage implementation.  If using Medplum on a server it may be useful to provide a custom storage implementation, for example using redis, a database or a file based storage.  Medplum CLI is an an example of `FileSystemStorage`, for reference.
    */
-  storage?: ClientStorage;
+  storage?: IClientStorage;
 
   /**
    * Create PDF implementation.
@@ -630,7 +631,7 @@ export class MedplumClient extends EventTarget {
   private readonly options: MedplumClientOptions;
   private readonly fetch: FetchLike;
   private readonly createPdfImpl?: CreatePdfFunction;
-  private readonly storage: ClientStorage;
+  private readonly storage: IClientStorage;
   private readonly requestCache: LRUCache<RequestCacheEntry> | undefined;
   private readonly cacheTime: number;
   private readonly baseUrl: string;
@@ -651,6 +652,8 @@ export class MedplumClient extends EventTarget {
   private profilePromise?: Promise<any>;
   private sessionDetails?: SessionDetails;
   private basicAuth?: string;
+  private initPromise: Promise<void>;
+  private initComplete = true;
 
   constructor(options?: MedplumClientOptions) {
     super();
@@ -691,15 +694,48 @@ export class MedplumClient extends EventTarget {
 
     if (options?.accessToken) {
       this.setAccessToken(options.accessToken);
+      this.initPromise = Promise.resolve();
+    } else if (this.storage.getInitPromise !== undefined) {
+      const storageInitPromise = this.storage.getInitPromise();
+      const initPromise = new Promise<void>((resolve) => {
+        storageInitPromise
+          .then(() => {
+            this.attemptResumeActiveLogin().then(resolve).catch(console.error);
+            this.initComplete = true;
+          })
+          .catch(console.error);
+      });
+      this.initPromise = initPromise;
+      this.initComplete = false;
     } else {
-      const activeLogin = this.getActiveLogin();
-      if (activeLogin) {
-        this.setAccessToken(activeLogin.accessToken, activeLogin.refreshToken);
-        this.refreshProfile().catch(console.log);
-      }
+      this.initPromise = this.attemptResumeActiveLogin().catch(console.error);
     }
 
     this.setupStorageListener();
+  }
+
+  /**
+   * @returns Whether the client has been fully initialized or not. Should always be true unless a custom asynchronous `ClientStorage` was passed into the constructor.
+   */
+  get isInitialized(): boolean {
+    return this.initComplete;
+  }
+
+  /**
+   * Gets a Promise that resolves when async initialization is complete. This is particularly useful for waiting for an async `ClientStorage` and/or authentication to finish.
+   * @returns A Promise that resolves when any async initialization of the client is finished.
+   */
+  getInitPromise(): Promise<void> {
+    return this.initPromise;
+  }
+
+  private async attemptResumeActiveLogin(): Promise<void> {
+    const activeLogin = this.getActiveLogin();
+    if (!activeLogin) {
+      return;
+    }
+    this.setAccessToken(activeLogin.accessToken, activeLogin.refreshToken);
+    await this.refreshProfile();
   }
 
   /**
@@ -752,6 +788,7 @@ export class MedplumClient extends EventTarget {
    */
   clear(): void {
     this.storage.clear();
+    sessionStorage.clear();
     this.clearActiveLogin();
   }
 
@@ -1093,16 +1130,23 @@ export class MedplumClient extends EventTarget {
    * @param clientId - The external client ID.
    * @param redirectUri - The external identity provider redirect URI.
    * @param baseLogin - The Medplum login request.
+   * @param pkceEnabled - Whether `PKCE` should be enabled for this external auth request. Defaults to `true`.
    * @category Authentication
    */
   async signInWithExternalAuth(
     authorizeUrl: string,
     clientId: string,
     redirectUri: string,
-    baseLogin: BaseLoginRequest
+    baseLogin: BaseLoginRequest,
+    pkceEnabled = true
   ): Promise<void> {
-    const loginRequest = await this.ensureCodeChallenge(baseLogin);
-    window.location.assign(this.getExternalAuthRedirectUri(authorizeUrl, clientId, redirectUri, loginRequest));
+    let loginRequest = baseLogin;
+    if (pkceEnabled) {
+      loginRequest = await this.ensureCodeChallenge(baseLogin);
+    }
+    window.location.assign(
+      this.getExternalAuthRedirectUri(authorizeUrl, clientId, redirectUri, loginRequest, pkceEnabled)
+    );
   }
 
   /**
@@ -1132,6 +1176,7 @@ export class MedplumClient extends EventTarget {
    * @param clientId - The external client ID.
    * @param redirectUri - The external identity provider redirect URI.
    * @param loginRequest - The Medplum login request.
+   * @param pkceEnabled - Whether `PKCE` should be enabled for this external auth request. Defaults to `true`.
    * @returns The external identity provider redirect URI.
    * @category Authentication
    */
@@ -1139,24 +1184,28 @@ export class MedplumClient extends EventTarget {
     authorizeUrl: string,
     clientId: string,
     redirectUri: string,
-    loginRequest: BaseLoginRequest
+    loginRequest: BaseLoginRequest,
+    pkceEnabled = true
   ): string {
-    const { codeChallenge, codeChallengeMethod } = loginRequest;
-    if (!codeChallengeMethod) {
-      throw new Error('`LoginRequest` for external auth must include a `codeChallengeMethod`.');
-    }
-    if (!codeChallenge) {
-      throw new Error('`LoginRequest` for external auth must include a `codeChallenge`.');
-    }
-
     const url = new URL(authorizeUrl);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('client_id', clientId);
     url.searchParams.set('redirect_uri', redirectUri);
     url.searchParams.set('scope', 'openid profile email');
     url.searchParams.set('state', JSON.stringify(loginRequest));
-    url.searchParams.set('code_challenge_method', codeChallengeMethod);
-    url.searchParams.set('code_challenge', codeChallenge);
+
+    if (pkceEnabled) {
+      const { codeChallenge, codeChallengeMethod } = loginRequest;
+      if (!codeChallengeMethod) {
+        throw new Error('`LoginRequest` for external auth must include a `codeChallengeMethod`.');
+      }
+      if (!codeChallenge) {
+        throw new Error('`LoginRequest` for external auth must include a `codeChallenge`.');
+      }
+      url.searchParams.set('code_challenge_method', codeChallengeMethod);
+      url.searchParams.set('code_challenge', codeChallenge);
+    }
+
     return url.toString();
   }
 
@@ -2978,7 +3027,7 @@ export class MedplumClient extends EventTarget {
    *
    * @example
    * ```typescript
-   * await medplum.startClientLogin(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_CLIENT_SECRET)
+   * await medplum.startClientLogin(import.meta.env.MEDPLUM_CLIENT_ID, import.meta.env.MEDPLUM_CLIENT_SECRET)
    * // Example Search
    * await medplum.searchResources('Patient')
    * ```
@@ -3006,7 +3055,7 @@ export class MedplumClient extends EventTarget {
    *
    * @example
    * ```typescript
-   * await medplum.startJwtBearerLogin(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_JWT_BEARER_ASSERTION, 'openid profile');
+   * await medplum.startJwtBearerLogin(import.meta.env.MEDPLUM_CLIENT_ID, import.meta.env.MEDPLUM_JWT_BEARER_ASSERTION, 'openid profile');
    * // Example Search
    * await medplum.searchResources('Patient')
    * ```
@@ -3052,7 +3101,7 @@ export class MedplumClient extends EventTarget {
    *
    * @example
    * ```typescript
-   * medplum.setBasicAuth(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_CLIENT_SECRET);
+   * medplum.setBasicAuth(import.meta.env.MEDPLUM_CLIENT_ID, import.meta.env.MEDPLUM_CLIENT_SECRET);
    * // Example Search
    * await medplum.searchResources('Patient');
    * ```
@@ -3153,7 +3202,7 @@ export class MedplumClient extends EventTarget {
    *
    * @category FHIRcast
    * @param topic - The topic to publish to. Usually a UUID.
-   * @param event - The name of the event to publish an updated context for, ie. `patient-open`.
+   * @param event - The name of the event to publish an updated context for, ie. `Patient-open`.
    * @param context - The updated context containing resources relevant to this event.
    * @param versionId - The `versionId` of the `anchor context` of the given event. Used for `DiagnosticReport-update` event.
    * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
@@ -3191,6 +3240,17 @@ export class MedplumClient extends EventTarget {
       createFhircastMessagePayload<typeof event>(topic, event, context),
       ContentType.JSON
     );
+  }
+
+  /**
+   * Gets the current context of the given FHIRcast `topic`.
+   *
+   * @category FHIRcast
+   * @param topic - The topic to get the current context for. Usually a UUID.
+   * @returns A Promise which resolves to the `CurrentContext` for the given topic.
+   */
+  async fhircastGetContext(topic: string): Promise<CurrentContext> {
+    return this.get(`/fhircast/STU3/${topic}`);
   }
 
   /**

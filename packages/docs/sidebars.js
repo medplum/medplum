@@ -239,7 +239,7 @@ const sidebars = {
     {
       type: 'category',
       label: 'TypeScript SDK',
-      link: { type: 'doc', id: 'sdk/index' },
+      link: { type: 'doc', id: 'sdk/core' },
       items: [
         { type: 'doc', id: 'sdk/core.medplumclient', label: 'MedplumClient' },
         { type: 'doc', id: 'sdk/core', label: 'Utilities' },

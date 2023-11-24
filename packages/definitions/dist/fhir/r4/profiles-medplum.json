@@ -3736,6 +3736,22 @@
             }
           },
           {
+            "id" : "IdentityProvider.usePkce",
+            "path" : "IdentityProvider.usePkce",
+            "short" : "Optional flag to use PKCE in the token request.",
+            "definition" : "Optional flag to use PKCE in the token request.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "base" : {
+              "path" : "IdentityProvider.usePkce",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "IdentityProvider.useSubject",
             "path" : "IdentityProvider.useSubject",
             "short" : "Optional flag to use the subject field instead of the email field.",

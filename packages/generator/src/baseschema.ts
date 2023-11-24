@@ -40,5 +40,5 @@ if (require.main === module) {
 }
 
 function isBaseType(name: string, schema: InternalTypeSchema): boolean {
-  return !(isLowerCase(name.charAt(0)) || schema.kind === 'resource');
+  return !isLowerCase(name.charAt(0)) && schema.kind !== 'resource' && !schema.parentType;
 }

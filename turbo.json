@@ -7,7 +7,7 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["build/**", "dist/**"],
+      "outputs": ["build/**", "dist/**", ".next/**"],
       "env": [
         "MEDPLUM_BASE_URL",
         "MEDPLUM_CLIENT_ID",

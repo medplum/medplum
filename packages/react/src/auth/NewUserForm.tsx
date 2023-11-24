@@ -1,11 +1,11 @@
 import { Anchor, Button, Center, Checkbox, Divider, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
 import { GoogleCredentialResponse, LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import React, { useEffect, useState } from 'react';
+import { useMedplum } from '@medplum/react-hooks';
+import { ReactNode, useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
 import { GoogleButton } from '../GoogleButton/GoogleButton';
 import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
-import { useMedplum } from '@medplum/react-hooks';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 import { getRecaptcha, initRecaptcha } from '../utils/recaptcha';
@@ -15,7 +15,7 @@ export interface NewUserFormProps {
   readonly clientId?: string;
   readonly googleClientId?: string;
   readonly recaptchaSiteKey?: string;
-  readonly children?: React.ReactNode;
+  readonly children?: ReactNode;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
 }
 

@@ -108,7 +108,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   }
 
   const signInPage = login.launch ? 'oauth' : 'signin';
-  const redirectUrl = new URL(getConfig().appBaseUrl + signInPage);
+  const redirectUrl = new URL(signInPage, getConfig().appBaseUrl);
   redirectUrl.searchParams.set('login', login.id as string);
   redirectUrl.searchParams.set('scope', login.scope as string);
   redirectUrl.searchParams.set('nonce', login.nonce as string);
@@ -168,7 +168,7 @@ async function verifyExternalCode(
   params.append('redirect_uri', getConfig().baseUrl + 'auth/external');
   params.append('code', code);
 
-  if (codeVerifier) {
+  if (idp.usePkce && codeVerifier) {
     params.append('code_verifier', codeVerifier);
   }
 
@@ -187,10 +187,16 @@ async function verifyExternalCode(
       body: params.toString(),
     });
 
-    const tokens = await response.json();
-    return parseJWTPayload(tokens.id_token);
+    const responseBody = await response.json();
+
+    if (!response.ok) {
+      globalLogger.warn('Bad response from external auth check', { status: response.status, body: responseBody });
+      throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
+    }
+
+    return parseJWTPayload(responseBody.id_token);
   } catch (err: any) {
-    globalLogger.warn('Failed to verify authorization code', err);
+    globalLogger.warn('Unhandled error in external auth check', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 }

@@ -3,7 +3,11 @@
   "compilerOptions": {
     "module": "esnext",
     "lib": ["esnext", "dom", "dom.iterable"],
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "paths": {
+      "@medplum/core": ["../core/src"],
+      "@medplum/react": ["../react/src"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "./jest.setup.ts"]
 }

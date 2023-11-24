@@ -3507,6 +3507,13 @@
           }
         ]
       },
+      "tokenAuthMethod": {
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
       "userInfoUrl": {
         "min": 1,
         "type": [
@@ -3528,6 +3535,13 @@
         "type": [
           {
             "code": "string"
+          }
+        ]
+      },
+      "usePkce": {
+        "type": [
+          {
+            "code": "boolean"
           }
         ]
       },

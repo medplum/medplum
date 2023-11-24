@@ -1,4 +1,5 @@
 import { Coding, Extension, Questionnaire, QuestionnaireItem } from '@medplum/fhirtypes';
+import { existsSync, readFileSync } from 'fs';
 
 // This scripts generates a FHIR Questionnaire resource for Health Gorilla order entry.
 // Questionnaires are used to generate forms in the Medplum UI.
@@ -20,7 +21,11 @@ const labs: Lab[] = [
   {
     id: 'test',
     name: 'Testing',
-    tests: [{ code: '1234-5', name: 'Test 1' }],
+    tests: [
+      { code: '1234-5', name: 'Test 1' },
+      { code: '11119', name: 'ABN TEST REFUSAL' },
+      { code: '38827', name: 'INCORRECT ABN SUBMITTED' },
+    ],
   },
   {
     id: 'labcorp',
@@ -29,6 +34,7 @@ const labs: Lab[] = [
       { code: '001453', name: 'Hemoglobin A1c' },
       { code: '010322', name: 'Prostate-Specific Ag' },
       { code: '322000', name: 'Comp. Metabolic Panel (14)' },
+      { code: '322755', name: 'Hepatic Function Panel (7)' },
       { code: '008649', name: 'Aerobic Bacterial Culture' },
       { code: '005009', name: 'CBC With Differential/Platelet' },
       { code: '008847', name: 'Urine Culture, Routine' },
@@ -255,8 +261,9 @@ for (const lab of labs) {
       text: `${test.name} (${test.code})`,
     });
 
-    // Add a group of supplemental questions that is only enabled when the test is enabled
-    testItems.push({
+    // Build a group of supplemental questions that is only enabled when the test is enabled
+    // Always ask for priority and notes
+    const detailsGroup: QuestionnaireItem & { item: QuestionnaireItem[] } = {
       id: `${fullTestId}-details`,
       linkId: `${fullTestId}-details`,
       type: 'group',
@@ -296,7 +303,25 @@ for (const lab of labs) {
           text: 'Notes',
         },
       ],
-    });
+    };
+
+    // Check for AOE Questionnaire
+    const aoeFileName = `./questionnaire-f-388554647b89801ea5e8320b-${test.code}.json`;
+    if (existsSync(aoeFileName)) {
+      const aoeQuestionnaire = JSON.parse(readFileSync(aoeFileName, 'utf8'));
+      if (aoeQuestionnaire.item) {
+        detailsGroup.item.push(
+          ...aoeQuestionnaire.item.map((i: QuestionnaireItem) => ({
+            ...i,
+            id: `${fullTestId}-aoe-${i.id}`,
+            linkId: `${fullTestId}-aoe-${i.id}`,
+          }))
+        );
+      }
+    }
+
+    // Add a group of supplemental questions that is only enabled when the test is enabled
+    testItems.push(detailsGroup);
   }
 
   labItem.item = testItems;

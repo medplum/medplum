@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { InternalSchemaElement, deepClone, getElementDefinition } from '@medplum/core';
 import { ProjectSecret } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
 
 export function SecretsPage(): JSX.Element {
@@ -34,7 +34,7 @@ export function SecretsPage(): JSX.Element {
     <form
       noValidate
       autoComplete="off"
-      onSubmit={(e: React.FormEvent) => {
+      onSubmit={(e: FormEvent) => {
         e.preventDefault();
         medplum
           .post(`admin/projects/${projectId}/secrets`, secrets)

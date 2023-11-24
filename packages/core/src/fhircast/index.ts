@@ -1,4 +1,4 @@
-import { Resource } from '@medplum/fhirtypes';
+import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { generateId } from '../crypto';
 import { TypedEventTarget } from '../eventtarget';
 import { OperationOutcomeError, validationError } from '../outcomes';
@@ -6,16 +6,16 @@ import { OperationOutcomeError, validationError } from '../outcomes';
 // We currently try to satisfy both STU2 and STU3. Where STU3 removes a resource / key from STU2, we leave it in as a valid key but don't require it.
 
 export const FHIRCAST_EVENT_NAMES = {
-  'patient-open': 'patient-open',
-  'patient-close': 'patient-close',
-  'imagingstudy-open': 'imagingstudy-open',
-  'imagingstudy-close': 'imagingstudy-close',
-  'encounter-open': 'encounter-open',
-  'encounter-close': 'encounter-close',
-  'diagnosticreport-open': 'diagnosticreport-open',
-  'diagnosticreport-close': 'diagnosticreport-close',
-  'diagnosticreport-select': 'diagnosticreport-select',
-  'diagnosticreport-update': 'diagnosticreport-update',
+  'Patient-open': 'Patient-open',
+  'Patient-close': 'Patient-close',
+  'ImagingStudy-open': 'ImagingStudy-open',
+  'ImagingStudy-close': 'ImagingStudy-close',
+  'Encounter-open': 'Encounter-open',
+  'Encounter-close': 'Encounter-close',
+  'DiagnosticReport-open': 'DiagnosticReport-open',
+  'DiagnosticReport-close': 'DiagnosticReport-close',
+  'DiagnosticReport-select': 'DiagnosticReport-select',
+  'DiagnosticReport-update': 'DiagnosticReport-update',
   syncerror: 'syncerror',
 } as const;
 
@@ -28,7 +28,7 @@ export const FHIRCAST_RESOURCE_TYPES = [
   'Bundle',
 ] as const;
 
-export const FHIRCAST_EVENT_VERSION_REQUIRED = ['diagnosticreport-update'] as const;
+export const FHIRCAST_EVENT_VERSION_REQUIRED = ['DiagnosticReport-update'] as const;
 export type FhircastEventVersionRequired = (typeof FHIRCAST_EVENT_VERSION_REQUIRED)[number];
 export type FhircastEventVersionOptional = Exclude<FhircastEventName, FhircastEventVersionRequired>;
 export function isContextVersionRequired(event: string): event is FhircastEventVersionRequired {
@@ -41,6 +41,7 @@ export function assertContextVersionOptional(event: string): asserts event is Fh
 }
 
 export type FhircastEventName = keyof typeof FHIRCAST_EVENT_NAMES;
+export type FhircastResourceEventName = Exclude<FhircastEventName, 'syncerror'>;
 export type FhircastResourceType = (typeof FHIRCAST_RESOURCE_TYPES)[number];
 
 export type FhircastEventContextDetails = {
@@ -52,51 +53,51 @@ export type FhircastEventContextDetails = {
 
 // Key value pairs of { [FhircastEventName]: [required_resource1, required_resource2] }
 export const FHIRCAST_EVENT_RESOURCES = {
-  'patient-open': {
+  'Patient-open': {
     patient: { resourceType: 'Patient' },
     /* STU2 only! `encounter` key removed in STU3 */
     encounter: { resourceType: 'Encounter', optional: true },
   },
-  'patient-close': {
+  'Patient-close': {
     patient: { resourceType: 'Patient' },
     /* STU2 only! `encounter` key removed in STU3 */
     encounter: { resourceType: 'Encounter', optional: true },
   },
-  'imagingstudy-open': {
+  'ImagingStudy-open': {
     study: { resourceType: 'ImagingStudy' },
     encounter: { resourceType: 'Encounter', optional: true },
     patient: { resourceType: 'Patient', optional: true },
   },
-  'imagingstudy-close': {
+  'ImagingStudy-close': {
     study: { resourceType: 'ImagingStudy' },
     encounter: { resourceType: 'Encounter', optional: true },
     patient: { resourceType: 'Patient', optional: true },
   },
-  'encounter-open': {
+  'Encounter-open': {
     encounter: { resourceType: 'Encounter' },
     patient: { resourceType: 'Patient' },
   },
-  'encounter-close': {
+  'Encounter-close': {
     encounter: { resourceType: 'Encounter' },
     patient: { resourceType: 'Patient' },
   },
-  'diagnosticreport-open': {
+  'DiagnosticReport-open': {
     report: { resourceType: 'DiagnosticReport' },
     encounter: { resourceType: 'Encounter', optional: true },
     study: { resourceType: 'ImagingStudy', optional: true, manyAllowed: true },
     patient: { resourceType: 'Patient' },
   },
-  'diagnosticreport-close': {
+  'DiagnosticReport-close': {
     report: { resourceType: 'DiagnosticReport' },
     encounter: { resourceType: 'Encounter', optional: true },
     study: { resourceType: 'ImagingStudy', optional: true, manyAllowed: true },
     patient: { resourceType: 'Patient' },
   },
-  'diagnosticreport-select': {
+  'DiagnosticReport-select': {
     report: { resourceType: 'DiagnosticReport' },
     select: { resourceType: '*', isArray: true },
   },
-  'diagnosticreport-update': {
+  'DiagnosticReport-update': {
     report: { resourceType: 'DiagnosticReport' },
     patient: { resourceType: 'Patient', optional: true },
     study: { resourceType: 'ImagingStudy', optional: true },
@@ -128,6 +129,12 @@ export type SubscriptionRequest = {
   events: FhircastEventName[];
   topic: string;
   endpoint: string;
+};
+
+export type CurrentContext<EventName extends FhircastResourceEventName = FhircastResourceEventName> = {
+  'context.type': ResourceType | '';
+  'context.versionId'?: string;
+  context: FhircastEventContext<EventName>[];
 };
 
 export type PendingSubscriptionRequest = Omit<SubscriptionRequest, 'endpoint'>;
@@ -172,7 +179,7 @@ export type FhircastEventContext<
     : FhircastSingleResourceContext<EventName, K>
   : never;
 
-type ConvertToUnion<T> = T[keyof T];
+export type ConvertToUnion<T> = T[keyof T];
 export type FhircastValidContextForEvent<EventName extends FhircastEventName = FhircastEventName> = ConvertToUnion<{
   [key in FhircastEventContextKey<EventName>]: FhircastEventContext<EventName, key>;
 }>;
@@ -185,6 +192,7 @@ export type FhircastEventPayload<
   'hub.event': EventName;
   context: FhircastEventContext<EventName, K>[];
   'context.versionId'?: string;
+  'context.priorVersionId'?: string;
 };
 
 export type FhircastMessagePayload<EventName extends FhircastEventName = FhircastEventName> = {
@@ -426,7 +434,7 @@ function validateFhircastContexts<EventName extends FhircastEventName>(
  * Creates a serializable JSON payload for the `FHIRcast` protocol
  *
  * @param topic - The topic that this message will be published on. Usually a UUID.
- * @param event - The event name, ie. "patient-open" or "patient-close".
+ * @param event - The event name, ie. "Patient-open" or "Patient-close".
  * @param context - The updated context, containing new versions of resources related to this event.
  * @param versionId - The current `versionId` of the anchor context. For example, in `DiagnosticReport-update`, it's the `versionId` of the `DiagnosticReport`.
  * @returns A serializable `FhircastMessagePayload`.

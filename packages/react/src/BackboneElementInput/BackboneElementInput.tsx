@@ -1,9 +1,9 @@
 import { Stack } from '@mantine/core';
 import { getPropertyDisplayName, tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
-import { DEFAULT_IGNORED_PROPERTIES } from '../constants';
+import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { FormSection } from '../FormSection/FormSection';
 import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
@@ -38,6 +38,9 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
     <Stack>
       {Object.entries(typeSchema.elements).map(([key, property]) => {
         if (key === 'id' || DEFAULT_IGNORED_PROPERTIES.includes(key)) {
+          return null;
+        }
+        if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && property.path.split('.').length === 2) {
           return null;
         }
         if (!property.type) {

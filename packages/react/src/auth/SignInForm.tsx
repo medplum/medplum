@@ -1,9 +1,9 @@
 import { showNotification } from '@mantine/notifications';
 import { BaseLoginRequest, LoginAuthenticationResponse, normalizeErrorString } from '@medplum/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
-import React, { useCallback, useEffect, useState } from 'react';
-import { Document } from '../Document/Document';
 import { useMedplum } from '@medplum/react-hooks';
+import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { Document } from '../Document/Document';
 import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
 import { ChooseScopeForm } from './ChooseScopeForm';
@@ -19,7 +19,7 @@ export interface SignInFormProps extends BaseLoginRequest {
   readonly onForgotPassword?: () => void;
   readonly onRegister?: () => void;
   readonly onCode?: (code: string) => void;
-  readonly children?: React.ReactNode;
+  readonly children?: ReactNode;
 }
 
 /**

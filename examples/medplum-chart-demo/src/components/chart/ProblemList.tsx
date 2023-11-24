@@ -15,7 +15,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { createReference } from '@medplum/core';
 import { Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, Form, useMedplum } from '@medplum/react';
-import React, { useCallback, useState } from 'react';
+import { Fragment, useCallback, useState } from 'react';
 
 export interface ProblemListProps {
   patient: Patient;
@@ -62,14 +62,14 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
       {problems.length > 0 ? (
         <Grid gutter="xs">
           {problems.map((problem) => (
-            <React.Fragment key={problem.id}>
+            <Fragment key={problem.id}>
               <Grid.Col span={2}>{problem.onsetDateTime?.substring(0, 4)}</Grid.Col>
               <Grid.Col span={10}>
                 <Badge key={problem.id} maw="100%">
                   <CodeableConceptDisplay value={problem.code} />
                 </Badge>
               </Grid.Col>
-            </React.Fragment>
+            </Fragment>
           ))}
         </Grid>
       ) : (

@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function StorybookFrame(): JSX.Element {
   const host = window.location.host;
   const hostname = window.location.hostname;

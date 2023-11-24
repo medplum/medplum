@@ -219,16 +219,26 @@ export class AgentHl7ChannelConnection {
   }
 }
 
-if (typeof require !== 'undefined' && require.main === module) {
-  if (process.argv.length < 6) {
+async function main(argv: string[]): Promise<void> {
+  if (argv.length < 6) {
     console.log('Usage: node medplum-agent.js <baseUrl> <clientId> <clientSecret> <agentId>');
     process.exit(1);
   }
+  const [_node, _script, baseUrl, clientId, clientSecret, agentId] = argv;
 
-  const [_node, _script, baseUrl, clientId, clientSecret, agentId] = process.argv;
   const medplum = new MedplumClient({ baseUrl, clientId });
-  medplum
-    .startClientLogin(clientId, clientSecret)
-    .then(() => new App(medplum, agentId).start())
-    .catch(console.error);
+  await medplum.startClientLogin(clientId, clientSecret);
+
+  const app = new App(medplum, agentId);
+  await app.start();
+
+  process.on('SIGINT', () => {
+    console.log('\ngracefully shutting down from SIGINT (Crtl-C)');
+    app.stop();
+    process.exit();
+  });
+}
+
+if (typeof require !== 'undefined' && require.main === module) {
+  main(process.argv).catch(console.error);
 }

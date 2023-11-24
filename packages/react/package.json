@@ -1,6 +1,6 @@
 {
   "name": "@medplum/react",
-  "version": "2.1.10",
+  "version": "2.1.17",
   "description": "Medplum React Component Library",
   "keywords": [
     "medplum",
@@ -22,6 +22,9 @@
     "react-component"
   ],
   "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
@@ -30,16 +33,21 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
+  "type": "module",
   "exports": {
-    "types": "./dist/types.d.ts",
     "require": "./dist/cjs/index.cjs",
     "import": "./dist/esm/index.mjs"
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
-  "types": "dist/types.d.ts",
+  "files": [
+    ".env.defaults",
+    "dist/cjs",
+    "dist/esm"
+  ],
   "scripts": {
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && api-extractor run --local",
+    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.cts && cp dist/types.d.ts dist/esm/index.d.mts",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist storybook-static",
     "dev": "storybook dev -p 6006",
     "storybook": "storybook build",
@@ -55,27 +63,27 @@
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
     "@medplum/react-hooks": "*",
-    "@storybook/addon-actions": "7.4.6",
-    "@storybook/addon-essentials": "7.4.6",
-    "@storybook/addon-links": "7.4.6",
-    "@storybook/addon-storysource": "7.4.6",
-    "@storybook/builder-vite": "7.4.6",
-    "@storybook/react": "7.4.6",
-    "@storybook/react-vite": "7.4.6",
-    "@tabler/icons-react": "2.39.0",
+    "@storybook/addon-actions": "7.5.3",
+    "@storybook/addon-essentials": "7.5.3",
+    "@storybook/addon-links": "7.5.3",
+    "@storybook/addon-storysource": "7.5.3",
+    "@storybook/builder-vite": "7.5.3",
+    "@storybook/react": "7.5.3",
+    "@storybook/react-vite": "7.5.3",
+    "@tabler/icons-react": "2.40.0",
     "@testing-library/dom": "9.3.3",
     "@testing-library/jest-dom": "6.1.4",
-    "@testing-library/react": "14.0.0",
-    "@types/jest": "29.5.5",
-    "@types/node": "20.8.6",
-    "@types/react": "18.2.28",
-    "@types/react-dom": "18.2.13",
+    "@testing-library/react": "14.1.0",
+    "@types/jest": "29.5.8",
+    "@types/node": "20.9.0",
+    "@types/react": "18.2.37",
+    "@types/react-dom": "18.2.15",
     "jest": "29.7.0",
     "jest-each": "29.7.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "rimraf": "5.0.5",
-    "storybook": "7.4.6",
+    "storybook": "7.5.3",
     "typescript": "5.2.2"
   },
   "peerDependencies": {

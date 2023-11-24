@@ -36,6 +36,7 @@ PACKAGES=(
   "cdk"
   "cli"
   "core"
+  "expo-polyfills"
   "fhir-router"
   "hl7"
   "mock"

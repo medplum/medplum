@@ -54,7 +54,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build
+        run: npm run build:all
         env:
           MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
           MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
@@ -83,9 +83,7 @@ jobs:
 
       - name: Build Agent installer
         working-directory: ./packages/agent
-        run: |
-          npm run package
-          npm run installer
+        run: npm run build:all
 
       - name: Upload Agent installer
         uses: actions/github-script@v6

@@ -38,6 +38,7 @@ export interface MedplumServerConfig {
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
   botCustomFunctionsEnabled?: boolean;
+  logRequests?: boolean;
   logAuditEvents?: boolean;
   saveAuditEvents?: boolean;
   auditEventLogGroup?: string;
@@ -47,6 +48,7 @@ export interface MedplumServerConfig {
   introspectionEnabled?: boolean;
   keepAliveTimeout?: number;
   vmContextBotsEnabled?: boolean;
+  shutdownTimeoutMilliseconds?: number;
 }
 
 /**
@@ -264,6 +266,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.botLambdaLayerName = config.botLambdaLayerName || 'medplum-bot-layer';
   config.bcryptHashSalt = config.bcryptHashSalt || 10;
   config.bullmq = { removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
+  config.shutdownTimeoutMilliseconds = config.shutdownTimeoutMilliseconds ?? 30000;
   return config;
 }
 
@@ -272,5 +275,10 @@ function isIntegerConfig(key: string): boolean {
 }
 
 function isBooleanConfig(key: string): boolean {
-  return key === 'botCustomFunctionsEnabled' || key === 'logAuditEvents' || key === 'registerEnabled';
+  return (
+    key === 'botCustomFunctionsEnabled' ||
+    key === 'logRequests' ||
+    key === 'logAuditEvents' ||
+    key === 'registerEnabled'
+  );
 }

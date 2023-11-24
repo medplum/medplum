@@ -4,7 +4,7 @@ import { ContentType, isUUID, MedplumClient, normalizeErrorString, PatchOperatio
 import { Bot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { sendCommand } from '../utils';
 import { BotRunner } from './BotRunner';
@@ -46,7 +46,7 @@ export function BotEditor(): JSX.Element | null {
   const [defaultCode, setDefaultCode] = useState<string>();
   const [fhirInput, setFhirInput] = useState(DEFAULT_FHIR_INPUT);
   const [hl7Input, setHl7Input] = useState(DEFAULT_HL7_INPUT);
-  const [contentType, setContentType] = useState(ContentType.FHIR_JSON);
+  const [contentType, setContentType] = useState<string>(ContentType.FHIR_JSON);
   const { classes } = useStyles();
   const codeFrameRef = useRef<HTMLIFrameElement>(null);
   const outputFrameRef = useRef<HTMLIFrameElement>(null);
@@ -64,11 +64,11 @@ export function BotEditor(): JSX.Element | null {
 
   const getCode = useCallback(() => {
     return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getValue' });
-  }, [codeFrameRef]);
+  }, []);
 
   const getCodeOutput = useCallback(() => {
     return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getOutput' });
-  }, [codeFrameRef]);
+  }, []);
 
   const getSampleInput = useCallback(async () => {
     if (contentType === ContentType.FHIR_JSON) {
@@ -79,7 +79,7 @@ export function BotEditor(): JSX.Element | null {
   }, [contentType, fhirInput, hl7Input]);
 
   const saveBot = useCallback(
-    async (e: React.SyntheticEvent) => {
+    async (e: SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setLoading(true);
@@ -112,7 +112,7 @@ export function BotEditor(): JSX.Element | null {
   );
 
   const deployBot = useCallback(
-    async (e: React.SyntheticEvent) => {
+    async (e: SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setLoading(true);
@@ -130,7 +130,7 @@ export function BotEditor(): JSX.Element | null {
   );
 
   const executeBot = useCallback(
-    async (e: React.SyntheticEvent) => {
+    async (e: SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setLoading(true);

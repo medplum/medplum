@@ -1,7 +1,7 @@
 import { createStyles } from '@mantine/core';
 import { getDataType, getPropertyDisplayName, stringify, toTypedValue } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMedplum } from '@medplum/react-hooks';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';

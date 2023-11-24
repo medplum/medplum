@@ -3,7 +3,6 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
-import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 export function DeletePage(): JSX.Element {

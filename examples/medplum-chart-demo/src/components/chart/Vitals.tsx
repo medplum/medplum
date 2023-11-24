@@ -3,7 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { generateId } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { Form, QuantityDisplay, useMedplum } from '@medplum/react';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   createCompoundObservation,
   createLoincCode,

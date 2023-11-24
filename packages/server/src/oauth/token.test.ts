@@ -1606,6 +1606,33 @@ describe('OAuth2 Token', () => {
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid subject_token_type');
   });
+
+  test('FHIRcast scopes added to client credentials flow', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+      scope: 'openid fhircast/Patient-open.read',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
+    expect(res.body['hub.topic']).toBeDefined();
+    expect(res.body['hub.url']).toBeDefined();
+  });
+
+  test('FHIRcast scopes NOT added - should not have Hub topic or URL', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
+    expect(res.body['hub.topic']).not.toBeDefined();
+    expect(res.body['hub.url']).not.toBeDefined();
+  });
 });
 
 class MockJoseMultipleMatchingError extends Error {

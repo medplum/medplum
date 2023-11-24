@@ -21,7 +21,7 @@ import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
 import { initBinaryStorage } from './fhir/storage';
 import { loadStructureDefinitions } from './fhir/structure';
-import { fhircastRouter } from './fhircast/routes';
+import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
 import { healthcheckHandler } from './healthcheck';
 import { hl7BodyParser } from './hl7/parser';
 import { globalLogger } from './logger';
@@ -152,7 +152,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
       type: [ContentType.HL7_V2],
     })
   );
-  app.use(loggingMiddleware);
+
+  if (config.logRequests) {
+    app.use(loggingMiddleware);
+  }
 
   const apiRouter = Router();
   apiRouter.get('/', (_req, res) => res.sendStatus(200));
@@ -165,7 +168,8 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/dicom/PS3/', dicomRouter);
   apiRouter.use('/email/v1/', emailRouter);
   apiRouter.use('/fhir/R4/', fhirRouter);
-  apiRouter.use('/fhircast/STU3/', fhircastRouter);
+  apiRouter.use('/fhircast/STU2/', fhircastSTU2Router);
+  apiRouter.use('/fhircast/STU3/', fhircastSTU3Router);
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);
   apiRouter.use('/storage/', storageRouter);
@@ -207,26 +211,29 @@ export async function shutdownApp(): Promise<void> {
   }
 }
 
-const loggingMiddleware = (req: Request, res: Response, next: NextFunction):void=>{
+const loggingMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const ctx = getRequestContext();
   const start = new Date();
-  next();
-  const afterNext = new Date().getTime(); // Record the time after next() completes
-  const totalTime = afterNext - start.getTime(); // Calculate the time taken including the time spent in next()  
-  let userProfile: string | undefined;
-  if (ctx instanceof AuthenticatedRequestContext) {
-    userProfile = ctx.profile.reference;
-  }
 
-  ctx.logger.info('Request served', 
-  {
-    receivedAt:start,
-    requestMethod: req.method,
-    path:req.path,
-    duration: `${totalTime} ms`, 
-    ip: req.ip, 
-    status: res.statusCode, 
-    ua: req.get('User-Agent'),
-    profile: userProfile
+  res.on('finish', () => {
+    const duration = new Date().getTime() - start.getTime();
+
+    let userProfile: string | undefined;
+    if (ctx instanceof AuthenticatedRequestContext) {
+      userProfile = ctx.profile.reference;
+    }
+
+    ctx.logger.info('Request served', {
+      duration: `${duration} ms`,
+      ip: req.ip,
+      method: req.method,
+      path: req.path,
+      profile: userProfile,
+      receivedAt: start,
+      status: res.statusCode,
+      ua: req.get('User-Agent'),
+    });
   });
-}
+
+  next();
+};

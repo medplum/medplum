@@ -3,7 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { createReference } from '@medplum/core';
 import { CodeableConcept, Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, CodeableConceptInput, Form, useMedplum } from '@medplum/react';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export interface MedicationsProps {
   patient: Patient;

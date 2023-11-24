@@ -78,18 +78,22 @@ Okta uses separate domains per organization. You will need your organization's O
 
 ![Okta Find URL](/img/auth/okta-find-url.png)
 
-The "baseUrl" could look something like this `dev-71569655.okta.com` or could be a named subdomain like `mydomain.okta.com`. Once you have obtained it, construct the Authorize, Token and UserInfo URLs as follows:
+The "baseUrl" could look something like this `https://dev-71569655.okta.com` or could be a named subdomain like `https://mydomain.okta.com`. Once you have obtained it, construct the Authorize, Token and UserInfo URLs as follows:
 
-- Authorize URL = $\{baseUrl\}/v1/authorize (e.g., "https://dev-71569655.okta.com/ oauth2/v1/authorize")
+- Authorize URL = $\{baseUrl\}/v1/authorize (e.g., "https://dev-71569655.okta.com/oauth2/v1/authorize")
 - Token URL = $\{baseUrl\}/oauth2/v1/token (e.g., "https://dev-71569655.okta.com/oauth2/v1/token")
 - UserInfo URL = $\{baseUrl\}/oauth2/v1/userinfo (e.g., "https://dev-71569655.okta.com/oauth2/v1/userinfo")
 
 Client ID and Client secret will be the same as those obtained at the end of the previous section.
+
+Create a [`DomainConfiguration`](/docs/api/fhir/medplum/domainconfiguration) resource:
+
+- Add the values for the five elements above
+- Leave "useSubject" **unchecked**
+- Set the `domain` field to the users' email domain (e.g. "d) Once the resource has been saved, all new authentication requests from that domain will use Okta authentication.
 
 :::caution Note
 
 Configuring a DL-IDP on the Medplum Hosted service requires a Medplum team member, contact us at hello@medplum.com to enable. For those self-hosting, setup below requires super admin privileges.
 
 :::
-
-Create a [`DomainConfiguration`](/docs/api/fhir/medplum/domainconfiguration) resource with the five elements above and save. Once the resource has been saved, all new authentication requests from that domain will use Okta authentication.

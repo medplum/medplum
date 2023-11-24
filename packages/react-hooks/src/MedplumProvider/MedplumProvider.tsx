@@ -1,11 +1,11 @@
 import { MedplumClient } from '@medplum/core';
-import React, { useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { MepdlumNavigateFunction, reactContext } from './MedplumProvider.context';
 
 export interface MedplumProviderProps {
   medplum: MedplumClient;
   navigate?: MepdlumNavigateFunction;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 /**
@@ -23,8 +23,21 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
 
   const [state, setState] = useState({
     profile: medplum.getProfile(),
-    loading: false,
+    loading: !medplum.isInitialized,
   });
+
+  useEffect(() => {
+    if (!medplum) {
+      return;
+    }
+    if (!medplum.isInitialized) {
+      setState((s) => ({ ...s, loading: true }));
+      medplum
+        .getInitPromise()
+        .then(() => setState((s) => ({ ...s, loading: false })))
+        .catch(console.error);
+    }
+  }, [medplum, medplum.isInitialized]);
 
   useEffect(() => {
     function eventListener(): void {

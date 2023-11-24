@@ -1,5 +1,4 @@
 import { Identifier } from '@medplum/fhirtypes';
-import React from 'react';
 
 export interface IdentifierDisplayProps {
   value?: Identifier;

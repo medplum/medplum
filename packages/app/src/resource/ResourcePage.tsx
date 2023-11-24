@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { getReferenceString, isGone, normalizeErrorString } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, useMedplum, useResource } from '@medplum/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { PatientHeader } from '../components/PatientHeader';
 import { QuickServiceRequests } from '../components/QuickServiceRequests';
@@ -28,7 +28,7 @@ function getTabs(resourceType: string): string[] {
     result.push('Preview', 'Builder', 'Bots', 'Responses');
   }
 
-  if (resourceType === 'DiagnosticReport') {
+  if (resourceType === 'DiagnosticReport' || resourceType === 'MeasureReport') {
     result.push('Report');
   }
 
@@ -52,9 +52,10 @@ export function ResourcePage(): JSX.Element | null {
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const value = useResource(reference, setOutcome);
   const tabs = getTabs(resourceType);
-  const defaultTab = tabs[0].toLowerCase();
-  const tab = window.location.pathname.split('/').pop();
-  const [currentTab, setCurrentTab] = useState<string>(tab ?? defaultTab);
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    const tab = window.location.pathname.split('/').pop();
+    return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
+  });
 
   async function restoreResource(): Promise<void> {
     const historyBundle = await medplum.readHistory(resourceType, id);

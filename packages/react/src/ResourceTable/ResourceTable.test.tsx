@@ -1,6 +1,5 @@
 import { MockClient } from '@medplum/mock';
 import { act, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ResourceTable, ResourceTableProps } from './ResourceTable';
 

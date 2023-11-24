@@ -1,6 +1,6 @@
 import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
 import { Attachment, Patient, Reference, ResourceType } from '@medplum/fhirtypes';
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface PatientTimelineProps {

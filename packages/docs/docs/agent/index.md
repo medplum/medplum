@@ -1,3 +1,7 @@
+---
+sidebar_position: 1
+---
+
 # Intro to Medplum Agent
 
 :::caution

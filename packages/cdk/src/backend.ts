@@ -112,7 +112,13 @@ export class BackEnd extends Construct {
 
       this.rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
         engine: rds.DatabaseClusterEngine.auroraPostgres({
-          version: rds.AuroraPostgresEngineVersion.VER_12_9,
+          version: config.rdsInstanceVersion
+            ? rds.AuroraPostgresEngineVersion.of(
+                config.rdsInstanceVersion,
+                config.rdsInstanceVersion.slice(0, config.rdsInstanceVersion.indexOf('.')),
+                { s3Import: true, s3Export: true }
+              )
+            : rds.AuroraPostgresEngineVersion.VER_12_9,
         }),
         credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
         defaultDatabaseName: 'medplum',
