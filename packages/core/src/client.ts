@@ -1566,7 +1566,33 @@ export class MedplumClient extends EventTarget {
       (async () => {
         const query = `{
       StructureDefinitionList(name: "${resourceType}") {
-        ${SCHEMA_STRUCTURE_DEFINITION_FIELDS}
+        resourceType,
+        name,
+        kind,
+        description,
+        snapshot {
+          element {
+            id,
+            path,
+            definition,
+            min,
+            max,
+            base {
+              path,
+              min,
+              max
+            },
+            contentReference,
+            type {
+              code,
+              targetProfile
+            },
+            binding {
+              strength,
+              valueSet
+            }
+          }
+        }
       }
       SearchParameterList(base: "${resourceType}", _count: 100) {
         base,
@@ -1599,7 +1625,6 @@ export class MedplumClient extends EventTarget {
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   requestProfileSchema(profileUrl: string): Promise<void> {
-    // TODO{mattlong} add a guard type and friends to distinguish between urls and other strings?
     if (isDataTypeLoadedByUrl(profileUrl)) {
       return Promise.resolve();
     }
@@ -1620,7 +1645,7 @@ export class MedplumClient extends EventTarget {
         } else {
           indexStructureDefinitionBundle(response);
         }
-        // TODO{mattlong} search parameters needed?
+        // TODO{profiles} search parameters
       })()
     );
     this.setCacheEntry(cacheKey, promise);
@@ -3494,46 +3519,3 @@ function bundleToResourceArray<T extends Resource>(bundle: Bundle<T>): ResourceA
   const array = bundle.entry?.map((e) => e.resource as T) ?? [];
   return Object.assign(array, { bundle });
 }
-
-// TODO{mattlong} revert a lot of changes around this
-const SCHEMA_STRUCTURE_DEFINITION_FIELDS = `
-    resourceType,
-    name,
-    type,
-    kind,
-    url,
-    description,
-    snapshot {
-      element {
-        id,
-        path,
-        slicing {
-          discriminator {
-            path,
-            type
-          }
-          ordered,
-          rules
-        }
-        sliceName,
-        definition,
-        min,
-        max,
-        base {
-          path,
-          min,
-          max
-        },
-        contentReference,
-        type {
-          code,
-          profile,
-          targetProfile
-        },
-        binding {
-          strength,
-          valueSet
-        }
-      }
-    }
-  `;
