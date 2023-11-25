@@ -14,7 +14,11 @@ type PopulatedSliceDefinition = SliceDefinition & {
 
 function isPopulatedSliceDefinition(slice: SliceDefinition): slice is PopulatedSliceDefinition {
   if (slice.type === undefined || slice.type.length === 0) {
+    console.log('WARN slice.type is missing or empty', slice);
     return false;
+  }
+  if (slice.type.length > 1) {
+    console.log('WARN slice has more than one type', slice);
   }
   return true;
 }
@@ -33,10 +37,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
   });
 
   if (!isPopulatedSliceDefinition(slice)) {
-    console.log('WARN slice.type is missing or empty', slice.type);
     return null;
-  } else if (slice.type.length > 1) {
-    //TODO{mattlong} Can a slice have multiple types? If so, add support for ElementDefinitionInputSelector?
   }
 
   function setValuesWrapper(newValues: any[]): void {
@@ -48,6 +49,9 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
   }
 
   const required = slice.min > 0;
+
+  // this is a bit of a hack targeted at nested extensions; indentation should likely be controlled elsewhere
+  // e.g. USCorePatientProfile -> USCoreEthnicityExtension -> {ombCategory, detailed, text}
   const stackStyle = Object.keys(slice.elements).length > 0 ? undefined : { marginTop: '1rem', marginLeft: '1rem' };
   return (
     <FormSection
@@ -59,7 +63,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
       <Stack style={stackStyle}>
         {values.map((value, valueIndex) => {
           return (
-            <Group key={valueIndex} noWrap>
+            <Group key={`${valueIndex}-${values.length}`} noWrap>
               <div style={{ flexGrow: 1 }}>
                 <Stack>
                   <ElementsInput
@@ -89,20 +93,22 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                   />
                 </Stack>
               </div>
-              <div>
-                <ActionIcon
-                  title="Remove"
-                  size="sm"
-                  onClick={(e: React.MouseEvent) => {
-                    killEvent(e);
-                    const newValues = [...values];
-                    newValues.splice(valueIndex, 1);
-                    setValuesWrapper(newValues);
-                  }}
-                >
-                  <IconCircleMinus />
-                </ActionIcon>
-              </div>
+              {values.length > slice.min && (
+                <div>
+                  <ActionIcon
+                    title="Remove"
+                    size="sm"
+                    onClick={(e: React.MouseEvent) => {
+                      killEvent(e);
+                      const newValues = [...values];
+                      newValues.splice(valueIndex, 1);
+                      setValuesWrapper(newValues);
+                    }}
+                  >
+                    <IconCircleMinus />
+                  </ActionIcon>
+                </div>
+              )}
             </Group>
           );
         })}
@@ -115,7 +121,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                 color="green"
                 onClick={(e: React.MouseEvent) => {
                   killEvent(e);
-                  const newValues = [...values, {}];
+                  const newValues = [...values, undefined];
                   setValuesWrapper(newValues);
                 }}
               >

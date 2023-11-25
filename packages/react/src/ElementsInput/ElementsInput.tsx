@@ -39,7 +39,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
     for (const [key, prop] of Object.entries(fixedProperties)) {
       setPropertyValue(newValue, key, key, prop, prop.fixed.value);
     }
-    console.log('ElementsInput', JSON.stringify(newValue));
+    console.log('ElementsInput', newValue);
     setValue(newValue);
     if (props.onChange) {
       props.onChange(newValue);

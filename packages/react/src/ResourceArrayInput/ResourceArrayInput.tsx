@@ -1,18 +1,26 @@
 import { ActionIcon, Group, Stack } from '@mantine/core';
 import {
   InternalSchemaElement,
+  InternalTypeSchema,
+  PropertyType,
   SliceDefinition,
+  SliceDiscriminator,
   SlicingRules,
+  TypedValue,
   arrayify,
-  getNestedProperty,
+  getElementDefinitionFromElements,
+  getTypedPropertyValueWithSchema,
+  isEmpty,
   matchDiscriminant,
+  tryGetDataTypeByUrl,
 } from '@medplum/core';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
-import { MouseEvent, useState, useMemo } from 'react';
+import { MouseEvent, useState, useEffect } from 'react';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { killEvent } from '../utils/dom';
 import { SliceInput } from '../SliceInput/SliceInput';
 import { OperationOutcome } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
 
 export interface ResourceArrayInputProps {
   property: InternalSchemaElement;
@@ -24,17 +32,62 @@ export interface ResourceArrayInputProps {
   onChange?: (value: any[]) => void;
 }
 
-// TODO{mattlong} getValueSliceName is broken. To reuse the validation discriminator
-// handling requires TypedValues and some related helper functions that look for type schemas
-// which doesn't work very well with slices yet
-function getValueSliceName(value: any, slicingRules: SlicingRules): string | undefined {
-  // based on packages/core/src/typeschema/validation.ts#checkSliceElement
-  for (const slice of slicingRules.slices) {
+type SupportedSliceDefinition = SliceDefinition & {
+  type: NonNullable<SliceDefinition['type']>;
+  typeSchema?: InternalTypeSchema;
+};
+
+function isSupportSliceDefinition(slice: SliceDefinition | undefined): slice is SupportedSliceDefinition {
+  if (!slice?.type || slice.type.length === 0) {
+    return false;
+  }
+
+  return true;
+}
+
+function getValueSliceName(
+  value: any,
+  slices: SupportedSliceDefinition[],
+  discriminators: SliceDiscriminator[]
+): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  for (const slice of slices) {
+    let typedValue: TypedValue;
+    if (slice.typeSchema) {
+      typedValue = { type: slice.typeSchema.name, value };
+    } else {
+      typedValue = { type: slice.type[0].code, value };
+    }
+
     if (
-      slicingRules.discriminator.every((discriminator) => {
-        return arrayify(getNestedProperty(value, discriminator.path))?.some((v) =>
-          matchDiscriminant(v, discriminator, slice)
-        );
+      discriminators.every((discriminator) => {
+        let nestedProp: TypedValue | TypedValue[] | undefined;
+        let elements: InternalTypeSchema['elements'] = slice.elements;
+
+        if (!isEmpty(slice.elements)) {
+          const ed = getElementDefinitionFromElements(slice.elements, discriminator.path);
+          if (ed) {
+            nestedProp = getTypedPropertyValueWithSchema(typedValue.value, discriminator.path, ed);
+          }
+        }
+
+        if (!nestedProp && slice.typeSchema && !isEmpty(slice.typeSchema?.elements)) {
+          elements = slice.typeSchema.elements;
+          const ed = getElementDefinitionFromElements(slice.typeSchema.elements, discriminator.path);
+          if (ed) {
+            nestedProp = getTypedPropertyValueWithSchema(typedValue.value, discriminator.path, ed);
+          }
+        }
+
+        if (!nestedProp) {
+          console.log('WARN Could not determine slice name');
+          return undefined;
+        }
+
+        return arrayify(nestedProp)?.some((v) => matchDiscriminant(v, discriminator, slice, elements));
       })
     ) {
       return slice.name;
@@ -43,101 +96,157 @@ function getValueSliceName(value: any, slicingRules: SlicingRules): string | und
   return undefined;
 }
 
-// TODO{mattlong} assignValuesIntoSlices is broken. It results in existing values NOT
-// being displayed at all and instead always returns a single entry for each slice right now
-function assignValuesIntoSlices(values: any[], slicing: SlicingRules | undefined): any[][] {
+function assignValuesIntoSlices(
+  values: any[],
+  slices: SupportedSliceDefinition[],
+  slicing: SlicingRules | undefined
+): any[][] {
   if (!slicing || slicing.slices.length === 0) {
     return [values];
   }
 
-  console.debug({ slicing, values });
-  const slices = slicing.slices;
+  // store values in an array of arrays: one for each slice plus another for non-sliced values
   const slicedValues: any[][] = new Array(slices.length + 1);
   for (let i = 0; i < slicedValues.length; i++) {
     slicedValues[i] = [];
   }
 
-  // TODO{mattlong} placeholder bit to return a single, empty value for each slice
-  for (let i = 0; i < slices.length; i++) {
-    slicedValues[i].push(undefined);
-  }
-
   for (const value of values) {
-    const sliceName = getValueSliceName(value, slicing);
-    let sliceIndex = slices.findIndex((slice) => slice.name === sliceName);
-    console.debug(`sliceName: ${sliceName} index: ${sliceIndex}`, value);
+    const sliceName = getValueSliceName(value, slices, slicing.discriminator);
+    let sliceIndex = sliceName ? slices.findIndex((slice) => slice.name === sliceName) : -1;
     if (sliceIndex === -1) {
-      sliceIndex = slices.length;
+      sliceIndex = slices.length; // values not matched to a slice go in the last entry for non-slice
     }
     slicedValues[sliceIndex].push(value);
   }
+
+  // for slices without existing values, add a placeholder empty value
+  for (let i = 0; i < slices.length; i++) {
+    if (slicedValues[i].length === 0) {
+      slicedValues[i].push(undefined);
+    }
+  }
+
   return slicedValues;
 }
 
 export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element {
   const { property } = props;
+  const medplum = useMedplum();
+  const [loading, setLoading] = useState(true);
+  const [slices, setSlices] = useState<SupportedSliceDefinition[]>();
+  const [slicedValues, setSlicedValues] = useState<any[][]>();
 
-  // TODO{mattlong} remove need of unhandledSlices
-  const [slices, _unhandledSlices] = useMemo<[SliceDefinition[], SliceDefinition[]]>(() => {
+  const propertyTypeCode = property.type[0]?.code;
+  useEffect(() => {
     if (!property.slicing) {
-      return [[], []];
+      setSlices([]);
+      setLoading(false);
+      return;
     }
 
-    const results = [];
-    const unhandled = [];
+    const supportedSlices: SupportedSliceDefinition[] = [];
+    const unsupportedSlices: SliceDefinition[] = [];
+    const profileUrls: (string | undefined)[] = [];
+    const promises: Promise<void>[] = [];
     for (const slice of property.slicing.slices) {
-      if (!slice.type) {
-        console.warn('PANIC slice.type is missing');
-        unhandled.push(slice);
-        continue;
-      } else if (slice.type.length > 1) {
-        //TODO{mattlong} Can a slice have more than one type?
-        console.warn('PANIC slice has more than one type');
-        unhandled.push(slice);
+      if (!isSupportSliceDefinition(slice)) {
+        console.warn('PANIC slice.type is missing', slice);
+        unsupportedSlices.push(slice);
         continue;
       }
+
       const sliceType = slice.type[0];
-
-      if (sliceType.code !== 'Extension') {
-        console.warn('PANIC slice.type[0].code is not Extension', sliceType.code);
-        unhandled.push(slice);
-        continue;
+      if (slice.type.length > 1) {
+        //TODO{mattlong} What to do if a slice has more than one type?
+        console.log('WARN slice has more than one type', slice.type);
       }
 
-      results.push(slice);
-    }
-    return [results, unhandled];
-  }, [property.slicing]);
+      if (sliceType.code !== propertyTypeCode) {
+        console.log('WARN slice.type[0].code did not match property.type[0].code', sliceType.code, propertyTypeCode);
+      }
 
-  const [sliceValues, setSliceValues] = useState(() =>
-    assignValuesIntoSlices(props.defaultValue ?? [], property.slicing)
-  );
+      let profileUrl: string | undefined;
+      if (isEmpty(slice.elements)) {
+        if (sliceType.profile) {
+          profileUrl = sliceType.profile[0];
+        }
+      }
+
+      // important to keep these three arrays the same length;
+      supportedSlices.push(slice);
+      profileUrls.push(profileUrl);
+      if (profileUrl) {
+        promises.push(medplum.requestProfileSchema(profileUrl));
+      } else {
+        promises.push(Promise.resolve());
+      }
+    }
+
+    Promise.all(promises)
+      .then(() => {
+        for (let i = 0; i < supportedSlices.length; i++) {
+          const slice = supportedSlices[i];
+          const profileUrl = profileUrls[i];
+          if (profileUrl) {
+            const typeSchema = tryGetDataTypeByUrl(profileUrl);
+            slice.typeSchema = typeSchema;
+          }
+        }
+        setSlices(supportedSlices);
+        setLoading(false);
+      })
+      .catch((reason) => {
+        console.error(reason);
+        // TODO{mattlong} error handling
+        setLoading(false);
+      });
+  }, [medplum, property.slicing, propertyTypeCode]);
+
+  useEffect(() => {
+    if (slices) {
+      const results = assignValuesIntoSlices(props.defaultValue ?? [], slices, property.slicing);
+      setSlicedValues(results);
+    }
+  }, [slices, props.defaultValue, property.slicing]);
 
   function setValuesWrapper(newValues: any[], sliceIndex: number): void {
-    const newSliceValues = [...sliceValues];
+    if (!slicedValues) {
+      // this shouldn't happen in practice; slicedValues is only undefined
+      // before anything has rendered
+      return;
+    }
+
+    const newSliceValues = [...slicedValues];
     newSliceValues[sliceIndex] = newValues;
-    setSliceValues(newSliceValues);
+    setSlicedValues(newSliceValues);
     if (props.onChange) {
-      // Remove any placeholder (i.e. undefined) values before propagating up the chain
-      console.debug('ResourceArrayInput', JSON.stringify(newSliceValues.flat().filter(Boolean)));
-      props.onChange(newSliceValues.flat().filter((val) => val !== undefined));
+      // Remove any placeholder (i.e. undefined) values before propagating
+      const cleaned = newSliceValues.flat().filter((val) => val !== undefined);
+      props.onChange(cleaned);
     }
   }
 
-  const style = props.indent ? { marginTop: '1rem', marginLeft: '1rem' } : undefined;
-  const nonSliceIndex = slices.length;
-  const nonSliceValues = sliceValues[nonSliceIndex];
+  // TODO{mattlong} better error handling needed here
+  if (loading || !slices || !slicedValues) {
+    return <div>Loading...</div>;
+  }
 
-  const enableRemoveNonSliceValues = property.type[0].code === 'Extension';
+  const nonSliceIndex = slices.length;
+  const nonSliceValues = slicedValues[nonSliceIndex];
+
+  // Sliced extensions cannot have non-sliced values
+  const disableAddNonSliceValues = property.type[0].code === PropertyType.Extension;
+
   return (
-    <Stack style={style}>
+    <Stack style={props.indent ? { marginTop: '1rem', marginLeft: '1rem' } : undefined}>
       {slices.map((slice, sliceIndex) => {
         return (
           <SliceInput
             slice={slice}
             key={slice.name}
             property={property}
-            defaultValue={sliceValues[sliceIndex]}
+            defaultValue={slicedValues[sliceIndex]}
             onChange={(newValue: any[]) => {
               setValuesWrapper(newValue, sliceIndex);
             }}
@@ -178,7 +287,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
           </div>
         </Group>
       ))}
-      {enableRemoveNonSliceValues && (
+      {!disableAddNonSliceValues && (
         <Group noWrap style={{ justifyContent: 'flex-end' }}>
           <div>
             <ActionIcon

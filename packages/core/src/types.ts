@@ -333,7 +333,20 @@ export function getElementDefinition(typeName: string, propertyName: string): In
   if (!typeSchema) {
     return undefined;
   }
-  return typeSchema.elements[propertyName] ?? typeSchema.elements[propertyName + '[x]'];
+  return getElementDefinitionFromElements(typeSchema.elements, propertyName);
+}
+
+/**
+ * Returns an element definition from mapping of elements by property name.
+ * @param elements  - A mapping of property names to element definitions
+ * @param propertyName - The property name of interest
+ * @returns The element definition if found.
+ */
+export function getElementDefinitionFromElements(
+  elements: InternalTypeSchema['elements'],
+  propertyName: string
+): InternalSchemaElement | undefined {
+  return elements[propertyName] ?? elements[propertyName + '[x]'];
 }
 
 /**
