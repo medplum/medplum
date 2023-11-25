@@ -54,9 +54,6 @@ fi
 # Fail on error
 set -e
 
-# Echo commands
-set -x
-
 # Diagnostics
 java --version
 
@@ -70,7 +67,9 @@ npm run build
 npx pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output dist/medplum-agent-win64.exe --options no-warnings
 
 # Download JSign
-wget https://github.com/ebourg/jsign/releases/download/5.0/jsign-5.0.jar
+if [ ! -f "jsign-5.0.jar" ]; then
+    wget https://github.com/ebourg/jsign/releases/download/5.0/jsign-5.0.jar
+fi
 
 # Unpack the client certificate
 echo "$SM_CLIENT_CERT_FILE_BASE64" | base64 --decode > Certificate_pkcs12.p12
