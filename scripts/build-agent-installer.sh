@@ -16,6 +16,11 @@ if ! command -v java >/dev/null 2>&1; then
     exit 1
 fi
 
+if ! command -v makensis >/dev/null 2>&1; then
+    echo "makensis required"
+    exit 1
+fi
+
 if ! command -v wget >/dev/null 2>&1; then
     echo "wget required"
     exit 1
@@ -68,7 +73,7 @@ npx pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output dist/medplum-agen
 wget https://github.com/ebourg/jsign/releases/download/5.0/jsign-5.0.jar
 
 # Unpack the client certificate
-echo "$SM_CLIENT_CERT_FILE_B64" | base64 --decode > Certificate_pkcs12.p12
+echo "$SM_CLIENT_CERT_FILE_BASE64" | base64 --decode > Certificate_pkcs12.p12
 SM_CLIENT_CERT_FILE="$(pwd)/Certificate_pkcs12.p12"
 
 # Sign the executable
