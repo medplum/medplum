@@ -37,7 +37,7 @@ export function CreateClientPage(): JSX.Element {
               showNotification({ color: 'green', message: 'Client created' });
             })
             .catch((err) => {
-              showNotification({ color: 'red', message: normalizeErrorString(err) });
+              showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
               setOutcome(normalizeOperationOutcome(err));
             });
         }}

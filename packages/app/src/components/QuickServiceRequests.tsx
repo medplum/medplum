@@ -59,7 +59,7 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
         resources.reverse();
         setServiceRequests(resources);
       })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum, resource]);
 
   if (!serviceRequests) {

@@ -43,21 +43,21 @@ export function SuperAdminPage(): JSX.Element {
     medplum
       .post('admin/super/removebotidjobsfromqueue', formData)
       .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   function purgeResources(formData: Record<string, string>): void {
     medplum
       .post('admin/super/purge', { ...formData, before: convertLocalToIso(formData.before) })
       .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   function forceSetPassword(formData: Record<string, string>): void {
     medplum
       .post('admin/super/setpassword', formData)
       .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   return (

@@ -46,6 +46,7 @@ export function SitesPage(): JSX.Element {
             showNotification({
               color: 'red',
               message: `Error ${operationOutcome.issue?.[0].details?.text} ${operationOutcome.issue?.[0].expression?.[0]}`,
+              autoClose: false,
             });
           });
       }}

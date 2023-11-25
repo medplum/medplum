@@ -35,7 +35,7 @@ export function QuestionnaireBotsPage(): JSX.Element {
           medplum.invalidateSearches('Subscription');
           showNotification({ color: 'green', message: 'Success' });
         })
-        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
     }
   }
 
