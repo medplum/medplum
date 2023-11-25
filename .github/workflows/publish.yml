@@ -26,6 +26,12 @@ jobs:
       - name: Install NSIS
         run: sudo apt-get install -y nsis
 
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
