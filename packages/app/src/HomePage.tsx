@@ -71,12 +71,12 @@ export function HomePage(): JSX.Element {
             .then((blob: Blob) => {
               window.open(window.URL.createObjectURL(blob), '_blank');
             })
-            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
         }}
         onExportTransactionBundle={async () => {
           getTransactionBundle(search, medplum)
             .then((bundle) => exportJsonFile(JSON.stringify(bundle, undefined, 2)))
-            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
         }}
         onDelete={(ids: string[]) => {
           if (window.confirm('Are you sure you want to delete these resources?')) {
@@ -93,7 +93,7 @@ export function HomePage(): JSX.Element {
                 })),
               })
               .then(() => setSearch({ ...search }))
-              .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+              .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
           }
         }}
         onBulk={(ids: string[]) => {

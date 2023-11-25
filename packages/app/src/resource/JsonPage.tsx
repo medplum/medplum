@@ -24,7 +24,7 @@ export function JsonPage(): JSX.Element | null {
           showNotification({ color: 'green', message: 'Success' });
         })
         .catch((err) => {
-          showNotification({ color: 'red', message: normalizeErrorString(err) });
+          showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
         });
     },
     [medplum, resourceType, id, navigate]

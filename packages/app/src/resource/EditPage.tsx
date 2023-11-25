@@ -19,7 +19,7 @@ export function EditPage(): JSX.Element | null {
       .then((resource) => setValue(deepClone(resource)))
       .catch((err) => {
         setOutcome(normalizeOperationOutcome(err));
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       });
   }, [medplum, resourceType, id]);
 
@@ -34,7 +34,7 @@ export function EditPage(): JSX.Element | null {
         })
         .catch((err) => {
           setOutcome(normalizeOperationOutcome(err));
-          showNotification({ color: 'red', message: normalizeErrorString(err) });
+          showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
         });
     },
     [medplum, resourceType, id, navigate]
