@@ -19,9 +19,6 @@
   "scripts": {
     "agent": "ts-node src/main.ts",
     "build": "npm run clean && tsc && node esbuild.mjs",
-    "build:all": "npm run build && npm run build:exe && npm run build:installer",
-    "build:exe": "pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output dist/medplum-agent-win-x64.exe --options no-warnings",
-    "build:installer": "makensis installer.nsi",
     "clean": "rimraf dist",
     "test": "jest"
   },
