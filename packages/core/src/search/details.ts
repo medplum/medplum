@@ -10,7 +10,7 @@ import {
   UnionAtom,
 } from '../fhirpath/atoms';
 import { parseFhirPath } from '../fhirpath/parse';
-import { getElementDefinition, globalSchema, PropertyType } from '../types';
+import { PropertyType, getElementDefinition, globalSchema } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
 import { capitalize } from '../utils';
 
@@ -261,6 +261,10 @@ function flattenAtom(atom: Atom): Atom[] {
   if (atom instanceof FunctionAtom) {
     if (atom.name === 'where' && !(atom.args[0] instanceof IsAtom)) {
       // Remove all "where" functions other than "where(x as type)"
+      return [];
+    }
+    if (atom.name === 'last') {
+      // Remove all "last" functions
       return [];
     }
   }
