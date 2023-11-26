@@ -56,8 +56,8 @@ interface HealthGorillaConfig {
 // These come from the Health Gorilla Organization resources
 const availableLabs: Record<string, string> = {
   Testing: 'f-4f0235627ac2d59b49e5575c',
-  Labcorp: 'f-c7403b62e57b776dfddf8051', // 'f-388554647b89801ea5e8320b',
-  Quest: 'f-6927735e92bc9c4cc2599d15', //'f-7b439a4f4e78f26d6704bbec', // 'f-7c075564349e1a592e53147a',
+  Labcorp: 'f-c7403b62e57b776dfddf8051',
+  Quest: 'f-6927735e92bc9c4cc2599d15',
 };
 
 // Available tests organized by Health Gorilla test code
@@ -264,6 +264,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // Specimen collected date/time
   // This is an optional field.  If present, it will create a Specimen resource.
   builder.specimenCollectedDateTime = answers.specimenCollectedDateTime?.valueDateTime;
+
+  // Order level notes
+  builder.note = answers.orderNote?.valueString;
 
   // Create the order
   const requestGroup = builder.buildRequestGroup();

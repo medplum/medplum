@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from 'fs';
 interface Lab {
   id: string;
   name: string;
+  healthGorillaId: string;
   tests: LabTest[];
 }
 
@@ -21,6 +22,7 @@ const labs: Lab[] = [
   {
     id: 'test',
     name: 'Testing',
+    healthGorillaId: 'f-4f0235627ac2d59b49e5575c',
     tests: [
       { code: '1234-5', name: 'Test 1' },
       { code: '11119', name: 'ABN TEST REFUSAL' },
@@ -30,6 +32,7 @@ const labs: Lab[] = [
   {
     id: 'labcorp',
     name: 'Labcorp',
+    healthGorillaId: 'f-c7403b62e57b776dfddf8051',
     tests: [
       { code: '001453', name: 'Hemoglobin A1c' },
       { code: '010322', name: 'Prostate-Specific Ag' },
@@ -53,6 +56,7 @@ const labs: Lab[] = [
   {
     id: 'quest',
     name: 'Quest',
+    healthGorillaId: 'f-6927735e92bc9c4cc2599d15',
     tests: [
       { code: '866', name: 'Free T4' },
       { code: '899', name: 'TSH' },
@@ -326,7 +330,7 @@ for (const lab of labs) {
     };
 
     // Check for AOE Questionnaire
-    const aoeFileName = `./questionnaire-f-388554647b89801ea5e8320b-${test.code}.json`;
+    const aoeFileName = `./questionnaire-${lab.healthGorillaId}-${test.code}.json`;
     if (existsSync(aoeFileName)) {
       const aoeQuestionnaire = JSON.parse(readFileSync(aoeFileName, 'utf8'));
       if (aoeQuestionnaire.item) {
