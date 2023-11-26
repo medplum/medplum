@@ -225,7 +225,7 @@ class SyncSecureStorage implements Storage {
   }
 }
 
-interface IExpoClientStorage extends IClientStorage {
+export interface IExpoClientStorage extends IClientStorage {
   getInitPromise(): Promise<void>;
   length: number;
 }
