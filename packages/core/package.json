@@ -1,6 +1,6 @@
 {
   "name": "@medplum/core",
-  "version": "2.1.19",
+  "version": "2.1.20",
   "description": "Medplum TS/JS Library",
   "keywords": [
     "medplum",
