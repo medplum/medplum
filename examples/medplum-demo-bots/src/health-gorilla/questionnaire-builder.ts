@@ -339,6 +339,7 @@ for (const lab of labs) {
             ...i,
             id: `${fullTestId}-aoe-${i.id}`,
             linkId: `${fullTestId}-aoe-${i.id}`,
+            initial: i.answerOption ? undefined : i.initial,
           }))
         );
       }

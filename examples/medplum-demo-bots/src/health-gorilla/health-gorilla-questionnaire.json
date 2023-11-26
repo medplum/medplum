@@ -1420,11 +1420,6 @@
                       }
                     }
                   ],
-                  "initial": [
-                    {
-                      "valueString": "Unknown/Not Indicated"
-                    }
-                  ],
                   "linkId": "labcorp-007625-aoe-ZBL-1"
                 },
                 {
@@ -1474,11 +1469,6 @@
                         "code": "9",
                         "display": "Unknown"
                       }
-                    }
-                  ],
-                  "initial": [
-                    {
-                      "valueString": "Unknown"
                     }
                   ],
                   "linkId": "labcorp-007625-aoe-ZBL-2"
