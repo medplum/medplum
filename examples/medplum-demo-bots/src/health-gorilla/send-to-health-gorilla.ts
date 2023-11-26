@@ -586,7 +586,6 @@ class HealthGorillaRequestGroupBuilder {
 
     const resultAccount: Account = {
       ...medplumAccount,
-      coverage: undefined,
     };
 
     if (resultAccount.type?.coding?.[0]?.code === 'patient') {
