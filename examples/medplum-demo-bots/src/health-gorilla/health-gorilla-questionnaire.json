@@ -419,6 +419,51 @@
                   "linkId": "labcorp-322000-note",
                   "type": "string",
                   "text": "Notes"
+                },
+                {
+                  "id": "labcorp-322000-aoe-ZCI-4",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-requiredwhenspecimen",
+                      "valueBoolean": true
+                    },
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: In specific testing procedures in calculation of result."
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCI-4"
+                    }
+                  ],
+                  "text": "Fasting",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-322000-aoe-ZCI-4"
                 }
               ]
             },
@@ -575,7 +620,7 @@
                       "valueCodeableConcept": {
                         "coding": [
                           {
-                            "code": "editableDropdown"
+                            "code": "dropdown"
                           }
                         ]
                       }
@@ -587,7 +632,39 @@
                     }
                   ],
                   "text": "Source of Specimen",
-                  "type": "open-choice",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueString": "Blood"
+                    },
+                    {
+                      "valueString": "Breast(Left)"
+                    },
+                    {
+                      "valueString": "Breast(Right)"
+                    },
+                    {
+                      "valueString": "Breast(Both)"
+                    },
+                    {
+                      "valueString": "Endocervical"
+                    },
+                    {
+                      "valueString": "Stool"
+                    },
+                    {
+                      "valueString": "Throat"
+                    },
+                    {
+                      "valueString": "Urethral"
+                    },
+                    {
+                      "valueString": "Urine"
+                    },
+                    {
+                      "valueString": "Wound"
+                    }
+                  ],
                   "linkId": "labcorp-008649-aoe-OBR-15"
                 }
               ]
@@ -713,6 +790,38 @@
                   ],
                   "text": "Source of Specimen",
                   "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueString": "Blood"
+                    },
+                    {
+                      "valueString": "Breast(Left)"
+                    },
+                    {
+                      "valueString": "Breast(Right)"
+                    },
+                    {
+                      "valueString": "Breast(Both)"
+                    },
+                    {
+                      "valueString": "Endocervical"
+                    },
+                    {
+                      "valueString": "Stool"
+                    },
+                    {
+                      "valueString": "Throat"
+                    },
+                    {
+                      "valueString": "Urethral"
+                    },
+                    {
+                      "valueString": "Urine"
+                    },
+                    {
+                      "valueString": "Wound"
+                    }
+                  ],
                   "linkId": "labcorp-008847-aoe-OBR-15"
                 }
               ]
@@ -761,6 +870,69 @@
                   "linkId": "labcorp-008144-note",
                   "type": "string",
                   "text": "Notes"
+                },
+                {
+                  "id": "labcorp-008144-aoe-OBR-15",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-requiredwhenspecimen",
+                      "valueBoolean": true
+                    },
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Identification of location specimen was obtained from the patient"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "OBR-15"
+                    }
+                  ],
+                  "text": "Source of Specimen",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueString": "Blood"
+                    },
+                    {
+                      "valueString": "Breast(Left)"
+                    },
+                    {
+                      "valueString": "Breast(Right)"
+                    },
+                    {
+                      "valueString": "Breast(Both)"
+                    },
+                    {
+                      "valueString": "Endocervical"
+                    },
+                    {
+                      "valueString": "Stool"
+                    },
+                    {
+                      "valueString": "Throat"
+                    },
+                    {
+                      "valueString": "Urethral"
+                    },
+                    {
+                      "valueString": "Urine"
+                    },
+                    {
+                      "valueString": "Wound"
+                    }
+                  ],
+                  "linkId": "labcorp-008144-aoe-OBR-15"
                 }
               ]
             },
@@ -855,6 +1027,51 @@
                   "linkId": "labcorp-322758-note",
                   "type": "string",
                   "text": "Notes"
+                },
+                {
+                  "id": "labcorp-322758-aoe-ZCI-4",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-requiredwhenspecimen",
+                      "valueBoolean": true
+                    },
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: In specific testing procedures in calculation of result."
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCI-4"
+                    }
+                  ],
+                  "text": "Fasting",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-322758-aoe-ZCI-4"
                 }
               ]
             },
@@ -902,6 +1119,2179 @@
                   "linkId": "labcorp-164922-note",
                   "type": "string",
                   "text": "Notes"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-000810",
+              "linkId": "labcorp-000810",
+              "type": "boolean",
+              "text": "Vitamin B12 and Folate (000810)"
+            },
+            {
+              "id": "labcorp-000810-details",
+              "linkId": "labcorp-000810-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "labcorp-000810",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "labcorp-000810-priority",
+                  "linkId": "labcorp-000810-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "labcorp-000810-note",
+                  "linkId": "labcorp-000810-note",
+                  "type": "string",
+                  "text": "Notes"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-322777",
+              "linkId": "labcorp-322777",
+              "type": "boolean",
+              "text": "Renal Panel (10) (322777)"
+            },
+            {
+              "id": "labcorp-322777-details",
+              "linkId": "labcorp-322777-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "labcorp-322777",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "labcorp-322777-priority",
+                  "linkId": "labcorp-322777-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "labcorp-322777-note",
+                  "linkId": "labcorp-322777-note",
+                  "type": "string",
+                  "text": "Notes"
+                },
+                {
+                  "id": "labcorp-322777-aoe-ZCI-4",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-requiredwhenspecimen",
+                      "valueBoolean": true
+                    },
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: In specific testing procedures in calculation of result."
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCI-4"
+                    }
+                  ],
+                  "text": "Fasting",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-322777-aoe-ZCI-4"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-480772",
+              "linkId": "labcorp-480772",
+              "type": "boolean",
+              "text": "PSA Total (Reflex To Free) (480772)"
+            },
+            {
+              "id": "labcorp-480772-details",
+              "linkId": "labcorp-480772-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "labcorp-480772",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "labcorp-480772-priority",
+                  "linkId": "labcorp-480772-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "labcorp-480772-note",
+                  "linkId": "labcorp-480772-note",
+                  "type": "string",
+                  "text": "Notes"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-007625",
+              "linkId": "labcorp-007625",
+              "type": "boolean",
+              "text": "Lead, Blood (Adult) (007625)"
+            },
+            {
+              "id": "labcorp-007625-details",
+              "linkId": "labcorp-007625-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "labcorp-007625",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "labcorp-007625-priority",
+                  "linkId": "labcorp-007625-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "labcorp-007625-note",
+                  "linkId": "labcorp-007625-note",
+                  "type": "string",
+                  "text": "Notes"
+                },
+                {
+                  "id": "labcorp-007625-aoe-ZBL-1",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-requiredwhenspecimen",
+                      "valueBoolean": true
+                    },
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Race is required for blood lead testing procedures."
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZBL-1"
+                    }
+                  ],
+                  "text": "Patient Race",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "1",
+                        "display": "White/Caucasian"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "2",
+                        "display": "Black"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "3",
+                        "display": "American Indian"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "4",
+                        "display": "Asian"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "5",
+                        "display": "Other"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "9",
+                        "display": "Unknown/Not Indicated"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-007625-aoe-ZBL-1"
+                },
+                {
+                  "id": "labcorp-007625-aoe-ZBL-2",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-requiredwhenspecimen",
+                      "valueBoolean": true
+                    },
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Race is required for blood lead testing procedures by some states.This field is self- identification rather than scientific classification."
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZBL-2"
+                    }
+                  ],
+                  "text": "Hispanic Heritage",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "1",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "2",
+                        "display": "No"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "9",
+                        "display": "Unknown"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-007625-aoe-ZBL-2"
+                },
+                {
+                  "id": "labcorp-007625-aoe-ZBL-3",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-requiredwhenspecimen",
+                      "valueBoolean": true
+                    },
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Indication of how specimen was collected."
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZBL-3"
+                    }
+                  ],
+                  "text": "Blood Lead Type",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "V",
+                        "display": "Venous (blood)"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "F",
+                        "display": "Finger stick (blood)"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-007625-aoe-ZBL-3"
+                },
+                {
+                  "id": "labcorp-007625-aoe-ZBL-4",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Indication of reason for testing."
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZBL-4"
+                    }
+                  ],
+                  "text": "Blood Lead Purpose",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "I",
+                        "display": "Initial"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "R",
+                        "display": "Repeat"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "F",
+                        "display": "Follow-up"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-007625-aoe-ZBL-4"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-192005",
+              "linkId": "labcorp-192005",
+              "type": "boolean",
+              "text": "Pap Lb (Liquid-based) (192005)"
+            },
+            {
+              "id": "labcorp-192005-details",
+              "linkId": "labcorp-192005-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "labcorp-192005",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "labcorp-192005-priority",
+                  "linkId": "labcorp-192005-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "labcorp-192005-note",
+                  "linkId": "labcorp-192005-note",
+                  "type": "string",
+                  "text": "Notes"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-1",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Gynecological body site"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-1"
+                    }
+                  ],
+                  "text": "Cervix",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-1"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-2",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Gynecological body site"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-2"
+                    }
+                  ],
+                  "text": "Endocervix",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-2"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-4",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Gynecological body site"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-4"
+                    }
+                  ],
+                  "text": "Vagina",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-4"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-5",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Gynecological body site"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-5"
+                    }
+                  ],
+                  "text": "Endometrium",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-5"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-6",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Collection technique"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-6"
+                    }
+                  ],
+                  "text": "Swab-Spatula",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-6"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-7",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Collection technique"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-7"
+                    }
+                  ],
+                  "text": "Brush-Spatula",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-7"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-8",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Collection technique"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-8"
+                    }
+                  ],
+                  "text": "Spatula-Alone",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-8"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-9",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Collection technique"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-9"
+                    }
+                  ],
+                  "text": "Brush-Alone",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-9"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-10",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Collection technique"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-10"
+                    }
+                  ],
+                  "text": "Broom-Alone",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-10"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-11",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Collection technique"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-11"
+                    }
+                  ],
+                  "text": "Other collection technique",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-11"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-12",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Date of patient's last menstrual period or menopausal date."
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "localDate"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-12"
+                    }
+                  ],
+                  "text": "LMP-Meno Date",
+                  "type": "date",
+                  "linkId": "labcorp-192005-aoe-ZCY-12"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-13",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous treatment"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-13"
+                    }
+                  ],
+                  "text": "None",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-13"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-15",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous treatment"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-15"
+                    }
+                  ],
+                  "text": "Coniza",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-15"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-16",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous treatment"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-16"
+                    }
+                  ],
+                  "text": "Colp-BX",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-16"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-17",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous treatment"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-17"
+                    }
+                  ],
+                  "text": "Laser-Vap",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-17"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-18",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous treatment"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-18"
+                    }
+                  ],
+                  "text": "Cyro",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-18"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-19",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous treatment"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-19"
+                    }
+                  ],
+                  "text": "Radiation",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-19"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-21",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Other patient information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-21"
+                    }
+                  ],
+                  "text": "Pregnant",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-21"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-22",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Other patient information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-22"
+                    }
+                  ],
+                  "text": "Lactating",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-22"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-23",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Other patient information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-23"
+                    }
+                  ],
+                  "text": "Oral Contraceptives",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-23"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-24",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Other patient information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-24"
+                    }
+                  ],
+                  "text": "Menopausal",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-24"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-25",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Other patient information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-25"
+                    }
+                  ],
+                  "text": "Estro-RX",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-25"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-26",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Other patient information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-26"
+                    }
+                  ],
+                  "text": "PMP-Bleeding",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-26"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-27",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Other patient information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-27"
+                    }
+                  ],
+                  "text": "Post-Part",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-27"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-28",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Other patient information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-28"
+                    }
+                  ],
+                  "text": "IUD",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-28"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-29",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Other patient information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-29"
+                    }
+                  ],
+                  "text": "All-Other-Pat",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-29"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-20",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous cytology information."
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "textBox"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-20"
+                    }
+                  ],
+                  "text": "Dates-Results",
+                  "type": "string",
+                  "linkId": "labcorp-192005-aoe-ZCY-20"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-30",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous cytology information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-30"
+                    }
+                  ],
+                  "text": "Negative",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-30"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-31",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous cytology information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-31"
+                    }
+                  ],
+                  "text": "Atypical",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-31"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-33",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous cytology information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-33"
+                    }
+                  ],
+                  "text": "Ca-In-Situ",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-33"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-34",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous cytology information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-34"
+                    }
+                  ],
+                  "text": "Invasive",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-34"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-35",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous cytology information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-35"
+                    }
+                  ],
+                  "text": "Other Previous Information",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-35"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-37",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Gynecological body site"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-37"
+                    }
+                  ],
+                  "text": "Labium majus",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-37"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-38",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Gynecological body site"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-38"
+                    }
+                  ],
+                  "text": "Labium minus",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-38"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-39",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Gynecological body site"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-39"
+                    }
+                  ],
+                  "text": "Vulva",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-39"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-40",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous treatment"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-40"
+                    }
+                  ],
+                  "text": "Hysterectomy, Total",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-40"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-41",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous treatment"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-41"
+                    }
+                  ],
+                  "text": "Hysterectomy, Partial (Supracervical)",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-41"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-42",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous cytology information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-42"
+                    }
+                  ],
+                  "text": "Dysplasia Low",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-42"
+                },
+                {
+                  "id": "labcorp-192005-aoe-ZCY-43",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Previous cytology information"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "ZCY-43"
+                    }
+                  ],
+                  "text": "Dysplasia High",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueCoding": {
+                        "code": "Y",
+                        "display": "Yes"
+                      }
+                    },
+                    {
+                      "valueCoding": {
+                        "code": "N",
+                        "display": "No"
+                      }
+                    }
+                  ],
+                  "linkId": "labcorp-192005-aoe-ZCY-43"
+                }
+              ]
+            },
+            {
+              "id": "labcorp-008623",
+              "linkId": "labcorp-008623",
+              "type": "boolean",
+              "text": "Ova + Parasite Exam (008623)"
+            },
+            {
+              "id": "labcorp-008623-details",
+              "linkId": "labcorp-008623-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "labcorp-008623",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "labcorp-008623-priority",
+                  "linkId": "labcorp-008623-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "labcorp-008623-note",
+                  "linkId": "labcorp-008623-note",
+                  "type": "string",
+                  "text": "Notes"
+                },
+                {
+                  "id": "labcorp-008623-aoe-OBR-15",
+                  "extension": [
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-requiredwhenspecimen",
+                      "valueBoolean": true
+                    },
+                    {
+                      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-constraints",
+                      "valueString": "Use: Identification of location specimen was obtained from the patient"
+                    },
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "dropdown"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "OBR-15"
+                    }
+                  ],
+                  "text": "Source of Specimen",
+                  "type": "choice",
+                  "answerOption": [
+                    {
+                      "valueString": "Blood"
+                    },
+                    {
+                      "valueString": "Breast(Left)"
+                    },
+                    {
+                      "valueString": "Breast(Right)"
+                    },
+                    {
+                      "valueString": "Breast(Both)"
+                    },
+                    {
+                      "valueString": "Endocervical"
+                    },
+                    {
+                      "valueString": "Stool"
+                    },
+                    {
+                      "valueString": "Throat"
+                    },
+                    {
+                      "valueString": "Urethral"
+                    },
+                    {
+                      "valueString": "Urine"
+                    },
+                    {
+                      "valueString": "Wound"
+                    }
+                  ],
+                  "linkId": "labcorp-008623-aoe-OBR-15"
                 }
               ]
             }
@@ -1293,6 +3683,29 @@
                   "linkId": "quest-229-note",
                   "type": "string",
                   "text": "Notes"
+                },
+                {
+                  "id": "quest-229-aoe-85989040",
+                  "extension": [
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "textBox"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "85989040"
+                    }
+                  ],
+                  "text": "TOTAL VOLUME",
+                  "type": "string",
+                  "linkId": "quest-229-aoe-85989040"
                 }
               ]
             },
@@ -1387,6 +3800,566 @@
                   "linkId": "quest-6399-note",
                   "type": "string",
                   "text": "Notes"
+                }
+              ]
+            },
+            {
+              "id": "quest-747",
+              "linkId": "quest-747",
+              "type": "boolean",
+              "text": "Protein, Total and Protein Electrophoresis (747)"
+            },
+            {
+              "id": "quest-747-details",
+              "linkId": "quest-747-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "quest-747",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "quest-747-priority",
+                  "linkId": "quest-747-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "quest-747-note",
+                  "linkId": "quest-747-note",
+                  "type": "string",
+                  "text": "Notes"
+                }
+              ]
+            },
+            {
+              "id": "quest-249",
+              "linkId": "quest-249",
+              "type": "boolean",
+              "text": "ANA (249)"
+            },
+            {
+              "id": "quest-249-details",
+              "linkId": "quest-249-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "quest-249",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "quest-249-priority",
+                  "linkId": "quest-249-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "quest-249-note",
+                  "linkId": "quest-249-note",
+                  "type": "string",
+                  "text": "Notes"
+                }
+              ]
+            },
+            {
+              "id": "quest-3020",
+              "linkId": "quest-3020",
+              "type": "boolean",
+              "text": "Urinalysis Complete (3020)"
+            },
+            {
+              "id": "quest-3020-details",
+              "linkId": "quest-3020-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "quest-3020",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "quest-3020-priority",
+                  "linkId": "quest-3020-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "quest-3020-note",
+                  "linkId": "quest-3020-note",
+                  "type": "string",
+                  "text": "Notes"
+                }
+              ]
+            },
+            {
+              "id": "quest-5149",
+              "linkId": "quest-5149",
+              "type": "boolean",
+              "text": "Antibody ID and Titer (5149)"
+            },
+            {
+              "id": "quest-5149-details",
+              "linkId": "quest-5149-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "quest-5149",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "quest-5149-priority",
+                  "linkId": "quest-5149-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "quest-5149-note",
+                  "linkId": "quest-5149-note",
+                  "type": "string",
+                  "text": "Notes"
+                }
+              ]
+            },
+            {
+              "id": "quest-4446",
+              "linkId": "quest-4446",
+              "type": "boolean",
+              "text": "Culture Anaerobic and Aerobic (4446)"
+            },
+            {
+              "id": "quest-4446-details",
+              "linkId": "quest-4446-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "quest-4446",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "quest-4446-priority",
+                  "linkId": "quest-4446-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "quest-4446-note",
+                  "linkId": "quest-4446-note",
+                  "type": "string",
+                  "text": "Notes"
+                },
+                {
+                  "id": "quest-4446-aoe-75400637",
+                  "extension": [
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "textBox"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "75400637"
+                    }
+                  ],
+                  "text": "SOURCE",
+                  "type": "string",
+                  "linkId": "quest-4446-aoe-75400637"
+                },
+                {
+                  "id": "quest-4446-aoe-75400638",
+                  "extension": [
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "textBox"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "75400638"
+                    }
+                  ],
+                  "text": "SOURCE",
+                  "type": "string",
+                  "linkId": "quest-4446-aoe-75400638"
+                }
+              ]
+            },
+            {
+              "id": "quest-18811",
+              "linkId": "quest-18811",
+              "type": "boolean",
+              "text": "Surepath Pap/w rfl HPV (18811)"
+            },
+            {
+              "id": "quest-18811-details",
+              "linkId": "quest-18811-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "quest-18811",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "quest-18811-priority",
+                  "linkId": "quest-18811-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "quest-18811-note",
+                  "linkId": "quest-18811-note",
+                  "type": "string",
+                  "text": "Notes"
+                },
+                {
+                  "id": "quest-18811-aoe-90000225",
+                  "extension": [
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "textBox"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "90000225"
+                    }
+                  ],
+                  "text": "SOURCE",
+                  "type": "string",
+                  "linkId": "quest-18811-aoe-90000225"
+                },
+                {
+                  "id": "quest-18811-aoe-90000571",
+                  "extension": [
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "textBox"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "90000571"
+                    }
+                  ],
+                  "text": "CLINICAL INFORMATION",
+                  "type": "string",
+                  "linkId": "quest-18811-aoe-90000571"
+                },
+                {
+                  "id": "quest-18811-aoe-90000597",
+                  "extension": [
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "textBox"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "90000597"
+                    }
+                  ],
+                  "text": "LMP",
+                  "type": "string",
+                  "linkId": "quest-18811-aoe-90000597"
+                },
+                {
+                  "id": "quest-18811-aoe-90000613",
+                  "extension": [
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "textBox"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "90000613"
+                    }
+                  ],
+                  "text": "PREV. PAP",
+                  "type": "string",
+                  "linkId": "quest-18811-aoe-90000613"
+                },
+                {
+                  "id": "quest-18811-aoe-90000639",
+                  "extension": [
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "textBox"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "90000639"
+                    }
+                  ],
+                  "text": "PREV. BX",
+                  "type": "string",
+                  "linkId": "quest-18811-aoe-90000639"
+                }
+              ]
+            },
+            {
+              "id": "quest-11363",
+              "linkId": "quest-11363",
+              "type": "boolean",
+              "text": "Chlamydia trachomatis/Neisseria gonorrhoeae RNA, TMA (11363)"
+            },
+            {
+              "id": "quest-11363-details",
+              "linkId": "quest-11363-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "quest-11363",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "quest-11363-priority",
+                  "linkId": "quest-11363-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "quest-11363-note",
+                  "linkId": "quest-11363-note",
+                  "type": "string",
+                  "text": "Notes"
+                }
+              ]
+            },
+            {
+              "id": "quest-3542",
+              "linkId": "quest-3542",
+              "type": "boolean",
+              "text": "Tissue Pathology (3542)"
+            },
+            {
+              "id": "quest-3542-details",
+              "linkId": "quest-3542-details",
+              "type": "group",
+              "enableWhen": [
+                {
+                  "question": "quest-3542",
+                  "operator": "=",
+                  "answerBoolean": true
+                }
+              ],
+              "item": [
+                {
+                  "id": "quest-3542-priority",
+                  "linkId": "quest-3542-priority",
+                  "type": "choice",
+                  "text": "Priority",
+                  "answerOption": [
+                    {
+                      "valueString": "routine",
+                      "initialSelected": true
+                    },
+                    {
+                      "valueString": "urgent"
+                    },
+                    {
+                      "valueString": "asap"
+                    },
+                    {
+                      "valueString": "stat"
+                    }
+                  ]
+                },
+                {
+                  "id": "quest-3542-note",
+                  "linkId": "quest-3542-note",
+                  "type": "string",
+                  "text": "Notes"
+                },
+                {
+                  "id": "quest-3542-aoe-90000795",
+                  "extension": [
+                    {
+                      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "code": "textBox"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "code": [
+                    {
+                      "code": "90000795"
+                    }
+                  ],
+                  "text": "CLINICAL INFORMATION",
+                  "type": "string",
+                  "linkId": "quest-3542-aoe-90000795"
                 }
               ]
             },
@@ -1672,6 +4645,12 @@
               "valueCode": "Account"
             }
           ]
+        },
+        {
+          "id": "dryRun",
+          "linkId": "dryRun",
+          "type": "boolean",
+          "text": "Dry Run (order contents will not be sent to Health Gorilla)"
         }
       ]
     }
