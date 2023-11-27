@@ -91,9 +91,8 @@ export function parseStructureDefinition(sd: StructureDefinition): InternalTypeS
   return new StructureDefinitionParser(sd).parse();
 }
 
-// TODO{mattlong} inflateBaseSchema should return values for DATA_TYPES and DATA_TYPES_BY_URL
-const DATA_TYPES: Record<string, InternalTypeSchema> = inflateBaseSchema(baseSchema);
-const DATA_TYPES_BY_URL: Record<string, InternalTypeSchema> = {};
+const [DATA_TYPES, DATA_TYPES_BY_URL]: [Record<string, InternalTypeSchema>, Record<string, InternalTypeSchema>] =
+  inflateBaseSchema(baseSchema);
 
 export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | Bundle): void {
   const sds = Array.isArray(bundle) ? bundle : bundle.entry?.map((e) => e.resource as StructureDefinition) ?? [];

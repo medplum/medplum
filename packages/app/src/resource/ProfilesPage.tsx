@@ -1,20 +1,23 @@
 import { OperationOutcome, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Document, ResourceForm, useMedplum } from '@medplum/react';
+import {
+  Document,
+  ProfileStructureDefinition,
+  ResourceForm,
+  isProfileStructureDefinition,
+  useMedplum,
+} from '@medplum/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { showNotification } from '@mantine/notifications';
-import { deepClone, isEmpty, normalizeErrorString, normalizeOperationOutcome, validateResource } from '@medplum/core';
+import {
+  ProfileSummary,
+  deepClone,
+  normalizeErrorString,
+  normalizeOperationOutcome,
+  validateResource,
+} from '@medplum/core';
 import { Anchor, Button, Code, Group, Stack, Tabs } from '@mantine/core';
 import { cleanResource } from './utils';
-
-export type ProfileStructureDefinition = StructureDefinition & {
-  url: NonNullable<StructureDefinition['url']>;
-  name: NonNullable<StructureDefinition['name']>;
-};
-
-function isProfileStructureDefinition(profile: StructureDefinition): profile is ProfileStructureDefinition {
-  return !isEmpty(profile.url) && !isEmpty(profile.name);
-}
 
 const DO_ACTIONS = true;
 
@@ -22,8 +25,8 @@ export function ProfilesPage(): JSX.Element | null {
   const medplum = useMedplum();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const [resource, setResource] = useState<Resource | undefined>();
-  const [profiles, setProfiles] = useState<ProfileStructureDefinition[] | undefined>();
-  const [currentProfile, setCurrentProfile] = useState<ProfileStructureDefinition | undefined>();
+  const [currentProfile, setCurrentProfile] = useState<ProfileSummary>();
+  const [profileSummaries, setProfileSummaries] = useState<ProfileSummary[]>();
 
   useEffect(() => {
     medplum
@@ -40,24 +43,23 @@ export function ProfilesPage(): JSX.Element | null {
       return;
     }
     const profileUrls: string[] = resource.meta.profile;
-    const profilesQueryParmas = new URLSearchParams(profileUrls.map((u) => ['url', u]));
-    medplum
-      .searchResources('StructureDefinition', profilesQueryParmas)
+
+    const promises: Promise<ProfileSummary[]>[] = [];
+    for (const profileUrl of profileUrls) {
+      promises.push(medplum.requestProfileSummary(profileUrl));
+    }
+
+    Promise.all(promises)
       .then((results) => {
-        const profiles: ProfileStructureDefinition[] = [];
-        for (const result of results) {
-          if (isProfileStructureDefinition(result)) {
-            profiles.push(result);
-          } else {
-            console.warn('Invalid Profile SD', result);
-          }
-        }
-        setProfiles(profiles);
-        if (profiles.length > 0) {
-          setCurrentProfile(profiles[0]);
+        const profileSummaries = results.flat();
+        setProfileSummaries(profileSummaries);
+        if (profileSummaries.length > 0) {
+          setCurrentProfile(profileSummaries[0]);
         }
       })
-      .catch(console.error);
+      .catch((reason) => {
+        console.error(reason);
+      });
   }, [medplum, resource]);
 
   if (!resource) {
@@ -69,8 +71,8 @@ export function ProfilesPage(): JSX.Element | null {
       <Document>
         <h1>Profiles</h1>
         <Stack>
-          {profiles?.map((profile, idx) => (
-            <ProfileSummary
+          {profileSummaries?.map((profile, idx) => (
+            <ProfileListItem
               key={profile.url ?? idx}
               profile={profile}
               onSelect={() => {
@@ -79,7 +81,7 @@ export function ProfilesPage(): JSX.Element | null {
             />
           ))}
           {currentProfile && (
-            <ProfileDetail profile={currentProfile} resourceType={resourceType} resource={resource} id={id} />
+            <ProfileDetail profileSummary={currentProfile} resourceType={resourceType} resource={resource} id={id} />
           )}
         </Stack>
       </Document>
@@ -87,7 +89,7 @@ export function ProfilesPage(): JSX.Element | null {
   );
 }
 
-function ProfileSummary({ profile, onSelect }: { profile: StructureDefinition; onSelect: () => void }): JSX.Element {
+function ProfileListItem({ profile, onSelect }: { profile: ProfileSummary; onSelect: () => void }): JSX.Element {
   return (
     <Anchor onClick={onSelect}>
       {profile.title} - {profile.url}
@@ -98,17 +100,35 @@ function ProfileSummary({ profile, onSelect }: { profile: StructureDefinition; o
 const tabs = ['Summary', 'Differential', 'Snapshot', 'JSON'];
 
 type Props = {
-  profile: ProfileStructureDefinition;
+  profileSummary: ProfileSummary;
   resourceType: ResourceType;
   resource: Resource;
   id: string;
 };
-const ProfileDetail: React.FC<Props> = ({ profile, resourceType, id, resource }) => {
+const ProfileDetail: React.FC<Props> = ({ profileSummary: profileSummary, resourceType, id, resource }) => {
   const medplum = useMedplum();
   const navigate = useNavigate();
+  const [profileSD, setProfileSD] = useState<ProfileStructureDefinition>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const [validationOutcome, _setValidationOutcome] = useState<OperationOutcome | undefined>();
-  const schemaName = profile.name;
+
+  useEffect(() => {
+    if (!profileSummary.url) {
+      return;
+    }
+
+    const profilesQueryParmas = new URLSearchParams({ url: profileSummary.url });
+    medplum
+      .searchOne('StructureDefinition', profilesQueryParmas)
+      .then((result) => {
+        if (isProfileStructureDefinition(result)) {
+          setProfileSD(result);
+        } else {
+          console.warn('Invalid Profile SD', result);
+        }
+      })
+      .catch(console.error);
+  }, [medplum, profileSummary.url]);
 
   function handleValidate(profile: StructureDefinition | undefined): void {
     validateResource(resource, profile);
@@ -154,21 +174,21 @@ const ProfileDetail: React.FC<Props> = ({ profile, resourceType, id, resource })
           </Tabs.List>
           <Tabs.Panel value="Summary">
             <Code block>
-              {JSON.stringify(pickKeys(profile, 'resourceType', 'id', 'name', 'url', 'title'), undefined, 4)}
+              {JSON.stringify(pickKeys(profileSummary, 'resourceType', 'id', 'name', 'url', 'title'), undefined, 4)}
             </Code>
             <Stack py="md" my="md">
               <Group>
                 <Button onClick={() => handleValidate(undefined)} disabled={true}>
                   Validate Base
                 </Button>
-                <Button onClick={() => handleValidate(profile)} disabled={true}>
+                <Button onClick={() => handleValidate(profileSummary)} disabled={true}>
                   Validate Profile
                 </Button>
               </Group>
               {validationOutcome && <Code block>{JSON.stringify(validationOutcome, undefined, 4)}</Code>}
             </Stack>
             <ResourceForm
-              schemaName={schemaName}
+              profileUrl={profileSummary.url}
               defaultValue={resource}
               onSubmit={handleSubmit}
               onDelete={handleDelete}
@@ -180,7 +200,7 @@ const ProfileDetail: React.FC<Props> = ({ profile, resourceType, id, resource })
               <Code fz="lg" fw={700}>
                 profile.differential.element
               </Code>
-              <Code block>{JSON.stringify(profile.differential?.element, undefined, 4)}</Code>
+              {profileSD && <Code block>{JSON.stringify(profileSD.differential?.element, undefined, 4)}</Code>}
             </Stack>
           </Tabs.Panel>
           <Tabs.Panel value="Snapshot">
@@ -188,13 +208,11 @@ const ProfileDetail: React.FC<Props> = ({ profile, resourceType, id, resource })
               <Code fz="lg" fw={700}>
                 profile.snapshot
               </Code>
-              <Code block>{JSON.stringify(profile.snapshot, undefined, 4)}</Code>
+              {profileSD && <Code block>{JSON.stringify(profileSD.snapshot, undefined, 4)}</Code>}
             </Stack>
           </Tabs.Panel>
           <Tabs.Panel value="JSON">
-            <Stack spacing="md">
-              <Code block>{JSON.stringify(profile, undefined, 4)}</Code>
-            </Stack>
+            <Stack spacing="md">{profileSD && <Code block>{JSON.stringify(profileSD, undefined, 4)}</Code>}</Stack>
           </Tabs.Panel>
         </Stack>
       </Tabs>

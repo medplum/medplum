@@ -1,5 +1,5 @@
 import { Button, Group, Stack, TextInput } from '@mantine/core';
-import { deepClone } from '@medplum/core';
+import { deepClone, tryGetDataTypeByUrl } from '@medplum/core';
 import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { FormEvent, useEffect, useState } from 'react';
@@ -13,6 +13,7 @@ export interface ResourceFormProps {
   onSubmit: (resource: Resource) => void;
   onDelete?: (resource: Resource) => void;
   schemaName?: string;
+  profileUrl?: string;
 }
 
 export function ResourceForm(props: ResourceFormProps): JSX.Element {
@@ -20,19 +21,33 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
   const medplum = useMedplum();
   const defaultValue = useResource(props.defaultValue);
   const [schemaLoaded, setSchemaLoaded] = useState<string>();
-  const [value, setValue] = useState<Resource | undefined>();
+  const [value, setValue] = useState<Resource>();
 
   useEffect(() => {
     if (defaultValue) {
       setValue(deepClone(defaultValue));
-      const schemaName = props.schemaName ?? defaultValue?.resourceType;
-      console.debug(`requesting schema for ${schemaName}`);
-      medplum
-        .requestSchema(schemaName)
-        .then(() => setSchemaLoaded(schemaName))
-        .catch(console.log);
+      if (props.profileUrl) {
+        const profileUrl: string = props.profileUrl;
+        medplum
+          .requestProfileSchema(props.profileUrl)
+          .then(() => {
+            const profile = tryGetDataTypeByUrl(profileUrl);
+            if (profile) {
+              setSchemaLoaded(profile.name);
+            } else {
+              console.log(`Schema not found for ${profileUrl}`);
+            }
+          })
+          .catch(console.log);
+      } else {
+        const schemaName = props.schemaName ?? defaultValue?.resourceType;
+        medplum
+          .requestSchema(schemaName)
+          .then(() => setSchemaLoaded(schemaName))
+          .catch(console.log);
+      }
     }
-  }, [medplum, defaultValue, props.schemaName]);
+  }, [medplum, defaultValue, props.schemaName, props.profileUrl]);
 
   const contextValue: ResourceFormContextType = {
     includeExtensions: true,

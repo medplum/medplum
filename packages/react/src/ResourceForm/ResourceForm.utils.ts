@@ -1,4 +1,5 @@
-import { capitalize, InternalSchemaElement } from '@medplum/core';
+import { capitalize, InternalSchemaElement, isEmpty } from '@medplum/core';
+import { StructureDefinition } from '@medplum/fhirtypes';
 import React from 'react';
 
 export function setPropertyValue(
@@ -28,3 +29,12 @@ export type ResourceFormContextType = {
 export const ResourceFormContext = React.createContext<ResourceFormContextType>({
   includeExtensions: true,
 });
+
+export type ProfileStructureDefinition = StructureDefinition & {
+  url: NonNullable<StructureDefinition['url']>;
+  name: NonNullable<StructureDefinition['name']>;
+};
+
+export function isProfileStructureDefinition(profile?: StructureDefinition): profile is ProfileStructureDefinition {
+  return !!profile && !isEmpty(profile.url) && !isEmpty(profile.name);
+}

@@ -42,10 +42,16 @@ export function inflateElement(partial: Partial<InternalSchemaElement>): Interna
   };
 }
 
-export function inflateBaseSchema(base: BaseSchema): Record<string, InternalTypeSchema> {
-  const output: Record<string, InternalTypeSchema> = Object.create(null);
+export function inflateBaseSchema(
+  base: BaseSchema
+): [Record<string, InternalTypeSchema>, Record<string, InternalTypeSchema>] {
+  const byName: Record<string, InternalTypeSchema> = Object.create(null);
+
+  // byUrl is targeted at profiles and extensions and is knowingly left empty
+  // since the base schema does not include any profiles/extensions
+  const byUrl: Record<string, InternalTypeSchema> = Object.create(null);
   for (const [key, schema] of Object.entries(base)) {
-    output[key] = {
+    byName[key] = {
       name: key,
       elements: Object.fromEntries(
         Object.entries(schema.elements).map(([property, partial]) => [property, inflateElement(partial)])
@@ -54,5 +60,5 @@ export function inflateBaseSchema(base: BaseSchema): Record<string, InternalType
       innerTypes: [],
     };
   }
-  return output;
+  return [byName, byUrl];
 }
