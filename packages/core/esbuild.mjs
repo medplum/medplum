@@ -6,7 +6,13 @@ import esbuild from 'esbuild';
 import { writeFileSync } from 'fs';
 import packageJson from './package.json' assert { type: 'json' };
 
-const gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+let gitHash;
+try {
+  gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+} catch (error) {
+  gitHash = 'unknown'; // Default value when not in a git repository
+}
+
 const medplumVersion = packageJson.version + '-' + gitHash;
 
 const options = {
