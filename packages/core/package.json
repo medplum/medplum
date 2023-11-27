@@ -1,6 +1,6 @@
 {
   "name": "@medplum/core",
-  "version": "2.1.17",
+  "version": "2.1.20",
   "description": "Medplum TS/JS Library",
   "keywords": [
     "medplum",
@@ -31,9 +31,16 @@
   "sideEffects": false,
   "type": "module",
   "exports": {
-    "require": "./dist/cjs/index.cjs",
-    "import": "./dist/esm/index.mjs"
+    "import": {
+      "types": "./dist/esm/index.d.ts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.ts",
+      "default": "./dist/cjs/index.cjs"
+    }
   },
+  "types": "dist/esm/index.d.ts",
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
   "files": [
@@ -42,7 +49,7 @@
   ],
   "scripts": {
     "api-documenter": "api-documenter markdown --input-folder ./dist/api/ --output-folder ./dist/docs/",
-    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.cts && cp dist/types.d.ts dist/esm/index.d.mts",
+    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor && npm run api-documenter",
     "clean": "rimraf dist",
     "test": "jest"

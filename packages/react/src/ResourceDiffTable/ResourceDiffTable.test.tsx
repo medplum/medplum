@@ -1,7 +1,7 @@
 import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { act, render, screen, waitFor } from '@testing-library/react';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { ResourceDiffTable, ResourceDiffTableProps } from './ResourceDiffTable';
 
 const medplum = new MockClient();
@@ -40,7 +40,7 @@ describe('ResourceDiffTable', () => {
       setup({ original, revised });
     });
 
-    await waitFor(() => screen.getByText('Property'));
+    await waitFor(() => screen.getByText('Replace active'));
 
     const removed = screen.getByText('false');
     expect(removed).toBeDefined();

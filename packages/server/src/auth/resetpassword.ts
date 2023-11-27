@@ -25,15 +25,35 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
+  // Define filters for searching users
+  const filters = [
+    {
+      code: 'email',
+      operator: Operator.EXACT,
+      value: email, // Set the email value for exact matching
+    },
+  ];
+
+  // If a specific project is associated with the request, add a project filter
+  if (req.body.projectId) {
+    filters.push({
+      code: 'project',
+      operator: Operator.EQUALS,
+      value: 'Project/' + req.body.projectId, // Set the project value for equality matching
+    });
+  } else {
+    // If project id not found in the request body then project should not present in the user
+    filters.push({
+      code: 'project',
+      operator: Operator.MISSING,
+      value: 'true',
+    });
+  }
+
+  // Search for a user based on the defined filters
   const user = await systemRepo.searchOne<User>({
     resourceType: 'User',
-    filters: [
-      {
-        code: 'email',
-        operator: Operator.EXACT,
-        value: email,
-      },
-    ],
+    filters,
   });
 
   if (!user) {

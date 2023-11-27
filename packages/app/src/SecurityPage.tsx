@@ -39,7 +39,7 @@ export function SecurityPage(): JSX.Element | null {
     medplum
       .get('auth/me')
       .then(setDetails)
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum]);
 
   function revokeLogin(loginId: string): void {
@@ -48,7 +48,7 @@ export function SecurityPage(): JSX.Element | null {
       .then(() => medplum.get('auth/me', { cache: 'no-cache' }))
       .then(setDetails)
       .then(() => showNotification({ color: 'green', message: 'Login revoked' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   if (!details) {

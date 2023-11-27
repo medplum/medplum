@@ -63,7 +63,7 @@ export function ResourcePage(): JSX.Element | null {
     if (restoredResource) {
       onSubmit(restoredResource);
     } else {
-      showNotification({ color: 'red', message: 'No history to restore' });
+      showNotification({ color: 'red', message: 'No history to restore', autoClose: false });
     }
   }
 
@@ -75,7 +75,7 @@ export function ResourcePage(): JSX.Element | null {
         showNotification({ color: 'green', message: 'Success' });
       })
       .catch((err) => {
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       });
   }
 

@@ -19,7 +19,7 @@ export function DeletePage(): JSX.Element {
           medplum
             .deleteResource(resourceType, id)
             .then(() => navigate(`/${resourceType}`))
-            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
         }}
       >
         Delete

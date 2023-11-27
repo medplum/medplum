@@ -1,6 +1,6 @@
 {
   "name": "@medplum/react-hooks",
-  "version": "2.1.17",
+  "version": "2.1.20",
   "description": "Medplum React Hooks Library",
   "keywords": [
     "medplum",
@@ -34,17 +34,24 @@
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
   "exports": {
-    "require": "./dist/cjs/index.cjs",
-    "import": "./dist/esm/index.mjs"
+    "import": {
+      "types": "./dist/esm/index.d.ts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.ts",
+      "default": "./dist/cjs/index.cjs"
+    }
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
+  "types": "dist/cjs/index.d.ts",
   "files": [
     "dist/cjs",
     "dist/esm"
   ],
   "scripts": {
-    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.cts && cp dist/types.d.ts dist/esm/index.d.mts",
+    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "test": "jest"

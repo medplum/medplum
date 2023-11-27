@@ -1,8 +1,8 @@
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
-import fs from 'fs';
+import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
+import fs from 'fs';
 
 import { getConfig, loadConfig } from './config';
 

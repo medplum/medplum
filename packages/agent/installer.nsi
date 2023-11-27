@@ -134,7 +134,7 @@ Function UpgradeApp
     Sleep 3000
 
     # Copy the new files to the installation directory
-    File dist\medplum-agent-win-x64.exe
+    File dist\medplum-agent-win64.exe
     File README.md
 
     # Start the service
@@ -155,14 +155,14 @@ Function InstallApp
     DetailPrint "Agent ID: $agentId"
 
     # Copy the service files to the root directory
-    File ..\..\node_modules\node-shawl\bin\shawl-v1.3.0-legal.txt
-    File ..\..\node_modules\node-shawl\bin\shawl-v1.3.0-win64.exe
-    File dist\medplum-agent-win-x64.exe
+    File dist\shawl-v1.3.0-legal.txt
+    File dist\shawl-v1.3.0-win64.exe
+    File dist\medplum-agent-win64.exe
     File README.md
 
     # Create the service
     DetailPrint "Creating service..."
-    ExecWait "shawl-v1.3.0-win64.exe add --name $\"${SERVICE_NAME}$\" -- $\"$INSTDIR\medplum-agent-win-x64.exe$\" $\"$baseUrl$\" $\"$clientId$\" $\"$clientSecret$\" $\"$agentId$\"" $1
+    ExecWait "shawl-v1.3.0-win64.exe add --name $\"${SERVICE_NAME}$\" -- $\"$INSTDIR\medplum-agent-win64.exe$\" $\"$baseUrl$\" $\"$clientId$\" $\"$clientSecret$\" $\"$agentId$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service display name

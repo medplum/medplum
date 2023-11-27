@@ -35,6 +35,7 @@ const options = {
     'react',
     'react-dom',
     'react-router-dom',
+    'rfc6902',
   ],
 };
 

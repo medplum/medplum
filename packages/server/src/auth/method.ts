@@ -1,10 +1,11 @@
-import { Operator } from '@medplum/core';
+import { Operator, OperationOutcomeError, badRequest } from '@medplum/core';
 import { DomainConfiguration } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { makeValidationMiddleware } from '../util/validator';
+import { globalLogger } from '../logger';
 
 /*
  * The method handler is used to determine available login methods.
@@ -48,12 +49,17 @@ export async function isExternalAuth(email: string): Promise<{ domain: string; a
     return undefined;
   }
 
-  const url = new URL(idp.authorizeUrl as string);
-  url.searchParams.set('client_id', idp.clientId as string);
-  url.searchParams.set('redirect_uri', getConfig().baseUrl + 'auth/external');
-  url.searchParams.set('response_type', 'code');
-  url.searchParams.set('scope', 'openid profile email');
-  return { domain, authorizeUrl: url.toString() };
+  try {
+    const url = new URL(idp.authorizeUrl as string);
+    url.searchParams.set('client_id', idp.clientId as string);
+    url.searchParams.set('redirect_uri', getConfig().baseUrl + 'auth/external');
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('scope', 'openid profile email');
+    return { domain, authorizeUrl: url.toString() };
+  } catch (error: any) {
+    globalLogger.error(`Error constructing URL for domain ${domain}:`);
+    throw new OperationOutcomeError(badRequest('Failed to construct URL for the domain'));
+  }
 }
 
 /**
