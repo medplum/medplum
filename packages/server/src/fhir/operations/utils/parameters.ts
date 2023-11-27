@@ -39,7 +39,7 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
 
   const inputParameters = input.resourceType === 'Parameters' ? (input as Parameters) : undefined;
   if (inputParameters) {
-    validateResource(inputParameters)
+    validateResource(inputParameters);
   }
   for (const param of operation.parameter.filter((p) => p.use === 'in')) {
     const paramName = param.name as string;
