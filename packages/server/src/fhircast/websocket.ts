@@ -1,25 +1,32 @@
+import { createDeferredPromise, generateId } from '@medplum/core';
 import { AsyncLocalStorage } from 'async_hooks';
 import { IncomingMessage } from 'http';
 import ws from 'ws';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
-import { HeartbeatStore } from './utils';
 
+export const DEFAULT_HEARTBEAT_MS = 10 * 1000;
+
+export const heartbeatTopics = new Set<string>();
 const cleanupPromises = [] as Promise<void>[];
-const heartbeatStore = new HeartbeatStore();
+let heartbeatTimer: NodeJS.Timeout | undefined;
 
 /**
- * Cleans up heartbeat timers for FHIRcast WebSocket connections.
+ * Cleans up heartbeat timers for `FHIRcast` WebSocket connections.
  */
-export function cleanupHeartbeatTimers(): void {
-  heartbeatStore.stopAll();
+export function cleanupHeartbeat(): void {
+  heartbeatTopics.clear();
+  if (heartbeatTimer) {
+    clearTimeout(heartbeatTimer);
+    heartbeatTimer = undefined;
+  }
 }
 
 /**
- *
+ * Cleans up WebSockets for `FHIRcast`.
  * @returns Promise that resolves when all registered WebSocket cleanup Promises have resolved or rejected.
  */
-export async function cleanupWebSockets(): Promise<unknown> {
+export async function waitForWebSocketsCleanup(): Promise<unknown> {
   return Promise.allSettled(cleanupPromises);
 }
 
@@ -38,14 +45,30 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
   const redis = getRedis();
   const redisSubscriber = redis.duplicate();
+  const deferredCleanupPromise = createDeferredPromise();
+  cleanupPromises.push(deferredCleanupPromise.promise);
 
   // Subscribe to the topic
   await redisSubscriber.subscribe(topic);
-
-  if (!heartbeatStore.has(topic)) {
-    const [, numOfSubscribers] = (await redis.pubsub('NUMSUB', topic)) as [string, number];
-    if (numOfSubscribers === 1) {
-      heartbeatStore.start(topic, 10000);
+  if (!heartbeatTopics.has(topic)) {
+    heartbeatTopics.add(topic);
+    if (!heartbeatTimer) {
+      const callback = (): void => {
+        const heartbeatPayload = {
+          timestamp: new Date().toISOString(),
+          id: generateId(),
+          event: {
+            context: [{ key: 'period', decimal: `${Math.ceil(DEFAULT_HEARTBEAT_MS / 1000)}` }],
+            'hub.topic': topic,
+            'hub.event': 'heartbeat',
+          },
+        };
+        for (const topic of heartbeatTopics.values()) {
+          getRedis().publish(topic, JSON.stringify(heartbeatPayload)).catch(console.error);
+        }
+        heartbeatTimer = setTimeout(callback, DEFAULT_HEARTBEAT_MS);
+      };
+      heartbeatTimer = setTimeout(callback, DEFAULT_HEARTBEAT_MS);
     }
   }
 
@@ -63,21 +86,31 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   );
 
   socket.on('close', () => {
-    const promise = redisSubscriber
+    const { resolve, reject } = deferredCleanupPromise;
+    redisSubscriber
       .unsubscribe(topic)
       .then(() => {
         (redis.pubsub('NUMSUB', topic) as Promise<[string, number]>)
           .then(([, numOfSubscribers]) => {
-            if (numOfSubscribers === 0 && heartbeatStore.has(topic)) {
-              heartbeatStore.stop(topic);
+            if (numOfSubscribers === 0 && heartbeatTopics.has(topic)) {
+              heartbeatTopics.delete(topic);
+            }
+            if (!heartbeatTopics.size && heartbeatTimer) {
+              clearTimeout(heartbeatTimer);
+              heartbeatTimer = undefined;
             }
             redisSubscriber.disconnect();
+            resolve();
           })
-          .catch(console.error);
+          .catch((err) => {
+            reject(err);
+            console.error(err);
+          });
       })
-      .catch(console.error);
-
-    cleanupPromises.push(promise);
+      .catch((err) => {
+        reject(err);
+        console.error(err);
+      });
   });
 
   // Send initial connection verification

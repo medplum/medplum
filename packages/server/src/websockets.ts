@@ -5,7 +5,7 @@ import ws from 'ws';
 import { handleAgentConnection } from './agent/websockets';
 import { getConfig } from './config';
 import { RequestContext, requestContextStore } from './context';
-import { cleanupWebSockets, handleFhircastConnection } from './fhircast/websocket';
+import { handleFhircastConnection, waitForWebSocketsCleanup } from './fhircast/websocket';
 import { globalLogger } from './logger';
 import { getRedis } from './redis';
 
@@ -85,7 +85,7 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
 }
 
 export async function closeWebSockets(): Promise<void> {
-  await cleanupWebSockets();
+  await waitForWebSocketsCleanup();
   if (wsServer) {
     wsServer.close();
     wsServer = undefined;

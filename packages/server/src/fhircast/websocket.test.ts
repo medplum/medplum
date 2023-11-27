@@ -6,7 +6,7 @@ import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { MedplumServerConfig, loadTestConfig } from '../config';
 import { initTestAuth } from '../test.setup';
-import { cleanupHeartbeatTimers } from './websocket';
+import { cleanupHeartbeat, heartbeatTopics, waitForWebSocketsCleanup } from './websocket';
 
 const app = express();
 let config: MedplumServerConfig;
@@ -76,13 +76,14 @@ describe('FHIRcast WebSocket', () => {
   });
 
   describe('Heartbeat', () => {
+    let setTimeoutSpy: jest.SpyInstance;
     beforeAll(() => {
       jest.useFakeTimers();
-      jest.spyOn(global, 'setTimeout');
+      setTimeoutSpy = jest.spyOn(global, 'setTimeout');
     });
 
     afterEach(() => {
-      cleanupHeartbeatTimers();
+      cleanupHeartbeat();
     });
 
     afterAll(() => {
@@ -106,6 +107,31 @@ describe('FHIRcast WebSocket', () => {
         .sendJson({ ok: true })
         .close()
         .expectClosed();
+    });
+
+    test('Check that timer are cleaned up after no topics active', async () => {
+      const topic = randomUUID();
+      await request(server)
+        .ws('/ws/fhircast/' + topic)
+        .expectJson((obj) => {
+          // Connection verification message
+          expect(obj['hub.topic']).toBe(topic);
+        })
+        .exec(() => jest.advanceTimersByTime(10001))
+        .expectJson((obj) => {
+          // Event message
+          expect(obj.event['hub.topic']).toBe(topic);
+          expect(obj.event['hub.event']).toBe('heartbeat');
+        })
+        .sendJson({ ok: true })
+        .close()
+        .expectClosed();
+
+      await waitForWebSocketsCleanup();
+      setTimeoutSpy.mockReset();
+      jest.advanceTimersByTime(10001);
+      expect(heartbeatTopics.size).toBe(0);
+      expect(setTimeoutSpy).not.toHaveBeenCalled();
     });
   });
 });
