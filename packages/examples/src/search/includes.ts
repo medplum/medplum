@@ -4,8 +4,14 @@ import { Resource } from '@medplum/fhirtypes';
 const medplum = new MedplumClient();
 
 /*
+  // start-block searchIncludesCli
+  medplum get 'Observation?code=78012-2&_include=Observation:patient&_revinclude=Provenance:target'
+  // end-block searchIncludesCli
+
   // start-block searchIncludesCurl
-  curl https://api.medplum.com/fhir/R4/Observation?code=78012-2&_include=Observation:patient&_revinclude=Provenance:target
+  curl 'https://api.medplum.com/fhir/R4/Observation?code=78012-2&_include=Observation:patient&_revinclude=Provenance:target' \
+    -H 'authorization: Bearer $ACCESS_TOKEN' \
+    -H 'content-type: application/fhir+json' \
   // end-block searchIncludesCurl
 */
 
@@ -106,8 +112,14 @@ let response: Resource[] =
 // end-block includesResponse
 
 /*
+  // start-block searchIncludeIterateCli
+  medplum get 'Observation?code=78012-2&_include=Observation:patient&_include:iterate=Patient:general-practitioner'
+  // end-block searchIncludeIterateCli
+
   // start-block searchIncludeIterateCurl
-  curl https://api.medplum.com/fhir/R4/Observation?code=78012-2&_include=Observation:patient&_include:iterate=Patient:general-practitioner
+  curl 'https://api.medplum.com/fhir/R4/Observation?code=78012-2&_include=Observation:patient&_include:iterate=Patient:general-practitioner' \
+    -H 'authorization: Bearer $ACCESS_TOKEN' \
+    -H 'content-type: application/fhir+json' \
   // end-block searchIncludeIterateCurl
 */
 
@@ -193,5 +205,84 @@ response =
     },
   ];
 // end-block iterateResponse
+
+// start-block relatedPersonTs
+await medplum.searchResources('Patient', {
+  _id: 'lisa-simpson',
+  _revinclude: 'RelatedPerson:patient',
+});
+// end-block relatedPersonTs
+
+/*
+// start-block relatedPersonCli
+medplum get 'Patient?_id=lisa-simpson&_revinclude=RelatedPerson:patient'
+// end-block relatedPersonCli
+
+// start-block relatedPersonCurl
+curl 'https://api.medplum.com/fhir/R4/Patient?_id=lisa-simpson&_revinclude=RelatedPerson:patient' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+// end-block relatedPersonCurl
+*/
+
+// start-block relatedPersonPatientTs
+await medplum.searchResources('Patient', {
+  _id: 'lisa-simpson',
+  _revinclude: 'RelatedPerson:patient',
+  '_revinclude:iterate': 'Patient:link',
+});
+// end-block relatedPersonPatientTs
+
+/*
+// start-block relatedPersonPatientCli
+medplum get 'Patient?_id=lisa-simpson&_revinclude=RelatedPerson:patient&_revinclude:iterate=Patient:link'
+// end-block relatedPersonPatientCli
+
+// start-block relatedPersonPatientCurl
+curl 'https://api.medplum.com/fhir/R4/Patient?_id=lisa-simpson&_revinclude=RelatedPerson:patient&_revinclude:iterate=Patient:link' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+// end-block relatedPersonPatientCurl
+*/
+
+// start-block locationPractitionerRoleTs
+await medplum.searchResources('Location', {
+  _id: 'example-location',
+  _revinclude: 'PractitionerRole:location',
+  '_include:iterate': 'PractitionerRole:practitioner',
+});
+// end-block locationPractitionerRoleTs
+
+/*
+// start-block locationPractitionerRoleCli
+medplum get ‘Location?_id=example-location&_revinclude=PractitionerRole:location&_include:iterate=PractitionerRole:practitioner’
+// end-block locationPractitionerRoleCli
+
+// start-block locationPractitionerRoleCurl
+curl 'https://api.medplum.com/fhir/R4/Location?_id=example-location&_revinclude=PractitionerRole:location&_include:iterate=PractitionerRole:practitioner' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+// end-block locationPractitionerRoleCurl
+*/
+
+// start-block careTeamTs
+await medplum.searchResources('Patient', {
+  _id: 'homer-simpson',
+  _revinclude: 'CareTeam:patient',
+  '_include:iterate': 'CareTeam:participant',
+});
+// end-block careTeamTs
+
+/*
+// start-block careTeamCli
+medplum get 'Patient?_id=homer-simpson&_revinclude=CareTeam:patient&_include:iterate=CareTeam:participant'
+// end-block careTeamCli
+
+// start-block careTeamCurl
+curl 'https://api.medplum.com/fhir/R4/Patient?_id=homer-simpson&_revinclude=CareTeam:patient&_include:iterate=CareTeam:participant' \
+	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+// end-block careTeamCurl
+*/
 
 console.log(response); // Needed to make the example compile, so `response` isn't unused
