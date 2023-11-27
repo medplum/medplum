@@ -63,6 +63,10 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
   </MedplumCodeBlock>
 </details>
 
+:::danger Batch vs Transaction
+Medplum does not currently distinguish between `'batch'` and `'transaction'` type [`Bundle`](/docs/api/fhir/resources/bundle) resources and does not provide atomic transactions. This is currently being worked on, and you can track progress on the issue [here](https://github.com/medplum/medplum/issues/1369).
+:::
+
 ## Creating Internal References
 
 A common workflow when using batch requests is creating a resource that references another resource that is being created in the same batch. For example, you may create a `Patient` resource that is the `subject` of an `Encounter` created in the same batch request.
