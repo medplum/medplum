@@ -6,6 +6,7 @@ import {
   isEmpty,
   isResource,
   serverError,
+  validateResource,
 } from '@medplum/core';
 import {
   OperationDefinition,
@@ -37,6 +38,9 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
   const input = req.body;
 
   const inputParameters = input.resourceType === 'Parameters' ? (input as Parameters) : undefined;
+  if (inputParameters) {
+    validateResource(inputParameters)
+  }
   for (const param of operation.parameter.filter((p) => p.use === 'in')) {
     const paramName = param.name as string;
     const min = param.min ?? 0;
@@ -132,7 +136,12 @@ export async function sendOutputParameters(
     );
   }
 
-  res.status(getStatus(outcome)).json(response);
+  try {
+    validateResource(response);
+    res.status(getStatus(outcome)).json(response);
+  } catch (err: any) {
+    sendOutcome(res, serverError(err));
+  }
 }
 
 function makeParameter(param: OperationDefinitionParameter, value: any): ParametersParameter {

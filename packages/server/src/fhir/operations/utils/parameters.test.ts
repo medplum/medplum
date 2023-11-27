@@ -9,8 +9,9 @@ import {
 } from '@medplum/fhirtypes';
 import { parseInputParameters, parseParameters, sendOutputParameters } from './parameters';
 import { Request, Response } from 'express';
-import { allOk, created } from '@medplum/core';
+import { allOk, created, indexStructureDefinitionBundle } from '@medplum/core';
 import { withTestContext } from '../../../test.setup';
+import { readJson } from '@medplum/definitions';
 
 describe('FHIR Parameters parsing', () => {
   test('Read Parameters', () => {
@@ -58,6 +59,10 @@ const opDef: OperationDefinition = {
 };
 
 describe('Operation Input Parameters parsing', () => {
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json'));
+  });
+
   test.each<[ParametersParameter[], Record<string, any>]>([
     [[{ name: 'requiredIn', valueBoolean: true }], { requiredIn: true, singleIn: undefined, multiIn: [] }],
     [
@@ -153,6 +158,23 @@ describe('Operation Input Parameters parsing', () => {
     [{ requiredIn: false, singleIn: ['a', 'b'] }, 'Expected 0..1 value for input parameter singleIn, but 2 provided'],
   ])('Throws error on incorrect argument counts: %j', (body, errorMsg) => {
     const req: Request = { body } as unknown as Request;
+    expect(() => parseInputParameters(opDef, req)).toThrow(new Error(errorMsg));
+  });
+
+  test.each<[Parameters, string]>([
+    [
+      {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'requiredIn', valueBoolean: 'Hi!' }],
+      } as unknown as Parameters,
+      'Invalid JSON type: expected boolean, but got string (Parameters.parameter.value[x])',
+    ],
+    [
+      { resourceType: 'Parameters', parameter: [{ valueQuantity: { value: 5 } }] } as unknown as Parameters,
+      'Missing required property (Parameters.parameter.name)',
+    ],
+  ])('Throws error on invalid Parameters: %j', (parameters, errorMsg) => {
+    const req: Request = { body: parameters } as unknown as Request;
     expect(() => parseInputParameters(opDef, req)).toThrow(new Error(errorMsg));
   });
 });
@@ -298,4 +320,24 @@ describe('Send Operation output Parameters', () => {
       parameter: [{ name: 'singleOut', valueQuantity: { value: 20.2, unit: 'kg/m^2' } }],
     });
   });
+
+  test('Returns error on invalid output', () =>
+    withTestContext(async () => {
+      await sendOutputParameters(opDef, res, allOk, { singleOut: { reference: 'Observation/foo' } });
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith<[OperationOutcome]>(
+        expect.objectContaining({
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              severity: 'error',
+              code: 'exception',
+              details: { text: 'Internal server error' },
+              diagnostics: 'Error: Invalid additional property "reference" (Parameters.parameter.value[x].reference)',
+            },
+          ],
+        })
+      );
+    }));
 });
