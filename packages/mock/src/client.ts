@@ -260,6 +260,10 @@ export class MockFetchClient {
   }
 
   private async mockAdminHandler(_method: string, path: string): Promise<any> {
+    if (path === 'admin/projects/setpassword' && _method.toUpperCase() === 'POST') {
+      return { ok: true };
+    }
+
     const projectMatch = /^admin\/projects\/([\w-]+)$/.exec(path);
     if (projectMatch) {
       return {
