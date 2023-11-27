@@ -156,14 +156,14 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
         continue;
       }
 
-      const sliceType = slice.type[0];
       if (slice.type.length > 1) {
-        //TODO{mattlong} What to do if a slice has more than one type?
-        console.log('WARN slice has more than one type', slice.type);
+        console.log('slice has more than one type', slice);
       }
 
+      const sliceType = slice.type[0];
+
       if (sliceType.code !== propertyTypeCode) {
-        console.log('WARN slice.type[0].code did not match property.type[0].code', sliceType.code, propertyTypeCode);
+        console.warn('WARN slice.type[0].code did not match property.type[0].code', slice, propertyTypeCode);
       }
 
       let profileUrl: string | undefined;

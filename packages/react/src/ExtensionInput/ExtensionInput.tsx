@@ -23,10 +23,10 @@ export function ExtensionInput(props: ExtensionInputNewProps): JSX.Element | nul
     if (!propertyType.profile) {
       console.debug('Extension.type[0].profile is missing', propertyType);
       return undefined;
-    } else if (propertyType.profile.length > 1) {
-      // TODO{mattlong} what to do if profile has more than one entry?
-      console.log('PANIC Extension.type[0].profile has more than one item', propertyType);
-      return undefined;
+    }
+
+    if (propertyType.profile.length > 1) {
+      console.log('Extension.type[0].profile has more than one item', propertyType);
     }
 
     return propertyType.profile[0] satisfies string;
@@ -39,7 +39,6 @@ export function ExtensionInput(props: ExtensionInputNewProps): JSX.Element | nul
         .requestProfileSchema(profileUrl)
         .then(() => {
           const profile = tryGetDataTypeByUrl(profileUrl);
-          console.debug(`schema for ${profileUrl}`, profile);
           setLoading(false);
           setTypeSchema(profile);
         })
@@ -52,7 +51,7 @@ export function ExtensionInput(props: ExtensionInputNewProps): JSX.Element | nul
 
   function onChange(newValue: any): void {
     if (props.onChange) {
-      console.log('Extension', JSON.stringify(newValue));
+      console.log('Extension', newValue);
       props.onChange(newValue);
     }
   }
@@ -80,7 +79,7 @@ export function ExtensionInput(props: ExtensionInputNewProps): JSX.Element | nul
     If present, the value[x] element SHALL have content (value attribute or other elements)
   */
 
-  // TODO{mattlong} it seems like behavior should alter based on extensionHasValue or not. It likely
+  // It seems like the behavior of ExtensionInput should differ based on extensionHasValue. It likely
   // isn't strictly necessary to do so given the recursive use of BackboneElementInput
 
   // const elements: Record<string, InternalSchemaElement> = {};

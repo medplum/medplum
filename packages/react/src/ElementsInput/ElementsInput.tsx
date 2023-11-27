@@ -80,7 +80,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
         const [beginning, _last] = splitRight(key, '.');
         if (seenKeys.has(beginning)) {
           // TODO {mattlong} walkedElements entries need to be used as nested elements
-          // are rendered to overwrite their (default) InternalSchemaElement
+          // are rendered to overwrite their default InternalSchemaElement properties like min, max, etc.
           return null;
         }
 
