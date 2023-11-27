@@ -30,7 +30,6 @@ export function ProjectAdminConfigPage(): JSX.Element {
         <Stack>
           <TextInput name="email" label="Email" required />
           <PasswordInput name="password" label="Password" required />
-          <TextInput name="projectId" label="Project ID" />
           <Button type="submit">Force Set Password</Button>
         </Stack>
       </Form>

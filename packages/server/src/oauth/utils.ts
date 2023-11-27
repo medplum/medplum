@@ -662,7 +662,7 @@ export async function getUserByEmailWithoutProject(email: string): Promise<User 
  * @returns True if the user is associated with the project; otherwise, false.
  */
 export async function isUserInProject(userId: string, projectId: string): Promise<boolean> {
-  const bundle = await systemRepo.search({
+  const bundle = await systemRepo.searchOne({
     resourceType: 'ProjectMembership',
     filters: [
       {
@@ -678,7 +678,7 @@ export async function isUserInProject(userId: string, projectId: string): Promis
     ],
   });
 
-  return bundle.entry && bundle.entry.length > 0 ? true : false;
+  return bundle !== undefined;
 }
 
 /**
