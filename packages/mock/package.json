@@ -58,7 +58,7 @@
     "@medplum/fhir-router": "*",
     "@medplum/fhirtypes": "*",
     "dataloader": "2.2.2",
-    "rfc6902": "5.0.1"
+    "rfc6902": "5.1.0"
   },
   "devDependencies": {
     "@types/pdfmake": "0.2.8"

@@ -33,7 +33,7 @@
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
     "@types/node-windows": "0.1.6",
-    "@types/ws": "8.5.9",
+    "@types/ws": "8.5.10",
     "mock-socket": "9.3.1",
     "pkg": "5.8.1"
   },
