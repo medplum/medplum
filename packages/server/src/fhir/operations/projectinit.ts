@@ -80,10 +80,6 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
   const login = ctx.login;
 
   const params = parseInputParameters<ProjectInitParameters>(projectInitOperation, req);
-  if (!params.name) {
-    sendOutcome(res, badRequest('Project name is required', 'Parameters.parameter'));
-    return;
-  }
 
   let ownerRef: Reference;
   if (params.owner) {
