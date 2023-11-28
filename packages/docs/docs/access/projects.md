@@ -33,6 +33,13 @@ While they _do_ cross the [`Project`](/docs/api/fhir/medplum/project) isolation 
 
 The main exception to this isolation model is the "Super Admin" project. This is a special project that provides a global view over all the resources on the Medplum server. See our [SuperAdmin Guide](/docs/self-hosting/super-admin-guide) for more information.
 
+The SuperAdmin has the following privileges:
+
+- Access to protected resources.
+- Ability to overwrite the `id` of a resource, which is normally server generated.
+- Ability to overwrite fields in the `meta` element of resources such as `author`, `lastUpdated`, etc.
+- Bypasses schema type validation (e.g. write numbers to a string field). This can be turned off by enabling strict mode in your SuperAdmin project.
+
 :::warning
 
 Logging into the Super Admin project allows for potential dangerous operations and is only intended for server administrators
