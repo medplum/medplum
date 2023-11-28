@@ -1,6 +1,7 @@
 import { createDeferredPromise, generateId } from '@medplum/core';
 import { AsyncLocalStorage } from 'async_hooks';
 import { IncomingMessage } from 'http';
+import { Redis } from 'ioredis';
 import ws from 'ws';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
@@ -28,6 +29,35 @@ export function cleanupHeartbeat(): void {
  */
 export async function waitForWebSocketsCleanup(): Promise<unknown> {
   return Promise.allSettled(cleanupPromises);
+}
+
+/**
+ * Handles the cleanup on close of a WebSocket connection associated with a Redis client.
+ *
+ * This handles cleaning up a topic from the `heartbeatTopics` map if there are no more topics subscribed to it.
+ *
+ * If after a topic is removed, there are no more topics in the map, the `heartbeatTimer` is also stopped.
+ *
+ * @param redisSubscriber - The `Redis` client associated with the closing WebSocket.
+ * @param topic - The topic to delete for the currently subscribed client.
+ * @param numOfSubscribers - The total number of subscribers as reported by Redis.
+ * @param done - The callback to call when done.
+ */
+function cleanupRedisSubscriber(
+  redisSubscriber: Redis,
+  topic: string,
+  numOfSubscribers: number,
+  done: () => void
+): void {
+  if (numOfSubscribers === 0 && heartbeatTopics.has(topic)) {
+    heartbeatTopics.delete(topic);
+  }
+  if (!heartbeatTopics.size && heartbeatTimer) {
+    clearTimeout(heartbeatTimer);
+    heartbeatTimer = undefined;
+  }
+  redisSubscriber.disconnect();
+  done();
 }
 
 /**
@@ -91,17 +121,7 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
       .unsubscribe(topic)
       .then(() => {
         (redis.pubsub('NUMSUB', topic) as Promise<[string, number]>)
-          .then(([, numOfSubscribers]) => {
-            if (numOfSubscribers === 0 && heartbeatTopics.has(topic)) {
-              heartbeatTopics.delete(topic);
-            }
-            if (!heartbeatTopics.size && heartbeatTimer) {
-              clearTimeout(heartbeatTimer);
-              heartbeatTimer = undefined;
-            }
-            redisSubscriber.disconnect();
-            resolve();
-          })
+          .then(([, numOfSubscribers]) => cleanupRedisSubscriber(redisSubscriber, topic, numOfSubscribers, resolve))
           .catch((err) => {
             reject(err);
             console.error(err);
