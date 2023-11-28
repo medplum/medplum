@@ -1402,7 +1402,12 @@ describe('Client', () => {
 
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const promise = client.createBinary(Readable.from('Hello World'), undefined, ContentType.TEXT, onProgress);
+    const promise = client.createBinary(
+      Readable.toWeb(Readable.from('Hello World')) as ReadableStream,
+      undefined,
+      ContentType.TEXT,
+      onProgress
+    );
     expect(xhrMock.open).toBeCalled();
     expect(xhrMock.setRequestHeader).toBeCalled();
 

@@ -1,7 +1,6 @@
 // PKCE auth based on:
 // https://aws.amazon.com/blogs/security/how-to-add-authentication-single-page-web-application-with-amazon-cognito-oauth2-implementation/
 
-import { Readable, Writable } from 'node:stream';
 import {
   AccessPolicy,
   Agent,
@@ -435,7 +434,7 @@ export interface PatchOperation {
 /**
  * Source for a FHIR Binary.
  */
-export type BinarySource = string | File | Blob | Uint8Array | Readable;
+export type BinarySource = string | File | Blob | Uint8Array | ReadableStream;
 
 /**
  * Email address definition.
@@ -1886,14 +1885,15 @@ export class MedplumClient extends EventTarget {
       xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, max-age=0');
       xhr.setRequestHeader('Content-Type', contentType);
       xhr.setRequestHeader('X-Medplum', 'extended');
-      if (data instanceof Readable) {
-        const writable = new Writable({
+      if (data instanceof ReadableStream) {
+        const writableStream = new WritableStream({
           write(chunk) {
             xhr.send(chunk);
           },
         });
 
-        data.pipe(writable);
+        // eslint-disable-next-line no-void
+        void data.pipeTo(writableStream);
       } else {
         xhr.send(data);
       }
