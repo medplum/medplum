@@ -34,7 +34,7 @@ export async function waitForWebSocketsCleanup(): Promise<unknown> {
 /**
  * Handles the cleanup on close of a WebSocket connection associated with a Redis client.
  *
- * This handles cleaning up a topic from the `heartbeatTopics` map if there are no more topics subscribed to it.
+ * This handles cleaning up a topic from the `heartbeatTopics` map if there are no more clients subscribed to it.
  *
  * If after a topic is removed, there are no more topics in the map, the `heartbeatTimer` is also stopped.
  *
