@@ -40,9 +40,9 @@
       "default": "./dist/cjs/index.cjs"
     }
   },
-  "types": "dist/esm/index.d.ts",
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
+  "types": "dist/esm/index.d.ts",
   "files": [
     "dist/cjs",
     "dist/esm"

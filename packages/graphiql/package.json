@@ -13,6 +13,7 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "scripts": {
     "build": "npm run clean && tsc && vite build",
     "clean": "rimraf dist",

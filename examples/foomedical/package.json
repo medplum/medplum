@@ -1,6 +1,7 @@
 {
   "name": "foomedical",
   "version": "2.1.20",
+  "type": "module",
   "scripts": {
     "build": "tsc && vite build",
     "coverage": "jest --coverage",
