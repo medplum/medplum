@@ -1892,8 +1892,7 @@ export class MedplumClient extends EventTarget {
           },
         });
 
-        // eslint-disable-next-line no-void
-        void data.pipeTo(writableStream);
+        data.pipeTo(writableStream).catch(console.error);
       } else {
         xhr.send(data);
       }
