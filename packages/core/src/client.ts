@@ -1,6 +1,7 @@
 // PKCE auth based on:
 // https://aws.amazon.com/blogs/security/how-to-add-authentication-single-page-web-application-with-amazon-cognito-oauth2-implementation/
 
+import { Readable, Writable } from 'node:stream';
 import {
   AccessPolicy,
   Agent,
@@ -77,7 +78,6 @@ import {
   resolveId,
   sleep,
 } from './utils';
-import { Readable, Writable } from 'node:stream';
 
 export const MEDPLUM_VERSION = import.meta.env.MEDPLUM_VERSION ?? '';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
