@@ -77,6 +77,7 @@ import {
   resolveId,
   sleep,
 } from './utils';
+import { Readable, Writable } from 'node:stream';
 
 export const MEDPLUM_VERSION = import.meta.env.MEDPLUM_VERSION ?? '';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
@@ -434,7 +435,7 @@ export interface PatchOperation {
 /**
  * Source for a FHIR Binary.
  */
-export type BinarySource = string | File | Blob | Uint8Array;
+export type BinarySource = string | File | Blob | Uint8Array | Readable;
 
 /**
  * Email address definition.
@@ -1885,7 +1886,17 @@ export class MedplumClient extends EventTarget {
       xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, max-age=0');
       xhr.setRequestHeader('Content-Type', contentType);
       xhr.setRequestHeader('X-Medplum', 'extended');
-      xhr.send(data);
+      if (data instanceof Readable) {
+        const writable = new Writable({
+          write(chunk) {
+            xhr.send(chunk);
+          },
+        });
+
+        data.pipe(writable);
+      } else {
+        xhr.send(data);
+      }
     });
   }
 

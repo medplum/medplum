@@ -19,6 +19,7 @@ import { ContentType } from './contenttype';
 import { OperationOutcomeError, notFound, unauthorized } from './outcomes';
 import { isDataTypeLoaded } from './typeschema/types';
 import { ProfileResource, createReference } from './utils';
+import { Readable } from 'stream';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -1401,7 +1402,7 @@ describe('Client', () => {
 
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const promise = client.createBinary('Hello world', undefined, ContentType.TEXT, onProgress);
+    const promise = client.createBinary(Readable.from('Hello World'), undefined, ContentType.TEXT, onProgress);
     expect(xhrMock.open).toBeCalled();
     expect(xhrMock.setRequestHeader).toBeCalled();
 
