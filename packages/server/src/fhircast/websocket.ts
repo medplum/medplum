@@ -94,7 +94,7 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
           },
         };
         for (const topic of heartbeatTopics.values()) {
-          getRedis().publish(topic, JSON.stringify(heartbeatPayload)).catch(console.error);
+          redis.publish(topic, JSON.stringify(heartbeatPayload)).catch(console.error);
         }
         heartbeatTimer = setTimeout(callback, DEFAULT_HEARTBEAT_MS);
       };
