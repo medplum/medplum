@@ -10,7 +10,13 @@ if (!existsSync('.env')) {
   copyFileSync('.env.defaults', '.env');
 }
 
-const gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+let gitHash;
+try {
+  gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+} catch (error) {
+  gitHash = 'unknown'; // Default value when not in a git repository
+}
+
 process.env.MEDPLUM_VERSION = packageJson.version + '-' + gitHash;
 
 export default defineConfig({
