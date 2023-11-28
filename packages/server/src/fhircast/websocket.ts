@@ -1,4 +1,4 @@
-import { createDeferredPromise, generateId } from '@medplum/core';
+import { DeferredPromise, createDeferredPromise, generateId } from '@medplum/core';
 import { AsyncLocalStorage } from 'async_hooks';
 import { IncomingMessage } from 'http';
 import { Redis } from 'ioredis';
@@ -9,7 +9,7 @@ import { getRedis } from '../redis';
 export const DEFAULT_HEARTBEAT_MS = 10 * 1000;
 
 export const heartbeatTopics = new Set<string>();
-const cleanupPromises = [] as Promise<void>[];
+export const cleanupPromises = new Map<Redis, DeferredPromise>();
 let heartbeatTimer: NodeJS.Timeout | undefined;
 
 /**
@@ -24,11 +24,12 @@ export function cleanupHeartbeat(): void {
 }
 
 /**
- * Cleans up WebSockets for `FHIRcast`.
+ * Waits for the cleanup of WebSockets for `FHIRcast` to complete.
  * @returns Promise that resolves when all registered WebSocket cleanup Promises have resolved or rejected.
  */
 export async function waitForWebSocketsCleanup(): Promise<unknown> {
-  return Promise.allSettled(cleanupPromises);
+  const promises = Array.from(cleanupPromises.values());
+  return Promise.allSettled(promises.map(({ promise }) => promise));
 }
 
 /**
@@ -40,7 +41,7 @@ export async function waitForWebSocketsCleanup(): Promise<unknown> {
  *
  * @param redisSubscriber - The `Redis` client associated with the closing WebSocket.
  * @param topic - The topic to delete for the currently subscribed client.
- * @param numOfSubscribers - The total number of subscribers as reported by Redis.
+ * @param numOfSubscribers - The total number of subscribers to this topic as reported by Redis.
  * @param done - The callback to call when done.
  */
 function cleanupRedisSubscriber(
@@ -57,6 +58,7 @@ function cleanupRedisSubscriber(
     heartbeatTimer = undefined;
   }
   redisSubscriber.disconnect();
+  cleanupPromises.delete(redisSubscriber);
   done();
 }
 
@@ -76,7 +78,7 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   const redis = getRedis();
   const redisSubscriber = redis.duplicate();
   const deferredCleanupPromise = createDeferredPromise();
-  cleanupPromises.push(deferredCleanupPromise.promise);
+  cleanupPromises.set(redisSubscriber, deferredCleanupPromise);
 
   // Subscribe to the topic
   await redisSubscriber.subscribe(topic);

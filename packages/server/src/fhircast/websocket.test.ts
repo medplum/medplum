@@ -6,7 +6,7 @@ import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { MedplumServerConfig, loadTestConfig } from '../config';
 import { initTestAuth } from '../test.setup';
-import { cleanupHeartbeat, heartbeatTopics, waitForWebSocketsCleanup } from './websocket';
+import { cleanupHeartbeat, cleanupPromises, heartbeatTopics, waitForWebSocketsCleanup } from './websocket';
 
 const app = express();
 let config: MedplumServerConfig;
@@ -18,7 +18,6 @@ describe('FHIRcast WebSocket', () => {
     config = await loadTestConfig();
     server = await initApp(app, config);
     accessToken = await initTestAuth({}, { admin: true });
-
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 511, resolve);
     });
@@ -79,15 +78,18 @@ describe('FHIRcast WebSocket', () => {
     let setTimeoutSpy: jest.SpyInstance;
     beforeAll(() => {
       jest.useFakeTimers();
+    });
+
+    afterAll(() => {
+      jest.useRealTimers();
+    });
+
+    beforeEach(() => {
       setTimeoutSpy = jest.spyOn(global, 'setTimeout');
     });
 
     afterEach(() => {
       cleanupHeartbeat();
-    });
-
-    afterAll(() => {
-      jest.useRealTimers();
     });
 
     test('Check that we get a heartbeat', async () => {
@@ -107,9 +109,11 @@ describe('FHIRcast WebSocket', () => {
         .sendJson({ ok: true })
         .close()
         .expectClosed();
+
+      await waitForWebSocketsCleanup();
     });
 
-    test('Check that timer are cleaned up after no topics active', async () => {
+    test('Check that timer and promises are cleaned up after no topics active', async () => {
       const topic = randomUUID();
       await request(server)
         .ws('/ws/fhircast/' + topic)
@@ -128,6 +132,9 @@ describe('FHIRcast WebSocket', () => {
         .expectClosed();
 
       await waitForWebSocketsCleanup();
+      // We check that promises are cleaned up after a WebSocket closes
+      expect(cleanupPromises.size).toBe(0);
+
       setTimeoutSpy.mockReset();
       jest.advanceTimersByTime(10001);
       expect(heartbeatTopics.size).toBe(0);
