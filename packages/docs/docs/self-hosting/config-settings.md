@@ -145,7 +145,9 @@ You will also be prompted for a parameter "Type". The default option is "String"
 | `awsRegion`            | The AWS Region identifier.                                                                                                                                                                            |          | `cdk`      | `us-east-1`                         |
 
 :::tip Local Config
-When you make changes to your configuration in the Medplum App, you will also need to reflect these changes in your local json server config file to make sure the changes are picked up.
+To make changes to the server config after your first deploy, you must the edit parameter values _directly in AWS parameter store_
+
+To make changes to settings that affect your deployed Medplum App, you must _also_ make this change to your local configuration json file.
 :::
 
 ### AWS Secrets
