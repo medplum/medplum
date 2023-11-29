@@ -38,7 +38,6 @@ The SuperAdmin has the following privileges:
 - Access to protected resources.
 - Ability to overwrite the `id` of a resource, which is normally server generated.
 - Ability to overwrite fields in the `meta` element of resources such as `author`, `lastUpdated`, etc.
-- Bypasses schema type validation (e.g. write numbers to a string field). This can be turned off by enabling strict mode in your SuperAdmin project.
 
 :::warning
 
