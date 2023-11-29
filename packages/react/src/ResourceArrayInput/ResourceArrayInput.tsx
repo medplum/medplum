@@ -28,7 +28,7 @@ export interface ResourceArrayInputProps {
   defaultValue?: any[];
   indent?: boolean;
   arrayElement?: boolean;
-  outcome?: OperationOutcome;
+  outcome: OperationOutcome | undefined;
   onChange?: (value: any[]) => void;
 }
 
@@ -135,6 +135,8 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
   const medplum = useMedplum();
   const [loading, setLoading] = useState(true);
   const [slices, setSlices] = useState<SupportedSliceDefinition[]>();
+  // props.defaultValue should NOT be used after this; prefer the defaultValue state
+  const [defaultValue] = useState<any[]>(() => (Array.isArray(props.defaultValue) ? props.defaultValue : []));
   const [slicedValues, setSlicedValues] = useState<any[][]>();
 
   const propertyTypeCode = property.type[0]?.code;
@@ -205,10 +207,10 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
 
   useEffect(() => {
     if (slices) {
-      const results = assignValuesIntoSlices(props.defaultValue ?? [], slices, property.slicing);
+      const results = assignValuesIntoSlices(defaultValue, slices, property.slicing);
       setSlicedValues(results);
     }
-  }, [slices, props.defaultValue, property.slicing]);
+  }, [slices, defaultValue, property.slicing]);
 
   function setValuesWrapper(newValues: any[], sliceIndex: number): void {
     if (!slicedValues) {
