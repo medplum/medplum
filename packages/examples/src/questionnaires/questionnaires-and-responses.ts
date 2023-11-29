@@ -10,35 +10,52 @@ const basicQuestionnaire: Questionnaire =
     description: 'A questionnaire to gather basic health information from the patient',
     item: [
       {
-        linkId: '1',
+        linkId: 'full-name',
         text: 'Patient Full Name',
         type: 'string',
         required: true,
       },
       {
-        linkId: '2',
+        linkId: 'age',
         text: 'Patient Age',
         type: 'integer',
       },
       {
-        linkId: '3',
+        linkId: 'gender',
+        text: 'Patient Gender',
+        type: 'choice',
+        answerOption: [
+          {
+            valueCoding: {
+              code: 'female',
+            },
+          },
+          {
+            valueCoding: {
+              code: 'male',
+            },
+          },
+        ],
+      },
+      {
+        linkId: 'medications',
         text: 'Current Medications',
         type: 'string',
         repeats: true,
       },
       {
-        linkId: '4',
+        linkId: 'allergies',
         text: 'Known Allergies',
         type: 'string',
         repeats: true,
       },
       {
-        linkId: '5',
+        linkId: 'exercise',
         text: 'Weekly Exercise Frequency',
         type: 'integer',
       },
       {
-        linkId: '6',
+        linkId: 'smoking',
         text: 'Smoking Status',
         type: 'reference',
         answerValueSet: 'http://loinc.org/LL22201-3',
@@ -56,39 +73,39 @@ const nestedQuestionnaire: Questionnaire =
     subjectType: ['Patient'],
     item: [
       {
-        linkId: '1',
+        linkId: 'allergies',
         text: 'Do you have allergies?',
         type: 'boolean',
       },
       {
-        linkId: '2',
+        linkId: 'general',
         text: 'General Information',
         type: 'group',
         item: [
           {
-            linkId: '2.1',
+            linkId: 'general.gender',
             text: 'What is your gender?',
             type: 'choice',
             answerOption: [
               {
                 valueCoding: {
-                  code: 'F',
+                  code: 'female',
                 },
               },
               {
                 valueCoding: {
-                  code: 'M',
+                  code: 'male',
                 },
               },
             ],
           },
           {
-            linkId: '2.2',
+            linkId: 'general.dob',
             text: 'What is your date of birth?',
             type: 'date',
           },
           {
-            linkId: '2.3',
+            linkId: 'general.marital',
             text: 'What is your marital status?',
             type: 'choice',
             answerOption: [
@@ -107,17 +124,17 @@ const nestedQuestionnaire: Questionnaire =
         ],
       },
       {
-        linkId: '3',
+        linkId: 'intoxicants',
         text: 'Intoxicants',
         type: 'group',
         item: [
           {
-            linkId: '3.1',
+            linkId: 'intoxicants.smoking',
             text: 'Do you smoke?',
             type: 'boolean',
           },
           {
-            linkId: '3.2',
+            linkId: 'intoxicants.alcohol',
             text: 'Do you drink alcohol?',
             type: 'boolean',
           },
@@ -136,39 +153,39 @@ const rules: Questionnaire =
     subjectType: ['Patient'],
     item: [
       {
-        linkId: '1',
+        linkId: 'allergies',
         text: 'Do you have allergies?',
         type: 'boolean',
       },
       {
-        linkId: '2',
+        linkId: 'general',
         text: 'General Information',
         type: 'group',
         item: [
           {
-            linkId: '2.1',
+            linkId: 'general.gender',
             text: 'What is your gender?',
             type: 'choice',
             answerOption: [
               {
                 valueCoding: {
-                  code: 'F',
+                  code: 'female',
                 },
               },
               {
                 valueCoding: {
-                  code: 'M',
+                  code: 'male',
                 },
               },
             ],
           },
           {
-            linkId: '2.2',
+            linkId: 'general.dob',
             text: 'What is your date of birth?',
             type: 'date',
           },
           {
-            linkId: '2.3',
+            linkId: 'general.birth-country',
             text: 'What is your country of birth?',
             type: 'string',
             initial: [
@@ -178,7 +195,7 @@ const rules: Questionnaire =
             ],
           },
           {
-            linkId: '2.4',
+            linkId: 'general.marital',
             text: 'What is your marital status?',
             type: 'choice',
             answerOption: [
@@ -197,34 +214,34 @@ const rules: Questionnaire =
         ],
       },
       {
-        linkId: '3',
+        linkId: 'intoxicants',
         text: 'Intoxicants',
         type: 'group',
         item: [
           {
-            linkId: '3.1',
+            linkId: 'intoxicants.smoking',
             text: 'Do you smoke?',
             type: 'boolean',
           },
           {
-            linkId: '3.2',
+            linkId: 'intoxicants.alcohol',
             text: 'Do you drink alcohol?',
             type: 'boolean',
           },
         ],
       },
       {
-        linkId: '4',
+        linkId: 'pregnancy',
         text: 'Pregnancy History',
         type: 'group',
         item: [
           {
-            linkId: '4.1',
+            linkId: 'pregnancy.boolean',
             text: 'Have you ever been pregnant?',
             type: 'boolean',
           },
           {
-            linkId: '4.2',
+            linkId: 'pregnancy.count',
             text: 'How many times have you been pregnant?',
             type: 'integer',
             enableWhen: [
@@ -254,8 +271,8 @@ const response: QuestionnaireResponse =
   // start-block response
   {
     resourceType: 'QuestionnaireResponse',
-    id: 'homer-simpson-grouped-response',
-    questionnaire: 'http://example.org/Questionnaires/grouped-questionnaire',
+    id: 'homer-simpson-conditional-response',
+    questionnaire: 'http://example.org/Questionnaires/conditional-questionnaire',
     subject: {
       reference: 'Patient/homer-simpson',
     },
@@ -268,7 +285,7 @@ const response: QuestionnaireResponse =
     },
     item: [
       {
-        linkId: '1',
+        linkId: 'allergies',
         text: 'Do you have allergies?',
         answer: [
           {
@@ -277,11 +294,11 @@ const response: QuestionnaireResponse =
         ],
       },
       {
-        linkId: '2',
+        linkId: 'general',
         text: 'General Information',
         item: [
           {
-            linkId: '2.1',
+            linkId: 'general.gender',
             text: 'What is your gender?',
             answer: [
               {
@@ -292,7 +309,7 @@ const response: QuestionnaireResponse =
             ],
           },
           {
-            linkId: '2.2',
+            linkId: 'general.dob',
             text: 'What is your date of birth?',
             answer: [
               {
@@ -301,7 +318,7 @@ const response: QuestionnaireResponse =
             ],
           },
           {
-            linkId: '2.3',
+            linkId: 'general.birth-country',
             text: 'What is your country of birth?',
             answer: [
               {
@@ -310,8 +327,8 @@ const response: QuestionnaireResponse =
             ],
           },
           {
-            linkId: '2.4',
-            text: 'What is yoru marital status?',
+            linkId: 'general.marital',
+            text: 'What is your marital status?',
             answer: [
               {
                 valueCoding: {
@@ -323,20 +340,20 @@ const response: QuestionnaireResponse =
         ],
       },
       {
-        linkId: '3',
+        linkId: 'intoxicants',
         text: 'Intoxicants',
         item: [
           {
-            linkId: '3.1',
+            linkId: 'intoxicants.smoking',
             text: 'Do you smoke?',
             answer: [
               {
-                valueBoolean: false,
+                valueBoolean: true,
               },
             ],
           },
           {
-            linkId: '3.2',
+            linkId: 'intoxicants.alcohol',
             text: 'Do you drink alcohol?',
             answer: [
               {
