@@ -1,8 +1,8 @@
 import { tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { ElementsInput } from '../ElementsInput/ElementsInput';
-import { BackboneElementContext, buildWalkedPathsAndSeenKeys } from './BackbonElementInput.utils';
+import { BackboneElementContext, buildBackboneElementContext } from './BackbonElementInput.utils';
 
 export interface BackboneElementInputProps {
   typeName: string;
@@ -15,7 +15,7 @@ export interface BackboneElementInputProps {
 export function BackboneElementInput(props: BackboneElementInputProps): JSX.Element {
   const { typeName } = props;
   const [value, setValue] = useState<any>(props.defaultValue ?? {});
-
+  const { walkedPathsFlat } = useContext(BackboneElementContext);
   const typeSchema = useMemo(() => tryGetDataType(typeName), [typeName]);
   useEffect(() => {
     if (typeSchema) {
@@ -23,10 +23,9 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
     }
   }, [typeSchema, typeName]);
 
-  // TODO{mattlong} actually use walkedPaths to alter logic
-  const [walkedPaths, seenKeys] = useMemo(() => {
-    return buildWalkedPathsAndSeenKeys(typeSchema?.elements);
-  }, [typeSchema?.elements]);
+  const context = useMemo(() => {
+    return buildBackboneElementContext(typeSchema, [walkedPathsFlat], false);
+  }, [typeSchema, walkedPathsFlat]);
 
   if (!typeSchema) {
     return <div>{typeName}&nbsp;not implemented</div>;
@@ -41,7 +40,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   }
 
   return (
-    <BackboneElementContext.Provider value={{ walkedPaths, seenKeys }}>
+    <BackboneElementContext.Provider value={context}>
       <ElementsInput
         type={props.type}
         elements={typeSchema.elements}

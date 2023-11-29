@@ -1,18 +1,14 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { HumanName } from '@medplum/fhirtypes';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
+import { getErrorsForInput } from '../utils/outcomes';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-export interface HumanNameInputProps {
-  name: string;
-  defaultValue?: HumanName;
-  onChange?: (value: HumanName) => void;
-}
+type HumanNameInputProps = ComplexTypeInputProps<HumanName>;
 
 export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
+  const { outcome, property } = props;
   const [value, setValue] = useState<HumanName | undefined>(props.defaultValue);
-
-  const valueRef = useRef<HumanName>();
-  valueRef.current = value;
 
   function setValueWrapper(newValue: HumanName): void {
     setValue(newValue);
@@ -22,33 +18,33 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
   }
 
   function setUse(use: 'temp' | 'old' | 'usual' | 'official' | 'nickname' | 'anonymous' | 'maiden' | undefined): void {
-    setValueWrapper({ ...valueRef.current, use: use || undefined });
+    setValueWrapper({ ...value, use: use || undefined });
   }
 
   function setPrefix(prefix: string): void {
     setValueWrapper({
-      ...valueRef.current,
+      ...value,
       prefix: prefix ? prefix.split(' ') : undefined,
     });
   }
 
   function setGiven(given: string): void {
     setValueWrapper({
-      ...valueRef.current,
+      ...value,
       given: given ? given.split(' ') : undefined,
     });
   }
 
   function setFamily(family: string): void {
     setValueWrapper({
-      ...valueRef.current,
+      ...value,
       family: family || undefined,
     });
   }
 
   function setSuffix(suffix: string): void {
     setValueWrapper({
-      ...valueRef.current,
+      ...value,
       suffix: suffix ? suffix.split(' ') : undefined,
     });
   }
@@ -63,30 +59,35 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
           setUse(e.currentTarget.value as 'temp' | 'old' | 'usual' | 'official' | 'nickname' | 'anonymous' | 'maiden')
         }
         data={['', 'temp', 'old', 'usual', 'official', 'nickname', 'anonymous', 'maiden']}
+        error={getErrorsForInput(outcome, property.path + '.use')}
       />
       <TextInput
         placeholder="Prefix"
         name={props.name + '-prefix'}
         defaultValue={value?.prefix?.join(' ')}
         onChange={(e) => setPrefix(e.currentTarget.value)}
+        error={getErrorsForInput(outcome, property.path + '.prefix')}
       />
       <TextInput
         placeholder="Given"
         name={props.name + '-given'}
         defaultValue={value?.given?.join(' ')}
         onChange={(e) => setGiven(e.currentTarget.value)}
+        error={getErrorsForInput(outcome, property.path + '.given')}
       />
       <TextInput
         name={props.name + '-family'}
         placeholder="Family"
         defaultValue={value?.family}
         onChange={(e) => setFamily(e.currentTarget.value)}
+        error={getErrorsForInput(outcome, property.path + '.family')}
       />
       <TextInput
         placeholder="Suffix"
         name={props.name + '-suffix'}
         defaultValue={value?.suffix?.join(' ')}
         onChange={(e) => setSuffix(e.currentTarget.value)}
+        error={getErrorsForInput(outcome, property.path + '.suffix')}
       />
     </Group>
   );

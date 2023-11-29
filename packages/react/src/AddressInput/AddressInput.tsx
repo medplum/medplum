@@ -1,6 +1,8 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Address } from '@medplum/fhirtypes';
-import { useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { BackboneElementContext } from '../BackboneElementInput/BackbonElementInput.utils';
 
 function getLine(address: Address, index: number): string {
   return address.line && address.line.length > index ? address.line[index] : '';
@@ -15,17 +17,19 @@ function setLine(address: Address, index: number, str: string): Address {
   return { ...address, line };
 }
 
-export interface AddressInputProps {
-  name: string;
-  defaultValue?: Address;
-  onChange?: (value: Address) => void;
-}
+type AddressInputProps = ComplexTypeInputProps<Address>;
 
 export function AddressInput(props: AddressInputProps): JSX.Element {
   const [value, setValue] = useState<Address>(props.defaultValue || {});
+  const { getNestedElement } = useContext(BackboneElementContext);
 
   const valueRef = useRef<Address>();
   valueRef.current = value;
+
+  useEffect(() => {
+    const stateElement = getNestedElement(props.property, 'state');
+    console.log({ stateElement });
+  }, [getNestedElement, props.property]);
 
   function setValueWrapper(newValue: Address): void {
     setValue(newValue);

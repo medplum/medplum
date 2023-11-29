@@ -1,7 +1,8 @@
 import { Input } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { ReactNode } from 'react';
+import { ReactNode, useContext } from 'react';
 import { getErrorsForInput } from '../utils/outcomes';
+import { BackboneElementContext } from '../BackboneElementInput/BackbonElementInput.utils';
 
 export interface FormSectionProps {
   title?: string;
@@ -14,8 +15,10 @@ export interface FormSectionProps {
 }
 
 export function FormSection(props: FormSectionProps): JSX.Element {
+  const { debugMode } = useContext(BackboneElementContext);
+
   let label: React.ReactNode;
-  if (props.fhirPath) {
+  if (debugMode && props.fhirPath) {
     label = `${props.title} - ${props.fhirPath}`;
   } else {
     label = props.title;

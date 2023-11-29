@@ -1,5 +1,6 @@
 import { Group, Input } from '@mantine/core';
-import { ReactNode } from 'react';
+import { ReactNode, useContext } from 'react';
+import { BackboneElementContext } from '../BackboneElementInput/BackbonElementInput.utils';
 
 export interface CheckboxFormSectionProps {
   htmlFor?: string;
@@ -11,8 +12,10 @@ export interface CheckboxFormSectionProps {
 }
 
 export function CheckboxFormSection(props: CheckboxFormSectionProps): JSX.Element {
+  const { debugMode } = useContext(BackboneElementContext);
+
   let label: React.ReactNode;
-  if (props.fhirPath) {
+  if (debugMode && props.fhirPath) {
     label = `${props.title} - ${props.fhirPath}`;
   } else {
     label = props.title;
