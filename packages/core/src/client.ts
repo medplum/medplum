@@ -1795,7 +1795,7 @@ export class MedplumClient extends EventTarget {
    * @param filename - Optional filename for the binary.
    * @param contentType - Content type for the binary.
    * @param onProgress - Optional callback for progress events.
-   * @param signal - Optional AbortSignal to short-circuit the request.
+   * @param signal - Optional AbortSignal to abort the request.
    * @returns The result of the create operation.
    */
   async createAttachment(
@@ -1836,7 +1836,7 @@ export class MedplumClient extends EventTarget {
    * @param filename - Optional filename for the binary.
    * @param contentType - Content type for the binary.
    * @param onProgress - Optional callback for progress events.
-   * @param signal - Optional AbortSignal to short-circuit the request.
+   * @param signal - Optional AbortSignal to abort the request.
    * @returns The result of the create operation.
    */
   createBinary(
