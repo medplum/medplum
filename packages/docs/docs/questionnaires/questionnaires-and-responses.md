@@ -123,7 +123,7 @@ The answers on a [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnair
 | `linkId`          | The item from the corresponding `Questionnaire` that this answer responds to.                               | marital-status       |
 
 <details>
-  <summary>Example: A `QuestionnaireResponse` responding to the the [conditional questionnaire above](#conditionally-displaying-questions)</summary>
+  <summary>Example: A `QuestionnaireResponse` responding to the [conditional questionnaire above](#conditionally-displaying-questions)</summary>
   <MedplumCodeBlock language="ts" selectBlocks="response">
     {ExampleCode}
   </MedplumCodeBlock>
