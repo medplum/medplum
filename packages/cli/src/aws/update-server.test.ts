@@ -7,29 +7,51 @@ import {
 import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
 import { mockClient } from 'aws-sdk-client-mock';
 import { main } from '../index';
+import { unlinkSync, writeFileSync } from 'fs';
+import { spawnSync } from 'child_process';
+import fetch from 'node-fetch';
+import { MedplumClient } from '@medplum/core';
+import { createMedplumClient } from '../util/client';
+
+jest.mock('node-fetch');
+jest.mock('child_process');
+jest.mock('../util/client');
 
 describe('update-server command', () => {
-  beforeAll(() => {
-    const cfMock = mockClient(CloudFormationClient);
+  const configFile = 'medplum.dev.config.json';
+  const currentVersion = '2.4.17';
+  const patchVersion = '2.4.18';
+  const nextVersion = '2.5.0';
+  const finalVersion = '2.6.0';
 
+  const cfMock = mockClient(CloudFormationClient);
+  let medplum: MedplumClient;
+
+  beforeAll(() => {
+    const ecsMock = mockClient(ECSClient);
+    ecsMock.on(UpdateServiceCommand).resolves({});
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (fetch as unknown as jest.Mock).mockResolvedValue({
+      json: jest
+        .fn()
+        .mockResolvedValue([
+          { tag_name: finalVersion },
+          { tag_name: nextVersion },
+          { tag_name: patchVersion },
+          { tag_name: currentVersion },
+        ]),
+    });
+
+    cfMock.reset();
     cfMock.on(ListStacksCommand).resolves({
       StackSummaries: [
         {
           StackId: '123',
           StackName: 'medplum-dev',
           StackStatus: 'CREATE_COMPLETE',
-          CreationTime: new Date(),
-        },
-        {
-          StackId: '124',
-          StackName: 'medplum-incomplete',
-          StackStatus: 'UPDATE_IN_PROGRESS',
-          CreationTime: new Date(),
-        },
-        {
-          StackId: '125',
-          StackName: 'medplum-missing-service',
-          StackStatus: 'UPDATE_IN_PROGRESS',
           CreationTime: new Date(),
         },
       ],
@@ -71,87 +93,31 @@ describe('update-server command', () => {
       ],
     });
 
-    cfMock.on(DescribeStacksCommand, { StackName: 'medplum-incomplete' }).resolves({
-      Stacks: [
-        {
-          StackId: '123',
-          StackName: 'medplum-incomplete',
-          StackStatus: 'UPDATE_IN_PROGRESS',
-          CreationTime: new Date(),
-          Tags: [
-            {
-              Key: 'medplum:environment',
-              Value: 'incomplete',
-            },
-          ],
-        },
-      ],
-    });
+    (spawnSync as unknown as jest.Mock).mockReturnValue({ status: 0 });
+    console.log = jest.fn();
+    writeFileSync(configFile, JSON.stringify({ serverImage: `medplum-server:${currentVersion}`, region: 'us-west-2' }));
 
-    cfMock.on(DescribeStackResourcesCommand, { StackName: 'medplum-incomplete' }).resolves({
-      StackResources: [],
-    });
+    medplum = { post: jest.fn() } as unknown as MedplumClient;
+    (createMedplumClient as unknown as jest.Mock).mockResolvedValue(medplum);
+  });
 
-    cfMock.on(DescribeStacksCommand, { StackName: 'medplum-missing-service' }).resolves({
-      Stacks: [
-        {
-          StackId: '123',
-          StackName: 'medplum-dev',
-          StackStatus: 'CREATE_COMPLETE',
-          CreationTime: new Date(),
-          Tags: [
-            {
-              Key: 'medplum:environment',
-              Value: 'missing-service',
-            },
-          ],
-        },
-      ],
-    });
-
-    cfMock.on(DescribeStackResourcesCommand, { StackName: 'medplum-missing-service' }).resolves({
-      StackResources: [
-        {
-          ResourceType: 'AWS::ECS::Cluster',
-          ResourceStatus: 'CREATE_COMPLETE',
-          LogicalResourceId: 'MedplumEcsCluster',
-          PhysicalResourceId: 'medplum-dev-MedplumEcsCluster-125',
-          Timestamp: new Date(),
-        },
-        {
-          ResourceType: 'AWS::ECS::Service',
-          ResourceStatus: 'CREATE_COMPLETE',
-          LogicalResourceId: 'MedplumEcsService',
-          Timestamp: new Date(),
-        },
-      ],
-    });
-
-    const ecsMock = mockClient(ECSClient);
-    ecsMock.on(UpdateServiceCommand).resolves({});
+  afterEach(() => {
+    unlinkSync(configFile);
   });
 
   test('Update server command', async () => {
-    console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'update-server', 'dev']);
-    expect(console.log).toBeCalledWith('Service "medplum-dev-MedplumEcsService-123" updated successfully.');
+    expect(console.log).toBeCalledWith('Performing update to v2.5.0');
+    expect(spawnSync).toHaveBeenCalledTimes(2);
+    expect(spawnSync).toHaveBeenCalledWith(`npx cdk deploy -c config=medplum.dev.config.json --all`);
+    expect(medplum.post).toHaveBeenCalledTimes(2);
+    expect(medplum.post).toHaveBeenCalledWith('/admin/super/migrate', '');
   });
 
-  test('Update server not found', async () => {
-    console.log = jest.fn();
+  test('Update config not found', async () => {
     await main(['node', 'index.js', 'aws', 'update-server', 'not-found']);
-    expect(console.log).toBeCalledWith('Stack not found');
-  });
-
-  test('Update server stack incomplete', async () => {
-    console.log = jest.fn();
-    await main(['node', 'index.js', 'aws', 'update-server', 'incomplete']);
-    expect(console.log).toBeCalledWith('ECS Cluster not found');
-  });
-
-  test('Update server stack missing service', async () => {
-    console.log = jest.fn();
-    await main(['node', 'index.js', 'aws', 'update-server', 'missing-service']);
-    expect(console.log).toBeCalledWith('ECS Service not found');
+    expect(console.log).toBeCalledWith('Configuration file medplum.not-found.config.json not found');
+    expect(spawnSync).not.toHaveBeenCalled();
+    expect(medplum.post).not.toHaveBeenCalled();
   });
 });

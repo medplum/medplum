@@ -13,7 +13,7 @@ import { generateKeyPairSync, randomUUID } from 'crypto';
 import { existsSync } from 'fs';
 import readline from 'readline';
 import { getServerVersions } from './utils';
-import { writeConfig } from '../utils';
+import { configFileName, writeConfig } from '../utils';
 
 type MedplumDomainType = 'api' | 'app' | 'storage';
 type MedplumDomainSetting = `${MedplumDomainType}DomainName`;
@@ -67,12 +67,12 @@ export async function initStackCommand(): Promise<void> {
 
   header('CONFIG FILE');
   print('Medplum Infrastructure will create a config file in the current directory.');
-  const configFileName = await ask('What is the config file name?', `medplum.${config.name}.config.json`);
-  if (existsSync(configFileName)) {
-    print('Config file already exists.');
+  const configFile = configFileName(config.name);
+  if (existsSync(configFile)) {
+    print(`Config file ${configFile} already exists.`);
     await checkOk('Do you want to overwrite the config file?');
   }
-  print('Using config file "' + configFileName + '"...');
+  print('Using config file "' + configFile + '"...');
   writeConfig(config, config.name);
 
   header('AWS REGION');

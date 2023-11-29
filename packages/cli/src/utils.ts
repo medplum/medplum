@@ -135,8 +135,8 @@ export function configFileName(tagName?: string): string {
 
 /**
  * Writes a config file to disk.
- * @param config The config file contents.
- * @param tagName The stack tag name.
+ * @param config - The config file contents.
+ * @param tagName - The stack tag name.
  */
 export function writeConfig(config: MedplumInfraConfig, tagName?: string): void {
   writeFileSync(resolve(configFileName(tagName)), JSON.stringify(config, undefined, 2), 'utf-8');

@@ -14,7 +14,7 @@ export async function updateServerCommand(tag: string, options: any): Promise<vo
   const client = await createMedplumClient(options);
   const config = readConfig(tag) as MedplumInfraConfig;
   if (!config) {
-    console.log('Config not found');
+    console.log(`Configuration file ${configFileName(tag)} not found`);
     return;
   }
   const separatorIndex = config.serverImage.lastIndexOf(':');

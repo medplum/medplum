@@ -50,7 +50,7 @@ export async function main(argv: string[]): Promise<void> {
     index.addCommand(hl7);
 
     await index.parseAsync(argv);
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error: ' + normalizeErrorString(err));
   }
 }
