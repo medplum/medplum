@@ -434,7 +434,7 @@ export interface PatchOperation {
 /**
  * Source for a FHIR Binary.
  */
-export type BinarySource = string | File | Blob | Uint8Array | ReadableStream;
+export type BinarySource = string | File | Blob | Uint8Array;
 
 /**
  * Email address definition.
@@ -1885,17 +1885,7 @@ export class MedplumClient extends EventTarget {
       xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, max-age=0');
       xhr.setRequestHeader('Content-Type', contentType);
       xhr.setRequestHeader('X-Medplum', 'extended');
-      if (data instanceof ReadableStream) {
-        const writableStream = new WritableStream({
-          write(chunk) {
-            xhr.send(chunk);
-          },
-        });
-
-        data.pipeTo(writableStream).catch(console.error);
-      } else {
-        xhr.send(data);
-      }
+      xhr.send(data);
     });
   }
 
