@@ -1,4 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import { createReference } from '@medplum/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -9,7 +10,6 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
-import { createReference } from '@medplum/core';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
@@ -66,7 +66,8 @@ describe('Project Admin routes', () => {
     // 3 members total (1 admin, 1 client, 1 invited)
     const res3 = await request(app)
       .get('/fhir/R4/ProjectMembership')
-      .set('Authorization', 'Bearer ' + accessToken);
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended');
     expect(res3.status).toBe(200);
     expect(res3.body.entry).toBeDefined();
     expect(res3.body.entry.length).toEqual(3);
@@ -76,6 +77,7 @@ describe('Project Admin routes', () => {
     expect(owner).toBeDefined();
     const member = members.find((m) => m.id === res2.body.id) as ProjectMembership;
     expect(member).toBeDefined();
+    expect(member.meta?.author?.reference).toEqual('system');
 
     // Get the new membership details
     const res4 = await request(app)
@@ -112,12 +114,14 @@ describe('Project Admin routes', () => {
     const res7 = await request(app)
       .post('/admin/projects/' + project.id + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended')
       .type('json')
       .send({
         ...res4.body,
         admin: true,
       });
     expect(res7.status).toBe(200);
+    expect(res7.body.meta?.author?.reference).toEqual(owner?.profile?.reference);
 
     // Make sure the new member is an admin
     const res8 = await request(app)
