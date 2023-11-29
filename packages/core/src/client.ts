@@ -1795,15 +1795,17 @@ export class MedplumClient extends EventTarget {
    * @param filename - Optional filename for the binary.
    * @param contentType - Content type for the binary.
    * @param onProgress - Optional callback for progress events.
+   * @param signal - Optional AbortSignal to short-circuit the request.
    * @returns The result of the create operation.
    */
   async createAttachment(
     data: BinarySource,
     filename: string | undefined,
     contentType: string,
-    onProgress?: (e: ProgressEvent) => void
+    onProgress?: (e: ProgressEvent) => void,
+    signal?: AbortSignal
   ): Promise<Attachment> {
-    const binary = await this.createBinary(data, filename, contentType, onProgress);
+    const binary = await this.createBinary(data, filename, contentType, onProgress, signal);
     return {
       contentType,
       url: binary.url,
@@ -1834,13 +1836,15 @@ export class MedplumClient extends EventTarget {
    * @param filename - Optional filename for the binary.
    * @param contentType - Content type for the binary.
    * @param onProgress - Optional callback for progress events.
+   * @param signal - Optional AbortSignal to short-circuit the request.
    * @returns The result of the create operation.
    */
   createBinary(
     data: BinarySource,
     filename: string | undefined,
     contentType: string,
-    onProgress?: (e: ProgressEvent) => void
+    onProgress?: (e: ProgressEvent) => void,
+    signal?: AbortSignal
   ): Promise<Binary> {
     const url = this.fhirUrl('Binary');
     if (filename) {
@@ -1848,9 +1852,9 @@ export class MedplumClient extends EventTarget {
     }
 
     if (onProgress) {
-      return this.uploadwithProgress(url, data, contentType, onProgress);
+      return this.uploadwithProgress(url, data, contentType, onProgress, signal);
     } else {
-      return this.post(url, data, contentType);
+      return this.post(url, data, contentType, { signal });
     }
   }
 
@@ -1858,13 +1862,29 @@ export class MedplumClient extends EventTarget {
     url: URL,
     data: BinarySource,
     contentType: string,
-    onProgress: (e: ProgressEvent) => void
+    onProgress: (e: ProgressEvent) => void,
+    signal?: AbortSignal
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
+
+      // Ensure the 'abort' event listener is removed from the signal to prevent memory leaks,
+      // especially in scenarios where there is a long-lived signal across multiple requests.
+      const handleSignalAbort = (): void => xhr.abort();
+      signal?.addEventListener('abort', handleSignalAbort);
+      const sendResult = (result: any): void => {
+        signal?.removeEventListener('abort', handleSignalAbort);
+
+        if (result instanceof Error) {
+          reject(result);
+        } else {
+          resolve(result);
+        }
+      };
+
       xhr.responseType = 'json';
-      xhr.onabort = () => reject(new Error('Request aborted'));
-      xhr.onerror = () => reject(new Error('Request error'));
+      xhr.onabort = () => sendResult(new Error('Request aborted'));
+      xhr.onerror = () => sendResult(new Error('Request error'));
 
       if (onProgress) {
         xhr.upload.onprogress = (e) => onProgress(e);
@@ -1873,9 +1893,9 @@ export class MedplumClient extends EventTarget {
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(xhr.response);
+          sendResult(xhr.response);
         } else {
-          reject(new OperationOutcomeError(normalizeOperationOutcome(xhr.response || xhr.statusText)));
+          sendResult(new OperationOutcomeError(normalizeOperationOutcome(xhr.response || xhr.statusText)));
         }
       };
 
