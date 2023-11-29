@@ -1,9 +1,10 @@
+import { randomUUID, webcrypto } from 'node:crypto';
+import { Readable } from 'node:stream';
+import { TextEncoder } from 'node:util';
 import { Bot, Bundle, Identifier, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { MockAsyncClientStorage } from '@medplum/mock';
-import { randomUUID, webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
-import { TextEncoder } from 'util';
 import { encodeBase64 } from './base64';
 import {
   DEFAULT_ACCEPT,
@@ -1401,7 +1402,45 @@ describe('Client', () => {
 
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const promise = client.createBinary('Hello world', undefined, ContentType.TEXT, onProgress);
+    const promise = client.createBinary('Hello World', undefined, ContentType.TEXT, onProgress);
+    expect(xhrMock.open).toBeCalled();
+    expect(xhrMock.setRequestHeader).toBeCalled();
+
+    // Emulate xhr progress events
+    (xhrMock.upload?.onprogress as EventListener)(new Event(''));
+    (xhrMock.upload?.onload as EventListener)(new Event(''));
+    (xhrMock.onload as EventListener)(new Event(''));
+
+    const result = await promise;
+    expect(result).toBeDefined();
+    expect(onProgress).toHaveBeenCalledTimes(2);
+  });
+
+  test('Create binary with progress event listener and readable stream', async () => {
+    const xhrMock: Partial<XMLHttpRequest> = {
+      open: jest.fn(),
+      send: jest.fn(),
+      setRequestHeader: jest.fn(),
+      upload: {} as XMLHttpRequestUpload,
+      readyState: 4,
+      status: 200,
+      response: {
+        resourceType: 'Binary',
+      },
+    };
+
+    jest.spyOn(window, 'XMLHttpRequest').mockImplementation(() => xhrMock as XMLHttpRequest);
+
+    const onProgress = jest.fn();
+
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const promise = client.createBinary(
+      Readable.toWeb(Readable.from('Hello World')) as ReadableStream,
+      undefined,
+      ContentType.TEXT,
+      onProgress
+    );
     expect(xhrMock.open).toBeCalled();
     expect(xhrMock.setRequestHeader).toBeCalled();
 
