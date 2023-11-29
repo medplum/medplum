@@ -1794,8 +1794,8 @@ export class MedplumClient extends EventTarget {
    * @param data - The binary data to upload.
    * @param filename - Optional filename for the binary.
    * @param contentType - Content type for the binary.
-   * @param onProgress - Optional callback for progress events.
-   * @param signal - Optional AbortSignal to abort the request.
+   * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
+   * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @returns The result of the create operation.
    */
   async createAttachment(
@@ -1803,9 +1803,9 @@ export class MedplumClient extends EventTarget {
     filename: string | undefined,
     contentType: string,
     onProgress?: (e: ProgressEvent) => void,
-    signal?: AbortSignal
+    options?: RequestInit
   ): Promise<Attachment> {
-    const binary = await this.createBinary(data, filename, contentType, onProgress, signal);
+    const binary = await this.createBinary(data, filename, contentType, onProgress, options);
     return {
       contentType,
       url: binary.url,
@@ -1835,8 +1835,8 @@ export class MedplumClient extends EventTarget {
    * @param data - The binary data to upload.
    * @param filename - Optional filename for the binary.
    * @param contentType - Content type for the binary.
-   * @param onProgress - Optional callback for progress events.
-   * @param signal - Optional AbortSignal to abort the request.
+   * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
+   * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @returns The result of the create operation.
    */
   createBinary(
@@ -1844,7 +1844,7 @@ export class MedplumClient extends EventTarget {
     filename: string | undefined,
     contentType: string,
     onProgress?: (e: ProgressEvent) => void,
-    signal?: AbortSignal
+    options?: RequestInit
   ): Promise<Binary> {
     const url = this.fhirUrl('Binary');
     if (filename) {
@@ -1852,9 +1852,9 @@ export class MedplumClient extends EventTarget {
     }
 
     if (onProgress) {
-      return this.uploadwithProgress(url, data, contentType, onProgress, signal);
+      return this.uploadwithProgress(url, data, contentType, onProgress, options);
     } else {
-      return this.post(url, data, contentType, { signal });
+      return this.post(url, data, contentType, options);
     }
   }
 
@@ -1863,7 +1863,7 @@ export class MedplumClient extends EventTarget {
     data: BinarySource,
     contentType: string,
     onProgress: (e: ProgressEvent) => void,
-    signal?: AbortSignal
+    options?: RequestInit
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -1871,9 +1871,9 @@ export class MedplumClient extends EventTarget {
       // Ensure the 'abort' event listener is removed from the signal to prevent memory leaks,
       // especially in scenarios where there is a long-lived signal across multiple requests.
       const handleSignalAbort = (): void => xhr.abort();
-      signal?.addEventListener('abort', handleSignalAbort);
+      options?.signal?.addEventListener('abort', handleSignalAbort);
       const sendResult = (result: any): void => {
-        signal?.removeEventListener('abort', handleSignalAbort);
+        options?.signal?.removeEventListener('abort', handleSignalAbort);
 
         if (result instanceof Error) {
           reject(result);
