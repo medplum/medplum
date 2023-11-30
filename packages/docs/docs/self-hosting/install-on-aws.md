@@ -27,12 +27,13 @@ At a high level, the process of installing Medplum on AWS includes:
 1. Prerequisites
    1. Setting up IAM permissions
    2. Setting up an SES account
+   3. Configuring your domain
 2. Creating a config repo
    1. Setting up CDK
    2. Setting up Medplum CDK
    3. Running the Medplum init tool
 3. Deploying the CDK stack
-   1. Boostrapping
+   1. Bootstrapping
    2. Synth
    3. Deploy
 4. Deploying the Medplum app
@@ -47,9 +48,13 @@ The resulting AWS configuration will look like the following:
 
 ### AWS CLI Setup
 
-While not strictly required, it is recommended to setup the [AWS Command Line Interface (AWS CLI)](https://aws.amazon.com/cli/) and your [AWS credential file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+It is recommended to setup the AWS Command Line Interface (AWS CLI) by following [these instructions](https://aws.amazon.com/cli/).
 
-When the AWS CLI and credentials are configured, the Medplum `aws init` command will be able to automate some tasks.
+### AWS Credentials Setup
+
+AWS CLI and credentials are required by `medplum aws init` automate certain tasks, such as creating public key pairs.
+
+If you have not already done so, follow these instructions [these instructions](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) to set up your AWS credentials file.
 
 ### AWS Account Number
 
@@ -81,6 +86,12 @@ You will need permission to access the following AWS services:
 | Secrets Manager                      | Store encrypted secret configuration details such as database credentials             |
 | Systems Manager (SSM)                | Store configuration details                                                           |
 | Web Application Firewall (WAF)       | Protect your web applications or APIs against common web exploits and bots            |
+
+### Configure your name servers
+
+Medplum strongly recommends configuring your domain to use [Amazon's Route 53](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/MigratingDNS.html) as your DNS service as your name server. This will make it much easier to set up SSL certificates for the [Medplum App](https://www.medplum.com/docs/app) and [Medplum Binary Storage](/docs/fhir-datastore/binary-data).
+
+If you choose not to go this route, you will be responsible for setting up your own SSL certificates.
 
 ### Setup SES
 
@@ -171,6 +182,12 @@ Make note of the CDK config file name.
 
 See [Config Settings](/docs/self-hosting/config-settings) for more details on each of the individual configuration settings.
 
+### (Optional) Validate Certificates
+
+If you are using Route 53 as your DNS service, we recommend you select `dns` method for validating domain ownership.
+
+Then, follow [these instructions](https://docs.aws.amazon.com/acm/latest/userguide/dns-validation.html#setting-up-dns-validation) from AWS finish the validation process.
+
 ### CDK Bootstrap
 
 Bootstrapping is the process of provisioning resources for the AWS CDK before you can deploy AWS CDK apps into an AWS environment.
@@ -210,7 +227,7 @@ When you are ready to actually execute the CDK configuration, use the `deploy` c
 Run CDK deploy:
 
 ```bash
-npx cdk deploy -c config=medplum.demo.config.json
+npx cdk deploy --all -c config=medplum.demo.config.json
 ```
 
 Note that you may receive warnings about changing security details. This is normal and expected anytime CDK makes changes to VPC, IAM, and other security features.
