@@ -145,6 +145,49 @@ describe('FHIR Repo', () => {
       expect(patient2.meta?.versionId).not.toEqual(patient1.meta?.versionId);
     }));
 
+  test('Update patient remove meta.profile', () =>
+    withTestContext(async () => {
+      const profileUrl = 'http://example.com/patient-profile';
+      const patient1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { profile: [profileUrl] },
+        name: [{ given: ['Update1'], family: 'Update1' }],
+      });
+      expect(patient1.meta?.profile).toEqual(expect.arrayContaining([profileUrl]));
+      expect(patient1.meta?.profile?.length).toEqual(1);
+
+      const patientWithoutProfile = { ...patient1 };
+      delete (patientWithoutProfile.meta as any).profile;
+      const patient2 = await systemRepo.updateResource<Patient>(patientWithoutProfile);
+      expect('profile' in (patient2.meta as any)).toBe(false);
+    }));
+
+  test('meta.project preserved after attempting to remove it', () =>
+    withTestContext(async () => {
+      const clientApp = 'ClientApplication/' + randomUUID();
+      const projectId = randomUUID();
+      const repo = new Repository({
+        extendedMode: true,
+        project: projectId,
+        author: {
+          reference: clientApp,
+        },
+      });
+
+      const patient1 = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Update1'], family: 'Update1' }],
+      });
+      expect(patient1.meta?.project).toBeDefined();
+      expect(patient1.meta?.project).toEqual(projectId);
+
+      const patientWithoutProject = { ...patient1 };
+      delete (patientWithoutProject.meta as any).project;
+      const patient2 = await systemRepo.updateResource<Patient>(patientWithoutProject);
+      expect(patient2.meta?.project).toBeDefined();
+      expect(patient2.meta?.project).toEqual(projectId);
+    }));
+
   test('Update patient no changes', () =>
     withTestContext(async () => {
       const patient1 = await systemRepo.createResource<Patient>({
