@@ -145,6 +145,23 @@ describe('FHIR Repo', () => {
       expect(patient2.meta?.versionId).not.toEqual(patient1.meta?.versionId);
     }));
 
+  test('Update patient remove meta.profile', () =>
+    withTestContext(async () => {
+      const profileUrl = 'http://example.com/patient-profile';
+      const patient1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { profile: [profileUrl] },
+        name: [{ given: ['Update1'], family: 'Update1' }],
+      });
+      expect(patient1.meta?.profile).toEqual(expect.arrayContaining([profileUrl]));
+      expect(patient1.meta?.profile?.length).toEqual(1);
+
+      const patientWithoutProfile = { ...patient1 };
+      delete (patientWithoutProfile.meta as any).profile;
+      const patient2 = await systemRepo.updateResource<Patient>(patientWithoutProfile);
+      expect('profile' in (patient2.meta as any)).toBe(false);
+    }));
+
   test('Update patient no changes', () =>
     withTestContext(async () => {
       const patient1 = await systemRepo.createResource<Patient>({
