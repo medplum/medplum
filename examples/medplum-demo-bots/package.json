@@ -4,8 +4,10 @@
   "description": "Medplum Demo Bots",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "scripts": {
-    "build": "tsc",
+    "clean": "rimraf dist",
+    "build": "npm run clean && npm run lint && tsc && node esbuild-script.js",
     "lint": "eslint src/",
     "prettier": "prettier --write .",
     "test": "vitest run",
