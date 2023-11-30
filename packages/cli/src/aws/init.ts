@@ -8,7 +8,7 @@ import {
 import { CloudFrontClient, CreatePublicKeyCommand } from '@aws-sdk/client-cloudfront';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
-import { MedplumInfraConfig } from '@medplum/core';
+import { MedplumInfraConfig, normalizeErrorString } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'crypto';
 import { existsSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
@@ -204,10 +204,16 @@ export async function initStackCommand(): Promise<void> {
 
   header('SIGNING KEY');
   print('Medplum uses AWS CloudFront Presigned URLs for binary content such as file uploads.');
-  const { keyId, privateKey, publicKey, passphrase } = await generateSigningKey(config.stackName + 'SigningKey');
-  config.signingKeyId = keyId;
-  config.storagePublicKey = publicKey;
-  writeConfig(configFileName, config);
+  const signingKey = await generateSigningKey(config.stackName + 'SigningKey');
+  if (signingKey) {
+    config.signingKeyId = signingKey.keyId;
+    config.storagePublicKey = signingKey.publicKey;
+    writeConfig(configFileName, config);
+  } else {
+    print('Unable to generate signing key.');
+    print('Please manually create a signing key and enter the key ID and public key in the config file.');
+    print('You must set the "signingKeyId", "signingKey", and "signingKeyPassphrase" settings.');
+  }
 
   header('SSL CERTIFICATES');
   print(`Medplum will now check for existing SSL certificates for the subdomains.`);
@@ -233,17 +239,20 @@ export async function initStackCommand(): Promise<void> {
   print('These values will be encrypted at rest.');
   print(`The values will be stored in the "/medplum/${config.name}" path.`);
 
-  const serverParams = {
+  const serverParams: Record<string, string | number> = {
     port: config.apiPort,
     baseUrl: config.baseUrl,
     appBaseUrl: `https://${config.appDomainName}/`,
     storageBaseUrl: `https://${config.storageDomainName}/binary/`,
     binaryStorage: `s3:${config.storageBucketName}`,
-    signingKeyId: config.signingKeyId,
-    signingKey: privateKey,
-    signingKeyPassphrase: passphrase,
     supportEmail: supportEmail,
   };
+
+  if (signingKey) {
+    serverParams.signingKeyId = signingKey.keyId;
+    serverParams.signingKey = signingKey.privateKey;
+    serverParams.signingKeyPassphrase = signingKey.passphrase;
+  }
 
   print(
     JSON.stringify(
@@ -257,8 +266,15 @@ export async function initStackCommand(): Promise<void> {
     )
   );
 
-  await checkOk('Do you want to store these values in AWS Parameter Store?');
-  await writeParameters(config.region, `/medplum/${config.name}/`, serverParams);
+  if (await yesOrNo('Do you want to store these values in AWS Parameter Store?')) {
+    await writeParameters(config.region, `/medplum/${config.name}/`, serverParams);
+  } else {
+    const serverConfigFileName = configFileName.replace('.json', '.server.json');
+    writeConfig(serverConfigFileName, serverParams);
+    print('Skipping AWS Parameter Store.');
+    print('Writing values to local config file: ' + serverConfigFileName);
+    print('Please add these values to AWS Parameter Store manually.');
+  }
 
   header('DONE!');
   print('Medplum configuration complete.');
@@ -372,7 +388,7 @@ async function checkOk(text: string): Promise<void> {
  * @param configFileName - The config file name.
  * @param config - The config file contents.
  */
-function writeConfig(configFileName: string, config: MedplumInfraConfig): void {
+function writeConfig(configFileName: string, config: Record<string, any>): void {
   writeFileSync(resolve(configFileName), JSON.stringify(config, undefined, 2), 'utf-8');
 }
 
@@ -503,12 +519,15 @@ async function requestCert(region: string, domain: string): Promise<string> {
  * @param keyName - The key name.
  * @returns A new signing key.
  */
-async function generateSigningKey(keyName: string): Promise<{
-  keyId: string;
-  publicKey: string;
-  privateKey: string;
-  passphrase: string;
-}> {
+async function generateSigningKey(keyName: string): Promise<
+  | {
+      keyId: string;
+      publicKey: string;
+      privateKey: string;
+      passphrase: string;
+    }
+  | undefined
+> {
   const passphrase = randomUUID();
   const signingKey = generateKeyPairSync('rsa', {
     modulusLength: 2048,
@@ -524,22 +543,27 @@ async function generateSigningKey(keyName: string): Promise<{
     },
   });
 
-  const response = await new CloudFrontClient({}).send(
-    new CreatePublicKeyCommand({
-      PublicKeyConfig: {
-        Name: keyName,
-        CallerReference: randomUUID(),
-        EncodedKey: signingKey.publicKey,
-      },
-    })
-  );
+  try {
+    const response = await new CloudFrontClient({}).send(
+      new CreatePublicKeyCommand({
+        PublicKeyConfig: {
+          Name: keyName,
+          CallerReference: randomUUID(),
+          EncodedKey: signingKey.publicKey,
+        },
+      })
+    );
 
-  return {
-    keyId: response.PublicKey?.Id as string,
-    publicKey: signingKey.publicKey,
-    privateKey: signingKey.privateKey,
-    passphrase,
-  };
+    return {
+      keyId: response.PublicKey?.Id as string,
+      publicKey: signingKey.publicKey,
+      privateKey: signingKey.privateKey,
+      passphrase,
+    };
+  } catch (err) {
+    console.log('Error: Unable to create signing key: ', normalizeErrorString(err));
+    return undefined;
+  }
 }
 
 /**
