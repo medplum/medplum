@@ -481,7 +481,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     };
     const result: T = { ...updated, meta: resultMeta };
 
-    const project = this.getProjectId(updated);
+    const project = this.getProjectId(existing, updated);
     if (project) {
       resultMeta.project = project;
     }
@@ -1376,23 +1376,24 @@ export class Repository extends BaseRepository implements FhirRepository {
    * If it is a public resource type, then returns the public project ID.
    * If it is a protected resource type, then returns the Medplum project ID.
    * Otherwise, by default, return the current context project ID.
-   * @param resource - The FHIR resource.
+   * @param existing - Existing resource if one exists.
+   * @param updated - The FHIR resource.
    * @returns The project ID.
    */
-  private getProjectId(resource: Resource): string | undefined {
-    if (resource.resourceType === 'Project') {
-      return resource.id;
+  private getProjectId(existing: Resource | undefined, updated: Resource): string | undefined {
+    if (updated.resourceType === 'Project') {
+      return updated.id;
     }
 
-    if (resource.resourceType === 'ProjectMembership') {
-      return resolveId(resource.project);
+    if (updated.resourceType === 'ProjectMembership') {
+      return resolveId(updated.project);
     }
 
-    if (protectedResourceTypes.includes(resource.resourceType)) {
+    if (protectedResourceTypes.includes(updated.resourceType)) {
       return undefined;
     }
 
-    const submittedProjectId = resource.meta?.project;
+    const submittedProjectId = updated.meta?.project;
     if (submittedProjectId && this.canWriteMeta()) {
       // If the resource has an project (whether provided or from existing),
       // and the current context is allowed to write meta,
@@ -1400,7 +1401,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       return submittedProjectId;
     }
 
-    return this.context.project;
+    return existing?.meta?.project ?? this.context.project;
   }
 
   /**

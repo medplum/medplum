@@ -162,6 +162,32 @@ describe('FHIR Repo', () => {
       expect('profile' in (patient2.meta as any)).toBe(false);
     }));
 
+  test.only('meta.project preserved after attempting to remove it', () =>
+    withTestContext(async () => {
+      const clientApp = 'ClientApplication/' + randomUUID();
+      const projectId = randomUUID();
+      const repo = new Repository({
+        extendedMode: true,
+        project: projectId,
+        author: {
+          reference: clientApp,
+        },
+      });
+
+      const patient1 = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Update1'], family: 'Update1' }],
+      });
+      expect(patient1.meta?.project).toBeDefined();
+      expect(patient1.meta?.project).toEqual(projectId);
+
+      const patientWithoutProject = { ...patient1 };
+      delete (patientWithoutProject.meta as any).project;
+      const patient2 = await systemRepo.updateResource<Patient>(patientWithoutProject);
+      expect(patient2.meta?.project).toBeDefined();
+      expect(patient2.meta?.project).toEqual(projectId);
+    }));
+
   test('Update patient no changes', () =>
     withTestContext(async () => {
       const patient1 = await systemRepo.createResource<Patient>({
