@@ -246,7 +246,7 @@ const rules: Questionnaire =
             type: 'integer',
             enableWhen: [
               {
-                question: '4.1',
+                question: 'pregnancy.boolean',
                 operator: '=',
                 answerBoolean: true,
               },
@@ -255,10 +255,10 @@ const rules: Questionnaire =
         ],
         enableWhen: [
           {
-            question: '2.1',
+            question: 'general.gender',
             operator: '=',
             answerCoding: {
-              code: 'F',
+              code: 'female',
             },
           },
         ],

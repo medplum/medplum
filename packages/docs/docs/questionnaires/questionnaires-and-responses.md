@@ -96,7 +96,11 @@ Once you have created your [`Questionnaire`](/docs/api/fhir/resources/questionna
 
 Each [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) represents an _individual response_ to a [`Questionnaire`](/docs/api/fhir/resources/questionnaire). An individual response could be one response per person or the same person responding multiple times to the same [`Questionnaire`](/docs/api/fhir/resources/questionnaire) over the course of their care.
 
-A [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) should link to a specific [`Questionnaire`](/docs/api/fhir/resources/questionnaire). The items should follow the same structure in terms of grouping and nesting and adhere to all data types for answers defined in the [`Questionnaire`](/docs/api/fhir/resources/questionnaire). A [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) does not necessarily need to provide answers to each question, but all required questions must be answered.
+A [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) should link to a specific [`Questionnaire`](/docs/api/fhir/resources/questionnaire). It does not necessarily need to provide answers to each question, but all required questions must be answered.
+
+:::caution Structuring Answers
+The answer items in a [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) should follow the same structure in terms of grouping and nesting and adhere to all data types for answers defined in the linked [`Questionnaire`](/docs/api/fhir/resources/questionnaire).
+:::
 
 The [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) resource provides fields to define meta data about the responses, such as who provided the answers, recorded the answers, and more.
 
@@ -128,3 +132,7 @@ The answers on a [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnair
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
+
+## UI Components
+
+Medplum provides React components to help you view and build [`Questionnaire`](/docs/api/fhir/resources/questionnaire) resources. You can preview the [QuestionnaireForm](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--basic) and [QuestionnaireBuilder](https://storybook.medplum.com/?path=/story/medplum-questionnairebuilder--basic) components in [Storybook](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs).
