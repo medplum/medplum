@@ -29,6 +29,13 @@ export function parseParameters<T>(input: T | Parameters): T {
   }
 }
 
+/**
+ * Parse an incoming Operation request and extract the defined input parameters into a dictionary object.
+ *
+ * @param operation - The Operation for which the request is intended.
+ * @param req - The incoming request.
+ * @returns A dictionary of parameter names to values.
+ */
 export function parseInputParameters<T>(operation: OperationDefinition, req: Request): T {
   const parsed = Object.create(null);
   if (!operation.parameter) {
@@ -70,7 +77,7 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
       }
     } else if (min > 0 && isEmpty(value)) {
       throw new OperationOutcomeError(
-        badRequest(`Expected ${min > 1 ? 'at least' + min + ' values for' : 'required'} input parameter ${paramName}`)
+        badRequest(`Expected ${min > 1 ? 'at least' + min + ' values for' : 'required'} input parameter '${paramName}'`)
       );
     }
 
