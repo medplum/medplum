@@ -471,10 +471,6 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     const updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
       ...this.restoreReadonlyFields(resource, existing),
-      meta: {
-        ...existing?.meta,
-        ...resource.meta,
-      },
     });
 
     const resultMeta = {
