@@ -27,9 +27,7 @@ describe('init command', () => {
   beforeEach(() => {
     (fetch as unknown as jest.Mock).mockClear();
     (fetch as unknown as jest.Mock).mockResolvedValueOnce({
-      json: jest.fn().mockResolvedValueOnce([
-        {tag_name: 'v2.4.17'}
-      ])
+      json: jest.fn().mockResolvedValueOnce([{ tag_name: 'v2.4.17' }]),
     });
 
     const cloudFrontClient = mockClient(CloudFrontClient);
