@@ -162,7 +162,7 @@ describe('FHIR Repo', () => {
       expect('profile' in (patient2.meta as any)).toBe(false);
     }));
 
-  test.only('meta.project preserved after attempting to remove it', () =>
+  test('meta.project preserved after attempting to remove it', () =>
     withTestContext(async () => {
       const clientApp = 'ClientApplication/' + randomUUID();
       const projectId = randomUUID();
