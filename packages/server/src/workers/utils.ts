@@ -106,14 +106,6 @@ export function getAuditEventEntityRole(resource: Resource): Coding {
   }
 }
 
-export function isDeleteInteraction(subscription: Subscription): boolean {
-  const supportedInteractionExtension = getExtension(
-    subscription,
-    'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
-  );
-  return supportedInteractionExtension?.valueCode === 'delete';
-}
-
 export async function isFhirCriteriaMet(subscription: Subscription, currentResource: Resource): Promise<boolean> {
   const criteria = getExtension(
     subscription,
