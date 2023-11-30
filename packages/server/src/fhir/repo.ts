@@ -1362,7 +1362,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       // and the current context is a ClientApplication (i.e., OAuth client credentials),
       // then allow the ClientApplication to set the date.
       const lastUpdated = resource.meta?.lastUpdated;
-      if (lastUpdated && this.canWriteMeta()) {
+      if (lastUpdated && this.canWriteProtectedMeta()) {
         return lastUpdated;
       }
     }
@@ -1394,7 +1394,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
 
     const submittedProjectId = updated.meta?.project;
-    if (submittedProjectId && this.canWriteMeta()) {
+    if (submittedProjectId && this.canWriteProtectedMeta()) {
       // If the resource has an project (whether provided or from existing),
       // and the current context is allowed to write meta,
       // then use the provided value.
@@ -1418,7 +1418,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     // and the current context is allowed to write meta,
     // then use the provided value.
     const author = resource.meta?.author;
-    if (author && this.canWriteMeta()) {
+    if (author && this.canWriteProtectedMeta()) {
       return author;
     }
 
@@ -1480,10 +1480,11 @@ export class Repository extends BaseRepository implements FhirRepository {
   }
 
   /**
-   * Determines if the current user can manually set meta fields.
-   * @returns True if the current user can manually set meta fields.
+   * Determines if the current user can manually set certain protected meta fields
+   * such as author, project, lastUpdated, etc.
+   * @returns True if the current user can manually set protected meta fields.
    */
-  private canWriteMeta(): boolean {
+  private canWriteProtectedMeta(): boolean {
     return this.isSuperAdmin();
   }
 
