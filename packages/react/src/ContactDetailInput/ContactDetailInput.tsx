@@ -2,12 +2,9 @@ import { Group, TextInput } from '@mantine/core';
 import { ContactDetail, ContactPoint } from '@medplum/fhirtypes';
 import { useRef, useState } from 'react';
 import { ContactPointInput } from '../ContactPointInput/ContactPointInput';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-export interface ContactDetailInputProps {
-  name: string;
-  defaultValue?: ContactDetail;
-  onChange?: (value: ContactDetail) => void;
-}
+type ContactDetailInputProps = ComplexTypeInputProps<ContactDetail>;
 
 export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element {
   const [contactPoint, setContactDetail] = useState(props.defaultValue);
@@ -50,8 +47,10 @@ export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element 
       />
       <ContactPointInput
         name={props.name + '-telecom'}
+        path={props.path + '.telecom'}
         defaultValue={contactPoint?.telecom?.[0]}
         onChange={setTelecom}
+        outcome={props.outcome}
       />
     </Group>
   );

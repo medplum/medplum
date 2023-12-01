@@ -433,6 +433,7 @@ function ActionTimingInput(props: ActionTimingInputProps): JSX.Element {
       onChange={(newValue: any, propName?: string) => {
         props.onChange(setPropertyValue(value, key, propName ?? key, timingProperty, newValue));
       }}
+      outcome={undefined}
     />
   );
 }
