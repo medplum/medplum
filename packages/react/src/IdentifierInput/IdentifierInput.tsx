@@ -8,13 +8,13 @@ import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourceProperty
 type IdentifierInputProps = ComplexTypeInputProps<Identifier>;
 
 export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
-  const { property, outcome } = props;
+  const { path, outcome } = props;
   const [value, setValue] = useState(props.defaultValue);
   const { getNestedElement } = useContext(BackboneElementContext);
 
   const [systemElement, valueElement] = useMemo(
-    () => ['system', 'value'].map((field) => getNestedElement(property, field)),
-    [getNestedElement, property]
+    () => ['system', 'value'].map((field) => getNestedElement(path, field)),
+    [getNestedElement, path]
   );
 
   function setValueWrapper(newValue: Identifier): void {
@@ -31,14 +31,14 @@ export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
         required={(systemElement?.min ?? 0) > 0}
         defaultValue={value?.system}
         onChange={(e) => setValueWrapper({ ...value, system: e.currentTarget.value })}
-        error={getErrorsForInput(outcome, property.path + '.system')}
+        error={getErrorsForInput(outcome, path + '.system')}
       />
       <TextInput
         placeholder="Value"
         required={(valueElement?.min ?? 0) > 0}
         defaultValue={value?.value}
         onChange={(e) => setValueWrapper({ ...value, value: e.currentTarget.value })}
-        error={getErrorsForInput(outcome, property.path + '.value')}
+        error={getErrorsForInput(outcome, path + '.value')}
       />
     </Group>
   );

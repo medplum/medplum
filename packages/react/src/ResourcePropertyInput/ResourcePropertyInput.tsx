@@ -25,6 +25,7 @@ import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
 import { ResourceArrayInput } from '../ResourceArrayInput/ResourceArrayInput';
 import { TimingInput } from '../TimingInput/TimingInput';
 import { getErrorsForInput } from '../utils/outcomes';
+import { ComplexTypeInputProps } from './ResourcePropertyInput.utils';
 
 export interface ResourcePropertyInputProps {
   property: InternalSchemaElement;
@@ -83,7 +84,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         min={property.min}
         max={property.min}
         binding={property.binding}
-        property={property}
+        path={property.path}
       />
     );
   }
@@ -133,7 +134,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
         min={props.property.min}
         max={props.property.max}
         binding={props.property.binding}
-        property={props.property}
+        path={props.property.path}
       />
     </Group>
   );
@@ -142,6 +143,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
 // Avoiding optional props on lower-level components like to make it more difficult to misuse
 export type ElementDefinitionTypeInputProps = {
   name: ResourcePropertyInputProps['name'];
+  path: string;
   defaultValue: ResourcePropertyInputProps['defaultValue'];
   onChange: ResourcePropertyInputProps['onChange'];
   outcome: ResourcePropertyInputProps['outcome'];
@@ -149,11 +151,10 @@ export type ElementDefinitionTypeInputProps = {
   min: number;
   max: number;
   binding: ElementDefinitionBinding | undefined;
-  property: ResourcePropertyInputProps['property'];
 };
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
-  const { name, defaultValue, onChange, outcome, binding, property } = props;
+  const { name, defaultValue, onChange, outcome, binding, path } = props;
   const required = props.min !== undefined && props.min > 0;
 
   const propertyType = props.elementDefinitionType.code;
@@ -162,7 +163,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     return <div>Property type not specified </div>;
   }
 
-  const properties = { name, defaultValue, onChange, outcome, property };
+  const properties: ComplexTypeInputProps<any> = { name, defaultValue, onChange, outcome, path };
 
   switch (propertyType) {
     // 2.24.0.1 Primitive Types

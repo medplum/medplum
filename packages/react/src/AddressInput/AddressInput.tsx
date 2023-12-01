@@ -26,9 +26,11 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
   const valueRef = useRef<Address>();
   valueRef.current = value;
 
-  const _stateElement = useMemo(() => getNestedElement(props.property, 'state'), [getNestedElement, props.property]);
-  if (_stateElement?.binding) {
-    console.log('address.state has a binding not being shown', _stateElement.binding);
+  const stateElement = useMemo(() => getNestedElement(props.path, 'state'), [getNestedElement, props.path]);
+  if (stateElement?.binding) {
+    // TODO{mattlong} is it worth the complexity of subbing in an autocomplete input when
+    // a binding is defined in a profile? If so, it should go in a new wrapper around TextInput
+    console.debug('address.state has a binding not being shown', stateElement.binding);
   }
 
   function setValueWrapper(newValue: Address): void {

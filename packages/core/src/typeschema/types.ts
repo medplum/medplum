@@ -68,6 +68,7 @@ export interface SlicingRules {
 
 export interface SliceDefinition {
   name: string;
+  path: string;
   definition?: string;
   type?: ElementType[];
   elements: Record<string, InternalSchemaElement>;
@@ -429,6 +430,7 @@ class StructureDefinitionParser {
     }
     this.slicingContext.current = {
       name: element.sliceName ?? '',
+      path: element.path ?? '',
       definition: element.definition,
       type: this.parseElementDefinitionType(element),
       elements: {},

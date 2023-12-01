@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { InternalSchemaElement, SliceDefinition, getPropertyDisplayName } from '@medplum/core';
+import { InternalSchemaElement, SliceDefinition, getPropertyDisplayName, isEmpty } from '@medplum/core';
 import { FormSection } from '../FormSection/FormSection';
 import { ActionIcon, Group, Stack } from '@mantine/core';
 import { ElementDefinitionTypeInput } from '../ResourcePropertyInput/ResourcePropertyInput';
@@ -50,7 +50,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
 
   const required = slice.min > 0;
 
-  // this is a bit of a hack targeted at nested extensions; indentation should likely be controlled elsewhere
+  // this is a bit of a hack targeted at nested extensions; indentation would ideally be controlled elsewhere
   // e.g. USCorePatientProfile -> USCoreEthnicityExtension -> {ombCategory, detailed, text}
   const stackStyle = Object.keys(slice.elements).length > 0 ? undefined : { marginTop: '1rem', marginLeft: '1rem' };
   return (
@@ -66,17 +66,19 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
             <Group key={`${valueIndex}-${values.length}`} noWrap>
               <div style={{ flexGrow: 1 }}>
                 <Stack>
-                  <ElementsInput
-                    type={slice.type[0].code}
-                    elements={slice.elements}
-                    defaultValue={value}
-                    outcome={props.outcome}
-                    onChange={(newValue) => {
-                      const newValues = [...values];
-                      newValues[valueIndex] = newValue;
-                      setValuesWrapper(newValues);
-                    }}
-                  />
+                  {!isEmpty(slice.elements) && (
+                    <ElementsInput
+                      type={slice.type[0].code}
+                      elements={slice.elements}
+                      defaultValue={value}
+                      outcome={props.outcome}
+                      onChange={(newValue) => {
+                        const newValues = [...values];
+                        newValues[valueIndex] = newValue;
+                        setValuesWrapper(newValues);
+                      }}
+                    />
+                  )}
                   <ElementDefinitionTypeInput
                     elementDefinitionType={slice.type[0]}
                     name={slice.name}
@@ -90,6 +92,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                     min={slice.min}
                     max={slice.max}
                     binding={undefined}
+                    path={slice.path}
                   />
                 </Stack>
               </div>

@@ -7,7 +7,7 @@ import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourceProperty
 type HumanNameInputProps = ComplexTypeInputProps<HumanName>;
 
 export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
-  const { outcome, property } = props;
+  const { outcome, path } = props;
   const [value, setValue] = useState<HumanName | undefined>(props.defaultValue);
 
   function setValueWrapper(newValue: HumanName): void {
@@ -59,35 +59,35 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
           setUse(e.currentTarget.value as 'temp' | 'old' | 'usual' | 'official' | 'nickname' | 'anonymous' | 'maiden')
         }
         data={['', 'temp', 'old', 'usual', 'official', 'nickname', 'anonymous', 'maiden']}
-        error={getErrorsForInput(outcome, property.path + '.use')}
+        error={getErrorsForInput(outcome, path + '.use')}
       />
       <TextInput
         placeholder="Prefix"
         name={props.name + '-prefix'}
         defaultValue={value?.prefix?.join(' ')}
         onChange={(e) => setPrefix(e.currentTarget.value)}
-        error={getErrorsForInput(outcome, property.path + '.prefix')}
+        error={getErrorsForInput(outcome, path + '.prefix')}
       />
       <TextInput
         placeholder="Given"
         name={props.name + '-given'}
         defaultValue={value?.given?.join(' ')}
         onChange={(e) => setGiven(e.currentTarget.value)}
-        error={getErrorsForInput(outcome, property.path + '.given')}
+        error={getErrorsForInput(outcome, path + '.given')}
       />
       <TextInput
         name={props.name + '-family'}
         placeholder="Family"
         defaultValue={value?.family}
         onChange={(e) => setFamily(e.currentTarget.value)}
-        error={getErrorsForInput(outcome, property.path + '.family')}
+        error={getErrorsForInput(outcome, path + '.family')}
       />
       <TextInput
         placeholder="Suffix"
         name={props.name + '-suffix'}
         defaultValue={value?.suffix?.join(' ')}
         onChange={(e) => setSuffix(e.currentTarget.value)}
-        error={getErrorsForInput(outcome, property.path + '.suffix')}
+        error={getErrorsForInput(outcome, path + '.suffix')}
       />
     </Group>
   );

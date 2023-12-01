@@ -27,8 +27,8 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   const typeSchema = useMemo(() => tryGetDataType(typeName, profileUrl), [typeName, profileUrl]);
 
   const context = useMemo(() => {
-    return buildBackboneElementContext(typeSchema, profileUrl, [backboneContext.walkedPathsFlat], false);
-  }, [backboneContext.walkedPathsFlat, profileUrl, typeSchema]);
+    return buildBackboneElementContext(typeSchema, profileUrl);
+  }, [typeSchema, profileUrl]);
 
   if (!typeSchema) {
     return <div>{typeName}&nbsp;not implemented</div>;
