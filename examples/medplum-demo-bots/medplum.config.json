@@ -71,6 +71,18 @@
       "id": "",
       "source": "src/deduplication/merge-matching-patients.ts",
       "dist": "dist/deduplication/merge-matching-patients.js"
+    },
+    {
+      "name": "welcome-patient",
+      "id": "c7c4c2a2-d5fc-43e9-b892-37b94149f541",
+      "source": "./src/bots-with-shared-library/welcome-patient.ts",
+      "dist": "./dist/bots-with-shared-library/welcome-patient.js"
+    },
+    {
+      "name": "goodbye-patient",
+      "id": "3d123930-aa11-49eb-96fa-ac928d3eac3d",
+      "source": "./src/bots-with-shared-library/goodbye-patient.ts",
+      "dist": "./dist/bots-with-shared-library/welcome-patient.js"
     }
   ]
 }

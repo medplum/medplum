@@ -39,6 +39,7 @@
     "@vitest/coverage-v8": "0.34.6",
     "@vitest/ui": "0.34.6",
     "form-data": "4.0.0",
+    "glob": "^10.3.10",
     "node-fetch": "2.7.0",
     "pdfmake": "0.2.8",
     "ssh2-sftp-client": "9.1.0",
