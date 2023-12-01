@@ -95,11 +95,11 @@ export function parseStructureDefinition(sd: StructureDefinition): InternalTypeS
 const DATA_TYPES: DataTypesMap = inflateBaseSchema(baseSchema);
 
 // profiles are referenced by URL instead of name
-const PROFILE_SCHEMAS_BY_URL: { [profileUrl: string]: InternalTypeSchema } = {};
+const PROFILE_SCHEMAS_BY_URL: { [profileUrl: string]: InternalTypeSchema } = Object.create(null);
 
 // Since profiles alter the schemas of their elements, a mapping of type names to schemas
 // is maintained per profile URL
-const PROFILE_DATA_TYPES: { [profileUrl: string]: DataTypesMap } = {};
+const PROFILE_DATA_TYPES: { [profileUrl: string]: DataTypesMap } = Object.create(null);
 
 function getDataTypesMap(profileUrl?: string): DataTypesMap {
   let dataTypes: DataTypesMap;
@@ -107,7 +107,7 @@ function getDataTypesMap(profileUrl?: string): DataTypesMap {
   if (profileUrl) {
     dataTypes = PROFILE_DATA_TYPES[profileUrl];
     if (!dataTypes) {
-      dataTypes = PROFILE_DATA_TYPES[profileUrl] = {};
+      dataTypes = PROFILE_DATA_TYPES[profileUrl] = Object.create(null);
     }
   } else {
     dataTypes = DATA_TYPES;
