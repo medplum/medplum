@@ -1,0 +1,22 @@
+{
+  "name": "Medplum",
+  "short_name": "Medplum",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff",
+  "description": "Fast and easy healthcare dev",
+  "icons": [
+    {
+      "src": "/img/logo-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/logo-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
