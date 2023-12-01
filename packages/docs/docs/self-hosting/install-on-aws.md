@@ -186,7 +186,7 @@ See [Config Settings](/docs/self-hosting/config-settings) for more details on ea
 
 If you are using Route 53 as your DNS service, we recommend you select `dns` method for validating domain ownership.
 
-Then, follow [these instructions](https://docs.aws.amazon.com/acm/latest/userguide/dns-validation.html#setting-up-dns-validation) from AWS finish the validation process.
+Then, follow [these instructions](https://docs.aws.amazon.com/acm/latest/userguide/dns-validation.html#setting-up-dns-validation) from AWS to finish the validation process.
 
 ### CDK Bootstrap
 
