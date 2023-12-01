@@ -65,6 +65,12 @@ function standardHeaders(_req: Request, res: Response, next: NextFunction): void
     "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none';"
   );
 
+  // Disable browser features
+  res.set(
+    'Permission-Policy',
+    'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()'
+  );
+
   // Never send the Referer header
   res.set('Referrer-Policy', 'no-referrer');
 
