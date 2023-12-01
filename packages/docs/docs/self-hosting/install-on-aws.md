@@ -54,7 +54,7 @@ It is recommended to setup the AWS Command Line Interface (AWS CLI) by following
 
 AWS CLI and credentials are required by `medplum aws init` automate certain tasks, such as creating public key pairs.
 
-If you have not already done so, follow these instructions [these instructions](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) to set up your AWS credentials file.
+If you have not already done so, follow [these instructions](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) to set up your AWS credentials file.
 
 ### AWS Account Number
 
