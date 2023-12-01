@@ -89,7 +89,7 @@ You will need permission to access the following AWS services:
 
 ### Configure your name servers
 
-Medplum strongly recommends configuring your domain to use [Amazon's Route 53](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/MigratingDNS.html) as your DNS service as your name server. This will make it much easier to set up SSL certificates for the [Medplum App](https://www.medplum.com/docs/app) and [Medplum Binary Storage](/docs/fhir-datastore/binary-data).
+Medplum strongly recommends configuring your domain to use [Amazon's Route 53](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/MigratingDNS.html) as your custom DNS name server. This will make it much easier to set up SSL certificates for the [Medplum App](https://www.medplum.com/docs/app) and [Medplum Binary Storage](/docs/fhir-datastore/binary-data).
 
 If you choose not to go this route, you will be responsible for setting up your own SSL certificates.
 
