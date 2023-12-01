@@ -4,6 +4,7 @@ import { Hl7Client } from '@medplum/hl7';
 import { EventLogger } from 'node-windows';
 import WebSocket from 'ws';
 import { Channel, QueueItem } from './channel';
+import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 
 export class App {
@@ -73,9 +74,22 @@ export class App {
 
     for (const definition of agent.channel as AgentChannel[]) {
       const endpoint = await this.medplum.readReference(definition.endpoint as Reference<Endpoint>);
-      const channel = new AgentHl7Channel(this, definition, endpoint);
-      channel.start();
-      this.channels.set(definition.name as string, channel);
+      let channel: Channel | undefined = undefined;
+
+      if (!endpoint.address) {
+        this.log.warn(`Ignoring empty endpoint address: ${definition.name}`);
+      } else if (endpoint.address.startsWith('dicom')) {
+        channel = new AgentDicomChannel(this, definition, endpoint);
+      } else if (endpoint.address.startsWith('mllp')) {
+        channel = new AgentHl7Channel(this, definition, endpoint);
+      } else {
+        this.log.error(`Unsupported endpoint type: ${endpoint.address}`);
+      }
+
+      if (channel) {
+        channel.start();
+        this.channels.set(definition.name as string, channel);
+      }
     }
 
     this.log.info('Medplum service started successfully');
