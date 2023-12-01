@@ -292,11 +292,13 @@ npx medplum aws deploy-app demo
 
 **Optional:** If you intend to use Medplum Bots, you will need an [AWS Lambda Layer](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-concepts.html#gettingstarted-concepts-layer).
 
-At present, the bot layer must be built from source. See [Clone the repo](/docs/contributing/local-dev-setup#clone-the-repo) and [Run the stack](/docs/contributing/run-the-stack) to build from source.
+At present, the bot layer must be built from source. See [Clone the repo](/docs/contributing/local-dev-setup#clone-the-repo).
 
-After you successfully build the Medplum project from source, you can use the `deploy-bot-layer.sh` script to build and deploy the Lambda Layer:
+After you successfully clone the Medplum repo, you can use the `deploy-bot-layer.sh` script to build and deploy the Lambda Layer:
 
 ```bash
+git clone https://github.com/medplum/medplum.git medplum
+cd medplum
 ./scripts/deploy-bot-layer.sh
 ```
 

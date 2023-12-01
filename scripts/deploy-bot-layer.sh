@@ -5,6 +5,12 @@ if [[ -z "${BOT_LAYER_NAME}" ]]; then
   BOT_LAYER_NAME="medplum-bot-layer"
 fi
 
+if [[ -z "${AWS_REGION}" ]]; then
+  AWS_REGION=$(aws configure get region)
+  : ${AWS_REGION:=us-east-1}
+  echo "Deploying bot layer in region: ${AWS_REGION}"
+fi
+
 # Fail on error
 set -e
 
@@ -41,7 +47,7 @@ zip -r -q medplum-bot-layer.zip .
 
 # Publish the bot layer
 aws lambda publish-layer-version \
-  --region us-east-1 \
+  --region $AWS_REGION \
   --layer-name "$BOT_LAYER_NAME" \
   --description "Medplum Bot Layer" \
   --license-info "Apache-2.0" \
