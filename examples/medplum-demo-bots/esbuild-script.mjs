@@ -1,3 +1,8 @@
+/* global console */
+/* global process */
+/* eslint no-console: "off" */
+/*eslint no-process-exit: "off"*/
+
 import esbuild from 'esbuild';
 import { glob } from 'glob';
 
