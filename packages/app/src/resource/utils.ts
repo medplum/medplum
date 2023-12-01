@@ -23,3 +23,17 @@ export function cleanResource(resource: Resource): Resource {
     meta,
   };
 }
+
+/**
+ * Adds the supplied profileUrl to the resource.meta.profile if it is not already
+ * specified
+ * @param resource - A FHIR resource
+ * @param profileUrl - The profile URL to add
+ */
+export function addProfileToResource(resource: Resource, profileUrl: string): void {
+  if (!resource?.meta?.profile?.includes(profileUrl)) {
+    resource.meta = resource.meta ?? {};
+    resource.meta.profile = resource.meta.profile ?? [];
+    resource.meta.profile.push(profileUrl);
+  }
+}
