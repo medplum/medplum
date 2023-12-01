@@ -260,10 +260,10 @@ For example:
 npx medplum aws update-bucket-policies demo
 ```
 
-You can use the `--dry-run` option to preview the changes:
+You can use the `--dryrun` option to preview the changes:
 
 ```bash
-npx medplum aws update-bucket-policies [env name] --dry-run
+npx medplum aws update-bucket-policies [env name] --dryrun
 ```
 
 ### Deploy the app
