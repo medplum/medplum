@@ -9,7 +9,7 @@ import {
 } from '@medplum/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { showNotification } from '@mantine/notifications';
-import { ProfileSummary, deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
+import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import { Anchor, Code, Group, Stack, Tabs, ThemeIcon } from '@mantine/core';
 import { addProfileToResource, cleanResource } from './utils';
 import { IconCheck } from '@tabler/icons-react';
@@ -32,6 +32,10 @@ export function ProfilesPage(): JSX.Element | null {
       });
   }, [medplum, resourceType, id]);
 
+  // TODO{mattlong} This is a bit inefficient since the entire structure definition
+  // for each available profile is being fetched. All that is really needed is the title & url
+  // The SD is usefule for the time being to populate the Snapshot and JSON debugging tabs;
+  // but those will likely be removed before deploying
   useEffect(() => {
     medplum
       .searchResources('StructureDefinition', new URLSearchParams({ type: resourceType, derivation: 'constraint' }))
@@ -95,7 +99,7 @@ function ProfileListItem({
   active,
 }: {
   active: boolean;
-  profile: ProfileSummary;
+  profile: SupportedProfileStructureDefinition;
   onSelect: () => void;
 }): JSX.Element {
   return (

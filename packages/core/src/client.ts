@@ -499,14 +499,6 @@ interface ResourceSchemaGraphQLResponse {
   };
 }
 
-export type ProfileSummary = Pick<StructureDefinition, 'resourceType' | 'name' | 'title' | 'kind' | 'url'>;
-
-interface ProfileSummaryGraphQLResponse {
-  readonly data: {
-    readonly StructureDefinitionList: ProfileSummary[];
-  };
-}
-
 interface RequestCacheEntry {
   readonly requestTime: number;
   readonly value: ReadablePromise<any>;
@@ -1620,45 +1612,6 @@ export class MedplumClient extends EventTarget {
           indexSearchParameter(searchParameter);
         }
       })()
-    );
-    this.setCacheEntry(cacheKey, promise);
-    return promise;
-  }
-
-  /**
-   * Requests the schema for a resource type.
-   * If the schema is already cached, the promise is resolved immediately.
-   * @category Schema
-   * @param profileUrl - The FHIR URL of the profile
-   * @returns Promise with a summary of the requested profile.
-   */
-  requestProfileSummary(profileUrl: string): Promise<ProfileSummary[]> {
-    const cacheKey = profileUrl + '-summary';
-    const cached = this.getCacheEntry(cacheKey, undefined);
-    if (cached) {
-      return cached.value;
-    }
-
-    const promise = new ReadablePromise<ProfileSummary[]>(
-      new Promise<ProfileSummary[]>((resolve, reject) => {
-        const query = `{
-          StructureDefinitionList(url: "${profileUrl}") {
-            resourceType,
-            name,
-            title,
-            kind,
-            url,
-          }
-        }`.replace(/\s+/g, ' ');
-
-        this.graphql(query)
-          .then((response) => {
-            resolve((response as ProfileSummaryGraphQLResponse).data.StructureDefinitionList);
-          })
-          .catch((reason) => {
-            reject(reason);
-          });
-      })
     );
     this.setCacheEntry(cacheKey, promise);
     return promise;
