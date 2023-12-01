@@ -67,7 +67,7 @@ import {
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage, IClientStorage } from './storage';
 import { indexSearchParameter } from './types';
-import { indexStructureDefinitionBundle, isDataTypeLoaded, isDataTypeLoadedByUrl } from './typeschema/types';
+import { indexStructureDefinitionBundle, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
 import {
   CodeChallengeMethod,
   ProfileResource,
@@ -1673,7 +1673,7 @@ export class MedplumClient extends EventTarget {
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   requestProfileSchema(profileUrl: string): Promise<void> {
-    if (isDataTypeLoadedByUrl(profileUrl)) {
+    if (isProfileLoaded(profileUrl)) {
       return Promise.resolve();
     }
 
@@ -1685,13 +1685,15 @@ export class MedplumClient extends EventTarget {
 
     const promise = new ReadablePromise<void>(
       (async () => {
+        // TODO{mattlong}: account for https://hl7.org/fhir/references.html#canonical-matching
+        // lexical sort by version and then fallback to lastUpdated
         const profilesQueryParmas = new URLSearchParams([['url', profileUrl]]);
         const response = await this.searchResources('StructureDefinition', profilesQueryParmas);
 
         if (response.length === 0) {
           console.warn(`No SDs found for ${profileUrl}!`);
         } else {
-          indexStructureDefinitionBundle(response);
+          indexStructureDefinitionBundle(response, profileUrl);
         }
         // TODO{profiles} search parameters
       })()

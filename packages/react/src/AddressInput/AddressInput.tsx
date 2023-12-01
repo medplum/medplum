@@ -1,6 +1,6 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Address } from '@medplum/fhirtypes';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useMemo, useRef, useState } from 'react';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { BackboneElementContext } from '../BackboneElementInput/BackbonElementInput.utils';
 
@@ -26,10 +26,10 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
   const valueRef = useRef<Address>();
   valueRef.current = value;
 
-  useEffect(() => {
-    const stateElement = getNestedElement(props.property, 'state');
-    console.log({ stateElement });
-  }, [getNestedElement, props.property]);
+  const _stateElement = useMemo(() => getNestedElement(props.property, 'state'), [getNestedElement, props.property]);
+  if (_stateElement?.binding) {
+    console.log('address.state has a binding not being shown', _stateElement.binding);
+  }
 
   function setValueWrapper(newValue: Address): void {
     setValue(newValue);

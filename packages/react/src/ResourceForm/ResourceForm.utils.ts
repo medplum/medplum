@@ -1,6 +1,5 @@
 import { capitalize, InternalSchemaElement, isEmpty } from '@medplum/core';
 import { StructureDefinition } from '@medplum/fhirtypes';
-import React from 'react';
 
 export function setPropertyValue(
   obj: any,
@@ -22,19 +21,13 @@ export function setPropertyValue(
   return obj;
 }
 
-export type ResourceFormContextType = {
-  includeExtensions: boolean;
-};
-
-export const ResourceFormContext = React.createContext<ResourceFormContextType>({
-  includeExtensions: true,
-});
-
-export type ProfileStructureDefinition = StructureDefinition & {
+export type SupportedProfileStructureDefinition = StructureDefinition & {
   url: NonNullable<StructureDefinition['url']>;
   name: NonNullable<StructureDefinition['name']>;
 };
 
-export function isProfileStructureDefinition(profile?: StructureDefinition): profile is ProfileStructureDefinition {
+export function isSupportedProfileStructureDefinition(
+  profile?: StructureDefinition
+): profile is SupportedProfileStructureDefinition {
   return !!profile && !isEmpty(profile.url) && !isEmpty(profile.name);
 }

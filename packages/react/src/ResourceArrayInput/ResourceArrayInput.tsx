@@ -12,7 +12,7 @@ import {
   getTypedPropertyValueWithSchema,
   isEmpty,
   matchDiscriminant,
-  tryGetDataTypeByUrl,
+  tryGetProfile,
 } from '@medplum/core';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
 import { MouseEvent, useState, useEffect } from 'react';
@@ -191,7 +191,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
           const slice = supportedSlices[i];
           const profileUrl = profileUrls[i];
           if (profileUrl) {
-            const typeSchema = tryGetDataTypeByUrl(profileUrl);
+            const typeSchema = tryGetProfile(profileUrl);
             slice.typeSchema = typeSchema;
           }
         }

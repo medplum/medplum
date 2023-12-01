@@ -1,5 +1,5 @@
 import { JsonInput } from '@mantine/core';
-import { InternalTypeSchema, stringify, tryGetDataTypeByUrl } from '@medplum/core';
+import { InternalTypeSchema, stringify, tryGetProfile } from '@medplum/core';
 import { ElementDefinitionType, Extension } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useMemo, useState } from 'react';
@@ -38,7 +38,7 @@ export function ExtensionInput(props: ExtensionInputNewProps): JSX.Element | nul
       medplum
         .requestProfileSchema(profileUrl)
         .then(() => {
-          const profile = tryGetDataTypeByUrl(profileUrl);
+          const profile = tryGetProfile(profileUrl);
           setLoading(false);
           setTypeSchema(profile);
         })
@@ -92,6 +92,7 @@ export function ExtensionInput(props: ExtensionInputNewProps): JSX.Element | nul
 
   return (
     <BackboneElementInput
+      profileUrl={profileUrl}
       typeName={typeSchema.name}
       defaultValue={props.defaultValue}
       onChange={onChange}
