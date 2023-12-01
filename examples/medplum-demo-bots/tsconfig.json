@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "lib": ["esnext"],
+    "lib": ["esnext", "DOM"],
     "types": ["vitest/globals"],
     "target": "es2018",
     "module": "commonjs",
