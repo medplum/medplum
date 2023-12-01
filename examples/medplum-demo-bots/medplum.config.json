@@ -74,13 +74,13 @@
     },
     {
       "name": "welcome-patient",
-      "id": "c7c4c2a2-d5fc-43e9-b892-37b94149f541",
+      "id": "",
       "source": "./src/bots-with-shared-library/welcome-patient.ts",
       "dist": "./dist/bots-with-shared-library/welcome-patient.js"
     },
     {
       "name": "goodbye-patient",
-      "id": "3d123930-aa11-49eb-96fa-ac928d3eac3d",
+      "id": "",
       "source": "./src/bots-with-shared-library/goodbye-patient.ts",
       "dist": "./dist/bots-with-shared-library/welcome-patient.js"
     }
