@@ -13,7 +13,7 @@ import { generateKeyPairSync, randomUUID } from 'crypto';
 import { existsSync } from 'fs';
 import readline from 'readline';
 import { getServerVersions } from './utils';
-import { configFileName, writeConfig } from '../utils';
+import { writeConfig } from '../utils';
 
 type MedplumDomainType = 'api' | 'app' | 'storage';
 type MedplumDomainSetting = `${MedplumDomainType}DomainName`;
@@ -67,12 +67,12 @@ export async function initStackCommand(): Promise<void> {
 
   header('CONFIG FILE');
   print('Medplum Infrastructure will create a config file in the current directory.');
-  const configFile = configFileName(config.name);
-  if (existsSync(configFile)) {
-    print(`Config file ${configFile} already exists.`);
+  const configFileName = await ask('What is the config file name?', `medplum.${config.name}.config.json`);
+  if (existsSync(configFileName)) {
+    print('Config file already exists.');
     await checkOk('Do you want to overwrite the config file?');
   }
-  print('Using config file "' + configFile + '"...');
+  print('Using config file "' + configFileName + '"...');
   writeConfig(config, config.name);
 
   header('AWS REGION');
@@ -271,10 +271,10 @@ export async function initStackCommand(): Promise<void> {
   if (await yesOrNo('Do you want to store these values in AWS Parameter Store?')) {
     await writeParameters(config.region, `/medplum/${config.name}/`, serverParams);
   } else {
-    const serverConfigFileName = configFileName.replace('.json', '.server.json');
-    writeConfig(config, config.name + '.server');
+    const serverTag = config.name + '.server';
+    writeConfig(config, serverTag);
     print('Skipping AWS Parameter Store.');
-    print('Writing values to local config file: ' + serverConfigFileName);
+    print(`Writing values to local config file: medplum.${serverTag}.json`);
     print('Please add these values to AWS Parameter Store manually.');
   }
 

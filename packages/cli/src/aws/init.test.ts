@@ -564,13 +564,10 @@ describe('init command', () => {
     const cloudFrontClient = mockClient(CloudFrontClient);
     cloudFrontClient.on(CreatePublicKeyCommand).rejects('CreatePublicKeyCommand failed');
 
-    const filename = `test-${randomUUID()}.json`;
-
     readline.createInterface = jest.fn(() =>
       mockReadline(
         'y', // Yes, proceed without AWS credentials
         'foo',
-        filename,
         'us-east-1',
         'account-123',
         'TestStack',
