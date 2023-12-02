@@ -27,7 +27,7 @@ Utility functions that use the `OperationDefinition` to automate implementation 
 
 ```ts
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { created } from '@medplum/core';
+import { created, OperationDefinition, Reference } from '@medplum/core';
 import { Request, Response } from 'express';
 
 const operation: OperationDefinition = {
