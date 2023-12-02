@@ -46,6 +46,7 @@ const operation: OperationDefinition = {
     // Optional params: owner (Reference), ownerEmail (string)
     { use: 'in', name: 'owner', type: 'Reference', min: 0, max: '1' },
     { use: 'in', name: 'ownerEmail', type: 'string', min: 0, max: '1' },
+    // Output parameter: Project
     { use: 'out', name: 'return', type: 'Project', min: 1, max: '1' },
   ],
 };
