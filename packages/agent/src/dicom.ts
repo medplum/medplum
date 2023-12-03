@@ -1,33 +1,20 @@
+import { normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
-import { Dataset, Scp, Server, association, constants, requests, responses } from 'dcmjs-dimse';
-import { Socket } from 'net';
-import { TLSSocket } from 'tls';
+import * as dimse from 'dcmjs-dimse';
 import { App } from './app';
 import { Channel, QueueItem } from './channel';
 
-const {
-  Status,
-  PresentationContextResult,
-  UserIdentityType,
-  RejectResult,
-  RejectSource,
-  RejectReason,
-  TransferSyntax,
-  SopClass,
-  StorageClass,
-} = constants;
-
-const { CEchoResponse, CFindResponse, CStoreResponse } = responses;
-
 export class AgentDicomChannel implements Channel {
-  readonly server: Server;
+  static instance: AgentDicomChannel;
+  readonly server: dimse.Server;
 
   constructor(
     readonly app: App,
     readonly definition: AgentChannel,
     readonly endpoint: Endpoint
   ) {
-    this.server = new Server(DcmjsDimseScp);
+    AgentDicomChannel.instance = this;
+    this.server = new dimse.Server(DcmjsDimseScp);
   }
 
   start(): void {
@@ -49,70 +36,30 @@ export class AgentDicomChannel implements Channel {
   }
 }
 
-class DcmjsDimseScp extends Scp {
-  association?: association.Association;
-
-  constructor(socket: Socket | TLSSocket, opts?: any) {
-    super(socket, opts);
-    this.association = undefined;
-  }
-
+class DcmjsDimseScp extends dimse.Scp {
   /**
    * Handle incoming association requests.
    * @param association - The incoming association.
    */
-  associationRequested(association: association.Association): void {
-    this.association = association;
+  associationRequested(association: dimse.association.Association): void {
+    // Set the preferred max PDU length
+    association.setMaxPduLength(65536);
 
-    // Evaluate calling/called AET and reject association, if needed
-    if (this.association.getCallingAeTitle() !== 'SCU') {
-      this.sendAssociationReject(RejectResult.Permanent, RejectSource.ServiceUser, RejectReason.CallingAeNotRecognized);
-      return;
-    }
-
-    // Evaluate user identity and reject association, if needed
-    if (this.association.getNegotiateUserIdentity() && this.association.getUserIdentityPositiveResponseRequested()) {
-      if (
-        this.association.getUserIdentityType() === UserIdentityType.UsernameAndPasscode &&
-        this.association.getUserIdentityPrimaryField() === 'USERNAME' &&
-        this.association.getUserIdentitySecondaryField() === 'PASSWORD'
-      ) {
-        this.association.setUserIdentityServerResponse('');
-        this.association.setNegotiateUserIdentityServerResponse(true);
-      } else {
-        this.sendAssociationReject(RejectResult.Permanent, RejectSource.ServiceUser, RejectReason.NoReasonGiven);
-        return;
-      }
-    }
-
-    // Optionally set the preferred max PDU length
-    this.association.setMaxPduLength(65536);
-
-    const contexts = association.getPresentationContexts();
-    contexts.forEach((c) => {
-      const context = association.getPresentationContext(c.id);
-      if (
-        context.getAbstractSyntaxUid() === SopClass.Verification ||
-        context.getAbstractSyntaxUid() === SopClass.StudyRootQueryRetrieveInformationModelFind ||
-        context.getAbstractSyntaxUid() === StorageClass.MrImageStorage
-        // Accept other presentation contexts, as needed
-      ) {
-        const transferSyntaxes = context.getTransferSyntaxUids();
-        transferSyntaxes.forEach((transferSyntax) => {
-          if (
-            transferSyntax === TransferSyntax.ImplicitVRLittleEndian ||
-            transferSyntax === TransferSyntax.ExplicitVRLittleEndian
-          ) {
-            context.setResult(PresentationContextResult.Accept, transferSyntax);
-          } else {
-            context.setResult(PresentationContextResult.RejectTransferSyntaxesNotSupported);
-          }
-        });
-      } else {
-        context.setResult(PresentationContextResult.RejectAbstractSyntaxNotSupported);
-      }
+    // Accept all presentation contexts, as needed
+    association.getPresentationContexts().forEach(({ context }) => {
+      context.getTransferSyntaxUids().forEach((ts) => {
+        context.setResult(dimse.constants.PresentationContextResult.Accept, ts);
+      });
     });
+
     this.sendAssociationAccept();
+  }
+
+  /**
+   * Handle incoming association release requests.
+   */
+  associationReleaseRequested(): void {
+    this.sendAssociationReleaseResponse();
   }
 
   /**
@@ -120,29 +67,13 @@ class DcmjsDimseScp extends Scp {
    * @param request - The incoming C-ECHO request.
    * @param callback - The callback function to invoke with the C-ECHO response.
    */
-  cEchoRequest(request: requests.CEchoRequest, callback: (response: responses.CEchoResponse) => void): void {
-    const response = CEchoResponse.fromRequest(request);
-    response.setStatus(Status.Success);
-
+  cEchoRequest(
+    request: dimse.requests.CEchoRequest,
+    callback: (response: dimse.responses.CEchoResponse) => void
+  ): void {
+    const response = dimse.responses.CEchoResponse.fromRequest(request);
+    response.setStatus(dimse.constants.Status.Success);
     callback(response);
-  }
-
-  /**
-   * Handle incoming C-FIND requests.
-   * @param request - The incoming C-FIND request.
-   * @param callback - The callback function to invoke with the C-FIND responses.
-   */
-  cFindRequest(request: requests.CFindRequest, callback: (responses: responses.CFindResponse[]) => void): void {
-    console.log(request.getDataset());
-
-    const pendingResponse = CFindResponse.fromRequest(request);
-    pendingResponse.setDataset(new Dataset({ PatientID: '12345', PatientName: 'JOHN^DOE' }));
-    pendingResponse.setStatus(Status.Pending);
-
-    const finalResponse = CFindResponse.fromRequest(request);
-    finalResponse.setStatus(Status.Success);
-
-    callback([pendingResponse, finalResponse]);
   }
 
   /**
@@ -150,17 +81,22 @@ class DcmjsDimseScp extends Scp {
    * @param request - The incoming C-STORE request.
    * @param callback - The callback function to invoke with the C-STORE response.
    */
-  cStoreRequest(request: requests.CStoreRequest, callback: (response: responses.CStoreResponse) => void): void {
-    console.log(request.getDataset());
+  cStoreRequest(
+    request: dimse.requests.CStoreRequest,
+    callback: (response: dimse.responses.CStoreResponse) => void
+  ): void {
+    try {
+      App.instance.addToWebSocketQueue({
+        channel: AgentDicomChannel.instance.definition.name as string,
+        remote: 'foo',
+        body: JSON.stringify(request.getDataset()),
+      });
+    } catch (err) {
+      App.instance.log.error(`DICOM error: ${normalizeErrorString(err)}`);
+    }
 
-    const response = CStoreResponse.fromRequest(request);
-    response.setStatus(Status.Success);
-
+    const response = dimse.responses.CStoreResponse.fromRequest(request);
+    response.setStatus(dimse.constants.Status.Success);
     callback(response);
-  }
-
-  // Handle incoming association release requests
-  associationReleaseRequested(): void {
-    this.sendAssociationReleaseResponse();
   }
 }

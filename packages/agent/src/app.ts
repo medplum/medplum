@@ -8,6 +8,7 @@ import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 
 export class App {
+  static instance: App;
   readonly log: EventLogger;
   readonly webSocket: WebSocket;
   readonly webSocketQueue: QueueItem[] = [];
@@ -19,6 +20,8 @@ export class App {
     readonly medplum: MedplumClient,
     readonly agentId: string
   ) {
+    App.instance = this;
+
     this.log = {
       info: console.log,
       warn: console.warn,
