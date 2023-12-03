@@ -67,6 +67,8 @@ export class App {
           case 'agent:transmit:request':
             this.pushMessage(command);
             break;
+          default:
+            this.log.error(`Unknown message type: ${command.type}`);
         }
       } catch (err) {
         this.log.error(`WebSocket error: ${normalizeErrorString(err)}`);

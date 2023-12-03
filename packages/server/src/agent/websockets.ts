@@ -49,6 +49,9 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
           case 'agent:transmit:request':
             await handleTransmit(command);
             break;
+
+          default:
+            sendError(`Unknown message type: ${command.type}`);
         }
       } catch (err) {
         sendError(normalizeErrorString(err));
