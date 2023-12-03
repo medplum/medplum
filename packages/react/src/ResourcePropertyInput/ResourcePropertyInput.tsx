@@ -38,7 +38,10 @@ export interface ResourcePropertyInputProps {
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
   const property = props.property;
-  const propertyType = props.defaultPropertyType ?? property.type[0].code;
+  const propertyType =
+    props.defaultPropertyType && props.defaultPropertyType !== 'undefined'
+      ? props.defaultPropertyType
+      : property.type[0].code;
   const name = props.name;
   const value = props.defaultValue;
 
