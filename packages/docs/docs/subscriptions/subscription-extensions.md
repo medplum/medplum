@@ -199,6 +199,8 @@ If your subscription failed or threw an error, you can configure it to attempt t
 
 To add an attempt number, use the `https://medplum.com/fhir/StructureDefinition/subscription-max-attempts` extension with the valueInteger set to a number between 1-18.
 
+The default number of attempts is 3.
+
 ```json
 {
   "resourceType": "Subscription",
