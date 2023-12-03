@@ -92,16 +92,16 @@ describe('Agent WebSockets', () => {
       .ws('/ws/agent')
       .sendText(
         JSON.stringify({
-          type: 'connect',
+          type: 'agent:connect:request',
           accessToken,
           agentId: agent.id,
         })
       )
-      .expectText('{"type":"connected"}')
+      .expectText('{"type":"agent:connect:response"}')
       // Now transmit, should succeed
       .sendText(
         JSON.stringify({
-          type: 'transmit',
+          type: 'agent:transmit:request',
           accessToken,
           channel: 'test',
           remote: '0.0.0.0:57000',
@@ -112,7 +112,9 @@ describe('Agent WebSockets', () => {
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
         })
       )
-      .expectText(/{"type":"transmit","channel":"test","remote":"0.0.0.0:57000","body":"MSH[^"]+ACK[^"]+"}/)
+      .expectText(
+        /{"type":"agent:transmit:response","channel":"test","remote":"0.0.0.0:57000","body":"MSH[^"]+ACK[^"]+"}/
+      )
       .close()
       .expectClosed();
   });
@@ -121,7 +123,7 @@ describe('Agent WebSockets', () => {
     await request(server)
       .ws('/ws/agent')
       .sendText('<html></html>')
-      .expectText(/{"type":"error","body":"Unexpected token/)
+      .expectText(/{"type":"agent:error","body":"Unexpected token/)
       .close()
       .expectClosed();
   });
@@ -131,11 +133,11 @@ describe('Agent WebSockets', () => {
       .ws('/ws/agent')
       .sendText(
         JSON.stringify({
-          type: 'connect',
+          type: 'agent:connect:request',
           agentId: agent.id,
         })
       )
-      .expectText('{"type":"error","body":"Missing access token"}')
+      .expectText('{"type":"agent:error","body":"Missing access token"}')
       .close()
       .expectClosed();
   });
@@ -145,11 +147,11 @@ describe('Agent WebSockets', () => {
       .ws('/ws/agent')
       .sendText(
         JSON.stringify({
-          type: 'connect',
+          type: 'agent:connect:request',
           accessToken,
         })
       )
-      .expectText('{"type":"error","body":"Missing agent ID"}')
+      .expectText('{"type":"agent:error","body":"Missing agent ID"}')
       .close()
       .expectClosed();
   });
@@ -166,7 +168,7 @@ describe('Agent WebSockets', () => {
           body: 'MSH|...',
         })
       )
-      .expectText('{"type":"error","body":"Not connected"}')
+      .expectText('{"type":"agent:error","body":"Not connected"}')
       .close()
       .expectClosed();
   });
@@ -176,12 +178,12 @@ describe('Agent WebSockets', () => {
       .ws('/ws/agent')
       .sendText(
         JSON.stringify({
-          type: 'connect',
+          type: 'agent:connect:request',
           accessToken,
           agentId: agent.id,
         })
       )
-      .expectText('{"type":"connected"}')
+      .expectText('{"type":"agent:connect:response"}')
       .sendText(
         JSON.stringify({
           type: 'transmit',
@@ -190,7 +192,7 @@ describe('Agent WebSockets', () => {
           body: 'MSH|...',
         })
       )
-      .expectText('{"type":"error","body":"Missing access token"}')
+      .expectText('{"type":"agent:error","body":"Missing access token"}')
       .close()
       .expectClosed();
   });
@@ -200,12 +202,12 @@ describe('Agent WebSockets', () => {
       .ws('/ws/agent')
       .sendText(
         JSON.stringify({
-          type: 'connect',
+          type: 'agent:connect:request',
           accessToken,
           agentId: agent.id,
         })
       )
-      .expectText('{"type":"connected"}')
+      .expectText('{"type":"agent:connect:response"}')
       .sendText(
         JSON.stringify({
           type: 'transmit',
@@ -214,7 +216,7 @@ describe('Agent WebSockets', () => {
           body: 'MSH|...',
         })
       )
-      .expectText('{"type":"error","body":"Missing channel"}')
+      .expectText('{"type":"agent:error","body":"Missing channel"}')
       .close()
       .expectClosed();
   });
@@ -224,12 +226,12 @@ describe('Agent WebSockets', () => {
       .ws('/ws/agent')
       .sendText(
         JSON.stringify({
-          type: 'connect',
+          type: 'agent:connect:request',
           accessToken,
           agentId: agent.id,
         })
       )
-      .expectText('{"type":"connected"}')
+      .expectText('{"type":"agent:connect:response"}')
       .sendText(
         JSON.stringify({
           type: 'transmit',
@@ -239,7 +241,7 @@ describe('Agent WebSockets', () => {
           body: 'MSH|...',
         })
       )
-      .expectText('{"type":"error","body":"Channel not found"}')
+      .expectText('{"type":"agent:error","body":"Channel not found"}')
       .close()
       .expectClosed();
   });
@@ -249,12 +251,12 @@ describe('Agent WebSockets', () => {
       .ws('/ws/agent')
       .sendText(
         JSON.stringify({
-          type: 'connect',
+          type: 'agent:connect:request',
           accessToken,
           agentId: agent.id,
         })
       )
-      .expectText('{"type":"connected"}')
+      .expectText('{"type":"agent:connect:response"}')
       .sendText(
         JSON.stringify({
           type: 'transmit',
@@ -263,7 +265,7 @@ describe('Agent WebSockets', () => {
           remote: '0.0.0.0:57000',
         })
       )
-      .expectText('{"type":"error","body":"Missing body"}')
+      .expectText('{"type":"agent:error","body":"Missing body"}')
       .close()
       .expectClosed();
   });
@@ -273,12 +275,12 @@ describe('Agent WebSockets', () => {
       .ws('/ws/agent')
       .sendText(
         JSON.stringify({
-          type: 'connect',
+          type: 'agent:connect:request',
           accessToken,
           agentId: agent.id,
         })
       )
-      .expectText('{"type":"connected"}')
+      .expectText('{"type":"agent:connect:response"}')
       .exec(async () => {
         const res = await request(server)
           .post(`/fhir/R4/Agent/${agent.id}/$push`)

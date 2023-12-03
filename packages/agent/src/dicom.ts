@@ -1,8 +1,8 @@
-import { normalizeErrorString } from '@medplum/core';
+import { AgentTransmitResponse, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import * as dimse from 'dcmjs-dimse';
 import { App } from './app';
-import { Channel, QueueItem } from './channel';
+import { Channel } from './channel';
 
 export class AgentDicomChannel implements Channel {
   static instance: AgentDicomChannel;
@@ -31,7 +31,7 @@ export class AgentDicomChannel implements Channel {
     this.app.log.info('Channel stopped successfully');
   }
 
-  sendToRemote(msg: QueueItem): void {
+  sendToRemote(msg: AgentTransmitResponse): void {
     throw new Error(`sendToRemote not implemented (${JSON.stringify(msg)})`);
   }
 }
@@ -87,6 +87,8 @@ class DcmjsDimseScp extends dimse.Scp {
   ): void {
     try {
       App.instance.addToWebSocketQueue({
+        type: 'agent:transmit:request',
+        accessToken: App.instance.medplum.getAccessToken() as string,
         channel: AgentDicomChannel.instance.definition.name as string,
         remote: 'foo',
         body: JSON.stringify(request.getDataset()),

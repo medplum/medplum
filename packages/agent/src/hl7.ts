@@ -1,8 +1,8 @@
-import { Hl7Message, normalizeErrorString } from '@medplum/core';
+import { AgentTransmitResponse, Hl7Message, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { App } from './app';
-import { Channel, QueueItem } from './channel';
+import { Channel } from './channel';
 
 export class AgentHl7Channel implements Channel {
   readonly server: Hl7Server;
@@ -30,8 +30,8 @@ export class AgentHl7Channel implements Channel {
     this.app.log.info('Channel stopped successfully');
   }
 
-  sendToRemote(msg: QueueItem): void {
-    const connection = this.connections.get(msg.remote);
+  sendToRemote(msg: AgentTransmitResponse): void {
+    const connection = this.connections.get(msg.remote as string);
     if (connection) {
       connection.hl7Connection.send(Hl7Message.parse(msg.body));
     }
@@ -62,6 +62,8 @@ export class AgentHl7ChannelConnection {
       this.channel.app.log.info('Received:');
       this.channel.app.log.info(event.message.toString().replaceAll('\r', '\n'));
       this.channel.app.addToWebSocketQueue({
+        type: 'agent:transmit:request',
+        accessToken: this.channel.app.medplum.getAccessToken() as string,
         channel: this.channel.definition.name as string,
         remote: this.remote,
         body: event.message.toString(),

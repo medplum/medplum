@@ -1,9 +1,9 @@
-import { Hl7Message, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { AgentMessage, AgentTransmitRequest, Hl7Message, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { EventLogger } from 'node-windows';
 import WebSocket from 'ws';
-import { Channel, QueueItem } from './channel';
+import { Channel } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 
@@ -11,9 +11,9 @@ export class App {
   static instance: App;
   readonly log: EventLogger;
   readonly webSocket: WebSocket;
-  readonly webSocketQueue: QueueItem[] = [];
+  readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
-  readonly hl7Queue: QueueItem[] = [];
+  readonly hl7Queue: AgentMessage[] = [];
   live = false;
 
   constructor(
@@ -37,13 +37,11 @@ export class App {
     this.webSocket.binaryType = 'nodebuffer';
     this.webSocket.addEventListener('error', (err) => this.log.error(err.message));
     this.webSocket.addEventListener('open', () => {
-      this.webSocket.send(
-        JSON.stringify({
-          type: 'connect',
-          accessToken: medplum.getAccessToken(),
-          agentId,
-        })
-      );
+      this.sendToWebSocket({
+        type: 'agent:connect:request',
+        accessToken: medplum.getAccessToken() as string,
+        agentId,
+      });
     });
 
     this.webSocket.addEventListener('message', (e) => {
@@ -51,16 +49,22 @@ export class App {
         const data = e.data as Buffer;
         const str = data.toString('utf8');
         this.log.info(`Received from WebSocket: ${str.replaceAll('\r', '\n')}`);
-        const command = JSON.parse(str);
+        const command = JSON.parse(str) as AgentMessage;
         switch (command.type) {
+          // @ts-expect-error - Deprecated message type
           case 'connected':
+          case 'agent:connect:response':
             this.live = true;
             this.trySendToWebSocket();
             break;
+          // @ts-expect-error - Deprecated message type
           case 'transmit':
+          case 'agent:transmit:response':
             this.addToHl7Queue(command);
             break;
+          // @ts-expect-error - Deprecated message type
           case 'push':
+          case 'agent:transmit:request':
             this.pushMessage(command);
             break;
         }
@@ -104,12 +108,12 @@ export class App {
     this.log.info('Medplum service stopped successfully');
   }
 
-  addToWebSocketQueue(message: QueueItem): void {
+  addToWebSocketQueue(message: AgentMessage): void {
     this.webSocketQueue.push(message);
     this.trySendToWebSocket();
   }
 
-  addToHl7Queue(message: QueueItem): void {
+  addToHl7Queue(message: AgentMessage): void {
     this.hl7Queue.push(message);
     this.trySendToHl7Connection();
   }
@@ -119,13 +123,7 @@ export class App {
       while (this.webSocketQueue.length > 0) {
         const msg = this.webSocketQueue.shift();
         if (msg) {
-          this.webSocket.send(
-            JSON.stringify({
-              type: 'transmit',
-              accessToken: this.medplum.getAccessToken(),
-              ...msg,
-            })
-          );
+          this.sendToWebSocket(msg);
         }
       }
     }
@@ -134,7 +132,7 @@ export class App {
   private trySendToHl7Connection(): void {
     while (this.hl7Queue.length > 0) {
       const msg = this.hl7Queue.shift();
-      if (msg) {
+      if (msg && msg.type === 'agent:transmit:response') {
         const channel = this.channels.get(msg.channel);
         if (channel) {
           channel.sendToRemote(msg);
@@ -143,7 +141,16 @@ export class App {
     }
   }
 
-  private pushMessage(message: QueueItem): void {
+  private sendToWebSocket(message: AgentMessage): void {
+    this.webSocket.send(JSON.stringify(message));
+  }
+
+  private pushMessage(message: AgentTransmitRequest): void {
+    if (!message.remote) {
+      this.log.error('Missing remote address');
+      return;
+    }
+
     const address = new URL(message.remote);
     const client = new Hl7Client({
       host: address.hostname,

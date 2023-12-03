@@ -12,6 +12,7 @@ export interface AgentPushParameters {
   body: string;
   contentType: string;
   destination: string;
+  waitForResponse?: boolean;
 }
 
 /**
@@ -57,8 +58,39 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
     return;
   }
 
-  await getRedis().publish(getReferenceString(agent), JSON.stringify({ type: 'push', remote: device.url, ...message }));
-  sendOutcome(res, allOk);
+  // If not waiting for a response, publish and return
+  if (!message.waitForResponse) {
+    await publishMessage(agent, device, message);
+    sendOutcome(res, allOk);
+    return;
+  }
+
+  // Otherwise, open a new redis connection in "subscribe" state
+  const redisSubscriber = getRedis().duplicate();
+  await redisSubscriber.subscribe(getReferenceString(agent));
+  redisSubscriber.on('message', (_channel: string, message: string) => {
+    const response = JSON.parse(message);
+    res.status(200).type(response.contentType).send(response.body);
+    cleanup();
+  });
+
+  // Create a timer for 5 seconds for timeout
+  const timer = setTimeout(() => {
+    cleanup();
+    sendOutcome(res, badRequest('Timeout'));
+  });
+
+  function cleanup(): void {
+    redisSubscriber.disconnect();
+    clearTimeout(timer);
+  }
+
+  // Publish the message to the agent channel
+  await publishMessage(agent, device, message);
+
+  // At this point, one of two things will happen:
+  // 1. The agent will respond with a message on the channel
+  // 2. The timer will expire and the request will timeout
 });
 
 /**
@@ -102,4 +134,11 @@ async function getDevice(repo: Repository, destination: string): Promise<Device 
     return repo.searchOne<Device>(parseSearchDefinition(destination));
   }
   return undefined;
+}
+
+async function publishMessage(agent: Agent, device: Device, message: AgentPushParameters): Promise<number> {
+  return getRedis().publish(
+    getReferenceString(agent),
+    JSON.stringify({ type: 'push', remote: device.url, ...message })
+  );
 }
