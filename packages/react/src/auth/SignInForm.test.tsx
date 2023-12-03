@@ -2,7 +2,6 @@ import { Title } from '@mantine/core';
 import { allOk, badRequest, GoogleCredentialResponse, MedplumClient } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import crypto from 'crypto';
-import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
 import { MedplumProvider } from '@medplum/react-hooks';

@@ -1,5 +1,4 @@
 import { Attachment } from '@medplum/fhirtypes';
-import React from 'react';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 
 export interface AttachmentArrayDisplayProps {

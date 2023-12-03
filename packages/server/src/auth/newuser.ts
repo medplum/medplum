@@ -2,21 +2,26 @@ import { badRequest, NewUserRequest, normalizeOperationOutcome } from '@medplum/
 import { ClientApplication, Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { getConfig } from '../config';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
+import { makeValidationMiddleware } from '../util/validator';
 import { bcryptHashPassword, getProjectByRecaptchaSiteKey, verifyRecaptcha } from './utils';
 
-export const newUserValidators = [
-  body('firstName').notEmpty().withMessage('First name is required'),
-  body('lastName').notEmpty().withMessage('Last name is required'),
-  body('email').isEmail().withMessage('Valid email address is required'),
-  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-];
+export const newUserValidator = makeValidationMiddleware([
+  body('firstName').isLength({ min: 1, max: 128 }).withMessage('First name must be between 1 and 128 characters'),
+  body('lastName').isLength({ min: 1, max: 128 }).withMessage('Last name must be between 1 and 128 characters'),
+  body('email')
+    .isEmail()
+    .withMessage('Valid email address between 3 and 72 characters is required')
+    .isLength({ min: 3, max: 72 })
+    .withMessage('Valid email address between 3 and 72 characters is required'),
+  body('password').isByteLength({ min: 8, max: 72 }).withMessage('Password must be between 8 and 72 characters'),
+]);
 
 /**
  * Handles a HTTP request to /auth/newuser.
@@ -28,12 +33,6 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   if (config.registerEnabled === false) {
     // Explicitly check for "false" because the config value may be undefined
     sendOutcome(res, badRequest('Registration is disabled'));
-    return;
-  }
-
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    sendOutcome(res, invalidRequest(errors));
     return;
   }
 

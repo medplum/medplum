@@ -5,7 +5,7 @@ import { convertToTransactionBundle, normalizeErrorString } from '@medplum/core'
 import { Bundle } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import { IconCheck, IconUpload, IconX } from '@tabler/icons-react';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 const DEFAULT_VALUE = `{"resourceType": "Bundle"}`;
 
@@ -17,6 +17,7 @@ interface ShowNotificationProps {
   icon?: JSX.Element | null;
   withCloseButton?: boolean;
   method?: 'show' | 'update';
+  loading?: boolean;
 }
 
 function showNotification({
@@ -27,10 +28,11 @@ function showNotification({
   icon,
   withCloseButton = false,
   method = 'show',
+  loading,
 }: ShowNotificationProps): void {
   notifications[method]({
     id,
-    loading: true,
+    loading,
     title,
     message,
     color,
@@ -53,6 +55,7 @@ export function BatchPage(): JSX.Element {
         title: 'Batch Upload in Progress',
         message: 'Your batch data is being uploaded. This may take a moment...',
         method: 'show',
+        loading: true,
       });
 
       try {

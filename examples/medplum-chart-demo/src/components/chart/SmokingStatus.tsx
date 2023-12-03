@@ -3,7 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { createReference } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, Form, useMedplum } from '@medplum/react';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 // Smoking Status widget
 // See: https://build.fhir.org/ig/HL7/US-Core/StructureDefinition-us-core-smokingstatus.html

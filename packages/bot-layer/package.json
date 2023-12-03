@@ -1,6 +1,6 @@
 {
   "name": "@medplum/bot-layer",
-  "version": "2.1.14",
+  "version": "2.1.21",
   "description": "Medplum Bot Lambda Layer",
   "keywords": [
     "medplum",
@@ -10,6 +10,9 @@
     "layer"
   ],
   "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
@@ -21,7 +24,7 @@
   "dependencies": {
     "@medplum/core": "*",
     "form-data": "4.0.0",
-    "jose": "5.1.0",
+    "jose": "5.1.1",
     "node-fetch": "2.7.0",
     "pdfmake": "0.2.8",
     "ssh2": "1.14.0",

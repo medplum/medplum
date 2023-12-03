@@ -1,7 +1,7 @@
 import { Loader, MultiSelect, MultiSelectProps, SelectItem } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 
 export interface AsyncAutocompleteOption<T> extends SelectItem {
@@ -120,7 +120,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   );
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent): void => {
+    (e: KeyboardEvent): void => {
       if (e.key === 'Enter') {
         if (!timerRef.current && !abortControllerRef.current) {
           killEvent(e);

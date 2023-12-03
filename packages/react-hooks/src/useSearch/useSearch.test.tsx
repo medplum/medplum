@@ -1,7 +1,7 @@
 import { operationOutcomeToString } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { act, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
+import { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { useSearch } from './useSearch';
@@ -22,7 +22,7 @@ describe('useSearch hooks', () => {
     console.error = jest.fn();
   });
 
-  async function setup(children: React.ReactNode): Promise<void> {
+  async function setup(children: ReactNode): Promise<void> {
     const medplum = new MockClient();
     await act(async () => {
       render(

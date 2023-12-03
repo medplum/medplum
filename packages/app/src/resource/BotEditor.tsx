@@ -4,7 +4,7 @@ import { ContentType, isUUID, MedplumClient, normalizeErrorString, PatchOperatio
 import { Bot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { sendCommand } from '../utils';
 import { BotRunner } from './BotRunner';
@@ -59,7 +59,7 @@ export function BotEditor(): JSX.Element | null {
         setBot(newBot);
         setDefaultCode(await getBotCode(medplum, newBot));
       })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum, id]);
 
   const getCode = useCallback(() => {
@@ -79,7 +79,7 @@ export function BotEditor(): JSX.Element | null {
   }, [contentType, fhirInput, hl7Input]);
 
   const saveBot = useCallback(
-    async (e: React.SyntheticEvent) => {
+    async (e: SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setLoading(true);
@@ -103,7 +103,7 @@ export function BotEditor(): JSX.Element | null {
         await medplum.patchResource('Bot', id, operations);
         showNotification({ color: 'green', message: 'Saved' });
       } catch (err) {
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       } finally {
         setLoading(false);
       }
@@ -112,7 +112,7 @@ export function BotEditor(): JSX.Element | null {
   );
 
   const deployBot = useCallback(
-    async (e: React.SyntheticEvent) => {
+    async (e: SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setLoading(true);
@@ -121,7 +121,7 @@ export function BotEditor(): JSX.Element | null {
         await medplum.post(medplum.fhirUrl('Bot', id, '$deploy'), { code });
         showNotification({ color: 'green', message: 'Deployed' });
       } catch (err) {
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       } finally {
         setLoading(false);
       }
@@ -130,7 +130,7 @@ export function BotEditor(): JSX.Element | null {
   );
 
   const executeBot = useCallback(
-    async (e: React.SyntheticEvent) => {
+    async (e: SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setLoading(true);
@@ -143,7 +143,7 @@ export function BotEditor(): JSX.Element | null {
         });
         showNotification({ color: 'green', message: 'Success' });
       } catch (err) {
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       } finally {
         setLoading(false);
       }

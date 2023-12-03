@@ -1,7 +1,6 @@
 import { Title } from '@mantine/core';
 import { CodeChallengeMethod } from '@medplum/core';
 import { Logo, SignInForm } from '@medplum/react';
-import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getConfig } from './config';
 

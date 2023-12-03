@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { InternalSchemaElement, deepClone, getElementDefinition, normalizeOperationOutcome } from '@medplum/core';
 import { ProjectSite } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
 
 export function SitesPage(): JSX.Element {
@@ -34,7 +34,7 @@ export function SitesPage(): JSX.Element {
     <form
       noValidate
       autoComplete="off"
-      onSubmit={(e: React.FormEvent) => {
+      onSubmit={(e: FormEvent) => {
         e.preventDefault();
         medplum
           .post(`admin/projects/${projectId}/sites`, sites)
@@ -46,6 +46,7 @@ export function SitesPage(): JSX.Element {
             showNotification({
               color: 'red',
               message: `Error ${operationOutcome.issue?.[0].details?.text} ${operationOutcome.issue?.[0].expression?.[0]}`,
+              autoClose: false,
             });
           });
       }}

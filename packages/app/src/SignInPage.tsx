@@ -1,6 +1,6 @@
 import { Title } from '@mantine/core';
 import { Logo, SignInForm, useMedplumProfile } from '@medplum/react';
-import React, { useCallback, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getConfig, isRegisterEnabled } from './config';
 

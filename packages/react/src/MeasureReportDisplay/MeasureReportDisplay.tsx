@@ -1,7 +1,6 @@
 import { Box, SimpleGrid } from '@mantine/core';
 import { MeasureReport, MeasureReportGroup, Reference } from '@medplum/fhirtypes';
 import { useResource, useSearchOne } from '@medplum/react-hooks';
-import React from 'react';
 import { MeasureReportGroupDisplay, MeasureTitle } from './MeasureReportGroupDisplay/MeasureReportGroupDisplay';
 
 export interface MeasureReportDisplayProps {

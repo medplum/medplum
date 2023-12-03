@@ -1,7 +1,6 @@
 import { Checkbox, TextInput } from '@mantine/core';
 import { getSearchParameterDetails, SearchParameterType } from '@medplum/core';
 import { Quantity, Reference, SearchParameter } from '@medplum/fhirtypes';
-import React from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { QuantityInput } from '../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../ReferenceInput/ReferenceInput';

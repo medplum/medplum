@@ -8,6 +8,10 @@ import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/fhir
 
 FHIR allows users to create batch requests to bundle multiple API calls into a single HTTP request. Batch requests can improve speed and efficiency and can reduce HTTP traffic when working with many resources.
 
+:::tip Cloning a project
+If you want to create a copy of a project, say for a new environment, this can be done using the `$clone` operation rather than by creating a batch request. For more details [see the Projects guide](/docs/access/projects##cloning-and-expunging-projects).
+:::
+
 ## How to Perform a Batch Request
 
 Batch requests are modeled using the `Bundle` resource by setting `Bundle.type` to `"batch"`.
@@ -58,6 +62,10 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
+
+:::danger Batch vs Transaction
+Medplum does not currently distinguish between `'batch'` and `'transaction'` type [`Bundle`](/docs/api/fhir/resources/bundle) resources and does not provide atomic transactions. This is currently being worked on, and you can track progress on the issue [here](https://github.com/medplum/medplum/issues/1369).
+:::
 
 ## Creating Internal References
 

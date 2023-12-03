@@ -26,6 +26,12 @@ jobs:
       - name: Install NSIS
         run: sudo apt-get install -y nsis
 
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -68,8 +74,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Sync example repos
-        run: |
-          ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}"
+        run: ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}"
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -82,8 +87,13 @@ jobs:
         run: ./scripts/deploy-bot-layer.sh
 
       - name: Build Agent installer
-        working-directory: ./packages/agent
-        run: npm run build:all
+        run: ./scripts/build-agent-installer.sh
+        env:
+          SM_HOST: ${{ secrets.SM_HOST }}
+          SM_API_KEY: ${{ secrets.SM_API_KEY }}
+          SM_CLIENT_CERT_FILE_BASE64: ${{ secrets.SM_CLIENT_CERT_FILE_BASE64 }}
+          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+          SM_CERT_ALIAS: ${{ secrets.SM_CERT_ALIAS }}
 
       - name: Upload Agent installer
         uses: actions/github-script@v6

@@ -22,6 +22,7 @@ import { fhirRouter } from './fhir/routes';
 import { initBinaryStorage } from './fhir/storage';
 import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
+import { cleanupHeartbeat } from './fhircast/websocket';
 import { healthcheckHandler } from './healthcheck';
 import { hl7BodyParser } from './hl7/parser';
 import { globalLogger } from './logger';
@@ -62,6 +63,12 @@ function standardHeaders(_req: Request, res: Response, next: NextFunction): void
   res.set(
     'Content-Security-Policy',
     "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none';"
+  );
+
+  // Disable browser features
+  res.set(
+    'Permission-Policy',
+    'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()'
   );
 
   // Never send the Referer header
@@ -195,9 +202,10 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
 export async function shutdownApp(): Promise<void> {
   await closeWorkers();
   await closeDatabase();
+  cleanupHeartbeat();
+  await closeWebSockets();
   closeRedis();
   closeRateLimiter();
-  closeWebSockets();
 
   if (server) {
     server.close();

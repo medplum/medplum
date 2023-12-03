@@ -1,6 +1,6 @@
 import { Operator, SearchRequest } from '@medplum/core';
 import { Meta } from '@storybook/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { SearchControl } from './SearchControl';
 
 export default {

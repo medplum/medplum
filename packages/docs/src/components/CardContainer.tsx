@@ -1,8 +1,8 @@
-import React from 'react';
+import { ReactNode } from 'react';
 import styles from './CardContainer.module.css';
 
 export interface CardContainerProps {
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 export function CardContainer(props: CardContainerProps): JSX.Element {

@@ -1,6 +1,5 @@
 import { formatRange } from '@medplum/core';
 import { Range } from '@medplum/fhirtypes';
-import React from 'react';
 
 export interface RangeDisplayProps {
   value?: Range;

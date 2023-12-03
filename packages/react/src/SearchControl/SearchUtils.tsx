@@ -9,7 +9,6 @@ import {
   SearchRequest,
 } from '@medplum/core';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
-import React from 'react';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { SearchControlField } from './SearchControlField';

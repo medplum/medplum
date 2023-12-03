@@ -4,7 +4,7 @@ import { getTypedPropertyValue, TypedValue } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, QuestionnaireResponseItem, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, ResourcePropertyDisplay, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TaskCellProps } from './TaskList';
 
 export function QuestionnaireTask(props: TaskCellProps): JSX.Element {

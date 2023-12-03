@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { getReferenceString, isGone, normalizeErrorString } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, useMedplum, useResource } from '@medplum/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { PatientHeader } from '../components/PatientHeader';
 import { QuickServiceRequests } from '../components/QuickServiceRequests';
@@ -63,7 +63,7 @@ export function ResourcePage(): JSX.Element | null {
     if (restoredResource) {
       onSubmit(restoredResource);
     } else {
-      showNotification({ color: 'red', message: 'No history to restore' });
+      showNotification({ color: 'red', message: 'No history to restore', autoClose: false });
     }
   }
 
@@ -75,7 +75,7 @@ export function ResourcePage(): JSX.Element | null {
         showNotification({ color: 'green', message: 'Success' });
       })
       .catch((err) => {
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       });
   }
 

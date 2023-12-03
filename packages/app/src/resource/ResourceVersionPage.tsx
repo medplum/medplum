@@ -1,7 +1,7 @@
 import { Paper, Tabs, Text, Title } from '@mantine/core';
 import { Bundle, BundleEntry, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Container, Document, Loading, MedplumLink, ResourceDiff, useMedplum } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 export function ResourceVersionPage(): JSX.Element {

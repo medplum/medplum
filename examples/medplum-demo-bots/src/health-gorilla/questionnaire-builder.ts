@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from 'fs';
 interface Lab {
   id: string;
   name: string;
+  healthGorillaId: string;
   tests: LabTest[];
 }
 
@@ -21,6 +22,7 @@ const labs: Lab[] = [
   {
     id: 'test',
     name: 'Testing',
+    healthGorillaId: 'f-4f0235627ac2d59b49e5575c',
     tests: [
       { code: '1234-5', name: 'Test 1' },
       { code: '11119', name: 'ABN TEST REFUSAL' },
@@ -30,6 +32,7 @@ const labs: Lab[] = [
   {
     id: 'labcorp',
     name: 'Labcorp',
+    healthGorillaId: 'f-c7403b62e57b776dfddf8051',
     tests: [
       { code: '001453', name: 'Hemoglobin A1c' },
       { code: '010322', name: 'Prostate-Specific Ag' },
@@ -42,11 +45,18 @@ const labs: Lab[] = [
       { code: '083935', name: 'HIV Ab/p24 Ag with Reflex' },
       { code: '322758', name: 'Basic Metabolic Panel (8)' },
       { code: '164922', name: 'HSV 1 and 2-Spec Ab, IgG w/Rfx' },
+      { code: '000810', name: 'Vitamin B12 and Folate' },
+      { code: '322777', name: 'Renal Panel (10)' },
+      { code: '480772', name: 'PSA Total (Reflex To Free)' },
+      { code: '007625', name: 'Lead, Blood (Adult)' },
+      { code: '192005', name: 'Pap Lb (Liquid-based)' },
+      { code: '008623', name: 'Ova + Parasite Exam' },
     ],
   },
   {
     id: 'quest',
     name: 'Quest',
+    healthGorillaId: 'f-6927735e92bc9c4cc2599d15',
     tests: [
       { code: '866', name: 'Free T4' },
       { code: '899', name: 'TSH' },
@@ -58,6 +68,14 @@ const labs: Lab[] = [
       { code: '229', name: 'Aldosterone, 24hr (U) (Diagnosis E04.2, Z00.00) Total Volume - 1200' },
       { code: '4112', name: 'FTA' },
       { code: '6399', name: 'CBC w/Diff' },
+      { code: '747', name: 'Protein, Total and Protein Electrophoresis' },
+      { code: '249', name: 'ANA' },
+      { code: '3020', name: 'Urinalysis Complete' },
+      { code: '5149', name: 'Antibody ID and Titer' },
+      { code: '4446', name: 'Culture Anaerobic and Aerobic' },
+      { code: '18811', name: 'Surepath Pap/w rfl HPV' },
+      { code: '11363', name: 'Chlamydia trachomatis/Neisseria gonorrhoeae RNA, TMA' },
+      { code: '3542', name: 'Tissue Pathology' },
       { code: '16814', name: 'ANA Scr, IFA w/Reflex Titer / Pattern / MPX AB Cascade' },
       { code: '7573', name: 'Iron Total/IBC Diagnosis code D64.9' },
     ],
@@ -225,6 +243,12 @@ const q: Questionnaire = {
             },
           ],
         },
+        {
+          id: 'dryRun',
+          linkId: 'dryRun',
+          type: 'boolean',
+          text: 'Dry Run (order contents will not be sent to Health Gorilla)',
+        },
       ],
     },
   ],
@@ -306,7 +330,7 @@ for (const lab of labs) {
     };
 
     // Check for AOE Questionnaire
-    const aoeFileName = `./questionnaire-f-388554647b89801ea5e8320b-${test.code}.json`;
+    const aoeFileName = `./questionnaire-${lab.healthGorillaId}-${test.code}.json`;
     if (existsSync(aoeFileName)) {
       const aoeQuestionnaire = JSON.parse(readFileSync(aoeFileName, 'utf8'));
       if (aoeQuestionnaire.item) {
@@ -315,6 +339,7 @@ for (const lab of labs) {
             ...i,
             id: `${fullTestId}-aoe-${i.id}`,
             linkId: `${fullTestId}-aoe-${i.id}`,
+            initial: i.answerOption ? undefined : i.initial,
           }))
         );
       }

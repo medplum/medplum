@@ -1,7 +1,7 @@
 import { ActionIcon, Group, Stack } from '@mantine/core';
 import { InternalSchemaElement } from '@medplum/core';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
-import React, { useRef, useState } from 'react';
+import { MouseEvent, useRef, useState } from 'react';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { killEvent } from '../utils/dom';
 
@@ -49,7 +49,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
             <ActionIcon
               title="Remove"
               size="sm"
-              onClick={(e: React.MouseEvent) => {
+              onClick={(e: MouseEvent) => {
                 killEvent(e);
                 const copy = [...(valuesRef.current as any[])];
                 copy.splice(index, 1);
@@ -67,7 +67,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
             title="Add"
             size="sm"
             color="green"
-            onClick={(e: React.MouseEvent) => {
+            onClick={(e: MouseEvent) => {
               killEvent(e);
               const copy = [...(valuesRef.current as any[])];
               copy.push(undefined);

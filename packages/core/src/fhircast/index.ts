@@ -542,6 +542,10 @@ export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEve
         }
 
         const fhircastMessage = message as unknown as FhircastMessagePayload;
+        // Don't bubble up heartbeats, they are just noise
+        if (fhircastMessage.event['hub.event'] === ('heartbeat' as unknown as FhircastEventName)) {
+          return;
+        }
         this.dispatchEvent({ type: 'message', payload: fhircastMessage });
 
         websocket.send(

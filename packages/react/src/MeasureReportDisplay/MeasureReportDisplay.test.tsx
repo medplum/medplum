@@ -1,5 +1,4 @@
 import { MockClient } from '@medplum/mock';
-import React from 'react';
 import { act, render, screen } from '@testing-library/react';
 import { MeasureReportDisplay, MeasureReportDisplayProps } from './MeasureReportDisplay';
 import { MemoryRouter } from 'react-router-dom';

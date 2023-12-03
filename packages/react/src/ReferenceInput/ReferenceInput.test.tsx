@@ -1,7 +1,6 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import { ReferenceInput, ReferenceInputProps } from './ReferenceInput';
 
 const medplum = new MockClient();

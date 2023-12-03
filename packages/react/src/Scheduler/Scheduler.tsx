@@ -2,7 +2,7 @@ import { Button, createStyles, Stack, Text } from '@mantine/core';
 import { getReferenceString, isReference } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import { useResource, useSearchResources } from '@medplum/react-hooks';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { CalendarInput } from '../CalendarInput/CalendarInput';
 import { getStartMonth } from '../CalendarInput/CalendarInput.utils';
 import { QuestionnaireForm } from '../QuestionnaireForm/QuestionnaireForm';

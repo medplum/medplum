@@ -574,6 +574,35 @@ describe('FhircastConnection', () => {
     wsServer.send(message);
   });
 
+  test('.addEventListener("message") - Heartbeat message', (done) => {
+    const heartbeatMessage = {
+      id: generateId(),
+      timestamp: new Date().toISOString(),
+      event: {
+        'hub.topic': 'abc123',
+        'hub.event': 'heartbeat',
+        context: [{ key: 'period', decimal: '10' }],
+      },
+    };
+
+    const message = createFhircastMessagePayload(
+      'abc123',
+      'Patient-open',
+      createFhircastMessageContext<'Patient-open'>('patient', 'Patient', 'patient-123')
+    ) satisfies FhircastMessagePayload<'Patient-open'>;
+
+    const handler = (event: FhircastMessageEvent): void => {
+      expect(event).toBeDefined();
+      expect(event.type).toBe('message');
+      expect(event.payload).toEqual(message);
+      connection.removeEventListener('message', handler);
+      done();
+    };
+    connection.addEventListener('message', handler);
+    wsServer.send(heartbeatMessage);
+    wsServer.send(message);
+  });
+
   test('.disconnect() / .addEventListener("disconnect")', (done) => {
     const handler = (event: FhircastDisconnectEvent): void => {
       expect(event).toBeDefined();

@@ -1,6 +1,6 @@
 import { Operator, SearchRequest } from '@medplum/core';
 import { Document, MemoizedSearchControl } from '@medplum/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 export function QuestionnaireResponsePage(): JSX.Element | null {

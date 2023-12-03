@@ -7,11 +7,11 @@ import {
   normalizeOperationOutcome,
 } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import React, { useCallback, useState } from 'react';
+import { useMedplum } from '@medplum/react-hooks';
+import { ReactNode, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { GoogleButton } from '../GoogleButton/GoogleButton';
 import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
-import { useMedplum } from '@medplum/react-hooks';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 
@@ -21,7 +21,7 @@ export interface AuthenticationFormProps extends BaseLoginRequest {
   readonly onForgotPassword?: () => void;
   readonly onRegister?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
-  readonly children?: React.ReactNode;
+  readonly children?: ReactNode;
 }
 
 export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
@@ -40,7 +40,7 @@ export interface EmailFormProps extends BaseLoginRequest {
   readonly onRegister?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
   readonly setEmail: (email: string) => void;
-  readonly children?: React.ReactNode;
+  readonly children?: ReactNode;
 }
 
 export function EmailForm(props: EmailFormProps): JSX.Element {
@@ -128,7 +128,7 @@ export interface PasswordFormProps extends BaseLoginRequest {
   readonly email: string;
   readonly onForgotPassword?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
-  readonly children?: React.ReactNode;
+  readonly children?: ReactNode;
 }
 
 export function PasswordForm(props: PasswordFormProps): JSX.Element {

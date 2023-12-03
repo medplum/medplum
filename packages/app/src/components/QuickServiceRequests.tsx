@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { BundleEntry, Patient, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { MedplumLink, sortByDateAndPriority, useMedplum, useResource } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getPatient } from '../utils';
 
 const useStyles = createStyles((theme) => ({
@@ -59,7 +59,7 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
         resources.reverse();
         setServiceRequests(resources);
       })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum, resource]);
 
   if (!serviceRequests) {

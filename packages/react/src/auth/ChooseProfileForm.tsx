@@ -1,7 +1,7 @@
 import { Avatar, Center, Group, Stack, Text, Title, UnstyledButton } from '@mantine/core';
 import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, ProjectMembership } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Logo } from '../Logo/Logo';
 import { useMedplum } from '@medplum/react-hooks';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';

@@ -16,10 +16,10 @@ import {
   SubscriptionChannel,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { render, screen } from '@testing-library/react';
-import React from 'react';
-import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { render, screen } from '@testing-library/react';
+import { ReactNode } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 const medplum = new MockClient();
@@ -33,7 +33,7 @@ const baseProperty: Omit<InternalSchemaElement, 'type'> = {
   path: '',
 };
 describe('ResourcePropertyDisplay', () => {
-  function setup(children: React.ReactNode): void {
+  function setup(children: ReactNode): void {
     render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
   }
 

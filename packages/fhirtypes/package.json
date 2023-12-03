@@ -1,6 +1,6 @@
 {
   "name": "@medplum/fhirtypes",
-  "version": "2.1.14",
+  "version": "2.1.21",
   "description": "Medplum FHIR Type Definitions",
   "keywords": [
     "medplum",
@@ -18,6 +18,9 @@
     "normative"
   ],
   "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
@@ -28,6 +31,9 @@
   "sideEffects": false,
   "main": "",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "",
     "clean": "",

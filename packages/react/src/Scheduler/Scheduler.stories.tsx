@@ -1,6 +1,5 @@
 import { DrAliceSmithSchedule, ExampleQuestionnaire } from '@medplum/mock';
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { Document } from '../Document/Document';
 import { Scheduler } from './Scheduler';
 

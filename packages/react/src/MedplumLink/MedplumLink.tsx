@@ -2,15 +2,15 @@ import { Anchor, TextProps } from '@mantine/core';
 import { isReference, isResource } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplumNavigate } from '@medplum/react-hooks';
-import React from 'react';
+import { MouseEvent, MouseEventHandler, ReactNode } from 'react';
 import { killEvent } from '../utils/dom';
 
 export interface MedplumLinkProps extends TextProps {
   to?: Resource | Reference | string;
   suffix?: string;
   label?: string;
-  onClick?: React.MouseEventHandler;
-  children: React.ReactNode;
+  onClick?: MouseEventHandler;
+  children: ReactNode;
 }
 
 export function MedplumLink(props: MedplumLinkProps): JSX.Element {
@@ -26,7 +26,7 @@ export function MedplumLink(props: MedplumLinkProps): JSX.Element {
     <Anchor
       href={href}
       aria-label={label}
-      onClick={(e: React.MouseEvent) => {
+      onClick={(e: MouseEvent) => {
         killEvent(e);
         if (onClick) {
           onClick(e);

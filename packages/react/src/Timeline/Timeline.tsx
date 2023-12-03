@@ -2,7 +2,7 @@ import { ActionIcon, Group, Menu, Text } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import { IconDots } from '@tabler/icons-react';
-import React from 'react';
+import { ReactNode } from 'react';
 import { Container } from '../Container/Container';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
@@ -11,7 +11,7 @@ import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
 
 export interface TimelineProps {
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 export function Timeline(props: TimelineProps): JSX.Element {
@@ -23,7 +23,7 @@ export interface TimelineItemProps extends PanelProps {
   profile?: Reference;
   dateTime?: string;
   padding?: boolean;
-  popupMenuItems?: React.ReactNode;
+  popupMenuItems?: ReactNode;
 }
 
 export function TimelineItem(props: TimelineItemProps): JSX.Element {
