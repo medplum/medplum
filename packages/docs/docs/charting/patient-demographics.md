@@ -52,12 +52,12 @@ The specification supports capturing aliases, and correct usage is beneficial fo
 
 Health record systems must manage common demographic data. It is important not to supply your own codes, but instead use the provided ValueSets as they relate to demographics. **Correct use of value sets is crucial for correct reporting and interoperability.** The following table shows references for common demographic value sets. Medplum supports these Value sets in our UI components, or you can build [ValueSets](https://storybook.medplum.com/?path=/story/medplum-valuesetautocomplete--basic) into your own applications.
 
-| Category  | Name                            | URL                                                                 |
-| --------- | ------------------------------- | ------------------------------------------------------------------- |
-| Gender    | Administrative Gender Value Set | <https://hl7.org/fhir/R4/valueset-administrative-gender.html>       |
-| Race      | US Core Race Extension          | <http://hl7.org/fhir/us/core/StructureDefinition/us-core-race>      |
-| Ethnicity | US Core ethnicity Extension     | <http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity> |
-| Birth Sex | Birth sex Extension             | <http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex>  |
+| Category  | Name                            | URL                                                               |
+| --------- | ------------------------------- | ----------------------------------------------------------------- |
+| Gender    | Administrative Gender Value Set | https://hl7.org/fhir/R4/valueset-administrative-gender.html       |
+| Race      | US Core Race Extension          | http://hl7.org/fhir/us/core/StructureDefinition/us-core-race      |
+| Ethnicity | US Core ethnicity Extension     | http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity |
+| Birth Sex | Birth sex Extension             | http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex  |
 
 ## Lifecycle
 
