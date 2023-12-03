@@ -24,13 +24,14 @@ export interface AgentConnectResponse extends BaseAgentMessage {
 export interface AgentTransmitRequest extends BaseAgentRequestMessage {
   type: 'agent:transmit:request';
   channel: string;
-  remote?: string;
+  remote: string;
   body: string;
 }
 
 export interface AgentTransmitResponse extends BaseAgentMessage {
   type: 'agent:transmit:response';
   channel: string;
+  remote: string;
   body: string;
 }
 
