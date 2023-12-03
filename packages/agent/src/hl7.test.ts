@@ -11,7 +11,7 @@ const medplum = new MockClient();
 let bot: Bot;
 let endpoint: Endpoint;
 
-describe('Agent', () => {
+describe('HL7', () => {
   beforeAll(async () => {
     console.log = jest.fn();
 
