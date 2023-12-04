@@ -25,7 +25,7 @@ export async function updateServerCommand(tag: string, options: any): Promise<vo
     config.serverImage = `${config.serverImage.slice(0, separatorIndex)}:${updateVersion}`;
     deployServerUpdate(tag, config);
     // Run data migrations
-    await client.post('/admin/super/migrate', '');
+    await client.startAsyncRequest('/admin/super/migrate');
 
     updateVersion = await nextUpdateVersion(updateVersion);
   }
