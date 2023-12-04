@@ -10,7 +10,7 @@ Building out a charting experience requires composing multiple FHIR resources in
 - **Capturing clinical notes**
 - **Placing orders** for medications, labs, imaging, etc.
 
-Here is a **sample** of what a charting experience might look like - to be clear, charting can look however you want it to.
+Here is a **sample** of what a charting experience might look like - to be clear, charting can look however you want it to. A sample charting application built off of Medplum [React components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) and be found on [medplum-chart-demo github](https://github.com/medplum/medplum/tree/main/examples/medplum-chart-demo).
 
 ![Chart sample](/img/tutorials/chart-sample.png)
 
