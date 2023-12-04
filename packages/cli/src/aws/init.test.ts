@@ -6,18 +6,16 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { mockClient } from 'aws-sdk-client-mock';
+import { randomUUID } from 'crypto';
 import { readFileSync, unlinkSync, writeFileSync } from 'fs';
 import readline from 'readline';
-import { main } from '../index';
 import fetch from 'node-fetch';
+import { main } from '../index';
 
 jest.mock('readline');
 jest.mock('node-fetch');
 
 describe('init command', () => {
-  const name = 'foo';
-  const filename = `medplum.${name}.config.json`;
-
   beforeAll(() => {
     mockClient(CloudFormationClient);
     mockClient(ECSClient);
@@ -66,9 +64,12 @@ describe('init command', () => {
   });
 
   test('Init tool success', async () => {
+    const filename = `test-${randomUUID()}.json`;
+
     readline.createInterface = jest.fn(() =>
       mockReadline(
-        name,
+        'foo',
+        filename,
         'us-east-1',
         'account-123',
         'TestStack',
@@ -100,7 +101,7 @@ describe('init command', () => {
     const config = JSON.parse(readFileSync(filename, 'utf8'));
     expect(config).toMatchObject({
       apiPort: 8103,
-      name,
+      name: 'foo',
       region: 'us-east-1',
       accountNumber: 'account-123',
       stackName: 'TestStack',
@@ -124,11 +125,13 @@ describe('init command', () => {
   });
 
   test('Overwrite existing file', async () => {
+    const filename = `test-${randomUUID()}.json`;
     writeFileSync(filename, '{}', 'utf8');
 
     readline.createInterface = jest.fn(() =>
       mockReadline(
-        name,
+        'foo',
+        filename,
         'y', // Yes, overwrite
         'us-east-1',
         'account-123',
@@ -161,7 +164,7 @@ describe('init command', () => {
     const config = JSON.parse(readFileSync(filename, 'utf8'));
     expect(config).toMatchObject({
       apiPort: 8103,
-      name,
+      name: 'foo',
       region: 'us-east-1',
       accountNumber: 'account-123',
       stackName: 'TestStack',
@@ -192,12 +195,15 @@ describe('init command', () => {
     acmClient.on(ListCertificatesCommand).rejects(new Error('Invalid region'));
     acmClient.on(RequestCertificateCommand).rejects(new Error('Invalid region'));
 
+    const filename = `test-${randomUUID()}.json`;
+
     console.log = jest.fn();
 
     readline.createInterface = jest.fn(() =>
       mockReadline(
         'y', // Do you want to continue without AWS credentials?
-        name,
+        'foo',
+        filename,
         'us-bad-1', // Special fake region for mock clients
         'account-123',
         'TestStack',
@@ -231,7 +237,7 @@ describe('init command', () => {
     const config = JSON.parse(readFileSync(filename, 'utf8'));
     expect(config).toMatchObject({
       apiPort: 8103,
-      name,
+      name: 'foo',
       region: 'us-bad-1',
       accountNumber: 'account-123',
       stackName: 'TestStack',
@@ -255,9 +261,12 @@ describe('init command', () => {
   });
 
   test('Bring your own database', async () => {
+    const filename = `test-${randomUUID()}.json`;
+
     readline.createInterface = jest.fn(() =>
       mockReadline(
-        name,
+        'foo',
+        filename,
         'us-east-1',
         'account-123',
         'TestStack',
@@ -288,7 +297,7 @@ describe('init command', () => {
     const config = JSON.parse(readFileSync(filename, 'utf8'));
     expect(config).toMatchObject({
       apiPort: 8103,
-      name,
+      name: 'foo',
       region: 'us-east-1',
       accountNumber: 'account-123',
       stackName: 'TestStack',
@@ -312,9 +321,12 @@ describe('init command', () => {
   });
 
   test('Do not request SSL certs', async () => {
+    const filename = `test-${randomUUID()}.json`;
+
     readline.createInterface = jest.fn(() =>
       mockReadline(
-        name,
+        'foo',
+        filename,
         'us-east-1',
         'account-123',
         'TestStack',
@@ -343,7 +355,7 @@ describe('init command', () => {
     const config = JSON.parse(readFileSync(filename, 'utf8'));
     expect(config).toMatchObject({
       apiPort: 8103,
-      name,
+      name: 'foo',
       region: 'us-east-1',
       accountNumber: 'account-123',
       stackName: 'TestStack',
@@ -367,9 +379,12 @@ describe('init command', () => {
   });
 
   test('Existing SSL certificates', async () => {
+    const filename = `test-${randomUUID()}.json`;
+
     readline.createInterface = jest.fn(() =>
       mockReadline(
-        name,
+        'foo',
+        filename,
         'us-east-1',
         'account-123',
         'TestStack',
@@ -401,7 +416,7 @@ describe('init command', () => {
     const config = JSON.parse(readFileSync(filename, 'utf8'));
     expect(config).toMatchObject({
       apiPort: 8103,
-      name,
+      name: 'foo',
       region: 'us-east-1',
       accountNumber: 'account-123',
       stackName: 'TestStack',
@@ -425,9 +440,12 @@ describe('init command', () => {
   });
 
   test('Handle empty support email', async () => {
+    const filename = `test-${randomUUID()}.json`;
+
     readline.createInterface = jest.fn(() =>
       mockReadline(
-        name,
+        'foo',
+        filename,
         'us-east-1',
         'account-123',
         'TestStack',
@@ -491,9 +509,12 @@ describe('init command', () => {
     });
     ssmClient.on(PutParameterCommand).resolves({});
 
+    const filename = `test-${randomUUID()}.json`;
+
     readline.createInterface = jest.fn(() =>
       mockReadline(
-        name,
+        'foo',
+        filename,
         'us-east-1',
         'account-123',
         'TestStack',
@@ -534,7 +555,7 @@ describe('init command', () => {
     const config = JSON.parse(readFileSync(filename, 'utf8'));
     expect(config).toMatchObject({
       apiPort: 8103,
-      name,
+      name: 'foo',
       region: 'us-east-1',
       accountNumber: 'account-123',
       stackName: 'TestStack',
@@ -564,10 +585,12 @@ describe('init command', () => {
     const cloudFrontClient = mockClient(CloudFrontClient);
     cloudFrontClient.on(CreatePublicKeyCommand).rejects('CreatePublicKeyCommand failed');
 
+    const filename = `test-${randomUUID()}.json`;
     readline.createInterface = jest.fn(() =>
       mockReadline(
         'y', // Yes, proceed without AWS credentials
         'foo',
+        filename,
         'us-east-1',
         'account-123',
         'TestStack',
@@ -610,7 +633,7 @@ describe('init command', () => {
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       apiSslCertArn: 'TODO',
       appSslCertArn: 'TODO',
       storageSslCertArn: 'TODO',
