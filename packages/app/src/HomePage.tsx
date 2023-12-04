@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { formatSearchQuery, normalizeErrorString, parseSearchDefinition, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { addSearchValues, getTransactionBundle, RESOURCE_TYPE_CREATION_PATHS, saveLastSearch } from './HomePage.utils';
 import { exportJsonFile } from './utils';
@@ -71,12 +71,12 @@ export function HomePage(): JSX.Element {
             .then((blob: Blob) => {
               window.open(window.URL.createObjectURL(blob), '_blank');
             })
-            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
         }}
         onExportTransactionBundle={async () => {
           getTransactionBundle(search, medplum)
             .then((bundle) => exportJsonFile(JSON.stringify(bundle, undefined, 2)))
-            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
         }}
         onDelete={(ids: string[]) => {
           if (window.confirm('Are you sure you want to delete these resources?')) {
@@ -93,7 +93,7 @@ export function HomePage(): JSX.Element {
                 })),
               })
               .then(() => setSearch({ ...search }))
-              .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+              .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
           }
         }}
         onBulk={(ids: string[]) => {

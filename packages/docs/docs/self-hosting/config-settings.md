@@ -144,6 +144,12 @@ You will also be prompted for a parameter "Type". The default option is "String"
 | `smtp`                 | Optional SMTP email settings to use SMTP for email. See [Sending SMTP Emails](/docs/self-hosting/sendgrid) for more details.                                                                          |          |            |                                     |
 | `awsRegion`            | The AWS Region identifier.                                                                                                                                                                            |          | `cdk`      | `us-east-1`                         |
 
+:::tip Local Config
+To make changes to the server config after your first deploy, you must the edit parameter values _directly in AWS parameter store_
+
+To make changes to settings that affect your deployed Medplum App, you must _also_ make this change to your local configuration json file.
+:::
+
 ### AWS Secrets
 
 Postgres and Redis connection details have special cases due the way CDK exposes them.

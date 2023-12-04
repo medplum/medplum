@@ -56,6 +56,16 @@ export class FrontEnd extends Construct {
     if (region === 'us-east-1') {
       // HTTP response headers policy
       this.responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'ResponseHeadersPolicy', {
+        customHeadersBehavior: {
+          customHeaders: [
+            {
+              header: 'Permission-Policy',
+              value:
+                'accelerometer=(), camera=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()',
+              override: true,
+            },
+          ],
+        },
         securityHeadersBehavior: {
           contentSecurityPolicy: {
             contentSecurityPolicy: [
@@ -78,10 +88,18 @@ export class FrontEnd extends Construct {
             override: true,
           },
           contentTypeOptions: { override: true },
-          frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
+          frameOptions: {
+            frameOption: cloudfront.HeadersFrameOption.DENY,
+            override: true,
+          },
+          referrerPolicy: {
+            referrerPolicy: cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+            override: true,
+          },
           strictTransportSecurity: {
             accessControlMaxAge: Duration.seconds(63072000),
             includeSubdomains: true,
+            preload: true,
             override: true,
           },
           xssProtection: {

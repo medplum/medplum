@@ -1,7 +1,7 @@
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumLink } from './MedplumLink';
 
@@ -25,7 +25,7 @@ const medplum = new MedplumClient({
   fetch: mockFetch,
 });
 
-function setup(ui: React.ReactElement): void {
+function setup(ui: ReactElement): void {
   Object.defineProperty(window, 'location', {
     value: {
       assign: jest.fn(),

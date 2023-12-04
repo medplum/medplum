@@ -1,7 +1,6 @@
 import { createStyles } from '@mantine/core';
 import { stringify } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
-import React from 'react';
 import { Delta, diff } from '../utils/diff';
 
 const useStyles = createStyles((theme) => ({

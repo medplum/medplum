@@ -36,7 +36,6 @@ import {
 import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
 import {
   AccessPolicy,
-  AccessPolicyResource,
   Bundle,
   BundleEntry,
   Meta,
@@ -414,7 +413,13 @@ export class Repository extends BaseRepository implements FhirRepository {
         throw new OperationOutcomeError(notFound);
       }
 
-      await this.readResourceImpl<T>(resourceType, id);
+      try {
+        await this.readResourceImpl<T>(resourceType, id);
+      } catch (err) {
+        if (!isGone(normalizeOperationOutcome(err))) {
+          throw err;
+        }
+      }
 
       const client = getClient();
       const rows = await new SelectQuery(resourceType + '_History')
@@ -474,10 +479,6 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     const updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
       ...this.restoreReadonlyFields(resource, existing),
-      meta: {
-        ...existing?.meta,
-        ...resource.meta,
-      },
     });
 
     const resultMeta = {
@@ -488,7 +489,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     };
     const result: T = { ...updated, meta: resultMeta };
 
-    const project = this.getProjectId(updated);
+    const project = this.getProjectId(existing, updated);
     if (project) {
       resultMeta.project = project;
     }
@@ -1369,7 +1370,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       // and the current context is a ClientApplication (i.e., OAuth client credentials),
       // then allow the ClientApplication to set the date.
       const lastUpdated = resource.meta?.lastUpdated;
-      if (lastUpdated && this.canWriteMeta()) {
+      if (lastUpdated && this.canWriteProtectedMeta()) {
         return lastUpdated;
       }
     }
@@ -1383,31 +1384,32 @@ export class Repository extends BaseRepository implements FhirRepository {
    * If it is a public resource type, then returns the public project ID.
    * If it is a protected resource type, then returns the Medplum project ID.
    * Otherwise, by default, return the current context project ID.
-   * @param resource - The FHIR resource.
+   * @param existing - Existing resource if one exists.
+   * @param updated - The FHIR resource.
    * @returns The project ID.
    */
-  private getProjectId(resource: Resource): string | undefined {
-    if (resource.resourceType === 'Project') {
-      return resource.id;
+  private getProjectId(existing: Resource | undefined, updated: Resource): string | undefined {
+    if (updated.resourceType === 'Project') {
+      return updated.id;
     }
 
-    if (resource.resourceType === 'ProjectMembership') {
-      return resolveId(resource.project);
+    if (updated.resourceType === 'ProjectMembership') {
+      return resolveId(updated.project);
     }
 
-    if (protectedResourceTypes.includes(resource.resourceType)) {
+    if (protectedResourceTypes.includes(updated.resourceType)) {
       return undefined;
     }
 
-    const submittedProjectId = resource.meta?.project;
-    if (submittedProjectId && this.canWriteMeta()) {
+    const submittedProjectId = updated.meta?.project;
+    if (submittedProjectId && this.canWriteProtectedMeta()) {
       // If the resource has an project (whether provided or from existing),
       // and the current context is allowed to write meta,
       // then use the provided value.
       return submittedProjectId;
     }
 
-    return this.context.project;
+    return existing?.meta?.project ?? this.context.project;
   }
 
   /**
@@ -1424,7 +1426,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     // and the current context is allowed to write meta,
     // then use the provided value.
     const author = resource.meta?.author;
-    if (author && this.canWriteMeta()) {
+    if (author && this.canWriteProtectedMeta()) {
       return author;
     }
 
@@ -1486,10 +1488,11 @@ export class Repository extends BaseRepository implements FhirRepository {
   }
 
   /**
-   * Determines if the current user can manually set meta fields.
-   * @returns True if the current user can manually set meta fields.
+   * Determines if the current user can manually set certain protected meta fields
+   * such as author, project, lastUpdated, etc.
+   * @returns True if the current user can manually set protected meta fields.
    */
-  private canWriteMeta(): boolean {
+  private canWriteProtectedMeta(): boolean {
     return this.isSuperAdmin();
   }
 
@@ -1598,7 +1601,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @returns The resource with hidden fields removed.
    */
   removeHiddenFields<T extends Resource>(input: T): T {
-    const policy = this.getResourceAccessPolicy(input.resourceType);
+    const policy = satisfiedAccessPolicy(input, AccessPolicyInteraction.READ, this.context.accessPolicy);
     if (policy?.hiddenFields) {
       for (const field of policy.hiddenFields) {
         this.removeField(input, field);
@@ -1623,7 +1626,11 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @returns The resource with restored hidden fields.
    */
   private restoreReadonlyFields<T extends Resource>(input: T, original: T | undefined): T {
-    const policy = this.getResourceAccessPolicy(input.resourceType);
+    const policy = satisfiedAccessPolicy(
+      original ?? input,
+      original ? AccessPolicyInteraction.UPDATE : AccessPolicyInteraction.CREATE,
+      this.context.accessPolicy
+    );
     if (policy?.readonlyFields) {
       for (const field of policy.readonlyFields) {
         this.removeField(input, field);
@@ -1651,17 +1658,6 @@ export class Repository extends BaseRepository implements FhirRepository {
     // but we don't care if the value is missing in this case
     applyPatch(input, patch);
     return input;
-  }
-
-  private getResourceAccessPolicy(resourceType: string): AccessPolicyResource | undefined {
-    if (this.context.accessPolicy?.resource) {
-      for (const resourcePolicy of this.context.accessPolicy.resource) {
-        if (resourcePolicy.resourceType === resourceType) {
-          return resourcePolicy;
-        }
-      }
-    }
-    return undefined;
   }
 
   private isSuperAdmin(): boolean {

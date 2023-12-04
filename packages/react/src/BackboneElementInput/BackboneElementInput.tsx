@@ -1,7 +1,7 @@
 import { Stack } from '@mantine/core';
 import { getPropertyDisplayName, tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { FormSection } from '../FormSection/FormSection';

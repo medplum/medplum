@@ -31,6 +31,7 @@ export async function seedDatabase(): Promise<void> {
     name: 'Super Admin',
     owner: createReference(superAdmin),
     superAdmin: true,
+    strictMode: true,
   });
 
   await systemRepo.updateResource<Project>({

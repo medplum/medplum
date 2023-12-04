@@ -9,7 +9,6 @@ import {
   IconReceipt2,
   IconSettings,
 } from '@tabler/icons-react';
-import React from 'react';
 import { Logo } from '../Logo/Logo';
 import { AppShell } from './AppShell';
 

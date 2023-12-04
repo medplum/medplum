@@ -66,7 +66,7 @@ jest.mock('pg', () => {
 describe('Server', () => {
   test('Main', async () => {
     const createServerSpy = jest.spyOn(http, 'createServer');
-    await main('file:medplum.config.json');
+    await main('file:test.config.json');
     expect(createServerSpy).toHaveBeenCalled();
     await shutdownApp();
   });

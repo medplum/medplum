@@ -2,7 +2,7 @@ import { stringify } from '@medplum/core';
 import { Button, Group, JsonInput } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, Form, OperationOutcomeAlert } from '@medplum/react';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useCreateResource } from './useCreateResource';
 

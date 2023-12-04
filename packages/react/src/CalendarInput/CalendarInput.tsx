@@ -1,6 +1,6 @@
 import { Button, createStyles, Group } from '@mantine/core';
 import { Slot } from '@medplum/fhirtypes';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { getMonthString, getStartMonth } from './CalendarInput.utils';
 
 const useStyles = createStyles((theme) => ({

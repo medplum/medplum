@@ -1,7 +1,7 @@
 import { ActionIcon } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
 import { IconCircleMinus, IconCloudUpload } from '@tabler/icons-react';
-import React, { useRef, useState } from 'react';
+import { MouseEvent, useRef, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { killEvent } from '../utils/dom';
@@ -42,7 +42,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
               <ActionIcon
                 title="Remove"
                 size="sm"
-                onClick={(e: React.MouseEvent) => {
+                onClick={(e: MouseEvent) => {
                   killEvent(e);
                   const copy = values.slice();
                   copy.splice(index, 1);

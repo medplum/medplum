@@ -11,6 +11,7 @@ import {
 } from '@medplum/core';
 import {
   Account,
+  AccountCoverage,
   Annotation,
   CodeableConcept,
   Coverage,
@@ -55,8 +56,8 @@ interface HealthGorillaConfig {
 // These come from the Health Gorilla Organization resources
 const availableLabs: Record<string, string> = {
   Testing: 'f-4f0235627ac2d59b49e5575c',
-  Labcorp: 'f-388554647b89801ea5e8320b',
-  Quest: 'f-7c075564349e1a592e53147a',
+  Labcorp: 'f-c7403b62e57b776dfddf8051',
+  Quest: 'f-6927735e92bc9c4cc2599d15',
 };
 
 // Available tests organized by Health Gorilla test code
@@ -82,6 +83,12 @@ const availableTests: Record<string, string> = {
   'labcorp-083935': 'HIV Ab/p24 Ag with Reflex',
   'labcorp-322758': 'Basic Metabolic Panel (8)',
   'labcorp-164922': 'HSV 1 and 2-Spec Ab, IgG w/Rfx',
+  'labcorp-000810': 'Vitamin B12 and Folate',
+  'labcorp-322777': 'Renal Panel (10)',
+  'labcorp-480772': 'PSA Total (Reflex To Free)',
+  'labcorp-007625': 'Lead, Blood (Adult)',
+  'labcorp-192005': 'Pap Lb (Liquid-based)',
+  'labcorp-008623': 'Ova + Parasite Exam',
   'quest-866': 'Free T4',
   'quest-899': 'TSH',
   'quest-10306': 'Hepatitis Panel, Acute w/reflex to confirmation',
@@ -92,6 +99,14 @@ const availableTests: Record<string, string> = {
   'quest-229': 'Aldosterone, 24hr (U) (Diagnosis E04.2, Z00.00) Total Volume - 1200',
   'quest-4112': 'FTA',
   'quest-6399': 'CBC w/Diff',
+  'quest-747': 'Protein, Total and Protein Electrophoresis',
+  'quest-249': 'ANA',
+  'quest-3020': 'Urinalysis Complete',
+  'quest-5149': 'Antibody ID and Titer',
+  'quest-4446': 'Culture Anaerobic and Aerobic',
+  'quest-18811': 'Surepath Pap/w rfl HPV',
+  'quest-11363': 'Chlamydia trachomatis/Neisseria gonorrhoeae RNA, TMA',
+  'quest-3542': 'Tissue Pathology',
   'quest-16814': 'ANA Scr, IFA w/Reflex Titer / Pattern / MPX AB Cascade',
   'quest-7573': 'Iron Total/IBC Diagnosis code D64.9',
 };
@@ -130,22 +145,22 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // Make sure that required fields are present
   const answers = getQuestionnaireAnswers(event.input);
 
-  const patient = answers.patient.valueReference;
+  const patient = answers.patient?.valueReference;
   if (!patient) {
     throw new Error('QuestionnaireResponse is missing patient');
   }
 
-  const account = answers.account.valueReference;
+  const account = answers.account?.valueReference;
   if (!account) {
     throw new Error('QuestionnaireResponse is missing account');
   }
 
-  const practitioner = answers.practitioner.valueReference;
+  const practitioner = answers.practitioner?.valueReference;
   if (!practitioner) {
     throw new Error('QuestionnaireResponse is missing practitioner');
   }
 
-  const performer = answers.performer.valueString;
+  const performer = answers.performer?.valueString;
   if (!performer) {
     throw new Error('QuestionnaireResponse is missing performer');
   }
@@ -250,20 +265,27 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // This is an optional field.  If present, it will create a Specimen resource.
   builder.specimenCollectedDateTime = answers.specimenCollectedDateTime?.valueDateTime;
 
-  // Place the order
+  // Order level notes
+  builder.note = answers.orderNote?.valueString;
+
+  // Create the order
   const requestGroup = builder.buildRequestGroup();
   await medplum.uploadMedia(JSON.stringify(requestGroup, null, 2), 'application/json', 'requestgroup.json');
 
-  const response = await healthGorilla.startAsyncRequest(healthGorilla.fhirUrl('RequestGroup').toString(), {
-    method: 'POST',
-    body: JSON.stringify(requestGroup),
-  });
+  // If this is a dry run, just upload the RequestGroup to Medplum
+  // Otherwise, send the RequestGroup to Health Gorilla
+  if (!answers.dryRun?.valueBoolean) {
+    const response = await healthGorilla.startAsyncRequest(healthGorilla.fhirUrl('RequestGroup').toString(), {
+      method: 'POST',
+      body: JSON.stringify(requestGroup),
+    });
 
-  // If the Health Gorilla API returns a RequestGroup immediately,
-  // it means that the order may have an ABN (Advanced Beneficiary Notice).
-  // Go through the process of getting the ABN PDF and uploading it to Medplum.
-  if (isResource(response) && response.resourceType === 'RequestGroup' && response.id) {
-    await checkAbn(medplum, healthGorilla, response as RequestGroup & { id: string });
+    // If the Health Gorilla API returns a RequestGroup immediately,
+    // it means that the order may have an ABN (Advanced Beneficiary Notice).
+    // Go through the process of getting the ABN PDF and uploading it to Medplum.
+    if (isResource(response) && response.resourceType === 'RequestGroup' && response.id) {
+      await checkAbn(medplum, healthGorilla, response as RequestGroup & { id: string });
+    }
   }
 }
 
@@ -491,13 +513,17 @@ class HealthGorillaRequestGroupBuilder {
     assertNotEmpty(address.city, 'Patient is missing address city');
     assertNotEmpty(address.state, 'Patient is missing address state');
     assertNotEmpty(address.postalCode, 'Patient is missing address postalCode');
-    assertNotEmpty(address.country, 'Patient is missing address country');
 
     const phone = patient.telecom?.find((t) => t.system === 'phone');
     assertNotEmpty(phone, 'Patient is missing phone');
 
     const email = patient.telecom?.find((t) => t.system === 'email');
     assertNotEmpty(email, 'Patient is missing email');
+
+    // Add default country "US" to address if not present
+    if (!address.country) {
+      address.country = 'US';
+    }
 
     const healthGorillaId = getIdentifier(patient, HEALTH_GORILLA_SYSTEM);
     if (healthGorillaId) {
@@ -550,7 +576,7 @@ class HealthGorillaRequestGroupBuilder {
     }
 
     this.practitioner = await healthGorilla.readResource('Practitioner', healthGorillaId);
-    return this.practitioner;
+    return this.practitioner as Practitioner;
   }
 
   async setupAccount(medplum: MedplumClient, medplumPatient: Patient, medplumAccount: Account): Promise<Account> {
@@ -560,7 +586,6 @@ class HealthGorillaRequestGroupBuilder {
 
     const resultAccount: Account = {
       ...medplumAccount,
-      coverage: undefined,
     };
 
     if (resultAccount.type?.coding?.[0]?.code === 'patient') {
@@ -568,7 +593,8 @@ class HealthGorillaRequestGroupBuilder {
     }
 
     if (medplumAccount.coverage) {
-      for (const accountCoverage of medplumAccount.coverage) {
+      for (let i = 0; i < medplumAccount.coverage.length; i++) {
+        const accountCoverage = medplumAccount.coverage[i];
         const coverageRef = accountCoverage?.coverage;
         if (coverageRef) {
           const medplumCoverage = await medplum.readReference(coverageRef);
@@ -580,11 +606,7 @@ class HealthGorillaRequestGroupBuilder {
             subscriber: undefined,
           };
 
-          resultAccount.coverage = append(resultAccount.coverage, {
-            coverage: { reference: '#' + resultCoverage.id },
-            priority: 1,
-          });
-
+          ((resultAccount.coverage as AccountCoverage[])[i].coverage as Reference).reference = '#' + resultCoverage.id;
           this.coverages = append(this.coverages, resultCoverage);
 
           if (medplumCoverage.payor) {

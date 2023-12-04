@@ -1,6 +1,6 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Quantity } from '@medplum/fhirtypes';
-import React, { useState, WheelEvent } from 'react';
+import { useState, WheelEvent } from 'react';
 
 export interface QuantityInputProps {
   name: string;

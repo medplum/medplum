@@ -1,6 +1,5 @@
 import { Range } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { Document } from '../Document/Document';
 import { RangeInput } from './RangeInput';
 

@@ -1,5 +1,6 @@
 import {
   allOk,
+  ClientStorage,
   ContentType,
   getReferenceString,
   indexSearchParameterBundle,
@@ -14,7 +15,7 @@ import { readJson } from '@medplum/definitions';
 import { Bundle, CodeableConcept, Patient, SearchParameter, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'crypto';
 import { TextEncoder } from 'util';
-import { MockClient } from './client';
+import { MockAsyncClientStorage, MockClient } from './client';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson } from './mocks';
 
 describe('MockClient', () => {
@@ -666,6 +667,40 @@ describe('MockClient', () => {
     expect(homer).toBeDefined();
     expect(homer.name[0].given[0]).toEqual('Homer');
     expect(homer.name[0].family).toEqual('Simpson');
+  });
+});
+
+describe('MockAsyncClientStorage', () => {
+  let clientStorage: MockAsyncClientStorage;
+
+  test('Constructor creates instance of ClientStorage', () => {
+    clientStorage = new MockAsyncClientStorage();
+    expect(clientStorage).toBeInstanceOf(ClientStorage);
+  });
+
+  test('.getInitPromise() returns a promise', () => {
+    expect(clientStorage.getInitPromise()).toBeInstanceOf(Promise);
+  });
+
+  test('Calling .setInitialized() resolves initPromise', async () => {
+    expect(clientStorage.isInitialized).toEqual(false);
+    const initPromise = clientStorage.getInitPromise();
+    clientStorage.setInitialized();
+    await expect(initPromise).resolves;
+    expect(clientStorage.isInitialized).toEqual(true);
+  });
+
+  test('Not calling .setInitialized() causes promise not to resolve', async () => {
+    const anotherStorage = new MockAsyncClientStorage();
+    const initPromise = anotherStorage.getInitPromise();
+    initPromise
+      .then(() => {
+        throw new Error('Failed!');
+      })
+      .catch((err) => {
+        throw err;
+      });
+    await new Promise(process.nextTick);
   });
 });
 

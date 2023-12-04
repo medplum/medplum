@@ -2,14 +2,13 @@ import { allOk, badRequest, forbidden, getReferenceString } from '@medplum/core'
 import { ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
+import { getAuthenticatedContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { createBotHandler, createBotValidator } from './bot';
 import { createClientHandler, createClientValidator } from './client';
 import { inviteHandler, inviteValidator } from './invite';
 import { verifyProjectAdmin } from './utils';
-import { getAuthenticatedContext } from '../context';
 
 export const projectAdminRouter = Router();
 projectAdminRouter.use(authenticateRequest);
@@ -92,7 +91,7 @@ projectAdminRouter.post(
       sendOutcome(res, forbidden);
       return;
     }
-    const result = await systemRepo.updateResource(resource);
+    const result = await ctx.repo.updateResource(resource);
     res.json(result);
   })
 );
@@ -113,7 +112,7 @@ projectAdminRouter.delete(
       return;
     }
 
-    await systemRepo.deleteResource('ProjectMembership', req.params.membershipId);
+    await ctx.repo.deleteResource('ProjectMembership', req.params.membershipId);
     sendOutcome(res, allOk);
   })
 );

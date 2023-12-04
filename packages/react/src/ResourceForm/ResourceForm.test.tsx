@@ -2,7 +2,6 @@ import { createReference } from '@medplum/core';
 import { Patient, Specimen } from '@medplum/fhirtypes';
 import { HomerObservation1, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ResourceForm, ResourceFormProps } from './ResourceForm';

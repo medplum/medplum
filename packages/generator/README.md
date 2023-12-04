@@ -8,4 +8,4 @@ Run the generator:
 npm run generate
 ```
 
-See the [definitions](../packages/definitions/README.md) for more details.
+See the [definitions](../definitions/README.md) for more details.

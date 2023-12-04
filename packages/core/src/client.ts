@@ -65,7 +65,7 @@ import {
   validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
-import { ClientStorage } from './storage';
+import { ClientStorage, IClientStorage } from './storage';
 import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded } from './typeschema/types';
 import {
@@ -213,7 +213,7 @@ export interface MedplumClientOptions {
    *
    * Default is window.localStorage (if available), this is the common implementation for use in the browser, or an in-memory storage implementation.  If using Medplum on a server it may be useful to provide a custom storage implementation, for example using redis, a database or a file based storage.  Medplum CLI is an an example of `FileSystemStorage`, for reference.
    */
-  storage?: ClientStorage;
+  storage?: IClientStorage;
 
   /**
    * Create PDF implementation.
@@ -631,7 +631,7 @@ export class MedplumClient extends EventTarget {
   private readonly options: MedplumClientOptions;
   private readonly fetch: FetchLike;
   private readonly createPdfImpl?: CreatePdfFunction;
-  private readonly storage: ClientStorage;
+  private readonly storage: IClientStorage;
   private readonly requestCache: LRUCache<RequestCacheEntry> | undefined;
   private readonly cacheTime: number;
   private readonly baseUrl: string;
@@ -652,6 +652,8 @@ export class MedplumClient extends EventTarget {
   private profilePromise?: Promise<any>;
   private sessionDetails?: SessionDetails;
   private basicAuth?: string;
+  private initPromise: Promise<void>;
+  private initComplete = true;
 
   constructor(options?: MedplumClientOptions) {
     super();
@@ -692,15 +694,48 @@ export class MedplumClient extends EventTarget {
 
     if (options?.accessToken) {
       this.setAccessToken(options.accessToken);
+      this.initPromise = Promise.resolve();
+    } else if (this.storage.getInitPromise !== undefined) {
+      const storageInitPromise = this.storage.getInitPromise();
+      const initPromise = new Promise<void>((resolve) => {
+        storageInitPromise
+          .then(() => {
+            this.attemptResumeActiveLogin().then(resolve).catch(console.error);
+            this.initComplete = true;
+          })
+          .catch(console.error);
+      });
+      this.initPromise = initPromise;
+      this.initComplete = false;
     } else {
-      const activeLogin = this.getActiveLogin();
-      if (activeLogin) {
-        this.setAccessToken(activeLogin.accessToken, activeLogin.refreshToken);
-        this.refreshProfile().catch(console.log);
-      }
+      this.initPromise = this.attemptResumeActiveLogin().catch(console.error);
     }
 
     this.setupStorageListener();
+  }
+
+  /**
+   * @returns Whether the client has been fully initialized or not. Should always be true unless a custom asynchronous `ClientStorage` was passed into the constructor.
+   */
+  get isInitialized(): boolean {
+    return this.initComplete;
+  }
+
+  /**
+   * Gets a Promise that resolves when async initialization is complete. This is particularly useful for waiting for an async `ClientStorage` and/or authentication to finish.
+   * @returns A Promise that resolves when any async initialization of the client is finished.
+   */
+  getInitPromise(): Promise<void> {
+    return this.initPromise;
+  }
+
+  private async attemptResumeActiveLogin(): Promise<void> {
+    const activeLogin = this.getActiveLogin();
+    if (!activeLogin) {
+      return;
+    }
+    this.setAccessToken(activeLogin.accessToken, activeLogin.refreshToken);
+    await this.refreshProfile();
   }
 
   /**
@@ -1759,16 +1794,18 @@ export class MedplumClient extends EventTarget {
    * @param data - The binary data to upload.
    * @param filename - Optional filename for the binary.
    * @param contentType - Content type for the binary.
-   * @param onProgress - Optional callback for progress events.
+   * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
+   * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @returns The result of the create operation.
    */
   async createAttachment(
     data: BinarySource,
     filename: string | undefined,
     contentType: string,
-    onProgress?: (e: ProgressEvent) => void
+    onProgress?: (e: ProgressEvent) => void,
+    options?: RequestInit
   ): Promise<Attachment> {
-    const binary = await this.createBinary(data, filename, contentType, onProgress);
+    const binary = await this.createBinary(data, filename, contentType, onProgress, options);
     return {
       contentType,
       url: binary.url,
@@ -1798,14 +1835,16 @@ export class MedplumClient extends EventTarget {
    * @param data - The binary data to upload.
    * @param filename - Optional filename for the binary.
    * @param contentType - Content type for the binary.
-   * @param onProgress - Optional callback for progress events.
+   * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
+   * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @returns The result of the create operation.
    */
   createBinary(
     data: BinarySource,
     filename: string | undefined,
     contentType: string,
-    onProgress?: (e: ProgressEvent) => void
+    onProgress?: (e: ProgressEvent) => void,
+    options?: RequestInit
   ): Promise<Binary> {
     const url = this.fhirUrl('Binary');
     if (filename) {
@@ -1813,9 +1852,9 @@ export class MedplumClient extends EventTarget {
     }
 
     if (onProgress) {
-      return this.uploadwithProgress(url, data, contentType, onProgress);
+      return this.uploadwithProgress(url, data, contentType, onProgress, options);
     } else {
-      return this.post(url, data, contentType);
+      return this.post(url, data, contentType, options);
     }
   }
 
@@ -1823,13 +1862,29 @@ export class MedplumClient extends EventTarget {
     url: URL,
     data: BinarySource,
     contentType: string,
-    onProgress: (e: ProgressEvent) => void
+    onProgress: (e: ProgressEvent) => void,
+    options?: RequestInit
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
+
+      // Ensure the 'abort' event listener is removed from the signal to prevent memory leaks,
+      // especially in scenarios where there is a long-lived signal across multiple requests.
+      const handleSignalAbort = (): void => xhr.abort();
+      options?.signal?.addEventListener('abort', handleSignalAbort);
+      const sendResult = (result: any): void => {
+        options?.signal?.removeEventListener('abort', handleSignalAbort);
+
+        if (result instanceof Error) {
+          reject(result);
+        } else {
+          resolve(result);
+        }
+      };
+
       xhr.responseType = 'json';
-      xhr.onabort = () => reject(new Error('Request aborted'));
-      xhr.onerror = () => reject(new Error('Request error'));
+      xhr.onabort = () => sendResult(new Error('Request aborted'));
+      xhr.onerror = () => sendResult(new Error('Request error'));
 
       if (onProgress) {
         xhr.upload.onprogress = (e) => onProgress(e);
@@ -1838,9 +1893,9 @@ export class MedplumClient extends EventTarget {
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(xhr.response);
+          sendResult(xhr.response);
         } else {
-          reject(new OperationOutcomeError(normalizeOperationOutcome(xhr.response || xhr.statusText)));
+          sendResult(new OperationOutcomeError(normalizeOperationOutcome(xhr.response || xhr.statusText)));
         }
       };
 
@@ -1968,15 +2023,15 @@ export class MedplumClient extends EventTarget {
     if (!resource.id) {
       throw new Error('Missing id');
     }
-    this.invalidateSearches(resource.resourceType);
     let result = await this.put(this.fhirUrl(resource.resourceType, resource.id), resource, undefined, options);
     if (!result) {
       // On 304 not modified, result will be undefined
       // Return the user input instead
-      // return result ?? resource;
       result = resource;
     }
     this.cacheResource(result);
+    this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id, '_history'));
+    this.invalidateSearches(resource.resourceType);
     return result;
   }
 

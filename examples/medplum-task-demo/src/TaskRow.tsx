@@ -1,10 +1,10 @@
 import { Tooltip, UnstyledButton } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { createReference, formatDateTime, getDisplayString, MedplumClient, PatchOperation } from '@medplum/core';
+import { MedplumClient, PatchOperation, createReference, formatDateTime, getDisplayString } from '@medplum/core';
 import { Practitioner, Task } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleX, IconEdit, IconUser, IconUserSearch } from '@tabler/icons-react';
-import React, { useCallback } from 'react';
+import { MouseEvent, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStyles } from './TaskRow.styles';
 import { formatDueDate, getShortName, getTaskColor } from './utils';
@@ -26,7 +26,7 @@ export function TaskRow(props: TaskRowProps): JSX.Element {
   const { classes, cx } = useStyles();
 
   const assignToMe = useCallback(
-    async (e: React.MouseEvent): Promise<void> => {
+    async (e: MouseEvent): Promise<void> => {
       e.stopPropagation();
       e.preventDefault();
       await testAndUpdateTask(medplum, task, 'accepted', profile);
@@ -42,7 +42,7 @@ export function TaskRow(props: TaskRowProps): JSX.Element {
   );
 
   const markAsCompleted = useCallback(
-    async (e: React.MouseEvent): Promise<void> => {
+    async (e: MouseEvent): Promise<void> => {
       e.stopPropagation();
       e.preventDefault();
       await testAndUpdateTask(medplum, task, 'completed');
@@ -58,7 +58,7 @@ export function TaskRow(props: TaskRowProps): JSX.Element {
   );
 
   const editTask = useCallback(
-    async (e: React.MouseEvent): Promise<void> => {
+    async (e: MouseEvent): Promise<void> => {
       e.stopPropagation();
       e.preventDefault();
       window.open(`https://app.medplum.com/Task/${task.id}`, '_blank', 'noopener,noreferrer');
@@ -67,7 +67,7 @@ export function TaskRow(props: TaskRowProps): JSX.Element {
   );
 
   const cancelTask = useCallback(
-    async (e: React.MouseEvent): Promise<void> => {
+    async (e: MouseEvent): Promise<void> => {
       e.stopPropagation();
       e.preventDefault();
       await testAndUpdateTask(medplum, task, 'cancelled');

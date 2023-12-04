@@ -1,6 +1,5 @@
-import { Resource } from '@medplum/fhirtypes';
+export type BackgroundJobInteraction = 'create' | 'update' | 'delete';
 
 export interface BackgroundJobContext {
-  interaction: 'create' | 'update' | 'delete';
-  previousVersion?: Resource;
+  interaction: BackgroundJobInteraction;
 }

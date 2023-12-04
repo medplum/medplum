@@ -570,6 +570,70 @@ describe('init command', () => {
     });
     unlinkSync(filename);
   });
+
+  test('No AWS credentials', async () => {
+    const stsClient = mockClient(STSClient);
+    stsClient.on(GetCallerIdentityCommand).rejects('GetCallerIdentityCommand failed');
+
+    const cloudFrontClient = mockClient(CloudFrontClient);
+    cloudFrontClient.on(CreatePublicKeyCommand).rejects('CreatePublicKeyCommand failed');
+
+    const filename = `test-${randomUUID()}.json`;
+
+    readline.createInterface = jest.fn(() =>
+      mockReadline(
+        'y', // Yes, proceed without AWS credentials
+        'foo',
+        filename,
+        'us-east-1',
+        'account-123',
+        'TestStack',
+        'test.example.com',
+        'support@example.com',
+        '', // default API domain
+        '', // default app domain
+        '', // default storage domain
+        '', // default storage bucket
+        '', // default availability zones
+        'y', // Yes, create a database
+        '', // default database instances
+        '', // default server instances
+        '', // default server memory
+        '', // default server cpu
+        '', // default server image
+        'n', // No, do not request api certificate
+        'n', // No, do not request app certificate
+        'n', // No, do not request storage certificate
+        'n' // No, do not write to Parameter Store
+      )
+    );
+
+    await main(['node', 'index.js', 'aws', 'init']);
+
+    const config = JSON.parse(readFileSync(filename, 'utf8'));
+    expect(config).toMatchObject({
+      apiPort: 8103,
+      name: 'foo',
+      region: 'us-east-1',
+      accountNumber: 'account-123',
+      stackName: 'TestStack',
+      domainName: 'test.example.com',
+      apiDomainName: 'api.test.example.com',
+      appDomainName: 'app.test.example.com',
+      storageDomainName: 'storage.test.example.com',
+      storageBucketName: 'storage.test.example.com',
+      maxAzs: 2,
+      rdsInstances: 1,
+      desiredServerCount: 1,
+      serverMemory: 512,
+      serverCpu: 256,
+      serverImage: 'medplum/medplum-server:latest',
+      apiSslCertArn: 'TODO',
+      appSslCertArn: 'TODO',
+      storageSslCertArn: 'TODO',
+    });
+    unlinkSync(filename);
+  });
 });
 
 function mockReadline(...answers: string[]): readline.Interface {

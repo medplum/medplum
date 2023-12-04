@@ -3,7 +3,6 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
-import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { ResourceHeader } from './ResourceHeader';
 

@@ -1,6 +1,5 @@
 import { Title } from '@mantine/core';
 import { Document, Loading, MedplumLink, useSearchResources } from '@medplum/react';
-import React from 'react';
 import { useParams } from 'react-router-dom';
 
 export function BulkAppPage(): JSX.Element {

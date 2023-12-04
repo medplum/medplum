@@ -21,7 +21,7 @@ import {
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
-import React, { useEffect, useRef, useState } from 'react';
+import { MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
@@ -112,6 +112,7 @@ const useStyles = createStyles((theme) => ({
 export interface QuestionnaireBuilderProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
   onSubmit: (result: Questionnaire) => void;
+  autoSave?: boolean;
 }
 
 export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Element | null {
@@ -147,6 +148,13 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
     };
   }, [defaultValue]);
 
+  const handleChange = (questionnaire: Questionnaire, disableSubmit?: boolean): void => {
+    setValue(questionnaire);
+    if (props.autoSave && !disableSubmit && props.onSubmit) {
+      props.onSubmit(questionnaire);
+    }
+  };
+
   if (!schemaLoaded || !value) {
     return null;
   }
@@ -160,7 +168,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
           setSelectedKey={setSelectedKey}
           hoverKey={hoverKey}
           setHoverKey={setHoverKey}
-          onChange={setValue}
+          onChange={handleChange}
         />
         <Button type="submit">Save</Button>
       </Form>
@@ -176,7 +184,7 @@ interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
   isFirst?: boolean;
   isLast?: boolean;
   setHoverKey: (key: string | undefined) => void;
-  onChange: (item: T) => void;
+  onChange: (item: T, disableSubmit?: boolean) => void;
   onRemove?: () => void;
   onRepeatable?: (item: QuestionnaireItem) => void;
   onMoveUp?(): void;
@@ -196,12 +204,12 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   const itemRef = useRef<T>();
   itemRef.current = props.item;
 
-  function onClick(e: React.SyntheticEvent): void {
+  function onClick(e: SyntheticEvent): void {
     killEvent(e);
     props.setSelectedKey(props.item.id);
   }
 
-  function onHover(e: React.SyntheticEvent): void {
+  function onHover(e: SyntheticEvent): void {
     killEvent(e);
     props.setHoverKey(props.item.id);
   }
@@ -214,11 +222,14 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     } as T);
   }
 
-  function addItem(addedItem: QuestionnaireItem): void {
-    props.onChange({
-      ...props.item,
-      item: [...(props.item.item ?? []), addedItem],
-    });
+  function addItem(addedItem: QuestionnaireItem, disableSubmit?: boolean): void {
+    props.onChange(
+      {
+        ...props.item,
+        item: [...(props.item.item ?? []), addedItem],
+      },
+      disableSubmit
+    );
   }
 
   function removeItem(removedItem: QuestionnaireItem): void {
@@ -272,7 +283,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
               <TextInput
                 size="xl"
                 defaultValue={resource.title}
-                onChange={(e) => changeProperty('title', e.currentTarget.value)}
+                onBlur={(e) => changeProperty('title', e.currentTarget.value)}
               />
             )}
             {!isResource && (
@@ -280,7 +291,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                 autosize
                 minRows={2}
                 defaultValue={item.text}
-                onChange={(e) => changeProperty('text', e.currentTarget.value)}
+                onBlur={(e) => changeProperty('text', e.currentTarget.value)}
               />
             )}
             {item.type === 'reference' && <ReferenceProfiles item={item} onChange={updateItem} />}
@@ -320,7 +331,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                 size="xs"
                 className={classes.linkIdInput}
                 defaultValue={item.linkId}
-                onChange={(e) => changeProperty('linkId', e.currentTarget.value)}
+                onBlur={(e) => changeProperty('linkId', e.currentTarget.value)}
               />
               {!isContainer && (
                 <NativeSelect
@@ -359,7 +370,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             {!props.isFirst && (
               <Anchor
                 href="#"
-                onClick={(e: React.MouseEvent) => {
+                onClick={(e: MouseEvent) => {
                   e.preventDefault();
                   if (props.onMoveUp) {
                     props.onMoveUp();
@@ -372,7 +383,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             {!props.isLast && (
               <Anchor
                 href="#"
-                onClick={(e: React.MouseEvent) => {
+                onClick={(e: MouseEvent) => {
                   e.preventDefault();
                   if (props.onMoveDown) {
                     props.onMoveDown();
@@ -390,7 +401,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           <>
             <Anchor
               href="#"
-              onClick={(e: React.MouseEvent) => {
+              onClick={(e: MouseEvent) => {
                 e.preventDefault();
                 addItem({
                   id: generateId(),
@@ -404,14 +415,17 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             </Anchor>
             <Anchor
               href="#"
-              onClick={(e: React.MouseEvent) => {
+              onClick={(e: MouseEvent) => {
                 e.preventDefault();
-                addItem({
-                  id: generateId(),
-                  linkId: generateLinkId('g'),
-                  type: 'group',
-                  text: 'Group',
-                } as QuestionnaireItem);
+                addItem(
+                  {
+                    id: generateId(),
+                    linkId: generateLinkId('g'),
+                    type: 'group',
+                    text: 'Group',
+                  } as QuestionnaireItem,
+                  true
+                );
               }}
             >
               Add group
@@ -421,9 +435,9 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
         {isResource && (
           <Anchor
             href="#"
-            onClick={(e: React.MouseEvent) => {
+            onClick={(e: MouseEvent) => {
               e.preventDefault();
-              addItem(createPage());
+              addItem(createPage(), true);
             }}
           >
             Add Page
@@ -433,7 +447,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           <>
             <Anchor
               href="#"
-              onClick={(e: React.MouseEvent) => {
+              onClick={(e: MouseEvent) => {
                 e.preventDefault();
                 if (props.onRepeatable) {
                   props.onRepeatable(item);
@@ -444,7 +458,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             </Anchor>
             <Anchor
               href="#"
-              onClick={(e: React.MouseEvent) => {
+              onClick={(e: MouseEvent) => {
                 e.preventDefault();
                 if (props.onRemove) {
                   props.onRemove();
@@ -482,7 +496,7 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
       <Box display="flex">
         <Anchor
           href="#"
-          onClick={(e: React.SyntheticEvent) => {
+          onClick={(e: SyntheticEvent) => {
             killEvent(e);
             props.onChange({
               ...props.item,
@@ -501,7 +515,7 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
         <Space w="lg" />
         <Anchor
           href="#"
-          onClick={(e: React.SyntheticEvent) => {
+          onClick={(e: SyntheticEvent) => {
             killEvent(e);
             props.onChange({
               ...props.item,
@@ -565,7 +579,7 @@ function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
             <div>
               <Anchor
                 href="#"
-                onClick={(e: React.SyntheticEvent) => {
+                onClick={(e: SyntheticEvent) => {
                   killEvent(e);
                   props.onChange({
                     ...props.item,
@@ -610,7 +624,7 @@ function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
             />
             <Anchor
               href="#"
-              onClick={(e: React.SyntheticEvent) => {
+              onClick={(e: SyntheticEvent) => {
                 killEvent(e);
                 props.onChange(
                   setQuestionnaireItemReferenceTargetTypes(
@@ -627,7 +641,7 @@ function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
       })}
       <Anchor
         href="#"
-        onClick={(e: React.SyntheticEvent) => {
+        onClick={(e: SyntheticEvent) => {
           killEvent(e);
           props.onChange(setQuestionnaireItemReferenceTargetTypes(props.item, [...targetTypes, '' as ResourceType]));
         }}

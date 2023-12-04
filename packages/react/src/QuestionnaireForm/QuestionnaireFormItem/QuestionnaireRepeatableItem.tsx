@@ -1,6 +1,6 @@
 import { Anchor } from '@mantine/core';
 import { QuestionnaireItem, QuestionnaireResponseItem } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FormSection } from '../../FormSection/FormSection';
 import { QuestionnaireItemType } from '../../utils/questionnaire';
 import { QuestionnaireFormItem } from './QuestionnaireFormItem';

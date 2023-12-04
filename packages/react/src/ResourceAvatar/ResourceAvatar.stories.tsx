@@ -1,7 +1,6 @@
 import { Anchor } from '@mantine/core';
 import { HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { Document } from '../Document/Document';
 import { ResourceAvatar } from './ResourceAvatar';
 

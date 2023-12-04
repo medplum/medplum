@@ -3,13 +3,13 @@ import { Attachment } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import { ReactNode } from 'react';
 import { AttachmentButton } from './AttachmentButton';
 
 const medplum = new MockClient();
 
 describe('AttachmentButton', () => {
-  const setup = (children: React.ReactNode): void => {
+  const setup = (children: ReactNode): void => {
     render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
   };
 

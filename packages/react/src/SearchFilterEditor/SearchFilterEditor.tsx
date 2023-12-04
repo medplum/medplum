@@ -1,7 +1,7 @@
 import { Button, Group, Modal, NativeSelect } from '@mantine/core';
 import { Filter, getSearchParameters, Operator, SearchRequest, stringify } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   addFilter,
   buildFieldNameString,

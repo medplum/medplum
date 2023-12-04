@@ -90,8 +90,11 @@ export function formatHumanName(name: HumanName, options?: HumanNameFormatOption
     builder.push('[' + name.use + ']');
   }
 
-  if (builder.length === 0 && name.text) {
-    return name.text;
+  if (builder.length === 0) {
+    const textStr = ensureString(name.text);
+    if (textStr) {
+      return textStr;
+    }
   }
 
   return builder.join(' ').trim();
@@ -116,7 +119,7 @@ export function formatGivenName(name: HumanName): string {
  * @returns The formatted family name string.
  */
 export function formatFamilyName(name: HumanName): string {
-  return name.family ?? '';
+  return ensureString(name.family) ?? '';
 }
 
 /**
@@ -407,8 +410,9 @@ export function formatCodeableConcept(codeableConcept: CodeableConcept | undefin
   if (!codeableConcept) {
     return '';
   }
-  if (codeableConcept.text) {
-    return codeableConcept.text;
+  const textStr = ensureString(codeableConcept.text);
+  if (textStr) {
+    return textStr;
   }
   if (codeableConcept.coding) {
     return codeableConcept.coding.map((c) => formatCoding(c)).join(', ');
@@ -422,7 +426,7 @@ export function formatCodeableConcept(codeableConcept: CodeableConcept | undefin
  * @returns The coding as a string.
  */
 export function formatCoding(coding: Coding | undefined): string {
-  return coding?.display ?? coding?.code ?? '';
+  return ensureString(coding?.display) ?? ensureString(coding?.code) ?? '';
 }
 
 /**
@@ -447,11 +451,23 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
     return formatCodeableConcept(obs.valueCodeableConcept);
   }
 
-  if (obs.valueString) {
-    return obs.valueString;
+  const valueString = ensureString(obs.valueString);
+  if (valueString) {
+    return valueString;
   }
 
   return '';
+}
+
+/**
+ * Ensures the input is a string.
+ * While the TypeScript type definitions for FHIR resources are strict, the actual input data can be malformed.
+ * We use this method to protect against runtime errors.
+ * @param input - The input to ensure is a string.
+ * @returns The input as a string, or undefined if not a string.
+ */
+function ensureString(input: unknown): string | undefined {
+  return typeof input === 'string' ? input : undefined;
 }
 
 /**

@@ -7,12 +7,16 @@ import { sendEmail } from '../email/email';
 import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
+import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
 import { getProjectByRecaptchaSiteKey, verifyRecaptcha } from './utils';
-import { makeValidationMiddleware } from '../util/validator';
 
 export const resetPasswordValidator = makeValidationMiddleware([
-  body('email').isEmail().withMessage('Valid email address is required'),
+  body('email')
+    .isEmail()
+    .withMessage('Valid email address between 3 and 72 characters is required')
+    .isLength({ min: 3, max: 72 })
+    .withMessage('Valid email address between 3 and 72 characters is required'),
 ]);
 
 export async function resetPasswordHandler(req: Request, res: Response): Promise<void> {
@@ -53,15 +57,35 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     }
   }
 
+  // Define filters for searching users
+  const filters = [
+    {
+      code: 'email',
+      operator: Operator.EXACT,
+      value: email, // Set the email value for exact matching
+    },
+  ];
+
+  // If a specific project is associated with the request, add a project filter
+  if (req.body.projectId) {
+    filters.push({
+      code: 'project',
+      operator: Operator.EQUALS,
+      value: 'Project/' + req.body.projectId, // Set the project value for equality matching
+    });
+  } else {
+    // If project id not found in the request body then project should not present in the user
+    filters.push({
+      code: 'project',
+      operator: Operator.MISSING,
+      value: 'true',
+    });
+  }
+
+  // Search for a user based on the defined filters
   const user = await systemRepo.searchOne<User>({
     resourceType: 'User',
-    filters: [
-      {
-        code: 'email',
-        operator: Operator.EXACT,
-        value: email,
-      },
-    ],
+    filters,
   });
 
   if (!user) {

@@ -1,7 +1,6 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import { QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireBuilder, QuestionnaireBuilderProps } from './QuestionnaireBuilder';
 
@@ -123,6 +122,48 @@ describe('QuestionnaireBuilder', () => {
     expect(onSubmit).toBeCalled();
   });
 
+  test('Handles AutoSave', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            type: QuestionnaireItemType.string,
+            linkId: 'question1',
+            text: 'Question 1',
+          },
+        ],
+      },
+      onSubmit,
+      autoSave: true,
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add item'));
+    });
+
+    expect(onSubmit).toBeCalled();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Question 1'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByText('Remove')[0]);
+    });
+
+    expect(onSubmit).toBeCalledTimes(2);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add group'));
+    });
+
+    // Shouldn't autosave when adding a group
+    expect(onSubmit).toBeCalledTimes(2);
+  });
+
   test('Sets ids', async () => {
     const onSubmit = jest.fn();
 
@@ -189,6 +230,7 @@ describe('QuestionnaireBuilder', () => {
         target: { value: 'Renamed' },
       });
     });
+    fireEvent.blur(screen.getByDisplayValue('Renamed'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
@@ -232,6 +274,9 @@ describe('QuestionnaireBuilder', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Add item'));
     });
+
+    // Should not submit without autosave flag
+    expect(onSubmit).not.toBeCalled();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
@@ -426,6 +471,7 @@ describe('QuestionnaireBuilder', () => {
         target: { value: 'Renamed' },
       });
     });
+    fireEvent.blur(screen.getByDisplayValue('Renamed'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
@@ -517,6 +563,7 @@ describe('QuestionnaireBuilder', () => {
         target: { value: 'myNewLinkId' },
       });
     });
+    fireEvent.blur(screen.getByDisplayValue('myNewLinkId'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));

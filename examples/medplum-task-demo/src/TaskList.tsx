@@ -1,6 +1,5 @@
 import { Paper, Table, Text, Title } from '@mantine/core';
 import { Task } from '@medplum/fhirtypes';
-import React from 'react';
 import { TaskRow } from './TaskRow';
 import { scoreTask } from './utils';
 

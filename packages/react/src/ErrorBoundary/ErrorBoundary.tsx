@@ -1,7 +1,7 @@
 import { Alert } from '@mantine/core';
 import { normalizeErrorString } from '@medplum/core';
 import { IconAlertCircle } from '@tabler/icons-react';
-import React, { ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 
 export interface ErrorBoundaryProps {
   children: ReactNode;
@@ -15,7 +15,7 @@ export interface ErrorBoundaryState {
  * ErrorBoundary is a React component that handles errors in its child components.
  * See: https://reactjs.org/docs/error-boundaries.html
  */
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState;
 
   constructor(props: ErrorBoundaryProps) {

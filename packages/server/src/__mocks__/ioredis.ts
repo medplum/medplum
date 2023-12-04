@@ -1,3 +1,5 @@
+const subscribers = new Map<string, Set<Redis>>();
+
 class Redis {
   private values: Map<string, string>;
   private listeners: Map<string, ((...args: any[]) => void)[]>;
@@ -54,12 +56,24 @@ class Redis {
     }
   }
 
-  async subscribe(_channel: string): Promise<void> {
+  async subscribe(channel: string): Promise<void> {
     // Subscribe
+    if (!subscribers.has(channel)) {
+      subscribers.set(channel, new Set([this]));
+    } else {
+      const set = subscribers.get(channel) as Set<Redis>;
+      set.add(this);
+    }
   }
 
-  async unsubscribe(_channel: string): Promise<void> {
+  async unsubscribe(channel: string): Promise<void> {
     // Unsubscribe
+    if (subscribers.has(channel)) {
+      const set = subscribers.get(channel) as Set<Redis>;
+      if (set.has(this)) {
+        set.delete(this);
+      }
+    }
   }
 
   duplicate(): this {
@@ -69,6 +83,13 @@ class Redis {
 
   disconnect(): void {
     // Disconnects
+  }
+
+  async pubsub(command: string, channel: string): Promise<unknown[]> {
+    if (command === 'NUMSUB') {
+      return [channel, subscribers.get(channel)?.size ?? 0];
+    }
+    throw new Error('Invalid command.');
   }
 }
 

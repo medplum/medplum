@@ -1,14 +1,13 @@
 import { ActionIcon, Box, CopyButton, Tooltip } from '@mantine/core';
 import {
+  InternalSchemaElement,
+  PropertyType,
   formatDateTime,
   formatPeriod,
   formatTiming,
-  InternalSchemaElement,
   isEmpty,
-  PropertyType,
 } from '@medplum/core';
 import { IconCheck, IconCopy } from '@tabler/icons-react';
-import React from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { AttachmentArrayDisplay } from '../AttachmentArrayDisplay/AttachmentArrayDisplay';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
@@ -87,6 +86,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.code:
     case PropertyType.date:
     case PropertyType.decimal:
+    case PropertyType.id:
     case PropertyType.integer:
     case PropertyType.positiveInt:
     case PropertyType.unsignedInt:

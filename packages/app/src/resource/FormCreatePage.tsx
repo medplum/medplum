@@ -1,6 +1,6 @@
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, ResourceForm } from '@medplum/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useCreateResource } from './useCreateResource';
 

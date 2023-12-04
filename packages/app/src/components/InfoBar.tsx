@@ -1,5 +1,5 @@
 import { createStyles, ScrollArea } from '@mantine/core';
-import React from 'react';
+import { ReactNode } from 'react';
 
 const useStyles = createStyles((theme) => ({
   root: {
@@ -30,7 +30,7 @@ const useStyles = createStyles((theme) => ({
 }));
 
 export interface InfoBarProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function InfoBar(props: InfoBarProps): JSX.Element {
@@ -43,7 +43,7 @@ export function InfoBar(props: InfoBarProps): JSX.Element {
 }
 
 export interface InfoBarEntryProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 InfoBar.Entry = function InfoBarEntry(props: InfoBarEntryProps): JSX.Element {
@@ -52,7 +52,7 @@ InfoBar.Entry = function InfoBarEntry(props: InfoBarEntryProps): JSX.Element {
 };
 
 export interface InfoBarKeyProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 InfoBar.Key = function InfoBarEntry(props: InfoBarKeyProps): JSX.Element {
@@ -61,7 +61,7 @@ InfoBar.Key = function InfoBarEntry(props: InfoBarKeyProps): JSX.Element {
 };
 
 export interface InfoBarValueProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 InfoBar.Value = function InfoBarEntry(props: InfoBarValueProps): JSX.Element {

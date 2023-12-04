@@ -1,6 +1,6 @@
 import { Group, TextInput } from '@mantine/core';
 import { ContactDetail, ContactPoint } from '@medplum/fhirtypes';
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { ContactPointInput } from '../ContactPointInput/ContactPointInput';
 
 export interface ContactDetailInputProps {

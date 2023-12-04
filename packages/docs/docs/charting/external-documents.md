@@ -18,7 +18,7 @@ See the [`DocumentReference` API guide](/docs/api/fhir/resources/documentreferen
 
 This is a similar process to [creating a PDF file from a Bot ](/docs/bots/creating-a-pdf).
 
-First, upload the binary file as a [`Binary`](/docs/api/fhir/resources/binary) resource. Then, create the corresponding `DocumentReference` as a pointer.
+First, upload the binary file as a [`Binary`](/docs/api/fhir/resources/binary) resource. Then, create the corresponding `DocumentReference` as a pointer. For more details on using [`Binary`] resources see the [Binary Data guide](/docs/fhir-datastore/binary-data#referencing-a-binary-in-an-attachment).
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">

@@ -1,6 +1,6 @@
 import { Button } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { MouseEvent, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { killEvent } from '../utils/dom';
@@ -27,7 +27,7 @@ export function AttachmentInput(props: AttachmentInputProps): JSX.Element {
       <>
         <AttachmentDisplay value={value} maxWidth={200} />
         <Button
-          onClick={(e: React.MouseEvent) => {
+          onClick={(e: MouseEvent) => {
             killEvent(e);
             setValueWrapper(undefined);
           }}

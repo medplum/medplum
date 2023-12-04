@@ -1,6 +1,5 @@
 import { Anchor } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
-import React from 'react';
 
 export interface AttachmentDisplayProps {
   value?: Attachment;

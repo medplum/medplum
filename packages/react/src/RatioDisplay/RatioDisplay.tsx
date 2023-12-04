@@ -1,5 +1,4 @@
 import { Ratio } from '@medplum/fhirtypes';
-import React from 'react';
 import { QuantityDisplay } from '../QuantityDisplay/QuantityDisplay';
 
 export interface RatioDisplayProps {
