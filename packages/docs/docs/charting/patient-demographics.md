@@ -20,7 +20,7 @@ Medplum provides React components for [Patient demographics](https://storybook.m
 
 ## Capturing Aliases
 
-The specification supports capturing aliases, and correct usage is beneficial for correct record keeping. The following `name` field on the FHIR [Patient](/docs/api/fhir/resources/patient) resource shows an example of how to represent maiden names, as an example.
+The specification supports capturing aliases, and correct usage is beneficial for record keeping. The following `name` field on the FHIR [Patient](/docs/api/fhir/resources/patient) resource shows an example of how to represent maiden names, as an example.
 
 ```json
 "name": [
@@ -45,7 +45,8 @@ The specification supports capturing aliases, and correct usage is beneficial fo
         "end": "1980-01-01T00:00:00Z"
       },
       "use": "old"
-    }]
+    }
+  ]
 ```
 
 ## Demographic Data
@@ -67,7 +68,7 @@ EHRs require capturing cause of death for patients. It is recommended to record 
 
 ## Common Identifiers
 
-Common identifiers, like Driver's License numbers or Social Security numbers should be captured on the Patient resource using [name spaced identifiers](/docs/fhir-basics#identifiers-naming-resources). These are useful when querying data from a Health Information Exchange (HIE) or HIE Onramp.
+Common identifiers, such as Driver's License numbers or Social Security numbers should be captured on the `Patient` resource using [name spaced identifiers](/docs/fhir-basics#identifiers-naming-resources). These are useful when querying data from a Health Information Exchange (HIE) or HIE Onramp.
 
 The [integration](/docs/integration) section has details on querying the exchanges.
 
