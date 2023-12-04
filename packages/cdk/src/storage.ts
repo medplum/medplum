@@ -78,6 +78,16 @@ export class Storage extends Construct {
 
       // HTTP response headers policy
       this.responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'ResponseHeadersPolicy', {
+        customHeadersBehavior: {
+          customHeaders: [
+            {
+              header: 'Permission-Policy',
+              value:
+                'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()',
+              override: true,
+            },
+          ],
+        },
         securityHeadersBehavior: {
           contentSecurityPolicy: {
             contentSecurityPolicy:
@@ -85,11 +95,18 @@ export class Storage extends Construct {
             override: true,
           },
           contentTypeOptions: { override: true },
-          frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
-          referrerPolicy: { referrerPolicy: cloudfront.HeadersReferrerPolicy.NO_REFERRER, override: true },
+          frameOptions: {
+            frameOption: cloudfront.HeadersFrameOption.DENY,
+            override: true,
+          },
+          referrerPolicy: {
+            referrerPolicy: cloudfront.HeadersReferrerPolicy.NO_REFERRER,
+            override: true,
+          },
           strictTransportSecurity: {
             accessControlMaxAge: Duration.seconds(63072000),
             includeSubdomains: true,
+            preload: true,
             override: true,
           },
           xssProtection: {

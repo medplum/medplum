@@ -183,11 +183,11 @@ It's very important that the `Coverage.payor` resource points to the `Organizati
     "coding": [
       {
         "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
-        "code": "self",
-        "display": "Self"
+        "code": "parent",
+        "display": "Parent"
       }
     ],
-    "text": "Self"
+    "text": "Parent"
   },
   "subscriber": {
     "reference": "RelatedPerson/<medplum-uuid>",
@@ -228,6 +228,11 @@ The `Account` resource `meta` should include the Health Gorilla [Account Profile
         "system": "https://healthgorilla.com/fhir/StructureDefinition/hg-order-account",
         "code": "thirdParty",
         "display": "Third Party"
+      },
+      {
+        "system": "https://www.healthgorilla.com/order-billto",
+        "code": "thirdParty",
+        "display": "Third Party"
       }
     ]
   },
@@ -253,5 +258,5 @@ The `Account` resource `meta` should include the Health Gorilla [Account Profile
 The following sample test scenarios are useful to understand when preparing for an integration.
 
 - PSC HOLD - in a Quest ordering workflow this refers to an order with no Specimen details. In this case, the order is placed but the patient has to go to a Quest center to have a specimen collection. PSC stands for "Patient Service Center." The requisition form and details will show PSC HOLD on them.
-- Advance Beneficiary Notice (ABN) - this refers to a Medicare or Medicaid workflow where the patient receives notice of their coverage for the lab test before the test is performed. Health Gorilla provides this as a PDF that should be stored for record keeping.
+- Advance Beneficiary Notice (ABN) - this refers to a Medicare or Medicaid workflow where the patient receives notice of their coverage for the lab test before the test is performed. Health Gorilla provides this as a PDF that should be stored for record keeping. For Medicare and Medicaid you will need to submit diagnosis codes with the order.
 - Clinical Note - this refers to a note at the test level placed as part of an order, for example if an order is placed for a Free T4 and a TSH test, the Free T4 and TSH test could each have their own clinical note.

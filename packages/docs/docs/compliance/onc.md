@@ -42,7 +42,7 @@ This is the list of certified criteria. Related to this criteria these scripts a
 | d13                                                 | Multi-factor Authentication                          |
 | [g4](/docs/compliance/iso9001)                      | Quality Management System                            |
 | g5                                                  | Accessibility-Centered Design                        |
-| g10(/docs/api)                                      | Standardized API for Patient and Population Services |
+| [g10](/docs/api)                                    | Standardized API for Patient and Population Services |
 
 The following criteria are required for CHPL listing: [d12](#encrypt-authentication-credentials-d12), [d13](#multi-factor-authentication-d13), [g4](#quality-management-system-g4), [g5](#accessibility-centered-design-g5).
 

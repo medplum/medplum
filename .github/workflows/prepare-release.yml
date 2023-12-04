@@ -1,0 +1,24 @@
+name: Prepare release
+
+on: workflow_dispatch
+
+jobs:
+  prepare-release:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Setup git
+        run: |
+          git config --global user.email "${{ secrets.MEDPLUM_BOT_EMAIL }}"
+          git config --global user.name "${{ secrets.MEDPLUM_BOT_NAME }}"
+      - name: Prepare release
+        run: ./scripts/prepare-release.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}

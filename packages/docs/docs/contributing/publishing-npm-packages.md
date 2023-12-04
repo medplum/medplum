@@ -4,65 +4,51 @@ sidebar_position: 101
 
 # Publishing NPM Packages
 
-This is the process we use to publish new versions of JS/TS NPM packages.
+This is the process we use to publish new versions of JavaScript NPM packages.
 
-Note that this is separate from deploying code to production.
+Publishing NPM dependencies requires being a member of the [Medplum dev team](https://github.com/orgs/medplum/teams/dev).
 
-## Background
+:::note
 
-This document assumes basic familiarity with NPM dependencies, how `package.json` and `package-lock.json` work, and the difference between `npm install` and `npm ci`.
+Note that publishing to NPM is separate from deploying to production. For details on deploying to production, see:
 
-- [npm ci](https://docs.npmjs.com/cli/v8/commands/npm-ci)
-- [Difference between npm i and npm ci in Node.js](https://www.geeksforgeeks.org/difference-between-npm-i-and-npm-ci-in-node-js/)
+- Hosted Medplum uses CI/CD which automatically pushes to production on every merge to `main`
+- For self-hosted, see [Install on AWS - Ongoing](/docs/self-hosting/install-on-aws#ongoing)
 
-Publishing NPM dependencies requires being a member of the [NPM Medplum organization](https://www.npmjs.com/org/medplum).
+:::
 
 ## Steps
 
-First, run the `version.sh` script in the project root directory:
+The Medplum publish process is automated using Github Actions.
 
-```bash
-./scripts/version.sh $OLD_VERSION $NEW_VERSION
-```
+### 1. Prepare the release
 
-(TODO: The `version.sh` script should extract `$OLD_VERSION` from package.json).
+- Go to [GitHub Actions](https://github.com/medplum/medplum/actions)
+- In the left side bar, click [Prepare release](https://github.com/medplum/medplum/actions/workflows/prepare-release.yml)
+- Click the "Run workflow" button
+- Use the default branch `main`
+- Click "Run workflow"
 
-This script sets `$NEW_VERSION` in all of the necessary places:
+This will initiate the action, which will create the release PR and a draft "Release".
 
-- Updates `version` in `package.json` files
-- Updates dependency versions for dependencies within the repo
-- Updates the version in `sonar-project.properties`
+Wait for the normal PR process, and merge the PR when ready.
 
-Next, reinstall the package dependencies using the `reinstall.sh` script in the project root directory:
+### 2. Publish the release
 
-```bash
-./scripts/reinstall.sh
-```
+- Go to [GitHub Releases](https://github.com/medplum/medplum/releases)
+- At the top, there should be a new release in "Draft" status
+- Click the pencil icon for "Edit"
+- Leave the tag alone
+- Update the "Target"
+  - Click on the "Target: main" button
+  - Go to the "Recent Commits" tab
+  - Select the Release commit
+- Update the release notes as you see fit
+  - Give shout-outs to new contributors
+  - When necessary, add notes about new features
+  - At your discretion, remove trivial commits
+- Click "Publish release"
 
-This purges the `node_modules` directory and `package-lock.json` file, and reinstalls all dependencies. This may sound extreme, but it is a consistent method to ensure reproducible behavior, and avoid configuration drift.
+That will create a new Github "Release", which starts a "Publish" action.
 
-Then, run a full build and test using the `build.sh` script in the project root directory:
-
-```bash
-./scripts/build.sh
-```
-
-This cleans, builds, tests, and lints all subprojects. Given our strict TypeScript configuration and high test coverage, a passing build typically indicates a high level of confidence that the upgrades were successful.
-
-Finally, run the server and the app for a basic sanity check. While we do have high test coverage, it is not 100%, and tests cannot cover everything. It may take an extra few minutes, but it is always better to be sure.
-
-If all of these steps complete successfully, then prepare a PR for a review.
-
-If the PR is approved, then you can take the final step of actually publishing packages to NPM:
-
-```bash
-./scripts/publish.sh
-```
-
-This will publish new versions of all of our publicly available NPM packages:
-
-- [@medplum/core](https://www.npmjs.com/package/@medplum/core) - Core library and FHIR client
-- [@medplum/definitions](https://www.npmjs.com/package/@medplum/definitions) - FHIR data definitions in JSON form
-- [@medplum/fhirtypes](https://www.npmjs.com/package/@medplum/fhirtypes) - FHIR definitions as TypeScript .d.ts
-- [@medplum/mock](https://www.npmjs.com/package/@medplum/mock) - Mock FHIR data and mock Medplum client
-- [@medplum/react](https://www.npmjs.com/package/@medplum/react) - React component library
+The publish action publishes all libraries to npm, and also builds the `medplum-agent-installer.exe` binary.
