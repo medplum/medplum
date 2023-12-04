@@ -1,10 +1,10 @@
 export interface BaseAgentMessage {
   type: string;
+  callback?: string;
 }
 
 export interface BaseAgentRequestMessage extends BaseAgentMessage {
-  accessToken: string;
-  callback?: string;
+  accessToken?: string;
 }
 
 export interface AgentError extends BaseAgentMessage {
@@ -23,15 +23,17 @@ export interface AgentConnectResponse extends BaseAgentMessage {
 
 export interface AgentTransmitRequest extends BaseAgentRequestMessage {
   type: 'agent:transmit:request';
-  channel: string;
+  channel?: string;
   remote: string;
+  contentType: string;
   body: string;
 }
 
 export interface AgentTransmitResponse extends BaseAgentMessage {
   type: 'agent:transmit:response';
-  channel: string;
+  channel?: string;
   remote: string;
+  contentType: string;
   body: string;
 }
 

@@ -1,6 +1,15 @@
-import { allOk, badRequest, getReferenceString, Operator, parseSearchDefinition } from '@medplum/core';
+import {
+  AgentTransmitRequest,
+  allOk,
+  badRequest,
+  BaseAgentRequestMessage,
+  getReferenceString,
+  Operator,
+  parseSearchDefinition,
+} from '@medplum/core';
 import { Agent, Device } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import { randomUUID } from 'node:crypto';
 import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
 import { getRedis } from '../../redis';
@@ -31,23 +40,23 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
     return;
   }
 
-  const message = parseParameters<AgentPushParameters>(req.body);
-  if (!message.body) {
+  const params = parseParameters<AgentPushParameters>(req.body);
+  if (!params.body) {
     sendOutcome(res, badRequest('Missing body parameter'));
     return;
   }
 
-  if (!message.contentType) {
+  if (!params.contentType) {
     sendOutcome(res, badRequest('Missing contentType parameter'));
     return;
   }
 
-  if (!message.destination) {
+  if (!params.destination) {
     sendOutcome(res, badRequest('Missing destination parameter'));
     return;
   }
 
-  const device = await getDevice(repo, message.destination);
+  const device = await getDevice(repo, params.destination);
   if (!device) {
     sendOutcome(res, badRequest('Destination device not found'));
     return;
@@ -58,16 +67,26 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
     return;
   }
 
+  const message: AgentTransmitRequest = {
+    type: 'agent:transmit:request',
+    remote: device.url,
+    contentType: params.contentType,
+    body: params.body,
+  };
+
   // If not waiting for a response, publish and return
-  if (!message.waitForResponse) {
-    await publishMessage(agent, device, message);
+  if (!params.waitForResponse) {
+    await publishMessage(agent, message);
     sendOutcome(res, allOk);
     return;
   }
 
   // Otherwise, open a new redis connection in "subscribe" state
+  // message.callback = getReferenceString(agent) + '-' + randomUUID();
+  message.callback = randomUUID();
+
   const redisSubscriber = getRedis().duplicate();
-  await redisSubscriber.subscribe(getReferenceString(agent));
+  await redisSubscriber.subscribe(message.callback);
   redisSubscriber.on('message', (_channel: string, message: string) => {
     const response = JSON.parse(message);
     res.status(200).type(response.contentType).send(response.body);
@@ -78,7 +97,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   const timer = setTimeout(() => {
     cleanup();
     sendOutcome(res, badRequest('Timeout'));
-  });
+  }, 5000);
 
   function cleanup(): void {
     redisSubscriber.disconnect();
@@ -86,7 +105,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   }
 
   // Publish the message to the agent channel
-  await publishMessage(agent, device, message);
+  await publishMessage(agent, message);
 
   // At this point, one of two things will happen:
   // 1. The agent will respond with a message on the channel
@@ -136,9 +155,6 @@ async function getDevice(repo: Repository, destination: string): Promise<Device 
   return undefined;
 }
 
-async function publishMessage(agent: Agent, device: Device, message: AgentPushParameters): Promise<number> {
-  return getRedis().publish(
-    getReferenceString(agent),
-    JSON.stringify({ type: 'push', remote: device.url, ...message })
-  );
+async function publishMessage(agent: Agent, message: BaseAgentRequestMessage): Promise<number> {
+  return getRedis().publish(getReferenceString(agent), JSON.stringify(message));
 }

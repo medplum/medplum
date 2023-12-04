@@ -1,4 +1,4 @@
-import { AgentTransmitResponse, normalizeErrorString } from '@medplum/core';
+import { AgentTransmitResponse, ContentType, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import * as dimse from 'dcmjs-dimse';
 import { App } from './app';
@@ -91,6 +91,7 @@ class DcmjsDimseScp extends dimse.Scp {
         accessToken: App.instance.medplum.getAccessToken() as string,
         channel: AgentDicomChannel.instance.definition.name as string,
         remote: 'foo',
+        contentType: ContentType.JSON,
         body: JSON.stringify(request.getDataset()),
       });
     } catch (err) {

@@ -1,4 +1,11 @@
-import { AgentMessage, AgentTransmitRequest, Hl7Message, MedplumClient, normalizeErrorString } from '@medplum/core';
+import {
+  AgentMessage,
+  AgentTransmitRequest,
+  ContentType,
+  Hl7Message,
+  MedplumClient,
+  normalizeErrorString,
+} from '@medplum/core';
 import { AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { EventLogger } from 'node-windows';
@@ -134,7 +141,7 @@ export class App {
   private trySendToHl7Connection(): void {
     while (this.hl7Queue.length > 0) {
       const msg = this.hl7Queue.shift();
-      if (msg && msg.type === 'agent:transmit:response') {
+      if (msg && msg.type === 'agent:transmit:response' && msg.channel) {
         const channel = this.channels.get(msg.channel);
         if (channel) {
           channel.sendToRemote(msg);
@@ -163,6 +170,14 @@ export class App {
       .sendAndWait(Hl7Message.parse(message.body))
       .then((response) => {
         this.log.info(`Response: ${response.toString().replaceAll('\r', '\n')}`);
+        this.addToWebSocketQueue({
+          type: 'agent:transmit:response',
+          channel: message.channel,
+          remote: message.remote,
+          callback: message.callback,
+          contentType: ContentType.HL7_V2,
+          body: response.toString(),
+        });
       })
       .catch((err) => {
         this.log.error(`HL7 error: ${normalizeErrorString(err)}`);

@@ -50,6 +50,13 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
             await handleTransmit(command);
             break;
 
+          case 'agent:transmit:response':
+            if (command.callback) {
+              const redis = getRedis();
+              await redis.publish(command.callback, JSON.stringify(command));
+            }
+            break;
+
           default:
             sendError(`Unknown message type: ${command.type}`);
         }
@@ -150,6 +157,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       type: 'agent:transmit:response',
       channel: command.channel,
       remote: command.remote,
+      contentType: ContentType.HL7_V2,
       body: result.returnValue,
     });
   }

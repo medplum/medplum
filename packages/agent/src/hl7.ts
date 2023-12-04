@@ -1,4 +1,4 @@
-import { AgentTransmitResponse, Hl7Message, normalizeErrorString } from '@medplum/core';
+import { AgentTransmitResponse, ContentType, Hl7Message, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { App } from './app';
@@ -66,6 +66,7 @@ export class AgentHl7ChannelConnection {
         accessToken: this.channel.app.medplum.getAccessToken() as string,
         channel: this.channel.definition.name as string,
         remote: this.remote,
+        contentType: ContentType.HL7_V2,
         body: event.message.toString(),
       });
     } catch (err) {
