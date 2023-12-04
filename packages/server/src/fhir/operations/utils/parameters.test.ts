@@ -131,7 +131,7 @@ describe('Operation Input Parameters parsing', () => {
   });
 
   test.each<[Parameters | Record<string, any>, string]>([
-    [{}, 'Expected required input parameter requiredIn'],
+    [{}, `Expected required input parameter 'requiredIn'`],
     [{ resourceType: 'Parameters', parameter: [] }, 'Expected 1 value for input parameter requiredIn, but 0 provided'],
     [
       {
