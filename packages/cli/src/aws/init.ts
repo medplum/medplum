@@ -10,10 +10,10 @@ import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/cl
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { MedplumInfraConfig, normalizeErrorString } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'crypto';
-import { existsSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { existsSync } from 'fs';
 import readline from 'readline';
 import { getServerVersions } from './utils';
+import { writeConfig } from '../utils';
 
 type MedplumDomainType = 'api' | 'app' | 'storage';
 type MedplumDomainSetting = `${MedplumDomainType}DomainName`;
@@ -383,15 +383,6 @@ async function checkOk(text: string): Promise<void> {
     print('Exiting...');
     throw new Error('User cancelled');
   }
-}
-
-/**
- * Writes a config file to disk.
- * @param configFileName - The config file name.
- * @param config - The config file contents.
- */
-function writeConfig(configFileName: string, config: Record<string, any>): void {
-  writeFileSync(resolve(configFileName), JSON.stringify(config, undefined, 2), 'utf-8');
 }
 
 /**

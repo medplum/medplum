@@ -39,7 +39,7 @@ async function nextUpdateVersion(currentVersion: string): Promise<string | undef
 
 function deployServerUpdate(tag: string, config: MedplumInfraConfig): void {
   const configFile = configFileName(tag);
-  writeConfig(config, tag);
+  writeConfig(configFile, config);
 
   const cmd = `npx cdk deploy -c config=${configFile}${config.region !== 'us-east-1' ? ' --all' : ''}`;
   console.log('> ' + cmd);

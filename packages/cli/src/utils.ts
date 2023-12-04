@@ -1,4 +1,4 @@
-import { ContentType, encodeBase64, MedplumClient, MedplumInfraConfig } from '@medplum/core';
+import { ContentType, encodeBase64, MedplumClient } from '@medplum/core';
 import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
 import { createHmac, createPrivateKey, randomBytes } from 'crypto';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
@@ -135,11 +135,11 @@ export function configFileName(tagName?: string): string {
 
 /**
  * Writes a config file to disk.
+ * @param configFileName - The config file name.
  * @param config - The config file contents.
- * @param tagName - The stack tag name.
  */
-export function writeConfig(config: MedplumInfraConfig, tagName?: string): void {
-  writeFileSync(resolve(configFileName(tagName)), JSON.stringify(config, undefined, 2), 'utf-8');
+export function writeConfig(configFileName: string, config: Record<string, any>): void {
+  writeFileSync(resolve(configFileName), JSON.stringify(config, undefined, 2), 'utf-8');
 }
 
 export function readConfig(tagName?: string): MedplumConfig | undefined {
