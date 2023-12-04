@@ -97,7 +97,7 @@ java -jar jsign-5.0.jar \
   dist/shawl-v1.3.0-win64.exe
 
 # Build the installer
-makensis installer.nsi
+makensis -V4 -DARCH=x86_64 installer.nsi
 
 # Check the build output
 ls -la "medplum-agent-installer-$MEDPLUM_VERSION.exe"

@@ -5,6 +5,7 @@
 !define COMPANY_NAME             "Medplum"
 !define APP_NAME                 "Medplum Agent"
 !define SERVICE_NAME             "MedplumAgent"
+!define SERVICE_FILE_NAME        "medplum-agent-$%MEDPLUM_VERSION%-win64.exe"
 !define INSTALLER_FILE_NAME      "medplum-agent-installer-$%MEDPLUM_VERSION%.exe"
 !define PRODUCT_VERSION          "$%MEDPLUM_VERSION%.0"
 !define DEFAULT_BASE_URL         "https://api.medplum.com/"
@@ -145,7 +146,7 @@ Function UpgradeApp
     Sleep 3000
 
     # Copy the new files to the installation directory
-    File dist\medplum-agent-win64.exe
+    File dist\${SERVICE_FILE_NAME}
     File README.md
 
     # Start the service
@@ -168,12 +169,12 @@ Function InstallApp
     # Copy the service files to the root directory
     File dist\shawl-v1.3.0-legal.txt
     File dist\shawl-v1.3.0-win64.exe
-    File dist\medplum-agent-win64.exe
+    File dist\${SERVICE_FILE_NAME}
     File README.md
 
     # Create the service
     DetailPrint "Creating service..."
-    ExecWait "shawl-v1.3.0-win64.exe add --name $\"${SERVICE_NAME}$\" -- $\"$INSTDIR\medplum-agent-win64.exe$\" $\"$baseUrl$\" $\"$clientId$\" $\"$clientSecret$\" $\"$agentId$\"" $1
+    ExecWait "shawl-v1.3.0-win64.exe add --name $\"${SERVICE_NAME}$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\" $\"$baseUrl$\" $\"$clientId$\" $\"$clientSecret$\" $\"$agentId$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service display name
