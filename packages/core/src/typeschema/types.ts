@@ -10,7 +10,7 @@ import {
 import { inflateBaseSchema } from '../base-schema';
 import baseSchema from '../base-schema.json';
 import { getTypedPropertyValue } from '../fhirpath/utils';
-import { OperationOutcomeError, serverError } from '../outcomes';
+import { OperationOutcomeError, badRequest } from '../outcomes';
 import { TypedValue, getElementDefinitionTypeName, isResourceTypeSchema } from '../types';
 import { capitalize, isEmpty } from '../utils';
 
@@ -126,7 +126,7 @@ export function tryGetDataType(type: string): InternalTypeSchema | undefined {
 export function getDataType(type: string): InternalTypeSchema {
   const schema = DATA_TYPES[type];
   if (!schema) {
-    throw new OperationOutcomeError(serverError(Error('Unknown data type: ' + type)));
+    throw new OperationOutcomeError(badRequest('Unknown data type: ' + type));
   }
   return schema;
 }

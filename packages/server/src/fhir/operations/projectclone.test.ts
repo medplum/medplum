@@ -19,7 +19,6 @@ import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { createProject } from '../../auth/newproject';
 import { loadTestConfig } from '../../config';
 import {
   createTestProject,
@@ -30,6 +29,7 @@ import {
 } from '../../test.setup';
 import { systemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
+import { createProject } from './projectinit';
 
 jest.mock('node-fetch');
 jest.mock('hibp');
@@ -179,12 +179,9 @@ describe('Project clone', () => {
       });
     const login = await systemRepo.readResource<Login>('Login', res1.body.login);
     const user = await systemRepo.readReference<User>(login.user as Reference<User>);
-    const { firstName, lastName } = user;
 
     expect(res1.status).toBe(200);
-    const { project } = await withTestContext(() =>
-      createProject(login, 'Test Project Name', firstName as string, lastName as string)
-    );
+    const { project } = await withTestContext(() => createProject('Test Project Name', user));
     const newProjectName = 'A New Name for a cloned project';
     expect(project).toBeDefined();
 

@@ -19,6 +19,9 @@ import { revokeHandler, revokeValidator } from './revoke';
 import { scopeHandler, scopeValidator } from './scope';
 import { setPasswordHandler, setPasswordValidator } from './setpassword';
 import { statusHandler, statusValidator } from './status';
+import { badRequest } from '@medplum/core';
+import { OperationOutcome, Project } from '@medplum/fhirtypes';
+import { validateRecaptcha } from './utils';
 
 export const authRouter = Router();
 authRouter.use(getRateLimiter());
@@ -26,16 +29,23 @@ authRouter.use('/mfa', mfaRouter);
 authRouter.post('/method', methodValidator, asyncWrap(methodHandler));
 authRouter.get('/external', asyncWrap(externalCallbackHandler));
 authRouter.get('/me', authenticateRequest, asyncWrap(meHandler));
-authRouter.post('/newuser', newUserValidator, asyncWrap(newUserHandler));
+authRouter.post('/newuser', newUserValidator, validateRecaptcha(projectRegistrationAllowed), asyncWrap(newUserHandler));
 authRouter.post('/newproject', newProjectValidator, asyncWrap(newProjectHandler));
 authRouter.post('/newpatient', newPatientValidator, asyncWrap(newPatientHandler));
 authRouter.post('/login', loginValidator, asyncWrap(loginHandler));
 authRouter.post('/profile', profileValidator, asyncWrap(profileHandler));
 authRouter.post('/scope', scopeValidator, asyncWrap(scopeHandler));
 authRouter.post('/changepassword', authenticateRequest, changePasswordValidator, asyncWrap(changePasswordHandler));
-authRouter.post('/resetpassword', resetPasswordValidator, asyncWrap(resetPasswordHandler));
+authRouter.post('/resetpassword', resetPasswordValidator, validateRecaptcha(), asyncWrap(resetPasswordHandler));
 authRouter.post('/setpassword', setPasswordValidator, asyncWrap(setPasswordHandler));
 authRouter.post('/google', googleValidator, asyncWrap(googleHandler));
 authRouter.post('/exchange', exchangeValidator, asyncWrap(exchangeHandler));
 authRouter.post('/revoke', authenticateRequest, revokeValidator, asyncWrap(revokeHandler));
 authRouter.get('/login/:login', statusValidator, asyncWrap(statusHandler));
+
+function projectRegistrationAllowed(project: Project): OperationOutcome | undefined {
+  if (!project.defaultPatientAccessPolicy) {
+    return badRequest('Project does not allow open registration');
+  }
+  return undefined;
+}

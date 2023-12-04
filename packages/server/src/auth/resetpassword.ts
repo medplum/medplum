@@ -9,7 +9,6 @@ import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
-import { getProjectByRecaptchaSiteKey, verifyRecaptcha } from './utils';
 
 export const resetPasswordValidator = makeValidationMiddleware([
   body('email')
@@ -24,37 +23,6 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
   if (await isExternalAuth(email)) {
     sendOutcome(res, badRequest('Cannot reset password for external auth. Contact your system administrator.'));
     return;
-  }
-
-  const recaptchaSiteKey = req.body.recaptchaSiteKey;
-  let secretKey: string | undefined = getConfig().recaptchaSecretKey;
-
-  if (recaptchaSiteKey && recaptchaSiteKey !== getConfig().recaptchaSiteKey) {
-    // If the recaptcha site key is not the main Medplum recaptcha site key,
-    // then it must be associated with a Project.
-    // The user can only authenticate with that project.
-    const project = await getProjectByRecaptchaSiteKey(recaptchaSiteKey, req.body.projectId);
-    if (!project) {
-      sendOutcome(res, badRequest('Invalid recaptchaSiteKey'));
-      return;
-    }
-    secretKey = project.site?.find((s) => s.recaptchaSiteKey === recaptchaSiteKey)?.recaptchaSecretKey;
-    if (!secretKey) {
-      sendOutcome(res, badRequest('Invalid recaptchaSecretKey'));
-      return;
-    }
-  }
-
-  if (secretKey) {
-    if (!req.body.recaptchaToken) {
-      sendOutcome(res, badRequest('Recaptcha token is required'));
-      return;
-    }
-
-    if (!(await verifyRecaptcha(secretKey, req.body.recaptchaToken))) {
-      sendOutcome(res, badRequest('Recaptcha failed'));
-      return;
-    }
   }
 
   // Define filters for searching users
