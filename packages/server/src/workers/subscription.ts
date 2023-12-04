@@ -24,7 +24,17 @@ import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext, BackgroundJobInteraction } from './context';
 import { createAuditEvent, findProjectMembership, isFhirCriteriaMet, isJobSuccessful } from './utils';
 
+/**
+ * The upper limit on the number of times a job can be retried.
+ * Using exponential backoff, 18 retries is about 73 hours.
+ */
 const MAX_JOB_ATTEMPTS = 18;
+
+/**
+ * The default number of times a job will be retried.
+ * This can be overridden by the subscription-max-attempts extension.
+ */
+const DEFAULT_RETRIES = 3;
 
 /*
  * The subscription worker inspects every resource change,
@@ -302,7 +312,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
       }
     }
   } catch (err) {
-    catchJobError(subscription, job, err);
+    await catchJobError(subscription, job, err);
   }
 }
 
@@ -473,13 +483,20 @@ async function execBot(
   });
 }
 
-function catchJobError(subscription: Subscription, job: Job<SubscriptionJobData>, err: any): void {
+async function catchJobError(subscription: Subscription, job: Job<SubscriptionJobData>, err: any): Promise<void> {
   const maxJobAttempts =
     getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
-      ?.valueInteger ?? MAX_JOB_ATTEMPTS;
+      ?.valueInteger ?? DEFAULT_RETRIES;
 
   if (job.attemptsMade < maxJobAttempts) {
     globalLogger.debug(`Retrying job due to error: ${err}`);
+
+    // Lower the job priority
+    // "Note that the priorities go from 1 to 2 097 152, where a lower number is always a higher priority than higher numbers."
+    // "Jobs without a `priority`` assigned will get the most priority."
+    // See: https://docs.bullmq.io/guide/jobs/prioritized
+    await job.changePriority({ priority: 1 + job.attemptsMade });
+
     throw err;
   } else {
     // If the maxJobAttempts equals the jobs.attemptsMade, we won't throw, which won't trigger a retry
