@@ -104,6 +104,16 @@ Function InputPageLeave
     ${NSD_GetText} $R3 $clientId
     ${NSD_GetText} $R5 $clientSecret
     ${NSD_GetText} $R7 $agentId
+
+    StrCmp $baseUrl "" inputError
+    StrCmp $clientId "" inputError
+    StrCmp $clientSecret "" inputError
+    StrCmp $agentId "" inputError
+    Goto inputOK
+    inputError:
+        MessageBox MB_OK|MB_ICONEXCLAMATION "Please fill in all required fields."
+        Abort
+    inputOK:
 FunctionEnd
 
 # Main installation entry point.
