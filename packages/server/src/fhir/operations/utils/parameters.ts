@@ -43,7 +43,6 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
   }
 
   const input = req.body;
-
   const inputParameters = input.resourceType === 'Parameters' ? (input as Parameters) : undefined;
   if (inputParameters) {
     validateResource(inputParameters);
@@ -152,5 +151,5 @@ export async function sendOutputParameters(
 }
 
 function makeParameter(param: OperationDefinitionParameter, value: any): ParametersParameter {
-  return { name: param.name, ['value' + param.type]: value };
+  return { name: param.name, ['value' + capitalize(param.type as string)]: value };
 }
