@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Patient Demographics
 
-Capturing Patient Demographics is a core function of an Electronic Health Record system. Requirements for EHR demographic capture are described in the [ONC (a)(5) criteria](/docs/fhir-datastore/patient-deduplication).
+Capturing Patient Demographics is a core function of an Electronic Health Record system. Requirements for EHR demographic capture are described in the [ONC (a)(5) criteria](https://www.healthit.gov/test-method/demographics).
 
 Demographic data can be input via multiple methods, for example via **application user interface (UI)**, synchronized via **integration** or written via **API**.
 
