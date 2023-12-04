@@ -22,7 +22,7 @@ describe('App', () => {
 
     endpoint = await medplum.createResource<Endpoint>({
       resourceType: 'Endpoint',
-      address: 'mllp://0.0.0.0:57000',
+      address: 'mllp://0.0.0.0:57009',
     });
   });
 

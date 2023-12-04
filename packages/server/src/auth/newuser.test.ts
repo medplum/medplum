@@ -67,6 +67,7 @@ describe('New user', () => {
         lastName: 'Hamilton',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(400);

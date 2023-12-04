@@ -411,7 +411,13 @@ export class Repository extends BaseRepository implements FhirRepository {
         throw new OperationOutcomeError(notFound);
       }
 
-      await this.readResourceImpl<T>(resourceType, id);
+      try {
+        await this.readResourceImpl<T>(resourceType, id);
+      } catch (err) {
+        if (!isGone(normalizeOperationOutcome(err))) {
+          throw err;
+        }
+      }
 
       const client = getClient();
       const rows = await new SelectQuery(resourceType + '_History')

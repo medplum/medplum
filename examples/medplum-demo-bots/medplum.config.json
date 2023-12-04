@@ -71,6 +71,18 @@
       "id": "",
       "source": "src/deduplication/merge-matching-patients.ts",
       "dist": "dist/deduplication/merge-matching-patients.js"
+    },
+    {
+      "name": "welcome-patient",
+      "id": "",
+      "source": "./src/bots-with-shared-library/welcome-patient.ts",
+      "dist": "./dist/bots-with-shared-library/welcome-patient.js"
+    },
+    {
+      "name": "goodbye-patient",
+      "id": "",
+      "source": "./src/bots-with-shared-library/goodbye-patient.ts",
+      "dist": "./dist/bots-with-shared-library/welcome-patient.js"
     }
   ]
 }
