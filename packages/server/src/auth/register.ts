@@ -1,10 +1,10 @@
 import { createReference, ProfileResource } from '@medplum/core';
 import { ClientApplication, Login, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { systemRepo } from '../fhir/repo';
-import { getAuthTokens, tryLogin } from '../oauth/utils';
-import { bcryptHashPassword } from './utils';
 import { createProject } from '../fhir/operations/projectinit';
+import { systemRepo } from '../fhir/repo';
+import { getAuthTokens, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
+import { bcryptHashPassword } from './utils';
 
 /*
  * This is a utility method for creating a Project, Profile, and ProjectMembership.
@@ -41,13 +41,17 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
   const { password, projectName, firstName, lastName } = request;
   const email = request.email.toLowerCase();
   const passwordHash = await bcryptHashPassword(password);
-  const user = await systemRepo.createResource<User>({
-    resourceType: 'User',
-    firstName,
-    lastName,
-    email,
-    passwordHash,
-  });
+
+  let user = await getUserByEmailWithoutProject(email);
+  if (!user) {
+    user = await systemRepo.createResource<User>({
+      resourceType: 'User',
+      firstName,
+      lastName,
+      email,
+      passwordHash,
+    });
+  }
 
   const login = await tryLogin({
     authMethod: 'password',
