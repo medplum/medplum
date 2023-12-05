@@ -75,7 +75,7 @@ if [ ! -f "jsign-5.0.jar" ]; then
 fi
 
 # Unpack the client certificate
-SM_CLIENT_CERT_FILE="Certificate_pkcs12.p12"
+export SM_CLIENT_CERT_FILE="Certificate_pkcs12.p12"
 echo "$SM_CLIENT_CERT_FILE_BASE64" | base64 --decode > "$SM_CLIENT_CERT_FILE"
 
 # Sign the executable
@@ -101,13 +101,6 @@ makensis installer.nsi
 
 # Check the build output
 ls -la "medplum-agent-installer-$MEDPLUM_VERSION.exe"
-
-# Sign the installer
-java -jar jsign-5.0.jar \
-  --storetype DIGICERTONE \
-  --storepass "$SM_API_KEY|$SM_CLIENT_CERT_FILE|$SM_CLIENT_CERT_PASSWORD" \
-  --alias "$SM_CERT_ALIAS" \
-  "medplum-agent-installer-$MEDPLUM_VERSION.exe"
 
 # Move back to root
 popd
