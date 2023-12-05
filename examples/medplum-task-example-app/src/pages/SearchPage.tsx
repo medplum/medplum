@@ -1,5 +1,5 @@
 import { Paper } from '@mantine/core';
-import { formatSearchQuery, parseSearchDefinition, SearchRequest } from '@medplum/core';
+import { formatSearchQuery, getReferenceString, parseSearchDefinition, SearchRequest } from '@medplum/core';
 import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
@@ -12,12 +12,12 @@ export function SearchPage(): JSX.Element {
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
 
-  console.log(location);
-
   useEffect(() => {
+    // Parse the search definition from the url and get the correct fields for the resource type
     const parsedSearch = parseSearchDefinition(location.pathname + location.search);
     const fields = getDefaultFields(parsedSearch.resourceType);
 
+    // Add the defaul fields to your parsed search definition
     const populatedSearch = {
       ...parsedSearch,
       fields,
@@ -27,11 +27,12 @@ export function SearchPage(): JSX.Element {
       location.pathname === `/${populatedSearch.resourceType}` &&
       location.search === formatSearchQuery(populatedSearch)
     ) {
+      // If the url matches the parsed search and fields, execute the search
       setSearch(populatedSearch);
     } else {
+      // If it doesn't, navigate to the correct URL
       navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
     }
-    console.log(populatedSearch);
   }, [medplum, navigate, location]);
 
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
@@ -40,11 +41,16 @@ export function SearchPage(): JSX.Element {
 
   return (
     <Paper>
-      <SearchControl search={search}></SearchControl>
+      <SearchControl
+        search={search}
+        onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+        onNew={() => navigate(`/${search.resourceType}/new`)}
+      ></SearchControl>
     </Paper>
   );
 }
 
+// Get the default fields for a given resource type
 function getDefaultFields(resourceType: string): string[] {
   const fields = ['id', '_lastUpdated'];
 

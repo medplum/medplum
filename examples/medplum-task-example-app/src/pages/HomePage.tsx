@@ -33,7 +33,7 @@ export function HomePage(): JSX.Element {
         Welcome <ResourceName value={profile} link />
       </Title>
       <SearchControl
-        search={{ resourceType: 'Patient', fields: ['name', 'birthdate', 'gender'] }}
+        search={{ resourceType: 'Task', fields: ['id', 'priority', 'for'] }}
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
         hideToolbar
       />

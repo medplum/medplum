@@ -1,6 +1,6 @@
 import { Paper, Text } from '@mantine/core';
 import { Resource } from '@medplum/fhirtypes';
-import { ResourceForm, useMedplum } from '@medplum/react';
+import { Document, ResourceForm, useMedplum } from '@medplum/react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 export function CreateResourcePage(): JSX.Element {
@@ -9,8 +9,10 @@ export function CreateResourcePage(): JSX.Element {
   const { resourceType } = useParams();
   console.log(medplum);
 
+  // Create a default resource with the correct resourceType
   const defaultResource = { resourceType } as Resource;
 
+  // Function to create the resource and navigate to the resource page when the form is submitted
   const handleSubmit = (newResource: Resource) => {
     medplum
       .createResource(newResource)
@@ -19,13 +21,13 @@ export function CreateResourcePage(): JSX.Element {
   };
 
   return (
-    <div>
+    <Document>
       <Paper>
         <Text>New {resourceType}</Text>
         <div>
           <ResourceForm defaultValue={defaultResource} onSubmit={handleSubmit}></ResourceForm>
         </div>
       </Paper>
-    </div>
+    </Document>
   );
 }
