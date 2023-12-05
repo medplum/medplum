@@ -5,12 +5,14 @@
 !define COMPANY_NAME             "Medplum"
 !define APP_NAME                 "Medplum Agent"
 !define SERVICE_NAME             "MedplumAgent"
-!define INSTALLER_FILE_NAME      "medplum-agent-installer.exe"
+!define SERVICE_FILE_NAME        "medplum-agent-$%MEDPLUM_VERSION%-win64.exe"
+!define INSTALLER_FILE_NAME      "medplum-agent-installer-$%MEDPLUM_VERSION%.exe"
+!define PRODUCT_VERSION          "$%MEDPLUM_VERSION%.0"
 !define DEFAULT_BASE_URL         "https://api.medplum.com/"
 
 Name                             "${APP_NAME}"
 OutFile                          "${INSTALLER_FILE_NAME}"
-VIProductVersion                 "1.0.0.0"
+VIProductVersion                 "${PRODUCT_VERSION}"
 VIAddVersionKey ProductName      "${APP_NAME}"
 VIAddVersionKey Comments         "${APP_NAME}"
 VIAddVersionKey CompanyName      "${COMPANY_NAME}"
@@ -25,6 +27,8 @@ VIAddVersionKey OriginalFilename "${INSTALLER_FILE_NAME}"
 InstallDir "$PROGRAMFILES64\${APP_NAME}"
 
 !include "nsDialogs.nsh"
+!include "x64.nsh"
+!include "LogicLib.nsh"
 
 RequestExecutionLevel admin
 
@@ -103,6 +107,16 @@ Function InputPageLeave
     ${NSD_GetText} $R3 $clientId
     ${NSD_GetText} $R5 $clientSecret
     ${NSD_GetText} $R7 $agentId
+
+    StrCmp $baseUrl "" inputError
+    StrCmp $clientId "" inputError
+    StrCmp $clientSecret "" inputError
+    StrCmp $agentId "" inputError
+    Goto inputOK
+    inputError:
+        MessageBox MB_OK|MB_ICONEXCLAMATION "Please fill in all required fields."
+        Abort
+    inputOK:
 FunctionEnd
 
 # Main installation entry point.
@@ -134,7 +148,7 @@ Function UpgradeApp
     Sleep 3000
 
     # Copy the new files to the installation directory
-    File dist\medplum-agent-win64.exe
+    File dist\${SERVICE_FILE_NAME}
     File README.md
 
     # Start the service
@@ -148,6 +162,17 @@ FunctionEnd
 # Install all of the files.
 # Install the Windows Service.
 Function InstallApp
+    # Show architecture
+    !if "${NSIS_PTR_SIZE}" >= 8
+      DetailPrint "64-bit installer"
+    !else
+      ${If} ${RunningX64}
+        DetailPrint "32-bit installer on a 64-bit OS"
+      ${Else}
+        DetailPrint "32-bit installer on a 32-bit OS"
+      ${EndIf}
+    !endif
+
     # Print user input
     DetailPrint "Base URL: $baseUrl"
     DetailPrint "Client ID: $clientId"
@@ -157,12 +182,12 @@ Function InstallApp
     # Copy the service files to the root directory
     File dist\shawl-v1.3.0-legal.txt
     File dist\shawl-v1.3.0-win64.exe
-    File dist\medplum-agent-win64.exe
+    File dist\${SERVICE_FILE_NAME}
     File README.md
 
     # Create the service
     DetailPrint "Creating service..."
-    ExecWait "shawl-v1.3.0-win64.exe add --name $\"${SERVICE_NAME}$\" -- $\"$INSTDIR\medplum-agent-win64.exe$\" $\"$baseUrl$\" $\"$clientId$\" $\"$clientSecret$\" $\"$agentId$\"" $1
+    ExecWait "shawl-v1.3.0-win64.exe add --name $\"${SERVICE_NAME}$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\" $\"$baseUrl$\" $\"$clientId$\" $\"$clientSecret$\" $\"$agentId$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service display name
@@ -236,3 +261,9 @@ Section Uninstall
     DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${SERVICE_NAME}"
 
 SectionEnd
+
+# Sign the installer and uninstaller
+# Keep in mind that you must append = 0 at !finalize and !uninstfinalize.
+# That will stop running both in parallel.
+!finalize 'java -jar jsign-5.0.jar --storetype DIGICERTONE --storepass "$%SM_API_KEY%|$%SM_CLIENT_CERT_FILE%|$%SM_CLIENT_CERT_PASSWORD%" --alias "$%SM_CERT_ALIAS%" "%1"' = 0
+!uninstfinalize 'java -jar jsign-5.0.jar --storetype DIGICERTONE --storepass "$%SM_API_KEY%|$%SM_CLIENT_CERT_FILE%|$%SM_CLIENT_CERT_PASSWORD%" --alias "$%SM_CERT_ALIAS%" "%1"' = 0
