@@ -123,7 +123,7 @@ function translateCodes(sourceCodes: Record<string, string[]>, groups: ConceptMa
         (m) =>
           m.target?.map((target) => ({
             equivalence: target.equivalence,
-            coding: {
+            concept: {
               system: group.target,
               code: target.code,
               display: target.display,

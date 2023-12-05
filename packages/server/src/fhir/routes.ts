@@ -95,6 +95,7 @@ protectedRoutes.post('/Project/:id/([$]|%24)clone', asyncWrap(projectCloneHandle
 protectedRoutes.post('/Project/([$]|%24)init', asyncWrap(projectInitHandler));
 
 // ConceptMap $translate
+protectedRoutes.post('/ConceptMap/([$]|%24)translate', asyncWrap(conceptMapTranslateHandler));
 protectedRoutes.post('/ConceptMap/:id/([$]|%24)translate', asyncWrap(conceptMapTranslateHandler));
 
 // ValueSet $expand operation

@@ -151,5 +151,15 @@ export async function sendOutputParameters(
 }
 
 function makeParameter(param: OperationDefinitionParameter, value: any): ParametersParameter {
+  if (param.part) {
+    const parts: ParametersParameter[] = [];
+    for (const part of param.part) {
+      const nestedValue = value[part.name ?? ''];
+      if (nestedValue !== undefined) {
+        parts.push(makeParameter(part, nestedValue));
+      }
+    }
+    return { name: param.name, part: parts };
+  }
   return { name: param.name, ['value' + capitalize(param.type as string)]: value };
 }
