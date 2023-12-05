@@ -27,6 +27,8 @@ VIAddVersionKey OriginalFilename "${INSTALLER_FILE_NAME}"
 InstallDir "$PROGRAMFILES64\${APP_NAME}"
 
 !include "nsDialogs.nsh"
+!include "x64.nsh"
+!include "LogicLib.nsh"
 
 RequestExecutionLevel admin
 
@@ -160,6 +162,17 @@ FunctionEnd
 # Install all of the files.
 # Install the Windows Service.
 Function InstallApp
+    # Show architecture
+    !if "${NSIS_PTR_SIZE}" >= 8
+      DetailPrint "64-bit installer"
+    !else
+      ${If} ${RunningX64}
+        DetailPrint "32-bit installer on a 64-bit OS"
+      ${Else}
+        DetailPrint "32-bit installer on a 32-bit OS"
+      ${EndIf}
+    !endif
+
     # Print user input
     DetailPrint "Base URL: $baseUrl"
     DetailPrint "Client ID: $clientId"

@@ -75,8 +75,8 @@ if [ ! -f "jsign-5.0.jar" ]; then
 fi
 
 # Unpack the client certificate
-echo "$SM_CLIENT_CERT_FILE_BASE64" | base64 --decode > Certificate_pkcs12.p12
-SM_CLIENT_CERT_FILE="$(pwd)/Certificate_pkcs12.p12"
+SM_CLIENT_CERT_FILE="Certificate_pkcs12.p12"
+echo "$SM_CLIENT_CERT_FILE_BASE64" | base64 --decode > "$SM_CLIENT_CERT_FILE"
 
 # Sign the executable
 java -jar jsign-5.0.jar \
@@ -97,7 +97,7 @@ java -jar jsign-5.0.jar \
   dist/shawl-v1.3.0-win64.exe
 
 # Build the installer
-makensis -V4 -DARCH=x86_64 installer.nsi
+makensis installer.nsi
 
 # Check the build output
 ls -la "medplum-agent-installer-$MEDPLUM_VERSION.exe"
