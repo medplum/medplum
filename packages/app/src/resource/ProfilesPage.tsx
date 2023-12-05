@@ -34,11 +34,11 @@ export function ProfilesPage(): JSX.Element | null {
 
   // TODO{mattlong} This is a bit inefficient since the entire structure definition
   // for each available profile is being fetched. All that is really needed is the title & url
-  // The SD is usefule for the time being to populate the Snapshot and JSON debugging tabs;
+  // The SD is useful for the time being to populate the Snapshot and JSON debugging tabs;
   // but those will likely be removed before deploying
   useEffect(() => {
     medplum
-      .searchResources('StructureDefinition', new URLSearchParams({ type: resourceType, derivation: 'constraint' }))
+      .searchResources('StructureDefinition', { type: resourceType, derivation: 'constraint' })
       .then((results) => {
         const [supported, unsupported] = partition(results, isSupportedProfileStructureDefinition);
         setAvailableProfiles(supported);

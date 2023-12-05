@@ -1638,17 +1638,21 @@ export class MedplumClient extends EventTarget {
 
     const promise = new ReadablePromise<void>(
       (async () => {
-        // TODO{mattlong}: account for https://hl7.org/fhir/references.html#canonical-matching
-        // lexical sort by version and then fallback to lastUpdated
-        const profilesQueryParmas = new URLSearchParams([['url', profileUrl]]);
-        const response = await this.searchResources('StructureDefinition', profilesQueryParmas);
+        // Just sort by lastUpdated. Ideally, it would also be based on a logical sort of version
+        // See https://hl7.org/fhir/references.html#canonical-matching for more discussion
+        const response = await this.searchResources('StructureDefinition', {
+          url: profileUrl,
+          _sort: '-_lastUpdated',
+          _count: 1,
+        });
 
         if (response.length === 0) {
-          console.warn(`No SDs found for ${profileUrl}!`);
-        } else {
-          indexStructureDefinitionBundle(response, profileUrl);
+          console.warn(`No StructureDefinition found for ${profileUrl}!`);
         }
-        // TODO{profiles} search parameters
+
+        indexStructureDefinitionBundle(response, profileUrl);
+
+        // TODO{profiles} search parameters?
       })()
     );
     this.setCacheEntry(cacheKey, promise);
