@@ -94,6 +94,9 @@ jobs:
       - name: Install NSIS
         run: choco install nsis
 
+      - name: Install Wget
+        run: choco install wget
+
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
