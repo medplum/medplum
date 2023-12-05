@@ -40,10 +40,11 @@ botCreateCommand
   .arguments('<botName> <projectId> <sourceFile> <distFile>')
   .description('Creating a bot')
   .option('--runtime-version <runtimeVersion>', 'Runtime version (awslambda, vmcontext)')
+  .option('--no-write-config', 'Do not write bot to config')
   .action(async (botName, projectId, sourceFile, distFile, options) => {
     const medplum = await createMedplumClient(options);
 
-    await createBot(medplum, botName, projectId, sourceFile, distFile, options.runtimeVersion);
+    await createBot(medplum, botName, projectId, sourceFile, distFile, options.runtimeVersion, !!options.writeConfig);
   });
 
 export async function botWrapper(medplum: MedplumClient, botName: string, deploy = false): Promise<void> {
