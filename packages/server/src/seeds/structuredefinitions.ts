@@ -14,7 +14,6 @@ export async function rebuildR4StructureDefinitions(): Promise<void> {
   await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
   await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-others.json') as Bundle);
-  await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-uscore.json') as Bundle);
 }
 
 async function createStructureDefinitionsForBundle(structureDefinitions: Bundle): Promise<void> {
