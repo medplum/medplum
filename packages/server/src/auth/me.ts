@@ -87,6 +87,7 @@ async function getUserConfiguration(project: Project, membership: ProjectMembers
         { name: 'AccessPolicy', target: '/AccessPolicy' },
         { name: 'Subscriptions', target: '/Subscription' },
         { name: 'Batch', target: '/batch' },
+        ...(!project.superAdmin ? [{ name: 'Config', target: '/admin/config' }] : []),
       ],
     });
   }
