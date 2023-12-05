@@ -3232,4 +3232,29 @@ describe('FHIR Search', () => {
       });
       expect(result.entry).toHaveLength(1);
     }));
+
+  test('Disjunction with lookup tables', () =>
+    withTestContext(async () => {
+      const n1 = randomUUID();
+      const n2 = randomUUID();
+
+      const p1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: n1 }],
+      });
+
+      const p2 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: n2 }],
+      });
+
+      const result = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [{ code: '_filter', operator: Operator.EQUALS, value: `name co "${n1}" or name co "${n2}"` }],
+      });
+
+      expect(result.entry).toHaveLength(2);
+      expect(bundleContains(result, p1)).toBe(true);
+      expect(bundleContains(result, p2)).toBe(true);
+    }));
 });

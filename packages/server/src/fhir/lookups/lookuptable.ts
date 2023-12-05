@@ -94,7 +94,7 @@ export abstract class LookupTable<T> {
       joinOnExpression.expressions.push(disjunction);
     }
 
-    selectQuery.innerJoin(tableName, joinName, joinOnExpression);
+    selectQuery.leftJoin(tableName, joinName, joinOnExpression);
     selectQuery.orderBy(new Column(joinName, columnName));
     return new Condition(new Column(joinName, 'resourceId'), '!=', null);
   }
