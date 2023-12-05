@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cli",
-  "version": "2.1.23",
+  "version": "2.1.24",
   "description": "Medplum Command Line Interface",
   "keywords": [
     "medplum",
