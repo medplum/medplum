@@ -1,6 +1,6 @@
 {
   "name": "@medplum/generator",
-  "version": "2.1.21",
+  "version": "2.1.22",
   "description": "Medplum Code Generator",
   "homepage": "https://www.medplum.com/",
   "repository": {
