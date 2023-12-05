@@ -73,6 +73,7 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly resourceType: T['resourceType'];
   readonly name: string;
   readonly defaultValue?: T | Reference<T>;
+  readonly searchCriteria?: Record<string, string>;
   readonly placeholder?: string;
   readonly loadOnFocus?: boolean;
   readonly required?: boolean;
@@ -89,7 +90,7 @@ function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
 
 export function ResourceInput<T extends Resource = Resource>(props: ResourceInputProps<T>): JSX.Element | null {
   const medplum = useMedplum();
-  const resourceType = props.resourceType;
+  const { resourceType, searchCriteria } = props;
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const defaultValue = useResource(props.defaultValue, setOutcome);
   const onChange = props.onChange;
@@ -100,12 +101,13 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       const searchParams = new URLSearchParams({
         [searchCode]: input,
         _count: '10',
+        ...searchCriteria,
       });
 
       const resources = await medplum.searchResources(resourceType, searchParams, { signal });
       return resources as unknown as T[];
     },
-    [medplum, resourceType]
+    [medplum, resourceType, searchCriteria]
   );
 
   const handleChange = useCallback(

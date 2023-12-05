@@ -10,6 +10,7 @@ export interface ReferenceInputProps {
   placeholder?: string;
   defaultValue?: Reference;
   targetTypes?: string[];
+  searchCriteria?: Record<string, string>;
   autoFocus?: boolean;
   required?: boolean;
   onChange?: (value: Reference | undefined) => void;
@@ -56,6 +57,7 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
         required={props.required}
         placeholder={props.placeholder}
         defaultValue={value}
+        searchCriteria={props.searchCriteria}
         onChange={(item: Resource | undefined) => {
           setValueHelper(item ? createReference(item) : undefined);
         }}
