@@ -125,6 +125,7 @@ jobs:
         run: npm run build -- --filter=@medplum/agent
 
       - name: Build Agent installer
+        shell: bash
         run: ./scripts/build-agent-installer.sh
         env:
           SM_HOST: ${{ secrets.SM_HOST }}
