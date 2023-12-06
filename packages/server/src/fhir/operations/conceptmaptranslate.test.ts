@@ -32,6 +32,7 @@ describe('ConceptMap $translate', () => {
         resourceType: 'ConceptMap',
         url: 'http://example.com/concept-map',
         status: 'active',
+        sourceCanonical: 'http://example.com/labs',
         group: [
           {
             source: system,
@@ -44,6 +45,21 @@ describe('ConceptMap $translate', () => {
                     display: 'Follitropin Qn',
                     equivalence: 'equivalent',
                     code: '15067-2',
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            source: system,
+            target: 'http://www.ama-assn.org/go/cpt',
+            element: [
+              {
+                code,
+                target: [
+                  {
+                    equivalence: 'equivalent',
+                    code: '83001',
                   },
                 ],
               },
@@ -83,7 +99,7 @@ describe('ConceptMap $translate', () => {
     const output = (res.body as Parameters).parameter;
     expect(output?.find((p) => p.name === 'result')?.valueBoolean).toEqual(true);
     const matches = output?.filter((p) => p.name === 'match');
-    expect(matches).toHaveLength(1);
+    expect(matches).toHaveLength(2);
     expect(matches?.[0]).toMatchObject<ParametersParameter>({
       name: 'match',
       part: [
@@ -101,6 +117,22 @@ describe('ConceptMap $translate', () => {
         },
       ],
     });
+    expect(matches?.[1]).toMatchObject<ParametersParameter>({
+      name: 'match',
+      part: [
+        {
+          name: 'equivalence',
+          valueCode: 'equivalent',
+        },
+        {
+          name: 'concept',
+          valueCoding: {
+            system: 'http://www.ama-assn.org/go/cpt',
+            code: '83001',
+          },
+        },
+      ],
+    });
   });
 
   test('Lookup by URL', async () => {
@@ -112,6 +144,113 @@ describe('ConceptMap $translate', () => {
         resourceType: 'Parameters',
         parameter: [
           { name: 'url', valueUri: conceptMap.url },
+          { name: 'coding', valueCoding: { system, code } },
+        ],
+      });
+    expect(res.status).toBe(200);
+
+    const output = (res.body as Parameters).parameter;
+    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toEqual(true);
+    const matches = output?.filter((p) => p.name === 'match');
+    expect(matches).toHaveLength(2);
+    expect(matches?.[0]).toMatchObject<ParametersParameter>({
+      name: 'match',
+      part: [
+        {
+          name: 'equivalence',
+          valueCode: 'equivalent',
+        },
+        {
+          name: 'concept',
+          valueCoding: {
+            system: 'http://loinc.org',
+            code: '15067-2',
+            display: 'Follitropin Qn',
+          },
+        },
+      ],
+    });
+    expect(matches?.[1]).toMatchObject<ParametersParameter>({
+      name: 'match',
+      part: [
+        {
+          name: 'equivalence',
+          valueCode: 'equivalent',
+        },
+        {
+          name: 'concept',
+          valueCoding: {
+            system: 'http://www.ama-assn.org/go/cpt',
+            code: '83001',
+          },
+        },
+      ],
+    });
+  });
+
+  test('Lookup by source ValueSet', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap/$translate`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'source', valueUri: conceptMap.sourceCanonical },
+          { name: 'coding', valueCoding: { system, code } },
+        ],
+      });
+    expect(res.status).toBe(200);
+
+    const output = (res.body as Parameters).parameter;
+    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toEqual(true);
+    const matches = output?.filter((p) => p.name === 'match');
+    expect(matches).toHaveLength(2);
+    expect(matches?.[0]).toMatchObject<ParametersParameter>({
+      name: 'match',
+      part: [
+        {
+          name: 'equivalence',
+          valueCode: 'equivalent',
+        },
+        {
+          name: 'concept',
+          valueCoding: {
+            system: 'http://loinc.org',
+            code: '15067-2',
+            display: 'Follitropin Qn',
+          },
+        },
+      ],
+    });
+    expect(matches?.[1]).toMatchObject<ParametersParameter>({
+      name: 'match',
+      part: [
+        {
+          name: 'equivalence',
+          valueCode: 'equivalent',
+        },
+        {
+          name: 'concept',
+          valueCoding: {
+            system: 'http://www.ama-assn.org/go/cpt',
+            code: '83001',
+          },
+        },
+      ],
+    });
+  });
+
+  test('Filter on target system', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap/$translate`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: conceptMap.url },
+          { name: 'targetsystem', valueUri: 'http://loinc.org' },
           { name: 'coding', valueCoding: { system, code } },
         ],
       });

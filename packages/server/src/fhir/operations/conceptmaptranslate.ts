@@ -12,12 +12,10 @@ type ConceptMapTranslateParameters = {
   url?: string;
   code?: string;
   system?: string;
-  version?: string;
+  source?: string;
   coding?: Coding;
   codeableConcept?: CodeableConcept;
-  target?: string;
   targetsystem?: string;
-  reverse?: boolean;
 };
 
 type Match = {
@@ -34,7 +32,7 @@ type ConceptMapTranslateOutput = {
 export async function conceptMapTranslateHandler(req: Request, res: Response): Promise<void> {
   const params = parseInputParameters<ConceptMapTranslateParameters>(operation, req);
 
-  const map = await lookupConceptMap({ id: req.params.id, url: params.url });
+  const map = await lookupConceptMap(params, req.params.id);
   if (isOutcome(map)) {
     sendOutcome(res, map);
     return;
@@ -49,7 +47,10 @@ export async function conceptMapTranslateHandler(req: Request, res: Response): P
     return;
   }
 
-  const matches = translateCodes(sourceCodes, map.group);
+  const matches = translateCodes(
+    sourceCodes,
+    params.targetsystem ? map.group.filter((g) => g.target === params.targetsystem) : map.group
+  );
   const result = matches.length > 0;
   await sendOutputParameters(operation, res, allOk, {
     result,
@@ -57,14 +58,27 @@ export async function conceptMapTranslateHandler(req: Request, res: Response): P
   } as ConceptMapTranslateOutput);
 }
 
-async function lookupConceptMap({ id, url }: { id?: string; url?: string }): Promise<ConceptMap | OperationOutcome> {
+async function lookupConceptMap(
+  params: ConceptMapTranslateParameters,
+  id?: string
+): Promise<ConceptMap | OperationOutcome> {
   const ctx = getAuthenticatedContext();
   if (id) {
     return ctx.repo.readResource('ConceptMap', id);
-  } else if (url) {
+  } else if (params.url) {
     const result = await ctx.repo.searchOne<ConceptMap>({
       resourceType: 'ConceptMap',
-      filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
+      filters: [{ code: 'url', operator: Operator.EQUALS, value: params.url }],
+      sortRules: [{ code: 'version', descending: true }],
+    });
+    if (!result) {
+      return notFound;
+    }
+    return result;
+  } else if (params.source) {
+    const result = await ctx.repo.searchOne<ConceptMap>({
+      resourceType: 'ConceptMap',
+      filters: [{ code: 'source', operator: Operator.EQUALS, value: params.source }],
       sortRules: [{ code: 'version', descending: true }],
     });
     if (!result) {
