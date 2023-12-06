@@ -7,9 +7,9 @@ tags: [integration]
 
 Health Gorilla is an interoperability services used to order labs and diagnostics, and do records requests via API. Medplum offers a first party integration with Health Gorilla.
 
-'''tip
+:::tip
 This is advanced integration. [Email us](mailto:info+healthgorilla@medplum.com?subject=Health%20Gorilla%20Integration%20for%20Medplum) for more information.
-'''
+:::
 
 The Medplum toolkit provides tooling to optimize the physician ordering experience (CPOE), to minimize errors and enhance patient experience. A well defined workflow with diagnostic menu will help set you up for success. The workflows shown here are intended to reduce the amount of repeated data entry required by clinicians and staff.
 
@@ -22,7 +22,7 @@ The following flowchart shows the most common workflows associated with Lab orde
 ```mermaid
 graph TD
     A[Prerequisite: Ensure correct demographic/insurance for patient] --> B[Choose a lab panel, e.g., Hepatic Function Panel]
-    B --> C[Fill out "Ask On Entry" (AOE) questions, e.g., "Fasting? Y/N"]
+    B --> C[Fill out Ask On Entry questions, e.g., Fasting? Y/N]
     C --> D[Are specimens collected onsite?]
     D -- Yes --> E[Enter the collected date and time]
     E --> F[Are you synchronizing patient insurance to lab provider?]
