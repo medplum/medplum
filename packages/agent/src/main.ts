@@ -1,12 +1,41 @@
 import { MedplumClient } from '@medplum/core';
 import { App } from './app';
+import { existsSync, readFileSync } from 'fs';
 
-async function main(argv: string[]): Promise<void> {
-  if (argv.length < 6) {
-    console.log('Usage: node medplum-agent.js <baseUrl> <clientId> <clientSecret> <agentId>');
+interface Args {
+  baseUrl: string;
+  clientId: string;
+  clientSecret: string;
+  agentId: string;
+}
+
+export async function main(argv: string[]): Promise<void> {
+  let args: Args;
+  if (argv.length >= 6) {
+    args = readCommandLineArgs(argv);
+  } else if (existsSync('agent.properties')) {
+    args = readPropertiesFile('agent.properties');
+  } else {
+    console.log('Missing arguments');
+    console.log('Arguments can be passed on the command line or in a properties file.');
+    console.log('Example with command line arguments:');
+    console.log('    node medplum-agent.js <baseUrl> <clientId> <clientSecret> <agentId>');
+    console.log('Example with properties file:');
+    console.log('    node medplum-agent.js');
     process.exit(1);
   }
-  const [_node, _script, baseUrl, clientId, clientSecret, agentId] = argv;
+
+  if (!args.baseUrl || !args.clientId || !args.clientSecret || !args.agentId) {
+    console.log('Missing arguments');
+    console.log('Expected arguments:');
+    console.log('    baseUrl: The Medplum server base URL.');
+    console.log('    clientId: The OAuth client ID.');
+    console.log('    clientSecret: The OAuth client secret.');
+    console.log('    agentId: The Medplum agent ID.');
+    process.exit(1);
+  }
+
+  const { baseUrl, clientId, clientSecret, agentId } = args;
 
   const medplum = new MedplumClient({ baseUrl, clientId });
   await medplum.startClientLogin(clientId, clientSecret);
@@ -19,6 +48,20 @@ async function main(argv: string[]): Promise<void> {
     app.stop();
     process.exit();
   });
+}
+
+function readCommandLineArgs(argv: string[]): Args {
+  const [_node, _script, baseUrl, clientId, clientSecret, agentId] = argv;
+  return { baseUrl, clientId, clientSecret, agentId };
+}
+
+function readPropertiesFile(fileName: string): Args {
+  return Object.fromEntries(
+    readFileSync(fileName)
+      .toString()
+      .split('\n')
+      .map((line) => line.split('='))
+  );
 }
 
 if (typeof require !== 'undefined' && require.main === module) {
