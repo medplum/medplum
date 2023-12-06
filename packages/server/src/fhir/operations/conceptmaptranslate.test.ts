@@ -42,9 +42,9 @@ describe('ConceptMap $translate', () => {
                 code,
                 target: [
                   {
+                    code: '15067-2',
                     display: 'Follitropin Qn',
                     equivalence: 'equivalent',
-                    code: '15067-2',
                   },
                 ],
               },
@@ -56,12 +56,7 @@ describe('ConceptMap $translate', () => {
             element: [
               {
                 code,
-                target: [
-                  {
-                    equivalence: 'equivalent',
-                    code: '83001',
-                  },
-                ],
+                target: [{ code: '83001', equivalence: 'equivalent' }],
               },
             ],
           },
@@ -430,12 +425,7 @@ describe('ConceptMap $translate', () => {
             element: [
               {
                 code: 'OTHER',
-                target: [
-                  {
-                    equivalence: 'equivalent',
-                    code: 'DISTINCT',
-                  },
-                ],
+                target: [{ code: 'DISTINCT', equivalence: 'equivalent' }],
               },
             ],
             unmapped: {
@@ -448,12 +438,7 @@ describe('ConceptMap $translate', () => {
             element: [
               {
                 code: 'OTHER',
-                target: [
-                  {
-                    equivalence: 'equivalent',
-                    code: '1',
-                  },
-                ],
+                target: [{ code: '1', equivalence: 'equivalent' }],
               },
             ],
             unmapped: {
@@ -507,6 +492,92 @@ describe('ConceptMap $translate', () => {
             system: 'http://example.com/other-system',
             code: 'UNK',
             display: 'Unknown',
+          },
+        },
+      ],
+    });
+  });
+
+  test('Handles empty CodeableConcept', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$translate`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'codeableConcept', valueCodeableConcept: { text: 'Nebulous concept' } }],
+      });
+    expect(res.status).toBe(200);
+
+    expect(res.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [
+        {
+          name: 'result',
+          valueBoolean: false,
+        },
+      ],
+    });
+  });
+
+  test('Handles implicit system', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ConceptMap',
+        url: 'http://example.com/concept-map',
+        status: 'active',
+        sourceCanonical: 'http://example.com/labs',
+        group: [
+          {
+            target: 'http://loinc.org',
+            element: [
+              {
+                code,
+                target: [
+                  {
+                    code: '15067-2',
+                    display: 'Follitropin Qn',
+                    equivalence: 'equivalent',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+    expect(res.status).toEqual(201);
+    conceptMap = res.body as ConceptMap;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$translate`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'coding', valueCoding: { code } }],
+      });
+    expect(res2.status).toBe(200);
+
+    const output = (res2.body as Parameters).parameter;
+    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toEqual(true);
+    const matches = output?.filter((p) => p.name === 'match');
+    expect(matches).toHaveLength(1);
+    expect(matches?.[0]).toMatchObject<ParametersParameter>({
+      name: 'match',
+      part: [
+        {
+          name: 'equivalence',
+          valueCode: 'equivalent',
+        },
+        {
+          name: 'concept',
+          valueCoding: {
+            system: 'http://loinc.org',
+            code: '15067-2',
+            display: 'Follitropin Qn',
           },
         },
       ],

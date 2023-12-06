@@ -128,7 +128,7 @@ function indexCodes(concept: CodeableConcept): Record<string, string[]> {
 function translateCodes(sourceCodes: Record<string, string[]>, groups: ConceptMapGroup[]): Match[] {
   const matches: Match[] = [];
   for (const [system, codes] of Object.entries(sourceCodes)) {
-    for (const group of groups.filter((g) => g.source === system)) {
+    for (const group of groups.filter((g) => (g.source ?? '') === system)) {
       let mappings: Match[] | undefined = group.element
         ?.filter((m) => codes.includes(m.code as string))
         .flatMap(
