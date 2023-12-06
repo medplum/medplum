@@ -129,22 +129,26 @@ function translateCodes(sourceCodes: Record<string, string[]>, groups: ConceptMa
   const matches: Match[] = [];
   for (const [system, codes] of Object.entries(sourceCodes)) {
     for (const group of groups.filter((g) => g.source === system)) {
-      const mappings = group.element?.filter((m) => codes.includes(m.code as string));
+      let mappings: Match[] | undefined = group.element
+        ?.filter((m) => codes.includes(m.code as string))
+        .flatMap(
+          (m) =>
+            m.target?.map((target) => ({
+              equivalence: target.equivalence,
+              concept: {
+                system: group.target,
+                code: target.code,
+                display: target.display,
+              },
+            })) ?? []
+        );
+
       if (!mappings?.length) {
-        continue;
+        mappings = handleUnmappedCodes(codes, group);
       }
-      const mappedCodes: Match[] = mappings.flatMap(
-        (m) =>
-          m.target?.map((target) => ({
-            equivalence: target.equivalence,
-            concept: {
-              system: group.target,
-              code: target.code,
-              display: target.display,
-            },
-          })) ?? []
-      );
-      matches.push(...mappedCodes);
+      if (mappings) {
+        matches.push(...mappings);
+      }
     }
   }
   return matches;
@@ -152,4 +156,27 @@ function translateCodes(sourceCodes: Record<string, string[]>, groups: ConceptMa
 
 function isOutcome(obj: any): obj is OperationOutcome {
   return obj.resourceType === 'OperationOutcome';
+}
+
+function handleUnmappedCodes(codes: string[], group: ConceptMapGroup): Match[] | undefined {
+  switch (group.unmapped?.mode) {
+    case 'provided':
+      return codes.map((code) => ({
+        equivalence: 'equal',
+        concept: { system: group.target, code },
+      }));
+    case 'fixed':
+      return [
+        {
+          equivalence: 'equivalent',
+          concept: {
+            system: group.target,
+            code: group.unmapped.code,
+            display: group.unmapped.display,
+          },
+        },
+      ];
+    default:
+      return undefined;
+  }
 }

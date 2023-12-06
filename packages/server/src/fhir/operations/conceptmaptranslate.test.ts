@@ -412,4 +412,104 @@ describe('ConceptMap $translate', () => {
       ],
     });
   });
+
+  test('Unmapped code handling', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ConceptMap',
+        url: 'http://example.com/concept-map',
+        status: 'active',
+        sourceCanonical: 'http://example.com/labs',
+        group: [
+          {
+            source: system,
+            target: system + '/v2',
+            element: [
+              {
+                code: 'OTHER',
+                target: [
+                  {
+                    equivalence: 'equivalent',
+                    code: 'DISTINCT',
+                  },
+                ],
+              },
+            ],
+            unmapped: {
+              mode: 'provided',
+            },
+          },
+          {
+            source: system,
+            target: 'http://example.com/other-system',
+            element: [
+              {
+                code: 'OTHER',
+                target: [
+                  {
+                    equivalence: 'equivalent',
+                    code: '1',
+                  },
+                ],
+              },
+            ],
+            unmapped: {
+              mode: 'fixed',
+              code: 'UNK',
+              display: 'Unknown',
+            },
+          },
+        ],
+      });
+    expect(res.status).toEqual(201);
+    conceptMap = res.body as ConceptMap;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$translate`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'coding', valueCoding: { system, code } }],
+      });
+    expect(res2.status).toBe(200);
+
+    const output = (res2.body as Parameters).parameter;
+    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toEqual(true);
+    const matches = output?.filter((p) => p.name === 'match');
+    expect(matches).toHaveLength(2);
+    expect(matches?.[0]).toMatchObject<ParametersParameter>({
+      name: 'match',
+      part: [
+        {
+          name: 'equivalence',
+          valueCode: 'equal',
+        },
+        {
+          name: 'concept',
+          valueCoding: { system: system + '/v2', code },
+        },
+      ],
+    });
+    expect(matches?.[1]).toMatchObject<ParametersParameter>({
+      name: 'match',
+      part: [
+        {
+          name: 'equivalence',
+          valueCode: 'equivalent',
+        },
+        {
+          name: 'concept',
+          valueCoding: {
+            system: 'http://example.com/other-system',
+            code: 'UNK',
+            display: 'Unknown',
+          },
+        },
+      ],
+    });
+  });
 });
