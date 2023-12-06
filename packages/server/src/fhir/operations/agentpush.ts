@@ -82,8 +82,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   }
 
   // Otherwise, open a new redis connection in "subscribe" state
-  // message.callback = getReferenceString(agent) + '-' + randomUUID();
-  message.callback = randomUUID();
+  message.callback = getReferenceString(agent) + '-' + randomUUID();
 
   const redisSubscriber = getRedis().duplicate();
   await redisSubscriber.subscribe(message.callback);
