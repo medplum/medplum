@@ -275,7 +275,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   });
 
   return (
-    <div data-testid={item.linkId} className={className} onClick={onClick} onMouseOver={onHover}>
+    <div data-testid={item.linkId} className={className} onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
       <div className={classes.questionBody}>
         {editing ? (
           <>
