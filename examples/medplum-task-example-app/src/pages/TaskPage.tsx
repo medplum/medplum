@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { PatientChart } from '../components/PatientChart';
+import { TaskActions } from '../components/TaskActions';
 import { NotesPage } from './NotesPage';
 
 export function TaskPage(): JSX.Element {
@@ -14,6 +15,7 @@ export function TaskPage(): JSX.Element {
   const { id } = useParams() as { id: string };
   const [task, setTask] = useState<Task | undefined>(undefined);
   const tabs = ['Details', 'Timeline', 'Notes'];
+
   // Set the current tab to what is in the URL, otherwise default to 'Details'
   const [currentTab, setCurrentTab] = useState<string>(() => {
     const tab = window.location.pathname.split('/').pop();
@@ -33,26 +35,35 @@ export function TaskPage(): JSX.Element {
     navigate(`/Task/${id}/${newTab}`);
   };
 
+  const handleTaskChange = (updatedTask: Task) => {
+    setTask(updatedTask);
+  };
+
   if (!task) {
     return <Loading />;
   }
 
   return (
-    <Document key={getReferenceString(task)}>
-      <Title>{getDisplayString(task)}</Title>
-      <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
-        <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
-          {tabs.map((tab) => (
-            <Tabs.Tab key={tab} value={tab.toLowerCase()}>
-              {tab}
-            </Tabs.Tab>
-          ))}
-        </Tabs.List>
-      </Tabs>
-      {currentTab === 'details' && <ResourceTable key={`Task/${id}`} value={task} ignoreMissingValues={false} />}
-      {currentTab === 'timeline' && <DefaultResourceTimeline resource={task} />}
-      {currentTab === 'notes' && <NotesPage task={task} />}
-      <PatientChart />
-    </Document>
+    <>
+      <Document key={getReferenceString(task)}>
+        <Title>{getDisplayString(task)}</Title>
+        <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
+          <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
+            {tabs.map((tab) => (
+              <Tabs.Tab key={tab} value={tab.toLowerCase()}>
+                {tab}
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
+        </Tabs>
+        {currentTab === 'details' && <ResourceTable key={`Task/${id}`} value={task} ignoreMissingValues={false} />}
+        {currentTab === 'timeline' && <DefaultResourceTimeline resource={task} />}
+        {currentTab === 'notes' && <NotesPage task={task} />}
+        {/* <PatientChart /> */}
+      </Document>
+      <Document>
+        <TaskActions task={task} onChange={handleTaskChange} />
+      </Document>
+    </>
   );
 }
