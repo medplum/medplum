@@ -1,6 +1,6 @@
 import { Tabs, Title } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
-import { ResourceType, Task } from '@medplum/fhirtypes';
+import { Task } from '@medplum/fhirtypes';
 import { DefaultResourceTimeline, Document, Loading, ResourceTable, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -59,7 +59,7 @@ export function TaskPage(): JSX.Element {
         {currentTab === 'details' && <ResourceTable key={`Task/${id}`} value={task} ignoreMissingValues={false} />}
         {currentTab === 'timeline' && <DefaultResourceTimeline resource={task} />}
         {currentTab === 'notes' && <NotesPage task={task} />}
-        {/* <PatientChart /> */}
+        <PatientChart />
       </Document>
       <Document>
         <TaskActions task={task} onChange={handleTaskChange} />

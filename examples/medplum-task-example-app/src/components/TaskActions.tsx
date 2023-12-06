@@ -1,8 +1,6 @@
-import { Button, Input } from '@mantine/core';
-import { Annotation, Reference, Task } from '@medplum/fhirtypes';
-import { AnnotationInput, Form, FormSection, Loading, useMedplum, useResource } from '@medplum/react';
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Button } from '@mantine/core';
+import { Annotation, Task } from '@medplum/fhirtypes';
+import { DateTimeInput, FormSection, Loading, useMedplum, useResource } from '@medplum/react';
 import { AddTaskComment } from './AddTaskComment';
 
 interface TaskActionsProps {
@@ -49,7 +47,7 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
         <Button>Assign Task</Button>
       </FormSection>
       <FormSection>
-        <Button>Add Due Date</Button>
+        <DateTimeInput />x<Button>Add Due Date</Button>
       </FormSection>
       <FormSection>
         <AddTaskComment task={task} onAddComment={handleAddComment} />
