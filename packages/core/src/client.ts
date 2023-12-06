@@ -180,7 +180,7 @@ export interface MedplumClientOptions {
   /**
    * The length of time in milliseconds to cache resources.
    *
-   * Default value is 10000 (10 seconds).
+   * Default value is 60000 (60 seconds).
    *
    * Cache time of zero disables all caching.
    *
