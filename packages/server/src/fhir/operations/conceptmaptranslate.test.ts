@@ -583,4 +583,39 @@ describe('ConceptMap $translate', () => {
       ],
     });
   });
+
+  test('No mapping groups specified', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ConceptMap',
+        url: 'http://example.com/concept-map',
+        status: 'active',
+        sourceCanonical: 'http://example.com/labs',
+        targetCanonical: 'http://example.com/loinc',
+      });
+    expect(res.status).toEqual(201);
+    conceptMap = res.body as ConceptMap;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$translate`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'coding', valueCoding: { system, code } }],
+      });
+    expect(res2.status).toBe(400);
+    expect(res2.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          details: { text: 'ConceptMap does not specify a mapping group' },
+          expression: ['ConceptMap.group'],
+        },
+      ],
+    });
+  });
 });

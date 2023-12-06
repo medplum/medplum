@@ -19,7 +19,7 @@
     "dev": "ts-node-dev --poll --respawn --transpile-only src/index.ts",
     "prestart": "tsc",
     "start": "node dist/index.js",
-    "test": "jest --runInBand src/fhir/operations/conceptmaptranslate.test.ts"
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch-logs": "3.458.0",
