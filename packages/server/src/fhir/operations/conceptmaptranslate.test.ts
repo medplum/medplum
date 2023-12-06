@@ -557,7 +557,7 @@ describe('ConceptMap $translate', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'coding', valueCoding: { code } }],
+        parameter: [{ name: 'codeableConcept', valueCodeableConcept: { coding: [{ code }] } }],
       });
     expect(res2.status).toBe(200);
 
