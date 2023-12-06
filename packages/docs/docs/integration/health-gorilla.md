@@ -31,7 +31,7 @@ graph TD
     H -- Yes --> I[Show the ABN] --> P[Capture diagnosis codes] --> Q[Lab receives specimen] --> M
     D -- No --> J[Leave the collected date and time blank]
     J --> K[Give patient requisition]
-    K --> L[Lab collects patient insurance/copay]
+    K --> L[Lab collects insurance/specimen]
     L --> M[Receive results via API]
     M --> N[Release results to patient following state resulting protocol]
 ```
