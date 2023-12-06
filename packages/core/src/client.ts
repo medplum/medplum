@@ -492,7 +492,7 @@ export interface MailOptions {
   readonly attachments?: MailAttachment[];
 }
 
-interface ResourceSchemaGraphQLResponse {
+interface SchemaGraphQLResponse {
   readonly data: {
     readonly StructureDefinitionList: StructureDefinition[];
     readonly SearchParameterList: SearchParameter[];
@@ -1604,7 +1604,7 @@ export class MedplumClient extends EventTarget {
       }
     }`.replace(/\s+/g, ' ');
 
-        const response = (await this.graphql(query)) as ResourceSchemaGraphQLResponse;
+        const response = (await this.graphql(query)) as SchemaGraphQLResponse;
 
         indexStructureDefinitionBundle(response.data.StructureDefinitionList);
 
