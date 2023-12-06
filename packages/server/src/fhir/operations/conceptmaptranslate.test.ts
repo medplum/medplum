@@ -382,7 +382,7 @@ describe('ConceptMap $translate', () => {
     });
   });
 
-  test('Not found by URL', async () => {
+  test.each(['url', 'source'])('Not found by %s', async (paramName) => {
     const res = await request(app)
       .post(`/fhir/R4/ConceptMap/$translate`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -390,7 +390,7 @@ describe('ConceptMap $translate', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [
-          { name: 'url', valueUri: conceptMap.url + 'BAD' },
+          { name: paramName, valueUri: conceptMap.url + 'BAD' },
           { name: 'coding', valueCoding: { system, code } },
         ],
       });
