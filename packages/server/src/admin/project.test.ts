@@ -7,7 +7,7 @@ import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
+import { registerNew, RegisterResponse } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
@@ -17,10 +17,24 @@ jest.mock('node-fetch');
 
 const app = express();
 
+// create testProjectAdmin to use for set password
+let testProjectAdmin: RegisterResponse;
+
 describe('Project Admin routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await withTestContext(() => initApp(app, config));
+
+    // Register and create a project
+    testProjectAdmin = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
   });
 
   afterAll(async () => {
@@ -456,5 +470,105 @@ describe('Project Admin routes', () => {
     expect(res3.status).toBe(200);
     expect(res3.body.project.site).toHaveLength(1);
     expect(res3.body.project.site[0].name).toEqual('test_site');
+  });
+
+  test('Set password access denied', async () => {
+    // Create test user in project
+    const testProjectUser = await addTestUser(testProjectAdmin.project, {
+      resourceType: 'AccessPolicy',
+    });
+
+    // Try to set password using user's access token
+    const res = await request(app)
+      .post('/admin/projects/setpassword')
+      .set('Authorization', 'Bearer ' + testProjectUser.accessToken)
+      .type('json')
+      .send({
+        email: 'alice@example.com',
+        password: 'password123',
+      });
+
+    expect(res.status).toBe(403);
+  });
+
+  test('Set password missing password', async () => {
+    const res = await request(app)
+      .post('/admin/projects/setpassword')
+      .set('Authorization', 'Bearer ' + testProjectAdmin.accessToken)
+      .type('json')
+      .send({
+        email: 'alice@example.com',
+        password: '',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 8 characters');
+  });
+
+  test('Set password user not found', async () => {
+    const res = await request(app)
+      .post('/admin/projects/setpassword')
+      .set('Authorization', 'Bearer ' + testProjectAdmin.accessToken)
+      .type('json')
+      .send({
+        email: 'user-not-found@example.com',
+        password: 'password123',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('User not found');
+  });
+
+  test('Set password user not associated with project', async () => {
+    const testOtherProjectAdmin = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const res = await request(app)
+      .post('/admin/projects/setpassword')
+      .set('Authorization', 'Bearer ' + testProjectAdmin.accessToken)
+      .type('json')
+      .send({
+        email: testOtherProjectAdmin.user.email,
+        password: 'password123',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('User not found in project');
+  });
+
+  test('Project admin set password by admin success', async () => {
+    const res = await request(app)
+      .post('/admin/projects/setpassword')
+      .set('Authorization', 'Bearer ' + testProjectAdmin.accessToken)
+      .type('json')
+      .send({
+        email: testProjectAdmin.user.email,
+        password: 'new-password!@#',
+      });
+
+    expect(res.status).toBe(200);
+  });
+
+  test('Project User set password by admin success', async () => {
+    const testProjectUser = await addTestUser(testProjectAdmin.project, {
+      resourceType: 'AccessPolicy',
+    });
+
+    const res = await request(app)
+      .post('/admin/projects/setpassword')
+      .set('Authorization', 'Bearer ' + testProjectAdmin.accessToken)
+      .type('json')
+      .send({
+        email: testProjectUser.user.email,
+        password: 'new-password!@#',
+      });
+
+    expect(res.status).toBe(200);
   });
 });

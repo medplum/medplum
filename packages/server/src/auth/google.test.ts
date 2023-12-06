@@ -204,31 +204,34 @@ describe('Google Auth', () => {
     expect(res2.body.code).toBeDefined();
   });
 
-  test('Custom Google client success', async () => {
+  test('Multiple projects same Google client success', async () => {
     const email = `google-client${randomUUID()}@example.com`;
     const password = 'password!@#';
     const googleClientId = 'google-client-id-' + randomUUID();
 
-    // Register and create a project
     await withTestContext(async () => {
-      const { project } = await registerNew({
-        firstName: 'Google',
-        lastName: 'Google',
-        projectName: 'Require Google Auth',
-        email,
-        password,
-      });
-      // As a super admin, set the google client ID
-      await systemRepo.updateResource({
-        ...project,
-        site: [
-          {
-            name: 'Test Site',
-            domain: ['example.com'],
-            googleClientId,
-          },
-        ],
-      });
+      for (let i = 0; i < 2; i++) {
+        // Register and create a project
+        const { project } = await registerNew({
+          firstName: 'Google',
+          lastName: 'Google',
+          projectName: 'Require Google Auth',
+          email,
+          password,
+        });
+
+        // As a super admin, set the google client ID
+        await systemRepo.updateResource({
+          ...project,
+          site: [
+            {
+              name: 'Test Site',
+              domain: ['example.com'],
+              googleClientId,
+            },
+          ],
+        });
+      }
     });
 
     // Try to login with the custom Google client
@@ -241,7 +244,10 @@ describe('Google Auth', () => {
         googleCredential: createCredential('Test', 'Test', email),
       });
     expect(res2.status).toBe(200);
-    expect(res2.body.code).toBeDefined();
+    expect(res2.body.code).toBeUndefined();
+    expect(res2.body.login).toBeDefined();
+    expect(res2.body.memberships).toBeDefined();
+    expect(res2.body.memberships).toHaveLength(2);
   });
 
   test('Custom Google client with project success', async () => {

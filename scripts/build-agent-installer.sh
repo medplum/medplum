@@ -57,6 +57,9 @@ set -e
 # Diagnostics
 java --version
 
+# Get the current version number
+export MEDPLUM_VERSION=$(node -p "require('./package.json').version")
+
 # Move into packages/agent
 pushd packages/agent
 
@@ -64,7 +67,7 @@ pushd packages/agent
 npm run build
 
 # Build the executable
-npx pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output dist/medplum-agent-win64.exe --options no-warnings
+npx pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output "dist/medplum-agent-$MEDPLUM_VERSION-win64.exe" --options no-warnings
 
 # Download JSign
 if [ ! -f "jsign-5.0.jar" ]; then
@@ -72,15 +75,15 @@ if [ ! -f "jsign-5.0.jar" ]; then
 fi
 
 # Unpack the client certificate
-echo "$SM_CLIENT_CERT_FILE_BASE64" | base64 --decode > Certificate_pkcs12.p12
-SM_CLIENT_CERT_FILE="$(pwd)/Certificate_pkcs12.p12"
+export SM_CLIENT_CERT_FILE="Certificate_pkcs12.p12"
+echo "$SM_CLIENT_CERT_FILE_BASE64" | base64 --decode > "$SM_CLIENT_CERT_FILE"
 
 # Sign the executable
 java -jar jsign-5.0.jar \
   --storetype DIGICERTONE \
   --storepass "$SM_API_KEY|$SM_CLIENT_CERT_FILE|$SM_CLIENT_CERT_PASSWORD" \
   --alias "$SM_CERT_ALIAS" \
-  dist/medplum-agent-win64.exe
+  "dist/medplum-agent-$MEDPLUM_VERSION-win64.exe"
 
 # Copy Shawl
 cp ../../node_modules/node-shawl/bin/shawl-v1.3.0-legal.txt dist
@@ -96,12 +99,8 @@ java -jar jsign-5.0.jar \
 # Build the installer
 makensis installer.nsi
 
-# Sign the installer
-java -jar jsign-5.0.jar \
-  --storetype DIGICERTONE \
-  --storepass "$SM_API_KEY|$SM_CLIENT_CERT_FILE|$SM_CLIENT_CERT_PASSWORD" \
-  --alias "$SM_CERT_ALIAS" \
-  medplum-agent-installer.exe
+# Check the build output
+ls -la "medplum-agent-installer-$MEDPLUM_VERSION.exe"
 
 # Move back to root
 popd

@@ -23,15 +23,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install NSIS
-        run: sudo apt-get install -y nsis
-
-      - name: Setup Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -86,7 +77,58 @@ jobs:
       - name: Deploy bot layer
         run: ./scripts/deploy-bot-layer.sh
 
+  build_agent:
+    runs-on: windows-latest
+    env:
+      NODE_VERSION: '18'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: 'medplum'
+      TURBO_REMOTE_ONLY: true
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install NSIS
+        run: choco install nsis
+
+      - name: Install Wget
+        run: choco install wget
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Cache node modules
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build -- --filter=@medplum/agent
+
       - name: Build Agent installer
+        shell: bash
         run: ./scripts/build-agent-installer.sh
         env:
           SM_HOST: ${{ secrets.SM_HOST }}
@@ -99,6 +141,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            const packageJson = require('./packages/agent/package.json');
             const fs = require('fs');
             const tag = context.ref.replace("refs/tags/", "");
             const release = await github.rest.repos.getReleaseByTag({
@@ -110,6 +153,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-installer.exe",
-              data: await fs.readFileSync("packages/agent/medplum-agent-installer.exe")
+              name: "medplum-agent-installer-" + packageJson.version + ".exe",
+              data: await fs.readFileSync("packages/agent/medplum-agent-installer-" + packageJson.version + ".exe")
             });
