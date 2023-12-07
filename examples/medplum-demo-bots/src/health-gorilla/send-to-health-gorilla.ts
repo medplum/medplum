@@ -56,7 +56,7 @@ interface HealthGorillaConfig {
 // These come from the Health Gorilla Organization resources
 const availableLabs: Record<string, string> = {
   Testing: 'f-4f0235627ac2d59b49e5575c',
-  Labcorp: 'f-c7403b62e57b776dfddf8051',
+  Labcorp: 'f-a855594f43fe879c6570b92e',
   Quest: 'f-6927735e92bc9c4cc2599d15',
 };
 
@@ -125,6 +125,7 @@ const availableDiagnoses: Record<string, string> = {
   'diagnosis-E78.2': 'Mixed hyperlipidemia',
   'diagnosis-E88.89': 'Other specified metabolic disorders',
   'diagnosis-F06.8': 'Other specified mental disorders due to known physiological condition',
+  'diagnosis-G30.0': "Alzheimer's disease with early onset",
   'diagnosis-I10': 'Essential (primary) hypertension',
   'diagnosis-K70.30': 'Alcoholic cirrhosis of liver without ascites',
   'diagnosis-K76.0': 'Fatty (change of) liver, not elsewhere classified',
@@ -132,6 +133,9 @@ const availableDiagnoses: Record<string, string> = {
   'diagnosis-N13.5': 'Crossing vessel and stricture of ureter',
   'diagnosis-N18.3': 'Chronic kidney disease, stage 3 (moderate)',
   'diagnosis-R53.83': 'Other fatigue',
+  'diagnosis-T67.4XXS': 'Heat exhaustion due to salt depletion, sequela',
+  'diagnosis-T84.81XD':
+    'Embolism due to internal orthopedic prosthetic devices, implants and grafts, subsequent encounter',
   'diagnosis-Z00.00': 'Encounter for general adult medical examination without abnormal findings',
   'diagnosis-Z34.90': 'Encounter for supervision of normal pregnancy, unspecified trimester',
 };
