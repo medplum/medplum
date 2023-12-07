@@ -33,23 +33,23 @@ describe('HL7', () => {
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
-        if (command.type === 'connect') {
+        if (command.type === 'agent:connect:request') {
           socket.send(
             Buffer.from(
               JSON.stringify({
-                type: 'connected',
+                type: 'agent:connect:response',
               })
             )
           );
         }
 
-        if (command.type === 'transmit') {
+        if (command.type === 'agent:transmit:request') {
           const hl7Message = Hl7Message.parse(command.body);
           const ackMessage = hl7Message.buildAck();
           socket.send(
             Buffer.from(
               JSON.stringify({
-                type: 'transmit',
+                type: 'agent:transmit:response',
                 channel: command.channel,
                 remote: command.remote,
                 body: ackMessage.toString(),
@@ -105,11 +105,11 @@ describe('HL7', () => {
       mySocket = socket;
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
-        if (command.type === 'connect') {
+        if (command.type === 'agent:connect:request') {
           socket.send(
             Buffer.from(
               JSON.stringify({
-                type: 'connected',
+                type: 'agent:connect:response',
               })
             )
           );
@@ -160,7 +160,7 @@ describe('HL7', () => {
     wsClient.send(
       Buffer.from(
         JSON.stringify({
-          type: 'push',
+          type: 'agent:transmit:request',
           body:
             'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +

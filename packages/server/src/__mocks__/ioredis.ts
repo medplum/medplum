@@ -1,16 +1,16 @@
+const values = new Map<string, string>();
 const subscribers = new Map<string, Set<Redis>>();
 
 class Redis {
-  private values: Map<string, string>;
-  private listeners: Map<string, ((...args: any[]) => void)[]>;
+  private callback?: (...args: any[]) => void;
 
-  constructor(readonly config: any) {
-    this.values = new Map<string, string>();
-    this.listeners = new Map<string, ((...args: any[]) => void)[]>();
-  }
+  constructor(readonly config: any) {}
 
   on(event: string, callback: (...args: any[]) => void): void {
-    this.listeners.set(event, [callback]);
+    if (event !== 'message') {
+      throw new Error('ioredis mock only supports message events');
+    }
+    this.callback = callback;
   }
 
   async ping(): Promise<string> {
@@ -18,40 +18,40 @@ class Redis {
   }
 
   async get(key: string): Promise<string | undefined> {
-    return this.values.get(key);
+    return values.get(key);
   }
 
   async mget(...keys: string[]): Promise<(string | undefined)[]> {
-    return keys.map((key) => this.values.get(key));
+    return keys.map((key) => values.get(key));
   }
 
   async set(key: string, value: string, ...args: (string | number)[]): Promise<undefined | null | string> {
     let oldValue;
     if (args.includes('GET')) {
-      oldValue = this.values.get(key) ?? null; // `ioredis` returns `null` when key didn't previously exist
+      oldValue = values.get(key) ?? null; // `ioredis` returns `null` when key didn't previously exist
     }
-    if (args.includes('NX') && this.values.has(key)) {
+    if (args.includes('NX') && values.has(key)) {
       return oldValue;
     }
-    this.values.set(key, value);
+    values.set(key, value);
     return oldValue;
   }
 
   async del(key: string | string[]): Promise<void> {
     if (Array.isArray(key)) {
       key.forEach((k) => {
-        this.values.delete(k);
+        values.delete(k);
       });
       return;
     }
-    this.values.delete(key);
+    values.delete(key);
   }
 
   async publish(channel: string, message: string): Promise<void> {
-    const listeners = this.listeners.get('message');
-    if (listeners) {
-      listeners.forEach((listener) => {
-        listener(channel, message);
+    const set = subscribers.get(channel);
+    if (set) {
+      set.forEach((subscriber) => {
+        subscriber.callback?.(channel, message);
       });
     }
   }
@@ -76,13 +76,13 @@ class Redis {
     }
   }
 
-  duplicate(): this {
-    // return new Redis(this.config);
-    return this;
+  duplicate(): Redis {
+    return new Redis(this.config);
   }
 
   disconnect(): void {
     // Disconnects
+    this.callback = undefined;
   }
 
   async pubsub(command: string, channel: string): Promise<unknown[]> {

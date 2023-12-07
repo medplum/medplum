@@ -1,4 +1,5 @@
 export * from './access';
+export * from './agent';
 export * from './base-schema';
 export * from './base64';
 export * from './bundle';
