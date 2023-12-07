@@ -1,23 +1,31 @@
 import { Address } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { AddressInput } from './AddressInput';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+
+const defaultProps: ComplexTypeInputProps<Address> = {
+  name: 'a',
+  path: 'Resource.address',
+  onChange: undefined,
+  outcome: undefined,
+};
 
 describe('AddressInput', () => {
   test('Renders', () => {
-    render(<AddressInput name="a" defaultValue={{ line: ['123 main st'], city: 'Happy' }} />);
+    render(<AddressInput {...defaultProps} defaultValue={{ line: ['123 main st'], city: 'Happy' }} />);
     expect(screen.getByDisplayValue('123 main st')).toBeDefined();
     expect(screen.getByDisplayValue('Happy')).toBeDefined();
   });
 
   test('Renders undefined value', () => {
-    render(<AddressInput name="a" />);
+    render(<AddressInput {...defaultProps} />);
     expect(screen.queryByDisplayValue('123 main st')).toBeNull();
   });
 
   test('Set value', async () => {
     let lastValue: Address | undefined = undefined;
 
-    render(<AddressInput name="a" onChange={(value) => (lastValue = value)} />);
+    render(<AddressInput {...defaultProps} onChange={(value) => (lastValue = value)} />);
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('address-use'), {

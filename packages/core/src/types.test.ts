@@ -12,6 +12,7 @@ import {
 } from '@medplum/fhirtypes';
 import { LOINC, UCUM } from './constants';
 import {
+  getElementDefinitionFromElements,
   getElementDefinitionTypeName,
   getPathDisplayName,
   isReference,
@@ -51,6 +52,25 @@ describe('Type Utils', () => {
         type: [{ code: 'Element' }],
       })
     ).toEqual('QuestionnaireItem');
+  });
+
+  test('getElementDefinitionFromElements', () => {
+    const elements = {
+      address: { path: 'Patient.address', type: [{ code: 'Address' }], description: '', min: 0, max: 1 },
+      'value[x]': { path: 'Patient.value[x]', type: [{ code: 'string' }], description: '', min: 0, max: 1 },
+    };
+
+    // should be found
+    expect(getElementDefinitionFromElements(elements, 'address')).toBeDefined();
+    expect(getElementDefinitionFromElements(elements, 'value[x]')).toBeDefined();
+    expect(getElementDefinitionFromElements(elements, 'value')).toBeDefined();
+
+    expect(getElementDefinitionFromElements(elements, 'value')).toEqual(
+      getElementDefinitionFromElements(elements, 'value[x]')
+    );
+
+    // shoudl NOT be found
+    expect(getElementDefinitionFromElements(elements, 'notreal')).toBeUndefined();
   });
 
   test('isResource', () => {

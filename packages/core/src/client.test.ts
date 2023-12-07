@@ -17,7 +17,7 @@ import {
 import { mockFetch } from './client-test-utils';
 import { ContentType } from './contenttype';
 import { OperationOutcomeError, notFound, unauthorized } from './outcomes';
-import { isDataTypeLoaded } from './typeschema/types';
+import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
 import { ProfileResource, createReference } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
@@ -56,6 +56,46 @@ const schemaResponse = {
   },
 };
 
+const patientProfileUrl = 'http://example.com/patient-profile';
+
+const profileSchemaResponse = {
+  resourceType: 'StructureDefinition',
+  name: 'PatientProfile',
+  url: patientProfileUrl,
+  snapshot: {
+    element: [
+      {
+        path: 'Patient',
+      },
+      {
+        path: 'Patient.id',
+        type: [
+          {
+            code: 'code',
+          },
+        ],
+      },
+      {
+        path: 'Patient.extension',
+        slicing: {
+          discriminator: [
+            {
+              type: 'value',
+              path: 'url',
+            },
+          ],
+          ordered: false,
+          rules: 'open',
+        },
+        type: [
+          {
+            code: 'Extension',
+          },
+        ],
+      },
+    ],
+  },
+};
 const originalWindow = globalThis.window;
 const originalBuffer = globalThis.Buffer;
 
@@ -1612,6 +1652,24 @@ describe('Client', () => {
 
     await request1;
     expect(isDataTypeLoaded('Patient')).toBe(true);
+  });
+
+  test('requestProfileSchema', async () => {
+    const fetch = mockFetch(200, {
+      resourceType: 'Bundle',
+      entry: [{ resource: profileSchemaResponse }],
+    });
+
+    const client = new MedplumClient({ fetch });
+
+    // Issue two requests simultaneously
+    const request1 = client.requestProfileSchema(patientProfileUrl);
+    const request2 = client.requestProfileSchema(patientProfileUrl);
+    expect(request2).toBe(request1);
+
+    await request1;
+    expect(isProfileLoaded(patientProfileUrl)).toBe(true);
+    expect(getDataType(profileSchemaResponse.name, patientProfileUrl)).toBeDefined();
   });
 
   test('Search', async () => {

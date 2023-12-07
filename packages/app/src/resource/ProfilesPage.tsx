@@ -32,7 +32,7 @@ export function ProfilesPage(): JSX.Element | null {
       });
   }, [medplum, resourceType, id]);
 
-  // TODO{mattlong} This is a bit inefficient since the entire structure definition
+  // TODO{profiles} This is a bit inefficient since the entire structure definition
   // for each available profile is being fetched. All that is really needed is the title & url
   // The SD is useful for the time being to populate the Snapshot and JSON debugging tabs;
   // but those will likely be removed before deploying
@@ -114,20 +114,15 @@ function ProfileListItem({
   );
 }
 
-const TAB_ORDER = ['Summary', 'JSON', 'Snapshot'] as const;
-const TAB_NAMES: Record<(typeof TAB_ORDER)[number], string> = {
-  Summary: 'Edit',
-  JSON: 'JSON',
-  Snapshot: 'Snapshot',
-};
+const TAB_ORDER = ['Edit', 'JSON', 'Snapshot'] as const;
 
-type Props = {
+type ProfileDetailProps = {
   profile: SupportedProfileStructureDefinition;
   resourceType: ResourceType;
   resource: Resource;
   id: string;
 };
-const ProfileDetail: React.FC<Props> = ({ profile, resourceType, id, resource }) => {
+const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resourceType, id, resource }) => {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
@@ -165,11 +160,11 @@ const ProfileDetail: React.FC<Props> = ({ profile, resourceType, id, resource })
           <Tabs.List>
             {TAB_ORDER.map((tab) => (
               <Tabs.Tab key={tab} value={tab}>
-                {TAB_NAMES[tab]}
+                {tab}
               </Tabs.Tab>
             ))}
           </Tabs.List>
-          <Tabs.Panel value="Summary">
+          <Tabs.Panel value={'Edit' satisfies (typeof TAB_ORDER)[number]}>
             <ResourceForm
               profileUrl={profile.url}
               defaultValue={resource}
@@ -178,12 +173,12 @@ const ProfileDetail: React.FC<Props> = ({ profile, resourceType, id, resource })
               outcome={outcome}
             />
           </Tabs.Panel>
-          <Tabs.Panel value="Snapshot">
+          <Tabs.Panel value={'Snapshot' satisfies (typeof TAB_ORDER)[number]}>
             <Stack spacing="md">
               <Code block>{JSON.stringify(profile.snapshot, undefined, 4)}</Code>
             </Stack>
           </Tabs.Panel>
-          <Tabs.Panel value="JSON">
+          <Tabs.Panel value={'JSON' satisfies (typeof TAB_ORDER)[number]}>
             <Stack spacing="md">
               <Code block>{JSON.stringify(profile, undefined, 4)}</Code>
             </Stack>
@@ -193,14 +188,3 @@ const ProfileDetail: React.FC<Props> = ({ profile, resourceType, id, resource })
     </div>
   );
 };
-
-// // eslint-disable-next-line @typescript-eslint/no-unused-vars
-// function pickKeys(obj: object, ...keys: string[]): object {
-//   const result: any = {};
-//   for (const key of keys) {
-//     if (key in obj) {
-//       result[key] = (obj as any)[key];
-//     }
-//   }
-//   return result;
-// }
