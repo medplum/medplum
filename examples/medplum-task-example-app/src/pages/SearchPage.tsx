@@ -1,5 +1,5 @@
 import { Paper } from '@mantine/core';
-import { formatSearchQuery, getReferenceString, parseSearchDefinition, SearchRequest } from '@medplum/core';
+import { formatSearchQuery, getReferenceString, parseSearchDefinition, SearchRequest, SortRule } from '@medplum/core';
 import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
@@ -16,6 +16,7 @@ export function SearchPage(): JSX.Element {
     // Parse the search definition from the url and get the correct fields for the resource type
     const parsedSearch = parseSearchDefinition(location.pathname + location.search);
     const fields = getDefaultFields(parsedSearch.resourceType);
+    const sort = getDefaultSort(parsedSearch.resourceType);
 
     // Add the defaul fields to your parsed search definition
     const populatedSearch = {
@@ -65,4 +66,15 @@ function getDefaultFields(resourceType: string): string[] {
   }
 
   return fields;
+}
+
+function getDefaultSort(resourceType: string): SortRule[] {
+  const defaultSort = [{ code: '-lastUpdated' }];
+
+  switch (resourceType) {
+    case 'Task':
+      defaultSort[0] = { code: 'priority' };
+  }
+
+  return defaultSort;
 }

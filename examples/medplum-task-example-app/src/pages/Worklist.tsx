@@ -1,7 +1,6 @@
-import { Filter, getReferenceString, Operator } from '@medplum/core';
-import { Resource, Task } from '@medplum/fhirtypes';
-import { SearchControl, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { getReferenceString, Operator } from '@medplum/core';
+import { Resource } from '@medplum/fhirtypes';
+import { SearchControl, useMedplumProfile } from '@medplum/react';
 import { useNavigate } from 'react-router-dom';
 
 export function Worklist(): JSX.Element {

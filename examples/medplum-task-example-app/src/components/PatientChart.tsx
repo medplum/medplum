@@ -11,8 +11,13 @@ import { useParams } from 'react-router-dom';
 // import { SmokingStatus } from './SmokingStatus';
 // import { Vitals } from './Vitals';
 
-export function PatientChart(): JSX.Element | null {
+interface PatientChartProps {
+  patient: Patient;
+}
+
+export function PatientChart(props: PatientChartProps): JSX.Element | null {
   const { id } = useParams();
+  const patientId = props.patient.id;
   const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient>();
   const [allergies, setAllergies] = useState<AllergyIntolerance[]>();
@@ -23,7 +28,7 @@ export function PatientChart(): JSX.Element | null {
 
   useEffect(() => {
     const query = `{
-      Patient(id: "${id}") {
+      Patient(id: "${patientId}") {
         resourceType,
         id,
         birthDate,

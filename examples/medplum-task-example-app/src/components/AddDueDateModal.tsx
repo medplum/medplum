@@ -10,8 +10,6 @@ interface AddDueDateModalProps {
 }
 
 export function AddDueDateModal(props: AddDueDateModalProps): JSX.Element {
-  // const [date, setDate] = useState<Date>();
-
   return (
     <Modal opened={props.isOpen} onClose={props.onClose}>
       <DateTimeInput onChange={(e) => console.log(typeof e)} />

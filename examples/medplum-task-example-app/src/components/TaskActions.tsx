@@ -64,10 +64,14 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
   const handleAddDueDate = (date: string) => {
     const updatedTask: Task = { ...task, resourceType: 'Task' };
 
+    // If there is no defined period for a task, add one
     updatedTask.restriction = updatedTask.restriction ?? {};
     updatedTask.restriction.period = updatedTask.restriction.period ?? {};
+
+    // Set the period end date to your due date. For more details see https://www.medplum.com/docs/careplans/tasks#task-start--due-dates
     updatedTask.restriction.period.end = date;
 
+    // Update the task with the new due date
     medplum.updateResource(updatedTask);
     props.onChange(updatedTask);
   };
