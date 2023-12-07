@@ -138,6 +138,12 @@ describe('FHIRPath utils', () => {
       getTypedPropertyValue(toTypedValue({ resourceType: 'Patient', identifier: [] }), 'identifier')
     ).toBeUndefined();
     expect(getTypedPropertyValue({ type: 'X', value: { x: [] } }, 'x')).toBeUndefined();
+
+    // Property path that is part of multi-type element in schema
+    expect(getTypedPropertyValue({ type: 'Extension', value: { valueBoolean: true } }, 'valueBoolean')).toEqual({
+      type: 'boolean',
+      value: true,
+    });
   });
 
   test('Bundle entries', () => {
