@@ -1,6 +1,6 @@
 import { MedplumClient } from '@medplum/core';
-import { App } from './app';
 import { existsSync, readFileSync } from 'fs';
+import { App } from './app';
 
 interface Args {
   baseUrl: string;
@@ -60,7 +60,7 @@ function readPropertiesFile(fileName: string): Args {
     readFileSync(fileName)
       .toString()
       .split('\n')
-      .map((line) => line.split('='))
+      .map((line) => line.split('=').map((s) => s.trim()))
   );
 }
 
