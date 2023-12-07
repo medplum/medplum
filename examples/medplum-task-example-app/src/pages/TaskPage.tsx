@@ -1,4 +1,4 @@
-import { Tabs, Title } from '@mantine/core';
+import { Grid, Group, SimpleGrid, Tabs, Title } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import { Task } from '@medplum/fhirtypes';
 import { DefaultResourceTimeline, Document, Loading, ResourceTable, useMedplum } from '@medplum/react';
@@ -44,35 +44,38 @@ export function TaskPage(): JSX.Element {
   }
 
   return (
-    <>
-      <Document key={getReferenceString(task)}>
-        <Title>{getDisplayString(task)}</Title>
-        <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
-          <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
-            {tabs.map((tab) => (
-              <Tabs.Tab key={tab} value={tab.toLowerCase()}>
-                {tab}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-          <Tabs.Panel value="details">
-            <ResourceTable key={`Task/${id}`} value={task} ignoreMissingValues={false} />
-          </Tabs.Panel>
-          <Tabs.Panel value="timeline">
-            <DefaultResourceTimeline resource={task} />
-          </Tabs.Panel>
-          <Tabs.Panel value="notes">
-            <NotesPage task={task} />
-          </Tabs.Panel>
-        </Tabs>
-        {/* {currentTab === 'details' && <ResourceTable key={`Task/${id}`} value={task} ignoreMissingValues={false} />}
-        {currentTab === 'timeline' && <DefaultResourceTimeline resource={task} />}
-        {currentTab === 'notes' && <NotesPage task={task} />} */}
-        {/* <PatientChart /> */}
-      </Document>
-      <Document>
-        <TaskActions task={task} onChange={handleTaskChange} />
-      </Document>
-    </>
+    <Grid>
+      <Grid.Col span={3}>
+        <Document>{/* <PatientChart /> */}</Document>
+      </Grid.Col>
+      <Grid.Col span={6}>
+        <Document key={getReferenceString(task)}>
+          <Title>{getDisplayString(task)}</Title>
+          <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
+            <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
+              {tabs.map((tab) => (
+                <Tabs.Tab key={tab} value={tab.toLowerCase()}>
+                  {tab}
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
+            <Tabs.Panel value="details">
+              <ResourceTable key={`Task/${id}`} value={task} ignoreMissingValues={false} />
+            </Tabs.Panel>
+            <Tabs.Panel value="timeline">
+              <DefaultResourceTimeline resource={task} />
+            </Tabs.Panel>
+            <Tabs.Panel value="notes">
+              <NotesPage task={task} />
+            </Tabs.Panel>
+          </Tabs>
+        </Document>
+      </Grid.Col>
+      <Grid.Col span={3}>
+        <Document>
+          <TaskActions task={task} onChange={handleTaskChange} />
+        </Document>
+      </Grid.Col>
+    </Grid>
   );
 }

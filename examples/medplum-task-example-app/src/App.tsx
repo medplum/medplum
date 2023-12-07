@@ -11,6 +11,7 @@ import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { TaskPage } from './pages/TaskPage';
+import { Worklist } from './pages/Worklist';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -52,6 +53,7 @@ export function App(): JSX.Element | null {
               <Route path="timeline" element={<Timeline />} />
               <Route path="notes" element={<TaskPage />} />
             </Route>
+            <Route path="/Worklist" element={<Worklist />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>

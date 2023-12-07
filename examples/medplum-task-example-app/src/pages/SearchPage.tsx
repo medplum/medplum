@@ -45,6 +45,7 @@ export function SearchPage(): JSX.Element {
         search={search}
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
         onNew={() => navigate(`/${search.resourceType}/new`)}
+        hideToolbar={true}
       ></SearchControl>
     </Paper>
   );

@@ -77,38 +77,39 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
   }
 
   return (
-    <Document>
-      <Stack>
-        <div className="comment">
-          <Button onClick={handleCommentModal}>Add a Comment</Button>
-          <AddTaskComment
-            task={task}
-            onAddComment={handleAddComment}
-            isOpen={isCommentOpen}
-            onClose={handleCommentModal}
-          />
-        </div>
-        <div>
-          <AddDueDateModal
-            task={task}
-            onAddDate={handleAddDueDate}
-            isOpen={isDueDateOpen}
-            onClose={handleDueDateModal}
-          />
-          <Button onClick={handleDueDateModal}>Add Due Date</Button>
-        </div>
-        <div>
-          <AssignTaskModal isOpen={isAssignOpen} onClose={handleAssignModal} />
-          <Button onClick={handleAssignModal}>Assign Task</Button>
-        </div>
-        <div>
-          <UpdateStatusModal isOpen={isStatusOpen} onClose={handleStatusModal} />
-          <Button onClick={handleStatusModal}>Update Status</Button>
-        </div>
-        <div>
-          <Button>Delete Task</Button>
-        </div>
-      </Stack>
-    </Document>
+    <Stack>
+      <div className="comment">
+        <AddTaskComment
+          task={task}
+          onAddComment={handleAddComment}
+          isOpen={isCommentOpen}
+          onClose={handleCommentModal}
+        />
+        <Button fullWidth onClick={handleCommentModal}>
+          Add a Comment
+        </Button>
+      </div>
+      <div>
+        <AddDueDateModal task={task} onAddDate={handleAddDueDate} isOpen={isDueDateOpen} onClose={handleDueDateModal} />
+        <Button fullWidth onClick={handleDueDateModal}>
+          Add Due Date
+        </Button>
+      </div>
+      <div>
+        <AssignTaskModal isOpen={isAssignOpen} onClose={handleAssignModal} />
+        <Button fullWidth onClick={handleAssignModal}>
+          Assign Task
+        </Button>
+      </div>
+      <div>
+        <UpdateStatusModal isOpen={isStatusOpen} onClose={handleStatusModal} />
+        <Button fullWidth onClick={handleStatusModal}>
+          Update Status
+        </Button>
+      </div>
+      <div>
+        <Button fullWidth>Delete Task</Button>
+      </div>
+    </Stack>
   );
 }
