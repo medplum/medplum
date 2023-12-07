@@ -638,13 +638,7 @@
                       "valueString": "Blood"
                     },
                     {
-                      "valueString": "Breast(Left)"
-                    },
-                    {
-                      "valueString": "Breast(Right)"
-                    },
-                    {
-                      "valueString": "Breast(Both)"
+                      "valueString": "Breast"
                     },
                     {
                       "valueString": "Endocervical"
@@ -660,6 +654,9 @@
                     },
                     {
                       "valueString": "Urine"
+                    },
+                    {
+                      "valueString": "Vaginal"
                     },
                     {
                       "valueString": "Wound"
@@ -795,13 +792,7 @@
                       "valueString": "Blood"
                     },
                     {
-                      "valueString": "Breast(Left)"
-                    },
-                    {
-                      "valueString": "Breast(Right)"
-                    },
-                    {
-                      "valueString": "Breast(Both)"
+                      "valueString": "Breast"
                     },
                     {
                       "valueString": "Endocervical"
@@ -817,6 +808,9 @@
                     },
                     {
                       "valueString": "Urine"
+                    },
+                    {
+                      "valueString": "Vaginal"
                     },
                     {
                       "valueString": "Wound"
@@ -905,13 +899,7 @@
                       "valueString": "Blood"
                     },
                     {
-                      "valueString": "Breast(Left)"
-                    },
-                    {
-                      "valueString": "Breast(Right)"
-                    },
-                    {
-                      "valueString": "Breast(Both)"
+                      "valueString": "Breast"
                     },
                     {
                       "valueString": "Endocervical"
@@ -927,6 +915,9 @@
                     },
                     {
                       "valueString": "Urine"
+                    },
+                    {
+                      "valueString": "Vaginal"
                     },
                     {
                       "valueString": "Wound"
@@ -3264,13 +3255,7 @@
                       "valueString": "Blood"
                     },
                     {
-                      "valueString": "Breast(Left)"
-                    },
-                    {
-                      "valueString": "Breast(Right)"
-                    },
-                    {
-                      "valueString": "Breast(Both)"
+                      "valueString": "Breast"
                     },
                     {
                       "valueString": "Endocervical"
@@ -3286,6 +3271,9 @@
                     },
                     {
                       "valueString": "Urine"
+                    },
+                    {
+                      "valueString": "Vaginal"
                     },
                     {
                       "valueString": "Wound"
@@ -4546,6 +4534,12 @@
               "text": "Other specified mental disorders due to known physiological condition [F06.8]"
             },
             {
+              "id": "diagnosis-G30.0",
+              "linkId": "diagnosis-G30.0",
+              "type": "boolean",
+              "text": "Alzheimer's disease with early onset [G30.0]"
+            },
+            {
               "id": "diagnosis-I10",
               "linkId": "diagnosis-I10",
               "type": "boolean",
@@ -4586,6 +4580,18 @@
               "linkId": "diagnosis-R53.83",
               "type": "boolean",
               "text": "Other fatigue [R53.83]"
+            },
+            {
+              "id": "diagnosis-T67.4XXS",
+              "linkId": "diagnosis-T67.4XXS",
+              "type": "boolean",
+              "text": "Heat exhaustion due to salt depletion, sequela [T67.4XXS]"
+            },
+            {
+              "id": "diagnosis-T84.81XD",
+              "linkId": "diagnosis-T84.81XD",
+              "type": "boolean",
+              "text": "Embolism due to internal orthopedic prosthetic devices, implants and grafts, subsequent encounter [T84.81XD]"
             },
             {
               "id": "diagnosis-Z00.00",
