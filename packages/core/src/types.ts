@@ -323,7 +323,6 @@ function capitalizeDisplayWord(word: string): string {
 
 /**
  * Returns an element definition by type and property name.
- * Handles content references.
  * @param typeName - The type name.
  * @param propertyName - The property name.
  * @returns The element definition if found.
@@ -346,7 +345,28 @@ export function getElementDefinitionFromElements(
   elements: InternalTypeSchema['elements'],
   propertyName: string
 ): InternalSchemaElement | undefined {
-  return elements[propertyName] ?? elements[propertyName + '[x]'];
+  // Always try to match the exact property name first
+  const simpleMatch = elements[propertyName] ?? elements[propertyName + '[x]'];
+  if (simpleMatch) {
+    return simpleMatch;
+  }
+
+  // The propertyName can be a "choice of type" property, such as "value[x]", but in resolved form "valueString".
+  // So we need to iterate through all the elements and find the one that matches.
+  // Try to split on each capital letter, and see if that matches an element.
+  for (let i = 0; i < propertyName.length; i++) {
+    const c = propertyName[i];
+    if (c >= 'A' && c <= 'Z') {
+      const testProperty = propertyName.slice(0, i) + '[x]';
+      const element = elements[testProperty];
+      if (element) {
+        return element;
+      }
+    }
+  }
+
+  // Otherwise, no matches.
+  return undefined;
 }
 
 /**
