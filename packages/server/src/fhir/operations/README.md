@@ -27,7 +27,8 @@ Utility functions that use the `OperationDefinition` to automate implementation 
 
 ```ts
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { created, OperationDefinition, Reference } from '@medplum/core';
+import { created } from '@medplum/core';
+import { Reference, OperationDefinition } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 
 const operation: OperationDefinition = {
@@ -57,7 +58,7 @@ interface ProjectInitParameters {
   ownerEmail?: string;
 }
 
-export function projectInitHandler(req: Request, res: Response): void {
+export async function projectInitHandler(req: Request, res: Response): Promise<void> {
   const params = parseInputParameters<ProjectInitParameters>(operation, req);
 
   // Handle operation business logic...
