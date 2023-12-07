@@ -324,6 +324,15 @@ export function getElementDefinition(typeName: string, propertyName: string): In
   if (!typeSchema) {
     return undefined;
   }
+
+  for (const [elementName, element] of Object.entries(typeSchema.elements)) {
+    for (const type of element.type) {
+      if (elementName.replace('[x]', capitalize(type.code)) === propertyName) {
+        return element;
+      }
+    }
+  }
+
   return typeSchema.elements[propertyName] ?? typeSchema.elements[propertyName + '[x]'];
 }
 
