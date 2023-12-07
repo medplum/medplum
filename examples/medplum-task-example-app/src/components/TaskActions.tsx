@@ -1,7 +1,11 @@
-import { Button } from '@mantine/core';
+import { Button, Stack } from '@mantine/core';
 import { Annotation, Task } from '@medplum/fhirtypes';
-import { DateTimeInput, FormSection, Loading, useMedplum, useResource } from '@medplum/react';
+import { DateTimeInput, Document, FormSection, Loading, useMedplum, useResource } from '@medplum/react';
+import { useState } from 'react';
+import { AddDueDateModal } from './AddDueDateModal';
 import { AddTaskComment } from './AddTaskComment';
+import { AssignTaskModal } from './AssignTaskModal';
+import { UpdateStatusModal } from './UpdateStatusModal';
 
 interface TaskActionsProps {
   task: Task;
@@ -11,6 +15,26 @@ interface TaskActionsProps {
 export function TaskActions(props: TaskActionsProps): JSX.Element {
   const medplum = useMedplum();
   const task = useResource(props.task);
+  const [isCommentOpen, setIsCommentOpen] = useState<boolean>(false);
+  const [isDueDateOpen, setIsDueDateOpen] = useState<boolean>(false);
+  const [isAssignOpen, setIsAssignOpen] = useState<boolean>(false);
+  const [isStatusOpen, setIsStatusOpen] = useState<boolean>(false);
+
+  const handleCommentModal = () => {
+    setIsCommentOpen(!isCommentOpen);
+  };
+
+  const handleDueDateModal = () => {
+    setIsDueDateOpen(!isDueDateOpen);
+  };
+
+  const handleAssignModal = () => {
+    setIsAssignOpen(!isAssignOpen);
+  };
+
+  const handleStatusModal = () => {
+    setIsStatusOpen(!isStatusOpen);
+  };
 
   const handleAddComment = (comment: Annotation) => {
     let taskNotes = task?.note;
@@ -37,27 +61,54 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
     props.onChange(updatedTask);
   };
 
+  const handleAddDueDate = (date: string) => {
+    const updatedTask: Task = { ...task, resourceType: 'Task' };
+
+    updatedTask.restriction = updatedTask.restriction ?? {};
+    updatedTask.restriction.period = updatedTask.restriction.period ?? {};
+    updatedTask.restriction.period.end = date;
+
+    medplum.updateResource(updatedTask);
+    props.onChange(updatedTask);
+  };
+
   if (!task) {
     return <Loading />;
   }
 
   return (
-    <div>
-      <FormSection>
-        <Button>Assign Task</Button>
-      </FormSection>
-      <FormSection>
-        <DateTimeInput />x<Button>Add Due Date</Button>
-      </FormSection>
-      <FormSection>
-        <AddTaskComment task={task} onAddComment={handleAddComment} />
-      </FormSection>
-      <FormSection>
-        <Button>Update Status</Button>
-      </FormSection>
-      <FormSection>
-        <Button>Delete Task</Button>
-      </FormSection>
-    </div>
+    <Document>
+      <Stack>
+        <div className="comment">
+          <Button onClick={handleCommentModal}>Add a Comment</Button>
+          <AddTaskComment
+            task={task}
+            onAddComment={handleAddComment}
+            isOpen={isCommentOpen}
+            onClose={handleCommentModal}
+          />
+        </div>
+        <div>
+          <AddDueDateModal
+            task={task}
+            onAddDate={handleAddDueDate}
+            isOpen={isDueDateOpen}
+            onClose={handleDueDateModal}
+          />
+          <Button onClick={handleDueDateModal}>Add Due Date</Button>
+        </div>
+        <div>
+          <AssignTaskModal isOpen={isAssignOpen} onClose={handleAssignModal} />
+          <Button onClick={handleAssignModal}>Assign Task</Button>
+        </div>
+        <div>
+          <UpdateStatusModal isOpen={isStatusOpen} onClose={handleStatusModal} />
+          <Button onClick={handleStatusModal}>Update Status</Button>
+        </div>
+        <div>
+          <Button>Delete Task</Button>
+        </div>
+      </Stack>
+    </Document>
   );
 }

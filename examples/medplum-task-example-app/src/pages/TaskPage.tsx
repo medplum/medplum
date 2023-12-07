@@ -55,11 +55,20 @@ export function TaskPage(): JSX.Element {
               </Tabs.Tab>
             ))}
           </Tabs.List>
+          <Tabs.Panel value="details">
+            <ResourceTable key={`Task/${id}`} value={task} ignoreMissingValues={false} />
+          </Tabs.Panel>
+          <Tabs.Panel value="timeline">
+            <DefaultResourceTimeline resource={task} />
+          </Tabs.Panel>
+          <Tabs.Panel value="notes">
+            <NotesPage task={task} />
+          </Tabs.Panel>
         </Tabs>
-        {currentTab === 'details' && <ResourceTable key={`Task/${id}`} value={task} ignoreMissingValues={false} />}
+        {/* {currentTab === 'details' && <ResourceTable key={`Task/${id}`} value={task} ignoreMissingValues={false} />}
         {currentTab === 'timeline' && <DefaultResourceTimeline resource={task} />}
-        {currentTab === 'notes' && <NotesPage task={task} />}
-        <PatientChart />
+        {currentTab === 'notes' && <NotesPage task={task} />} */}
+        {/* <PatientChart /> */}
       </Document>
       <Document>
         <TaskActions task={task} onChange={handleTaskChange} />
