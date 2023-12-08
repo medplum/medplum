@@ -8,7 +8,7 @@ interface DeleteTaskModalProps {
 
 export function DeleteTaskModal(props: DeleteTaskModalProps): JSX.Element {
   return (
-    <Modal opened={props.opened} onClose={props.onClose}>
+    <Modal opened={props.opened} onClose={props.onClose} withCloseButton={false}>
       <Alert color="red" title="Are you sure you want to delete?">
         <Group>
           <Button onClick={props.onDelete} color="red">

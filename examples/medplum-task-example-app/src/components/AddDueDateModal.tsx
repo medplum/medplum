@@ -2,6 +2,7 @@ import { Modal } from '@mantine/core';
 import { getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import { QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm } from '@medplum/react';
+import { dueDateQuestionnaire } from '../data/questionnaires';
 
 interface AddDueDateModalProps {
   onAddDate: (date: string) => void;
@@ -22,21 +23,7 @@ export function AddDueDateModal(props: AddDueDateModalProps): JSX.Element {
 
   return (
     <Modal opened={props.isOpen} onClose={props.onClose}>
-      <QuestionnaireForm
-        questionnaire={{
-          resourceType: 'Questionnaire',
-          id: 'due-date',
-          title: 'Add a Due Date',
-          item: [
-            {
-              linkId: 'due-date',
-              text: 'Add a Due Date',
-              type: 'date',
-            },
-          ],
-        }}
-        onSubmit={handleDueDateSubmit}
-      />
+      <QuestionnaireForm questionnaire={dueDateQuestionnaire} onSubmit={handleDueDateSubmit} />
     </Modal>
   );
 }

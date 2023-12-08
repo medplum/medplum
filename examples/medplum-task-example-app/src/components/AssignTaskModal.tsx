@@ -2,6 +2,7 @@ import { Modal } from '@mantine/core';
 import { getQuestionnaireAnswers } from '@medplum/core';
 import { QuestionnaireResponse, Reference, Resource } from '@medplum/fhirtypes';
 import { QuestionnaireForm } from '@medplum/react';
+import { assignTaskQuestionnaire } from '../data/questionnaires';
 
 interface AssignTaskModalProps {
   onAssign: (owner: Reference<Resource>) => void;
@@ -22,21 +23,7 @@ export function AssignTaskModal(props: AssignTaskModalProps): JSX.Element {
 
   return (
     <Modal opened={props.isOpen} onClose={props.onClose}>
-      <QuestionnaireForm
-        questionnaire={{
-          resourceType: 'Questionnaire',
-          id: 'assign-questionnaire',
-          title: 'Assign Owner to Task',
-          item: [
-            {
-              linkId: 'owner',
-              type: 'reference',
-              text: 'Owner',
-            },
-          ],
-        }}
-        onSubmit={handleQuestionnaireSubmit}
-      />
+      <QuestionnaireForm questionnaire={assignTaskQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
     </Modal>
   );
 }

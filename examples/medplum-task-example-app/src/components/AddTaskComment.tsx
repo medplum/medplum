@@ -3,6 +3,7 @@ import { createReference, getQuestionnaireAnswers } from '@medplum/core';
 import { Annotation, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplumProfile } from '@medplum/react';
 import { useState } from 'react';
+import { commentQuestionnaire } from '../data/questionnaires';
 
 interface AddTaskCommentProps {
   onAddComment: (comment: Annotation) => void;
@@ -53,21 +54,7 @@ export function AddTaskComment(props: AddTaskCommentProps): JSX.Element {
 
   return (
     <Modal onSubmit={handleSubmit} opened={props.isOpen} onClose={props.onClose}>
-      <QuestionnaireForm
-        questionnaire={{
-          resourceType: 'Questionnaire',
-          id: 'comment-questionnaire',
-          title: 'Add a comment',
-          item: [
-            {
-              linkId: 'new-comment',
-              text: 'Add a Comment',
-              type: 'string',
-            },
-          ],
-        }}
-        onSubmit={onQuestionnaireSubmit}
-      />
+      <QuestionnaireForm questionnaire={commentQuestionnaire} onSubmit={onQuestionnaireSubmit} />
 
       {/* <FormSection>
         <AnnotationInput name="task-comment" onChange={handleCommentChange} />

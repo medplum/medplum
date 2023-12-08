@@ -2,6 +2,7 @@ import { Modal } from '@mantine/core';
 import { getQuestionnaireAnswers } from '@medplum/core';
 import { Coding, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm } from '@medplum/react';
+import { updateStatusQuestionnaire } from '../data/questionnaires';
 
 interface UpdateStatusModalProps {
   onUpdateStatus: (status: Coding) => void;
@@ -22,22 +23,7 @@ export function UpdateStatusModal(props: UpdateStatusModalProps): JSX.Element {
 
   return (
     <Modal opened={props.isOpen} onClose={props.onClose}>
-      <QuestionnaireForm
-        questionnaire={{
-          resourceType: 'Questionnaire',
-          id: 'update-status-questionnaire',
-          title: 'Update Status',
-          item: [
-            {
-              linkId: 'update-status',
-              text: 'Update Task Status',
-              type: 'choice',
-              answerValueSet: 'http://hl7.org/fhir/ValueSet/task-status',
-            },
-          ],
-        }}
-        onSubmit={handleStatusUpdate}
-      />
+      <QuestionnaireForm questionnaire={updateStatusQuestionnaire} onSubmit={handleStatusUpdate} />
     </Modal>
   );
 }
