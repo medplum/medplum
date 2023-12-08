@@ -150,7 +150,8 @@ export abstract class LookupTable<T> {
       return;
     }
     const tableName = this.getTableName(resourceType);
-    await new InsertQuery(tableName, values).execute(client);
+    const insert = new InsertQuery(tableName, values);
+    await insert.execute(client);
   }
 
   /**

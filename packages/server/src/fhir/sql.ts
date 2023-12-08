@@ -579,8 +579,8 @@ export class InsertQuery extends BaseQuery {
     this.values = values;
   }
 
-  mergeOnConflict(merge: boolean): this {
-    this.merge = merge;
+  mergeOnConflict(): this {
+    this.merge = true;
     return this;
   }
 
