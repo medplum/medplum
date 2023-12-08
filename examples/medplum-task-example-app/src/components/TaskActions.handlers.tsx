@@ -14,6 +14,7 @@ import {
   PractitionerRole,
   RelatedPerson,
 } from '@medplum/fhirtypes';
+import { NavigateFunction } from 'react-router-dom';
 
 type OwnerTypes = Reference<
   CareTeam | Device | HealthcareService | Organization | Patient | Practitioner | PractitionerRole | RelatedPerson
@@ -107,4 +108,15 @@ export function handleAssignTask(
 
   medplum.updateResource(updatedTask);
   onChange(updatedTask);
+}
+
+export function handleDeleteTask(task: Task, medplum: MedplumClient, navigate: NavigateFunction) {
+  const taskId = task.id;
+
+  if (taskId) {
+    medplum.deleteResource('Task', taskId);
+    navigate('/Task');
+  } else {
+    console.error('Task could not be deleted');
+  }
 }

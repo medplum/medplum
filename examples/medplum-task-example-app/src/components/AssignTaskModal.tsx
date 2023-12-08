@@ -1,4 +1,4 @@
-import { filterProps, Modal } from '@mantine/core';
+import { Modal } from '@mantine/core';
 import { getQuestionnaireAnswers } from '@medplum/core';
 import { QuestionnaireResponse, Reference, Resource } from '@medplum/fhirtypes';
 import { QuestionnaireForm } from '@medplum/react';

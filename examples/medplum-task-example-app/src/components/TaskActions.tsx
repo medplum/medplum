@@ -2,10 +2,18 @@ import { Button, Stack } from '@mantine/core';
 import { Annotation, Coding, Reference, Resource, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum, useResource } from '@medplum/react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AddDueDateModal } from './AddDueDateModal';
 import { AddTaskComment } from './AddTaskComment';
 import { AssignTaskModal } from './AssignTaskModal';
-import { handleAddComment, handleAddDueDate, handleAssignTask, handleUpdateStatus } from './TaskActions.handlers';
+import { DeleteTaskModal } from './DeleteTaskModal';
+import {
+  handleAddComment,
+  handleAddDueDate,
+  handleAssignTask,
+  handleDeleteTask,
+  handleUpdateStatus,
+} from './TaskActions.handlers';
 import { UpdateStatusModal } from './UpdateStatusModal';
 
 interface TaskActionsProps {
@@ -15,11 +23,13 @@ interface TaskActionsProps {
 
 export function TaskActions(props: TaskActionsProps): JSX.Element {
   const medplum = useMedplum();
+  const navigate = useNavigate();
   const task = useResource(props.task);
   const [isCommentOpen, setIsCommentOpen] = useState<boolean>(false);
   const [isDueDateOpen, setIsDueDateOpen] = useState<boolean>(false);
   const [isAssignOpen, setIsAssignOpen] = useState<boolean>(false);
   const [isStatusOpen, setIsStatusOpen] = useState<boolean>(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false);
 
   const handleCommentModal = () => {
     setIsCommentOpen(!isCommentOpen);
@@ -35,6 +45,10 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
 
   const handleStatusModal = () => {
     setIsStatusOpen(!isStatusOpen);
+  };
+
+  const handleDeleteModal = () => {
+    setIsDeleteOpen(!isDeleteOpen);
   };
 
   if (!task) {
@@ -84,7 +98,12 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
         </Button>
       </div>
       <div>
-        <Button color="red" fullWidth>
+        <DeleteTaskModal
+          onDelete={() => handleDeleteTask(task, medplum, navigate)}
+          opened={isDeleteOpen}
+          onClose={handleDeleteModal}
+        />
+        <Button onClick={handleDeleteModal} color="red" fullWidth>
           Delete Task
         </Button>
       </div>
