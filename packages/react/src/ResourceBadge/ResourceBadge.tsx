@@ -1,6 +1,5 @@
 import { Group } from '@mantine/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
-import React from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
 

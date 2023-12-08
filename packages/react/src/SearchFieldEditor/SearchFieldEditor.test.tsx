@@ -1,7 +1,6 @@
 import { SearchRequest } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import { SearchFieldEditor } from './SearchFieldEditor';
 
 describe('SearchFieldEditor', () => {

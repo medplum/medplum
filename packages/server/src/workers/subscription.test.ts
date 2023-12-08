@@ -1,11 +1,10 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { ContentType, createReference, getReferenceString, Operator, stringify } from '@medplum/core';
+import { ContentType, Operator, createReference, getReferenceString, stringify } from '@medplum/core';
 import { AuditEvent, Bot, Observation, Patient, Project, ProjectMembership, Subscription } from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import { Job } from 'bullmq';
 import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';
-
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { getClient } from '../database';
@@ -713,10 +712,16 @@ describe('Subscription Worker', () => {
 
       (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 429 }));
 
-      const job = { id: 1, data: queue.add.mock.calls[0][1], attemptsMade: 2 } as unknown as Job;
+      const job = {
+        id: 1,
+        data: queue.add.mock.calls[0][1],
+        attemptsMade: 2,
+        changePriority: jest.fn(),
+      } as unknown as Job;
 
       // If the job throws, then the QueueScheduler will retry
-      await expect(execSubscriptionJob(job)).rejects.toThrow();
+      await expect(execSubscriptionJob(job)).rejects.toThrow('Received status 429');
+      expect(job.changePriority).toHaveBeenCalledWith({ priority: 3 });
     }));
 
   test('Retry on exception', () =>
@@ -752,13 +757,19 @@ describe('Subscription Worker', () => {
       expect(queue.add).toHaveBeenCalled();
 
       (fetch as unknown as jest.Mock).mockImplementation(() => {
-        throw new Error();
+        throw new Error('foo');
       });
 
-      const job = { id: 1, data: queue.add.mock.calls[0][1], attemptsMade: 2 } as unknown as Job;
+      const job = {
+        id: 1,
+        data: queue.add.mock.calls[0][1],
+        attemptsMade: 2,
+        changePriority: jest.fn(),
+      } as unknown as Job;
 
       // If the job throws, then the QueueScheduler will retry
-      await expect(execSubscriptionJob(job)).rejects.toThrow();
+      await expect(execSubscriptionJob(job)).rejects.toThrow('foo');
+      expect(job.changePriority).toHaveBeenCalledWith({ priority: 3 });
     }));
 
   test('Do not throw after max job attempts', () =>

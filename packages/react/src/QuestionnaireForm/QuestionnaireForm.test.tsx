@@ -5,7 +5,6 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import each from 'jest-each';
-import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
@@ -1563,5 +1562,58 @@ describe('QuestionnaireForm', () => {
     });
 
     expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
+  });
+
+  test('Reference filter', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'reference-filter',
+        item: [
+          {
+            linkId: 'q1',
+            type: 'reference',
+            text: 'Question',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                valueCode: 'Observation',
+              },
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceFilter',
+                valueString: 'subject=$subj',
+              },
+            ],
+          },
+        ],
+      },
+      subject: { reference: 'Patient/123' },
+      onSubmit: jest.fn(),
+    });
+
+    // Add a spy on medplum.searchResources
+    const searchResources = jest.spyOn(medplum, 'searchResources');
+
+    // Get the search input
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+
+    // Enter "Simpson"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    expect(screen.getByText('Test 1')).toBeDefined();
+    expect(searchResources).toHaveBeenCalledTimes(1);
+    expect(searchResources.mock.calls[0][0]).toBe('Observation');
+    expect(searchResources.mock.calls[0][1]).toBeInstanceOf(URLSearchParams);
+
+    const params = searchResources.mock.calls[0][1] as URLSearchParams;
+    expect(params.get('subject')).toBe('Patient/123');
+    expect(params.get('code')).toBe('Test');
   });
 });

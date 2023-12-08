@@ -1,12 +1,12 @@
 import { Group, Input } from '@mantine/core';
-import React from 'react';
+import { ReactNode } from 'react';
 
 export interface CheckboxFormSectionProps {
   htmlFor?: string;
   title?: string;
   description?: string;
   withAsterisk?: boolean;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 export function CheckboxFormSection(props: CheckboxFormSectionProps): JSX.Element {

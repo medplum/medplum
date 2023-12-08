@@ -1,10 +1,11 @@
-import { Operator } from '@medplum/core';
+import { Operator, OperationOutcomeError, badRequest } from '@medplum/core';
 import { DomainConfiguration } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
 import { getConfig } from '../config';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
+import { makeValidationMiddleware } from '../util/validator';
+import { globalLogger } from '../logger';
 
 /*
  * The method handler is used to determine available login methods.
@@ -13,15 +14,11 @@ import { systemRepo } from '../fhir/repo';
  * For example, an unauthenticated user could determine if "foo.com" has a domain configuration.
  */
 
-export const methodValidators = [body('email').isEmail().withMessage('Valid email address is required')];
+export const methodValidator = makeValidationMiddleware([
+  body('email').isEmail().withMessage('Valid email address is required'),
+]);
 
 export async function methodHandler(req: Request, res: Response): Promise<void> {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    sendOutcome(res, invalidRequest(errors));
-    return;
-  }
-
   const externalAuth = await isExternalAuth(req.body.email);
   if (externalAuth) {
     // Return the authorization URL
@@ -52,12 +49,17 @@ export async function isExternalAuth(email: string): Promise<{ domain: string; a
     return undefined;
   }
 
-  const url = new URL(idp.authorizeUrl as string);
-  url.searchParams.set('client_id', idp.clientId as string);
-  url.searchParams.set('redirect_uri', getConfig().baseUrl + 'auth/external');
-  url.searchParams.set('response_type', 'code');
-  url.searchParams.set('scope', 'openid profile email');
-  return { domain, authorizeUrl: url.toString() };
+  try {
+    const url = new URL(idp.authorizeUrl as string);
+    url.searchParams.set('client_id', idp.clientId as string);
+    url.searchParams.set('redirect_uri', getConfig().baseUrl + 'auth/external');
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('scope', 'openid profile email');
+    return { domain, authorizeUrl: url.toString() };
+  } catch (error: any) {
+    globalLogger.error(`Error constructing URL for domain ${domain}:`);
+    throw new OperationOutcomeError(badRequest('Failed to construct URL for the domain'));
+  }
 }
 
 /**

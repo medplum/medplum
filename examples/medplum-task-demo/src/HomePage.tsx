@@ -1,7 +1,7 @@
 import { Button, Group, Loader, Modal, NativeSelect, Paper, SimpleGrid, Stack, TextInput } from '@mantine/core';
 import { Location, PractitionerRole, Task, TaskRestriction } from '@medplum/fhirtypes';
 import { convertLocalToIso, DateTimeInput, Form, FormSection, useMedplum } from '@medplum/react';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { TaskList } from './TaskList';
 
 /*

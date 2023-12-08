@@ -23,6 +23,10 @@ These three requirements will need to be in place to connect
   {ExampleCode}
 </MedplumCodeBlock>
 
+:::tip Cloning an existing project
+If you have an existing project, and want to copy your data to a new environment (for example to a staging environment), this can easily be done using the `$clone` operation. For more details [ee the Projects guide](/docs/access/projects##cloning-and-expunging-projects).
+:::
+
 ## Example App - Simple Lab Results Workflow
 
 This example represents a common healthcare workflow, creating an order for lab tests (a.k.a `ServiceRequest` in FHIR) for patients and when the lab test is complete creating results (a.k.a. `Observation` and `DiagnosticReport` in FHIR) that correspond to the original `ServiceRequest`.

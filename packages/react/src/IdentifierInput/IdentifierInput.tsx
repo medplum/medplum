@@ -1,6 +1,6 @@
 import { Group, TextInput } from '@mantine/core';
 import { Identifier } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 export interface IdentifierInputProps {
   name: string;

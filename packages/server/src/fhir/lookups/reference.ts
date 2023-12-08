@@ -37,7 +37,7 @@ export class ReferenceTable extends LookupTable<Reference> {
     if (existing.length > 0) {
       await this.deleteValuesForResource(client, resource);
     }
-    await this.insertValuesForResource(client, resource.resourceType, values, true);
+    await this.insertValuesForResource(client, resource.resourceType, values);
   }
 }
 
@@ -59,7 +59,7 @@ function getSearchReferences(resource: Resource): ReferenceRow[] {
   if (!searchParams) {
     return [];
   }
-  const result: ReferenceRow[] = [];
+  const result = new Map<string, ReferenceRow>();
   for (const searchParam of Object.values(searchParams)) {
     if (!isIndexed(searchParam)) {
       continue;
@@ -72,7 +72,7 @@ function getSearchReferences(resource: Resource): ReferenceRow[] {
       }
       const [_targetType, targetId] = value.value.reference.split('/', 2);
       if (isUUID(targetId)) {
-        result.push({
+        result.set(`${searchParam.code}|${targetId}`, {
           resourceId: resource.id as string,
           targetId: targetId,
           code: searchParam.code as string,
@@ -80,7 +80,7 @@ function getSearchReferences(resource: Resource): ReferenceRow[] {
       }
     }
   }
-  return result;
+  return Array.from(result.values());
 }
 
 /**

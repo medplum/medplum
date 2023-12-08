@@ -37,9 +37,12 @@ For example, the search query described above for `Observation`, `Patient`, and 
     <MedplumCodeBlock language="ts" selectBlocks="searchIncludes">
       {ExampleCode}
     </MedplumCodeBlock>
-
   </TabItem>
-
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="ts" selectBlocks="searchIncludesCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
   <TabItem value="curl" label="cURL">
     <MedplumCodeBlock language="bash" selectBlocks="searchIncludesCurl">
       {ExampleCode}
@@ -106,9 +109,12 @@ to search for `Observation` resources, plus the `Patient` resources they refer t
     <MedplumCodeBlock language="ts" selectBlocks="searchIncludeIterate">
       {ExampleCode}
     </MedplumCodeBlock>
-
   </TabItem>
-
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="ts" selectBlocks="searchIncludeIterateCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
   <TabItem value="curl" label="cURL">
     <MedplumCodeBlock language="bash" selectBlocks="searchIncludeIterateCurl">
       {ExampleCode}
@@ -183,3 +189,203 @@ flowchart TD
 ```
 
 :::
+
+## Additional Examples
+
+### Searching for a related person
+
+In some cases you may want to search for a [`Patient`](/docs/api/fhir/resources/patient) as well as any [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) resources they may have. This is often used in pediatric care when you need to retrieve a [`Patient`](/docs/api/fhir/resources/patient) and their parent in the same search. See the [family relationships guide](/docs/fhir-datastore/family-relationships) for more details.
+
+```mermaid
+flowchart TD
+    subgraph Search Results
+        A(Patient/lisa-simpson)
+    end
+
+    subgraph _revinclude
+        B(RelatedPerson/marge-simpson)
+        C(RelatedPerson/homer-simpson)
+    end
+
+    B --> |patient| A
+    C --> |patient| A
+```
+
+<details>
+  <summary>Example: Get a `Patient` and their `RelatedPerson`</summary>
+  <Tabs groupId="language">
+    <TabItem value="ts" label="TypeScript">
+      <MedplumCodeBlock language="ts" selectBlocks="relatedPersonTs">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="cli" label="CLI">
+      <MedplumCodeBlock language="ts" selectBlocks="relatedPersonCli">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="curl" label="cURL">
+      <MedplumCodeBlock language="bash" selectBlocks="relatedPersonCurl">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+  </Tabs>
+</details>
+
+In this example we:
+
+- Search for a root [`Patient`](/docs/api/fhir/resources/patient) resource
+- We then use `_revinclude=RelatedPerson:patient` to include any [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) resources that reference one of the patients in our results.
+
+However, some models use the [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) as a link between two patients (for more details see [approach #3 of Family Relationships guide](/docs/fhir-datastore/family-relationships#approach-3)).
+
+```mermaid
+flowchart TD
+    subgraph Search Results
+        A(Patient/lisa-simpson)
+    end
+
+    subgraph _revinclude
+        B(RelatedPerson/marge-lisa)
+        C(RelatedPerson/homer-lisa)
+    end
+
+    subgraph _revinclude:iterate
+        D(Patient/marge-simpson)
+        E(Patient/homer-simpson)
+    end
+
+    B --> |patient| A
+    C --> |patient| A
+    D --> |link| B
+    E --> |link| C
+```
+
+<details>
+  <summary>Example: Get a `Patient` and their `RelatedPerson` modeled as a `Patient`</summary>
+  <Tabs groupId="language">
+    <TabItem value="ts" label="TypeScript">
+      <MedplumCodeBlock language="ts" selectBlocks="relatedPersonPatientTs">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="cli" label="CLI">
+      <MedplumCodeBlock language="ts" selectBlocks="relatedPersonPatientCli">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="curl" label="cURL">
+      <MedplumCodeBlock language="bash" selectBlocks="relatedPersonPatientCurl">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+  </Tabs>
+</details>
+
+This example is similar to the first, but includes an additional step.
+
+- We search for the root [`Patient`](/docs/api/fhir/resources/patient) resource
+- We use `_revinclude=RelatedPerson:patient` to again get any [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) resources that reference our results. In this case they are only representing a link between the two [`Patient`](/docs/api/fhir/resources/patient) resources.
+- We then use `_revinclude:iterate=Patient:link` to iterate on the [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) resources and get any [`Patient`](/docs/api/fhir/resources/patient) resources that reference them on the `link` element. In this scenario, these are the parents.
+
+### Searching for practitioners at a specific location
+
+A common use case is searching for any [`Practitioner`](/docs/api/fhir/resources/practitioner) and [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole) resources at a specific location. This can be necessary when the same physician provides care at multiple locations. See the [provider organizations guide](/docs/fhir-datastore/provider-directory/provider-organizations) for more details.
+
+```mermaid
+flowchart TD
+    subgraph Search Results
+        A(Location/example-location)
+    end
+
+    subgraph _revinclude
+        B(PractitionerRole/1)
+        C(PractitionerRole/2)
+    end
+
+    subgraph _include:iterate
+        D(Practitioner/dr-alice-smith)
+        E(Practitioner/dr-gregory-house)
+    end
+
+    B & C--> |location| A
+    B --> |practitioner| D
+    C --> |practitioner| E
+```
+
+<details>
+  <summary>Example: Find all practitioners and roles at a specific location</summary>
+  <Tabs groupId="language">
+    <TabItem value="ts" label="TypeScript">
+      <MedplumCodeBlock language="ts" selectBlocks="locationPractitionerRoleTs">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="cli" label="CLI">
+      <MedplumCodeBlock language="ts" selectBlocks="locationPractitionerRoleCli">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="curl" label="cURL">
+      <MedplumCodeBlock language="bash" selectBlocks="locationPractitionerRoleCurl">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+  </Tabs>
+</details>
+
+In this example, we:
+
+- Search for a root [`Location`](/docs/api/fhir/resources/location) resource.
+- We then use `_revinclude=PractitionerRole:location` to get all [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole) resources that reference the [`Location`](/docs/api/fhir/resources/location) using the `location` search parameter.
+- Next, we iterate on the [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole) resources using `_include:iterate=PractitionerRole:practitioner`. This will include all the [`Practitioner`](/docs/api/fhir/resources/practitioner) resources referenced by the `practitioner` search parameter of the returned [`PractitionerRoles`](/docs/api/fhir/resources/practitionerrole).
+
+### Searching for a patient's care team
+
+You may want to display a [`Patient`](/docs/api/fhir/resources/patient) resource as well as a list of all the members of their [`CareTeam`](/docs/api/fhir/resources/careteam) on one page.
+
+```mermaid
+flowchart TD
+    subgraph Search Results
+       A(Patient/homer-simpson)
+    end
+
+    subgraph _revinclude
+        B(CareTeam/homer-care-team)
+    end
+
+    subgraph _include:iterate
+        C(Practitioner/dr-alice-smith)
+        D(Organization/example-hospital)
+    end
+
+    B --> |patient| A
+    B --> |member| C & D
+```
+
+<details>
+  <summary>Example: Search for all members of the `CareTeam` of a `Patient`</summary>
+  <Tabs groupId="language">
+    <TabItem value="ts" label="TypeScript">
+      <MedplumCodeBlock language="ts" selectBlocks="careTeamTs">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="cli" label="CLI">
+      <MedplumCodeBlock language="ts" selectBlocks="careTeamCli">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="curl" label="cURL">
+      <MedplumCodeBlock language="bash" selectBlocks="careTeamCurl">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+  </Tabs>
+</details>
+
+In this example we:
+
+- Search for a root [`Patient`](/docs/api/fhir/resources/patient) resource.
+- Then we use `_revinclude=CareTeam:patient` to search for a [`CareTeam`](/docs/api/fhir/resources/careteam) resource that references our results using the `patient` search parameter.
+- We then iterate on the [`CareTeam`](/docs/api/fhir/resources/careteam) with `_include:iterate=CareTeam:participant` to search for all members of the team.

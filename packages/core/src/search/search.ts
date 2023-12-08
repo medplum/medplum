@@ -1,7 +1,7 @@
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { badRequest, OperationOutcomeError } from '../outcomes';
-import { TypedValue, stringifyTypedValue, globalSchema } from '../types';
 import { evalFhirPathTyped } from '../fhirpath/parse';
+import { OperationOutcomeError, badRequest } from '../outcomes';
+import { TypedValue, globalSchema, stringifyTypedValue } from '../types';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 
@@ -401,8 +401,16 @@ function addFilter(searchRequest: SearchRequest, filter: Filter): void {
 const subexpressionPattern = /{{([^{}]+)}}/g;
 
 /**
- * Parses an extended FHIR search criteria string (i.e. application/x-fhir-query), evaluating
- * any embedded FHIRPath subexpressions (e.g. `{{ %patient.id }}`) with the provided variables.
+ * Parses an extended FHIR search criteria string (i.e. application/x-fhir-query).
+ *
+ * @example Evaluating a FHIRPath subexpression
+ *
+ * ```typescript
+ * const query = 'Patient?name={{ %patient.name }}';
+ * const variables = { patient: { name: 'John Doe' } };
+ * const request = parseXFhirQuery(query, variables);
+ * console.log(request.filters[0].value); // "John Doe"
+ * ```
  *
  * @see https://hl7.org/fhir/fhir-xquery.html
  * @param query - The X-Fhir-Query string to parse

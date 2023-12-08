@@ -52,6 +52,17 @@ export interface MedplumServerConfig {
 }
 
 /**
+ * The SSL configuration for the database.
+ */
+export interface MedplumDatabaseSslConfig {
+  ca?: string;
+  key?: string;
+  cert?: string;
+  rejectUnauthorized?: boolean;
+  require?: boolean;
+}
+
+/**
  * Based on AWS Secrets Manager for databases.
  * See: https://docs.aws.amazon.com/secretsmanager/latest/userguide/secretsmanager-userguide.pdf
  */
@@ -61,6 +72,7 @@ export interface MedplumDatabaseConfig {
   dbname?: string;
   username?: string;
   password?: string;
+  ssl?: MedplumDatabaseSslConfig;
 }
 
 export interface MedplumRedisConfig {
@@ -279,6 +291,8 @@ function isBooleanConfig(key: string): boolean {
     key === 'botCustomFunctionsEnabled' ||
     key === 'logRequests' ||
     key === 'logAuditEvents' ||
-    key === 'registerEnabled'
+    key === 'registerEnabled' ||
+    key === 'require' ||
+    key === 'rejectUnauthorized'
   );
 }

@@ -1,6 +1,5 @@
 import { ResourceType } from '@medplum/fhirtypes';
 import { DefaultResourceTimeline, EncounterTimeline, PatientTimeline, ServiceRequestTimeline } from '@medplum/react';
-import React from 'react';
 import { useParams } from 'react-router-dom';
 
 export function TimelinePage(): JSX.Element | null {

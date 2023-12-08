@@ -2,7 +2,7 @@ import { Anchor, Button, createStyles, NativeSelect, Stack, TextInput } from '@m
 import { getReferenceString, InternalSchemaElement } from '@medplum/core';
 import { PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import React, { useEffect, useRef, useState } from 'react';
+import { MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { FormSection } from '../FormSection/FormSection';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
@@ -165,7 +165,7 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
       <div className={classes.bottomActions}>
         <Anchor
           href="#"
-          onClick={(e: React.MouseEvent) => {
+          onClick={(e: MouseEvent) => {
             killEvent(e);
             addAction({ id: generateId() });
           }}
@@ -194,12 +194,12 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   const editing = props.selectedKey === props.action.id;
   const hovering = props.hoverKey === props.action.id;
 
-  function onClick(e: React.SyntheticEvent): void {
+  function onClick(e: SyntheticEvent): void {
     e.stopPropagation();
     props.setSelectedKey(props.action.id);
   }
 
-  function onHover(e: React.SyntheticEvent): void {
+  function onHover(e: SyntheticEvent): void {
     killEvent(e);
     props.setHoverKey(props.action.id);
   }
@@ -210,7 +210,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   });
 
   return (
-    <div data-testid={action.id} className={className} onClick={onClick} onMouseOver={onHover}>
+    <div data-testid={action.id} className={className} onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
       {editing ? (
         <ActionEditor
           action={action}
@@ -228,7 +228,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
       <div className={classes.bottomActions}>
         <Anchor
           href="#"
-          onClick={(e: React.MouseEvent) => {
+          onClick={(e: MouseEvent) => {
             e.preventDefault();
             props.onRemove();
           }}

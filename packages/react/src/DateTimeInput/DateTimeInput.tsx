@@ -1,6 +1,6 @@
 import { TextInput } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import React from 'react';
+import { ChangeEvent } from 'react';
 import { getErrorsForInput } from '../utils/outcomes';
 import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput.utils';
 
@@ -35,7 +35,7 @@ export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
       defaultValue={convertIsoToLocal(props.defaultValue)}
       autoFocus={props.autoFocus}
       error={getErrorsForInput(props.outcome, props.name)}
-      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+      onChange={(e: ChangeEvent<HTMLInputElement>) => {
         if (props.onChange) {
           const newValue = e.currentTarget.value;
           props.onChange(convertLocalToIso(newValue));

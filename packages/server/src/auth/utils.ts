@@ -6,15 +6,16 @@ import {
   ProfileResource,
   resolveId,
 } from '@medplum/core';
-import { ContactPoint, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { ContactPoint, Login, OperationOutcome, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
-import { Response } from 'express';
+import { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { getConfig } from '../config';
 import { getRequestContext } from '../context';
 import { systemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getClient, getMembershipsForLogin } from '../oauth/utils';
+import { sendOutcome } from '../fhir/outcomes';
 
 export async function createProfile(
   project: Project,
@@ -208,4 +209,47 @@ export function getProjectByRecaptchaSiteKey(
  */
 export function bcryptHashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, getConfig().bcryptHashSalt);
+}
+
+export function validateRecaptcha(projectValidation?: (p: Project) => OperationOutcome | undefined): Handler {
+  return async function (req: Request, res: Response, next: NextFunction): Promise<void> {
+    const recaptchaSiteKey = req.body.recaptchaSiteKey;
+    const config = getConfig();
+    let secretKey: string | undefined = config.recaptchaSecretKey;
+
+    if (recaptchaSiteKey && recaptchaSiteKey !== config.recaptchaSiteKey) {
+      // If the recaptcha site key is not the main Medplum recaptcha site key,
+      // then it must be associated with a Project.
+      // The user can only authenticate with that project.
+      const project = await getProjectByRecaptchaSiteKey(recaptchaSiteKey, req.body.projectId);
+      if (!project) {
+        sendOutcome(res, badRequest('Invalid recaptchaSiteKey'));
+        return;
+      }
+      secretKey = project.site?.find((s) => s.recaptchaSiteKey === recaptchaSiteKey)?.recaptchaSecretKey;
+      if (!secretKey) {
+        sendOutcome(res, badRequest('Invalid recaptchaSecretKey'));
+        return;
+      }
+
+      const validationOutcome = projectValidation?.(project);
+      if (validationOutcome) {
+        sendOutcome(res, validationOutcome);
+        return;
+      }
+    }
+
+    if (secretKey) {
+      if (!req.body.recaptchaToken) {
+        sendOutcome(res, badRequest('Recaptcha token is required'));
+        return;
+      }
+
+      if (!(await verifyRecaptcha(secretKey, req.body.recaptchaToken))) {
+        sendOutcome(res, badRequest('Recaptcha failed'));
+        return;
+      }
+    }
+    next();
+  };
 }

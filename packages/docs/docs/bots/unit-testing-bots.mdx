@@ -117,6 +117,10 @@ This example searches for all `Patient` resources named 'Alex'. It also uses the
 
 A transaction `Bundle` can be used directly in a batch request, and can be passed as an argument to `executeBatch` on your `MockClient`. This allows you to easily create test resoures from already existing data.
 
+#### Cloning an Existing Projects
+
+If you want to clone an existing project into a new environment, you can use the `$clone` operation. For more details [see the Projects guide](/docs/access/projects##cloning-and-expunging-projects).
+
 ### Invoke your Bot
 
 After setting up your mock resources, you can invoke your bot by calling your bot's handler function. See the ["Bot Basics" tutorial](/docs/bots/bot-basics#editing-a-bot) for more information about the arguments to `handler`
@@ -158,7 +162,8 @@ If you have a dev project that already has rich data, you can use the Mepdlum CL
 
 The Medplum CLI offers the optional `--as-transaction` flag when using the `medplum get` command. A `GET` request returns a `Bundle` with `type=searchset`, but this flag will convert it to `type=transaction`.
 
-<details><summary>Example: Get a patient and all encounters that reference them as a transactioin</summary>
+<details>
+<summary>Example: Get a patient and all encounters that reference them as a transactioin</summary>
 
 ```cli
 

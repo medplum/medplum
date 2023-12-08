@@ -17,7 +17,6 @@ import {
   IconSortDescending,
   IconX,
 } from '@tabler/icons-react';
-import React from 'react';
 import {
   addLastMonthFilter,
   addMissingFilter,

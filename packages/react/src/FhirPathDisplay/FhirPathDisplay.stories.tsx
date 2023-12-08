@@ -1,4 +1,3 @@
-import React from 'react';
 import { FhirPathDisplay, FhirPathDisplayProps } from './FhirPathDisplay';
 import { PropertyType } from '@medplum/core';
 import { HomerServiceRequest, HomerSimpson } from '@medplum/mock';

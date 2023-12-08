@@ -1,5 +1,5 @@
 import { Paper, ScrollArea, Tabs, Text } from '@mantine/core';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 
 const tabs = ['Form', 'JSON'];

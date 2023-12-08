@@ -2,7 +2,7 @@ import { showNotification } from '@mantine/notifications';
 import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceForm, useMedplum } from '@medplum/react';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cleanResource } from './utils';
 
@@ -19,7 +19,7 @@ export function EditPage(): JSX.Element | null {
       .then((resource) => setValue(deepClone(resource)))
       .catch((err) => {
         setOutcome(normalizeOperationOutcome(err));
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       });
   }, [medplum, resourceType, id]);
 
@@ -34,7 +34,7 @@ export function EditPage(): JSX.Element | null {
         })
         .catch((err) => {
           setOutcome(normalizeOperationOutcome(err));
-          showNotification({ color: 'red', message: normalizeErrorString(err) });
+          showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
         });
     },
     [medplum, resourceType, id, navigate]

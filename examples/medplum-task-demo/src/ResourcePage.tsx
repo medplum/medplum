@@ -2,7 +2,6 @@ import { Anchor, Loader } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
 import { Document, ResourceTable, useResource } from '@medplum/react';
 import { IconExternalLink } from '@tabler/icons-react';
-import React from 'react';
 import { useParams } from 'react-router-dom';
 
 export function ResourcePage(): JSX.Element | null {

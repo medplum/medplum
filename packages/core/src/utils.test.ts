@@ -1,11 +1,13 @@
 import { Attachment, CodeableConcept, ObservationDefinition, Patient, Resource } from '@medplum/fhirtypes';
 import { ContentType } from './contenttype';
 import {
+  ResourceWithCode,
   arrayBufferToBase64,
   arrayBufferToHex,
   calculateAge,
   calculateAgeString,
   capitalize,
+  createDeferredPromise,
   createReference,
   deepClone,
   deepEquals,
@@ -34,7 +36,6 @@ import {
   preciseLessThanOrEquals,
   preciseRound,
   resolveId,
-  ResourceWithCode,
   setCodeBySystem,
   setIdentifier,
   splitN,
@@ -541,10 +542,31 @@ describe('Core Utils', () => {
     expect(deepIncludes({ value: 1 }, { value: {} })).toEqual(false);
     expect(deepIncludes({ value: {} }, { value: {} })).toEqual(true);
     expect(deepIncludes({ value: { x: 1 } }, { value: { x: 1 } })).toEqual(true);
-    expect(deepIncludes({ value: { x: 1, y: '2' } }, { value: { x: 1, y: '2', z: 4 } })).toEqual(true);
-    expect(deepIncludes([{ value: 1 }, { value: 2 }], [{ value: 2 }, { value: 1 }, { y: 6 }])).toEqual(true);
+
+    expect(deepIncludes({ value: { x: 1, y: '2' } }, { value: { x: 1, y: '2', z: 4 } })).toEqual(false);
+    expect(deepIncludes({ value: { x: 1, y: '2', z: 4 } }, { value: { x: 1, y: '2' } })).toEqual(true);
+
+    expect(deepIncludes([{ value: 1 }, { value: 2 }], [{ value: 2 }, { value: 1 }, { y: 6 }])).toEqual(false);
+    expect(deepIncludes([{ value: 2 }, { value: 1 }, { y: 6 }], [{ value: 1 }, { value: 2 }])).toEqual(true);
+
     expect(deepIncludes([{ value: 1 }], { value: 1 })).toEqual(false);
     expect(deepIncludes([{ value: 1 }], [{ y: 2, z: 3 }])).toEqual(false);
+
+    const value = {
+      type: 'CodeableConcept',
+      value: {
+        coding: [{ system: 'http://loinc.org', code: '8480-6', display: 'Systolic blood pressure' }],
+        text: 'Systolic blood pressure',
+      },
+    };
+    const pattern = {
+      type: 'CodeableConcept',
+      value: {
+        coding: [{ system: 'http://loinc.org', code: '8480-6' }],
+      },
+    };
+    expect(deepIncludes(value, pattern)).toEqual(true);
+    expect(deepIncludes(pattern, value)).toEqual(false);
   });
 
   test('deepClone', () => {
@@ -996,5 +1018,26 @@ describe('Core Utils', () => {
       splitN('_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status', ':', 3)
     ).toEqual(['_has', 'Observation', 'subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status']);
     expect(splitN('organization', ':', 2)).toEqual(['organization']);
+  });
+
+  describe('createDeferredPromise', () => {
+    test('Created promise has all props', () => {
+      const deferredPromise = createDeferredPromise();
+      expect(deferredPromise.promise).toBeInstanceOf(Promise);
+      expect(deferredPromise.resolve).toBeInstanceOf(Function);
+      expect(deferredPromise.reject).toBeInstanceOf(Function);
+    });
+
+    test('Calling `resolve` resolves promise', async () => {
+      const deferredPromise = createDeferredPromise();
+      expect(() => deferredPromise.resolve()).not.toThrow();
+      await expect(deferredPromise.promise).resolves;
+    });
+
+    test('Calling `reject` rejects promise', async () => {
+      const deferredPromise = createDeferredPromise();
+      expect(() => deferredPromise.reject(new Error('Rejected!'))).not.toThrow();
+      await expect(deferredPromise.promise).rejects.toThrow(/Rejected!/);
+    });
   });
 });

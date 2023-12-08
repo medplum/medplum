@@ -1,5 +1,4 @@
 import { ContactDetail } from '@medplum/fhirtypes';
-import React from 'react';
 import { ContactPointDisplay } from '../ContactPointDisplay/ContactPointDisplay';
 
 export interface ContactDetailDisplayProps {

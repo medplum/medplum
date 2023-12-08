@@ -2,7 +2,6 @@ import { PropertyType } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { FhirPathDisplay } from './FhirPathDisplay';
 
 describe('FhirPathDisplay', () => {

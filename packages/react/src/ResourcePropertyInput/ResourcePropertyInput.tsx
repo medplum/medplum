@@ -1,7 +1,7 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import { capitalize, InternalSchemaElement, PropertyType } from '@medplum/core';
 import { ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
 import { AnnotationInput } from '../AnnotationInput/AnnotationInput';
 import { AttachmentArrayInput } from '../AttachmentArrayInput/AttachmentArrayInput';
@@ -38,7 +38,10 @@ export interface ResourcePropertyInputProps {
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
   const property = props.property;
-  const propertyType = props.defaultPropertyType ?? property.type[0].code;
+  const propertyType =
+    props.defaultPropertyType && props.defaultPropertyType !== 'undefined'
+      ? props.defaultPropertyType
+      : property.type[0].code;
   const name = props.name;
   const value = props.defaultValue;
 

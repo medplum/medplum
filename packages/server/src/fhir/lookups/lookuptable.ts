@@ -94,7 +94,7 @@ export abstract class LookupTable<T> {
       joinOnExpression.expressions.push(disjunction);
     }
 
-    selectQuery.innerJoin(tableName, joinName, joinOnExpression);
+    selectQuery.leftJoin(tableName, joinName, joinOnExpression);
     selectQuery.orderBy(new Column(joinName, columnName));
     return new Condition(new Column(joinName, 'resourceId'), '!=', null);
   }
@@ -140,22 +140,17 @@ export abstract class LookupTable<T> {
    * @param client - The database client.
    * @param resourceType - The resource type.
    * @param values - The values to insert.
-   * @param ignoreConflict - Whether to ignore conflicts when inserting lookup values.
    */
   protected async insertValuesForResource(
     client: Pool | PoolClient,
     resourceType: ResourceType,
-    values: Record<string, any>[],
-    ignoreConflict?: boolean
+    values: Record<string, any>[]
   ): Promise<void> {
     if (values.length === 0) {
       return;
     }
     const tableName = this.getTableName(resourceType);
     const insert = new InsertQuery(tableName, values);
-    if (ignoreConflict) {
-      insert.ignoreConflict();
-    }
     await insert.execute(client);
   }
 

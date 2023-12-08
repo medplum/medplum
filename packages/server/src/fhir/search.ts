@@ -818,7 +818,7 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
   const resourceType = searchRequest.resourceType;
   const param = getSearchParameter(resourceType, sortRule.code);
   if (!param?.code) {
-    return;
+    throw new OperationOutcomeError(badRequest('Unknown search parameter: ' + sortRule.code));
   }
 
   const lookupTable = getLookupTable(resourceType, param);

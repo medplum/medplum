@@ -83,9 +83,9 @@ Over time, you may find that two master records actually correspond to the same 
 - You accumulate more precise data from your source systems.
 - Your matching rules become more advanced.
 
-A key design question will whether your automated pipelines are allowed to combine or split master records after they have been created.
+A key design question will be whether your automated pipelines are allowed to combine or split master records after they have been created.
 
-The benefit of automated splitting/merging that your target system always maintains the most accurate master records.
+The benefit of automated splitting/merging is that your target system always maintains the most accurate master records.
 
 The drawback is that frequently combining and splitting master records can cause instability in downstream systems. This can happen in the early days of pipeline development, when matching and merge rules are still being finalized.
 
@@ -102,7 +102,7 @@ The two options are:
 
 ![rewrite references](./rewrite-references.png)
 
-The tradeoff primary will be dictated by the downstream applications and the frequency of unmerge operations.
+The downstream applications and the frequency of unmerge operations will primarily dictate the tradeoffs.
 
 ### Rewriting references to master record
 

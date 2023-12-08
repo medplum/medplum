@@ -1,4 +1,4 @@
-import { Paper, Text, Title } from '@mantine/core';
+import { Box, Paper, Text, Title } from '@mantine/core';
 import { createReference, getDisplayString, getReferenceString } from '@medplum/core';
 import {
   Bundle,
@@ -9,7 +9,7 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { Document, Loading, MedplumLink, QuestionnaireForm, useMedplum } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { PatientHeader } from './components/PatientHeader';
 import { ResourceHeader } from './components/ResourceHeader';
@@ -124,13 +124,15 @@ export function FormPage(): JSX.Element {
 
   return (
     <>
-      {patient && <PatientHeader patient={patient} />}
-      {subject && subject.resourceType !== 'Patient' && <ResourceHeader resource={subject} />}
-      <Paper p="xl" shadow="xs" radius={0}>
-        <Text>
-          {getDisplayString(questionnaire)}
-          {subjectList && subjectList.length > 1 && <>&nbsp;(for {subjectList.length} resources)</>}
-        </Text>
+      <Paper shadow="xs" radius={0}>
+        {patient && <PatientHeader patient={patient} />}
+        {subject && subject.resourceType !== 'Patient' && <ResourceHeader resource={subject} />}
+        <Box px="xl" py="md">
+          <Text>
+            {getDisplayString(questionnaire)}
+            {subjectList && subjectList.length > 1 && <>&nbsp;(for {subjectList.length} resources)</>}
+          </Text>
+        </Box>
       </Paper>
       <Document>
         <QuestionnaireForm

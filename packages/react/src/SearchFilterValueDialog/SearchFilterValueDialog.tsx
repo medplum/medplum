@@ -1,7 +1,7 @@
 import { Button, Grid, Modal } from '@mantine/core';
 import { Filter } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Form } from '../Form/Form';
 import { SearchFilterValueInput } from '../SearchFilterValueInput/SearchFilterValueInput';
 

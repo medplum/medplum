@@ -4,6 +4,9 @@ on:
   issues:
     types:
       - opened
+  pull_request_target:
+    types:
+      - opened
 
 jobs:
   add-to-project:
@@ -13,9 +16,9 @@ jobs:
       - uses: actions/add-to-project@v0.5.0
         with:
           project-url: https://github.com/orgs/medplum/projects/1
-          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          github-token: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}
       - uses: actions/add-to-project@v0.5.0
         with:
           project-url: https://github.com/orgs/medplum/projects/3
-          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          github-token: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}
           labeled: customer

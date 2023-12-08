@@ -1,5 +1,4 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import { TimingInput } from './TimingInput';
 
 describe('TimingInput', () => {

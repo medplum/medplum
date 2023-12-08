@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Bot, Resource, Subscription } from '@medplum/fhirtypes';
 import { Document, ResourceInput, ResourceName, useMedplum } from '@medplum/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 export function QuestionnaireBotsPage(): JSX.Element {
@@ -35,7 +35,7 @@ export function QuestionnaireBotsPage(): JSX.Element {
           medplum.invalidateSearches('Subscription');
           showNotification({ color: 'green', message: 'Success' });
         })
-        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
     }
   }
 

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/hl7",
-  "version": "2.1.12",
+  "version": "2.1.25",
   "description": "Medplum HL7 Utilities",
   "keywords": [
     "medplum",
@@ -18,6 +18,9 @@
     "normative"
   ],
   "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
@@ -27,15 +30,25 @@
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
   "exports": {
-    "types": "./dist/types.d.ts",
-    "require": "./dist/cjs/index.cjs",
-    "import": "./dist/esm/index.mjs"
+    "import": {
+      "types": "./dist/esm/index.d.ts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.ts",
+      "default": "./dist/cjs/index.cjs"
+    }
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
-  "types": "dist/types.d.ts",
+  "types": "dist/cjs/index.d.ts",
+  "files": [
+    "dist/cjs",
+    "dist/esm"
+  ],
   "scripts": {
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && api-extractor run --local",
+    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "test": "jest"
   },

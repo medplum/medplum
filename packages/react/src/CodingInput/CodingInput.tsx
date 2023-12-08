@@ -1,5 +1,5 @@
 import { Coding, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface CodingInputProps {

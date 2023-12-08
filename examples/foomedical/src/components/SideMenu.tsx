@@ -1,5 +1,5 @@
 import { createStyles, getStylesRef, Title } from '@mantine/core';
-import React from 'react';
+import { Fragment } from 'react';
 import { NavLink } from 'react-router-dom';
 
 export interface SubMenuProps {
@@ -70,7 +70,7 @@ export function SideMenu(props: SideMenuProps): JSX.Element {
         {props.title}
       </Title>
       {props.menu.map((item) => (
-        <React.Fragment key={item.href}>
+        <Fragment key={item.href}>
           <NavLink to={item.href} end className={({ isActive }) => cx(classes.link, isActive && classes.linkActive)}>
             <span>{item.name}</span>
           </NavLink>
@@ -81,7 +81,7 @@ export function SideMenu(props: SideMenuProps): JSX.Element {
               </NavLink>
             </div>
           ))}
-        </React.Fragment>
+        </Fragment>
       ))}
     </div>
   );

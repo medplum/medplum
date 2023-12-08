@@ -1,7 +1,7 @@
 import { Group, NativeSelect } from '@mantine/core';
 import { createReference } from '@medplum/core';
 import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 
@@ -10,6 +10,7 @@ export interface ReferenceInputProps {
   placeholder?: string;
   defaultValue?: Reference;
   targetTypes?: string[];
+  searchCriteria?: Record<string, string>;
   autoFocus?: boolean;
   required?: boolean;
   onChange?: (value: Reference | undefined) => void;
@@ -56,6 +57,7 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
         required={props.required}
         placeholder={props.placeholder}
         defaultValue={value}
+        searchCriteria={props.searchCriteria}
         onChange={(item: Resource | undefined) => {
           setValueHelper(item ? createReference(item) : undefined);
         }}

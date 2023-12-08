@@ -1,5 +1,5 @@
 import { Card, CloseButton, createStyles, Title } from '@mantine/core';
-import React from 'react';
+import { ReactNode } from 'react';
 
 const useStyles = createStyles((theme) => ({
   titleSection: {
@@ -16,7 +16,7 @@ const useStyles = createStyles((theme) => ({
 
 interface InfoSectionProps {
   title: string | JSX.Element;
-  children: React.ReactNode;
+  children: ReactNode;
   onButtonClick?: (id: string) => void;
   resourceType?: string;
   id?: string;

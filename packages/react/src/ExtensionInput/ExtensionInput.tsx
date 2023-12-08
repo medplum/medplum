@@ -1,7 +1,6 @@
 import { JsonInput } from '@mantine/core';
 import { stringify } from '@medplum/core';
 import { Extension } from '@medplum/fhirtypes';
-import React from 'react';
 
 export interface ExtensionInputProps {
   name: string;

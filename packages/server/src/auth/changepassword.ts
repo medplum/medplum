@@ -2,26 +2,21 @@ import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import { Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { bcryptHashPassword } from './utils';
 import { getAuthenticatedContext } from '../context';
+import { makeValidationMiddleware } from '../util/validator';
 
-export const changePasswordValidators = [
+export const changePasswordValidator = makeValidationMiddleware([
   body('oldPassword').notEmpty().withMessage('Missing oldPassword'),
   body('newPassword').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
-];
+]);
 
 export async function changePasswordHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
-
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    sendOutcome(res, invalidRequest(errors));
-    return;
-  }
 
   const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
 

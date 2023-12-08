@@ -1,6 +1,7 @@
 import { Title } from '@mantine/core';
 import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
 import {
+  Encounter,
   Questionnaire,
   QuestionnaireItem,
   QuestionnaireResponse,
@@ -8,14 +9,16 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
 import { buildInitialResponse, getNumberOfPages, isQuestionEnabled } from '../utils/questionnaire';
 import { QuestionnairePageSequence } from './QuestionnaireFormComponents/QuestionnaireFormPageSequence';
+import { QuestionnaireFormContext } from './QuestionnaireForm.context';
 
 export interface QuestionnaireFormProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
   subject?: Reference;
+  encounter?: Reference<Encounter>;
   submitButtonText?: string;
   onSubmit: (response: QuestionnaireResponse) => void;
 }
@@ -68,35 +71,37 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const prevStep = (): void => setActivePage((current) => current - 1);
 
   return (
-    <Form
-      testid="questionnaire-form"
-      onSubmit={() => {
-        if (props.onSubmit && response) {
-          props.onSubmit({
-            ...response,
-            questionnaire: getReferenceString(questionnaire),
-            subject: props.subject,
-            source: createReference(source as ProfileResource),
-            authored: new Date().toISOString(),
-            status: 'completed',
-          });
-        }
-      }}
-    >
-      {questionnaire.title && <Title>{questionnaire.title}</Title>}
-      <QuestionnairePageSequence
-        items={questionnaire.item ?? []}
-        response={response}
-        onChange={setItems}
-        renderPages={numberOfPages > 1}
-        activePage={activePage}
-        numberOfPages={numberOfPages}
-        submitButtonText={props.submitButtonText}
-        checkForQuestionEnabled={checkForQuestionEnabled}
-        nextStep={nextStep}
-        prevStep={prevStep}
-      />
-    </Form>
+    <QuestionnaireFormContext.Provider value={{ subject: props.subject, encounter: props.encounter }}>
+      <Form
+        testid="questionnaire-form"
+        onSubmit={() => {
+          if (props.onSubmit && response) {
+            props.onSubmit({
+              ...response,
+              questionnaire: getReferenceString(questionnaire),
+              subject: props.subject,
+              source: createReference(source as ProfileResource),
+              authored: new Date().toISOString(),
+              status: 'completed',
+            });
+          }
+        }}
+      >
+        {questionnaire.title && <Title>{questionnaire.title}</Title>}
+        <QuestionnairePageSequence
+          items={questionnaire.item ?? []}
+          response={response}
+          onChange={setItems}
+          renderPages={numberOfPages > 1}
+          activePage={activePage}
+          numberOfPages={numberOfPages}
+          submitButtonText={props.submitButtonText}
+          checkForQuestionEnabled={checkForQuestionEnabled}
+          nextStep={nextStep}
+          prevStep={prevStep}
+        />
+      </Form>
+    </QuestionnaireFormContext.Provider>
   );
 }
 

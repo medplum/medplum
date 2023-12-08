@@ -1,8 +1,9 @@
 {
   "name": "medplum-task-demo",
-  "version": "2.1.12",
+  "version": "2.1.25",
   "private": true,
   "description": "Medplum Task Demo",
+  "type": "module",
   "scripts": {
     "build": "tsc && vite build",
     "dev": "vite",
@@ -23,19 +24,19 @@
     "@mantine/core": "6.0.21",
     "@mantine/hooks": "6.0.21",
     "@mantine/notifications": "6.0.21",
-    "@medplum/core": "2.1.12",
-    "@medplum/eslint-config": "2.1.12",
-    "@medplum/fhirtypes": "2.1.12",
-    "@medplum/react": "2.1.12",
-    "@tabler/icons-react": "2.40.0",
-    "@types/node": "20.9.0",
-    "@types/react": "18.2.37",
-    "@types/react-dom": "18.2.15",
-    "@vitejs/plugin-react": "4.1.1",
+    "@medplum/core": "2.1.25",
+    "@medplum/eslint-config": "2.1.25",
+    "@medplum/fhirtypes": "2.1.25",
+    "@medplum/react": "2.1.25",
+    "@tabler/icons-react": "2.42.0",
+    "@types/node": "20.10.3",
+    "@types/react": "18.2.42",
+    "@types/react-dom": "18.2.17",
+    "@vitejs/plugin-react": "4.2.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "6.18.0",
-    "typescript": "5.2.2",
-    "vite": "4.5.0"
+    "react-router-dom": "6.20.1",
+    "typescript": "5.3.2",
+    "vite": "5.0.5"
   }
 }

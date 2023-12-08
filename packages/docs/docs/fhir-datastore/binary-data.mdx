@@ -95,6 +95,10 @@ const communication = await medplum.createResource('Communication', {
 });
 ```
 
+:::caution Attachment Data
+When creating an [`Attachment`](/docs/api/fhir/datatypes/attachment), we recommend that you _do not_ use the `data` field to provide the full binary data string. This can make the attachment very large and can cause issues when making HTTP requests. See the [Handling External Files guide](/docs/charting/external-documents#example-creating-a-documentreference-for-a-binary-file) for an example of how to upload and reference [`Binary`](/docs/api/fhir/resources/binary) resources.
+:::
+
 ## Consuming a FHIR `Binary` in an Application
 
 In a normal FHIR server, when reading a FHIR resource that references a `Binary`, you'd receive a URL to the `Binary` resource.
