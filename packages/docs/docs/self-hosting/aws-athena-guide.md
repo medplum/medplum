@@ -123,6 +123,28 @@ LIMIT
     100;
 ```
 
+Find all 500 errors
+
+```sql
+SELECT
+    elb_status_code,
+    time,
+    client_ip,
+    request_verb,
+    request_url,
+    request_processing_time,
+    target_processing_time,
+    response_processing_time
+FROM
+    alb_logs
+WHERE
+    day = '2023/09/27'
+    AND "elb_status_code">=500
+ORDER BY time
+LIMIT
+    100;
+```
+
 Count status codes by day and by client IP address:
 
 ```sql
