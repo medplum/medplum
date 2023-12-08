@@ -1,6 +1,6 @@
 {
   "name": "@medplum/definitions",
-  "version": "2.1.25",
+  "version": "2.2.0",
   "description": "Medplum Data Definitions",
   "keywords": [
     "medplum",

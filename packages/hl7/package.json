@@ -1,6 +1,6 @@
 {
   "name": "@medplum/hl7",
-  "version": "2.1.25",
+  "version": "2.2.0",
   "description": "Medplum HL7 Utilities",
   "keywords": [
     "medplum",
