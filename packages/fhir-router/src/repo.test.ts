@@ -111,4 +111,29 @@ describe('MemoryRepository', () => {
     const bundle = await repo.search({ resourceType: 'Patient', sortRules: [{ code: 'xyz' }] });
     expect(bundle.entry).toBeDefined();
   });
+
+  test('clears all resources', async () => {
+    const patientCount = 10;
+    for (let i = 0; i < patientCount; i++) {
+      await repo.createResource<Patient>({ resourceType: 'Patient' });
+    }
+    const observationCount = 11;
+    for (let i = 0; i < observationCount; i++) {
+      await repo.createResource<Observation>({ resourceType: 'Observation' });
+    }
+
+    const [patientsBefore, observationsBefore] = await Promise.all([
+      repo.searchResources<Patient>({ resourceType: 'Patient' }),
+      repo.searchResources<Observation>({ resourceType: 'Observation' }),
+    ]);
+    expect(patientsBefore.length + observationsBefore.length).toBe(patientCount + observationCount);
+
+    repo.clear();
+
+    const [patientsAfter, observationsAfter] = await Promise.all([
+      repo.searchResources<Patient>({ resourceType: 'Patient' }),
+      repo.searchResources<Observation>({ resourceType: 'Observation' }),
+    ]);
+    expect(patientsAfter.length + observationsAfter.length).toBe(0);
+  });
 });
