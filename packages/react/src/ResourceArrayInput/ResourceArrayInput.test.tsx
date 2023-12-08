@@ -249,7 +249,7 @@ describe('ResourceArrayInput', () => {
     });
   });
 
-  test.only('With slices and values in each slice and non-slice values', async () => {
+  test('With slices and values in each slice and non-slice values', async () => {
     const onChange = jest.fn();
 
     const defaultValue = [

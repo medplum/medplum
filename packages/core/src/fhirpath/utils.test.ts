@@ -219,7 +219,7 @@ describe('FHIRPath utils', () => {
     });
   });
 
-  test.only('getTypedPropertyValueWithSchema', () => {
+  test('getTypedPropertyValueWithSchema', () => {
     const value = { active: true };
     const path = 'active';
     const goodElement: InternalSchemaElement = {
@@ -229,12 +229,24 @@ describe('FHIRPath utils', () => {
       max: 0,
       type: [{ code: 'boolean' }],
     };
+    expect(getTypedPropertyValueWithSchema(value, path, goodElement)).toEqual({ type: 'boolean', value: true });
+
     const badElement: InternalSchemaElement = {
       ...goodElement,
       type: [{ code: 'string' }, { code: 'integer' }],
     };
+    expect(getTypedPropertyValueWithSchema(value, path, badElement)).toBeUndefined();
 
-    expect(getTypedPropertyValueWithSchema(value, path, goodElement)).toEqual({ type: 'boolean', value: true });
-    expect(() => getTypedPropertyValueWithSchema(value, path, badElement)).toThrow();
+    const extensionValueX: InternalSchemaElement = {
+      description: '',
+      path: 'Extension.value[x]',
+      min: 1,
+      max: 1,
+      type: [{ code: 'boolean' }],
+    };
+    expect(getTypedPropertyValueWithSchema({ valueBoolean: true }, 'value[x]', extensionValueX)).toEqual({
+      type: 'boolean',
+      value: true,
+    });
   });
 });

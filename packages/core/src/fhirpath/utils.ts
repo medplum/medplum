@@ -101,7 +101,12 @@ export function getTypedPropertyValueWithSchema(
   let resultValue: any = undefined;
   let resultType = 'undefined';
 
-  if (path.endsWith('[x]')) {
+  // check path.endsWith('[x]') in addition to multiple types
+  // since extensions can define a single type for their value[x] element,
+  // e.g. https://build.fhir.org/ig/HL7/US-Core/StructureDefinition-us-core-birthsex.html
+  // cannot only check for endsWith('[x]') since FHIRPath uses this code path
+  // with a path of 'value' and expects Choice of Types treatment
+  if (types.length > 1 || path.endsWith('[x]')) {
     for (const type of types) {
       const path2 = path.replace('[x]', '') + capitalize(type.code);
       if (path2 in value) {
@@ -113,8 +118,6 @@ export function getTypedPropertyValueWithSchema(
   } else if (types.length === 1) {
     resultValue = value[path];
     resultType = types[0].code;
-  } else {
-    throw new Error(`Unexpected type definition of ${JSON.stringify(types)} for path ${path}`);
   }
 
   const primitiveExtension = value['_' + path];
