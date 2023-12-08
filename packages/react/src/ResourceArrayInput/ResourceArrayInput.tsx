@@ -2,7 +2,6 @@ import { ActionIcon, Group, Stack } from '@mantine/core';
 import {
   InternalSchemaElement,
   InternalTypeSchema,
-  PropertyType,
   SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
@@ -30,6 +29,7 @@ export interface ResourceArrayInputProps {
   arrayElement?: boolean;
   outcome: OperationOutcome | undefined;
   onChange?: (value: any[]) => void;
+  hideNonSliceValues?: boolean;
 }
 
 type SupportedSliceDefinition = SliceDefinition & {
@@ -219,12 +219,12 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
       return;
     }
 
-    const newSliceValues = [...slicedValues];
-    newSliceValues[sliceIndex] = newValues;
-    setSlicedValues(newSliceValues);
+    const newSlicedValues = [...slicedValues];
+    newSlicedValues[sliceIndex] = newValues;
+    setSlicedValues(newSlicedValues);
     if (props.onChange) {
       // Remove any placeholder (i.e. undefined) values before propagating
-      const cleaned = newSliceValues.flat().filter((val) => val !== undefined);
+      const cleaned = newSlicedValues.flat().filter((val) => val !== undefined);
       props.onChange(cleaned);
     }
   }
@@ -237,8 +237,8 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
   const nonSliceIndex = slices.length;
   const nonSliceValues = slicedValues[nonSliceIndex];
 
-  // Sliced extensions cannot have non-sliced values
-  const disableAddNonSliceValues = property.type[0].code === PropertyType.Extension;
+  // Hide non-sliced values when dealing with extensions
+  const showNonSliceValues = !(props.hideNonSliceValues ?? propertyTypeCode === 'Extension');
 
   return (
     <Stack style={props.indent ? { marginTop: '1rem', marginLeft: '1rem' } : undefined}>
@@ -252,50 +252,54 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
             onChange={(newValue: any[]) => {
               setValuesWrapper(newValue, sliceIndex);
             }}
+            testId={`slice-${slice.name}`}
           />
         );
       })}
 
-      {nonSliceValues.map((value, valueIndex) => (
-        <Group key={`${valueIndex}-${nonSliceValues.length}`} noWrap style={{ flexGrow: 1 }}>
-          <div style={{ flexGrow: 1 }}>
-            <ResourcePropertyInput
-              arrayElement={true}
-              property={props.property}
-              name={props.name + '.' + valueIndex}
-              defaultValue={value}
-              onChange={(newValue: any) => {
-                const newNonSliceValues = [...nonSliceValues];
-                newNonSliceValues[valueIndex] = newValue;
-                setValuesWrapper(newNonSliceValues, nonSliceIndex);
-              }}
-              defaultPropertyType={undefined}
-              outcome={props.outcome}
-            />
-          </div>
-          <div>
-            <ActionIcon
-              title="Remove"
-              size="sm"
-              onClick={(e: MouseEvent) => {
-                killEvent(e);
-                const newNonSliceValues = [...nonSliceValues];
-                newNonSliceValues.splice(valueIndex, 1);
-                setValuesWrapper(newNonSliceValues, nonSliceIndex);
-              }}
-            >
-              <IconCircleMinus />
-            </ActionIcon>
-          </div>
-        </Group>
-      ))}
-      {!disableAddNonSliceValues && (
+      {showNonSliceValues &&
+        nonSliceValues.map((value, valueIndex) => (
+          <Group key={`${valueIndex}-${nonSliceValues.length}`} noWrap style={{ flexGrow: 1 }}>
+            <div style={{ flexGrow: 1 }}>
+              <ResourcePropertyInput
+                arrayElement={true}
+                property={props.property}
+                name={props.name + '.' + valueIndex}
+                defaultValue={value}
+                onChange={(newValue: any) => {
+                  const newNonSliceValues = [...nonSliceValues];
+                  newNonSliceValues[valueIndex] = newValue;
+                  setValuesWrapper(newNonSliceValues, nonSliceIndex);
+                }}
+                defaultPropertyType={undefined}
+                outcome={props.outcome}
+              />
+            </div>
+            <div>
+              <ActionIcon
+                title="Remove"
+                size="sm"
+                data-testid={`nonsliced-remove-${valueIndex}`}
+                onClick={(e: MouseEvent) => {
+                  killEvent(e);
+                  const newNonSliceValues = [...nonSliceValues];
+                  newNonSliceValues.splice(valueIndex, 1);
+                  setValuesWrapper(newNonSliceValues, nonSliceIndex);
+                }}
+              >
+                <IconCircleMinus />
+              </ActionIcon>
+            </div>
+          </Group>
+        ))}
+      {showNonSliceValues && slicedValues.flat().length < property.max && (
         <Group noWrap style={{ justifyContent: 'flex-end' }}>
           <div>
             <ActionIcon
               title="Add"
               size="sm"
               color="green"
+              data-testid={`nonsliced-add`}
               onClick={(e: MouseEvent) => {
                 killEvent(e);
                 const newNonSliceValues = [...nonSliceValues];

@@ -17,6 +17,7 @@ export interface ElementsInputProps {
   defaultValue: any;
   outcome: OperationOutcome | undefined;
   onChange: ((value: any) => void) | undefined;
+  testId?: string;
 }
 
 export function ElementsInput(props: ElementsInputProps): JSX.Element {
@@ -37,15 +38,13 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
     for (const [key, prop] of Object.entries(fixedProperties)) {
       setPropertyValue(newValue, key, key, prop, prop.fixed.value);
     }
-    console.log('ElementsInput', newValue);
     setValue(newValue);
     if (props.onChange) {
       props.onChange(newValue);
     }
   }
-
   return (
-    <Stack style={{ flexGrow: 1 }}>
+    <Stack style={{ flexGrow: 1 }} data-testid={props.testId}>
       {Object.entries(elements).map(([key, element]) => {
         if (!element.type) {
           return null;
@@ -61,8 +60,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
         }
 
         if (EXTENSION_KEYS.includes(key)) {
-          // TODO{mattlong} verify the following comment is accurate
-          // an extension property without slices has no sub-extensions nor content
+          // an extension property without slices has no nested extensions
           if (!element.slicing || element.slicing.slices.length === 0) {
             return null;
           }

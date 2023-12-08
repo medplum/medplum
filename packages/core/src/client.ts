@@ -1624,7 +1624,6 @@ export class MedplumClient extends EventTarget {
    * @param profileUrl - The FHIR URL of the profile
    * @returns Promise to a schema with the requested profile.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   requestProfileSchema(profileUrl: string): Promise<void> {
     if (isProfileLoaded(profileUrl)) {
       return Promise.resolve();

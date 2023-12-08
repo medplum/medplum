@@ -78,7 +78,6 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         onChange={(newValue: any) => {
           if (props.onChange) {
             const newPropName = props.name.replace('[x]', capitalize(propertyTypes[0].code as string));
-            console.log('ResourceProperty', newPropName, JSON.stringify(newValue));
             props.onChange(newValue, newPropName);
           }
         }}
@@ -315,6 +314,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         />
       );
     default:
+      console.log('RENDERING BEI', propertyType, defaultValue);
       return (
         <BackboneElementInput
           typeName={propertyType}

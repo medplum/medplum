@@ -11,6 +11,7 @@ export interface FormSectionProps {
   withAsterisk?: boolean;
   outcome?: OperationOutcome;
   children?: ReactNode;
+  testId?: string;
   fhirPath?: string;
 }
 
@@ -30,6 +31,7 @@ export function FormSection(props: FormSectionProps): JSX.Element {
       description={props.description}
       withAsterisk={props.withAsterisk}
       error={getErrorsForInput(props.outcome, props.htmlFor)}
+      data-testid={props.testId}
     >
       {props.children}
     </Input.Wrapper>

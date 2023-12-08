@@ -29,6 +29,7 @@ type SliceInputProps = {
   defaultValue: any[];
   onChange: (newValue: any[]) => void;
   outcome?: OperationOutcome;
+  testId?: string;
 };
 export function SliceInput(props: SliceInputProps): JSX.Element | null {
   const { slice, property } = props;
@@ -43,7 +44,6 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
   function setValuesWrapper(newValues: any[]): void {
     setValues(newValues);
     if (props.onChange) {
-      console.log('SliceInput', JSON.stringify(newValues));
       props.onChange(newValues);
     }
   }
@@ -59,6 +59,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
       description={slice.definition}
       withAsterisk={required}
       fhirPath={`${property.path}:${slice.name}`}
+      testId={props.testId}
     >
       <Stack style={stackStyle}>
         {values.map((value, valueIndex) => {
@@ -66,7 +67,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
             <Group key={`${valueIndex}-${values.length}`} noWrap>
               <div style={{ flexGrow: 1 }}>
                 <Stack>
-                  {!isEmpty(slice.elements) && (
+                  {!isEmpty(slice.elements) ? (
                     <ElementsInput
                       type={slice.type[0].code}
                       elements={slice.elements}
@@ -77,23 +78,25 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                         newValues[valueIndex] = newValue;
                         setValuesWrapper(newValues);
                       }}
+                      testId={props.testId && `${props.testId}-elements`}
+                    />
+                  ) : (
+                    <ElementDefinitionTypeInput
+                      elementDefinitionType={slice.type[0]}
+                      name={slice.name}
+                      defaultValue={value}
+                      onChange={(newValue) => {
+                        const newValues = [...values];
+                        newValues[valueIndex] = newValue;
+                        setValuesWrapper(newValues);
+                      }}
+                      outcome={undefined}
+                      min={slice.min}
+                      max={slice.max}
+                      binding={undefined}
+                      path={slice.path}
                     />
                   )}
-                  <ElementDefinitionTypeInput
-                    elementDefinitionType={slice.type[0]}
-                    name={slice.name}
-                    defaultValue={value}
-                    onChange={(newValue) => {
-                      const newValues = [...values];
-                      newValues[valueIndex] = newValue;
-                      setValuesWrapper(newValues);
-                    }}
-                    outcome={undefined}
-                    min={slice.min}
-                    max={slice.max}
-                    binding={undefined}
-                    path={slice.path}
-                  />
                 </Stack>
               </div>
               {values.length > slice.min && (
@@ -101,6 +104,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                   <ActionIcon
                     title="Remove"
                     size="sm"
+                    data-testid={props.testId && `${props.testId}-remove-${valueIndex}`}
                     onClick={(e: React.MouseEvent) => {
                       killEvent(e);
                       const newValues = [...values];
@@ -122,6 +126,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                 title="Add"
                 size="sm"
                 color="green"
+                data-testid={props.testId && `${props.testId}-add`}
                 onClick={(e: React.MouseEvent) => {
                   killEvent(e);
                   const newValues = [...values, undefined];

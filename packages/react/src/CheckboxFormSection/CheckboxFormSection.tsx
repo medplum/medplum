@@ -8,6 +8,7 @@ export interface CheckboxFormSectionProps {
   description?: string;
   withAsterisk?: boolean;
   children?: ReactNode;
+  testId?: string;
   fhirPath?: string;
 }
 
@@ -21,7 +22,7 @@ export function CheckboxFormSection(props: CheckboxFormSectionProps): JSX.Elemen
     label = props.title;
   }
   return (
-    <Group noWrap>
+    <Group noWrap data-testid={props.testId}>
       <div>{props.children}</div>
       <div>
         <Input.Wrapper
