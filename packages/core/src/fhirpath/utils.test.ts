@@ -1,7 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, Questionnaire } from '@medplum/fhirtypes';
 import { PropertyType, TypedValue } from '../types';
-import { indexStructureDefinitionBundle } from '../typeschema/types';
+import { InternalSchemaElement, indexStructureDefinitionBundle } from '../typeschema/types';
 import {
   fhirPathArrayEquals,
   fhirPathArrayEquivalent,
@@ -9,6 +9,7 @@ import {
   fhirPathEquivalent,
   fhirPathIs,
   getTypedPropertyValue,
+  getTypedPropertyValueWithSchema,
   toJsBoolean,
   toTypedValue,
 } from './utils';
@@ -216,5 +217,24 @@ describe('FHIRPath utils', () => {
         type: 'display',
       },
     });
+  });
+
+  test.only('getTypedPropertyValueWithSchema', () => {
+    const value = { active: true };
+    const path = 'active';
+    const goodElement: InternalSchemaElement = {
+      description: '',
+      path: 'Patient.active',
+      min: 0,
+      max: 0,
+      type: [{ code: 'boolean' }],
+    };
+    const badElement: InternalSchemaElement = {
+      ...goodElement,
+      type: [{ code: 'string' }, { code: 'integer' }],
+    };
+
+    expect(getTypedPropertyValueWithSchema(value, path, goodElement)).toEqual({ type: 'boolean', value: true });
+    expect(() => getTypedPropertyValueWithSchema(value, path, badElement)).toThrow();
   });
 });

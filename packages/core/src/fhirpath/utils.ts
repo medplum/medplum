@@ -101,9 +101,9 @@ export function getTypedPropertyValueWithSchema(
   let resultValue: any = undefined;
   let resultType = 'undefined';
 
-  if (path === 'value[x]') {
+  if (path.endsWith('[x]')) {
     for (const type of types) {
-      const path2 = 'value' + capitalize(type.code);
+      const path2 = path.replace('[x]', '') + capitalize(type.code);
       if (path2 in value) {
         resultValue = value[path2];
         resultType = type.code;
@@ -114,15 +114,9 @@ export function getTypedPropertyValueWithSchema(
     resultValue = value[path];
     resultType = types[0].code;
   } else {
-    for (const type of types) {
-      const path2 = path.replace('[x]', '') + capitalize(type.code);
-      if (path2 in value) {
-        resultValue = value[path2];
-        resultType = type.code;
-        break;
-      }
-    }
+    throw new Error(`Unexpected type definition of ${JSON.stringify(types)} for path ${path}`);
   }
+
   const primitiveExtension = value['_' + path];
   if (primitiveExtension) {
     if (Array.isArray(resultValue)) {

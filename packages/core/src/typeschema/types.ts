@@ -481,8 +481,8 @@ class StructureDefinitionParser {
         description: c.human ?? '',
       })),
       type: this.parseElementDefinitionType(ed),
-      fixed: firstValue(getTypedPropertyValue(typedElementDef, 'fixed')),
-      pattern: firstValue(getTypedPropertyValue(typedElementDef, 'pattern')),
+      fixed: firstValue(getTypedPropertyValue(typedElementDef, 'fixed[x]')),
+      pattern: firstValue(getTypedPropertyValue(typedElementDef, 'pattern[x]')),
       binding: ed.binding,
     };
   }
