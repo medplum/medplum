@@ -7,8 +7,8 @@ import {
   parseSearchDefinition,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { Bundle, Observation, Patient, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { randomInt, randomUUID } from 'crypto';
 import { MemoryRepository } from './repo';
 
 const repo = new MemoryRepository();
@@ -113,27 +113,30 @@ describe('MemoryRepository', () => {
   });
 
   test('clears all resources', async () => {
-    const patientCount = 10;
-    for (let i = 0; i < patientCount; i++) {
-      await repo.createResource<Patient>({ resourceType: 'Patient' });
-    }
-    const observationCount = 11;
-    for (let i = 0; i < observationCount; i++) {
-      await repo.createResource<Observation>({ resourceType: 'Observation' });
-    }
+    repo.clear();
 
-    const [patientsBefore, observationsBefore] = await Promise.all([
-      repo.searchResources<Patient>({ resourceType: 'Patient' }),
-      repo.searchResources<Observation>({ resourceType: 'Observation' }),
-    ]);
-    expect(patientsBefore.length + observationsBefore.length).toBe(patientCount + observationCount);
+    const resourceTypes: ResourceType[] = ['Patient', 'Observation', 'AccessPolicy', 'Account', 'Binary', 'Bot'];
+    let expectedTotalResourceCount = 0;
+    await Promise.all(
+      resourceTypes.map(async (rt) => {
+        const count = randomInt(9) + 1;
+        for (let i = 0; i < count; i++) {
+          await repo.createResource<any>({ resourceType: rt });
+        }
+        expectedTotalResourceCount += count;
+      })
+    );
+
+    const resourcesListBefore = await Promise.all(
+      resourceTypes.map((rt) => repo.searchResources({ resourceType: rt }))
+    );
+    const actualResourceCountBefore = resourcesListBefore.reduce((count, resources) => (count += resources.length), 0);
+    expect(actualResourceCountBefore).toBe(expectedTotalResourceCount);
 
     repo.clear();
 
-    const [patientsAfter, observationsAfter] = await Promise.all([
-      repo.searchResources<Patient>({ resourceType: 'Patient' }),
-      repo.searchResources<Observation>({ resourceType: 'Observation' }),
-    ]);
-    expect(patientsAfter.length + observationsAfter.length).toBe(0);
+    const resourcesListAfter = await Promise.all(resourceTypes.map((rt) => repo.searchResources({ resourceType: rt })));
+    const actualResourceCountAfter = resourcesListAfter.reduce((count, resources) => (count += resources.length), 0);
+    expect(actualResourceCountAfter).toBe(0);
   });
 });
