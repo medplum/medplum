@@ -109,20 +109,8 @@ jobs:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Cache node modules
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --force
 
       - name: Build
         run: npm run build -- --filter=@medplum/agent
