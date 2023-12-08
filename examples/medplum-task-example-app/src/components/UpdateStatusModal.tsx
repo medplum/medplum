@@ -1,15 +1,22 @@
 import { Modal } from '@mantine/core';
-import { QuestionnaireResponse } from '@medplum/fhirtypes';
+import { getQuestionnaireAnswers } from '@medplum/core';
+import { Coding, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm } from '@medplum/react';
 
 interface UpdateStatusModalProps {
+  onUpdateStatus: (status: Coding) => void;
   isOpen: boolean;
   onClose: () => void;
 }
 
 export function UpdateStatusModal(props: UpdateStatusModalProps): JSX.Element {
-  const handleSubmit = (formData: QuestionnaireResponse) => {
-    console.log(formData);
+  const handleStatusUpdate = (formData: QuestionnaireResponse) => {
+    const status = getQuestionnaireAnswers(formData)['update-status'].valueCoding;
+
+    if (status) {
+      props.onUpdateStatus(status);
+    }
+
     props.onClose();
   };
 
@@ -25,10 +32,11 @@ export function UpdateStatusModal(props: UpdateStatusModalProps): JSX.Element {
               linkId: 'update-status',
               text: 'Update Task Status',
               type: 'choice',
+              answerValueSet: 'http://hl7.org/fhir/ValueSet/task-status',
             },
           ],
         }}
-        onSubmit={handleSubmit}
+        onSubmit={handleStatusUpdate}
       />
     </Modal>
   );

@@ -1,15 +1,22 @@
 import { filterProps, Modal } from '@mantine/core';
-import { QuestionnaireResponse } from '@medplum/fhirtypes';
+import { getQuestionnaireAnswers } from '@medplum/core';
+import { QuestionnaireResponse, Reference, Resource } from '@medplum/fhirtypes';
 import { QuestionnaireForm } from '@medplum/react';
 
 interface AssignTaskModalProps {
+  onAssign: (owner: Reference<Resource>) => void;
   isOpen: boolean;
   onClose: () => void;
 }
 
 export function AssignTaskModal(props: AssignTaskModalProps): JSX.Element {
   const handleQuestionnaireSubmit = (formData: QuestionnaireResponse) => {
-    console.log(formData);
+    const answer = getQuestionnaireAnswers(formData)['ower'].valueReference;
+
+    if (answer) {
+      props.onAssign(answer);
+    }
+
     props.onClose();
   };
 

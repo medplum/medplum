@@ -1,12 +1,10 @@
-import { Button, Modal } from '@mantine/core';
-import { createReference } from '@medplum/core';
-import { Annotation, Task } from '@medplum/fhirtypes';
-import { AnnotationInput, Form, FormSection, QuestionnaireForm, useMedplumProfile } from '@medplum/react';
-import { profile } from 'console';
-import { SetStateAction, useState } from 'react';
+import { Modal } from '@mantine/core';
+import { createReference, getQuestionnaireAnswers } from '@medplum/core';
+import { Annotation, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { QuestionnaireForm, useMedplumProfile } from '@medplum/react';
+import { useState } from 'react';
 
 interface AddTaskCommentProps {
-  task: Task;
   onAddComment: (comment: Annotation) => void;
   isOpen: boolean;
   onClose: () => void;
@@ -32,8 +30,24 @@ export function AddTaskComment(props: AddTaskCommentProps): JSX.Element {
     }
   };
 
-  const onQuestionnaireSubmit = (formData: any) => {
-    console.log(formData);
+  const onQuestionnaireSubmit = (formData: QuestionnaireResponse) => {
+    // Get the answers from the QuestionnaireResponse. See https://www.medplum.com/docs/bots/bot-for-questionnaire-response#4-write-the-bot
+    const answer = getQuestionnaireAnswers(formData)['new-comment'].valueString;
+
+    // Create a new note
+    if (answer) {
+      const newNote: Annotation = {
+        ...comment,
+        text: answer,
+        authorReference: author && createReference(author),
+        time: new Date().toISOString(),
+      };
+
+      // Add the note to the task
+      props.onAddComment(newNote);
+    }
+
+    // Close the modal
     props.onClose();
   };
 

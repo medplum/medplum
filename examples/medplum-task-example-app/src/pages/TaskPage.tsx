@@ -47,10 +47,6 @@ export function TaskPage(): JSX.Element {
       }
     };
 
-    // if (id) {
-    //   medplum.readResource('Task', id).then(setTask).catch(console.error);
-    // }
-
     fetchTask();
     fetchLinkedPatient();
   }, [medplum, id, task]);
@@ -75,7 +71,7 @@ export function TaskPage(): JSX.Element {
         <div>{patient ? <PatientChart patient={patient} /> : <div>No patient linked to this task</div>}</div>
       </Grid.Col>
       <Grid.Col span={6}>
-        <Document key={getReferenceString(task)}>
+        <Document key={task ? task.id : 'loading'}>
           <Title>{getDisplayString(task)}</Title>
           <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
             <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>

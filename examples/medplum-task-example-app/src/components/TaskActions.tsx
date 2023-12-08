@@ -1,10 +1,11 @@
 import { Button, Stack } from '@mantine/core';
-import { Annotation, Task } from '@medplum/fhirtypes';
-import { DateTimeInput, Document, FormSection, Loading, useMedplum, useResource } from '@medplum/react';
+import { Annotation, Coding, Reference, Resource, Task } from '@medplum/fhirtypes';
+import { Loading, useMedplum, useResource } from '@medplum/react';
 import { useState } from 'react';
 import { AddDueDateModal } from './AddDueDateModal';
 import { AddTaskComment } from './AddTaskComment';
 import { AssignTaskModal } from './AssignTaskModal';
+import { handleAddComment, handleAddDueDate, handleAssignTask, handleUpdateStatus } from './TaskActions.handlers';
 import { UpdateStatusModal } from './UpdateStatusModal';
 
 interface TaskActionsProps {
@@ -36,46 +37,6 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
     setIsStatusOpen(!isStatusOpen);
   };
 
-  const handleAddComment = (comment: Annotation) => {
-    let taskNotes = task?.note;
-    if (taskNotes) {
-      // If there are already notes, push on to the array
-      taskNotes.push(comment);
-    } else {
-      // Otherwise, create an array with the first comment
-      taskNotes = [comment];
-    }
-
-    if (!task) {
-      return;
-    }
-
-    // Create an updated task with the new note. See https://www.medplum.com/docs/careplans/tasks#task-comments
-    const updatedTask = {
-      ...task,
-      note: taskNotes,
-    };
-
-    // Update the resource on the server and re-render the task page
-    medplum.updateResource(updatedTask);
-    props.onChange(updatedTask);
-  };
-
-  const handleAddDueDate = (date: string) => {
-    const updatedTask: Task = { ...task, resourceType: 'Task' };
-
-    // If there is no defined period for a task, add one
-    updatedTask.restriction = updatedTask.restriction ?? {};
-    updatedTask.restriction.period = updatedTask.restriction.period ?? {};
-
-    // Set the period end date to your due date. For more details see https://www.medplum.com/docs/careplans/tasks#task-start--due-dates
-    updatedTask.restriction.period.end = date;
-
-    // Update the task with the new due date
-    medplum.updateResource(updatedTask);
-    props.onChange(updatedTask);
-  };
-
   if (!task) {
     return <Loading />;
   }
@@ -84,8 +45,7 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
     <Stack>
       <div className="comment">
         <AddTaskComment
-          task={task}
-          onAddComment={handleAddComment}
+          onAddComment={(comment: Annotation) => handleAddComment(comment, task, medplum, props.onChange)}
           isOpen={isCommentOpen}
           onClose={handleCommentModal}
         />
@@ -94,25 +54,39 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
         </Button>
       </div>
       <div>
-        <AddDueDateModal task={task} onAddDate={handleAddDueDate} isOpen={isDueDateOpen} onClose={handleDueDateModal} />
+        <AddDueDateModal
+          onAddDate={(date: string) => handleAddDueDate(date, task, medplum, props.onChange)}
+          isOpen={isDueDateOpen}
+          onClose={handleDueDateModal}
+        />
         <Button fullWidth onClick={handleDueDateModal}>
           Add Due Date
         </Button>
       </div>
       <div>
-        <AssignTaskModal isOpen={isAssignOpen} onClose={handleAssignModal} />
+        <AssignTaskModal
+          onAssign={(owner: Reference<Resource>) => handleAssignTask(owner, task, medplum, props.onChange)}
+          isOpen={isAssignOpen}
+          onClose={handleAssignModal}
+        />
         <Button fullWidth onClick={handleAssignModal}>
           Assign Task
         </Button>
       </div>
       <div>
-        <UpdateStatusModal isOpen={isStatusOpen} onClose={handleStatusModal} />
+        <UpdateStatusModal
+          onUpdateStatus={(status: Coding) => handleUpdateStatus(status, task, medplum, props.onChange)}
+          isOpen={isStatusOpen}
+          onClose={handleStatusModal}
+        />
         <Button fullWidth onClick={handleStatusModal}>
           Update Status
         </Button>
       </div>
       <div>
-        <Button fullWidth>Delete Task</Button>
+        <Button color="red" fullWidth>
+          Delete Task
+        </Button>
       </div>
     </Stack>
   );
