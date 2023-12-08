@@ -354,6 +354,8 @@ describe('ConceptMap $translate', () => {
       resourceType: 'OperationOutcome',
       issue: [
         {
+          severity: 'error',
+          code: 'invalid',
           details: { text: `Ambiguous input: multiple source codings provided` },
         },
       ],
