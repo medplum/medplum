@@ -92,7 +92,7 @@ export function PatientChart(props: PatientChartProps): JSX.Element | null {
   }
 
   return (
-    <Card w="25%" withBorder padding="lg" radius="md" mx="md" my="xl" shadow="xs">
+    <Card w="95%" withBorder padding="md" radius="md" mx="md" my="xl" shadow="xs">
       <Card.Section
         h={100}
         style={{

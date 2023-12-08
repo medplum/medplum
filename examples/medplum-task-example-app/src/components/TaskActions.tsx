@@ -1,4 +1,4 @@
-import { Button, Stack } from '@mantine/core';
+import { Button, Paper, Stack, Title } from '@mantine/core';
 import { Annotation, Coding, Reference, Resource, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum, useResource } from '@medplum/react';
 import { useState } from 'react';
@@ -6,11 +6,13 @@ import { useNavigate } from 'react-router-dom';
 import { AddDueDateModal } from './AddDueDateModal';
 import { AddTaskComment } from './AddTaskComment';
 import { AssignTaskModal } from './AssignTaskModal';
+import { ClaimTaskModal } from './ClaimTaskModal';
 import { DeleteTaskModal } from './DeleteTaskModal';
 import {
   handleAddComment,
   handleAddDueDate,
   handleAssignTask,
+  handleClaimTask,
   handleDeleteTask,
   handleUpdateStatus,
 } from './TaskActions.handlers';
@@ -30,6 +32,7 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
   const [isAssignOpen, setIsAssignOpen] = useState<boolean>(false);
   const [isStatusOpen, setIsStatusOpen] = useState<boolean>(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false);
+  const [isClaimOpen, setIsClaimOpen] = useState<boolean>(false);
 
   const handleCommentModal = () => {
     setIsCommentOpen(!isCommentOpen);
@@ -51,62 +54,59 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
     setIsDeleteOpen(!isDeleteOpen);
   };
 
+  const handleClaimModal = () => {
+    setIsClaimOpen(!isClaimOpen);
+  };
+
   if (!task) {
     return <Loading />;
   }
 
   return (
     <Stack>
-      <div className="comment">
+      <Title>Task Actions</Title>
+      <Stack>
+        <Button onClick={handleCommentModal}>Add a Comment</Button>
+        <Button onClick={handleDueDateModal}>Add Due Date</Button>
+        <Button onClick={handleStatusModal}>Update Status</Button>
+        <Button onClick={handleAssignModal}>{task.owner ? 'Reassign Task' : 'Assign Task'}</Button>
+        {!task.owner ? <Button onClick={handleClaimModal}>Claim Task</Button> : null}
+        <Button onClick={handleDeleteModal} color="red">
+          Delete Task
+        </Button>
+      </Stack>
+      <Paper>
         <AddTaskComment
           onAddComment={(comment: Annotation) => handleAddComment(comment, task, medplum, props.onChange)}
           isOpen={isCommentOpen}
           onClose={handleCommentModal}
         />
-        <Button fullWidth onClick={handleCommentModal}>
-          Add a Comment
-        </Button>
-      </div>
-      <div>
         <AddDueDateModal
           onAddDate={(date: string) => handleAddDueDate(date, task, medplum, props.onChange)}
           isOpen={isDueDateOpen}
           onClose={handleDueDateModal}
         />
-        <Button fullWidth onClick={handleDueDateModal}>
-          Add Due Date
-        </Button>
-      </div>
-      <div>
         <AssignTaskModal
           onAssign={(owner: Reference<Resource>) => handleAssignTask(owner, task, medplum, props.onChange)}
           isOpen={isAssignOpen}
           onClose={handleAssignModal}
         />
-        <Button fullWidth onClick={handleAssignModal}>
-          Assign Task
-        </Button>
-      </div>
-      <div>
         <UpdateStatusModal
           onUpdateStatus={(status: Coding) => handleUpdateStatus(status, task, medplum, props.onChange)}
           isOpen={isStatusOpen}
           onClose={handleStatusModal}
         />
-        <Button fullWidth onClick={handleStatusModal}>
-          Update Status
-        </Button>
-      </div>
-      <div>
+        <ClaimTaskModal
+          onClaimTask={() => handleClaimTask(task, medplum, props.onChange)}
+          opened={isClaimOpen}
+          onClose={handleClaimModal}
+        />
         <DeleteTaskModal
           onDelete={() => handleDeleteTask(task, medplum, navigate)}
           opened={isDeleteOpen}
           onClose={handleDeleteModal}
         />
-        <Button onClick={handleDeleteModal} color="red" fullWidth>
-          Delete Task
-        </Button>
-      </div>
+      </Paper>
     </Stack>
   );
 }

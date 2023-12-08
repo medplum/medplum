@@ -1,10 +1,9 @@
 import { Paper } from '@mantine/core';
 import { formatSearchQuery, getReferenceString, parseSearchDefinition, SearchRequest, SortRule } from '@medplum/core';
-import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export function SearchPage(): JSX.Element {
   const medplum = useMedplum();
@@ -46,7 +45,6 @@ export function SearchPage(): JSX.Element {
         search={search}
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
         onNew={() => navigate(`/${search.resourceType}/new`)}
-        hideToolbar={true}
       ></SearchControl>
     </Paper>
   );
@@ -69,11 +67,11 @@ function getDefaultFields(resourceType: string): string[] {
 }
 
 function getDefaultSort(resourceType: string): SortRule[] {
-  const defaultSort = [{ code: '-lastUpdated' }];
+  const defaultSort = [{ code: '-_lastUpdated' }];
 
   switch (resourceType) {
     case 'Task':
-      defaultSort[0] = { code: 'priority' };
+      defaultSort[0] = { code: '-priority-order' };
   }
 
   return defaultSort;

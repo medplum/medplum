@@ -1,39 +1,11 @@
-import { MedplumClient } from '@medplum/core';
-import {
-  Annotation,
-  CareTeam,
-  Coding,
-  Reference,
-  Resource,
-  Task,
-  Device,
-  HealthcareService,
-  Organization,
-  Patient,
-  Practitioner,
-  PractitionerRole,
-  RelatedPerson,
-} from '@medplum/fhirtypes';
+import { getReferenceString, MedplumClient } from '@medplum/core';
+import { Annotation, Coding, Practitioner, Reference, Resource, Task } from '@medplum/fhirtypes';
+import { useMedplumProfile } from '@medplum/react';
 import { NavigateFunction } from 'react-router-dom';
 
-type OwnerTypes = Reference<
-  CareTeam | Device | HealthcareService | Organization | Patient | Practitioner | PractitionerRole | RelatedPerson
->;
+type OwnerTypes = Task['owner'];
 
-type TaskStatus =
-  | 'draft'
-  | 'requested'
-  | 'received'
-  | 'accepted'
-  | 'rejected'
-  | 'ready'
-  | 'cancelled'
-  | 'in-progress'
-  | 'on-hold'
-  | 'failed'
-  | 'completed'
-  | 'entered-in-error'
-  | undefined;
+type TaskStatus = Task['status'];
 
 export function handleAddComment(
   comment: Annotation,
@@ -105,6 +77,22 @@ export function handleAssignTask(
   const updatedTask = { ...task };
 
   updatedTask.owner = owner as OwnerTypes;
+
+  medplum.updateResource(updatedTask);
+  onChange(updatedTask);
+}
+
+export async function handleClaimTask(task: Task, medplum: MedplumClient, onChange: (task: Task) => void) {
+  const currentUser = medplum.getProfile() as Practitioner;
+
+  if (!task) return;
+
+  const updatedTask = { ...task };
+
+  updatedTask.owner = {
+    reference: `Practitioner/${currentUser.id}`,
+    resource: currentUser,
+  };
 
   medplum.updateResource(updatedTask);
   onChange(updatedTask);

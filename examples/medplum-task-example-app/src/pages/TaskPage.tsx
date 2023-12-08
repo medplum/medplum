@@ -1,4 +1,4 @@
-import { Grid, Group, SimpleGrid, Tabs, Title } from '@mantine/core';
+import { Grid, Group, Paper, SimpleGrid, Tabs, Title } from '@mantine/core';
 import { getDisplayString, getReferenceString, resolveId } from '@medplum/core';
 import { Patient, Task } from '@medplum/fhirtypes';
 import { DefaultResourceTimeline, Document, Loading, ResourceTable, useMedplum } from '@medplum/react';
@@ -66,12 +66,12 @@ export function TaskPage(): JSX.Element {
   }
 
   return (
-    <Grid>
-      <Grid.Col span={6}>
-        <div>{patient ? <PatientChart patient={patient} /> : <div>No patient linked to this task</div>}</div>
+    <Grid gutter="xs">
+      <Grid.Col span={4}>
+        <Paper>{patient ? <PatientChart patient={patient} /> : <div>No patient linked to this task</div>}</Paper>
       </Grid.Col>
       <Grid.Col span={6}>
-        <Document key={task ? task.id : 'loading'}>
+        <Paper p="md" key={task ? task.id : 'loading'}>
           <Title>{getDisplayString(task)}</Title>
           <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
             <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
@@ -91,12 +91,12 @@ export function TaskPage(): JSX.Element {
               <NotesPage task={task} />
             </Tabs.Panel>
           </Tabs>
-        </Document>
+        </Paper>
       </Grid.Col>
-      <Grid.Col span={3}>
-        <Document>
+      <Grid.Col span={2}>
+        <Paper p="md">
           <TaskActions task={task} onChange={handleTaskChange} />
-        </Document>
+        </Paper>
       </Grid.Col>
     </Grid>
   );

@@ -30,7 +30,7 @@ export function App(): JSX.Element | null {
         {
           title: 'My Links',
           links: [
-            { icon: <IconUser />, label: 'Worklist', href: '/Worklist' },
+            { icon: <IconUser />, label: 'Worklist', href: '/Task/worklist' },
             { icon: <IconUser />, label: 'Tasks For My Role', href: '/Queue' },
             { icon: <IconUser />, label: 'All Tasks', href: '/Task' },
           ],
@@ -53,7 +53,7 @@ export function App(): JSX.Element | null {
               <Route path="timeline" element={<Timeline />} />
               <Route path="notes" element={<TaskPage />} />
             </Route>
-            <Route path="/Worklist" element={<Worklist />} />
+            <Route path="/Task/worklist" element={<Worklist />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>
