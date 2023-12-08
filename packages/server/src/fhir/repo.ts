@@ -566,16 +566,7 @@ export class Repository extends BaseRepository implements FhirRepository {
   }
 
   private async loadProfile(url: string): Promise<StructureDefinition | undefined> {
-    const redis = getRedis();
-    const cacheKey = `Project/${this.context.project}/StructureDefinition/${url}`;
-    // Try retrieving from cache
-    const cachedProfile = await redis.get(cacheKey);
-    if (cachedProfile) {
-      return (JSON.parse(cachedProfile) as CacheEntry<StructureDefinition>).resource;
-    }
-
-    // Fall back to loading from the DB; descending version sort approximates version resolution for some cases
-    const profile = await this.searchOne<StructureDefinition>({
+    return this.searchOne<StructureDefinition>({
       resourceType: 'StructureDefinition',
       filters: [
         {
@@ -591,17 +582,6 @@ export class Repository extends BaseRepository implements FhirRepository {
         },
       ],
     });
-
-    if (profile) {
-      // Store loaded profile in cache
-      await redis.set(
-        cacheKey,
-        JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
-        'EX',
-        24 * 60 * 60 // 24 hours in seconds
-      );
-    }
-    return profile;
   }
 
   /**

@@ -172,7 +172,7 @@ class StructureDefinitionParser {
    * @throws Throws when the StructureDefinition does not have a populated `snapshot` field
    */
   constructor(sd: StructureDefinition) {
-    if (!sd.snapshot?.element || sd.snapshot.element.length === 0) {
+    if (!sd.snapshot?.element?.length) {
       throw new Error(`No snapshot defined for StructureDefinition '${sd.name}'`);
     }
 
