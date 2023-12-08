@@ -10,6 +10,20 @@ Medplum bots are functions that execute when triggered. They are similar to AWS 
 
 The following tutorials will walk through some of the use cases for Bots, to give you a sense of how they can work for you.
 
+:::warning Enabling Bots
+
+Bots are a [project level setting](/docs/access/projects#settings) that must be enabled by a Super Admin user.
+
+For users on the [Medplum Hosted Service](/pricing), bots are a paid features. Contact info@medplum.com or reach out in our [Discord channel](https://discord.gg/medplum) to have Bots enabled on your project.
+
+Super administrators can enable bots via the Medplum App:
+
+- Navigate to https://app.your-medplum-domain.com/Project/:projectId
+- Click on the "Edit" tab
+- In the "Features" section, add an entry with the value "bots"
+
+:::
+
 ## Consume event data or webhooks from other platforms
 
 1. [Consuming Webhooks](consuming-webhooks.md)
