@@ -48,7 +48,7 @@ jobs:
             {"text": "Starting publish: ${{ github.ref_name }}"}
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --maxsockets 1
 
       - name: Build
         run: npm run build:all
@@ -110,7 +110,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
-        run: npm ci --force
+        run: npm ci --maxsockets 1
 
       - name: Build
         run: npm run build -- --filter=@medplum/agent
