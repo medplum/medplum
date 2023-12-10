@@ -49,4 +49,7 @@ Placing orders requires constructing the right resources, for example [CarePlans
 
 ## Reference
 
+- Sample application [Charting Demo Source Code](https://github.com/medplum/medplum/tree/main/examples/medplum-chart-demo)
+- [Charting Demo Video](https://youtu.be/PHZr9q20tbM) on Youtube (3 min)
 - [Charting Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acharting) on Github
+- [Medical condition/diagnosis 1CD-9](https://drive.google.com/file/d/1cFHGBud9IlGH86yilxe-KkDxGUbGr2Mn/view?usp=sharing) sample ValueSet bundle
