@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { ContactPointInput } from '../ContactPointInput/ContactPointInput';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-type ContactDetailInputProps = ComplexTypeInputProps<ContactDetail>;
+export type ContactDetailInputProps = ComplexTypeInputProps<ContactDetail>;
 
 export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element {
   const [contactPoint, setContactDetail] = useState(props.defaultValue);

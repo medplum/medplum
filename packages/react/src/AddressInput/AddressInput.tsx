@@ -16,7 +16,7 @@ function setLine(address: Address, index: number, str: string): Address {
   return { ...address, line };
 }
 
-type AddressInputProps = ComplexTypeInputProps<Address>;
+export type AddressInputProps = ComplexTypeInputProps<Address>;
 
 export function AddressInput(props: AddressInputProps): JSX.Element {
   const [value, setValue] = useState<Address>(props.defaultValue || {});

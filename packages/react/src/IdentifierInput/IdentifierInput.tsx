@@ -5,7 +5,7 @@ import { getErrorsForInput } from '../utils/outcomes';
 import { BackboneElementContext } from '../BackboneElementInput/BackbonElementInput.utils';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-type IdentifierInputProps = ComplexTypeInputProps<Identifier>;
+export type IdentifierInputProps = ComplexTypeInputProps<Identifier>;
 
 export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
   const { path, outcome } = props;

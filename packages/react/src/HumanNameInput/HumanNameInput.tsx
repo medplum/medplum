@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { getErrorsForInput } from '../utils/outcomes';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-type HumanNameInputProps = ComplexTypeInputProps<HumanName>;
+export type HumanNameInputProps = ComplexTypeInputProps<HumanName>;
 
 export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
   const { outcome, path } = props;

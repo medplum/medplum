@@ -83,11 +83,10 @@ function getValueSliceName(
         }
 
         if (!nestedProp) {
-          console.log('WARN Could not determine slice name');
           return undefined;
         }
 
-        return arrayify(nestedProp)?.some((v) => matchDiscriminant(v, discriminator, slice, elements));
+        return arrayify(nestedProp)?.some((v: any) => matchDiscriminant(v, discriminator, slice, elements));
       })
     ) {
       return slice.name;
@@ -158,10 +157,6 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
         continue;
       }
 
-      if (slice.type.length > 1) {
-        console.log('slice has more than one type', slice);
-      }
-
       const sliceType = slice.type[0];
 
       if (sliceType.code !== propertyTypeCode) {
@@ -200,7 +195,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
       })
       .catch((reason) => {
         console.error(reason);
-        // TODO{mattlong} error handling
+        // TODO{profiles} error handling
         setLoading(false);
       });
   }, [medplum, property.slicing, propertyTypeCode]);

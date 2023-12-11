@@ -5,7 +5,7 @@ import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourceProperty
 import { BackboneElementContext } from '../BackboneElementInput/BackbonElementInput.utils';
 import { getErrorsForInput } from '../utils/outcomes';
 
-type ContactPointInputProps = ComplexTypeInputProps<ContactPoint> & {
+export type ContactPointInputProps = ComplexTypeInputProps<ContactPoint> & {
   onChange: ((value: ContactPoint | undefined) => void) | undefined;
 };
 
