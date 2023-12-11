@@ -8,7 +8,7 @@ import { App } from './App';
 
 const medplum = new MedplumClient({
   // To run FooMedical locally, you can set the baseURL in this constructor
-  // baseUrl: http://localhost:3000
+  // baseUrl: http://localhost:8103
   onUnauthenticated: () => (window.location.href = '/'),
 });
 
