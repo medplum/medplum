@@ -37,6 +37,10 @@ jobs:
         run: npm ci --maxsockets 1
       - name: Build
         run: npm run build:fast
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
+          MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
+          RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -55,9 +59,6 @@ jobs:
         env:
           APP_BUCKET: ${{ secrets.STAGING_APP_BUCKET }}
           AWS_REGION: ${{ secrets.STAGING_AWS_REGION }}
-          GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
-          MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
-          RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
       - name: Deploy Server
         run: ./scripts/deploy-server.sh
         env:
