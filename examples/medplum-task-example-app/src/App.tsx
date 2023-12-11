@@ -10,6 +10,7 @@ import { LandingPage } from './pages/LandingPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
+import { TaskByRoleQueue } from './pages/TaskByRoleQueue';
 import { TaskPage } from './pages/TaskPage';
 import { Worklist } from './pages/Worklist';
 
@@ -31,7 +32,7 @@ export function App(): JSX.Element | null {
           title: 'My Links',
           links: [
             { icon: <IconUser />, label: 'Worklist', href: '/Task/worklist' },
-            { icon: <IconUser />, label: 'Tasks For My Role', href: '/Queue' },
+            { icon: <IconUser />, label: 'Tasks For My Role', href: '/Task/queue' },
             { icon: <IconUser />, label: 'All Tasks', href: '/Task' },
           ],
         },
@@ -54,6 +55,7 @@ export function App(): JSX.Element | null {
               <Route path="notes" element={<TaskPage />} />
             </Route>
             <Route path="/Task/worklist" element={<Worklist />} />
+            <Route path="/Task/queue" element={<TaskByRoleQueue />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>
