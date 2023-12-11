@@ -7,6 +7,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
 
 const medplum = new MedplumClient({
+  // To run FooMedical locally, you can set the baseURL in this constructor
+  // baseUrl: http://localhost:3000
   onUnauthenticated: () => (window.location.href = '/'),
 });
 
