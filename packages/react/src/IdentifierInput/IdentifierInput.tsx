@@ -10,11 +10,11 @@ type IdentifierInputProps = ComplexTypeInputProps<Identifier>;
 export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
   const { path, outcome } = props;
   const [value, setValue] = useState(props.defaultValue);
-  const { getNestedElement } = useContext(BackboneElementContext);
+  const { getModifiedNestedElement } = useContext(BackboneElementContext);
 
   const [systemElement, valueElement] = useMemo(
-    () => ['system', 'value'].map((field) => getNestedElement(path, field)),
-    [getNestedElement, path]
+    () => ['system', 'value'].map((field) => getModifiedNestedElement(path + '.' + field)),
+    [getModifiedNestedElement, path]
   );
 
   function setValueWrapper(newValue: Identifier): void {

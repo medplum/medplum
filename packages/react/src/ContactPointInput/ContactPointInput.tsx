@@ -11,15 +11,15 @@ type ContactPointInputProps = ComplexTypeInputProps<ContactPoint> & {
 
 export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   const { path, outcome } = props;
-  const { getNestedElement } = useContext(BackboneElementContext);
+  const { getModifiedNestedElement } = useContext(BackboneElementContext);
   const [contactPoint, setContactPoint] = useState(props.defaultValue);
 
   const ref = useRef<ContactPoint>();
   ref.current = contactPoint;
 
   const [systemElement, useElement, valueElement] = useMemo(
-    () => ['system', 'use', 'value'].map((field) => getNestedElement(path, field)),
-    [getNestedElement, path]
+    () => ['system', 'use', 'value'].map((field) => getModifiedNestedElement(path + '.' + field)),
+    [getModifiedNestedElement, path]
   );
 
   function setContactPointWrapper(newValue: ContactPoint | undefined): void {

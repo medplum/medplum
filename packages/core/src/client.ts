@@ -1570,6 +1570,7 @@ export class MedplumClient extends EventTarget {
         name,
         kind,
         description,
+        type,
         snapshot {
           element {
             id,

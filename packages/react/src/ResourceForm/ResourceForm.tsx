@@ -77,7 +77,6 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         defaultValue={value}
         outcome={outcome}
         onChange={setValue}
-        type={undefined}
         profileUrl={props.profileUrl}
       />
       <Group position="right" mt="xl">

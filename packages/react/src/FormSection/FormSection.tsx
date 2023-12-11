@@ -7,7 +7,7 @@ import { BackboneElementContext } from '../BackboneElementInput/BackbonElementIn
 export interface FormSectionProps {
   title?: string;
   htmlFor?: string;
-  description?: React.ReactNode;
+  description?: string;
   withAsterisk?: boolean;
   outcome?: OperationOutcome;
   children?: ReactNode;

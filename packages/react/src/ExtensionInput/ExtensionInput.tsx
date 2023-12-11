@@ -86,7 +86,6 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
       typeName={typeSchema.name}
       defaultValue={props.defaultValue}
       onChange={onChange}
-      type={typeSchema?.type}
     />
   );
 }

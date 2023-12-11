@@ -66,9 +66,6 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
   }
 
   if (propertyTypes.length > 1) {
-    if (propertyTypes.some((type) => type.code === 'Extension')) {
-      console.warn('More than one type for an Extension', propertyTypes);
-    }
     return <ElementDefinitionInputSelector elementDefinitionTypes={propertyTypes} {...props} />;
   } else {
     return (
@@ -310,7 +307,6 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           defaultValue={defaultValue}
           onChange={onChange}
           outcome={outcome}
-          type={propertyType}
         />
       );
     default:
@@ -321,7 +317,6 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           defaultValue={defaultValue}
           onChange={onChange}
           outcome={outcome}
-          type={propertyType}
         />
       );
   }

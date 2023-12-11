@@ -7,8 +7,6 @@ import { BackboneElementContext, buildBackboneElementContext } from './BackbonEl
 export interface BackboneElementInputProps {
   /** Type name the backbone element represents */
   typeName: string;
-  /** The data type of the backbone element */
-  type: string | undefined;
   /** (optional) The contents of the resource represented by the backbone element */
   defaultValue?: any;
   /** (optional) OperationOutcome from the last attempted system action*/
@@ -44,7 +42,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   return (
     <BackboneElementContext.Provider value={context}>
       <ElementsInput
-        type={props.type}
+        type={typeSchema.type}
         elements={typeSchema.elements}
         defaultValue={value}
         onChange={setValueWrapper}

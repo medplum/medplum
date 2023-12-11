@@ -39,7 +39,11 @@ export function getValueAndType(context: TypedValue, path: string): [any, string
  * @param element - The property element definition.
  * @returns The value of the property and the property type.
  */
-export function getValueAndTypeFromElement(value: any, path: string, element: InternalSchemaElement): [any, string] {
+export function getValueAndTypeFromElement(
+  value: TypedValue['value'],
+  path: string,
+  element: InternalSchemaElement
+): [any, string] {
   const typedResult = getTypedPropertyValueWithSchema(value, path, element);
   if (!typedResult) {
     return [undefined, 'undefined'];

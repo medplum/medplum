@@ -21,12 +21,15 @@ type AddressInputProps = ComplexTypeInputProps<Address>;
 
 export function AddressInput(props: AddressInputProps): JSX.Element {
   const [value, setValue] = useState<Address>(props.defaultValue || {});
-  const { getNestedElement } = useContext(BackboneElementContext);
+  const { getModifiedNestedElement } = useContext(BackboneElementContext);
 
   const valueRef = useRef<Address>();
   valueRef.current = value;
 
-  const stateElement = useMemo(() => getNestedElement(props.path, 'state'), [getNestedElement, props.path]);
+  const stateElement = useMemo(
+    () => getModifiedNestedElement(props.path + '.state'),
+    [getModifiedNestedElement, props.path]
+  );
   if (stateElement?.binding) {
     // TODO{mattlong} is it worth the complexity of subbing in an autocomplete input when
     // a binding is defined in a profile? If so, it should go in a new wrapper around TextInput
