@@ -51,6 +51,10 @@ export function TaskPage(): JSX.Element {
     fetchLinkedPatient();
   }, [medplum, id, task]);
 
+  useEffect(() => {
+    console.log('Updated Task: ', task);
+  }, [task]);
+
   // Update the current tab and navigate to its URL
   const handleTabChange = (newTab: string) => {
     setCurrentTab(newTab);

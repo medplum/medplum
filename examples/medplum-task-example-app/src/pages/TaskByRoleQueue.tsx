@@ -1,5 +1,5 @@
 import { Paper } from '@mantine/core';
-import { Filter, getReferenceString, Operator, ResourceArray, SearchRequest } from '@medplum/core';
+import { Filter, getReferenceString, Operator, ResourceArray } from '@medplum/core';
 import { Practitioner, PractitionerRole, Task } from '@medplum/fhirtypes';
 import { SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';

@@ -7,7 +7,7 @@ type OwnerTypes = Task['owner'];
 
 type TaskStatus = Task['status'];
 
-export function handleAddComment(
+export async function handleAddComment(
   comment: Annotation,
   task: Task,
   medplum: MedplumClient,
@@ -33,11 +33,16 @@ export function handleAddComment(
   };
 
   // Update the resource on the server and re-render the task page
-  medplum.updateResource(updatedTask);
+  await medplum.updateResource(updatedTask);
   onChange(updatedTask);
 }
 
-export function handleAddDueDate(date: string, task: Task, medplum: MedplumClient, onChange: (task: Task) => void) {
+export async function handleAddDueDate(
+  date: string,
+  task: Task,
+  medplum: MedplumClient,
+  onChange: (task: Task) => void
+) {
   const updatedTask: Task = { ...task, resourceType: 'Task' };
 
   // If there is no defined period for a task, add one
@@ -48,11 +53,16 @@ export function handleAddDueDate(date: string, task: Task, medplum: MedplumClien
   updatedTask.restriction.period.end = date;
 
   // Update the task with the new due date
-  medplum.updateResource(updatedTask);
+  await medplum.updateResource(updatedTask);
   onChange(updatedTask);
 }
 
-export function handleUpdateStatus(status: Coding, task: Task, medplum: MedplumClient, onChange: (task: Task) => void) {
+export async function handleUpdateStatus(
+  status: Coding,
+  task: Task,
+  medplum: MedplumClient,
+  onChange: (task: Task) => void
+) {
   if (!task) return;
 
   // Create a resource for an updated Task
@@ -62,11 +72,11 @@ export function handleUpdateStatus(status: Coding, task: Task, medplum: MedplumC
   updatedTask.status = status.display as TaskStatus;
 
   // Update the Task on the server and re-render. For more details see https://www.medplum.com/docs/careplans/tasks#task-status
-  medplum.updateResource(updatedTask);
+  await medplum.updateResource(updatedTask);
   onChange(updatedTask);
 }
 
-export function handleAssignTask(
+export async function handleAssignTask(
   owner: Reference<Resource>,
   task: Task,
   medplum: MedplumClient,
@@ -78,7 +88,7 @@ export function handleAssignTask(
 
   updatedTask.owner = owner as OwnerTypes;
 
-  medplum.updateResource(updatedTask);
+  await medplum.updateResource(updatedTask);
   onChange(updatedTask);
 }
 
@@ -94,15 +104,15 @@ export async function handleClaimTask(task: Task, medplum: MedplumClient, onChan
     resource: currentUser,
   };
 
-  medplum.updateResource(updatedTask);
+  await medplum.updateResource(updatedTask);
   onChange(updatedTask);
 }
 
-export function handleDeleteTask(task: Task, medplum: MedplumClient, navigate: NavigateFunction) {
+export async function handleDeleteTask(task: Task, medplum: MedplumClient, navigate: NavigateFunction) {
   const taskId = task.id;
 
   if (taskId) {
-    medplum.deleteResource('Task', taskId);
+    await medplum.deleteResource('Task', taskId);
     navigate('/Task');
   } else {
     console.error('Task could not be deleted');

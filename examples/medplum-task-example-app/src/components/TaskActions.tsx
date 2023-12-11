@@ -58,6 +58,31 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
     setIsClaimOpen(!isClaimOpen);
   };
 
+  const handleChangeTaskStatus = async () => {
+    if (task) {
+      const updatedTask: Task = { ...task };
+      if (updatedTask.status !== 'on-hold') {
+        updatedTask.status = 'on-hold';
+      } else {
+        updatedTask.status = 'in-progress';
+      }
+      await medplum.updateResource(updatedTask);
+      props.onChange(updatedTask);
+    } else {
+      throw new Error('No valid task to update');
+    }
+  };
+
+  const handleCompleteTask = async () => {
+    if (task) {
+      const updatedTask: Task = { ...task };
+      updatedTask.status = 'completed';
+
+      await medplum.updateResource(updatedTask);
+      props.onChange(updatedTask);
+    }
+  };
+
   if (!task) {
     return <Loading />;
   }
@@ -71,6 +96,12 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
         <Button onClick={handleStatusModal}>Update Status</Button>
         <Button onClick={handleAssignModal}>{task.owner ? 'Reassign Task' : 'Assign Task'}</Button>
         {!task.owner ? <Button onClick={handleClaimModal}>Claim Task</Button> : null}
+        {task.status === 'on-hold' ? (
+          <Button onClick={handleChangeTaskStatus}>Resume Task</Button>
+        ) : (
+          <Button onClick={handleChangeTaskStatus}>Pause Task</Button>
+        )}
+        {task.status === 'completed' ? null : <Button onClick={handleCompleteTask}>Complete Task</Button>}
         <Button onClick={handleDeleteModal} color="red">
           Delete Task
         </Button>
