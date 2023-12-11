@@ -310,7 +310,6 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         />
       );
     default:
-      console.log('RENDERING BEI', propertyType, defaultValue);
       return (
         <BackboneElementInput
           typeName={propertyType}

@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { BackboneElementInput, BackboneElementInputProps } from './BackboneElementInput';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { Patient } from '@medplum/fhirtypes';
 
 const valueSetComposeProperty: InternalSchemaElement = {
   path: 'ValueSet.compose',
@@ -60,6 +61,34 @@ globalSchema.types['ValueSetCompose'] = {
 
 const medplum = new MockClient();
 
+const shortyTheFish: Patient = {
+  resourceType: 'Patient',
+  id: 'Shorty',
+  meta: {
+    profile: ['http://example.org/fhir/fish/StructureDefinition/fish-patient'],
+  },
+  extension: [
+    {
+      url: 'http://example.org/fhir/fish/StructureDefinition/fish-species',
+      valueCodeableConcept: {
+        coding: [
+          {
+            code: '47978005',
+            system: 'http://snomed.info/sct',
+            display: 'Carpiodes cyprinus (organism)',
+          },
+        ],
+      },
+    },
+  ],
+  name: [
+    {
+      given: ['Shorty'],
+      family: 'Koi-Fish',
+    },
+  ],
+};
+
 describe('BackboneElementInput', () => {
   async function setup(args: BackboneElementInputProps): Promise<void> {
     await act(async () => {
@@ -95,7 +124,7 @@ describe('BackboneElementInput', () => {
     return JSON.parse(readFileSync(resolve('src', '__test__', testFilename), 'utf8'));
   }
 
-  test('Profile', async () => {
+  test('Resource with profile', async () => {
     const fishPatientProfile = readJson('StructureDefinition-fish-patient.json');
     const fishSpeciesProfile = readJson('StructureDefinition-fish-species.json');
     for (const profile of [fishPatientProfile, fishSpeciesProfile]) {
@@ -104,6 +133,8 @@ describe('BackboneElementInput', () => {
     await setup({
       typeName: fishPatientProfile.name,
       profileUrl: fishPatientProfile.url,
+      defaultValue: shortyTheFish,
+      onChange: () => {},
     });
 
     // Name is required
@@ -124,5 +155,8 @@ describe('BackboneElementInput', () => {
     }*/
     expect(screen.getByText('Species')).toBeInTheDocument();
     expect(screen.getByText('The species of the fish.')).toBeInTheDocument();
+
+    // Shorty's species
+    expect(screen.getByText('Carpiodes cyprinus (organism)')).toBeInTheDocument();
   });
 });

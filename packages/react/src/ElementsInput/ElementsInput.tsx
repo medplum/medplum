@@ -89,7 +89,6 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
             defaultValue={propertyValue}
             defaultPropertyType={propertyType}
             onChange={(newValue: any, propName?: string) => {
-              console.debug('Backbone updating', propName, newValue);
               setValueWrapper(setPropertyValue({ ...value }, key, propName ?? key, element, newValue));
             }}
             arrayElement={undefined}
