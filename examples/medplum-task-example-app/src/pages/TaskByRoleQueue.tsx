@@ -1,7 +1,6 @@
-import { Paper } from '@mantine/core';
 import { Filter, getReferenceString, Operator, ResourceArray } from '@medplum/core';
-import { Practitioner, PractitionerRole, Task } from '@medplum/fhirtypes';
-import { SearchControl, useMedplum } from '@medplum/react';
+import { Practitioner, PractitionerRole } from '@medplum/fhirtypes';
+import { Document, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -51,7 +50,7 @@ export function TaskByRoleQueue(): JSX.Element {
   }, [roles]);
 
   return (
-    <Paper>
+    <Document>
       <SearchControl
         search={{
           resourceType: 'Task',
@@ -59,6 +58,6 @@ export function TaskByRoleQueue(): JSX.Element {
         }}
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
       />
-    </Paper>
+    </Document>
   );
 }

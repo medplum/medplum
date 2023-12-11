@@ -1,7 +1,7 @@
-import { Grid, Group, Paper, SimpleGrid, Tabs, Title } from '@mantine/core';
-import { getDisplayString, getReferenceString, resolveId } from '@medplum/core';
+import { Grid, Paper, Tabs, Title } from '@mantine/core';
+import { getDisplayString, resolveId } from '@medplum/core';
 import { Patient, Task } from '@medplum/fhirtypes';
-import { DefaultResourceTimeline, Document, Loading, ResourceTable, useMedplum } from '@medplum/react';
+import { DefaultResourceTimeline, Loading, ResourceTable, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
@@ -50,10 +50,6 @@ export function TaskPage(): JSX.Element {
     fetchTask();
     fetchLinkedPatient();
   }, [medplum, id, task]);
-
-  useEffect(() => {
-    console.log('Updated Task: ', task);
-  }, [task]);
 
   // Update the current tab and navigate to its URL
   const handleTabChange = (newTab: string) => {

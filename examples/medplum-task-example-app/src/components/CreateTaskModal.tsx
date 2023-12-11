@@ -1,8 +1,8 @@
 import { Modal, Text } from '@mantine/core';
 import { Resource } from '@medplum/fhirtypes';
-import { Document, ResourceForm, useMedplum } from '@medplum/react';
+import { ResourceForm, useMedplum } from '@medplum/react';
 import { useLocation } from 'react-router-dom';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 interface CreateTaskModalProps {
   opened: boolean;

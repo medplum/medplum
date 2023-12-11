@@ -48,7 +48,7 @@ export const updateStatusQuestionnaire: Questionnaire = {
       linkId: 'update-status',
       text: 'Update Status',
       type: 'choice',
-      answerValueSet: 'http://hl7.org/fhir/ValueSet/task-status',
+      answerValueSet: 'https://example-business.org',
     },
   ],
 };

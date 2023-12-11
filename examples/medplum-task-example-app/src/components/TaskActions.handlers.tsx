@@ -1,11 +1,8 @@
-import { getReferenceString, MedplumClient } from '@medplum/core';
+import { MedplumClient } from '@medplum/core';
 import { Annotation, Coding, Practitioner, Reference, Resource, Task } from '@medplum/fhirtypes';
-import { useMedplumProfile } from '@medplum/react';
 import { NavigateFunction } from 'react-router-dom';
 
 type OwnerTypes = Task['owner'];
-
-type TaskStatus = Task['status'];
 
 export async function handleAddComment(
   comment: Annotation,
@@ -68,10 +65,10 @@ export async function handleUpdateStatus(
   // Create a resource for an updated Task
   const updatedTask: Task = { ...task };
 
-  // Update the status of your Task
-  updatedTask.status = status.display as TaskStatus;
+  // Update the status of your Task. For more details see https://www.medplum.com/docs/careplans/tasks#task-status
+  updatedTask.businessStatus = { coding: [status] };
 
-  // Update the Task on the server and re-render. For more details see https://www.medplum.com/docs/careplans/tasks#task-status
+  // Update the Task on the server and re-render.
   await medplum.updateResource(updatedTask);
   onChange(updatedTask);
 }
@@ -84,8 +81,10 @@ export async function handleAssignTask(
 ) {
   if (!task) return;
 
+  // Create a resource for the updated task
   const updatedTask = { ...task };
 
+  // Update the owner, or who is responsible for the task. For more details see https://www.medplum.com/docs/careplans/tasks#task-assignment
   updatedTask.owner = owner as OwnerTypes;
 
   await medplum.updateResource(updatedTask);
@@ -97,8 +96,10 @@ export async function handleClaimTask(task: Task, medplum: MedplumClient, onChan
 
   if (!task) return;
 
+  // Create a resource for the updated task.
   const updatedTask = { ...task };
 
+  // Update the owner to the current user. For more details see https://www.medplum.com/docs/careplans/tasks#task-assignment
   updatedTask.owner = {
     reference: `Practitioner/${currentUser.id}`,
     resource: currentUser,
@@ -109,9 +110,11 @@ export async function handleClaimTask(task: Task, medplum: MedplumClient, onChan
 }
 
 export async function handleDeleteTask(task: Task, medplum: MedplumClient, navigate: NavigateFunction) {
+  // Get the task id
   const taskId = task.id;
 
   if (taskId) {
+    // Delete the task and navigate to the main tasks queue
     await medplum.deleteResource('Task', taskId);
     navigate('/Task');
   } else {

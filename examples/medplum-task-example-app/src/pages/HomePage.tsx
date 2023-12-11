@@ -1,18 +1,8 @@
 import { Title } from '@mantine/core';
-import { formatSearchQuery, getReferenceString, parseSearchDefinition, SearchRequest } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import { Practitioner } from '@medplum/fhirtypes';
-import {
-  Document,
-  Loading,
-  ResourceName,
-  SearchControl,
-  useMedplum,
-  useMedplumNavigate,
-  useMedplumProfile,
-} from '@medplum/react';
-import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Document, ResourceName, SearchControl, useMedplumNavigate, useMedplumProfile } from '@medplum/react';
+import { Outlet } from 'react-router-dom';
 
 /**
  * Home page that greets the user and displays a list of patients.

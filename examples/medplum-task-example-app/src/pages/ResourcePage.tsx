@@ -4,7 +4,6 @@ import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { DefaultResourceTimeline, Document, ResourceTable, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { NotesPage } from './NotesPage';
 
 /**
  * This is an example of a generic "Resource Display" page.

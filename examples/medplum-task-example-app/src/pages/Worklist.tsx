@@ -1,7 +1,6 @@
-import { Paper } from '@mantine/core';
 import { getReferenceString, Operator } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
-import { SearchControl, useMedplumProfile } from '@medplum/react';
+import { Document, SearchControl, useMedplumProfile } from '@medplum/react';
 import { useNavigate } from 'react-router-dom';
 
 export function Worklist(): JSX.Element {
@@ -9,7 +8,7 @@ export function Worklist(): JSX.Element {
   const navigate = useNavigate();
 
   return (
-    <Paper>
+    <Document>
       <SearchControl
         search={{
           resourceType: 'Task',
@@ -18,6 +17,6 @@ export function Worklist(): JSX.Element {
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
         hideToolbar={true}
       />
-    </Paper>
+    </Document>
   );
 }
