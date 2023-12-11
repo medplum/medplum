@@ -1,9 +1,11 @@
-import { globalSchema, InternalSchemaElement, TypeInfo } from '@medplum/core';
+import { globalSchema, indexStructureDefinitionBundle, InternalSchemaElement, TypeInfo } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { BackboneElementInput, BackboneElementInputProps } from './BackboneElementInput';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 const valueSetComposeProperty: InternalSchemaElement = {
   path: 'ValueSet.compose',
@@ -87,5 +89,40 @@ describe('BackboneElementInput', () => {
   test('Not implemented', async () => {
     await setup({ typeName: 'Foo' });
     expect(screen.getByText('Foo not implemented')).toBeInTheDocument();
+  });
+
+  function readJson(testFilename: string): any {
+    return JSON.parse(readFileSync(resolve('src', '__test__', testFilename), 'utf8'));
+  }
+
+  test('Profile', async () => {
+    const fishPatientProfile = readJson('StructureDefinition-fish-patient.json');
+    const fishSpeciesProfile = readJson('StructureDefinition-fish-species.json');
+    for (const profile of [fishPatientProfile, fishSpeciesProfile]) {
+      indexStructureDefinitionBundle([profile], profile.url);
+    }
+    await setup({
+      typeName: fishPatientProfile.name,
+      profileUrl: fishPatientProfile.url,
+    });
+
+    // Name is required
+    expect(screen.getByText('Name')).toBeInTheDocument();
+    expect(within(screen.getByText('Name')).getByText('*')).toBeInTheDocument();
+
+    // Marital Status and Communication eliminated
+    expect(screen.queryByText('Marital Status')).toBeNull();
+    expect(screen.queryByText('Communication')).toBeNull();
+
+    // Fish Patient has an extension defined as shown below; the sliceName and definition appear in the form
+    /*{
+      "id": "Patient.extension:species",
+      "path": "Patient.extension",
+      "sliceName": "species",
+      "definition": "The species of the fish.",
+      ...
+    }*/
+    expect(screen.getByText('Species')).toBeInTheDocument();
+    expect(screen.getByText('The species of the fish.')).toBeInTheDocument();
   });
 });
