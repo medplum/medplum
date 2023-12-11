@@ -25,7 +25,10 @@ export async function snapshotHandler(req: Request, res: Response): Promise<void
     def = await ctx.repo.searchOne<StructureDefinition>({
       resourceType: 'StructureDefinition',
       filters: [{ code: 'url', operator: Operator.EQUALS, value: params.url }],
-      sortRules: [{ code: 'version', descending: true }],
+      sortRules: [
+        { code: 'version', descending: true },
+        { code: '_lastUpdated', descending: true },
+      ],
     });
   }
   if (!def) {
