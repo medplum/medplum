@@ -1,15 +1,24 @@
-import { Paper } from '@mantine/core';
 import { formatSearchQuery, getReferenceString, parseSearchDefinition, SearchRequest, SortRule } from '@medplum/core';
-import { Loading, SearchControl, useMedplum } from '@medplum/react';
+import { Task } from '@medplum/fhirtypes';
+import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+import { CreateTaskModal } from '../components/CreateTaskModal';
 
 export function SearchPage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
+  const [isNewOpen, setIsNewOpen] = useState<boolean>(false);
+
+  const handleCreateTask = (newTask: Task) => {
+    medplum
+      .createResource(newTask)
+      .then((result) => navigate(`/${result.resourceType}/${result.id}`))
+      .catch((error) => console.error(error));
+  };
 
   useEffect(() => {
     // Parse the search definition from the url and get the correct fields for the resource type
@@ -21,6 +30,7 @@ export function SearchPage(): JSX.Element {
     const populatedSearch = {
       ...parsedSearch,
       fields,
+      sort,
     };
 
     if (
@@ -40,13 +50,22 @@ export function SearchPage(): JSX.Element {
   }
 
   return (
-    <Paper>
-      <SearchControl
-        search={search}
-        onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
-        onNew={() => navigate(`/${search.resourceType}/new`)}
-      ></SearchControl>
-    </Paper>
+    <Document>
+      {search.resourceType === 'Task' ? (
+        <SearchControl
+          search={search}
+          onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+          onNew={() => setIsNewOpen(!isNewOpen)}
+        />
+      ) : (
+        <SearchControl
+          search={search}
+          onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+          hideToolbar={true}
+        />
+      )}
+      <CreateTaskModal opened={isNewOpen} onClose={() => setIsNewOpen(!isNewOpen)} />
+    </Document>
   );
 }
 
