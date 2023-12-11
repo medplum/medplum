@@ -352,6 +352,10 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
         'value'
       ) as TypedValue;
 
+      if (!optionValue?.value) {
+        continue;
+      }
+
       if (initialValue && stringify(optionValue) === stringify(initialValue)) {
         defaultValue = optionName;
       }
