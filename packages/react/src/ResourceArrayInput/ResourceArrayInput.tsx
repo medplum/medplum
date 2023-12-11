@@ -237,8 +237,8 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
   const nonSliceIndex = slices.length;
   const nonSliceValues = slicedValues[nonSliceIndex];
 
-  // Hide non-sliced values when dealing with extensions
-  const showNonSliceValues = !(props.hideNonSliceValues ?? propertyTypeCode === 'Extension');
+  // Hide non-sliced values when handling sliced extensions
+  const showNonSliceValues = !(props.hideNonSliceValues ?? (propertyTypeCode === 'Extension' && slices.length > 0));
 
   return (
     <Stack style={props.indent ? { marginTop: '1rem', marginLeft: '1rem' } : undefined}>

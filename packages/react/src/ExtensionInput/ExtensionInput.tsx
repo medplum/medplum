@@ -19,12 +19,7 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
 
   const profileUrl: string | undefined = useMemo(() => {
     if (!propertyType.profile || propertyType.profile.length === 0) {
-      console.debug('Extension.type[0].profile is missing or empty', propertyType);
       return undefined;
-    }
-
-    if (propertyType.profile.length > 1) {
-      console.log('Extension.type[0].profile has more than one item', propertyType);
     }
 
     return propertyType.profile[0] satisfies string;

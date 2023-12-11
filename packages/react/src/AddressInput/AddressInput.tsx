@@ -1,8 +1,7 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Address } from '@medplum/fhirtypes';
-import { useContext, useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
-import { BackboneElementContext } from '../BackboneElementInput/BackbonElementInput.utils';
 
 function getLine(address: Address, index: number): string {
   return address.line && address.line.length > index ? address.line[index] : '';
@@ -21,20 +20,17 @@ type AddressInputProps = ComplexTypeInputProps<Address>;
 
 export function AddressInput(props: AddressInputProps): JSX.Element {
   const [value, setValue] = useState<Address>(props.defaultValue || {});
-  const { getModifiedNestedElement } = useContext(BackboneElementContext);
 
   const valueRef = useRef<Address>();
   valueRef.current = value;
 
-  const stateElement = useMemo(
-    () => getModifiedNestedElement(props.path + '.state'),
-    [getModifiedNestedElement, props.path]
-  );
-  if (stateElement?.binding) {
-    // TODO{mattlong} is it worth the complexity of subbing in an autocomplete input when
-    // a binding is defined in a profile? If so, it should go in a new wrapper around TextInput
-    console.debug('address.state has a binding not being shown', stateElement.binding);
-  }
+  // const stateElement = useMemo(
+  //   () => getModifiedNestedElement(props.path + '.state'),
+  //   [getModifiedNestedElement, props.path]
+  // );
+  // TODO{profiles} is it worth the complexity of subbing in an autocomplete input when
+  // a binding is defined in a profile? If so, it should go in a new wrapper around TextInput
+  // e.g. US Core Patient Profile
 
   function setValueWrapper(newValue: Address): void {
     setValue(newValue);
