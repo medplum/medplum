@@ -1,6 +1,6 @@
 {
   "name": "@medplum/fhir-router",
-  "version": "2.1.24",
+  "version": "2.2.2",
   "description": "Medplum FHIR Router",
   "keywords": [
     "medplum",
@@ -58,7 +58,7 @@
     "@medplum/fhirtypes": "*",
     "dataloader": "2.2.2",
     "graphql": "16.8.1",
-    "rfc6902": "5.1.0"
+    "rfc6902": "5.1.1"
   },
   "engines": {
     "node": ">=18.0.0"

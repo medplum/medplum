@@ -1,6 +1,6 @@
 {
   "name": "@medplum/app",
-  "version": "2.1.24",
+  "version": "2.2.2",
   "description": "Medplum App",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -40,15 +40,16 @@
     "@medplum/mock": "*",
     "@medplum/react": "*",
     "@tabler/icons-react": "2.42.0",
-    "@testing-library/jest-dom": "6.1.4",
+    "@testing-library/jest-dom": "6.1.5",
     "@testing-library/react": "14.1.2",
-    "@types/react": "18.2.38",
+    "@types/react": "18.2.42",
     "@types/react-dom": "18.2.17",
+    "@vitejs/plugin-react": "4.2.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "6.20.0",
-    "rfc6902": "5.1.0",
-    "vite": "5.0.2"
+    "react-router-dom": "6.20.1",
+    "rfc6902": "5.1.1",
+    "vite": "5.0.5"
   },
   "engines": {
     "node": ">=18.0.0"

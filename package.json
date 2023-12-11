@@ -1,6 +1,6 @@
 {
   "name": "root",
-  "version": "2.1.24",
+  "version": "2.2.2",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -32,15 +32,15 @@
     "root": true
   },
   "devDependencies": {
-    "@babel/core": "7.23.3",
-    "@babel/preset-env": "7.23.3",
+    "@babel/core": "7.23.5",
+    "@babel/preset-env": "7.23.5",
     "@babel/preset-react": "7.23.3",
     "@babel/preset-typescript": "7.23.3",
-    "@cyclonedx/cyclonedx-npm": "1.14.2",
-    "@microsoft/api-documenter": "7.23.12",
-    "@microsoft/api-extractor": "7.38.3",
-    "@types/jest": "29.5.10",
-    "@types/node": "20.10.0",
+    "@cyclonedx/cyclonedx-npm": "1.14.3",
+    "@microsoft/api-documenter": "7.23.13",
+    "@microsoft/api-extractor": "7.38.4",
+    "@types/jest": "29.5.11",
+    "@types/node": "20.10.3",
     "babel-jest": "29.7.0",
     "babel-preset-vite": "1.1.0",
     "cross-env": "7.0.3",
@@ -57,7 +57,7 @@
     "source-map-explorer": "2.5.3",
     "ts-node": "10.9.1",
     "tslib": "2.6.2",
-    "turbo": "1.10.16",
+    "turbo": "1.11.0",
     "typescript": "5.3.2"
   },
   "packageManager": "npm@9.8.1",
@@ -65,10 +65,12 @@
     "node": ">=18.0.0"
   },
   "overrides": {
+    "@vitejs/plugin-react": "4.2.1",
     "esbuild": "0.19.8",
     "got": "11.8.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "trim": "0.0.3"
+    "trim": "0.0.3",
+    "vite": "5.0.5"
   }
 }

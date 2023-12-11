@@ -32,7 +32,7 @@ const labs: Lab[] = [
   {
     id: 'labcorp',
     name: 'Labcorp',
-    healthGorillaId: 'f-c7403b62e57b776dfddf8051',
+    healthGorillaId: 'f-a855594f43fe879c6570b92e',
     tests: [
       { code: '001453', name: 'Hemoglobin A1c' },
       { code: '010322', name: 'Prostate-Specific Ag' },
@@ -82,9 +82,6 @@ const labs: Lab[] = [
   },
 ];
 
-// Codes for test 2 Send these ICD10 Diagnosis Codes:
-// E04.2 , D63.1, E11.42,  Z00.00, Z34.90, M10.9, R53.83, D64.9, N13.5, I10, E88.89, F06.8
-
 const diagnosticCodes: Coding[] = [
   { code: 'D63.1', display: 'Anemia in chronic kidney disease' },
   { code: 'D64.9', display: 'Anemia, unspecified' },
@@ -96,6 +93,7 @@ const diagnosticCodes: Coding[] = [
   { code: 'E78.2', display: 'Mixed hyperlipidemia' },
   { code: 'E88.89', display: 'Other specified metabolic disorders' },
   { code: 'F06.8', display: 'Other specified mental disorders due to known physiological condition' },
+  { code: 'G30.0', display: "Alzheimer's disease with early onset" },
   { code: 'I10', display: 'Essential (primary) hypertension' },
   { code: 'K70.30', display: 'Alcoholic cirrhosis of liver without ascites' },
   { code: 'K76.0', display: 'Fatty (change of) liver, not elsewhere classified' },
@@ -103,6 +101,11 @@ const diagnosticCodes: Coding[] = [
   { code: 'N13.5', display: 'Crossing vessel and stricture of ureter' },
   { code: 'N18.3', display: 'Chronic kidney disease, stage 3 (moderate)' },
   { code: 'R53.83', display: 'Other fatigue' },
+  { code: 'T67.4XXS', display: 'Heat exhaustion due to salt depletion, sequela' },
+  {
+    code: 'T84.81XD',
+    display: 'Embolism due to internal orthopedic prosthetic devices, implants and grafts, subsequent encounter',
+  },
   { code: 'Z00.00', display: 'Encounter for general adult medical examination without abnormal findings' },
   { code: 'Z34.90', display: 'Encounter for supervision of normal pregnancy, unspecified trimester' },
 ];

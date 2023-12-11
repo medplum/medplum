@@ -3,6 +3,7 @@ import {
   getReferenceString,
   LOINC,
   normalizeErrorString,
+  normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
   parseSearchDefinition,
@@ -537,7 +538,7 @@ describe('FHIR Search', () => {
   test('Search sort by Patient.id', async () => {
     const bundle = await systemRepo.search({
       resourceType: 'Patient',
-      sortRules: [{ code: 'id' }],
+      sortRules: [{ code: '_id' }],
     });
 
     expect(bundle).toBeDefined();
@@ -546,7 +547,7 @@ describe('FHIR Search', () => {
   test('Search sort by Patient.meta.lastUpdated', async () => {
     const bundle = await systemRepo.search({
       resourceType: 'Patient',
-      sortRules: [{ code: 'lastUpdated' }],
+      sortRules: [{ code: '_lastUpdated' }],
     });
 
     expect(bundle).toBeDefined();
@@ -3257,4 +3258,16 @@ describe('FHIR Search', () => {
       expect(bundleContains(result, p1)).toBe(true);
       expect(bundleContains(result, p2)).toBe(true);
     }));
+
+  test('Sort by unknown search parameter', async () => {
+    try {
+      await systemRepo.search({
+        resourceType: 'Patient',
+        sortRules: [{ code: 'xyz' }],
+      });
+    } catch (err) {
+      const outcome = normalizeOperationOutcome(err);
+      expect(outcome.issue?.[0]?.details?.text).toBe('Unknown search parameter: xyz');
+    }
+  });
 });

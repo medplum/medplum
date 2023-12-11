@@ -1,11 +1,7 @@
-export interface QueueItem {
-  channel: string;
-  remote: string;
-  body: string;
-}
+import { AgentTransmitResponse } from '@medplum/core';
 
 export interface Channel {
   start(): void;
   stop(): void;
-  sendToRemote(message: QueueItem): void;
+  sendToRemote(message: AgentTransmitResponse): void;
 }

@@ -180,7 +180,7 @@ export interface MedplumClientOptions {
   /**
    * The length of time in milliseconds to cache resources.
    *
-   * Default value is 10000 (10 seconds).
+   * Default value is 60000 (60 seconds).
    *
    * Cache time of zero disables all caching.
    *
@@ -2359,22 +2359,25 @@ export class MedplumClient extends EventTarget {
    * @param destination - The destination device.
    * @param body - The message body.
    * @param contentType - Optional message content type.
+   * @param waitForResponse - Optional wait for response flag.
    * @param options - Optional fetch options.
-   * @returns Promise to the operation outcome.
+   * @returns Promise to the result. If waiting for response, the result is the response body. Otherwise, it is an operation outcome.
    */
   pushToAgent(
     agent: Agent | Reference<Agent>,
     destination: Device | Reference<Device>,
     body: any,
     contentType?: string,
+    waitForResponse?: boolean,
     options?: RequestInit
-  ): Promise<OperationOutcome> {
+  ): Promise<any> {
     return this.post(
       this.fhirUrl('Agent', resolveId(agent) as string, '$push'),
       {
         destination: getReferenceString(destination),
         body,
         contentType,
+        waitForResponse,
       },
       ContentType.FHIR_JSON,
       options

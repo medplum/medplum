@@ -185,9 +185,17 @@ Function InstallApp
     File dist\${SERVICE_FILE_NAME}
     File README.md
 
+    # Create the agent.properties config file
+    FileOpen $9 agent.properties w
+    FileWrite $9 "baseUrl=$baseUrl$\r$\n"
+    FileWrite $9 "clientId=$clientId$\r$\n"
+    FileWrite $9 "clientSecret=$clientSecret$\r$\n"
+    FileWrite $9 "agentId=$agentId$\r$\n"
+    FileClose $9
+
     # Create the service
     DetailPrint "Creating service..."
-    ExecWait "shawl-v1.3.0-win64.exe add --name $\"${SERVICE_NAME}$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\" $\"$baseUrl$\" $\"$clientId$\" $\"$clientSecret$\" $\"$agentId$\"" $1
+    ExecWait "shawl-v1.3.0-win64.exe add --name $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service display name
