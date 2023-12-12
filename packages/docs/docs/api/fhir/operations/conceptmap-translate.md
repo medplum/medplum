@@ -4,7 +4,8 @@ sidebar_position: 9
 
 # ConceptMap Translate
 
-Medplum implements the [`ConceptMap/$translate`][translate-operation] operation, which allows mapping a coded value from
+Medplum implements the [`ConceptMap/$translate`][translate-operation] operation, which allows mapping a coded value
+between code systems.
 
 [translate-operation]: http://hl7.org/fhir/R4/conceptmap-operation-translate.html
 
@@ -15,7 +16,35 @@ Medplum implements the [`ConceptMap/$translate`][translate-operation] operation,
 [base]/ConceptMap/[id]/$translate
 ```
 
-For example, given the following `ConceptMap` resource:
+### Parameters
+
+| Name              | Type              | Description                                                      | Required |
+| ----------------- | ----------------- | ---------------------------------------------------------------- | -------- |
+| `url`             | `uri`             | Canonical URL of the ConceptMap, if not specified by ID          | No       |
+| `source`          | `uri`             | Canonical URL of source ValueSet, used to look up ConceptMap     | No       |
+| `code`            | `code`            | Code to translate using the ConceptMap                           | No       |
+| `system`          | `uri`             | System the code (above) is drawn from                            | No       |
+| `coding`          | `Coding`          | Full coding to translate using the ConceptMap                    | No       |
+| `codeableConcept` | `CodeableConcept` | Concept with one or more codes to translate using the ConceptMap | No       |
+| `targetsystem`    | `uri`             | Target code system, used to filter results                       | No       |
+
+:::note Required Parameters
+
+Although no individual parameter for the operation is required, both of the following must be satisfied for the
+operation to proceed:
+
+- Either the ConceptMap ID must be present in the request path (e.g. by calling `ConceptMap/[id]/$translate`), or
+  one of `url` or `source` must be populated to look up the ConceptMap
+- Exactly one of the following must be set to specify the source code(s) to translate:
+  - Both `code` and `system`
+  - `coding`
+  - `codeableConcept`
+
+:::
+
+### Example
+
+As an example, assume the following `ConceptMap` resource exists in the system:
 
 ```json
 {
@@ -53,6 +82,8 @@ For example, given the following `ConceptMap` resource:
   ]
 }
 ```
+
+To translate a code using this ConceptMap, one would make an API request like the following:
 
 ```bash
 curl 'https://api.medplum.com/fhir/R4/ConceptMap/[id]/$translate' \

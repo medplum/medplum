@@ -10,9 +10,9 @@ const operation = getOperationDefinition('ConceptMap', 'translate');
 
 type ConceptMapTranslateParameters = {
   url?: string;
+  source?: string;
   code?: string;
   system?: string;
-  source?: string;
   coding?: Coding;
   codeableConcept?: CodeableConcept;
   targetsystem?: string;
@@ -92,10 +92,10 @@ async function lookupConceptMap(
 
 function constructSourceSet(params: ConceptMapTranslateParameters): Record<string, string[]> | OperationOutcome {
   if (params.code && !params.coding && !params.codeableConcept) {
-    if (!params.system) {
+    if (params.system === undefined) {
       return badRequest(`Missing required 'system' input parameter with 'code' parameter`);
     }
-    return { [params.system ?? '']: [params.code] };
+    return { [params.system]: [params.code] };
   } else if (params.coding && !params.code && !params.codeableConcept) {
     return { [params.coding.system ?? '']: [params.coding.code ?? ''] };
   } else if (params.codeableConcept && !params.code && !params.coding) {
