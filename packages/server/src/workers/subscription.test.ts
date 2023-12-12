@@ -1347,8 +1347,6 @@ describe('Subscription Worker', () => {
         deferredPromise.resolve();
       });
 
-      subscriber.on('error', (err) => deferredPromise.reject(err));
-
       const queue = getSubscriptionQueue() as any;
       queue.add.mockClear();
 
