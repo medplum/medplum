@@ -77,6 +77,7 @@ export * from './ResourceInput/ResourceInput';
 export * from './ResourceName/ResourceName';
 export * from './ResourcePropertyDisplay/ResourcePropertyDisplay';
 export * from './ResourcePropertyInput/ResourcePropertyInput';
+export * from './ResourcePropertyInput/ResourcePropertyInput.utils';
 export * from './ResourceTable/ResourceTable';
 export * from './ResourceTimeline/ResourceTimeline';
 export * from './Scheduler/Scheduler';
