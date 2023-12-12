@@ -22,7 +22,7 @@ const slicedProperty: InternalSchemaElement = {
   path: 'IceCream.flavors',
   description: 'A list of ice cream flavors',
   min: 0,
-  max: 3,
+  max: 4,
   type: [{ code: 'Extension' }],
   slicing: {
     discriminator: [{ path: 'url', type: 'value' }],
@@ -50,7 +50,7 @@ const slicedProperty: InternalSchemaElement = {
           },
         },
         min: 0,
-        max: 1,
+        max: 2,
         type: [{ code: 'Extension' }],
       },
       {
@@ -194,19 +194,20 @@ describe('ResourceArrayInput', () => {
       onChange,
     });
 
-    const testIdsThatShouldExist = [
-      'slice-chocolateVariety-elements',
+    const shouldExist = [
+      'slice-chocolateVariety-elements-0',
       'slice-chocolateVariety-remove-0',
-      'slice-vanillaVariety-elements',
+      'slice-chocolateVariety-add',
+      'slice-vanillaVariety-elements-0',
       'slice-vanillaVariety-remove-0',
       'nonsliced-add',
     ];
-    testIdsThatShouldExist.forEach((testId) => {
+    shouldExist.forEach((testId) => {
       expect(screen.getByTestId(testId)).toBeInTheDocument();
     });
 
-    const testIdsThatShouldNotExist = ['slice-chocolateVariety-add', 'slice-vanillaVariety-add', 'nonsliced-remove-0'];
-    testIdsThatShouldNotExist.forEach((testId) => {
+    const shouldNotExist = ['slice-vanillaVariety-add', 'nonsliced-remove-0'];
+    shouldNotExist.forEach((testId) => {
       expect(screen.queryByTestId(testId)).toBeNull();
     });
 
@@ -214,39 +215,25 @@ describe('ResourceArrayInput', () => {
       fireEvent.click(screen.getByTestId('slice-chocolateVariety-remove-0'));
     });
 
-    expect(screen.getByTestId('slice-chocolateVariety-add')).toBeInTheDocument();
+    expect(screen.queryByTestId('slice-chocolateVariety-add')).toBeInTheDocument();
     expect(screen.queryByTestId('slice-chocolateVariety-remove-0')).toBeNull();
-    expect(screen.queryByTestId('slice-chocolateVariety-elements')).toBeNull();
-  });
+    expect(screen.queryByTestId('slice-chocolateVariety-elements-0')).toBeNull();
 
-  test('With slices and values not in any slice', async () => {
-    const onChange = jest.fn();
-
-    const property = { ...slicedProperty, max: 4 };
-    await setup({
-      ...defaultProps,
-      property,
-      hideNonSliceValues: false,
-      defaultValue: [{ code: 'GREEN', text: 'Pistachio' }],
-      onChange,
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('slice-chocolateVariety-add'));
     });
 
-    const testIdsThatShouldExist = [
-      'slice-chocolateVariety-elements',
-      'slice-chocolateVariety-remove-0',
-      'slice-vanillaVariety-elements',
-      'slice-vanillaVariety-remove-0',
-      'nonsliced-add',
-      'nonsliced-remove-0',
-    ];
-    testIdsThatShouldExist.forEach((testId) => {
-      expect(screen.getByTestId(testId)).toBeInTheDocument();
+    expect(screen.queryByTestId('slice-chocolateVariety-add')).toBeInTheDocument();
+    expect(screen.queryByTestId('slice-chocolateVariety-remove-0')).toBeInTheDocument();
+    expect(screen.queryByTestId('slice-chocolateVariety-elements-0')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('slice-chocolateVariety-add'));
     });
 
-    const testIdsThatShouldNotExist = ['slice-chocolateVariety-add', 'sliced-vanillaVariety-add'];
-    testIdsThatShouldNotExist.forEach((testId) => {
-      expect(screen.queryByTestId(testId)).toBeNull();
-    });
+    expect(screen.queryByTestId('slice-chocolateVariety-add')).toBeNull();
+    expect(screen.queryByTestId('slice-chocolateVariety-remove-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('slice-chocolateVariety-elements-1')).toBeInTheDocument();
   });
 
   test('With slices and values in each slice and non-slice values', async () => {
@@ -265,25 +252,26 @@ describe('ResourceArrayInput', () => {
       onChange,
     });
 
-    const testIdsThatShouldExist = [
-      'slice-chocolateVariety-elements',
+    const shouldExist = [
+      'slice-chocolateVariety-elements-0',
       'slice-chocolateVariety-remove-0',
-      'slice-vanillaVariety-elements',
+      'slice-chocolateVariety-add',
+      'slice-vanillaVariety-elements-0',
       'slice-vanillaVariety-remove-0',
       'nonsliced-remove-0',
+      'nonsliced-add',
     ];
-    testIdsThatShouldExist.forEach((testId) => {
+    shouldExist.forEach((testId) => {
       expect(screen.getByTestId(testId)).toBeInTheDocument();
     });
 
-    // Since the property has max: 3, shouldn't be able to add anything
-    const testIdsThatShouldNotExist = ['slice-chocolateVariety-add', 'sliced-vanillaVariety-add', 'nonsliced-add'];
-    testIdsThatShouldNotExist.forEach((testId) => {
+    const shouldNotExist = ['sliced-vanillaVariety-add'];
+    shouldNotExist.forEach((testId) => {
       expect(screen.queryByTestId(testId)).toBeNull();
     });
 
     await act(async () => {
-      const valueElement = within(screen.getByTestId('slice-chocolateVariety-elements')).getByTestId('value[x]');
+      const valueElement = within(screen.getByTestId('slice-chocolateVariety-elements-0')).getByTestId('value[x]');
       fireEvent.change(valueElement, {
         target: { value: 'Dark Chocolate' },
       });
@@ -306,6 +294,7 @@ describe('ResourceArrayInput', () => {
     const nonSliceValue = { url: 'greenVariety', valueString: 'Pistachio' };
     const defaultValue = [
       { url: 'chocolateVariety', valueString: 'Milk Chocolate' },
+      { url: 'chocolateVariety', valueString: 'White Chocolate' },
       { url: 'vanillaVariety', valueString: 'French Vanilla' },
       nonSliceValue,
     ];
@@ -318,16 +307,15 @@ describe('ResourceArrayInput', () => {
     });
 
     const testIdsThatShouldExist = [
-      'slice-chocolateVariety-elements',
+      'slice-chocolateVariety-elements-0',
       'slice-chocolateVariety-remove-0',
-      'slice-vanillaVariety-elements',
+      'slice-vanillaVariety-elements-0',
       'slice-vanillaVariety-remove-0',
     ];
     testIdsThatShouldExist.forEach((testId) => {
       expect(screen.getByTestId(testId)).toBeInTheDocument();
     });
 
-    // Since the property has max: 3, shouldn't be able to add anything
     const testIdsThatShouldNotExist = [
       'slice-chocolateVariety-add',
       'sliced-vanillaVariety-add',
@@ -343,9 +331,12 @@ describe('ResourceArrayInput', () => {
     });
 
     // Even though non-sliced values are being hidden, values should be preserved
-    const expectedValue = defaultValue.filter((val) => val.url !== 'vanillaVariety');
+    const expectedValue = [
+      { url: 'chocolateVariety', valueString: 'Milk Chocolate' },
+      { url: 'chocolateVariety', valueString: 'White Chocolate' },
+      nonSliceValue,
+    ];
     expect(expectedValue.length).toBe(defaultValue.length - 1);
     expect(onChange).toHaveBeenCalledWith(expectedValue);
-    expect(expectedValue.includes(nonSliceValue)).toBe(true);
   });
 });

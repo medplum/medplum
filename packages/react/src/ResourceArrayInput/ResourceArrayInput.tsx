@@ -2,7 +2,6 @@ import { ActionIcon, Group, Stack } from '@mantine/core';
 import {
   InternalSchemaElement,
   InternalTypeSchema,
-  SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
   TypedValue,
@@ -20,6 +19,7 @@ import { killEvent } from '../utils/dom';
 import { SliceInput } from '../SliceInput/SliceInput';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import { SupportedSliceDefinition, isSupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
 
 export interface ResourceArrayInputProps {
   property: InternalSchemaElement;
@@ -30,19 +30,6 @@ export interface ResourceArrayInputProps {
   outcome: OperationOutcome | undefined;
   onChange?: (value: any[]) => void;
   hideNonSliceValues?: boolean;
-}
-
-type SupportedSliceDefinition = SliceDefinition & {
-  type: NonNullable<SliceDefinition['type']>;
-  typeSchema?: InternalTypeSchema;
-};
-
-function isSupportSliceDefinition(slice: SliceDefinition | undefined): slice is SupportedSliceDefinition {
-  if (!slice?.type || slice.type.length === 0) {
-    return false;
-  }
-
-  return true;
 }
 
 function getValueSliceName(
@@ -133,36 +120,31 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
   const { property } = props;
   const medplum = useMedplum();
   const [loading, setLoading] = useState(true);
-  const [slices, setSlices] = useState<SupportedSliceDefinition[]>();
+  const [slices, setSlices] = useState<SupportedSliceDefinition[]>([]);
   // props.defaultValue should NOT be used after this; prefer the defaultValue state
   const [defaultValue] = useState<any[]>(() => (Array.isArray(props.defaultValue) ? props.defaultValue : []));
-  const [slicedValues, setSlicedValues] = useState<any[][]>();
+  const [slicedValues, setSlicedValues] = useState<any[][]>([[]]);
 
   const propertyTypeCode = property.type[0]?.code;
   useEffect(() => {
     if (!property.slicing) {
-      setSlices([]);
+      const emptySlices: SupportedSliceDefinition[] = [];
+      setSlices(emptySlices);
+      const results = assignValuesIntoSlices(defaultValue, emptySlices, property.slicing);
+      setSlicedValues(results);
       setLoading(false);
       return;
     }
 
     const supportedSlices: SupportedSliceDefinition[] = [];
-    const unsupportedSlices: SliceDefinition[] = [];
     const profileUrls: (string | undefined)[] = [];
     const promises: Promise<void>[] = [];
     for (const slice of property.slicing.slices) {
-      if (!isSupportSliceDefinition(slice)) {
-        console.warn('PANIC slice.type is missing', slice);
-        unsupportedSlices.push(slice);
+      if (!isSupportedSliceDefinition(slice)) {
         continue;
       }
 
       const sliceType = slice.type[0];
-
-      if (sliceType.code !== propertyTypeCode) {
-        console.warn('WARN slice.type[0].code did not match property.type[0].code', slice, propertyTypeCode);
-      }
-
       let profileUrl: string | undefined;
       if (isEmpty(slice.elements)) {
         if (sliceType.profile) {
@@ -191,29 +173,17 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
           }
         }
         setSlices(supportedSlices);
+        const results = assignValuesIntoSlices(defaultValue, supportedSlices, property.slicing);
+        setSlicedValues(results);
         setLoading(false);
       })
       .catch((reason) => {
         console.error(reason);
-        // TODO{profiles} error handling
         setLoading(false);
       });
-  }, [medplum, property.slicing, propertyTypeCode]);
-
-  useEffect(() => {
-    if (slices) {
-      const results = assignValuesIntoSlices(defaultValue, slices, property.slicing);
-      setSlicedValues(results);
-    }
-  }, [slices, defaultValue, property.slicing]);
+  }, [medplum, property.slicing, propertyTypeCode, defaultValue]);
 
   function setValuesWrapper(newValues: any[], sliceIndex: number): void {
-    if (!slicedValues) {
-      // this shouldn't happen in practice; slicedValues is only undefined
-      // before anything has rendered
-      return;
-    }
-
     const newSlicedValues = [...slicedValues];
     newSlicedValues[sliceIndex] = newValues;
     setSlicedValues(newSlicedValues);
@@ -224,8 +194,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
     }
   }
 
-  // TODO{mattlong} better error handling needed here
-  if (loading || !slices || !slicedValues) {
+  if (loading) {
     return <div>Loading...</div>;
   }
 

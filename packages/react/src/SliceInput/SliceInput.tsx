@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { InternalSchemaElement, SliceDefinition, getPropertyDisplayName, isEmpty } from '@medplum/core';
+import { InternalSchemaElement, getPropertyDisplayName, isEmpty } from '@medplum/core';
 import { FormSection } from '../FormSection/FormSection';
 import { ActionIcon, Group, Stack } from '@mantine/core';
 import { ElementDefinitionTypeInput } from '../ResourcePropertyInput/ResourcePropertyInput';
@@ -7,24 +7,10 @@ import { killEvent } from '../utils/dom';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
 import { ElementsInput } from '../ElementsInput/ElementsInput';
 import { OperationOutcome } from '@medplum/fhirtypes';
-
-type PopulatedSliceDefinition = SliceDefinition & {
-  type: NonNullable<SliceDefinition['type']>;
-};
-
-function isPopulatedSliceDefinition(slice: SliceDefinition): slice is PopulatedSliceDefinition {
-  if (slice.type === undefined || slice.type.length === 0) {
-    console.log('WARN slice.type is missing or empty', slice);
-    return false;
-  }
-  if (slice.type.length > 1) {
-    console.log('WARN slice has more than one type', slice);
-  }
-  return true;
-}
+import { SupportedSliceDefinition } from './SliceInput.utils';
 
 type SliceInputProps = {
-  slice: SliceDefinition;
+  slice: SupportedSliceDefinition;
   property: InternalSchemaElement;
   defaultValue: any[];
   onChange: (newValue: any[]) => void;
@@ -36,10 +22,6 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
   const [values, setValues] = useState<any[]>(() => {
     return props.defaultValue.map((v) => v ?? {});
   });
-
-  if (!isPopulatedSliceDefinition(slice)) {
-    return null;
-  }
 
   function setValuesWrapper(newValues: any[]): void {
     setValues(newValues);
@@ -78,7 +60,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                         newValues[valueIndex] = newValue;
                         setValuesWrapper(newValues);
                       }}
-                      testId={props.testId && `${props.testId}-elements`}
+                      testId={props.testId && `${props.testId}-elements-${valueIndex}`}
                     />
                   ) : (
                     <ElementDefinitionTypeInput
