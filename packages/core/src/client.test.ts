@@ -552,7 +552,7 @@ describe('Client', () => {
         'https://me.example.com',
         {
           clientId: 'medplum-client-123',
-          scope: "profile email foo",
+          scope: 'profile email foo',
         },
         false
       );
