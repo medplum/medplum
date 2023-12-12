@@ -516,6 +516,14 @@ export class Repository extends BaseRepository implements FhirRepository {
       throw new OperationOutcomeError(forbidden);
     }
 
+    await this.handleMaybeCacheOnly(result);
+    await setCacheEntry(result);
+    await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
+    this.removeHiddenFields(result);
+    return result;
+  }
+
+  private async handleMaybeCacheOnly(result: Resource): Promise<void> {
     if (!this.isCacheOnly(result)) {
       await this.writeToDatabase(result);
     } else if (result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
@@ -535,10 +543,6 @@ export class Repository extends BaseRepository implements FhirRepository {
       }
       await redis.set('::subscriptions/r4::', JSON.stringify(currentWsSubscriptions));
     }
-    await setCacheEntry(result);
-    await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
-    this.removeHiddenFields(result);
-    return result;
   }
 
   private async validateResource(resource: Resource): Promise<void> {
