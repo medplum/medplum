@@ -142,7 +142,6 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
   for (const subscription of subscriptions) {
     const criteria = await matchesCriteria(resource, subscription, context);
     if (criteria) {
-      console.log('Matched criteria!', subscription);
       await addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
