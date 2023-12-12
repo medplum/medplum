@@ -37,7 +37,7 @@ jobs:
             ${{ runner.os }}-
       - id: install
         name: Install prettier
-        run: npm ci
+        run: npm ci --maxsockets 1
       - name: Run prettier
         id: fmt
         run: |
