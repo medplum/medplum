@@ -9,7 +9,6 @@ export function CreateResourcePage(): JSX.Element {
   const medplum = useMedplum();
   const location = useLocation();
   const resourceType = location.pathname.split('/')[1];
-  console.log(resourceType);
 
   // Create a default resource with the correct resourceType
   const defaultResource = { resourceType } as Resource;

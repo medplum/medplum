@@ -32,6 +32,8 @@ export function TaskByRoleQueue(): JSX.Element {
     const getRoleFilters = async () => {
       const filterQueue: Filter[] = [];
 
+      console.log(roles);
+
       if (roles) {
         for (const role of roles) {
           const roleCode = role.specialty?.[0].coding?.[0];
@@ -42,6 +44,8 @@ export function TaskByRoleQueue(): JSX.Element {
           }
         }
       }
+
+      filterQueue.push({ code: 'owner', operator: Operator.MISSING, value: 'true' });
 
       setFilters(filterQueue);
     };
@@ -55,6 +59,7 @@ export function TaskByRoleQueue(): JSX.Element {
         search={{
           resourceType: 'Task',
           filters: filters,
+          fields: ['id', 'priority', 'description', 'for'],
         }}
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
       />
