@@ -15,12 +15,12 @@ export const commentQuestionnaire: Questionnaire = {
 
 export const dueDateQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
-  id: 'add-due-date',
-  title: 'Add a due date',
+  id: 'due-date',
+  title: 'Due-Date',
   item: [
     {
       linkId: 'due-date',
-      text: 'Add a due date',
+      text: 'The date the task should be completed',
       type: 'date',
     },
   ],

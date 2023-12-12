@@ -1,3 +1,4 @@
+import { notifications } from '@mantine/notifications';
 import { MedplumClient } from '@medplum/core';
 import { Annotation, Coding, Practitioner, Reference, Resource, Task } from '@medplum/fhirtypes';
 import { NavigateFunction } from 'react-router-dom';
@@ -30,7 +31,16 @@ export async function handleAddComment(
   };
 
   // Update the resource on the server and re-render the task page
-  await medplum.updateResource(updatedTask);
+  await medplum.updateResource(updatedTask).catch((error) =>
+    notifications.show({
+      title: 'Error',
+      message: `Error: ${error}`,
+    })
+  );
+  notifications.show({
+    title: 'Success',
+    message: 'Comment added',
+  });
   onChange(updatedTask);
 }
 
@@ -50,7 +60,16 @@ export async function handleAddDueDate(
   updatedTask.restriction.period.end = date;
 
   // Update the task with the new due date
-  await medplum.updateResource(updatedTask);
+  await medplum.updateResource(updatedTask).catch((error) =>
+    notifications.show({
+      title: 'Error',
+      message: `Error: ${error}`,
+    })
+  );
+  notifications.show({
+    title: 'Success',
+    message: 'The due-date has been updated.',
+  });
   onChange(updatedTask);
 }
 
@@ -69,7 +88,16 @@ export async function handleUpdateStatus(
   updatedTask.businessStatus = { coding: [status] };
 
   // Update the Task on the server and re-render.
-  await medplum.updateResource(updatedTask);
+  await medplum.updateResource(updatedTask).catch((error) =>
+    notifications.show({
+      title: 'Error',
+      message: `Error: ${error}`,
+    })
+  );
+  notifications.show({
+    title: 'Success',
+    message: 'Status updated.',
+  });
   onChange(updatedTask);
 }
 
@@ -87,7 +115,16 @@ export async function handleAssignTask(
   // Update the owner, or who is responsible for the task. For more details see https://www.medplum.com/docs/careplans/tasks#task-assignment
   updatedTask.owner = owner as OwnerTypes;
 
-  await medplum.updateResource(updatedTask);
+  await medplum.updateResource(updatedTask).catch((error) =>
+    notifications.show({
+      title: 'Error',
+      message: `Error: ${error}`,
+    })
+  );
+  notifications.show({
+    title: 'Success',
+    message: 'Task assigned.',
+  });
   onChange(updatedTask);
 }
 
@@ -105,7 +142,16 @@ export async function handleClaimTask(task: Task, medplum: MedplumClient, onChan
     resource: currentUser,
   };
 
-  await medplum.updateResource(updatedTask);
+  await medplum.updateResource(updatedTask).catch((error) =>
+    notifications.show({
+      title: 'Error',
+      message: `Error: ${error}`,
+    })
+  );
+  notifications.show({
+    title: 'Success',
+    message: 'You have claimed this task.',
+  });
   onChange(updatedTask);
 }
 
@@ -115,8 +161,17 @@ export async function handleDeleteTask(task: Task, medplum: MedplumClient, navig
 
   if (taskId) {
     // Delete the task and navigate to the main tasks queue
-    await medplum.deleteResource('Task', taskId);
+    await medplum.deleteResource('Task', taskId).catch((error) =>
+      notifications.show({
+        title: 'Error',
+        message: `Error: ${error}`,
+      })
+    );
     navigate('/Task');
+    notifications.show({
+      title: 'Deleted',
+      message: 'This task has been deleted.',
+    });
   } else {
     console.error('Task could not be deleted');
   }

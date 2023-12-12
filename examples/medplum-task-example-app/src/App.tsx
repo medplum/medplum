@@ -1,5 +1,5 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconUser } from '@tabler/icons-react';
+import { IconGridDots, IconLayoutList, IconListCheck } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { Timeline } from './components/Timeline';
@@ -31,9 +31,9 @@ export function App(): JSX.Element | null {
         {
           title: 'My Links',
           links: [
-            { icon: <IconUser />, label: 'Worklist', href: '/Task/worklist' },
-            { icon: <IconUser />, label: 'Tasks For My Role', href: '/Task/queue' },
-            { icon: <IconUser />, label: 'All Tasks', href: '/Task' },
+            { icon: <IconLayoutList />, label: 'Worklist', href: '/Task/worklist' },
+            { icon: <IconListCheck />, label: 'Tasks For My Role', href: '/Task/queue' },
+            { icon: <IconGridDots />, label: 'All Tasks', href: '/Task' },
           ],
         },
       ]}

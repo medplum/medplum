@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 
 export function Worklist(): JSX.Element {
   const profile = useMedplumProfile() as Resource;
-  console.log(profile);
   const navigate = useNavigate();
   const [search, setSearch] = useState<SearchRequest>({ resourceType: 'Task' });
 

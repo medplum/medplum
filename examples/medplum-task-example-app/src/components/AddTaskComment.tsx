@@ -15,10 +15,6 @@ export function AddTaskComment(props: AddTaskCommentProps): JSX.Element {
   const author = useMedplumProfile();
   const [comment, setComment] = useState<Annotation>({});
 
-  const handleCommentChange = (newComment: Annotation) => {
-    setComment(newComment);
-  };
-
   const handleSubmit = () => {
     if (comment?.text) {
       const newComment: Annotation = {
@@ -55,11 +51,6 @@ export function AddTaskComment(props: AddTaskCommentProps): JSX.Element {
   return (
     <Modal onSubmit={handleSubmit} opened={props.isOpen} onClose={props.onClose}>
       <QuestionnaireForm questionnaire={commentQuestionnaire} onSubmit={onQuestionnaireSubmit} />
-
-      {/* <FormSection>
-        <AnnotationInput name="task-comment" onChange={handleCommentChange} />
-      </FormSection>
-      <Button type="submit">Submit</Button> */}
     </Modal>
   );
 }

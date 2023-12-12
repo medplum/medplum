@@ -12,7 +12,7 @@ interface AssignTaskModalProps {
 
 export function AssignTaskModal(props: AssignTaskModalProps): JSX.Element {
   const handleQuestionnaireSubmit = (formData: QuestionnaireResponse) => {
-    const answer = getQuestionnaireAnswers(formData)['ower'].valueReference;
+    const answer = getQuestionnaireAnswers(formData)['owner'].valueReference;
 
     if (answer) {
       props.onAssign(answer);

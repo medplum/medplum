@@ -1,7 +1,7 @@
 import { Grid, Paper, Tabs, Title } from '@mantine/core';
 import { getDisplayString, resolveId } from '@medplum/core';
 import { Patient, Task } from '@medplum/fhirtypes';
-import { DefaultResourceTimeline, Loading, ResourceTable, useMedplum } from '@medplum/react';
+import { DefaultResourceTimeline, Document, Loading, ResourceTable, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
@@ -57,20 +57,22 @@ export function TaskPage(): JSX.Element {
     navigate(`/Task/${id}/${newTab}`);
   };
 
-  const handleTaskChange = (updatedTask: Task) => {
+  const onTaskChange = (updatedTask: Task) => {
     setTask(updatedTask);
   };
 
   if (!task) {
-    return <Loading />;
+    return <Document>No Task found</Document>;
   }
 
   return (
     <Grid gutter="xs">
       <Grid.Col span={4}>
-        <Paper>{patient ? <PatientChart patient={patient} /> : <div>No patient linked to this task</div>}</Paper>
+        <Paper>
+          {patient ? <PatientChart patient={patient} /> : <Document>No patient linked to this task</Document>}
+        </Paper>
       </Grid.Col>
-      <Grid.Col span={6}>
+      <Grid.Col span={5}>
         <Paper p="md" key={task ? task.id : 'loading'}>
           <Title>{getDisplayString(task)}</Title>
           <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
@@ -82,7 +84,7 @@ export function TaskPage(): JSX.Element {
               ))}
             </Tabs.List>
             <Tabs.Panel value="details">
-              <ResourceTable key={`Task/${id}`} value={task} ignoreMissingValues={false} />
+              <ResourceTable key={`Task/${id}`} value={task} ignoreMissingValues={true} />
             </Tabs.Panel>
             <Tabs.Panel value="timeline">
               <DefaultResourceTimeline resource={task} />
@@ -93,9 +95,9 @@ export function TaskPage(): JSX.Element {
           </Tabs>
         </Paper>
       </Grid.Col>
-      <Grid.Col span={2}>
+      <Grid.Col span={3}>
         <Paper p="md">
-          <TaskActions task={task} onChange={handleTaskChange} />
+          <TaskActions task={task} onChange={onTaskChange} />
         </Paper>
       </Grid.Col>
     </Grid>

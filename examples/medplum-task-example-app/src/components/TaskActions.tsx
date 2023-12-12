@@ -1,10 +1,12 @@
 import { Button, Paper, Stack, Title } from '@mantine/core';
-import { Annotation, Coding, Reference, Resource, Task } from '@medplum/fhirtypes';
+import { notifications } from '@mantine/notifications';
+import { Annotation, CodeableConcept, Coding, Reference, Resource, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum, useResource } from '@medplum/react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AddDueDateModal } from './AddDueDateModal';
 import { AddTaskComment } from './AddTaskComment';
+import { AssignRoleModal } from './AssignRoleModal';
 import { AssignTaskModal } from './AssignTaskModal';
 import { ClaimTaskModal } from './ClaimTaskModal';
 import { DeleteTaskModal } from './DeleteTaskModal';
@@ -33,6 +35,7 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
   const [isStatusOpen, setIsStatusOpen] = useState<boolean>(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false);
   const [isClaimOpen, setIsClaimOpen] = useState<boolean>(false);
+  const [isAssignRoleOpen, setIsAssignRoleOpen] = useState<boolean>(false);
 
   const handleCommentModal = () => {
     setIsCommentOpen(!isCommentOpen);
@@ -58,17 +61,34 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
     setIsClaimOpen(!isClaimOpen);
   };
 
+  const handleAssignRoleModal = () => {
+    setIsAssignRoleOpen(!isAssignRoleOpen);
+  };
+
   const handleChangeTaskStatus = async () => {
     if (task) {
       const updatedTask: Task = { ...task };
       if (updatedTask.status !== 'on-hold') {
         updatedTask.status = 'on-hold';
+        await medplum.updateResource(updatedTask);
+        notifications.show({
+          title: 'Success',
+          message: 'Task paused',
+        });
+        props.onChange(updatedTask);
       } else {
         updatedTask.status = 'in-progress';
+        await medplum.updateResource(updatedTask);
+        notifications.show({
+          title: 'Success',
+          message: 'Task resumed',
+        });
       }
-      await medplum.updateResource(updatedTask);
-      props.onChange(updatedTask);
     } else {
+      notifications.show({
+        title: 'Error',
+        message: 'No valid task to update.',
+      });
       throw new Error('No valid task to update');
     }
   };
@@ -79,6 +99,28 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
       updatedTask.status = 'completed';
 
       await medplum.updateResource(updatedTask);
+      notifications.show({
+        title: 'Success',
+        message: 'Task completed!',
+      });
+      props.onChange(updatedTask);
+    }
+  };
+
+  const handleAssignRole = async (role: CodeableConcept) => {
+    if (task) {
+      const updatedTask: Task = { ...task };
+      if (updatedTask.performerType) {
+        updatedTask.performerType.push(role);
+      } else {
+        updatedTask.performerType = [role];
+      }
+
+      await medplum.updateResource(updatedTask);
+      notifications.show({
+        title: 'Success',
+        message: 'Role assigned.',
+      });
       props.onChange(updatedTask);
     }
   };
@@ -92,10 +134,15 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
       <Title>Task Actions</Title>
       <Stack>
         <Button onClick={handleCommentModal}>Add a Comment</Button>
-        <Button onClick={handleDueDateModal}>Add Due Date</Button>
+        {task.restriction?.period?.end ? (
+          <Button onClick={handleDueDateModal}>Change Due-Date</Button>
+        ) : (
+          <Button onClick={handleDueDateModal}>Add Due-Date</Button>
+        )}
         <Button onClick={handleStatusModal}>Update Status</Button>
         <Button onClick={handleAssignModal}>{task.owner ? 'Reassign Task' : 'Assign Task'}</Button>
         {!task.owner ? <Button onClick={handleClaimModal}>Claim Task</Button> : null}
+        <Button onClick={handleAssignRoleModal}>Assign to a Role</Button>
         {task.status === 'on-hold' ? (
           <Button onClick={handleChangeTaskStatus}>Resume Task</Button>
         ) : (
@@ -122,6 +169,7 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
           isOpen={isAssignOpen}
           onClose={handleAssignModal}
         />
+        <AssignRoleModal onAssignRole={handleAssignRole} isOpen={isAssignRoleOpen} onClose={handleAssignRoleModal} />
         <UpdateStatusModal
           onUpdateStatus={(status: Coding) => handleUpdateStatus(status, task, medplum, props.onChange)}
           isOpen={isStatusOpen}

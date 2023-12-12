@@ -1,9 +1,10 @@
 import { Tabs, Title } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import { Resource, ResourceType } from '@medplum/fhirtypes';
-import { DefaultResourceTimeline, Document, ResourceTable, useMedplum } from '@medplum/react';
+import { DefaultResourceTimeline, Document, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { ResourceHistoryTab } from '../components/ResourceHistoryTab';
 
 /**
  * This is an example of a generic "Resource Display" page.
@@ -12,10 +13,9 @@ import { useNavigate, useParams } from 'react-router-dom';
  */
 export function ResourcePage(): JSX.Element | null {
   const medplum = useMedplum();
-  const navigate = useNavigate();
   const { resourceType, id } = useParams();
   const [resource, setResource] = useState<Resource | undefined>(undefined);
-  const tabs = ['Details', 'Timeline', 'Notes'];
+  const tabs = ['Details', 'Timeline', 'History'];
   const [currentTab, setCurrentTab] = useState<string>(() => {
     const tab = window.location.pathname.split('/').pop();
     return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
@@ -33,7 +33,6 @@ export function ResourcePage(): JSX.Element | null {
   // Update the tab and navigate to that tab's URL
   const handleTabChange = (newTab: string) => {
     setCurrentTab(newTab);
-    navigate(`/${resourceType}/${id}/${newTab}`);
   };
 
   if (!resource) {
@@ -51,10 +50,16 @@ export function ResourcePage(): JSX.Element | null {
             </Tabs.Tab>
           ))}
         </Tabs.List>
+        <Tabs.Panel value="details">
+          <ResourceTable key={`${resourceType}/${id}`} value={resource} />
+        </Tabs.Panel>
+        <Tabs.Panel value="timeline">
+          <DefaultResourceTimeline resource={resource} />
+        </Tabs.Panel>
+        <Tabs.Panel value="history">
+          <ResourceHistoryTab />
+        </Tabs.Panel>
       </Tabs>
-      {currentTab === 'details' && <ResourceTable key={`${resourceType}/${id}`} value={resource} />}
-      {currentTab === 'timeline' && <DefaultResourceTimeline resource={resource} />}
-      {/* {currentTab === 'notes' && <NotesPage task={resource} />} */}
     </Document>
   );
 }

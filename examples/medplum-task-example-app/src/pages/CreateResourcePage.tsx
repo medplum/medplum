@@ -1,4 +1,5 @@
 import { Paper, Text } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, useMedplum } from '@medplum/react';
 import { useLocation } from 'react-router-dom';
@@ -17,8 +18,19 @@ export function CreateResourcePage(): JSX.Element {
   const handleSubmit = (newResource: Resource) => {
     medplum
       .createResource(newResource)
-      .then((result) => navigate(`/${resourceType}/${result.id}`))
-      .catch((error) => console.error(error));
+      .then((result) => {
+        navigate(`/${resourceType}/${result.id}`);
+        notifications.show({
+          title: 'Success',
+          message: `${result.resourceType} created!`,
+        });
+      })
+      .catch((error) =>
+        notifications.show({
+          title: 'Error',
+          message: `Resource could not be created: ${error}`,
+        })
+      );
   };
 
   return (
