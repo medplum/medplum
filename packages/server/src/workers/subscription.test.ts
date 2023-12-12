@@ -1,10 +1,19 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { ContentType, Operator, createReference, getReferenceString, stringify } from '@medplum/core';
+import {
+  ContentType,
+  Operator,
+  createDeferredPromise,
+  createReference,
+  getReferenceString,
+  stringify,
+} from '@medplum/core';
 import { AuditEvent, Bot, Observation, Patient, Project, ProjectMembership, Subscription } from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import { Job } from 'bullmq';
 import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';
+import { getRedis } from '../redis';
+
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { getClient } from '../database';
@@ -14,6 +23,7 @@ import { AuditEventOutcome } from '../util/auditevent';
 import { closeSubscriptionWorker, execSubscriptionJob, getSubscriptionQueue } from './subscription';
 
 jest.mock('node-fetch');
+jest.mock('ioredis');
 
 let repo: Repository;
 let botRepo: Repository;
@@ -1309,5 +1319,68 @@ describe('Subscription Worker', () => {
       await repo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
       expect(queue.add).not.toHaveBeenCalled();
+    }));
+
+  test('WebSocket Subscription', () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'websocket',
+        },
+      });
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      // Subscribe to the topic
+      const subscriber = getRedis().duplicate();
+      await subscriber.subscribe(subscription.id as string);
+
+      const deferredPromise = createDeferredPromise();
+
+      subscriber.on('message', (topic, message) => {
+        expect(topic).toEqual(subscription.id);
+        expect(JSON.parse(message)).toEqual(expect.any(Object));
+        deferredPromise.resolve();
+      });
+
+      subscriber.on('error', (err) => deferredPromise.reject(err));
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      await execSubscriptionJob(job);
+
+      // Expect that a job is published
+
+      // Clear the queue
+      queue.add.mockClear();
+
+      // Update the patient
+      await repo.updateResource({ ...patient, active: true });
+
+      // Update should also trigger the subscription
+      expect(queue.add).toHaveBeenCalled();
+
+      // Clear the queue
+      queue.add.mockClear();
+
+      // Delete the patient
+      await repo.deleteResource('Patient', patient.id as string);
+
+      expect(queue.add).toHaveBeenCalled();
+
+      await deferredPromise.promise;
     }));
 });

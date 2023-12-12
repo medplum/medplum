@@ -8,11 +8,13 @@ import { RequestContext, requestContextStore } from './context';
 import { handleFhircastConnection } from './fhircast/websocket';
 import { globalLogger } from './logger';
 import { getRedis } from './redis';
+import { handleR4SubscriptionConnection } from './subscriptions/websockets';
 
 const handlerMap = new Map<string, (socket: ws.WebSocket, request: IncomingMessage) => Promise<void>>();
 handlerMap.set('echo', handleEchoConnection);
 handlerMap.set('agent', handleAgentConnection);
 handlerMap.set('fhircast', handleFhircastConnection);
+handlerMap.set('subscriptions-r4', handleR4SubscriptionConnection);
 
 let wsServer: ws.Server | undefined = undefined;
 

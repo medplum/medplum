@@ -45,6 +45,7 @@ import {
   ResourceType,
   SearchParameter,
   StructureDefinition,
+  Subscription,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Pool, PoolClient } from 'pg';
@@ -257,6 +258,8 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     const resource = JSON.parse(rows[0].content as string) as T;
     await setCacheEntry(resource);
+    // TODO(ThatOneBro 01 Dec 23): Check if we can do this in the background
+    // setCacheEntry(resource).catch(console.error);
     return resource;
   }
 
@@ -456,7 +459,8 @@ export class Repository extends BaseRepository implements FhirRepository {
     const { resourceType, id } = resource;
     if (!id) {
       throw new OperationOutcomeError(badRequest('Missing id'));
-    } else if (!validator.isUUID(id)) {
+    }
+    if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
     await this.validateResource(resource);
@@ -505,13 +509,31 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     if (this.isNotModified(existing, result)) {
       return existing as T;
-    } else if (!this.isResourceWriteable(existing, result)) {
+    }
+
+    if (!this.isResourceWriteable(existing, result)) {
       // Check after the update
       throw new OperationOutcomeError(forbidden);
     }
 
     if (!this.isCacheOnly(result)) {
       await this.writeToDatabase(result);
+    } else if (result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
+      const redis = getRedis();
+      // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
+      const currentWsSubscriptionsStr = await redis.get('::subscriptions/r4::');
+      const currentWsSubscriptions = (
+        currentWsSubscriptionsStr ? JSON.parse(currentWsSubscriptionsStr) : []
+      ) as Subscription[];
+      const existingIdx = currentWsSubscriptions.findIndex(
+        (sub: Subscription) => (sub.id as string) === (result.id as string)
+      );
+      if (existingIdx !== -1) {
+        currentWsSubscriptions[existingIdx] = result;
+      } else {
+        currentWsSubscriptions.push(result);
+      }
+      await redis.set('::subscriptions/r4::', JSON.stringify(currentWsSubscriptions));
     }
     await setCacheEntry(result);
     await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
@@ -1221,7 +1243,8 @@ export class Repository extends BaseRepository implements FhirRepository {
       // Can be a Period
       if ('start' in value) {
         return this.buildDateTimeColumn(value.start);
-      } else if ('end' in value) {
+      }
+      if ('end' in value) {
         return this.buildDateTimeColumn(value.end);
       }
     }
@@ -1244,7 +1267,8 @@ export class Repository extends BaseRepository implements FhirRepository {
         if (value.reference) {
           // Handle normal "reference" properties
           return value.reference;
-        } else if (typeof value.identifier === 'object') {
+        }
+        if (typeof value.identifier === 'object') {
           // Handle logical (identifier-only) references by putting a placeholder in the column
           // NOTE(mattwiller 2023-11-01): This is done to enable searches using the :missing modifier;
           // actual identifier search matching is handled by the `<ResourceType>_Token` lookup tables
@@ -1551,7 +1575,8 @@ export class Repository extends BaseRepository implements FhirRepository {
     const resourceType = resource.resourceType;
     if (protectedResourceTypes.includes(resourceType)) {
       return false;
-    } else if (resource.meta?.project !== this.context.project) {
+    }
+    if (resource.meta?.project !== this.context.project) {
       return false;
     }
     return !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
@@ -1576,7 +1601,6 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!matchingPolicy) {
       return false;
     }
-
     if (matchingPolicy?.writeConstraint) {
       return matchingPolicy.writeConstraint.every((constraint) => {
         const invariant = evalFhirPathTyped(
@@ -1590,7 +1614,6 @@ export class Repository extends BaseRepository implements FhirRepository {
         return invariant.length === 1 && invariant[0].value === true;
       });
     }
-
     return true;
   }
 
@@ -1601,7 +1624,13 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @returns True if the resource should be cached only and not written to the database.
    */
   private isCacheOnly(resource: Resource): boolean {
-    return resource.resourceType === 'Login' && (resource.authMethod === 'client' || resource.authMethod === 'execute');
+    if (resource.resourceType === 'Login' && (resource.authMethod === 'client' || resource.authMethod === 'execute')) {
+      return true;
+    }
+    if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
+      return true;
+    }
+    return false;
   }
 
   /**

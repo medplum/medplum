@@ -17,6 +17,7 @@ import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
+import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
 import { patientEverythingHandler } from './operations/patienteverything';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
@@ -148,6 +149,9 @@ protectedRoutes.get('/Patient/:id/([$]|%24)everything', asyncWrap(patientEveryth
 
 // $expunge operation
 protectedRoutes.post('/:resourceType/:id/([$]|%24)expunge', asyncWrap(expungeHandler));
+
+// $get-ws-binding-token operation
+protectedRoutes.get('/:resourceType/:id/([$]|%24)get-ws-binding-token', asyncWrap(getWsBindingTokenHandler));
 
 // Validate create resource
 protectedRoutes.post(

@@ -6,8 +6,10 @@ import {
   isGone,
   matchesSearchRequest,
   normalizeOperationOutcome,
+  OperationOutcomeError,
   Operator,
   parseSearchUrl,
+  serverError,
   stringify,
 } from '@medplum/core';
 import { Bot, ProjectMembership, Reference, Resource, Subscription } from '@medplum/fhirtypes';
@@ -20,6 +22,7 @@ import { getRequestContext } from '../context';
 import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
+import { getRedis } from '../redis';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext, BackgroundJobInteraction } from './context';
 import { createAuditEvent, findProjectMembership, isFhirCriteriaMet, isJobSuccessful } from './utils';
@@ -139,6 +142,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
   for (const subscription of subscriptions) {
     const criteria = await matchesCriteria(resource, subscription, context);
     if (criteria) {
+      console.log('Matched criteria!', subscription);
       await addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
@@ -225,6 +229,10 @@ function matchesChannelType(subscription: Subscription): boolean {
     return true;
   }
 
+  if (channelType === 'websocket') {
+    return true;
+  }
+
   return false;
 }
 
@@ -252,7 +260,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
   if (!project) {
     return [];
   }
-  return systemRepo.searchResources<Subscription>({
+  const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
     filters: [
@@ -268,6 +276,14 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
+  // TODO: Can we include project ID in this key to make searches / deletes faster?
+  const inMemorySubscriptionsStr = await getRedis().get('::subscriptions/r4::');
+  if (inMemorySubscriptionsStr) {
+    const inMemorySubscriptions = JSON.parse(inMemorySubscriptionsStr) as Subscription[];
+    const matchedSubscriptions = inMemorySubscriptions.filter((sub) => sub.meta?.project === project);
+    subscriptions.push(...matchedSubscriptions);
+  }
+  return subscriptions;
 }
 
 /**
@@ -302,14 +318,21 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   }
 
   try {
-    const resourceVersion = await systemRepo.readVersion(resourceType, id, versionId);
+    const versionedResource = await systemRepo.readVersion(resourceType, id, versionId);
     const channelType = subscription.channel?.type;
-    if (channelType === 'rest-hook') {
-      if (subscription.channel?.endpoint?.startsWith('Bot/')) {
-        await execBot(subscription, resourceVersion, interaction);
-      } else {
-        await sendRestHook(job, subscription, resourceVersion, interaction);
-      }
+    switch (channelType) {
+      case 'rest-hook':
+        if (subscription.channel?.endpoint?.startsWith('Bot/')) {
+          await execBot(subscription, versionedResource, interaction);
+        } else {
+          await sendRestHook(job, subscription, versionedResource, interaction);
+        }
+        break;
+      case 'websocket':
+        await getRedis().publish(subscription.id as string, JSON.stringify(versionedResource));
+        break;
+      default:
+        throw new OperationOutcomeError(serverError(new Error('Subscription type not currently supported.')));
     }
   } catch (err) {
     await catchJobError(subscription, job, err);
@@ -498,8 +521,7 @@ async function catchJobError(subscription: Subscription, job: Job<SubscriptionJo
     await job.changePriority({ priority: 1 + job.attemptsMade });
 
     throw err;
-  } else {
-    // If the maxJobAttempts equals the jobs.attemptsMade, we won't throw, which won't trigger a retry
-    globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
   }
+  // If the maxJobAttempts equals the jobs.attemptsMade, we won't throw, which won't trigger a retry
+  globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
 }
