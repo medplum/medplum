@@ -29,38 +29,6 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket, reque
   const subscriptions = subscriptionsStr.split(',');
   await redisSubscriber.subscribe(...subscriptions);
 
-  // How do we identify who the subscription is for?
-
-  // Unsubscribing / cleanup? How does that work?
-
-  // Keep list of active websocket subscriptions in a shortlist? (cache them)
-  // When update to a given resource happens, check list of active subscriptions for criteria
-  // If one matches, find the associated
-  //
-
-  // Can these subscriptions be persistent? No, shouldn't be probably
-
-  // FLOW:
-  // Create subscription resource via FHIR API
-  // Get binding token via $get-ws-binding-token operation
-  // Open WebSocket connection to the provided URL
-  // Send: bind-with-token event (?)
-  // Get back bundle: Handshake
-  // Get back bundle: heartbeat (todo?)
-
-  // Get back bundle: event-notification:
-  // For each incoming "event", query against active in-memory subscriptions
-  // If passed, find associated Redis channel, publish notification there
-
-  // TODO now:
-  // - Add handshake bundle event
-  // - Add normal dispatch of events where subscriptions are checked for
-  // - When finding a matching subscription, do reverse lookup for channels associated with subscription, publish event to the channel via redis
-
-  // TODO: Add route for all subscriptions
-  // TODO: Add optional ID for subscription route
-  // TODO: Add heartbeat after refactor for agent, FHIRcast heartbeat
-
   redisSubscriber.on('message', (channel: string, message: string) => {
     globalLogger.debug('[WS] redis message', { channel, message });
     socket.send(message, { binary: false });
