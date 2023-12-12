@@ -10,10 +10,9 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { showNotification } from '@mantine/notifications';
 import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
-import { Anchor, Code, Group, Stack, Tabs, ThemeIcon } from '@mantine/core';
+import { Button, Code, Group, Stack, Tabs, ThemeIcon } from '@mantine/core';
 import { addProfileToResource, cleanResource } from './utils';
 import { IconCheck } from '@tabler/icons-react';
-import { partition } from '../utils';
 
 export function ProfilesPage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -40,11 +39,8 @@ export function ProfilesPage(): JSX.Element | null {
     medplum
       .searchResources('StructureDefinition', { type: resourceType, derivation: 'constraint' })
       .then((results) => {
-        const [supported, unsupported] = partition(results, isSupportedProfileStructureDefinition);
+        const supported = results.filter(isSupportedProfileStructureDefinition);
         setAvailableProfiles(supported);
-        if (unsupported.length > 0) {
-          console.warn('Unsupported profile StructureDefinitions', unsupported);
-        }
       })
       .catch(console.error);
   }, [medplum, resourceType]);
@@ -52,7 +48,7 @@ export function ProfilesPage(): JSX.Element | null {
   useEffect(() => {
     if (availableProfiles) {
       const activeProfiles = availableProfiles.filter(
-        (profile) => resource?.meta?.profile?.includes(profile.url ?? '') ?? false
+        (profile) => resource?.meta?.profile?.includes(profile.url) ?? false
       );
       setActiveProfiles(activeProfiles);
       if (activeProfiles[0]) {
@@ -72,18 +68,20 @@ export function ProfilesPage(): JSX.Element | null {
       <Document>
         <h2>Available {resourceType} profiles</h2>
         <Stack>
-          {availableProfiles?.map((profile, idx) => (
-            <ProfileListItem
-              key={profile.url ?? idx}
-              profile={profile}
-              active={resource.meta?.profile?.includes(profile.url ?? '') ?? false}
-              onSelect={() => {
-                if (currentProfile !== profile) {
-                  setCurrentProfile(profile);
-                }
-              }}
-            />
-          ))}
+          <Group noWrap>
+            {availableProfiles?.map((profile, idx) => (
+              <ProfileListItem
+                key={profile.url ?? idx}
+                profile={profile}
+                active={resource.meta?.profile?.includes(profile.url ?? '') ?? false}
+                onSelect={() => {
+                  if (currentProfile !== profile) {
+                    setCurrentProfile(profile);
+                  }
+                }}
+              />
+            ))}
+          </Group>
           {currentProfile && (
             <ProfileDetail profile={currentProfile} resourceType={resourceType} resource={resource} id={id} />
           )}
@@ -104,12 +102,15 @@ function ProfileListItem({
 }): JSX.Element {
   return (
     <Group spacing={4}>
-      {active && (
-        <ThemeIcon variant="light" color="green" size="sm" title="Active profile">
-          <IconCheck />
-        </ThemeIcon>
-      )}
-      <Anchor onClick={onSelect}>{profile.title}</Anchor>
+      <Button variant="outline" onClick={onSelect}>
+        {active && (
+          <ThemeIcon variant="light" color="green" size="sm" title="Active profile">
+            <IconCheck />
+          </ThemeIcon>
+        )}
+        &nbsp;
+        {profile.title}
+      </Button>
     </Group>
   );
 }
@@ -130,7 +131,6 @@ const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resourceType, id
   const handleSubmit = useCallback(
     (newResource: Resource): void => {
       setOutcome(undefined);
-      console.log('handleSubmit', newResource);
 
       const cleanedResource = cleanResource(newResource);
       addProfileToResource(cleanedResource, profile.url);
