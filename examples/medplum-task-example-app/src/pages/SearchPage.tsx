@@ -150,7 +150,7 @@ function getPopulatedSearch(parsedSearch: SearchRequest<Resource>, tab = 'active
   const sortRules = getDefaultSort(parsedSearch.resourceType);
   const filters = getTaskFilters(tab);
 
-  const populatedSearch = {
+  const populatedSearch: SearchRequest = {
     ...parsedSearch,
     fields,
     sortRules,

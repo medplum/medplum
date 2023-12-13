@@ -74,7 +74,7 @@ export function TaskPage(): JSX.Element {
       </Grid.Col>
       <Grid.Col span={5}>
         <Paper p="md" key={task ? task.id : 'loading'}>
-          <Title>{getDisplayString(task)}</Title>
+          <Title>{task.code?.coding?.[0].display ? task.code?.coding[0].display : getDisplayString(task)}</Title>
           <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
             <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
               {tabs.map((tab) => (
