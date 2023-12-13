@@ -18,6 +18,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
   }
 
   function setUse(use: 'temp' | 'old' | 'usual' | 'official' | 'nickname' | 'anonymous' | 'maiden' | undefined): void {
+    // || instead of ?? to handle empty strings
     setValueWrapper({ ...value, use: use || undefined });
   }
 
@@ -38,6 +39,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
   function setFamily(family: string): void {
     setValueWrapper({
       ...value,
+      // || instead of ?? to handle empty strings
       family: family || undefined,
     });
   }

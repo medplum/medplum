@@ -301,14 +301,6 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return <TimingInput {...properties} />;
     case PropertyType.Dosage:
     case PropertyType.UsageContext:
-      return (
-        <BackboneElementInput
-          typeName={propertyType}
-          defaultValue={defaultValue}
-          onChange={onChange}
-          outcome={outcome}
-        />
-      );
     default:
       return (
         <BackboneElementInput

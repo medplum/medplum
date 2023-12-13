@@ -1651,8 +1651,6 @@ export class MedplumClient extends EventTarget {
         }
 
         indexStructureDefinitionBundle(response, profileUrl);
-
-        // TODO{profiles} search parameters?
       })()
     );
     this.setCacheEntry(cacheKey, promise);

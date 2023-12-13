@@ -50,8 +50,6 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
   }
 
   if (!profileUrl) {
-    // TODO{profiles} should there be a ResourceForm context to disable all profile-specific behavior?
-    // revert to JSON if the extension doesn't have a profile URL specified
     return <ExtensionJsonInput {...props} />;
   }
 

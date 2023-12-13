@@ -20,7 +20,6 @@ export function ProfilesPage(): JSX.Element | null {
   const [resource, setResource] = useState<Resource | undefined>();
   const [currentProfile, setCurrentProfile] = useState<SupportedProfileStructureDefinition>();
   const [availableProfiles, setAvailableProfiles] = useState<SupportedProfileStructureDefinition[]>();
-  const [_activeProfiles, setActiveProfiles] = useState<SupportedProfileStructureDefinition[]>();
 
   useEffect(() => {
     medplum
@@ -31,7 +30,7 @@ export function ProfilesPage(): JSX.Element | null {
       });
   }, [medplum, resourceType, id]);
 
-  // TODO{profiles} This is a bit inefficient since the entire structure definition
+  // This is a bit inefficient since the entire structure definition
   // for each available profile is being fetched. All that is really needed is the title & url
   // The SD is useful for the time being to populate the Snapshot and JSON debugging tabs;
   // but those will likely be removed before deploying
@@ -50,12 +49,9 @@ export function ProfilesPage(): JSX.Element | null {
       const activeProfiles = availableProfiles.filter(
         (profile) => resource?.meta?.profile?.includes(profile.url) ?? false
       );
-      setActiveProfiles(activeProfiles);
       if (activeProfiles[0]) {
         setCurrentProfile(activeProfiles[0]);
       }
-    } else {
-      setActiveProfiles([]);
     }
   }, [resource, availableProfiles]);
 
@@ -64,30 +60,28 @@ export function ProfilesPage(): JSX.Element | null {
   }
 
   return (
-    <>
-      <Document>
-        <h2>Available {resourceType} profiles</h2>
-        <Stack>
-          <Group noWrap>
-            {availableProfiles?.map((profile, idx) => (
-              <ProfileListItem
-                key={profile.url ?? idx}
-                profile={profile}
-                active={resource.meta?.profile?.includes(profile.url ?? '') ?? false}
-                onSelect={() => {
-                  if (currentProfile !== profile) {
-                    setCurrentProfile(profile);
-                  }
-                }}
-              />
-            ))}
-          </Group>
-          {currentProfile && (
-            <ProfileDetail profile={currentProfile} resourceType={resourceType} resource={resource} id={id} />
-          )}
-        </Stack>
-      </Document>
-    </>
+    <Document>
+      <h2>Available {resourceType} profiles</h2>
+      <Stack>
+        <Group noWrap>
+          {availableProfiles?.map((profile, idx) => (
+            <ProfileListItem
+              key={profile.url ?? idx}
+              profile={profile}
+              active={resource.meta?.profile?.includes(profile.url ?? '') ?? false}
+              onSelect={() => {
+                if (currentProfile !== profile) {
+                  setCurrentProfile(profile);
+                }
+              }}
+            />
+          ))}
+        </Group>
+        {currentProfile && (
+          <ProfileDetail profile={currentProfile} resourceType={resourceType} resource={resource} id={id} />
+        )}
+      </Stack>
+    </Document>
   );
 }
 
