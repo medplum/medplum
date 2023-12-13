@@ -10,9 +10,9 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { showNotification } from '@mantine/notifications';
 import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
-import { Button, Code, Group, Stack, Tabs, ThemeIcon } from '@mantine/core';
-import { addProfileToResource, cleanResource } from './utils';
-import { IconCheck } from '@tabler/icons-react';
+import { ActionIcon, Button, Group, Stack, Switch, Tabs, Text } from '@mantine/core';
+import { addProfileToResource, cleanResource, removeProfileFromResource } from './utils';
+import { IconCircleFilled } from '@tabler/icons-react';
 
 export function ProfilesPage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -44,17 +44,6 @@ export function ProfilesPage(): JSX.Element | null {
       .catch(console.error);
   }, [medplum, resourceType]);
 
-  useEffect(() => {
-    if (availableProfiles) {
-      const activeProfiles = availableProfiles.filter(
-        (profile) => resource?.meta?.profile?.includes(profile.url) ?? false
-      );
-      if (activeProfiles[0]) {
-        setCurrentProfile(activeProfiles[0]);
-      }
-    }
-  }, [resource, availableProfiles]);
-
   if (!resource) {
     return null;
   }
@@ -63,76 +52,85 @@ export function ProfilesPage(): JSX.Element | null {
     <Document>
       <h2>Available {resourceType} profiles</h2>
       <Stack>
-        <Group noWrap>
-          {availableProfiles?.map((profile, idx) => (
-            <ProfileListItem
-              key={profile.url ?? idx}
-              profile={profile}
-              active={resource.meta?.profile?.includes(profile.url ?? '') ?? false}
-              onSelect={() => {
-                if (currentProfile !== profile) {
-                  setCurrentProfile(profile);
-                }
-              }}
+        <>
+          <Tabs
+            value={currentProfile?.url}
+            onTabChange={(newProfileUrl) => setCurrentProfile(availableProfiles?.find((p) => p.url === newProfileUrl))}
+          >
+            <Tabs.List>
+              {availableProfiles?.map((profile) => {
+                const isActive = resource.meta?.profile?.includes(profile.url);
+                const title = isActive
+                  ? `This profile is present in this resource's meta.profile property.`
+                  : `This profile is not included in this resource's meta.profile property.`;
+                return (
+                  <Tabs.Tab
+                    key={profile.url}
+                    value={profile.url}
+                    title={title}
+                    rightSection={
+                      isActive && (
+                        <ActionIcon variant="transparent" color="green" size="xs">
+                          <IconCircleFilled size="80%" />
+                        </ActionIcon>
+                      )
+                    }
+                  >
+                    {profile.title || profile.name}
+                  </Tabs.Tab>
+                );
+              })}
+            </Tabs.List>
+          </Tabs>
+          {currentProfile ? (
+            <ProfileDetail
+              key={currentProfile.url}
+              profile={currentProfile}
+              resourceType={resourceType}
+              resource={resource}
+              id={id}
+              onResourceUpdated={(newResource) => setResource(newResource)}
             />
-          ))}
-        </Group>
-        {currentProfile && (
-          <ProfileDetail profile={currentProfile} resourceType={resourceType} resource={resource} id={id} />
-        )}
+          ) : (
+            <Text my="lg" fz="lg" fs="italic" ta="center">
+              Select a profile above
+            </Text>
+          )}
+        </>
       </Stack>
     </Document>
   );
 }
-
-function ProfileListItem({
-  profile,
-  onSelect,
-  active,
-}: {
-  active: boolean;
-  profile: SupportedProfileStructureDefinition;
-  onSelect: () => void;
-}): JSX.Element {
-  return (
-    <Group spacing={4}>
-      <Button variant="outline" onClick={onSelect}>
-        {active && (
-          <ThemeIcon variant="light" color="green" size="sm" title="Active profile">
-            <IconCheck />
-          </ThemeIcon>
-        )}
-        &nbsp;
-        {profile.title}
-      </Button>
-    </Group>
-  );
-}
-
-const TAB_ORDER = ['Edit', 'JSON', 'Snapshot'] as const;
 
 type ProfileDetailProps = {
   profile: SupportedProfileStructureDefinition;
   resourceType: ResourceType;
   resource: Resource;
   id: string;
+  onResourceUpdated: (newResource: Resource) => void;
 };
-const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resourceType, id, resource }) => {
+
+const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resourceType, id, resource, onResourceUpdated }) => {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
+  const [active, setActive] = useState(() => resource.meta?.profile?.includes(profile.url));
 
   const handleSubmit = useCallback(
     (newResource: Resource): void => {
       setOutcome(undefined);
-
       const cleanedResource = cleanResource(newResource);
-      addProfileToResource(cleanedResource, profile.url);
+      if (active) {
+        addProfileToResource(cleanedResource, profile.url);
+      } else {
+        removeProfileFromResource(cleanedResource, profile.url);
+      }
 
       medplum
         .updateResource(cleanedResource)
-        .then(() => {
-          navigate(`/${resourceType}/${id}/details`);
+        .then((resp) => {
+          onResourceUpdated(resp);
+          // navigate(`/${resourceType}/${id}/details`);
           showNotification({ color: 'green', message: 'Success' });
         })
         .catch((err) => {
@@ -140,45 +138,32 @@ const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resourceType, id
           showNotification({ color: 'red', message: normalizeErrorString(err) });
         });
     },
-    [medplum, navigate, resourceType, id, profile.url]
+    [medplum, navigate, resourceType, id, profile.url, active]
   );
 
-  const handleDelete = useCallback(() => {
-    navigate(`/${resourceType}/${id}/delete`);
-  }, [navigate, resourceType, id]);
-
   return (
-    <div>
-      <Tabs defaultValue={TAB_ORDER[0]}>
-        <Stack spacing="lg">
-          <Tabs.List>
-            {TAB_ORDER.map((tab) => (
-              <Tabs.Tab key={tab} value={tab}>
-                {tab}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-          <Tabs.Panel value={'Edit' satisfies (typeof TAB_ORDER)[number]}>
-            <ResourceForm
-              profileUrl={profile.url}
-              defaultValue={resource}
-              onSubmit={handleSubmit}
-              onDelete={handleDelete}
-              outcome={outcome}
-            />
-          </Tabs.Panel>
-          <Tabs.Panel value={'Snapshot' satisfies (typeof TAB_ORDER)[number]}>
-            <Stack spacing="md">
-              <Code block>{JSON.stringify(profile.snapshot, undefined, 4)}</Code>
-            </Stack>
-          </Tabs.Panel>
-          <Tabs.Panel value={'JSON' satisfies (typeof TAB_ORDER)[number]}>
-            <Stack spacing="md">
-              <Code block>{JSON.stringify(profile, undefined, 4)}</Code>
-            </Stack>
-          </Tabs.Panel>
-        </Stack>
-      </Tabs>
-    </div>
+    <Stack>
+      <Switch
+        size="md"
+        checked={active}
+        label={`Conform resource to ${profile.title}`}
+        onChange={(e) => setActive(e.currentTarget.checked)}
+      />
+      {active ? (
+        <ResourceForm profileUrl={profile.url} defaultValue={resource} onSubmit={handleSubmit} outcome={outcome} />
+      ) : (
+        <form
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit(resource);
+          }}
+        >
+          <Group position="right" mt="xl">
+            <Button type="submit">OK</Button>
+          </Group>
+        </form>
+      )}
+    </Stack>
   );
 };
