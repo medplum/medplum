@@ -59,10 +59,13 @@ jobs:
         env:
           APP_BUCKET: ${{ secrets.STAGING_APP_BUCKET }}
           AWS_REGION: ${{ secrets.STAGING_AWS_REGION }}
+      - name: Build Docker Image
+        run: ./scripts/build-docker.sh
+        env:
+          DOCKERHUB_REPOSITORY: ${{ secrets.STAGING_DOCKERHUB_REPOSITORY }}
       - name: Deploy Server
         run: ./scripts/deploy-server.sh
         env:
           AWS_REGION: ${{ secrets.STAGING_AWS_REGION }}
-          DOCKERHUB_REPOSITORY: ${{ secrets.STAGING_DOCKERHUB_REPOSITORY }}
           ECS_CLUSTER: ${{ secrets.STAGING_ECS_CLUSTER }}
           ECS_SERVICE: ${{ secrets.STAGING_ECS_SERVICE }}
