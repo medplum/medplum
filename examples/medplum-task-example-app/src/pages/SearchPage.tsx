@@ -1,4 +1,4 @@
-import { filterProps, Tabs } from '@mantine/core';
+import { Tabs } from '@mantine/core';
 import {
   Filter,
   formatSearchQuery,
@@ -118,6 +118,7 @@ function getDefaultFields(resourceType: string): string[] {
   return fields;
 }
 
+// Get the default sort for a given resource
 function getDefaultSort(resourceType: string): SortRule[] {
   const defaultSort = [{ code: '-_lastUpdated' }];
 
@@ -129,6 +130,7 @@ function getDefaultSort(resourceType: string): SortRule[] {
   return defaultSort;
 }
 
+// Get the filters for the active and completed tabs
 function getTaskFilters(currentTab: string): Filter[] {
   const filter = [];
   if (currentTab === 'active') {
@@ -146,7 +148,7 @@ function getTaskFilters(currentTab: string): Filter[] {
 function getPopulatedSearch(parsedSearch: SearchRequest<Resource>, tab = 'active') {
   const fields = getDefaultFields(parsedSearch.resourceType);
   const sortRules = getDefaultSort(parsedSearch.resourceType);
-  const filters = parsedSearch.resourceType === 'Task' ? getTaskFilters(tab) : [];
+  const filters = getTaskFilters(tab);
 
   const populatedSearch = {
     ...parsedSearch,

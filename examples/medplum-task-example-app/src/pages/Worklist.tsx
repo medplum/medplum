@@ -21,10 +21,12 @@ export function Worklist(): JSX.Element {
   };
 
   useEffect(() => {
+    // Filter for tasks assigned to the current user
     const filters = [{ code: 'owner', operator: Operator.EQUALS, value: `${getReferenceString(profile)}` }];
     const fields = ['id', '_lastUpdated', 'owner', 'priority', 'for'];
     const sortRules = [{ code: '-priority-order,due-date' }];
 
+    // Filter for active/complete tabs
     if (currentTab === 'active') {
       filters.push({ code: 'status:not', operator: Operator.EQUALS, value: 'completed' });
     } else {
