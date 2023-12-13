@@ -41,7 +41,7 @@ export function App(): JSX.Element | null {
       <ErrorBoundary key={location.key}>
         <Suspense fallback={<Loading />}>
           <Routes>
-            <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
+            <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/:resourceType" element={<SearchPage />} />
             <Route path="/:resourceType/new" element={<CreateResourcePage />} />
@@ -55,7 +55,11 @@ export function App(): JSX.Element | null {
               <Route path="notes" element={<TaskPage />} />
             </Route>
             <Route path="/Task/worklist" element={<Worklist />} />
+            <Route path="/Task/worklist/active" element={<Worklist />} />
+            <Route path="/Task/worklist/completed" element={<Worklist />} />
             <Route path="/Task/queue" element={<TaskByRoleQueue />} />
+            <Route path="/Task/queue/active" element={<TaskByRoleQueue />} />
+            <Route path="/Task/queue/completed" element={<TaskByRoleQueue />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>

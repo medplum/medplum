@@ -1,19 +1,29 @@
-import { Filter, getReferenceString, Operator, ResourceArray } from '@medplum/core';
+import { Tabs } from '@mantine/core';
+import { Filter, getReferenceString, Operator, ResourceArray, SearchRequest } from '@medplum/core';
 import { Practitioner, PractitionerRole } from '@medplum/fhirtypes';
-import { Document, SearchControl, useMedplum } from '@medplum/react';
+import { Document, SearchControl, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export function TaskByRoleQueue(): JSX.Element {
   const medplum = useMedplum();
+  const profile = useMedplumProfile() as Practitioner;
   const navigate = useNavigate();
-  const [filters, setFilters] = useState<Filter[]>();
   const [roles, setRoles] = useState<PractitionerRole[]>();
+  const tabs = ['Active', 'Completed'];
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    const tab = window.location.pathname.split('/').pop();
+    return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
+  });
+  const [search, setSearch] = useState<SearchRequest>({ resourceType: 'Task' });
+
+  const handleTabChange = (newTab: string) => {
+    setCurrentTab(newTab);
+    navigate(`/Task/queue/${newTab}`);
+  };
 
   useEffect(() => {
     const getUserPractitionerRoles = async () => {
-      const profile = (await medplum.getProfile()) as Practitioner;
-
       const results: ResourceArray<PractitionerRole> = await medplum.searchResources('PractitionerRole', {
         practitioner: `Practitioner/${profile.id}`,
       });
@@ -29,40 +39,72 @@ export function TaskByRoleQueue(): JSX.Element {
   }, []);
 
   useEffect(() => {
-    const getRoleFilters = async () => {
-      const filterQueue: Filter[] = [];
+    const filters: Filter[] = [{ code: 'owner:missing', operator: Operator.EQUALS, value: 'true' }];
 
-      console.log(roles);
+    if (roles) {
+      for (const role of roles) {
+        const roleCode = role.specialty?.[0].coding?.[0];
 
-      if (roles) {
-        for (const role of roles) {
-          const roleCode = role.specialty?.[0].coding?.[0];
-
-          if (roleCode?.code) {
-            const filter: Filter = { code: 'performer', operator: Operator.EQUALS, value: roleCode.code };
-            filterQueue.push(filter);
-          }
+        if (roleCode?.code) {
+          const filter: Filter = { code: 'performer', operator: Operator.EQUALS, value: roleCode.code };
+          filters.push(filter);
         }
       }
+    }
 
-      filterQueue.push({ code: 'owner', operator: Operator.MISSING, value: 'true' });
+    addActiveOrCompletedFilters(filters, currentTab);
+    console.log(filters);
 
-      setFilters(filterQueue);
+    const fields = ['id', 'priority', 'description', 'for'];
+    const sortRules = [{ code: '-priority-order,due-date' }];
+
+    const populatedSearch = {
+      ...search,
+      fields,
+      sortRules,
+      filters,
     };
 
-    getRoleFilters();
-  }, [roles]);
+    setSearch(populatedSearch);
+  }, [roles, currentTab]);
+
+  console.log(search);
 
   return (
     <Document>
-      <SearchControl
-        search={{
-          resourceType: 'Task',
-          filters: filters,
-          fields: ['id', 'priority', 'description', 'for'],
-        }}
-        onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
-      />
+      <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
+        <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
+          {tabs.map((tab) => (
+            <Tabs.Tab key={tab} value={tab.toLowerCase()}>
+              {tab}
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
+        <Tabs.Panel value="active">
+          <SearchControl
+            search={search}
+            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+            hideFilters={true}
+            hideToolbar={true}
+          />
+        </Tabs.Panel>
+        <Tabs.Panel value="completed">
+          <SearchControl
+            search={search}
+            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+            hideFilters={true}
+            hideToolbar={true}
+          />
+        </Tabs.Panel>
+      </Tabs>
     </Document>
   );
+}
+
+function addActiveOrCompletedFilters(filters: Filter[], currentTab: string) {
+  if (currentTab === 'active') {
+    filters.push({ code: 'status:not', operator: Operator.EQUALS, value: 'completed' });
+  } else {
+    filters.push({ code: 'status', operator: Operator.EQUALS, value: 'completed' });
+  }
 }

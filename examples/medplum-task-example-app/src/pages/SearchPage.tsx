@@ -1,5 +1,6 @@
-import { Tabs } from '@mantine/core';
+import { filterProps, Tabs } from '@mantine/core';
 import {
+  Filter,
   formatSearchQuery,
   getReferenceString,
   Operator,
@@ -7,6 +8,7 @@ import {
   SearchRequest,
   SortRule,
 } from '@medplum/core';
+import { Resource } from '@medplum/fhirtypes';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -26,27 +28,23 @@ export function SearchPage(): JSX.Element {
   });
 
   const handleTabChange = (newTab: string) => {
-    console.log(newTab);
     setCurrentTab(newTab);
+    const parsedSearch = parseSearchDefinition(location.pathname + location.search);
+    const populatedSearch = getPopulatedSearch(parsedSearch, newTab);
+
+    setSearch(populatedSearch);
   };
 
   useEffect(() => {
     // Parse the search definition from the url and get the correct fields for the resource type
     const parsedSearch = parseSearchDefinition(location.pathname + location.search);
-    const fields = getDefaultFields(parsedSearch.resourceType);
-    const sort = getDefaultSort(parsedSearch.resourceType);
+    if (!parsedSearch.resourceType) {
+      navigate('/Task');
+      return;
+    }
+    const populatedSearch = getPopulatedSearch(parsedSearch, currentTab);
 
-    const activeFilter = [{ code: 'status', operator: Operator.EQUALS, value: 'completed' }];
-
-    // Add the defaul fields to your parsed search definition
-    const populatedSearch = {
-      ...parsedSearch,
-      fields,
-      sort,
-      filter: currentTab === 'active' ? activeFilter : [],
-    };
-
-    console.log(populatedSearch);
+    console.log(currentTab);
 
     if (
       location.pathname === `/${populatedSearch.resourceType}` &&
@@ -58,7 +56,7 @@ export function SearchPage(): JSX.Element {
       // If it doesn't, navigate to the correct URL
       navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
     }
-  }, [medplum, navigate, location, currentTab]);
+  }, [medplum, navigate, location]);
 
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
     return <Loading />;
@@ -80,6 +78,7 @@ export function SearchPage(): JSX.Element {
               search={search}
               onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
               onNew={() => setIsNewOpen(!isNewOpen)}
+              hideFilters={true}
             />
           </Tabs.Panel>
           <Tabs.Panel value="completed">
@@ -87,6 +86,7 @@ export function SearchPage(): JSX.Element {
               search={search}
               onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
               onNew={() => setIsNewOpen(!isNewOpen)}
+              hideFilters={true}
             />
           </Tabs.Panel>
         </Tabs>
@@ -123,8 +123,37 @@ function getDefaultSort(resourceType: string): SortRule[] {
 
   switch (resourceType) {
     case 'Task':
-      defaultSort[0] = { code: '-priority-order' };
+      defaultSort[0] = { code: '-priority-order,due-date' };
   }
 
   return defaultSort;
+}
+
+function getTaskFilters(currentTab: string): Filter[] {
+  const filter = [];
+  if (currentTab === 'active') {
+    filter.push({
+      code: 'status:not',
+      operator: Operator.EQUALS,
+      value: 'completed',
+    });
+  } else {
+    filter.push({ code: 'status', operator: Operator.EQUALS, value: 'completed' });
+  }
+  return filter;
+}
+
+function getPopulatedSearch(parsedSearch: SearchRequest<Resource>, tab = 'active') {
+  const fields = getDefaultFields(parsedSearch.resourceType);
+  const sortRules = getDefaultSort(parsedSearch.resourceType);
+  const filters = parsedSearch.resourceType === 'Task' ? getTaskFilters(tab) : [];
+
+  const populatedSearch = {
+    ...parsedSearch,
+    fields,
+    sortRules,
+    filters,
+  };
+
+  return populatedSearch;
 }

@@ -22,7 +22,7 @@ export function AssignRoleModal({ onAssignRole, isOpen, onClose }: AssignRoleMod
               linkId: 'assign-role',
               text: 'Select Role',
               type: 'choice',
-              answerValueSet: 'https://example-business.org',
+              answerValueSet: 'http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate',
             },
           ],
         }}
