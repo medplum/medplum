@@ -544,6 +544,22 @@ describe('Client', () => {
         )
       ).toThrow();
     });
+
+    test('should respect scope parameter', async () => {
+      const result = client.getExternalAuthRedirectUri(
+        'https://auth.example.com/authorize',
+        'external-client-123',
+        'https://me.example.com',
+        {
+          clientId: 'medplum-client-123',
+          scope: 'profile email foo',
+        },
+        false
+      );
+
+      const { searchParams } = new URL(result);
+      expect(searchParams.get('scope')).toBe('profile email foo');
+    });
   });
 
   test('New project success', async () => {
