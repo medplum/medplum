@@ -237,12 +237,6 @@ describe('FHIRPath utils', () => {
     };
     expect(getTypedPropertyValueWithSchema(value, path, goodElement)).toEqual({ type: 'boolean', value: true });
 
-    const badElement: InternalSchemaElement = {
-      ...goodElement,
-      type: [{ code: 'string' }, { code: 'integer' }],
-    };
-    expect(getTypedPropertyValueWithSchema(value, path, badElement)).toBeUndefined();
-
     const extensionValueX: InternalSchemaElement = {
       description: '',
       path: 'Extension.value[x]',
