@@ -16,8 +16,9 @@ describe('BaseSchema', () => {
       type: [{ code: 'string' }],
     });
 
-    const inflated = inflateElement(compressed);
+    const inflated = inflateElement('x', compressed);
     expect(inflated).toMatchObject({
+      path: 'x',
       min: 0,
       max: 1,
       type: [{ code: 'string' }],
@@ -40,8 +41,9 @@ describe('BaseSchema', () => {
       type: [{ code: 'string' }],
     });
 
-    const inflated = inflateElement(compressed);
+    const inflated = inflateElement('x', compressed);
     expect(inflated).toMatchObject({
+      path: 'x',
       min: 1,
       max: Infinity,
       isArray: true,
@@ -65,8 +67,9 @@ describe('BaseSchema', () => {
       type: [{ code: 'string' }],
     });
 
-    const inflated = inflateElement(compressed);
+    const inflated = inflateElement('x', compressed);
     expect(inflated).toMatchObject({
+      path: 'x',
       min: 1,
       max: 3,
       isArray: true,

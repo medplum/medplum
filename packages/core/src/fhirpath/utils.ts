@@ -1,5 +1,5 @@
 import { Coding, Period, Quantity } from '@medplum/fhirtypes';
-import { getElementDefinition, isResource, PropertyType, TypedValue } from '../types';
+import { PropertyType, TypedValue, getElementDefinition, isResource } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
 import { capitalize, isEmpty } from '../utils';
 
@@ -93,34 +93,57 @@ export function getTypedPropertyValueWithSchema(
   path: string,
   element: InternalSchemaElement
 ): TypedValue[] | TypedValue | undefined {
+  // Consider the following cases of the inputs:
+
+  // "path" input types:
+  // 1. Simple path, e.g., "name"
+  // 2. Choice-of-type without type, e.g., "value[x]"
+  // 3. Choice-of-type with type, e.g., "valueBoolean"
+
+  // "element" can be either:
+  // 1. Full ElementDefinition from a well-formed StructureDefinition
+  // 2. Partial ElementDefinition from base-schema.json
+
+  // "types" input types:
+  // 1. Simple single type, e.g., "string"
+  // 2. Choice-of-type with full array of types, e.g., ["string", "integer", "Quantity"]
+  // 3. Choice-of-type with single array of types, e.g., ["Quantity"]
+
+  // Note that FHIR Profiles can define a single type for a choice-of-type element.
+  // e.g. https://build.fhir.org/ig/HL7/US-Core/StructureDefinition-us-core-birthsex.html
+  // Therefore, cannot only check for endsWith('[x]') since FHIRPath uses this code path
+  // with a path of 'value' and expects Choice of Types treatment
+
   const types = element.type;
   if (!types || types.length === 0) {
     return undefined;
   }
 
+  // The path parameter can be in both "value[x]" form and "valueBoolean" form.
+  // So we need to use the element path to find the type.
+  let resultPath = path;
   let resultValue: any = undefined;
   let resultType = 'undefined';
 
-  // check path.endsWith('[x]') in addition to multiple types
-  // since extensions can define a single type for their value[x] element,
-  // e.g. https://build.fhir.org/ig/HL7/US-Core/StructureDefinition-us-core-birthsex.html
-  // cannot only check for endsWith('[x]') since FHIRPath uses this code path
-  // with a path of 'value' and expects Choice of Types treatment
-  if (types.length > 1 || path.endsWith('[x]')) {
+  if (element.path.endsWith('[x]')) {
+    const elementBasePath = (element.path.split('.').pop() as string).replace('[x]', '');
     for (const type of types) {
-      const path2 = path.replace('[x]', '') + capitalize(type.code);
-      if (path2 in value) {
-        resultValue = value[path2];
+      resultPath = elementBasePath + capitalize(type.code);
+      resultValue = value[resultPath];
+      if (resultValue !== undefined) {
         resultType = type.code;
         break;
       }
     }
-  } else if (types.length === 1) {
+  } else {
+    console.assert(types.length === 1, 'Expected single type', element.path);
     resultValue = value[path];
     resultType = types[0].code;
   }
 
-  const primitiveExtension = value['_' + path];
+  // When checking for primitive extensions, we must use the "resolved" path.
+  // In the case of [x] choice-of-type, the type must be resolved to a single type.
+  const primitiveExtension = value['_' + resultPath];
   if (primitiveExtension) {
     if (Array.isArray(resultValue)) {
       resultValue = resultValue.map((v, i) => (primitiveExtension[i] ? safeAssign(v ?? {}, primitiveExtension[i]) : v));
