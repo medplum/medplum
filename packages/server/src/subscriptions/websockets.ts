@@ -4,8 +4,6 @@ import ws from 'ws';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 
-const tokenMap = new Map<ws.WebSocket, string>();
-
 interface BaseSubscriptionClientMsg {
   type: string;
   payload: Record<string, unknown>;
@@ -59,7 +57,6 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
       case 'bind-with-token': {
         const tokenPayload = parseJWTPayload(msg.payload.token);
         await onBind(tokenPayload.login_id as string);
-        tokenMap.set(socket, msg.payload.token);
         break;
       }
       default:
