@@ -50,6 +50,7 @@ export function SecretsPage(): JSX.Element {
         name="secret"
         defaultValue={secrets}
         onChange={setSecrets}
+        outcome={undefined}
       />
       <Button type="submit">Save</Button>
     </form>

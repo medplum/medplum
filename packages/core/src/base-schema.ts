@@ -42,8 +42,10 @@ export function inflateElement(partial: Partial<InternalSchemaElement>): Interna
   };
 }
 
-export function inflateBaseSchema(base: BaseSchema): Record<string, InternalTypeSchema> {
-  const output: Record<string, InternalTypeSchema> = Object.create(null);
+export type DataTypesMap = { [type: string]: InternalTypeSchema };
+
+export function inflateBaseSchema(base: BaseSchema): DataTypesMap {
+  const output: DataTypesMap = Object.create(null);
   for (const [key, schema] of Object.entries(base)) {
     output[key] = {
       name: key,

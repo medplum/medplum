@@ -16,6 +16,10 @@ export const Basic = (): JSX.Element => (
       defaultValue={
         { url: 'http://hl7.org/fhir/StructureDefinition/patient-interpreterRequired', valueBoolean: true } as Extension
       }
+      path={''}
+      onChange={undefined}
+      outcome={undefined}
+      propertyType={{ code: 'Extension' }}
     />
   </Document>
 );

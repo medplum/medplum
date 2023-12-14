@@ -1,7 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, Questionnaire } from '@medplum/fhirtypes';
 import { PropertyType, TypedValue } from '../types';
-import { indexStructureDefinitionBundle } from '../typeschema/types';
+import { InternalSchemaElement, indexStructureDefinitionBundle } from '../typeschema/types';
 import {
   fhirPathArrayEquals,
   fhirPathArrayEquivalent,
@@ -9,6 +9,7 @@ import {
   fhirPathEquivalent,
   fhirPathIs,
   getTypedPropertyValue,
+  getTypedPropertyValueWithSchema,
   toJsBoolean,
   toTypedValue,
 } from './utils';
@@ -215,6 +216,37 @@ describe('FHIRPath utils', () => {
         linkId: '1.1',
         type: 'display',
       },
+    });
+  });
+
+  test('getTypedPropertyValueWithSchema', () => {
+    const value = { active: true };
+    const path = 'active';
+    const goodElement: InternalSchemaElement = {
+      description: '',
+      path: 'Patient.active',
+      min: 0,
+      max: 0,
+      type: [{ code: 'boolean' }],
+    };
+    expect(getTypedPropertyValueWithSchema(value, path, goodElement)).toEqual({ type: 'boolean', value: true });
+
+    const badElement: InternalSchemaElement = {
+      ...goodElement,
+      type: [{ code: 'string' }, { code: 'integer' }],
+    };
+    expect(getTypedPropertyValueWithSchema(value, path, badElement)).toBeUndefined();
+
+    const extensionValueX: InternalSchemaElement = {
+      description: '',
+      path: 'Extension.value[x]',
+      min: 1,
+      max: 1,
+      type: [{ code: 'boolean' }],
+    };
+    expect(getTypedPropertyValueWithSchema({ valueBoolean: true }, 'value[x]', extensionValueX)).toEqual({
+      type: 'boolean',
+      value: true,
     });
   });
 });

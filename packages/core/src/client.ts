@@ -67,7 +67,7 @@ import {
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage, IClientStorage } from './storage';
 import { indexSearchParameter } from './types';
-import { indexStructureDefinitionBundle, isDataTypeLoaded } from './typeschema/types';
+import { indexStructureDefinitionBundle, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
 import {
   CodeChallengeMethod,
   ProfileResource,
@@ -1570,6 +1570,7 @@ export class MedplumClient extends EventTarget {
         name,
         kind,
         description,
+        type,
         snapshot {
           element {
             id,
@@ -1585,6 +1586,7 @@ export class MedplumClient extends EventTarget {
             contentReference,
             type {
               code,
+              profile,
               targetProfile
             },
             binding {
@@ -1609,6 +1611,44 @@ export class MedplumClient extends EventTarget {
 
         for (const searchParameter of response.data.SearchParameterList) {
           indexSearchParameter(searchParameter);
+        }
+      })()
+    );
+    this.setCacheEntry(cacheKey, promise);
+    return promise;
+  }
+
+  /**
+   * Requests the schema for a profile.
+   * If the schema is already cached, the promise is resolved immediately.
+   * @category Schema
+   * @param profileUrl - The FHIR URL of the profile
+   * @returns Promise to a schema with the requested profile.
+   */
+  requestProfileSchema(profileUrl: string): Promise<void> {
+    if (isProfileLoaded(profileUrl)) {
+      return Promise.resolve();
+    }
+
+    const cacheKey = profileUrl + '-requestSchema';
+    const cached = this.getCacheEntry(cacheKey, undefined);
+    if (cached) {
+      return cached.value;
+    }
+
+    const promise = new ReadablePromise<void>(
+      (async () => {
+        // Just sort by lastUpdated. Ideally, it would also be based on a logical sort of version
+        // See https://hl7.org/fhir/references.html#canonical-matching for more discussion
+        const sd = await this.searchOne('StructureDefinition', {
+          url: profileUrl,
+          _sort: '-_lastUpdated',
+        });
+
+        if (!sd) {
+          console.warn(`No StructureDefinition found for ${profileUrl}!`);
+        } else {
+          indexStructureDefinitionBundle([sd], profileUrl);
         }
       })()
     );

@@ -419,16 +419,19 @@ function matchesSpecifiedValue(value: TypedValue | TypedValue[], element: Intern
   return true;
 }
 
-function matchDiscriminant(
+export function matchDiscriminant(
   value: TypedValue | TypedValue[] | undefined,
   discriminator: SliceDiscriminator,
-  slice: SliceDefinition
+  slice: SliceDefinition,
+  elements?: Record<string, InternalSchemaElement>
 ): boolean {
   if (Array.isArray(value)) {
     // Only single values can match
     return false;
   }
-  const sliceElement = slice.elements[discriminator.path];
+
+  const sliceElement: InternalSchemaElement = (elements ?? slice.elements)[discriminator.path];
+
   const sliceType = slice.type;
   switch (discriminator.type) {
     case 'value':

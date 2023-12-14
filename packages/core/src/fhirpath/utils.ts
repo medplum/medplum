@@ -75,7 +75,7 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
 
   const elementDefinition = getElementDefinition(input.type, path);
   if (elementDefinition) {
-    return getTypedPropertyValueWithSchema(input, path, elementDefinition);
+    return getTypedPropertyValueWithSchema(input.value, path, elementDefinition);
   }
 
   return getTypedPropertyValueWithoutSchema(input, path);
@@ -83,13 +83,13 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
 
 /**
  * Returns the value of the property and the property type using a type schema.
- * @param input - The base context (FHIR resource or backbone element).
+ * @param value - The base context (FHIR resource or backbone element).
  * @param path - The property path.
  * @param element - The property element definition.
  * @returns The value of the property and the property type.
  */
-function getTypedPropertyValueWithSchema(
-  input: TypedValue,
+export function getTypedPropertyValueWithSchema(
+  value: TypedValue['value'],
   path: string,
   element: InternalSchemaElement
 ): TypedValue[] | TypedValue | undefined {
@@ -101,20 +101,26 @@ function getTypedPropertyValueWithSchema(
   let resultValue: any = undefined;
   let resultType = 'undefined';
 
-  if (types.length === 1) {
-    resultValue = input.value[path];
-    resultType = types[0].code;
-  } else {
+  // check path.endsWith('[x]') in addition to multiple types
+  // since extensions can define a single type for their value[x] element,
+  // e.g. https://build.fhir.org/ig/HL7/US-Core/StructureDefinition-us-core-birthsex.html
+  // cannot only check for endsWith('[x]') since FHIRPath uses this code path
+  // with a path of 'value' and expects Choice of Types treatment
+  if (types.length > 1 || path.endsWith('[x]')) {
     for (const type of types) {
       const path2 = path.replace('[x]', '') + capitalize(type.code);
-      if (path2 in input.value) {
-        resultValue = input.value[path2];
+      if (path2 in value) {
+        resultValue = value[path2];
         resultType = type.code;
         break;
       }
     }
+  } else if (types.length === 1) {
+    resultValue = value[path];
+    resultType = types[0].code;
   }
-  const primitiveExtension = input.value['_' + path];
+
+  const primitiveExtension = value['_' + path];
   if (primitiveExtension) {
     if (Array.isArray(resultValue)) {
       resultValue = resultValue.map((v, i) => (primitiveExtension[i] ? safeAssign(v ?? {}, primitiveExtension[i]) : v));

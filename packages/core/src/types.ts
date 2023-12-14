@@ -282,12 +282,21 @@ export function getSearchParameter(resourceType: string, code: string): SearchPa
  * @param path - The FHIR element definition path.
  * @returns The best guess of the display name.
  */
-export function getPropertyDisplayName(path: string): string {
+export function getPathDisplayName(path: string): string {
   // Get the property name, which is the remainder after the last period
   // For example, for path "Patient.birthDate"
   // the property name is "birthDate"
   const propertyName = path.replaceAll('[x]', '').split('.').pop() as string;
 
+  return getPropertyDisplayName(propertyName);
+}
+
+/**
+ * Return s a human friendly display name for a FHIR element property or slice name
+ * @param propertyName - The FHIR element property or slice name
+ * @returns The best guess of the display name.
+ */
+export function getPropertyDisplayName(propertyName: string): string {
   // Split by capital letters
   // Capitalize the first letter of each word
   // Join together with spaces in between
@@ -302,7 +311,7 @@ export function getPropertyDisplayName(path: string): string {
     .replace(/\s+/g, ' ');
 }
 
-const capitalizedWords = new Set(['ID', 'IP', 'PKCE', 'JWKS', 'URI', 'URL']);
+const capitalizedWords = new Set(['ID', 'IP', 'PKCE', 'JWKS', 'URI', 'URL', 'OMB']);
 
 function capitalizeDisplayWord(word: string): string {
   const upper = word.toUpperCase();
@@ -324,7 +333,20 @@ export function getElementDefinition(typeName: string, propertyName: string): In
   if (!typeSchema) {
     return undefined;
   }
-  return typeSchema.elements[propertyName] ?? typeSchema.elements[propertyName + '[x]'];
+  return getElementDefinitionFromElements(typeSchema.elements, propertyName);
+}
+
+/**
+ * Returns an element definition from mapping of elements by property name.
+ * @param elements  - A mapping of property names to element definitions
+ * @param propertyName - The property name of interest
+ * @returns The element definition if found.
+ */
+export function getElementDefinitionFromElements(
+  elements: InternalTypeSchema['elements'],
+  propertyName: string
+): InternalSchemaElement | undefined {
+  return elements[propertyName] ?? elements[propertyName + '[x]'];
 }
 
 /**
