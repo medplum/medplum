@@ -86,13 +86,6 @@ Batches are processed in order, so resources must be created in your bundle prio
   </MedplumCodeBlock>
 </details>
 
-<details>
-  <summary>Example: Create a patient and update it in the same batch request</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="createThenUpdate">
-    {ExampleCode}
-  </MedplumCodeBlock>
-</details>
-
 ## Conditional Batch Actions
 
 There may be situations where you would only like to create a a resource as part of a batch request if it does not already exist.
@@ -104,6 +97,29 @@ The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#se
 <details>
   <summary>Example: Create a patient and organization, only if the organization does not already exist</summary>
   <MedplumCodeBlock language="ts" selectBlocks="conditionalCreate">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+## Performing Upserts
+
+You can combine conditional creates and internal references to perform an "upsert" operation to either create a resource or update it in place.
+
+The example below first uses a `POST` request to conditionally create create a patient, and then performs a `PUT` with the _same patient data_ to perform an in-place update.
+
+If the patient doesn't exist:
+
+- `POST` creates the `Patient`
+- `PUT` updates the `Patient` with the exact same data (no-op)
+
+If the patient does exist:
+
+- `POST` doesn't create a new `Patient` (no-op)
+- `PUT` updates the `Patient`
+
+<details>
+  <summary>Example: Create a patient and update it in the same batch request</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="upsert">
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
@@ -123,7 +139,9 @@ Instead you should create the queue of `Promise` requests and then use `Promise.
   <MedplumCodeBlock language="ts" selectBlocks="autobatchingWrong">
     {ExampleCode}
   </MedplumCodeBlock>
-  ✅ CORRECT
+
+✅ CORRECT
+
   <MedplumCodeBlock language="ts" selectBlocks="autobatchingCorrect">
     {ExampleCode}
   </MedplumCodeBlock>
