@@ -1,30 +1,42 @@
 import { Tabs } from '@mantine/core';
-import { getReferenceString, Operator, SearchRequest } from '@medplum/core';
+import { formatSearchQuery, getReferenceString, Operator, SearchRequest } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { Document, SearchControl, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export function Worklist(): JSX.Element {
+export function MyTasks(): JSX.Element {
   const profile = useMedplumProfile() as Resource;
   const navigate = useNavigate();
-  const [search, setSearch] = useState<SearchRequest>({ resourceType: 'Task' });
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Task',
+    fields: ['id', '_lastUpdated', 'owner', 'priority', 'for'],
+    sortRules: [{ code: '-priority-order,due-date' }],
+  });
   const tabs = ['Active', 'Completed'];
   const [currentTab, setCurrentTab] = useState<string>(() => {
-    const tab = window.location.pathname.split('/').pop();
-    return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
+    const searchQuery = window.location.search;
+    return handleInitialTab(searchQuery);
   });
 
   const handleTabChange = (newTab: string) => {
     setCurrentTab(newTab);
-    navigate(`/Task/worklist/${newTab}`);
+    const updatedSearch: SearchRequest = { resourceType: 'Task' };
+    updatedSearch.filters = [];
+
+    if (newTab === 'active') {
+      updatedSearch.filters.push({ code: 'status:not', operator: Operator.EQUALS, value: 'completed' });
+    }
+    if (newTab === 'completed') {
+      updatedSearch.filters.push({ code: 'status', operator: Operator.EQUALS, value: 'completed' });
+    }
+
+    navigate(formatSearchQuery(updatedSearch));
   };
 
   useEffect(() => {
     // Filter for tasks assigned to the current user
     const filters = [{ code: 'owner', operator: Operator.EQUALS, value: `${getReferenceString(profile)}` }];
-    const fields = ['id', '_lastUpdated', 'owner', 'priority', 'for'];
-    const sortRules = [{ code: '-priority-order,due-date' }];
 
     // Filter for active/complete tabs
     if (currentTab === 'active') {
@@ -33,11 +45,9 @@ export function Worklist(): JSX.Element {
       filters.push({ code: 'status', operator: Operator.EQUALS, value: 'completed' });
     }
 
-    const populatedSearch = {
+    const populatedSearch: SearchRequest = {
       ...search,
       filters,
-      fields,
-      sortRules,
     };
 
     setSearch(populatedSearch);
@@ -72,4 +82,12 @@ export function Worklist(): JSX.Element {
       </Tabs>
     </Document>
   );
+}
+
+function handleInitialTab(searchQuery: string) {
+  if (searchQuery === '?status=completed') {
+    return 'completed';
+  } else {
+    return 'active';
+  }
 }

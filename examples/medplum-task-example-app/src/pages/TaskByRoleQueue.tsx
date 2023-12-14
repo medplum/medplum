@@ -5,22 +5,16 @@ import { Document, SearchControl, useMedplum, useMedplumProfile } from '@medplum
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+/**
+ * A queue that displays unclaimed tasks that are assigned to the current user's role
+ * @returns A React component that displays a queue of tasks for a given role
+ */
 export function TaskByRoleQueue(): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
   const navigate = useNavigate();
   const [roles, setRoles] = useState<PractitionerRole[]>();
-  const tabs = ['Active', 'Completed'];
-  const [currentTab, setCurrentTab] = useState<string>(() => {
-    const tab = window.location.pathname.split('/').pop();
-    return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
-  });
   const [search, setSearch] = useState<SearchRequest>({ resourceType: 'Task' });
-
-  const handleTabChange = (newTab: string) => {
-    setCurrentTab(newTab);
-    navigate(`/Task/queue/${newTab}`);
-  };
 
   useEffect(() => {
     // Search for all PractitionerRoles for the logged in user
@@ -56,7 +50,6 @@ export function TaskByRoleQueue(): JSX.Element {
     }
 
     // Add filters for active and complete tabs
-    addActiveOrCompletedFilters(filters, currentTab);
 
     const fields = ['id', 'priority', 'description', 'for'];
     const sortRules = [{ code: '-priority-order,due-date' }];
@@ -69,43 +62,16 @@ export function TaskByRoleQueue(): JSX.Element {
     };
 
     setSearch(populatedSearch);
-  }, [roles, currentTab]);
+  }, [roles]);
 
   return (
     <Document>
-      <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
-        <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
-          {tabs.map((tab) => (
-            <Tabs.Tab key={tab} value={tab.toLowerCase()}>
-              {tab}
-            </Tabs.Tab>
-          ))}
-        </Tabs.List>
-        <Tabs.Panel value="active">
-          <SearchControl
-            search={search}
-            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
-            hideFilters={true}
-            hideToolbar={true}
-          />
-        </Tabs.Panel>
-        <Tabs.Panel value="completed">
-          <SearchControl
-            search={search}
-            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
-            hideFilters={true}
-            hideToolbar={true}
-          />
-        </Tabs.Panel>
-      </Tabs>
+      <SearchControl
+        search={search}
+        onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+        hideFilters={true}
+        hideToolbar={true}
+      />
     </Document>
   );
-}
-
-function addActiveOrCompletedFilters(filters: Filter[], currentTab: string) {
-  if (currentTab === 'active') {
-    filters.push({ code: 'status:not', operator: Operator.EQUALS, value: 'completed' });
-  } else {
-    filters.push({ code: 'status', operator: Operator.EQUALS, value: 'completed' });
-  }
 }

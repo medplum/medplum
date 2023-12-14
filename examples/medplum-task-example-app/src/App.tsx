@@ -6,20 +6,18 @@ import { Timeline } from './components/Timeline';
 import { AllTasks } from './pages/AllTasks';
 import { CreateResourcePage } from './pages/CreateResourcePage';
 import { DetailsPage } from './pages/DetailsPage';
-import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { TaskByRoleQueue } from './pages/TaskByRoleQueue';
 import { TaskPage } from './pages/TaskPage';
-import { Worklist } from './pages/Worklist';
+import { MyTasks } from './pages/MyTasks';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const location = useLocation();
   const profile = useMedplumProfile();
-  // const navigate = useNavigate();
 
   if (medplum.isLoading()) {
     return null;
@@ -32,7 +30,7 @@ export function App(): JSX.Element | null {
         {
           title: 'My Links',
           links: [
-            { icon: <IconLayoutList />, label: 'Worklist', href: '/Task/worklist' },
+            { icon: <IconLayoutList />, label: 'My Tasks', href: '/Task/mytasks' },
             { icon: <IconListCheck />, label: 'Tasks For My Role', href: '/Task/queue' },
             { icon: <IconGridDots />, label: 'All Tasks', href: '/Task' },
           ],
@@ -56,12 +54,10 @@ export function App(): JSX.Element | null {
               <Route path="notes" element={<TaskPage />} />
             </Route>
             <Route path="/Task" element={<AllTasks />} />
-            <Route path="/Task/worklist" element={<Worklist />} />
-            <Route path="/Task/worklist/active" element={<Worklist />} />
-            <Route path="/Task/worklist/completed" element={<Worklist />} />
+            <Route path="/Task/mytasks" element={<MyTasks />} />
+            <Route path="/Task/mytasks/active" element={<MyTasks />} />
+            <Route path="/Task/mytasks/completed" element={<MyTasks />} />
             <Route path="/Task/queue" element={<TaskByRoleQueue />} />
-            <Route path="/Task/queue/active" element={<TaskByRoleQueue />} />
-            <Route path="/Task/queue/completed" element={<TaskByRoleQueue />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>
