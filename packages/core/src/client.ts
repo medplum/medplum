@@ -1640,17 +1640,16 @@ export class MedplumClient extends EventTarget {
       (async () => {
         // Just sort by lastUpdated. Ideally, it would also be based on a logical sort of version
         // See https://hl7.org/fhir/references.html#canonical-matching for more discussion
-        const response = await this.searchResources('StructureDefinition', {
+        const sd = await this.searchOne('StructureDefinition', {
           url: profileUrl,
           _sort: '-_lastUpdated',
-          _count: 1,
         });
 
-        if (response.length === 0) {
+        if (!sd) {
           console.warn(`No StructureDefinition found for ${profileUrl}!`);
+        } else {
+          indexStructureDefinitionBundle([sd], profileUrl);
         }
-
-        indexStructureDefinitionBundle(response, profileUrl);
       })()
     );
     this.setCacheEntry(cacheKey, promise);

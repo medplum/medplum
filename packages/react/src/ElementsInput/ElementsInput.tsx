@@ -1,13 +1,13 @@
 import { Stack } from '@mantine/core';
 import { InternalSchemaElement, TypedValue, getPathDisplayName } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMemo, useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
-import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { FormSection } from '../FormSection/FormSection';
 import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
 import { getValueAndTypeFromElement } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 
 const EXTENSION_KEYS = ['extension', 'modifierExtension'];
 

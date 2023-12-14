@@ -12,14 +12,14 @@ import {
   matchDiscriminant,
   tryGetProfile,
 } from '@medplum/core';
-import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
-import { MouseEvent, useState, useEffect } from 'react';
-import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
-import { killEvent } from '../utils/dom';
-import { SliceInput } from '../SliceInput/SliceInput';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
+import { MouseEvent, useEffect, useState } from 'react';
+import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
+import { SliceInput } from '../SliceInput/SliceInput';
 import { SupportedSliceDefinition, isSupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
+import { killEvent } from '../utils/dom';
 
 export interface ResourceArrayInputProps {
   property: InternalSchemaElement;

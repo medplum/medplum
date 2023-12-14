@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { InternalSchemaElement, getPropertyDisplayName, isEmpty } from '@medplum/core';
-import { FormSection } from '../FormSection/FormSection';
 import { ActionIcon, Group, Stack } from '@mantine/core';
+import { InternalSchemaElement, getPropertyDisplayName, isEmpty } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
+import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
+import React, { useState } from 'react';
+import { ElementsInput } from '../ElementsInput/ElementsInput';
+import { FormSection } from '../FormSection/FormSection';
 import { ElementDefinitionTypeInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { killEvent } from '../utils/dom';
-import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
-import { ElementsInput } from '../ElementsInput/ElementsInput';
-import { OperationOutcome } from '@medplum/fhirtypes';
 import { SupportedSliceDefinition } from './SliceInput.utils';
 
 type SliceInputProps = {
