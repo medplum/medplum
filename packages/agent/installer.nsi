@@ -5,6 +5,7 @@
 !define COMPANY_NAME             "Medplum"
 !define APP_NAME                 "Medplum Agent"
 !define SERVICE_NAME             "MedplumAgent"
+!define SERVICE_DESCRIPTION      "Securely connects local devices to ${COMPANY_NAME} cloud"
 !define SERVICE_FILE_NAME        "medplum-agent-$%MEDPLUM_VERSION%-win64.exe"
 !define INSTALLER_FILE_NAME      "medplum-agent-installer-$%MEDPLUM_VERSION%.exe"
 !define PRODUCT_VERSION          "$%MEDPLUM_VERSION%.0"
@@ -35,6 +36,7 @@ RequestExecutionLevel admin
 Var WelcomeDialog
 Var WelcomeLabel
 Var alreadyInstalled
+Var foundPropertiesFile
 Var baseUrl
 Var clientId
 Var clientSecret
@@ -46,6 +48,21 @@ Function .onInit
     ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\Services\${SERVICE_NAME}" "ImagePath"
     ${If} $0 != ""
         StrCpy $alreadyInstalled 1
+    ${Else}
+        StrCpy $alreadyInstalled 0
+    ${EndIf}
+
+    ${If} ${FileExists} "$INSTDIR\agent.properties"
+        StrCpy $foundPropertiesFile 1
+    ${Else}
+        StrCpy $foundPropertiesFile 0
+    ${EndIf}
+
+    # Check if already installed and properties file not found
+    ${If} $alreadyInstalled == 1
+    ${AndIf} $foundPropertiesFile == 0
+        MessageBox MB_ICONSTOP "The currently installed version is too old and needs to be uninstalled manually before proceeding."
+        Quit
     ${EndIf}
 FunctionEnd
 
@@ -147,14 +164,41 @@ Function UpgradeApp
     DetailPrint "Sleeping..."
     Sleep 3000
 
+    # Deleting the service
+    DetailPrint "Deleting service..."
+    ExecWait "sc.exe delete ${SERVICE_NAME}" $1
+    DetailPrint "Exit code $1"
+
     # Copy the new files to the installation directory
+    File dist\shawl-v1.4.0-legal.txt
+    File dist\shawl-v1.4.0-win64.exe
     File dist\${SERVICE_FILE_NAME}
     File README.md
 
+    # Create the service
+    DetailPrint "Creating service..."
+    ExecWait "shawl-v1.4.0-win64.exe add --name $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
+    DetailPrint "Exit code $1"
+
+    # Set service display name
+    DetailPrint "Setting service display name..."
+    ExecWait "sc.exe config $\"${SERVICE_NAME}$\" displayname= $\"${APP_NAME}$\"" $1
+    DetailPrint "Exit code $1"
+
+    # Set service description
+    DetailPrint "Setting service description..."
+    ExecWait "sc.exe description $\"${SERVICE_NAME}$\" $\"${SERVICE_DESCRIPTION}$\"" $1
+    DetailPrint "Exit code $1"
+
+    # Set service to start automatically
+    DetailPrint "Setting service to start automatically..."
+    ExecWait "sc.exe config $\"${SERVICE_NAME}$\" start= auto" $1
+    DetailPrint "Exit code $1"
+
     # Start the service
     DetailPrint "Starting service..."
-    ExecWait "sc.exe start ${SERVICE_NAME}" $1
-    DetailPrint "Start service returned $1"
+    ExecWait "sc.exe start $\"${SERVICE_NAME}$\"" $1
+    DetailPrint "Exit code $1"
 
 FunctionEnd
 
@@ -180,8 +224,8 @@ Function InstallApp
     DetailPrint "Agent ID: $agentId"
 
     # Copy the service files to the root directory
-    File dist\shawl-v1.3.0-legal.txt
-    File dist\shawl-v1.3.0-win64.exe
+    File dist\shawl-v1.4.0-legal.txt
+    File dist\shawl-v1.4.0-win64.exe
     File dist\${SERVICE_FILE_NAME}
     File README.md
 
@@ -195,7 +239,7 @@ Function InstallApp
 
     # Create the service
     DetailPrint "Creating service..."
-    ExecWait "shawl-v1.3.0-win64.exe add --name $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
+    ExecWait "shawl-v1.4.0-win64.exe add --name $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service display name
@@ -205,7 +249,7 @@ Function InstallApp
 
     # Set service description
     DetailPrint "Setting service description..."
-    ExecWait "sc.exe description $\"${SERVICE_NAME}$\" $\"Securely connects local devices to ${COMPANY_NAME} cloud$\"" $1
+    ExecWait "sc.exe description $\"${SERVICE_NAME}$\" $\"${SERVICE_DESCRIPTION}$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service to start automatically

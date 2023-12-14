@@ -158,3 +158,10 @@ jobs:
               name: "medplum-agent-installer-" + packageJson.version + ".exe",
               data: await fs.readFileSync("packages/agent/medplum-agent-installer-" + packageJson.version + ".exe")
             });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-installer-" + packageJson.version + ".exe.sha256",
+              data: await fs.readFileSync("packages/agent/medplum-agent-installer-" + packageJson.version + ".exe.sha256")
+            });

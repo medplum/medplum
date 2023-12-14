@@ -85,22 +85,36 @@ java -jar jsign-5.0.jar \
   --alias "$SM_CERT_ALIAS" \
   "dist/medplum-agent-$MEDPLUM_VERSION-win64.exe"
 
-# Copy Shawl
-cp ../../node_modules/node-shawl/bin/shawl-v1.3.0-legal.txt dist
-cp ../../node_modules/node-shawl/bin/shawl-v1.3.0-win64.exe dist
+# Download Shawl exe
+rm -f shawl-v1.4.0-win64.zip
+wget https://github.com/mtkennerly/shawl/releases/download/v1.4.0/shawl-v1.4.0-win64.zip
+unzip shawl-v1.4.0-win64.zip
+mv shawl.exe dist/shawl-v1.4.0-win64.exe
+
+# Download Shawl legal
+rm -f shawl-v1.4.0-legal.zip
+wget https://github.com/mtkennerly/shawl/releases/download/v1.4.0/shawl-v1.4.0-legal.zip
+unzip shawl-v1.4.0-legal.zip
+mv shawl-v1.4.0-legal.txt dist
 
 # Sign the Shawl executable
 java -jar jsign-5.0.jar \
   --storetype DIGICERTONE \
   --storepass "$SM_API_KEY|$SM_CLIENT_CERT_FILE|$SM_CLIENT_CERT_PASSWORD" \
   --alias "$SM_CERT_ALIAS" \
-  dist/shawl-v1.3.0-win64.exe
+  dist/shawl-v1.4.0-win64.exe
 
 # Build the installer
 makensis installer.nsi
 
+# Generate the installer checksum
+sha256sum "medplum-agent-installer-$MEDPLUM_VERSION.exe" > "medplum-agent-installer-$MEDPLUM_VERSION.exe.sha256"
+
+# Check the installer checksum
+sha256sum --check "medplum-agent-installer-$MEDPLUM_VERSION.exe.sha256"
+
 # Check the build output
-ls -la "medplum-agent-installer-$MEDPLUM_VERSION.exe"
+ls -la
 
 # Move back to root
 popd
