@@ -275,12 +275,10 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
-  // TODO: Can we include project ID in this key to make searches / deletes faster?
-  const inMemorySubscriptionsStr = await getRedis().get('::subscriptions/r4::');
+  const inMemorySubscriptionsStr = await getRedis().get(`::subscriptions/r4::project::${project}`);
   if (inMemorySubscriptionsStr) {
     const inMemorySubscriptions = JSON.parse(inMemorySubscriptionsStr) as Subscription[];
-    const matchedSubscriptions = inMemorySubscriptions.filter((sub) => sub.meta?.project === project);
-    subscriptions.push(...matchedSubscriptions);
+    subscriptions.push(...inMemorySubscriptions);
   }
   return subscriptions;
 }

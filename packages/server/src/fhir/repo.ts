@@ -28,6 +28,7 @@ import {
   protectedResourceTypes,
   resolveId,
   satisfiedAccessPolicy,
+  serverError,
   stringify,
   tooManyRequests,
   validateResource,
@@ -528,8 +529,12 @@ export class Repository extends BaseRepository implements FhirRepository {
       await this.writeToDatabase(result);
     } else if (result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
       const redis = getRedis();
+      const project = result?.meta?.project;
+      if (!project) {
+        throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
+      }
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
-      const currentWsSubscriptionsStr = await redis.get('::subscriptions/r4::');
+      const currentWsSubscriptionsStr = await redis.get(`::subscriptions/r4::project::${project}`);
       const currentWsSubscriptions = (
         currentWsSubscriptionsStr ? JSON.parse(currentWsSubscriptionsStr) : []
       ) as Subscription[];
@@ -541,7 +546,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       } else {
         currentWsSubscriptions.push(result);
       }
-      await redis.set('::subscriptions/r4::', JSON.stringify(currentWsSubscriptions));
+      await redis.set(`::subscriptions/r4::project::${project}`, JSON.stringify(currentWsSubscriptions));
     }
   }
 
