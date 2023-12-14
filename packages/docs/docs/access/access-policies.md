@@ -119,6 +119,16 @@ The following policy uses a FHIR Search Query to grant access only to Coverage w
 
 Note that in this implementation access policy, only the `Coverage` resources that have `payor=Organization/123` will be visible.
 
+:::warning Limitations
+While Medplum `AccessPolicies` use the [FHIR search syntax](/docs/search), it does not implement the full search specification. Specifically, the `criteria` syntax has the following limitations:
+
+- Only `:not` and `:missing` [modifiers](/docs/search/basic-search#search-modifiers) are allowed.
+- [Chained searches](/docs/search/chained-search#forward-chained-search) are **not** allowed.
+
+:::
+
+### Write Constraints
+
 Constraints on writes to a resource can also be specified using [FHIRPath expressions][fhirpath] in the `AccessPolicy.resource.writeConstraint` field. These expressions may contain the special variable `%before` to refer to the resource as it existed before the write. Any property accesses will by default refer to the resource as it exists with updates applied, but the `%after` variable is also provided for convenience.
 
 :::tip
