@@ -259,8 +259,6 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     const resource = JSON.parse(rows[0].content as string) as T;
     await setCacheEntry(resource);
-    // TODO(ThatOneBro 01 Dec 23): Check if we can do this in the background
-    // setCacheEntry(resource).catch(console.error);
     return resource;
   }
 
