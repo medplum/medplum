@@ -17,6 +17,7 @@ export const AddressInput = (): JSX.Element => (
       property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'Address' }] }}
       defaultPropertyType={PropertyType.Address}
       onChange={console.log}
+      outcome={undefined}
     />
   </Document>
 );
@@ -29,6 +30,7 @@ export const BooleanInput = (): JSX.Element => (
       property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'boolean' }] }}
       defaultPropertyType={PropertyType.boolean}
       onChange={console.log}
+      outcome={undefined}
     />
   </Document>
 );
@@ -41,6 +43,7 @@ export const DateInput = (): JSX.Element => (
       property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'date' }] }}
       defaultPropertyType={PropertyType.date}
       onChange={console.log}
+      outcome={undefined}
     />
   </Document>
 );
@@ -53,6 +56,7 @@ export const DateTimeInput = (): JSX.Element => (
       property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'dateTime' }] }}
       defaultPropertyType={PropertyType.dateTime}
       onChange={console.log}
+      outcome={undefined}
     />
   </Document>
 );

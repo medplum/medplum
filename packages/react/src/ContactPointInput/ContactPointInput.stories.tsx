@@ -12,8 +12,10 @@ export const Basic = (): JSX.Element => (
   <Document>
     <ContactPointInput
       name="test"
+      path="Patient.contact"
       defaultValue={{ use: 'home', system: 'email', value: 'homer@example.com' } as ContactPoint}
       onChange={console.log}
+      outcome={undefined}
     />
   </Document>
 );
