@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cdk",
-  "version": "2.2.2",
+  "version": "2.2.3",
   "description": "Medplum CDK Infra as Code",
   "homepage": "https://www.medplum.com/",
   "bugs": {
