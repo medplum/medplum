@@ -26,7 +26,6 @@
     "@medplum/core": "*",
     "@medplum/hl7": "*",
     "dcmjs-dimse": "0.1.23",
-    "node-shawl": "1.3.0",
     "node-windows": "1.0.0-beta.8",
     "ws": "8.14.2"
   },
