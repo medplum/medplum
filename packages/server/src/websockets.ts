@@ -4,11 +4,9 @@ import http, { IncomingMessage } from 'http';
 import ws from 'ws';
 import { handleAgentConnection } from './agent/websockets';
 import { getConfig } from './config';
-import { AuthenticatedRequestContext, RequestContext, requestContextStore } from './context';
-import { getRepoForLogin } from './fhir/accesspolicy';
+import { RequestContext, requestContextStore } from './context';
 import { handleFhircastConnection } from './fhircast/websocket';
 import { globalLogger } from './logger';
-import { authenticateTokenImpl } from './oauth/middleware';
 import { getRedis } from './redis';
 import { handleR4SubscriptionConnection } from './subscriptions/websockets';
 
@@ -37,16 +35,7 @@ export function initWebSockets(server: http.Server): void {
 
     const path = getWebSocketPath(request.url as string);
     const handler = handlerMap.get(path);
-    if (handler && path === 'subscriptions-r4') {
-      const { login, project, membership } = await authenticateTokenImpl(request);
-      const repo = await getRepoForLogin(login, membership, project.strictMode, false, project.checkReferencesOnWrite);
-      await requestContextStore.run(
-        new AuthenticatedRequestContext(RequestContext.empty(), login, project, membership, repo),
-        () => handler(socket, request)
-      );
-      // TODO: Figure out why this is necessary to make agent tests pass.
-      // It seems that the agent connection handler does not work in an authenticated context
-    } else if (handler) {
+    if (handler) {
       await requestContextStore.run(RequestContext.empty(), () => handler(socket, request));
     } else {
       socket.close();

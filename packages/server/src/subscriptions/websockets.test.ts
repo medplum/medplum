@@ -91,6 +91,7 @@ describe('WebSockets Subscriptions', () => {
       await request(server)
         .ws('/ws/subscriptions-r4')
         .set('Authorization', 'Bearer ' + accessToken)
+        .sendJson({ type: 'bind-with-token', payload: { token: accessToken } })
         // Add a new patient for this project
         .exec(async () => {
           const queue = getSubscriptionQueue() as any;

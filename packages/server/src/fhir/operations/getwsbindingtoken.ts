@@ -1,14 +1,12 @@
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, createReference, parseJWTPayload } from '@medplum/core';
 import { Parameters } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
+import { getAuthTokens } from '../../oauth/utils';
 import { getRedis } from '../../redis';
 import { sendOutcome } from '../outcomes';
 import { sendResponse } from '../routes';
-
-const ONE_HOUR = 60 * 60 * 1000;
 
 /**
  * Handles a GetWsBindingToken request.
@@ -24,11 +22,26 @@ const ONE_HOUR = 60 * 60 * 1000;
  * @param res - The HTTP response.
  */
 export async function getWsBindingTokenHandler(req: Request, res: Response): Promise<void> {
-  const {
-    login: { id: loginId },
-  } = getAuthenticatedContext();
+  const { login, membership, profile, accessToken } = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const redis = getRedis();
+  const loginId = login.id as string;
+
+  let token: string;
+  if (!accessToken) {
+    const tokens = await getAuthTokens(
+      {
+        ...login,
+        membership: createReference(membership),
+      },
+      profile
+    );
+    token = tokens.accessToken;
+  } else {
+    token = accessToken;
+  }
+
+  const tokenPayload = parseJWTPayload(token);
 
   // Create params to send back
   const tokenParams = {
@@ -36,11 +49,11 @@ export async function getWsBindingTokenHandler(req: Request, res: Response): Pro
     parameter: [
       {
         name: 'token',
-        valueString: randomUUID(),
+        valueString: token,
       },
       {
         name: 'expiration',
-        valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString(),
+        valueDateTime: new Date((tokenPayload.exp as number) * 1000).toISOString(),
       },
       {
         name: 'websocket-url',

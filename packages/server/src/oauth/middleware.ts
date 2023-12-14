@@ -11,11 +11,12 @@ export interface AuthState {
   login: Login;
   project: Project;
   membership: ProjectMembership;
+  accessToken?: string;
 }
 
 export function authenticateRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
   return authenticateTokenImpl(req)
-    .then(async ({ login, project, membership }) => {
+    .then(async ({ login, project, membership, accessToken }) => {
       const ctx = getRequestContext();
       const repo = await getRepoForLogin(
         login,
@@ -24,7 +25,10 @@ export function authenticateRequest(req: Request, res: Response, next: NextFunct
         isExtendedMode(req),
         project.checkReferencesOnWrite
       );
-      requestContextStore.run(new AuthenticatedRequestContext(ctx, login, project, membership, repo), () => next());
+      requestContextStore.run(
+        new AuthenticatedRequestContext(ctx, login, project, membership, repo, undefined, accessToken),
+        () => next()
+      );
     })
     .catch(next);
 }

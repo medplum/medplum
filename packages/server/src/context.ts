@@ -1,10 +1,10 @@
-import { Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
-import { Repository, systemRepo } from './fhir/repo';
 import { ProfileResource, isUUID } from '@medplum/core';
-import { LogLevel, Logger } from './logger';
+import { Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { AsyncLocalStorage } from 'async_hooks';
-import { NextFunction, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
+import { NextFunction, Request, Response } from 'express';
+import { Repository, systemRepo } from './fhir/repo';
+import { LogLevel, Logger } from './logger';
 
 export class RequestContext {
   readonly requestId: string;
@@ -28,6 +28,7 @@ export class AuthenticatedRequestContext extends RequestContext {
   readonly membership: ProjectMembership;
   readonly login: Login;
   readonly profile: Reference<ProfileResource>;
+  readonly accessToken?: string;
 
   constructor(
     ctx: RequestContext,
@@ -35,7 +36,8 @@ export class AuthenticatedRequestContext extends RequestContext {
     project: Project,
     membership: ProjectMembership,
     repo: Repository,
-    logger?: Logger
+    logger?: Logger,
+    accessToken?: string
   ) {
     super(ctx.requestId, ctx.traceId, logger);
 
@@ -44,6 +46,7 @@ export class AuthenticatedRequestContext extends RequestContext {
     this.membership = membership;
     this.login = login;
     this.profile = membership.profile as Reference<ProfileResource>;
+    this.accessToken = accessToken;
   }
 
   static system(): AuthenticatedRequestContext {
