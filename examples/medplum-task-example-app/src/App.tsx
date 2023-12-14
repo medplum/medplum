@@ -3,6 +3,7 @@ import { IconGridDots, IconLayoutList, IconListCheck } from '@tabler/icons-react
 import { Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { Timeline } from './components/Timeline';
+import { AllTasks } from './pages/AllTasks';
 import { CreateResourcePage } from './pages/CreateResourcePage';
 import { DetailsPage } from './pages/DetailsPage';
 import { HomePage } from './pages/HomePage';
@@ -54,6 +55,7 @@ export function App(): JSX.Element | null {
               <Route path="timeline" element={<Timeline />} />
               <Route path="notes" element={<TaskPage />} />
             </Route>
+            <Route path="/Task" element={<AllTasks />} />
             <Route path="/Task/worklist" element={<Worklist />} />
             <Route path="/Task/worklist/active" element={<Worklist />} />
             <Route path="/Task/worklist/completed" element={<Worklist />} />
