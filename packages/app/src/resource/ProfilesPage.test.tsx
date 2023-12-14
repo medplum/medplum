@@ -11,11 +11,9 @@ import { AppRoutes } from '../AppRoutes';
 const medplum = new MockClient();
 
 describe('ProfilesPage', () => {
+  const fishPatientProfile = FishPatientResources.getFishPatientProfileSD();
   beforeAll(async () => {
-    for (const profile of [
-      FishPatientResources.getFishPatientProfileSD(),
-      FishPatientResources.getFishSpeciesExtensionSD(),
-    ]) {
+    for (const profile of [fishPatientProfile, FishPatientResources.getFishSpeciesExtensionSD()]) {
       await medplum.createResourceIfNoneExist<StructureDefinition>(profile, `url:${profile.url}`);
     }
   });
@@ -40,58 +38,60 @@ describe('ProfilesPage', () => {
     await waitFor(() => screen.getByText('Available Patient profiles'));
   }
 
-  test('Profiles tab automatically shows form when resource already has profile', async () => {
-    const patient = await medplum.createResource<Patient>(FishPatientResources.getSampleFishPatient());
-    await setup(`/Patient/${patient.id}/profiles`);
-
-    expect(screen.getByText('Available Patient profiles')).toBeInTheDocument();
-
-    // The name of the available profile
-    expect(screen.getByText('Fish Patient')).toBeInTheDocument();
-
-    // An element name from the profile
-    expect(screen.getByText('Species')).toBeInTheDocument();
-
-    expect(screen.queryByRole('button', { name: 'OK' })).toBeInTheDocument();
-  });
-
   test('Can add a profile to an empty resource', async () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
     await setup(`/Patient/${patient.id}/profiles`);
 
-    // The name of the available profile
-    expect(screen.queryByText('Fish Patient')).toBeInTheDocument();
-
     // The form should not be rendered yet
     expect(screen.queryByText('Species')).toBeNull();
 
-    expect(screen.queryByRole('button', { name: 'OK' })).toBeNull();
-
+    // Click the tab of a profile
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Fish Patient' }));
+      fireEvent.click(screen.getByText('Fish Patient'));
     });
 
-    expect(screen.queryByRole('button', { name: 'OK' })).toBeInTheDocument();
+    // Toggle comformance from false to true
+    const toggleInput = screen.getByTestId<HTMLInputElement>('profile-toggle');
+    expect(toggleInput.checked).toEqual(false);
+    await act(async () => {
+      fireEvent.click(toggleInput);
+    });
+
+    // The form should be rendered
+    expect(screen.queryByText('Species')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     });
 
     expect(screen.getByText('Success')).toBeInTheDocument();
+
+    const updatedPatient = await medplum.readResource('Patient', patient.id as string);
+    expect(updatedPatient.meta?.profile?.includes(fishPatientProfile.url)).toEqual(true);
   });
 
-  test('Delete button on edit page', async () => {
+  test('Can remove a profile from a resource with a profile', async () => {
     const patient = await medplum.createResource<Patient>(FishPatientResources.getSampleFishPatient());
+    expect(patient.meta?.profile?.includes(fishPatientProfile.url)).toEqual(true);
     await setup(`/Patient/${patient.id}/profiles`);
 
-    await waitFor(() => screen.getByText('Delete'));
-    expect(screen.getByText('Delete')).toBeInTheDocument();
-
+    // Click the tab of a profile
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete'));
+      fireEvent.click(screen.getByText('Fish Patient'));
     });
 
-    await waitFor(() => screen.getByText('Are you sure you want to delete this Patient?'));
-    expect(screen.getByText('Are you sure you want to delete this Patient?')).toBeInTheDocument();
+    // Toggle comformance from true to false
+    const toggleInput = screen.getByTestId<HTMLInputElement>('profile-toggle');
+    expect(toggleInput.checked).toEqual(true);
+    await act(async () => {
+      fireEvent.click(toggleInput);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+    });
+
+    const updatedPatient = await medplum.readResource('Patient', patient.id as string);
+    expect(updatedPatient.meta?.profile?.includes(fishPatientProfile.url)).toEqual(false);
   });
 });

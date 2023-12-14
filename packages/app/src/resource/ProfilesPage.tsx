@@ -1,18 +1,18 @@
+import { Button, Group, Stack, Switch, Tabs, Text, ThemeIcon, Title } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
-import React, { useCallback, useEffect, useState } from 'react';
 import {
   Document,
-  SupportedProfileStructureDefinition,
   ResourceForm,
+  SupportedProfileStructureDefinition,
   isSupportedProfileStructureDefinition,
   useMedplum,
 } from '@medplum/react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { showNotification } from '@mantine/notifications';
-import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
-import { ActionIcon, Button, Group, Stack, Switch, Tabs, Text } from '@mantine/core';
-import { addProfileToResource, cleanResource, removeProfileFromResource } from './utils';
 import { IconCircleFilled } from '@tabler/icons-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { addProfileToResource, cleanResource, removeProfileFromResource } from './utils';
 
 export function ProfilesPage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -36,10 +36,9 @@ export function ProfilesPage(): JSX.Element | null {
   // but those will likely be removed before deploying
   useEffect(() => {
     medplum
-      .searchResources('StructureDefinition', { type: resourceType, derivation: 'constraint' })
+      .searchResources('StructureDefinition', { type: resourceType, derivation: 'constraint', _count: 50 })
       .then((results) => {
-        const supported = results.filter(isSupportedProfileStructureDefinition);
-        setAvailableProfiles(supported);
+        setAvailableProfiles(results.filter(isSupportedProfileStructureDefinition));
       })
       .catch(console.error);
   }, [medplum, resourceType]);
@@ -50,7 +49,7 @@ export function ProfilesPage(): JSX.Element | null {
 
   return (
     <Document>
-      <h2>Available {resourceType} profiles</h2>
+      <Title order={2}>Available {resourceType} profiles</Title>
       <Stack>
         <>
           <Tabs
@@ -70,9 +69,9 @@ export function ProfilesPage(): JSX.Element | null {
                     title={title}
                     rightSection={
                       isActive && (
-                        <ActionIcon variant="transparent" color="green" size="xs">
-                          <IconCircleFilled size="80%" />
-                        </ActionIcon>
+                        <ThemeIcon variant="outline" color="green" size="xs" sx={{ borderStyle: 'none' }}>
+                          <IconCircleFilled size="90%" />
+                        </ThemeIcon>
                       )
                     }
                   >
@@ -86,9 +85,7 @@ export function ProfilesPage(): JSX.Element | null {
             <ProfileDetail
               key={currentProfile.url}
               profile={currentProfile}
-              resourceType={resourceType}
               resource={resource}
-              id={id}
               onResourceUpdated={(newResource) => setResource(newResource)}
             />
           ) : (
@@ -104,15 +101,12 @@ export function ProfilesPage(): JSX.Element | null {
 
 type ProfileDetailProps = {
   profile: SupportedProfileStructureDefinition;
-  resourceType: ResourceType;
   resource: Resource;
-  id: string;
   onResourceUpdated: (newResource: Resource) => void;
 };
 
-const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resourceType, id, resource, onResourceUpdated }) => {
+const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resource, onResourceUpdated }) => {
   const medplum = useMedplum();
-  const navigate = useNavigate();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const [active, setActive] = useState(() => resource.meta?.profile?.includes(profile.url));
 
@@ -130,7 +124,6 @@ const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resourceType, id
         .updateResource(cleanedResource)
         .then((resp) => {
           onResourceUpdated(resp);
-          // navigate(`/${resourceType}/${id}/details`);
           showNotification({ color: 'green', message: 'Success' });
         })
         .catch((err) => {
@@ -138,7 +131,7 @@ const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resourceType, id
           showNotification({ color: 'red', message: normalizeErrorString(err) });
         });
     },
-    [medplum, navigate, resourceType, id, profile.url, active]
+    [medplum, profile.url, onResourceUpdated, active]
   );
 
   return (
@@ -148,6 +141,7 @@ const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resourceType, id
         checked={active}
         label={`Conform resource to ${profile.title}`}
         onChange={(e) => setActive(e.currentTarget.checked)}
+        data-testid="profile-toggle"
       />
       {active ? (
         <ResourceForm profileUrl={profile.url} defaultValue={resource} onSubmit={handleSubmit} outcome={outcome} />
