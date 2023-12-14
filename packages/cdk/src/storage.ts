@@ -158,9 +158,8 @@ export class Storage extends Construct {
 
       // DNS
       if (!config.skipDns) {
-        const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-          domainName: config.domainName.split('.').slice(-2).join('.'),
-        });
+        const hostedZoneName = config.hostedZoneName ?? config.domainName.split('.').slice(-2).join('.');
+        const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: hostedZoneName });
 
         // Route53 alias record for the CloudFront distribution
         this.dnsRecord = new route53.ARecord(this, 'StorageAliasRecord', {
