@@ -4,9 +4,11 @@ import http, { IncomingMessage } from 'http';
 import ws from 'ws';
 import { handleAgentConnection } from './agent/websockets';
 import { getConfig } from './config';
-import { RequestContext, requestContextStore } from './context';
+import { AuthenticatedRequestContext, RequestContext, requestContextStore } from './context';
+import { getRepoForLogin } from './fhir/accesspolicy';
 import { handleFhircastConnection } from './fhircast/websocket';
 import { globalLogger } from './logger';
+import { authenticateTokenImpl } from './oauth/middleware';
 import { getRedis } from './redis';
 import { handleR4SubscriptionConnection } from './subscriptions/websockets';
 
@@ -35,7 +37,12 @@ export function initWebSockets(server: http.Server): void {
 
     const handler = handlerMap.get(getWebSocketPath(request.url as string));
     if (handler) {
-      await requestContextStore.run(RequestContext.empty(), () => handler(socket, request));
+      const { login, project, membership } = await authenticateTokenImpl(request);
+      const repo = await getRepoForLogin(login, membership, project.strictMode, false, project.checkReferencesOnWrite);
+      await requestContextStore.run(
+        new AuthenticatedRequestContext(RequestContext.empty(), login, project, membership, repo),
+        () => handler(socket, request)
+      );
     } else {
       socket.close();
     }

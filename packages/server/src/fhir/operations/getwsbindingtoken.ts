@@ -1,13 +1,14 @@
-import { allOk, parseJWTPayload } from '@medplum/core';
+import { allOk, badRequest } from '@medplum/core';
 import { Parameters } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
-import crypto from 'node:crypto';
 import { getConfig } from '../../config';
+import { getAuthenticatedContext } from '../../context';
 import { getRedis } from '../../redis';
+import { sendOutcome } from '../outcomes';
 import { sendResponse } from '../routes';
 
-const textEncoder = new TextEncoder();
-const textDecoder = new TextDecoder();
+const ONE_HOUR = 60 * 60 * 1000;
 
 /**
  * Handles a GetWsBindingToken request.
@@ -23,24 +24,23 @@ const textDecoder = new TextDecoder();
  * @param res - The HTTP response.
  */
 export async function getWsBindingTokenHandler(req: Request, res: Response): Promise<void> {
+  const {
+    login: { id: loginId },
+  } = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const redis = getRedis();
 
-  const accessToken = (req.headers.authorization as string).replace('Bearer ', '').trim();
-  const tokenPayload = parseJWTPayload(accessToken);
   // Create params to send back
   const tokenParams = {
     resourceType: 'Parameters',
     parameter: [
       {
         name: 'token',
-        valueString: accessToken,
+        valueString: randomUUID(),
       },
       {
         name: 'expiration',
-        valueDateTime: new Date(
-          (typeof tokenPayload.exp === 'string' ? parseInt(tokenPayload.exp, 10) : tokenPayload.exp) * 1000
-        ).toISOString(),
+        valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString(),
       },
       {
         name: 'websocket-url',
@@ -52,15 +52,11 @@ export async function getWsBindingTokenHandler(req: Request, res: Response): Pro
   // Create tentative binding for this user
   // When user connects to WebSocket, get all of the tentative bindings
   const subscriptionId = req.params.id;
-  const bindingsKey = `::subscriptions/r4::bindings::${textDecoder.decode(
-    await crypto.subtle.digest('sha-256', textEncoder.encode(accessToken))
-  )}`;
-  const existingBindings = await redis.get(bindingsKey);
-  if (!existingBindings) {
-    await redis.set(bindingsKey, subscriptionId);
-  } else if (!existingBindings.includes(subscriptionId)) {
-    // Check if we already have this subscription in the bindings
-    await redis.set(bindingsKey, `${existingBindings},${subscriptionId}`);
+  const subExists = await redis.exists(`Subscription/${subscriptionId}`);
+  if (!subExists) {
+    await sendOutcome(res, badRequest('Content could not be parsed'));
+    return;
   }
+  await redis.sadd(`::subscriptions/r4::bindings::${loginId}`, subscriptionId);
   await sendResponse(res, allOk, tokenParams);
 }

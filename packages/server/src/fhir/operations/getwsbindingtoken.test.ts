@@ -45,6 +45,5 @@ describe('Get WebSocket binding token', () => {
       .get(`/fhir/R4/Subscription/${createdSub.id}/$get-ws-binding-token`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
-    console.log(res2.body);
   });
 });
