@@ -18,6 +18,7 @@
     "docs": "ts-node src/docs.ts",
     "generate": "ts-node src/index.ts && ts-node src/jsonschema.ts && ts-node src/baseschema.ts",
     "migrate": "ts-node src/migrate.ts",
+    "umls": "ts-node src/umls.ts",
     "test": "jest"
   },
   "devDependencies": {
