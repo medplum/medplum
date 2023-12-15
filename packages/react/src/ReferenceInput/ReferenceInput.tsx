@@ -42,15 +42,21 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
 
   useEffect(() => {
     const promises: Promise<TargetType>[] = [];
-    let fetchedAtLeastOne: boolean = false;
+    let didFetch: boolean = false;
     for (const tt of targetTypes) {
       if (tt.type === 'profile' && isEmpty(tt.resourceType)) {
-        console.log(`fetching ${tt.value}`);
         const promise = fetchResourceType(medplum, tt.value)
           .then((partialSD) => {
-            if (partialSD?.type) {
+            if (!partialSD) {
+              console.debug(`StructureDefinition for ${tt.value} not found`);
+              return tt;
+            }
+
+            if (partialSD.type) {
               return { ...tt, resourceType: partialSD.type satisfies string };
             }
+
+            console.debug(`resourceType for ${tt.value} unexpectedly missing`);
             return tt;
           })
           .catch((reason) => {
@@ -58,35 +64,35 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
             return tt;
           });
         promises.push(promise);
-        fetchedAtLeastOne ||= true;
+        didFetch ||= true;
       } else {
         promises.push(Promise.resolve(tt));
       }
     }
 
-    Promise.all(promises)
-      .then((results) => {
-        if (fetchedAtLeastOne) {
+    if (didFetch) {
+      Promise.all(promises)
+        .then((newTargetTypes) => {
+          setTargetTypes(newTargetTypes);
           if (targetType) {
-            const index = results.findIndex((tt) => tt.resourceType === targetType.resourceType);
+            const index = newTargetTypes.findIndex((tt) => tt.resourceType === targetType.resourceType);
             if (index >= 0) {
-              console.log('updated target type', results[index] === targetType);
-              setTargetType(results[index]);
+              // orphaned targetType has been resolved
+              setTargetType(newTargetTypes[index]);
             } else {
               console.log(`defaultValue had unexpected resourceType: ${targetType.resourceType}`);
             }
           }
-          setTargetTypes(results);
-        }
-      })
-      .catch(console.error);
+        })
+        .catch(console.error);
+    }
   }, [medplum, targetType, targetTypes]);
 
   useEffect(() => {
     if (targetType?.resourceType !== resourceType) {
       setResourceType(targetType?.resourceType as ResourceType);
     }
-  }, [resourceType, targetType]);
+  }, [resourceType, targetType?.resourceType]);
 
   function setValueHelper(newValue: Reference | undefined): void {
     setValue(newValue);
@@ -165,12 +171,14 @@ function getInitialTargetType(defaultValue: Reference | undefined, targetTypes: 
       return targetType;
     }
 
+    // An "orphaned" TargetType is created when defaultValue references a resourceType
+    // that is not yet represented in targetTypes due to profile URL resolution to resource type
+    // that has yet to occur
     const orphan: TargetType = {
       type: 'resourceType',
       value: defaultValueResourceType,
       resourceType: defaultValueResourceType,
     };
-    console.log(`initializing with orphaned targetType: ${JSON.stringify(orphan)}`);
     return orphan;
   }
 
