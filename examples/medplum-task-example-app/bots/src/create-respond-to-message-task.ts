@@ -1,5 +1,5 @@
 import { BotEvent, getReferenceString, MedplumClient, parseReference } from '@medplum/core';
-import { Bundle, BundleEntry, Communication, Practitioner, Reference, Task } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Communication, Practitioner, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   const currentDate = new Date();
@@ -14,9 +14,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   });
 
   // Filter for messages that have not been responded to
-  const unrespondedMessages = messages.filter((message) => {
-    getMessageSenderType(message) === 'Patient' && !message.inResponseTo;
-  });
+  const unrespondedMessages = messages.filter(
+    (message) => getMessageSenderType(message) === 'Patient' && !message.inResponseTo
+  );
 
   // If all messages have been responded to, return
   if (unrespondedMessages.length === 0) {
@@ -33,7 +33,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   if (threadMessages.entry) {
     for (const message of threadMessages.entry) {
       const communication = message.resource;
-      if (communication?.resourceType !== 'Communication' || !communication.partOf) continue;
+      if (communication?.resourceType !== 'Communication' || !communication.partOf) {
+        continue;
+      }
 
       const threadReferenceString = getReferenceString(communication.partOf[0]);
 
@@ -46,48 +48,52 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   }
 
   for (const thread in threads) {
-    const messages = threads[thread];
+    if (threads.hasOwnProperty(thread)) {
+      const messages = threads[thread];
 
-    if (await checkNoExistingTask(medplum, thread)) {
-      const sender = getMostRecentResponder(messages) as Reference<Practitioner> | undefined;
-      const task: Task = {
-        resourceType: 'Task',
-        focus: {
-          reference: thread,
-        },
-        code: {
-          text: 'Respond to Message',
-        },
-        performerType: [
-          {
-            coding: [
-              {
-                system: 'http://snomed.info/sct',
-                code: '768820003',
-                display: 'Care Coordinator',
-              },
-            ],
+      if (await checkNoExistingTask(medplum, thread)) {
+        const sender = getMostRecentResponder(messages) as Reference<Practitioner> | undefined;
+        const task: Task = {
+          resourceType: 'Task',
+          focus: {
+            reference: thread,
           },
-        ],
-      };
+          code: {
+            text: 'Respond to Message',
+          },
+          performerType: [
+            {
+              coding: [
+                {
+                  system: 'http://snomed.info/sct',
+                  code: '768820003',
+                  display: 'Care Coordinator',
+                },
+              ],
+            },
+          ],
+        };
 
-      if (sender) {
-        task.owner = sender;
+        if (sender) {
+          task.owner = sender;
+        }
       }
     }
   }
 }
 
-function getMostRecentResponder(thread: Communication[]) {
+function getMostRecentResponder(thread: Communication[]): Reference<Practitioner> | undefined {
   for (const message of thread) {
     const senderType = getMessageSenderType(message);
     if (senderType === 'Practitioner') {
-      return message.sender;
+      return message.sender as Reference<Practitioner>;
     }
   }
+
+  return undefined;
 }
 
-async function checkNoExistingTask(medplum: MedplumClient, threadHeader: string) {
+async function checkNoExistingTask(medplum: MedplumClient, threadHeader: string): Promise<boolean> {
   const existingTasks = await medplum.searchResources('Task', {
     focus: threadHeader,
   });
@@ -106,7 +112,9 @@ function buildSearchBundle(messages: Communication[]): Bundle {
   };
 
   for (const message of messages) {
-    if (!message.partOf) continue;
+    if (!message.partOf) {
+      continue;
+    }
     // Get the parent communication representing the thread
     const threadHeader = getReferenceString(message.partOf[0]);
 
@@ -131,7 +139,7 @@ function buildSearchBundle(messages: Communication[]): Bundle {
   return requestBundle;
 }
 
-function getMessageSenderType(message: Communication) {
+function getMessageSenderType(message: Communication): ResourceType {
   const sender = message.sender;
   if (!sender) {
     return undefined;
