@@ -1,7 +1,7 @@
 {
   "name": "medplum-task-example-bots",
   "version": "2.1.21",
-  "description": "Medplum Demo Bots",
+  "description": "Medplum Task Example Bots",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "type": "module",
