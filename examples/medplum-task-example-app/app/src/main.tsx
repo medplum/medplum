@@ -4,8 +4,8 @@ import { MedplumProvider } from '@medplum/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { App } from './App';
 import { Notifications } from '@mantine/notifications';
+import { App } from './App';
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
