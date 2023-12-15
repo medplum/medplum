@@ -1,22 +1,12 @@
 import { getReferenceString, MedplumClient, parseReference } from '@medplum/core';
-import {
-  Bundle,
-  BundleEntry,
-  Communication,
-  Practitioner,
-  Reference,
-  Resource,
-  ResourceType,
-  Task,
-} from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Communication, Practitioner, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 
 /**
  * This bot creates a task for any messages that have not been responded to in 30 minutes. It is set to run every 15 minutes, and
  * only create one task per thread. If an employee has already responded to the thread, it will automatically be assigned to that
  * employee, otherwise it will be assigned to the Care Coordinator queue.
  *
- * @param medplum MedplumClient
- * @param event BotEvent
+ * @param medplum - The medplum client
  * @returns Promise<any>
  */
 export async function handler(medplum: MedplumClient): Promise<any> {
@@ -56,48 +46,48 @@ export async function handler(medplum: MedplumClient): Promise<any> {
 
   // Go through each thread and create a task if necessary
   for (const thread in threads) {
-    if (threads.hasOwnProperty(thread)) {
-      const messages = threads[thread];
+    const messages = threads[thread];
 
-      // Check if there is already an existing task to respond to this message
-      if (await checkNoExistingTask(medplum, thread)) {
-        const sender = getMostRecentResponder(messages) as Reference<Practitioner> | undefined;
-        const task: Task = {
-          resourceType: 'Task',
-          focus: {
-            reference: thread,
-          },
-          code: {
-            text: 'Respond to Message',
-          },
-        };
+    // Check if there is already an existing task to respond to this message
+    if (await checkNoExistingTask(medplum, thread)) {
+      const sender = getMostRecentResponder(messages) as Reference<Practitioner> | undefined;
+      const task: Task = {
+        resourceType: 'Task',
+        focus: {
+          reference: thread,
+        },
+        code: {
+          text: 'Respond to Message',
+        },
+      };
 
-        // If somebody has already responded to this thread, assign the task to them, otherwise assign to care coordinator queue
-        if (sender) {
-          task.owner = sender;
-        } else {
-          task.performerType = [
-            {
-              coding: [
-                {
-                  system: 'http://snomed.info/sct',
-                  code: '768820003',
-                  display: 'Care Coordinator',
-                },
-              ],
-            },
-          ];
-        }
-
-        await medplum.createResource(task);
+      // If somebody has already responded to this thread, assign the task to them, otherwise assign to care coordinator queue
+      if (sender) {
+        task.owner = sender;
       } else {
-        console.log('Task already exists for this thread.');
+        task.performerType = [
+          {
+            coding: [
+              {
+                system: 'http://snomed.info/sct',
+                code: '768820003',
+                display: 'Care Coordinator',
+              },
+            ],
+          },
+        ];
       }
+
+      await medplum.createResource(task);
+    } else {
+      console.log('Task already exists for this thread.');
     }
   }
+
+  return true;
 }
 
-function organizeThreads(messages: BundleEntry<Resource>[], threads: Record<string, Communication[]>) {
+function organizeThreads(messages: BundleEntry[], threads: Record<string, Communication[]>): void {
   for (const message of messages) {
     const communication = message.resource;
     if (communication?.resourceType !== 'Communication' || !communication.partOf) {
