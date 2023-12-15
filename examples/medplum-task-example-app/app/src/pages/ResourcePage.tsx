@@ -1,7 +1,7 @@
 import { Tabs, Title } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import { Resource, ResourceType } from '@medplum/fhirtypes';
-import { DefaultResourceTimeline, Document, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
+import { DefaultResourceTimeline, Document, ResourceTable, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ResourceHistoryTab } from '../components/ResourceHistoryTab';
@@ -31,7 +31,7 @@ export function ResourcePage(): JSX.Element | null {
   }, [medplum, resourceType, id]);
 
   // Update the tab and navigate to that tab's URL
-  const handleTabChange = (newTab: string) => {
+  const handleTabChange = (newTab: string): void => {
     setCurrentTab(newTab);
   };
 

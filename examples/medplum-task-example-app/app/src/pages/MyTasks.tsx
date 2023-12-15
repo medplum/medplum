@@ -19,7 +19,7 @@ export function MyTasks(): JSX.Element {
     return handleInitialTab(searchQuery);
   });
 
-  const handleTabChange = (newTab: string) => {
+  const handleTabChange = (newTab: string): void => {
     setCurrentTab(newTab);
     const updatedSearch: SearchRequest = { resourceType: 'Task' };
     updatedSearch.filters = [];
@@ -84,7 +84,7 @@ export function MyTasks(): JSX.Element {
   );
 }
 
-function handleInitialTab(searchQuery: string) {
+function handleInitialTab(searchQuery: string): string {
   if (searchQuery === '?status=completed') {
     return 'completed';
   } else {

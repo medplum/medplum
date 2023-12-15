@@ -2,8 +2,7 @@ import { Paper, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, useMedplum } from '@medplum/react';
-import { useLocation } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export function CreateResourcePage(): JSX.Element {
   const navigate = useNavigate();
@@ -15,7 +14,7 @@ export function CreateResourcePage(): JSX.Element {
   const defaultResource = { resourceType } as Resource;
 
   // Function to create the resource and navigate to the resource page when the form is submitted
-  const handleSubmit = (newResource: Resource) => {
+  const handleSubmit = (newResource: Resource): void => {
     medplum
       .createResource(newResource)
       .then((result) => {

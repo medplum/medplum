@@ -11,7 +11,7 @@ interface AddDueDateModalProps {
 }
 
 export function AddDueDateModal(props: AddDueDateModalProps): JSX.Element {
-  const handleDueDateSubmit = (formData: QuestionnaireResponse) => {
+  const handleDueDateSubmit = (formData: QuestionnaireResponse): void => {
     const dueDate = getQuestionnaireAnswers(formData)['due-date'].valueDate;
 
     if (dueDate) {

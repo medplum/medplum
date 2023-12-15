@@ -1,4 +1,3 @@
-import { Tabs } from '@mantine/core';
 import { Filter, getReferenceString, Operator, ResourceArray, SearchRequest } from '@medplum/core';
 import { Practitioner, PractitionerRole } from '@medplum/fhirtypes';
 import { Document, SearchControl, useMedplum, useMedplumProfile } from '@medplum/react';
@@ -18,7 +17,7 @@ export function TaskByRoleQueue(): JSX.Element {
 
   useEffect(() => {
     // Search for all PractitionerRoles for the logged in user
-    const getUserPractitionerRoles = async () => {
+    const getUserPractitionerRoles = async (): Promise<void> => {
       const results: ResourceArray<PractitionerRole> = await medplum.searchResources('PractitionerRole', {
         practitioner: `Practitioner/${profile.id}`,
       });

@@ -2,8 +2,7 @@ import { formatSearchQuery, getReferenceString, parseSearchDefinition, SearchReq
 import { Resource } from '@medplum/fhirtypes';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { CreateTaskModal } from '../components/CreateTaskModal';
 
 export function SearchPage(): JSX.Element {
@@ -72,7 +71,7 @@ function getDefaultFields(resourceType: string): string[] {
   return fields;
 }
 
-function getPopulatedSearch(parsedSearch: SearchRequest<Resource>) {
+function getPopulatedSearch(parsedSearch: SearchRequest): SearchRequest {
   const fields = getDefaultFields(parsedSearch.resourceType);
   const sortRules = [{ code: '-_lastUpdated' }];
 

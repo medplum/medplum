@@ -1,10 +1,9 @@
 import { Grid, Paper, Tabs, Title } from '@mantine/core';
 import { getDisplayString, resolveId } from '@medplum/core';
 import { Patient, Task } from '@medplum/fhirtypes';
-import { DefaultResourceTimeline, Document, Loading, ResourceTable, useMedplum } from '@medplum/react';
+import { DefaultResourceTimeline, Document, ResourceTable, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { PatientChart } from '../components/PatientChart';
 
 import { TaskActions } from '../components/TaskActions';
@@ -26,7 +25,7 @@ export function TaskPage(): JSX.Element {
 
   useEffect(() => {
     // Fetch the task that is specified in the URL
-    const fetchTask = async () => {
+    const fetchTask = async (): Promise<void> => {
       try {
         const taskData = await medplum.readResource('Task', id);
         setTask(taskData);
@@ -36,8 +35,8 @@ export function TaskPage(): JSX.Element {
     };
 
     // Fetch the patient that this task if for. See https://www.medplum.com/docs/careplans/tasks#task-assignment for more details
-    const fetchLinkedPatient = async () => {
-      if (task && task.for) {
+    const fetchLinkedPatient = async (): Promise<void> => {
+      if (task?.for) {
         const patientId = resolveId(task.for);
         try {
           const patientData = patientId ? await medplum.readResource('Patient', patientId) : undefined;
@@ -53,12 +52,12 @@ export function TaskPage(): JSX.Element {
   }, [medplum, id, task]);
 
   // Update the current tab and navigate to its URL
-  const handleTabChange = (newTab: string) => {
+  const handleTabChange = (newTab: string): void => {
     setCurrentTab(newTab);
     navigate(`/Task/${id}/${newTab}`);
   };
 
-  const onTaskChange = (updatedTask: Task) => {
+  const onTaskChange = (updatedTask: Task): void => {
     setTask(updatedTask);
   };
 

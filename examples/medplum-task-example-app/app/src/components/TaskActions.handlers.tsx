@@ -10,7 +10,7 @@ export async function handleAddComment(
   task: Task,
   medplum: MedplumClient,
   onChange: (task: Task) => void
-) {
+): Promise<void> {
   let taskNotes = task?.note;
   if (taskNotes) {
     // If there are already notes, push on to the array
@@ -49,7 +49,7 @@ export async function handleAddDueDate(
   task: Task,
   medplum: MedplumClient,
   onChange: (task: Task) => void
-) {
+): Promise<void> {
   const updatedTask: Task = { ...task, resourceType: 'Task' };
 
   // If there is no defined period for a task, add one
@@ -78,8 +78,10 @@ export async function handleUpdateStatus(
   task: Task,
   medplum: MedplumClient,
   onChange: (task: Task) => void
-) {
-  if (!task) return;
+): Promise<void> {
+  if (!task) {
+    return;
+  }
 
   // Create a resource for an updated Task
   const updatedTask: Task = { ...task };
@@ -102,12 +104,14 @@ export async function handleUpdateStatus(
 }
 
 export async function handleAssignTask(
-  owner: Reference<Resource>,
+  owner: Reference,
   task: Task,
   medplum: MedplumClient,
   onChange: (task: Task) => void
-) {
-  if (!task) return;
+): Promise<void> {
+  if (!task) {
+    return;
+  }
 
   // Create a resource for the updated task
   const updatedTask = { ...task };
@@ -128,10 +132,16 @@ export async function handleAssignTask(
   onChange(updatedTask);
 }
 
-export async function handleClaimTask(task: Task, medplum: MedplumClient, onChange: (task: Task) => void) {
+export async function handleClaimTask(
+  task: Task,
+  medplum: MedplumClient,
+  onChange: (task: Task) => void
+): Promise<void> {
   const currentUser = medplum.getProfile() as Practitioner;
 
-  if (!task) return;
+  if (!task) {
+    return;
+  }
 
   // Create a resource for the updated task.
   const updatedTask = { ...task };
@@ -155,7 +165,7 @@ export async function handleClaimTask(task: Task, medplum: MedplumClient, onChan
   onChange(updatedTask);
 }
 
-export async function handleDeleteTask(task: Task, medplum: MedplumClient, navigate: NavigateFunction) {
+export async function handleDeleteTask(task: Task, medplum: MedplumClient, navigate: NavigateFunction): Promise<void> {
   // Get the task id
   const taskId = task.id;
 

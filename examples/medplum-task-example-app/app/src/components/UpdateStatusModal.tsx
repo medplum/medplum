@@ -11,7 +11,7 @@ interface UpdateStatusModalProps {
 }
 
 export function UpdateStatusModal(props: UpdateStatusModalProps): JSX.Element {
-  const handleStatusUpdate = (formData: QuestionnaireResponse) => {
+  const handleStatusUpdate = (formData: QuestionnaireResponse): void => {
     const status = getQuestionnaireAnswers(formData)['update-status'].valueCoding;
 
     if (status) {

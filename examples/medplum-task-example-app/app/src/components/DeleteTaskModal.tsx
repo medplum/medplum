@@ -1,4 +1,4 @@
-import { Alert, Button, Group, Modal, Paper } from '@mantine/core';
+import { Alert, Button, Group, Modal } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 
 interface DeleteTaskModalProps {

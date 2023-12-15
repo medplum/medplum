@@ -19,7 +19,7 @@ export function AllTasks(): JSX.Element {
   });
   const [isNewOpen, setIsNewOpen] = useState<boolean>(false);
 
-  const handleTabChange = (newTab: string) => {
+  const handleTabChange = (newTab: string): void => {
     setCurrentTab(newTab);
     const updatedSearch: SearchRequest = { resourceType: 'Task' };
     updatedSearch.filters = [];
@@ -82,7 +82,7 @@ export function AllTasks(): JSX.Element {
   );
 }
 
-function handleInitialTab(searchQuery: string) {
+function handleInitialTab(searchQuery: string): string {
   if (searchQuery === '?status=completed') {
     return 'completed';
   } else {

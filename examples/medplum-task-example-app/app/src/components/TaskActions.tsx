@@ -37,35 +37,35 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
   const [isClaimOpen, setIsClaimOpen] = useState<boolean>(false);
   const [isAssignRoleOpen, setIsAssignRoleOpen] = useState<boolean>(false);
 
-  const handleCommentModal = () => {
+  const handleCommentModal = (): void => {
     setIsCommentOpen(!isCommentOpen);
   };
 
-  const handleDueDateModal = () => {
+  const handleDueDateModal = (): void => {
     setIsDueDateOpen(!isDueDateOpen);
   };
 
-  const handleAssignModal = () => {
+  const handleAssignModal = (): void => {
     setIsAssignOpen(!isAssignOpen);
   };
 
-  const handleStatusModal = () => {
+  const handleStatusModal = (): void => {
     setIsStatusOpen(!isStatusOpen);
   };
 
-  const handleDeleteModal = () => {
+  const handleDeleteModal = (): void => {
     setIsDeleteOpen(!isDeleteOpen);
   };
 
-  const handleClaimModal = () => {
+  const handleClaimModal = (): void => {
     setIsClaimOpen(!isClaimOpen);
   };
 
-  const handleAssignRoleModal = () => {
+  const handleAssignRoleModal = (): void => {
     setIsAssignRoleOpen(!isAssignRoleOpen);
   };
 
-  const handleChangeTaskStatus = async () => {
+  const handleChangeTaskStatus = async (): Promise<void> => {
     if (task) {
       const updatedTask: Task = { ...task };
       if (updatedTask.status !== 'on-hold') {
@@ -93,7 +93,7 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
     }
   };
 
-  const handleCompleteTask = async () => {
+  const handleCompleteTask = async (): Promise<void> => {
     if (task) {
       const updatedTask: Task = { ...task };
       updatedTask.status = 'completed';
@@ -107,7 +107,7 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
     }
   };
 
-  const handleAssignRole = async (role: CodeableConcept) => {
+  const handleAssignRole = async (role: CodeableConcept): Promise<void> => {
     if (task) {
       const updatedTask: Task = { ...task };
       if (updatedTask.performerType) {
@@ -165,7 +165,7 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
           onClose={handleDueDateModal}
         />
         <AssignTaskModal
-          onAssign={(owner: Reference<Resource>) => handleAssignTask(owner, task, medplum, props.onChange)}
+          onAssign={(owner: Reference) => handleAssignTask(owner, task, medplum, props.onChange)}
           isOpen={isAssignOpen}
           onClose={handleAssignModal}
         />
