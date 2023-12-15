@@ -1,10 +1,11 @@
 import { deepClone } from '@medplum/core';
 import { Patient, StructureDefinition } from '@medplum/fhirtypes';
 
-type ProfileStructureDefinition = StructureDefinition & {
+export type ProfileStructureDefinition = StructureDefinition & {
   url: string;
   name: string;
 };
+
 const SAMPLE_FISH_PATIENT: Patient = {
   resourceType: 'Patient',
   id: 'Shorty',
