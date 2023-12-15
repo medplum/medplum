@@ -14,8 +14,6 @@ interface BindWithTokenMsg extends BaseSubscriptionClientMsg {
   payload: { token: string };
 }
 
-type SubscriptionClientMsg = BindWithTokenMsg;
-
 export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Promise<void> {
   const redis = getRedis();
   let redisSubscriber: Redis;
@@ -49,12 +47,16 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
   socket.on('message', async (data: ws.RawData) => {
     const rawDataStr = (data as Buffer).toString();
     globalLogger.debug('[WS] received data', { data: rawDataStr });
-    const msg = JSON.parse(rawDataStr) as SubscriptionClientMsg;
+    const msg = JSON.parse(rawDataStr) as BindWithTokenMsg;
     switch (msg.type) {
       // It's actually ok to rebind to the same token...
       // Since it will essentially tell redis to subscribe to these channels
       // Which the current client is already subscribed to
       case 'bind-with-token': {
+        if (!msg?.payload?.token) {
+          globalLogger.error('[WS]: invalid client message - missing token', { data, socket });
+          return;
+        }
         const tokenPayload = parseJWTPayload(msg.payload.token);
         await onBind(tokenPayload.login_id as string);
         break;
