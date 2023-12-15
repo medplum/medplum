@@ -131,17 +131,17 @@ class UmlsConcept {
   }
 }
 
-const umlsSources: Record<string, { system: string; tty: string; resource: CodeSystem }> = {
-  SNOMEDCT_US: { system: 'http://snomed.info/sct', tty: 'FN', resource: snomed },
-  LNC: { system: 'http://loinc.org', tty: 'LC', resource: loinc },
-  RXNORM: { system: 'http://www.nlm.nih.gov/research/umls/rxnorm', tty: 'PSN', resource: rxnorm },
-  CPT: { system: 'http://www.ama-assn.org/go/cpt', tty: 'PT', resource: cpt },
-  CVX: { system: 'http://hl7.org/fhir/sid/cvx', tty: 'PT', resource: cvx },
-  ICD10PCS: { system: 'http://hl7.org/fhir/sid/icd-10-pcs', tty: 'PT', resource: icd10pcs },
-  ICD10CM: { system: 'http://hl7.org/fhir/sid/icd-10-cm', tty: 'PT', resource: icd10cm },
+const umlsSources: Record<string, { system: string; tty: string[]; resource: CodeSystem }> = {
+  SNOMEDCT_US: { system: 'http://snomed.info/sct', tty: ['FN', 'PT', 'SY'], resource: snomed },
+  LNC: { system: 'http://loinc.org', tty: ['LC', 'LPDN', 'LA', 'DN', 'HC', 'LN'], resource: loinc },
+  RXNORM: { system: 'http://www.nlm.nih.gov/research/umls/rxnorm', tty: ['PSN'], resource: rxnorm },
+  CPT: { system: 'http://www.ama-assn.org/go/cpt', tty: ['PT'], resource: cpt },
+  CVX: { system: 'http://hl7.org/fhir/sid/cvx', tty: ['PT'], resource: cvx },
+  ICD10PCS: { system: 'http://hl7.org/fhir/sid/icd-10-pcs', tty: ['PT'], resource: icd10pcs },
+  ICD10CM: { system: 'http://hl7.org/fhir/sid/icd-10-cm', tty: ['PT'], resource: icd10cm },
 };
 
-async function processConcepts(): Promise<Record<string, string>> {
+async function processConcepts(): Promise<Record<string, UmlsConcept>> {
   const inStream = createReadStream(resolve(__dirname, '2023AB/META/MRCONSO.RRF'));
   const rl = createInterface(inStream);
 
@@ -149,7 +149,7 @@ async function processConcepts(): Promise<Record<string, string>> {
   let skipped = 0;
   const counts = Object.create(null) as Record<string, number>;
   const codings = Object.create(null) as Record<string, Coding[]>;
-  const mappedCodes: Record<string, string> = Object.create(null);
+  const mappedConcepts: Record<string, UmlsConcept> = Object.create(null);
 
   for await (const line of rl) {
     const concept = new UmlsConcept(line);
@@ -160,8 +160,8 @@ async function processConcepts(): Promise<Record<string, string>> {
     } else if (concept.LAT !== 'ENG') {
       // Ignore non-English
       continue;
-    } else if (concept.TTY !== source.tty) {
-      // Use only preferred term type for the display string
+    } else if (!source.tty.includes(concept.TTY)) {
+      // Use only preferred term types for the display string
       continue;
     } else if (concept.SUPPRESS !== 'N') {
       // Skip suppressible terms
@@ -169,9 +169,22 @@ async function processConcepts(): Promise<Record<string, string>> {
       continue;
     }
 
+    mappedConcepts[concept.AUI] = concept; // Map all term types for future reference
+    const existingConcept = mappedConcepts[concept.SAB + '|' + concept.CODE];
+    if (existingConcept) {
+      const priority = source.tty.indexOf(concept.TTY);
+      const existingPriority = source.tty.indexOf(existingConcept.TTY);
+      if (priority >= existingPriority) {
+        // Ignore less-preferred term types
+        continue;
+      }
+    } else {
+      // Count the first occurrence of each code in the system
+      counts[source.system] = (counts[source.system] ?? 0) + 1;
+    }
+    mappedConcepts[concept.SAB + '|' + concept.CODE] = concept;
+
     const coding = { code: concept.CODE, display: concept.STR };
-    processed++;
-    counts[source.system] = (counts[source.system] ?? 0) + 1;
     let foundCodings = codings[source.system];
     if (foundCodings) {
       foundCodings.push(coding);
@@ -185,7 +198,7 @@ async function processConcepts(): Promise<Record<string, string>> {
     } else {
       codings[source.system] = foundCodings;
     }
-    mappedCodes[concept.CUI] = concept.CODE;
+    processed++;
   }
 
   for (const [system, foundCodings] of Object.entries(codings)) {
@@ -193,14 +206,14 @@ async function processConcepts(): Promise<Record<string, string>> {
       await sendCodings(foundCodings, system);
     }
   }
-  console.log(`Found ${fmtNum(processed)} codes`);
+  console.log(`Processed ${fmtNum(processed)} entries`);
   console.log(`(skipped ${fmtNum(skipped)})`);
   console.log(`==============================`);
   for (const [systemUrl, count] of Object.entries(counts).sort((l, r) => r[1] - l[1])) {
     console.log(`${systemUrl}: ${fmtNum(count)}`);
   }
 
-  return mappedCodes;
+  return mappedConcepts;
 }
 
 async function sendCodings(codings: Coding[], system: string): Promise<void> {
@@ -359,8 +372,8 @@ async function processProperties(): Promise<void> {
   for await (const line of rl) {
     const attr = new UmlsAttribute(line);
     const source = umlsSources[attr.SAB];
-    if (!source?.resource?.property?.length) {
-      // Ignore unknown code system or one with no properties
+    if (!source) {
+      // Ignore unknown code system
       continue;
     } else if (attr.SUPPRESS !== 'N') {
       // Skip suppressible terms
@@ -368,26 +381,30 @@ async function processProperties(): Promise<void> {
       continue;
     }
 
-    for (const property of source.resource.property) {
-      if (attr.ATN === property.code || mappedProperties[attr.ATN] === property.code) {
-        const key = `${source.system}|${property.code}`;
-        counts[key] = (counts[key] ?? 0) + 1;
-        const prop = { code: attr.CODE, property: property.code, value: attr.ATV };
-        let foundProperties = properties[source.system];
-        if (foundProperties) {
-          foundProperties.push(prop);
-        } else {
-          foundProperties = [prop];
-        }
-
-        if (foundProperties.length >= 500) {
-          await sendProperties(properties[source.system], source.system);
-          properties[source.system] = [];
-        } else {
-          properties[source.system] = foundProperties;
-        }
-      }
+    const property = source?.resource?.property?.find(
+      (p) => attr.ATN === p.code || mappedProperties[attr.ATN] === p.code
+    );
+    if (!property) {
+      // Ignore unknown property
+      continue;
     }
+    const prop = { code: attr.CODE, property: property.code as string, value: attr.ATV };
+    let foundProperties = properties[source.system];
+    if (foundProperties) {
+      foundProperties.push(prop);
+    } else {
+      foundProperties = [prop];
+    }
+
+    if (foundProperties.length >= 500) {
+      await sendProperties(properties[source.system], source.system);
+      properties[source.system] = [];
+    } else {
+      properties[source.system] = foundProperties;
+    }
+
+    const key = `${source.system}|${property.code}`;
+    counts[key] = (counts[key] ?? 0) + 1;
     processed++;
   }
 
@@ -487,7 +504,7 @@ const CHILD_PROPERTY = 'http://hl7.org/fhir/concept-properties#child';
 
 async function processRelationships(
   relationshipProperties: Record<string, string>,
-  mappedCodes: Record<string, string>
+  mappedCodes: Record<string, UmlsConcept>
 ): Promise<void> {
   const inStream = createReadStream(resolve(__dirname, '2023AB/META/MRREL.RRF'));
   const rl = createInterface(inStream);
@@ -508,30 +525,34 @@ async function processRelationships(
       continue;
     }
 
-    let property: Property | undefined;
-    const code = mappedCodes[rel.CUI1];
-    const value = mappedCodes[rel.CUI2];
-
-    let propertyName = relationshipProperties[rel.SAB + '/' + rel.REL + '/' + rel.RELA];
-    if (propertyName) {
-      const key = `${source.system}|${propertyName} (${rel.REL}/${rel.RELA})`;
-      counts[key] = (counts[key] ?? 0) + 1;
-      property = { code, property: propertyName, value };
-    }
-    if (rel.REL === 'PAR') {
+    const mappedPropertyName = relationshipProperties[rel.SAB + '/' + rel.REL + '/' + rel.RELA];
+    let propertyName: string | undefined;
+    if (mappedPropertyName) {
+      propertyName = mappedPropertyName;
+    } else if (rel.REL === 'PAR') {
       propertyName = source.resource.property?.find((p) => p.uri === PARENT_PROPERTY)?.code ?? '';
     } else if (rel.REL === 'CHD') {
       propertyName = source.resource.property?.find((p) => p.uri === CHILD_PROPERTY)?.code ?? '';
     }
-    if (propertyName) {
-      const key = `${source.system}|${propertyName} (${rel.REL}/${rel.RELA})`;
-      counts[key] = (counts[key] ?? 0) + 1;
-      property = { code, property: propertyName, value };
-    } else {
+    if (!propertyName) {
       // Ignore unknown property
       continue;
     }
 
+    const code = mappedCodes[rel.AUI1]?.CODE;
+    const value = mappedCodes[rel.AUI2]?.CODE;
+    if (!code || !value) {
+      console.warn(
+        'Skipping relationship with missing atom:',
+        propertyName,
+        rel.REL + '/' + rel.RELA,
+        code ? rel.AUI2 : rel.AUI1
+      );
+      skipped++;
+      continue;
+    }
+
+    const property = { code, property: propertyName, value };
     let foundProperties = properties[source.system];
     if (foundProperties) {
       foundProperties.push(property);
@@ -546,6 +567,8 @@ async function processRelationships(
       properties[source.system] = foundProperties;
     }
 
+    const key = `${source.system}|${propertyName} (${rel.REL}/${rel.RELA})`;
+    counts[key] = (counts[key] ?? 0) + 1;
     processed++;
   }
 
