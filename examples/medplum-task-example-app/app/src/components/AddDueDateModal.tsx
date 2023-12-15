@@ -2,7 +2,7 @@ import { Modal } from '@mantine/core';
 import { getQuestionnaireAnswers } from '@medplum/core';
 import { QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm } from '@medplum/react';
-import { dueDateQuestionnaire } from '../data/questionnaires';
+import { dueDateQuestionnaire } from '../../../data/questionnaires';
 
 interface AddDueDateModalProps {
   onAddDate: (date: string) => void;

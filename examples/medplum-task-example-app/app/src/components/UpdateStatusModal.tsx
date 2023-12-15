@@ -2,7 +2,7 @@ import { Modal } from '@mantine/core';
 import { getQuestionnaireAnswers } from '@medplum/core';
 import { Coding, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm } from '@medplum/react';
-import { updateStatusQuestionnaire } from '../data/questionnaires';
+import { updateStatusQuestionnaire } from '../../../data/questionnaires';
 
 interface UpdateStatusModalProps {
   onUpdateStatus: (status: Coding) => void;

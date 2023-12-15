@@ -3,7 +3,7 @@ import { createReference, getQuestionnaireAnswers } from '@medplum/core';
 import { Annotation, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplumProfile } from '@medplum/react';
 import { useState } from 'react';
-import { commentQuestionnaire } from '../data/questionnaires';
+import { commentQuestionnaire } from '../../../data/questionnaires';
 
 interface AddTaskCommentProps {
   onAddComment: (comment: Annotation) => void;
