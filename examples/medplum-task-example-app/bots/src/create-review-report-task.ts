@@ -8,6 +8,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     throw new Error('Unexpected input. Expected DiagnosticReport');
   }
 
+  if (report.status !== 'preliminary') {
+    throw new Error('Unexpected input. DiagnosticReport not in preliminary status');
+  }
+
   const task: Task = {
     resourceType: 'Task',
     code: {
@@ -33,4 +37,5 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
   // Create the task and persist to the server
   await medplum.createResource(task);
+  return true;
 }
