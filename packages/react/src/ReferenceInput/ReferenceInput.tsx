@@ -1,7 +1,7 @@
 import { Group, NativeSelect } from '@mantine/core';
 import { MedplumClient, createReference, isEmpty } from '@medplum/core';
 import { Reference, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 import { useMedplum } from '@medplum/react-hooks';
@@ -17,15 +17,21 @@ export interface ReferenceInputProps {
   onChange?: (value: Reference | undefined) => void;
 }
 
-type TargetType = {
-  type: 'resourceType' | 'profile';
-  resourceType?: string;
-  value: string;
-};
+type TargetType =
+  | {
+      type: 'resourceType';
+      value: string;
+      resourceType: string;
+    }
+  | {
+      type: 'profile';
+      value: string;
+      resourceType?: string;
+    };
 
 export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   const medplum = useMedplum();
-  const [targetTypes, setTargetTypes] = useState<TargetType[]>(() => getTargetTypes(props.targetTypes));
+  const [targetTypes, setTargetTypes] = useState<TargetType[]>(() => createTargetTypes(props.targetTypes));
   const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
   const [targetType, setTargetType] = useState<TargetType | undefined>(() =>
     getInitialTargetType(props.defaultValue, targetTypes)
@@ -33,14 +39,16 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   const [resourceType, setResourceType] = useState<ResourceType | undefined>();
 
   const searchCriteria = useMemo<ReferenceInputProps['searchCriteria']>(() => {
-    if (targetType?.type !== 'profile' || !targetType?.value) {
-      return props.searchCriteria;
+    if (targetType?.type === 'profile') {
+      return { ...props.searchCriteria, _profile: targetType.value };
     }
-
-    return { ...props.searchCriteria, _profile: targetType.value };
+    return props.searchCriteria;
   }, [props.searchCriteria, targetType]);
 
   useEffect(() => {
+    // const typesToFetch = targetTypes.filter((tt) => isEmpty(tt.resourceType));
+
+    // if (typesToFetch)
     const promises: Promise<TargetType>[] = [];
     let didFetch: boolean = false;
     for (const tt of targetTypes) {
@@ -74,8 +82,11 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
       Promise.all(promises)
         .then((newTargetTypes) => {
           setTargetTypes(newTargetTypes);
-          if (targetType) {
-            const index = newTargetTypes.findIndex((tt) => tt.resourceType === targetType.resourceType);
+          if (targetType?.resourceType) {
+            const needle = targetType.resourceType satisfies string;
+            // assumes newTargetTypes has no duplicate resourceType entries which technically
+            // might not be the case if multiple profiles on the same resource type are included
+            const index = newTargetTypes.findIndex((tt) => tt.resourceType === needle);
             if (index >= 0) {
               // orphaned targetType has been resolved
               setTargetType(newTargetTypes[index]);
@@ -94,12 +105,19 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
     }
   }, [resourceType, targetType?.resourceType]);
 
-  function setValueHelper(newValue: Reference | undefined): void {
-    setValue(newValue);
-    if (props.onChange) {
-      props.onChange(newValue);
-    }
-  }
+  const setValueHelper = useCallback(
+    (item: Resource | undefined) => {
+      const newValue = item ? createReference(item) : undefined;
+      setValue(newValue);
+      if (props.onChange) {
+        props.onChange(newValue);
+      }
+    },
+    // exhaustive deps wants this to be [props] instead of [props.onChange], but it's
+    // unclear why.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [props.onChange]
+  );
 
   return (
     <Group spacing="xs" grow noWrap>
@@ -111,13 +129,14 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
           autoFocus={props.autoFocus}
           onChange={(e) => {
             const newValue = e.currentTarget.value;
+            // TODO: handle case where nativeselect is shown for multiple types including a profile
             setTargetType(targetTypes.find((tt) => tt.value === newValue));
             setResourceType(newValue as ResourceType);
           }}
           data={targetTypes.map((tt) => tt.value)}
         />
       )}
-      {!targetTypes && (
+      {targetTypes.length === 0 && (
         <ResourceTypeInput
           autoFocus={props.autoFocus}
           testId="reference-input-resource-type-input"
@@ -134,30 +153,28 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
         placeholder={props.placeholder}
         defaultValue={value}
         searchCriteria={searchCriteria}
-        onChange={(item: Resource | undefined) => {
-          setValueHelper(item ? createReference(item) : undefined);
-        }}
+        onChange={setValueHelper}
       />
     </Group>
   );
 }
 
-function getTargetTypes(resourceTypesOrProfileUrls: string[] | undefined): TargetType[] {
+function createTargetTypes(resourceTypesAndProfileUrls: string[] | undefined): TargetType[] {
   const results: TargetType[] = [];
   if (
-    !resourceTypesOrProfileUrls ||
-    resourceTypesOrProfileUrls.length === 0 ||
-    (resourceTypesOrProfileUrls.length === 1 && resourceTypesOrProfileUrls[0] === 'Resource')
+    !resourceTypesAndProfileUrls ||
+    resourceTypesAndProfileUrls.length === 0 ||
+    (resourceTypesAndProfileUrls.length === 1 && resourceTypesAndProfileUrls[0] === 'Resource')
   ) {
     return results;
   }
 
-  for (const type of resourceTypesOrProfileUrls) {
+  for (const value of resourceTypesAndProfileUrls) {
     // TODO is there a less hacky way to distinguish resourceType from URLs?
-    if (type.includes('/')) {
-      results.push({ type: 'profile', value: type });
+    if (value.includes('/')) {
+      results.push({ type: 'profile', value });
     } else {
-      results.push({ type: 'resourceType', value: type, resourceType: type });
+      results.push({ type: 'resourceType', value, resourceType: value });
     }
   }
   return results;
