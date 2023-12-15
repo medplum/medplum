@@ -1,4 +1,4 @@
-import { BotEvent, getReferenceString, MedplumClient, parseReference } from '@medplum/core';
+import { getReferenceString, MedplumClient, parseReference } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
@@ -19,7 +19,7 @@ import {
  * @param event BotEvent
  * @returns Promise<any>
  */
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+export async function handler(medplum: MedplumClient): Promise<any> {
   const currentDate = new Date();
   const thirtyMinutesAgo = new Date(currentDate.getTime() - 30 * 60 * 1000);
   const timeStamp = thirtyMinutesAgo.toISOString();
@@ -38,6 +38,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
   // If all messages have been responded to, return
   if (unrespondedMessages.length === 0) {
+    console.log('No messages in the last 30 minutes that require a response.');
     return false;
   }
 
@@ -89,6 +90,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
         }
 
         await medplum.createResource(task);
+      } else {
+        console.log('Task already exists for this thread.');
       }
     }
   }
