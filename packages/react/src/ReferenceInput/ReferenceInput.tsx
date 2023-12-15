@@ -31,7 +31,7 @@ type TargetType =
 
 export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   const medplum = useMedplum();
-  const [targetTypes, setTargetTypes] = useState<TargetType[]>(() => createTargetTypes(props.targetTypes));
+  const [targetTypes, setTargetTypes] = useState<TargetType[] | undefined>(() => createTargetTypes(props.targetTypes));
   const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
   const [targetType, setTargetType] = useState<TargetType | undefined>(() =>
     getInitialTargetType(props.defaultValue, targetTypes)
@@ -46,13 +46,18 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   }, [props.searchCriteria, targetType]);
 
   useEffect(() => {
-    // const typesToFetch = targetTypes.filter((tt) => isEmpty(tt.resourceType));
+    if (!targetTypes) {
+      return;
+    }
 
-    // if (typesToFetch)
+    const typesToFetch = targetTypes.filter(isMissingResourceType);
+    if (typesToFetch.length === 0) {
+      return;
+    }
+
     const promises: Promise<TargetType>[] = [];
-    let didFetch: boolean = false;
     for (const tt of targetTypes) {
-      if (tt.type === 'profile' && isEmpty(tt.resourceType)) {
+      if (isMissingResourceType(tt)) {
         const promise = fetchResourceType(medplum, tt.value)
           .then((partialSD) => {
             if (!partialSD) {
@@ -72,31 +77,28 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
             return tt;
           });
         promises.push(promise);
-        didFetch ||= true;
       } else {
         promises.push(Promise.resolve(tt));
       }
     }
 
-    if (didFetch) {
-      Promise.all(promises)
-        .then((newTargetTypes) => {
-          setTargetTypes(newTargetTypes);
-          if (targetType?.resourceType) {
-            const needle = targetType.resourceType satisfies string;
-            // assumes newTargetTypes has no duplicate resourceType entries which technically
-            // might not be the case if multiple profiles on the same resource type are included
-            const index = newTargetTypes.findIndex((tt) => tt.resourceType === needle);
-            if (index >= 0) {
-              // orphaned targetType has been resolved
-              setTargetType(newTargetTypes[index]);
-            } else {
-              console.log(`defaultValue had unexpected resourceType: ${targetType.resourceType}`);
-            }
+    Promise.all(promises)
+      .then((newTargetTypes) => {
+        setTargetTypes(newTargetTypes);
+        if (targetType?.resourceType) {
+          const needle = targetType.resourceType satisfies string;
+          // assumes newTargetTypes has no duplicate resourceType entries which technically
+          // might not be the case if multiple profiles on the same resource type are included
+          const index = newTargetTypes.findIndex((tt) => tt.resourceType === needle);
+          if (index >= 0) {
+            // orphaned targetType has been resolved
+            setTargetType(newTargetTypes[index]);
+          } else {
+            console.log(`defaultValue had unexpected resourceType: ${targetType.resourceType}`);
           }
-        })
-        .catch(console.error);
-    }
+        }
+      })
+      .catch(console.error);
   }, [medplum, targetType, targetTypes]);
 
   useEffect(() => {
@@ -136,7 +138,7 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
           data={targetTypes.map((tt) => tt.value)}
         />
       )}
-      {targetTypes.length === 0 && (
+      {!targetTypes && (
         <ResourceTypeInput
           autoFocus={props.autoFocus}
           testId="reference-input-resource-type-input"
@@ -159,16 +161,16 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   );
 }
 
-function createTargetTypes(resourceTypesAndProfileUrls: string[] | undefined): TargetType[] {
-  const results: TargetType[] = [];
+function createTargetTypes(resourceTypesAndProfileUrls: string[] | undefined): TargetType[] | undefined {
   if (
     !resourceTypesAndProfileUrls ||
     resourceTypesAndProfileUrls.length === 0 ||
     (resourceTypesAndProfileUrls.length === 1 && resourceTypesAndProfileUrls[0] === 'Resource')
   ) {
-    return results;
+    return undefined;
   }
 
+  const results: TargetType[] = [];
   for (const value of resourceTypesAndProfileUrls) {
     // TODO is there a less hacky way to distinguish resourceType from URLs?
     if (value.includes('/')) {
@@ -180,10 +182,13 @@ function createTargetTypes(resourceTypesAndProfileUrls: string[] | undefined): T
   return results;
 }
 
-function getInitialTargetType(defaultValue: Reference | undefined, targetTypes: TargetType[]): TargetType | undefined {
+function getInitialTargetType(
+  defaultValue: Reference | undefined,
+  targetTypes: TargetType[] | undefined
+): TargetType | undefined {
   const defaultValueResourceType = defaultValue?.reference?.split('/')[0];
   if (defaultValueResourceType) {
-    const targetType = targetTypes.find((tt) => tt.resourceType === defaultValueResourceType);
+    const targetType = targetTypes?.find((tt) => tt.resourceType === defaultValueResourceType);
     if (targetType) {
       return targetType;
     }
@@ -199,11 +204,15 @@ function getInitialTargetType(defaultValue: Reference | undefined, targetTypes: 
     return orphan;
   }
 
-  if (targetTypes.length > 0) {
+  if (targetTypes && targetTypes.length > 0) {
     return targetTypes[0];
   }
 
   return undefined;
+}
+
+function isMissingResourceType(targetType: TargetType): boolean {
+  return targetType.type === 'profile' && isEmpty(targetType.resourceType);
 }
 
 interface ResourceTypeGraphQLResponse {

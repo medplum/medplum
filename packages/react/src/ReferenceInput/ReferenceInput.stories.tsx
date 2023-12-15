@@ -18,3 +18,14 @@ export const FreeText = (): JSX.Element => (
     <ReferenceInput name="foo" />
   </Document>
 );
+
+export const JustDefaultValue = (): JSX.Element => (
+  <Document>
+    <ReferenceInput
+      name="foo"
+      defaultValue={{
+        reference: 'Patient/123',
+      }}
+    />
+  </Document>
+);
