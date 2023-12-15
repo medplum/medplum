@@ -9,7 +9,7 @@ interface AssignRoleModalProps {
 }
 
 export function AssignRoleModal(props: AssignRoleModalProps): JSX.Element {
-  const handleAssignRoleQuestionnaireSubmit = () => {};
+  const handleAssignRoleQuestionnaireSubmit = (): void => {};
   return (
     <Modal opened={props.isOpen} onClose={props.onClose}>
       <QuestionnaireForm

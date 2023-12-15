@@ -46,41 +46,43 @@ export async function handler(medplum: MedplumClient): Promise<any> {
 
   // Go through each thread and create a task if necessary
   for (const thread in threads) {
-    const messages = threads[thread];
+    if (Object.hasOwn(threads, thread)) {
+      const messages = threads[thread];
 
-    // Check if there is already an existing task to respond to this message
-    if (await checkNoExistingTask(medplum, thread)) {
-      const sender = getMostRecentResponder(messages) as Reference<Practitioner> | undefined;
-      const task: Task = {
-        resourceType: 'Task',
-        focus: {
-          reference: thread,
-        },
-        code: {
-          text: 'Respond to Message',
-        },
-      };
-
-      // If somebody has already responded to this thread, assign the task to them, otherwise assign to care coordinator queue
-      if (sender) {
-        task.owner = sender;
-      } else {
-        task.performerType = [
-          {
-            coding: [
-              {
-                system: 'http://snomed.info/sct',
-                code: '768820003',
-                display: 'Care Coordinator',
-              },
-            ],
+      // Check if there is already an existing task to respond to this message
+      if (await checkNoExistingTask(medplum, thread)) {
+        const sender = getMostRecentResponder(messages) as Reference<Practitioner> | undefined;
+        const task: Task = {
+          resourceType: 'Task',
+          focus: {
+            reference: thread,
           },
-        ];
-      }
+          code: {
+            text: 'Respond to Message',
+          },
+        };
 
-      await medplum.createResource(task);
-    } else {
-      console.log('Task already exists for this thread.');
+        // If somebody has already responded to this thread, assign the task to them, otherwise assign to care coordinator queue
+        if (sender) {
+          task.owner = sender;
+        } else {
+          task.performerType = [
+            {
+              coding: [
+                {
+                  system: 'http://snomed.info/sct',
+                  code: '768820003',
+                  display: 'Care Coordinator',
+                },
+              ],
+            },
+          ];
+        }
+
+        await medplum.createResource(task);
+      } else {
+        console.log('Task already exists for this thread.');
+      }
     }
   }
 

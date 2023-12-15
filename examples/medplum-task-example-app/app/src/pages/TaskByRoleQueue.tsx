@@ -29,7 +29,7 @@ export function TaskByRoleQueue(): JSX.Element {
       setRoles(practitionerRoles);
     };
 
-    getUserPractitionerRoles();
+    getUserPractitionerRoles().catch((error) => console.error(error));
   }, []);
 
   useEffect(() => {

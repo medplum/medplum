@@ -1,6 +1,6 @@
 import { notifications } from '@mantine/notifications';
 import { MedplumClient } from '@medplum/core';
-import { Annotation, Coding, Practitioner, Reference, Resource, Task } from '@medplum/fhirtypes';
+import { Annotation, Coding, Practitioner, Reference, Task } from '@medplum/fhirtypes';
 import { NavigateFunction } from 'react-router-dom';
 
 type OwnerTypes = Task['owner'];

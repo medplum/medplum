@@ -1,6 +1,6 @@
 import { Anchor, Card, Divider, Flex, Group, Paper, Stack, Text } from '@mantine/core';
 import { calculateAgeString, formatHumanName, getDisplayString } from '@medplum/core';
-import { AllergyIntolerance, Condition, HumanName, MedicationRequest, Observation, Patient } from '@medplum/fhirtypes';
+import { HumanName, Observation, Patient } from '@medplum/fhirtypes';
 import { ResourceAvatar, useMedplum, useResource } from '@medplum/react';
 import { IconGenderFemale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
@@ -20,11 +20,11 @@ export function PatientChart(props: PatientChartProps): JSX.Element | null {
   const patientId = props.patient.id;
   const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient>();
-  const [allergies, setAllergies] = useState<AllergyIntolerance[]>();
-  const [problems, setProblems] = useState<Condition[]>();
-  const [smokingStatus, setSmokingStatus] = useState<Observation>();
-  const [vitals, setVitals] = useState<Observation[]>();
-  const [medicationRequest, setMedicationRequest] = useState<MedicationRequest[]>();
+  // const [allergies, setAllergies] = useState<AllergyIntolerance[]>();
+  // const [problems, setProblems] = useState<Condition[]>();
+  // const [smokingStatus, setSmokingStatus] = useState<Observation>();
+  // const [vitals, setVitals] = useState<Observation[]>();
+  // const [medicationRequest, setMedicationRequest] = useState<MedicationRequest[]>();
 
   useEffect(() => {
     const query = `{
@@ -78,11 +78,11 @@ export function PatientChart(props: PatientChartProps): JSX.Element | null {
         const newPatient = response.data.Patient;
         const observations = (newPatient.ObservationList ?? []) as Observation[];
         setPatient(newPatient as Patient);
-        setAllergies((newPatient.AllergyIntoleranceList ?? []) as AllergyIntolerance[]);
-        setProblems(newPatient.ConditionList as Condition[]);
-        setMedicationRequest(newPatient.MedicationRequestList as MedicationRequest[]);
-        setSmokingStatus(observations.find((obs) => obs.code?.coding?.[0].code === '72166-2'));
-        setVitals(observations.filter((obs) => obs.category?.[0]?.coding?.[0].code === 'vital-signs'));
+        // setAllergies((newPatient.AllergyIntoleranceList ?? []) as AllergyIntolerance[]);
+        // setProblems(newPatient.ConditionList as Condition[]);
+        // setMedicationRequest(newPatient.MedicationRequestList as MedicationRequest[]);
+        // setSmokingStatus(observations.find((obs) => obs.code?.coding?.[0].code === '72166-2'));
+        // setVitals(observations.filter((obs) => obs.category?.[0]?.coding?.[0].code === 'vital-signs'));
       })
       .catch(console.error);
   }, [medplum, id]);

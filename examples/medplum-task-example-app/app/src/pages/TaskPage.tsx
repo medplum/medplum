@@ -47,8 +47,8 @@ export function TaskPage(): JSX.Element {
       }
     };
 
-    fetchTask();
-    fetchLinkedPatient();
+    fetchTask().catch((error) => console.error(error));
+    fetchLinkedPatient().catch((error) => console.error(error));
   }, [medplum, id, task]);
 
   // Update the current tab and navigate to its URL

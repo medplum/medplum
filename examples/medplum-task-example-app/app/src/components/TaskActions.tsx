@@ -1,6 +1,6 @@
 import { Button, Paper, Stack, Title } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { Annotation, CodeableConcept, Coding, Reference, Resource, Task } from '@medplum/fhirtypes';
+import { Annotation, CodeableConcept, Coding, Reference, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum, useResource } from '@medplum/react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
