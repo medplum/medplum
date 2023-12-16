@@ -60,3 +60,4 @@ The following Medplum features were used to build this product.
 
 - [Summer Health](https://www.summerhealth.com/) Website
 - [Analyze FHIR in Bigquery](https://cloud.google.com/architecture/analyzing-fhir-data-in-bigquery)
+- [Open AI Blog features Summer Health](https://openai.com/customer-stories/summer-health)

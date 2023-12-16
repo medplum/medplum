@@ -17,54 +17,52 @@ export default function CaseStudiesPage(): JSX.Element {
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>Case Studies</h1>
             <p className={styles.heroText}>
-              See detailed Medplum implementations with extensive reference materials and videos.
+              Read the details on Medplum implementations with extensive reference materials, documentation and videos.
             </p>
           </div>
           <div className={styles.heroImage}>
             <img src="/img/medplum-overview.svg" alt="Medplum architecture diagram" width="488" height="384" />
           </div>
         </Jumbotron>
-        <Section>
-          <CardContainer>
-            <Card>
-              <h3>Real implementations.</h3>
-              <p>
-                Medplum enables many use cases and scenarios. Find samples and see experiences built by our customers
-                across sectors. Examples built by devs, not by marketers.
-              </p>
-            </Card>
-          </CardContainer>
-        </Section>
         <SectionHeader>
-          <h2>Use Cases</h2>
+          <h2>Solutions</h2>
         </SectionHeader>
         <Section>
           <FeatureGrid columns={2}>
-            <Feature title="AI." imgSrc="/img/icons/api.svg">
-              Sophisticated, high-fidelity uses of AI in healthcare.
+            <Feature title="AI" imgSrc="/img/icons/code.svg">
+              Medplum is a best of breed EHR for integrating AI. Our customers build sophisticated, high-fidelity AI
+              driven applications on an open source platform with much attention to detail.
             </Feature>
-            <Feature title="Specialty EHR." imgSrc="/img/icons/code.svg">
-              Pediatrics, geriatrics, cardiac care and more.
+            <Feature title="Specialty EHR" imgSrc="/img/icons/clinical-logic.svg">
+              Medplum powers many specialty electronic health record systems and other purpose-built healthcare apps.
+              Implmentations include solutions across specialties: pediatrics, radiology, geriatrics, cardiac care and
+              more.
             </Feature>
-            <Feature title="Automation." imgSrc="/img/icons/automation.svg">
-              We believe collaborative innovation will unlock capabilities, advancements, and ideas that will ultimately
-              transform healthcare, so we continually strive to elevate and unify the entire field of players.
+            <Feature title="Diagnostics" imgSrc="/img/icons/cog-icon.svg">
+              Diagnostics providers need highly programmable system that can manage data securely at scale. Medplum
+              provides solutions for laboratory, medical device, imaging, remote patient monitoring and more.
             </Feature>
-            <Feature title="Interop." imgSrc="/img/icons/shield.svg">
-              Reliable and transparent integration. Integrate many systems on the same unified platform.
+            <Feature title="Interop" imgSrc="/img/icons/interoperability.svg">
+              Reliable and transparent integrations are built on Medplum. Integrate many systems on the same unified
+              platform. Medplum's bot framework and industry standard authentication offering speed up development and
+              ensure that integrations really work.
             </Feature>
           </FeatureGrid>
         </Section>
         <Jumbotron>
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>Summer Health</h1>
-            <p className={styles.heroText}>Pediatric care via SMS, streamlined charting using AI.</p>
+            <p className={styles.heroText}>
+              Pediatric care 24 hours a day via SMS. Summer's custom EHR careOS features streamlined charting using AI
+              which enhances the experience for patients and clinicians. This application makes extensive use of patient
+              messaging workflows and is mobile optimized.
+            </p>
           </div>
           <div className={styles.heroImage}>
             <iframe
               width="560"
               height="315"
-              src="https://www.youtube.com/embed/sy3YKRFyPII?start=0"
+              src="https://youtu.be/H2fJVYG8LvQ"
               title="YouTube video player"
               frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -77,23 +75,23 @@ export default function CaseStudiesPage(): JSX.Element {
             <ProfileCard
               name="Ro Diagnostics"
               title="Lab, integrations, workflow"
-              imgUrl="/img/logos/ro.webp"
-              linkedInUrl="https://www.linkedin.com/in/reshmakhilnani/"
-              githubUrl="https://github.com/reshmakh"
+              imgUrl="/img/blog/ro-logo.png"
+              linkedInUrl="https://ro.co/"
+              githubUrl="https://www.medplum.com/blog/ro-case-study"
             />
             <ProfileCard
               name="Titan Intake"
-              title="AI, Patient intake, scheduling"
-              imgUrl="/img/people/cody.jpg"
-              linkedInUrl="https://www.medplum.com/blog/titan-case-study"
-              githubUrl="https://www.titanintake.com/"
+              title="AI, scheduling, interop"
+              imgUrl="/img/blog/titan-logo.jpeg"
+              linkedInUrl="https://www.titanintake.com/"
+              githubUrl="https://www.medplum.com/blog/titan-case-study"
             />
             <ProfileCard
               name="Ensage Health"
-              title="Geriatrics, Value Based Care"
-              imgUrl="/img/people/rahul.jpg"
-              linkedInUrl="https://www.medplum.com/blog/ensage-case-study"
-              githubUrl="https://www.ensagehealth.com/"
+              title="Geriatrics, Value Based Care, custom EHR"
+              imgUrl="/img/blog/ensage.jpg"
+              linkedInUrl="https://www.ensagehealth.com/"
+              githubUrl="https://www.medplum.com/blog/ensage-case-study"
             />
           </CardContainer>
         </Section>
