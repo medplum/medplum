@@ -99,7 +99,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
     async (input: string, signal: AbortSignal): Promise<T[]> => {
       const searchCode = getSearchParamForResourceType(resourceType);
       const searchParams = new URLSearchParams({
-        [searchCode]: input,
+        [searchCode]: input ?? '',
         _count: '10',
         ...searchCriteria,
       });
