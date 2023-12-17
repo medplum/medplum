@@ -401,7 +401,7 @@ export interface PackagedProductDefinitionPackageContainedItem {
    * as a wholesale or distribution pack (for layers within one package,
    * use PackagedProductDefinition.package.package).
    */
-  item?: CodeableReference;
+  item: CodeableReference;
 
   /**
    * The number of this type of item within this packaging.
@@ -452,7 +452,7 @@ export interface PackagedProductDefinitionPackageProperty {
   /**
    * A code expressing the type of characteristic.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * A value for the characteristic.

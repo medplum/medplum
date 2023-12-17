@@ -110,7 +110,7 @@ export interface AdministrableProductDefinition {
    * The status of this administrable product. Enables tracking the
    * life-cycle of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * References a product from which one or more of the constituent parts
@@ -183,7 +183,7 @@ export interface AdministrableProductDefinition {
    * route. RouteOfAdministration cannot be used when the 'formOf' product
    * already uses MedicinalProductDefinition.route (and vice versa).
    */
-  routeOfAdministration?: AdministrableProductDefinitionRouteOfAdministration[];
+  routeOfAdministration: AdministrableProductDefinitionRouteOfAdministration[];
 }
 
 /**
@@ -229,7 +229,7 @@ export interface AdministrableProductDefinitionProperty {
   /**
    * A code expressing the type of characteristic.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * A value for the characteristic.
@@ -308,7 +308,7 @@ export interface AdministrableProductDefinitionRouteOfAdministration {
   /**
    * Coded expression for the route.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * The first dose (dose quantity) administered can be specified for the
@@ -388,7 +388,7 @@ export interface AdministrableProductDefinitionRouteOfAdministrationTargetSpecie
   /**
    * Coded expression for the species.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * A species specific time during which consumption of animal product is
@@ -442,12 +442,12 @@ export interface AdministrableProductDefinitionRouteOfAdministrationTargetSpecie
    * Coded expression for the type of tissue for which the withdrawal
    * period applies, e.g. meat, milk.
    */
-  tissue?: CodeableConcept;
+  tissue: CodeableConcept;
 
   /**
    * A value for the time.
    */
-  value?: Quantity;
+  value: Quantity;
 
   /**
    * Extra information about the withdrawal period.

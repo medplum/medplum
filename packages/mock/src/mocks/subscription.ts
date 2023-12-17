@@ -6,6 +6,13 @@ export const ExampleSubscription: Subscription = {
   meta: {
     versionId: '456',
   },
+  status: 'active',
+  reason: 'Reason',
+  criteria: 'Criteria',
+  channel: {
+    type: 'rest-hook',
+    endpoint: 'https://example.com',
+  },
 };
 
 export const ExampleAuditEvent: AuditEvent = {
@@ -16,6 +23,26 @@ export const ExampleAuditEvent: AuditEvent = {
     versionId: '456',
     author: {
       reference: 'Practitioner/123',
+    },
+  },
+  type: {
+    system: 'http://terminology.hl7.org/CodeSystem/audit-event-type',
+    code: 'rest-hook',
+  },
+  recorded: new Date().toISOString(),
+  agent: [
+    {
+      who: {
+        reference: 'Practitioner/123',
+      },
+      altId: '123',
+      name: 'Alice Smith',
+      requestor: true,
+    },
+  ],
+  source: {
+    observer: {
+      reference: 'Organization/123',
     },
   },
 };

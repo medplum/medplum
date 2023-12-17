@@ -61,7 +61,7 @@ export interface Extension {
    * Source of the definition for the extension code - a logical name or a
    * URL.
    */
-  url?: string;
+  url: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data

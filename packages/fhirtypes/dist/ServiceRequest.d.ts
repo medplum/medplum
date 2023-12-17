@@ -161,13 +161,13 @@ export interface ServiceRequest {
   /**
    * The status of the order.
    */
-  status?: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
+  status: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Whether the request is a proposal, plan, an original order or a reflex
    * order.
    */
-  intent?: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
+  intent: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * A code that classifies the service for searching, sorting and display
@@ -230,7 +230,7 @@ export interface ServiceRequest {
    * or animals, devices such as dialysis machines, or even locations
    * (typically for environmental scans).
    */
-  subject?: Reference<Patient | Group | Location | Device>;
+  subject: Reference<Patient | Group | Location | Device>;
 
   /**
    * An encounter that provides additional information about the healthcare

@@ -70,7 +70,7 @@ export interface MarketingStatus {
    * the medicinal product See ISO/TS 20443 for more information and
    * examples.
    */
-  status?: CodeableConcept;
+  status: CodeableConcept;
 
   /**
    * The date when the Medicinal Product is placed on the market by the

@@ -108,14 +108,14 @@ export interface Endpoint {
   /**
    * active | suspended | error | off | test.
    */
-  status?: 'active' | 'suspended' | 'error' | 'off' | 'entered-in-error' | 'test';
+  status: 'active' | 'suspended' | 'error' | 'off' | 'entered-in-error' | 'test';
 
   /**
    * A coded value that represents the technical details of the usage of
    * this endpoint, such as what WSDLs should be used in what way. (e.g.
    * XDS.b/DICOM/cds-hook).
    */
-  connectionType?: Coding;
+  connectionType: Coding;
 
   /**
    * A friendly name that this endpoint can be referred to with.
@@ -144,7 +144,7 @@ export interface Endpoint {
    * The payload type describes the acceptable content that can be
    * communicated on the endpoint.
    */
-  payloadType?: CodeableConcept[];
+  payloadType: CodeableConcept[];
 
   /**
    * The mime type to send the payload in - e.g. application/fhir+xml,
@@ -157,7 +157,7 @@ export interface Endpoint {
   /**
    * The uri that describes the actual end-point to connect to.
    */
-  address?: string;
+  address: string;
 
   /**
    * Additional headers / information to send as part of the notification.

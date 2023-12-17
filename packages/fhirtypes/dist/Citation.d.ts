@@ -152,7 +152,7 @@ export interface Citation {
    * The status of this summary. Enables tracking the life-cycle of the
    * content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this citation is authored for testing
@@ -464,7 +464,7 @@ export interface CitationCitedArtifactAbstract {
   /**
    * Abstract content.
    */
-  text?: string;
+  text: string;
 
   /**
    * Copyright notice for the abstract.
@@ -855,7 +855,7 @@ export interface CitationCitedArtifactContributorshipEntryContributionInstance {
   /**
    * The specific contribution.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * The time that the contribution was made.
@@ -924,7 +924,7 @@ export interface CitationCitedArtifactContributorshipSummary {
    * The display string for the author list, contributor list, or
    * contributorship statement.
    */
-  value?: string;
+  value: string;
 }
 
 /**
@@ -1327,7 +1327,7 @@ export interface CitationCitedArtifactRelatesTo {
   /**
    * How the cited artifact relates to the target artifact.
    */
-  relationshipType?: CodeableConcept;
+  relationshipType: CodeableConcept;
 
   /**
    * The clasification of the related artifact.
@@ -1398,7 +1398,7 @@ export interface CitationCitedArtifactStatusDate {
   /**
    * Classification of the status.
    */
-  activity?: CodeableConcept;
+  activity: CodeableConcept;
 
   /**
    * Either occurred or expected.
@@ -1408,7 +1408,7 @@ export interface CitationCitedArtifactStatusDate {
   /**
    * When the status started and/or ended.
    */
-  period?: Period;
+  period: Period;
 }
 
 /**
@@ -1464,7 +1464,7 @@ export interface CitationCitedArtifactTitle {
   /**
    * The title of the article or artifact.
    */
-  text?: string;
+  text: string;
 }
 
 /**
@@ -1510,7 +1510,7 @@ export interface CitationCitedArtifactVersion {
   /**
    * The version number or other version identifier.
    */
-  value?: string;
+  value: string;
 
   /**
    * Citation for the main version of the cited artifact.
@@ -1663,7 +1663,7 @@ export interface CitationRelatesTo {
   /**
    * How the Citation resource relates to the target artifact.
    */
-  relationshipType?: CodeableConcept;
+  relationshipType: CodeableConcept;
 
   /**
    * The clasification of the related artifact.
@@ -1734,7 +1734,7 @@ export interface CitationStatusDate {
   /**
    * Classification of the status.
    */
-  activity?: CodeableConcept;
+  activity: CodeableConcept;
 
   /**
    * Either occurred or expected.
@@ -1744,7 +1744,7 @@ export interface CitationStatusDate {
   /**
    * When the status started and/or ended.
    */
-  period?: Period;
+  period: Period;
 }
 
 /**
@@ -1795,5 +1795,5 @@ export interface CitationSummary {
   /**
    * The human-readable display of the citation.
    */
-  text?: string;
+  text: string;
 }

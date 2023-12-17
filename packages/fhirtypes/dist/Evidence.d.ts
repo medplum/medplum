@@ -153,7 +153,7 @@ export interface Evidence {
    * The status of this summary. Enables tracking the life-cycle of the
    * content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * The date  (and optionally time) when the summary was published. The
@@ -246,7 +246,7 @@ export interface Evidence {
   /**
    * Evidence variable such as population, exposure, or outcome.
    */
-  variableDefinition?: EvidenceVariableDefinition[];
+  variableDefinition: EvidenceVariableDefinition[];
 
   /**
    * The method to combine studies.
@@ -561,7 +561,7 @@ export interface EvidenceStatisticModelCharacteristic {
   /**
    * Description of a component of the method to generate the statistic.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * Further specification of the quantified value of the component of the
@@ -623,7 +623,7 @@ export interface EvidenceStatisticModelCharacteristicVariable {
   /**
    * Description of the variable.
    */
-  variableDefinition?: Reference<Group | EvidenceVariable>;
+  variableDefinition: Reference<Group | EvidenceVariable>;
 
   /**
    * How the variable is classified for use in adjusted analysis.
@@ -767,7 +767,7 @@ export interface EvidenceVariableDefinition {
    * population | subpopulation | exposure | referenceExposure |
    * measuredVariable | confounder.
    */
-  variableRole?: CodeableConcept;
+  variableRole: CodeableConcept;
 
   /**
    * Definition of the actual variable related to the statistic(s).

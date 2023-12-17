@@ -123,13 +123,13 @@ export interface GraphDefinition {
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  name?: string;
+  name: string;
 
   /**
    * The status of this graph definition. Enables tracking the life-cycle
    * of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this graph definition is authored for
@@ -188,7 +188,7 @@ export interface GraphDefinition {
   /**
    * The type of FHIR resource at which instances of this graph start.
    */
-  start?: ResourceType;
+  start: ResourceType;
 
   /**
    * The profile that describes the use of the base resource.
@@ -317,7 +317,7 @@ export interface GraphDefinitionLinkTarget {
   /**
    * Type of resource this link refers to.
    */
-  type?: ResourceType;
+  type: ResourceType;
 
   /**
    * A set of parameters to look up.
@@ -385,17 +385,17 @@ export interface GraphDefinitionLinkTargetCompartment {
    * test whether resources are subject to the rule, or whether it is a
    * rule that must be followed.
    */
-  use?: 'condition' | 'requirement';
+  use: 'condition' | 'requirement';
 
   /**
    * Identifies the compartment.
    */
-  code?: 'Patient' | 'Encounter' | 'RelatedPerson' | 'Practitioner' | 'Device';
+  code: 'Patient' | 'Encounter' | 'RelatedPerson' | 'Practitioner' | 'Device';
 
   /**
    * identical | matching | different | no-rule | custom.
    */
-  rule?: 'identical' | 'matching' | 'different' | 'custom';
+  rule: 'identical' | 'matching' | 'different' | 'custom';
 
   /**
    * Custom rule, as a FHIRPath expression.

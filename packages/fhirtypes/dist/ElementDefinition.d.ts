@@ -83,7 +83,7 @@ export interface ElementDefinition {
    * list of ancestor elements, beginning with the name of the resource or
    * extension.
    */
-  path?: string;
+  path: string;
 
   /**
    * Codes that define how this element is represented in instances, when
@@ -2390,17 +2390,17 @@ export interface ElementDefinitionBase {
    * a [StructureDefinition](structuredefinition.html#) without a
    * StructureDefinition.base.
    */
-  path?: string;
+  path: string;
 
   /**
    * Minimum cardinality of the base element identified by the path.
    */
-  min?: number;
+  min: number;
 
   /**
    * Maximum cardinality of the base element identified by the path.
    */
-  max?: string;
+  max: string;
 }
 
 /**
@@ -2430,7 +2430,7 @@ export interface ElementDefinitionBinding {
    * binding - that is, the degree to which the provided value set must be
    * adhered to in the instances.
    */
-  strength?: 'required' | 'extensible' | 'preferred' | 'example';
+  strength: 'required' | 'extensible' | 'preferred' | 'example';
 
   /**
    * Describes the intended use of this particular set of codes.
@@ -2471,7 +2471,7 @@ export interface ElementDefinitionConstraint {
    * impacted by the constraint.  Will not be referenced for constraints
    * that do not affect cardinality.
    */
-  key?: string;
+  key: string;
 
   /**
    * Description of why this constraint is necessary or appropriate.
@@ -2482,13 +2482,13 @@ export interface ElementDefinitionConstraint {
    * Identifies the impact constraint violation has on the conformance of
    * the instance.
    */
-  severity?: 'error' | 'warning';
+  severity: 'error' | 'warning';
 
   /**
    * Text that can be used to describe the constraint in messages
    * identifying that the constraint has been violated.
    */
-  human?: string;
+  human: string;
 
   /**
    * A [FHIRPath](fhirpath.html) expression of constraint that can be
@@ -2534,7 +2534,7 @@ export interface ElementDefinitionExample {
   /**
    * Describes the purpose of this example amoung the set of examples.
    */
-  label?: string;
+  label: string;
 
   /**
    * The actual value for the element, which must be one of the types
@@ -2868,7 +2868,7 @@ export interface ElementDefinitionMapping {
   /**
    * An internal reference to the definition of a mapping.
    */
-  identity?: string;
+  identity: string;
 
   /**
    * Identifies the computable language in which mapping.map is expressed.
@@ -2879,7 +2879,7 @@ export interface ElementDefinitionMapping {
    * Expresses what part of the target specification corresponds to this
    * element.
    */
-  map?: string;
+  map: string;
 
   /**
    * Comments that provide information about the mapping or its use.
@@ -2943,7 +2943,7 @@ export interface ElementDefinitionSlicing {
    * ordered, profile authors can also say that additional slices are only
    * allowed at the end.
    */
-  rules?: 'closed' | 'open' | 'openAtEnd';
+  rules: 'closed' | 'open' | 'openAtEnd';
 }
 
 /**
@@ -2974,14 +2974,14 @@ export interface ElementDefinitionSlicingDiscriminator {
   /**
    * How the element value is interpreted when discrimination is evaluated.
    */
-  type?: 'value' | 'exists' | 'pattern' | 'type' | 'profile';
+  type: 'value' | 'exists' | 'pattern' | 'type' | 'profile';
 
   /**
    * A FHIRPath expression, using [the simple subset of
    * FHIRPath](fhirpath.html#simple), that is used to identify the element
    * on which discrimination is based.
    */
-  path?: string;
+  path: string;
 }
 
 /**
@@ -3013,7 +3013,7 @@ export interface ElementDefinitionType {
    * to http://hl7.org/fhir/StructureDefinition/string. Absolute URLs are
    * only allowed in logical models.
    */
-  code?: string;
+  code: string;
 
   /**
    * Identifies a profile structure or implementation Guide that applies to

@@ -1,12 +1,13 @@
 import {
   capitalize,
+  ElementType,
   getAllDataTypes,
   indexStructureDefinitionBundle,
   InternalSchemaElement,
   InternalTypeSchema,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, ElementDefinitionType, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, StructureDefinition } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { JSONSchema6, JSONSchema6Definition } from 'json-schema';
 import { resolve } from 'path';
@@ -115,9 +116,9 @@ function buildProperties(typeSchema: InternalTypeSchema): {
   }
 
   for (const [path, elementDefinition] of Object.entries(typeSchema.elements)) {
-    for (const elementDefinitionType of elementDefinition?.type ?? []) {
-      const propertyName = path.replace('[x]', capitalize(elementDefinitionType.code as string));
-      properties[propertyName] = buildPropertySchema(elementDefinition, elementDefinitionType, path);
+    for (const elementType of elementDefinition?.type ?? []) {
+      const propertyName = path.replace('[x]', capitalize(elementType.code as string));
+      properties[propertyName] = buildPropertySchema(elementDefinition, elementType);
     }
 
     if (!path.includes('[x]') && elementDefinition?.min) {
@@ -133,8 +134,7 @@ function buildProperties(typeSchema: InternalTypeSchema): {
 
 function buildPropertySchema(
   elementDefinition: InternalSchemaElement,
-  elementDefinitionType: ElementDefinitionType,
-  path: string
+  elementType: ElementType
 ): JSONSchema6Definition {
   const result: JSONSchema6Definition = {
     description: elementDefinition.description,
@@ -147,31 +147,16 @@ function buildPropertySchema(
     if (enumValues) {
       result.items.enum = enumValues;
     } else {
-      result.items.$ref = `#/definitions/${getTypeName(path, elementDefinitionType)}`;
+      result.items.$ref = `#/definitions/${elementType.code}`;
     }
     result.type = 'array';
   } else if (enumValues) {
     result.enum = enumValues;
   } else {
-    result.$ref = `#/definitions/${getTypeName(path, elementDefinitionType)}`;
+    result.$ref = `#/definitions/${elementType.code}`;
   }
 
   return result;
-}
-
-function getTypeName(path: string, elementDefinitionType: ElementDefinitionType): string {
-  if (path.endsWith('.id')) {
-    return 'id';
-  }
-  const code = elementDefinitionType.code as string;
-  return code === 'BackboneElement' || code === 'Element' ? buildTypeName(path.split('.') as string[]) : code;
-}
-
-function buildTypeName(components: string[]): string {
-  if (components.length === 1) {
-    return components[0];
-  }
-  return components.map(capitalize).join('_');
 }
 
 const excludedValueSets = [
@@ -179,6 +164,7 @@ const excludedValueSets = [
   'http://hl7.org/fhir/ValueSet/all-types|4.0.1',
   'http://hl7.org/fhir/ValueSet/defined-types|4.0.1',
 ];
+
 function getEnumValues(elementDefinition: InternalSchemaElement): string[] | undefined {
   const valueSet = elementDefinition.binding?.valueSet;
   if (valueSet) {

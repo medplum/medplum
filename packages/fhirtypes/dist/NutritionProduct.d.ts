@@ -101,7 +101,7 @@ export interface NutritionProduct {
   /**
    * The current state of the product.
    */
-  status?: 'active' | 'inactive' | 'entered-in-error';
+  status: 'active' | 'inactive' | 'entered-in-error';
 
   /**
    * Nutrition products can have different classifications - according to
@@ -197,7 +197,7 @@ export interface NutritionProductIngredient {
   /**
    * The ingredient contained in the product.
    */
-  item?: CodeableReference;
+  item: CodeableReference;
 
   /**
    * The amount of ingredient that is in the product.
@@ -371,7 +371,7 @@ export interface NutritionProductProductCharacteristic {
    * A code specifying which characteristic of the product is being
    * described (for example, colour, shape).
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * The actual characteristic value corresponding to the type.

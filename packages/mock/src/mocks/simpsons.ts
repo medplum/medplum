@@ -311,6 +311,8 @@ export const HomerEncounter: Encounter = {
       reference: 'Practitioner/123',
     },
   },
+  status: 'finished',
+  class: { code: 'AMB', display: 'ambulatory' },
 };
 
 export const HomerCommunication: Communication = {
@@ -322,6 +324,7 @@ export const HomerCommunication: Communication = {
       reference: 'Practitioner/123',
     },
   },
+  status: 'completed',
   encounter: createReference(HomerEncounter),
   payload: [
     {
@@ -339,6 +342,7 @@ export const HomerMedia: Media = {
       reference: 'Practitioner/123',
     },
   },
+  status: 'completed',
   encounter: createReference(HomerEncounter),
   content: {
     contentType: ContentType.TEXT,
@@ -475,6 +479,7 @@ export const HomerObservation6: Observation = {
   },
   component: [
     {
+      code: { coding: [{ system: SNOMED, code: '8480-6', display: 'Systolic blood pressure' }] },
       valueQuantity: {
         value: 110,
         unit: 'mmHg',
@@ -482,6 +487,7 @@ export const HomerObservation6: Observation = {
       },
     },
     {
+      code: { coding: [{ system: SNOMED, code: '8462-4', display: 'Diastolic blood pressure' }] },
       valueQuantity: {
         value: 75,
         unit: 'mmHg',
@@ -504,6 +510,7 @@ export const HomerObservation7: Observation = {
   },
   component: [
     {
+      code: { coding: [{ system: SNOMED, code: '2345-7', display: 'Glucose' }] },
       valueQuantity: {
         value: 1000,
         unit: 'mg/dL',
@@ -537,6 +544,7 @@ export const HomerObservation8: Observation = {
   },
   component: [
     {
+      code: { coding: [{ system: SNOMED, code: '2345-7', display: 'Glucose' }] },
       valueString: 'REACTIVE',
     },
   ],
@@ -600,6 +608,7 @@ export const HomerServiceRequest: ServiceRequest = {
     display: 'Homer Simpson',
   },
   status: 'active',
+  intent: 'order',
   orderDetail: [
     {
       text: 'ORDERED',
@@ -618,6 +627,15 @@ export const HomerDiagnosticReport: DiagnosticReport = {
     author: {
       reference: 'Practitioner/123',
     },
+  },
+  status: 'final',
+  code: {
+    coding: [
+      {
+        system: SNOMED,
+        code: 'DIAGNOSTIC_REPORT_CODE',
+      },
+    ],
   },
   subject: createReference(HomerSimpson),
   basedOn: [createReference(HomerServiceRequest)],

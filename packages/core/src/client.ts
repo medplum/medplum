@@ -86,7 +86,11 @@ const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
 const DEFAULT_CACHE_TIME = 60000; // 60 seconds
 const BINARY_URL_PREFIX = 'Binary/';
 
-const system: Device = { resourceType: 'Device', id: 'system', deviceName: [{ name: 'System' }] };
+const system: Device = {
+  resourceType: 'Device',
+  id: 'system',
+  deviceName: [{ type: 'model-name', name: 'System' }],
+};
 
 /**
  * The MedplumClientOptions interface defines configuration options for MedplumClient.
@@ -2019,6 +2023,7 @@ export class MedplumClient extends EventTarget {
     return this.createResource<Communication>(
       {
         resourceType: 'Communication',
+        status: 'completed',
         basedOn: [createReference(resource)],
         encounter,
         subject,

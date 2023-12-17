@@ -1,10 +1,10 @@
-import { OperationOutcomeError, unauthorized } from '@medplum/core';
+import { OperationOutcomeError, createReference, unauthorized } from '@medplum/core';
 import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
+import { AuthenticatedRequestContext, getRequestContext, requestContextStore } from '../context';
+import { getRepoForLogin } from '../fhir/accesspolicy';
 import { systemRepo } from '../fhir/repo';
 import { getClientApplicationMembership, getLoginForAccessToken, timingSafeEqualStr } from './utils';
-import { getRequestContext, requestContextStore, AuthenticatedRequestContext } from '../context';
-import { getRepoForLogin } from '../fhir/accesspolicy';
 
 export interface AuthState {
   login: Login;
@@ -78,7 +78,9 @@ async function authenticateBasicAuth(req: Request, token: string): Promise<AuthS
   const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
   const login: Login = {
     resourceType: 'Login',
+    user: createReference(client),
     authMethod: 'client',
+    authTime: new Date().toISOString(),
     superAdmin: project.superAdmin,
   };
 

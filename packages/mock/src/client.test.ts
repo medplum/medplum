@@ -471,6 +471,9 @@ describe('MockClient', () => {
 
     const resource1 = await client.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: 'Patient/123' },
       orderDetail: [{ text: 'foo' }],
     });
     expect(resource1).toBeDefined();

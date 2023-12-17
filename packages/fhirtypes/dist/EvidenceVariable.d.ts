@@ -164,7 +164,7 @@ export interface EvidenceVariable {
    * The status of this evidence variable. Enables tracking the life-cycle
    * of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * The date  (and optionally time) when the evidence variable was

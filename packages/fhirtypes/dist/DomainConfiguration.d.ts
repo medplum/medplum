@@ -45,7 +45,7 @@ export interface DomainConfiguration {
   /**
    * Globally unique domain name for this configuration.
    */
-  domain?: string;
+  domain: string;
 
   /**
    * Optional external Identity Provider (IdP) for the domain name.

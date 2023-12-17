@@ -114,7 +114,7 @@ export interface ClinicalUseDefinition {
    * indication | contraindication | interaction | undesirable-effect |
    * warning.
    */
-  type?: 'indication' | 'contraindication' | 'interaction' | 'undesirable-effect' | 'warning';
+  type: 'indication' | 'contraindication' | 'interaction' | 'undesirable-effect' | 'warning';
 
   /**
    * A categorisation of the issue, primarily for dividing warnings into
@@ -282,14 +282,14 @@ export interface ClinicalUseDefinitionContraindicationOtherTherapy {
    * The type of relationship between the medicinal product indication or
    * contraindication and another therapy.
    */
-  relationshipType?: CodeableConcept;
+  relationshipType: CodeableConcept;
 
   /**
    * Reference to a specific medication (active substance, medicinal
    * product or class of products) as part of an indication or
    * contraindication.
    */
-  therapy?: CodeableReference;
+  therapy: CodeableReference;
 }
 
 /**

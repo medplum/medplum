@@ -122,7 +122,7 @@ export interface EvidenceReport {
    * The status of this summary. Enables tracking the life-cycle of the
    * content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -176,7 +176,7 @@ export interface EvidenceReport {
    * Specifies the subject or focus of the report. Answers &quot;What is this
    * report about?&quot;.
    */
-  subject?: EvidenceReportSubject;
+  subject: EvidenceReportSubject;
 
   /**
    * The name of the organization or individual that published the evidence
@@ -271,7 +271,7 @@ export interface EvidenceReportRelatesTo {
    * The type of relationship that this composition has with anther
    * composition or document.
    */
-  code?: 'replaces' | 'amends' | 'appends' | 'transforms' | 'replacedWith' | 'amendedWith' | 'appendedWith' | 'transformedWith';
+  code: 'replaces' | 'amends' | 'appends' | 'transforms' | 'replacedWith' | 'amendedWith' | 'appendedWith' | 'transformedWith';
 
   /**
    * The target composition/document of this relationship.
@@ -494,7 +494,7 @@ export interface EvidenceReportSubjectCharacteristic {
   /**
    * Characteristic code.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * Characteristic value.

@@ -277,7 +277,7 @@ export interface MedicinalProductDefinition {
   /**
    * The product's name, including full name and possibly coded parts.
    */
-  name?: MedicinalProductDefinitionName[];
+  name: MedicinalProductDefinitionName[];
 
   /**
    * Reference to another product, e.g. for linking authorised to
@@ -342,7 +342,7 @@ export interface MedicinalProductDefinitionCharacteristic {
   /**
    * A code expressing the type of characteristic.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * A value for the characteristic.
@@ -419,7 +419,7 @@ export interface MedicinalProductDefinitionContact {
   /**
    * A product specific contact, person (in a role), or an organization.
    */
-  contact?: Reference<Organization | PractitionerRole>;
+  contact: Reference<Organization | PractitionerRole>;
 }
 
 /**
@@ -467,7 +467,7 @@ export interface MedicinalProductDefinitionCrossReference {
    * Reference to another product, e.g. for linking authorised to
    * investigational product.
    */
-  product?: CodeableReference;
+  product: CodeableReference;
 
   /**
    * The type of relationship, for instance branded to generic, virtual to
@@ -520,7 +520,7 @@ export interface MedicinalProductDefinitionName {
   /**
    * The full product name.
    */
-  productName?: string;
+  productName: string;
 
   /**
    * Type of product name, such as rINN, BAN, Proprietary, Non-Proprietary.
@@ -583,7 +583,7 @@ export interface MedicinalProductDefinitionNameCountryLanguage {
   /**
    * Country code for where this name applies.
    */
-  country?: CodeableConcept;
+  country: CodeableConcept;
 
   /**
    * Jurisdiction code for where this name applies. A jurisdiction may be a
@@ -594,7 +594,7 @@ export interface MedicinalProductDefinitionNameCountryLanguage {
   /**
    * Language code for this name.
    */
-  language?: CodeableConcept;
+  language: CodeableConcept;
 }
 
 /**
@@ -640,12 +640,12 @@ export interface MedicinalProductDefinitionNameNamePart {
   /**
    * A fragment of a product name.
    */
-  part?: string;
+  part: string;
 
   /**
    * Identifying type for this part of the name (e.g. strength part).
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 }
 
 /**

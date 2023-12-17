@@ -298,14 +298,14 @@ export interface DeviceDeviceName {
   /**
    * The name that identifies the device.
    */
-  name?: string;
+  name: string;
 
   /**
    * The type of deviceName.
    * UDILabelName | UserFriendlyName | PatientReportedName |
    * ManufactureDeviceName | ModelName.
    */
-  type?: 'udi-label-name' | 'user-friendly-name' | 'patient-reported-name' | 'manufacturer-name' | 'model-name' | 'other';
+  type: 'udi-label-name' | 'user-friendly-name' | 'patient-reported-name' | 'manufacturer-name' | 'model-name' | 'other';
 }
 
 /**
@@ -353,7 +353,7 @@ export interface DeviceProperty {
    * Code that specifies the property DeviceDefinitionPropetyCode
    * (Extensible).
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Property value as a quantity.
@@ -411,7 +411,7 @@ export interface DeviceSpecialization {
   /**
    * The standard that is used to operate and communicate.
    */
-  systemType?: CodeableConcept;
+  systemType: CodeableConcept;
 
   /**
    * The version of the standard that is used to operate and communicate.
@@ -566,5 +566,5 @@ export interface DeviceVersion {
   /**
    * The version text.
    */
-  value?: string;
+  value: string;
 }

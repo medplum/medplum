@@ -420,7 +420,7 @@ export interface SubstanceDefinitionMolecularWeight {
    * single definite value for a given element is given, it would be
    * captured in this field.
    */
-  amount?: Quantity;
+  amount: Quantity;
 }
 
 /**
@@ -466,7 +466,7 @@ export interface SubstanceDefinitionName {
   /**
    * The actual name.
    */
-  name?: string;
+  name: string;
 
   /**
    * Name type, for example 'systematic',  'scientific, 'brand'.
@@ -621,7 +621,7 @@ export interface SubstanceDefinitionProperty {
   /**
    * A code expressing the type of property.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * A value for the property.
@@ -706,7 +706,7 @@ export interface SubstanceDefinitionRelationship {
    * For example &quot;salt to parent&quot;, &quot;active moiety&quot;, &quot;starting material&quot;,
    * &quot;polymorph&quot;, &quot;impurity of&quot;.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * For example where an enzyme strongly bonds with a particular

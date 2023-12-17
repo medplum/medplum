@@ -55,12 +55,12 @@ export interface Agent {
   /**
    * The human readable friendly name of the agent.
    */
-  name?: string;
+  name: string;
 
   /**
    * The status of the agent.
    */
-  status?: 'active' | 'off' | 'error';
+  status: 'active' | 'off' | 'error';
 
   /**
    * Optional device resource representing the device running the agent.
@@ -76,7 +76,7 @@ export interface Agent {
    * Details where to send notifications when resources are received that
    * meet the criteria.
    */
-  channel?: AgentChannel[];
+  channel: AgentChannel[];
 }
 
 /**
@@ -88,13 +88,13 @@ export interface AgentChannel {
   /**
    * The channel name.
    */
-  name?: string;
+  name: string;
 
   /**
    * The channel endpoint definition including protocol and network binding
    * details.
    */
-  endpoint?: Reference<Endpoint>;
+  endpoint: Reference<Endpoint>;
 
   /**
    * The target resource where channel messages will be delivered.
@@ -115,7 +115,7 @@ export interface AgentSetting {
   /**
    * The setting name.
    */
-  name?: string;
+  name: string;
 
   /**
    * The setting value.

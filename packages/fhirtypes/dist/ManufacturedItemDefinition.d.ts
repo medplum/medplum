@@ -106,13 +106,13 @@ export interface ManufacturedItemDefinition {
    * The status of this item. Enables tracking the life-cycle of the
    * content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * Dose form as manufactured and before any transformation into the
    * pharmaceutical product.
    */
-  manufacturedDoseForm?: CodeableConcept;
+  manufacturedDoseForm: CodeableConcept;
 
   /**
    * The &ldquo;real world&rdquo; units in which the quantity of the manufactured item
@@ -182,7 +182,7 @@ export interface ManufacturedItemDefinitionProperty {
   /**
    * A code expressing the type of characteristic.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * A value for the characteristic.

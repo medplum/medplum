@@ -77,7 +77,9 @@ export const DrAliceSmithSlots: Slot[] = (() => {
       result.push({
         resourceType: 'Slot',
         id: `slot-${day}-${hour}`,
+        status: 'free',
         start: slotDate.toISOString(),
+        end: new Date(slotDate.getTime() + 60 * 60 * 1000).toISOString(),
         schedule,
       });
     }

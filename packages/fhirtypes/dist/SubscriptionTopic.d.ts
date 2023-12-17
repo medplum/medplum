@@ -105,7 +105,7 @@ export interface SubscriptionTopic {
    * URL can be the target of a canonical reference. It SHALL remain the
    * same when the subscription topic is stored on different servers.
    */
-  url?: string;
+  url: string;
 
   /**
    * Business identifiers assigned to this subscription topic by the
@@ -139,7 +139,7 @@ export interface SubscriptionTopic {
   /**
    * The current state of the SubscriptionTopic.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A flag to indicate that this TopSubscriptionTopicic is authored for
@@ -311,7 +311,7 @@ export interface SubscriptionTopicCanFilterBy {
    * topic-defined parameter (like &quot;hub.event&quot;) which is a label for the
    * filter.
    */
-  filterParameter?: string;
+  filterParameter: string;
 
   /**
    * Either the canonical URL to a search parameter (like
@@ -382,7 +382,7 @@ export interface SubscriptionTopicEventTrigger {
    * A well-defined event which can be used to trigger notifications from
    * the SubscriptionTopic.
    */
-  event?: CodeableConcept;
+  event: CodeableConcept;
 
   /**
    * URL of the Resource that is the focus type used in this event trigger.
@@ -393,7 +393,7 @@ export interface SubscriptionTopicEventTrigger {
    * information, see &lt;a
    * href=&quot;elementdefinition-definitions.html#ElementDefinition.type.code&quot;&gt;ElementDefinition.type.code&lt;/a&gt;.
    */
-  resource?: string;
+  resource: string;
 }
 
 /**
@@ -445,7 +445,7 @@ export interface SubscriptionTopicNotificationShape {
    * SubscriptionTopic.resourceTrigger.resource or
    * SubscriptionTopic.eventTrigger.resource when they are present.
    */
-  resource?: string;
+  resource: string;
 
   /**
    * Search-style _include directives, rooted in the resource for this
@@ -527,7 +527,7 @@ export interface SubscriptionTopicResourceTrigger {
    * information, see &lt;a
    * href=&quot;elementdefinition-definitions.html#ElementDefinition.type.code&quot;&gt;ElementDefinition.type.code&lt;/a&gt;.
    */
-  resource?: string;
+  resource: string;
 
   /**
    * The FHIR RESTful interaction which can be used to trigger a

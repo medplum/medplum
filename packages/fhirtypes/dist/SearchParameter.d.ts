@@ -103,7 +103,7 @@ export interface SearchParameter {
    * can be the target of a canonical reference. It SHALL remain the same
    * when the search parameter is stored on different servers.
    */
-  url?: string;
+  url: string;
 
   /**
    * The identifier that is used to identify this version of the search
@@ -121,7 +121,7 @@ export interface SearchParameter {
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  name?: string;
+  name: string;
 
   /**
    * Where this search parameter is originally defined. If a derivedFrom is
@@ -136,7 +136,7 @@ export interface SearchParameter {
    * The status of this search parameter. Enables tracking the life-cycle
    * of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this search parameter is authored for
@@ -168,7 +168,7 @@ export interface SearchParameter {
   /**
    * And how it used.
    */
-  description?: string;
+  description: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -195,19 +195,19 @@ export interface SearchParameter {
    * The code used in the URL or the parameter name in a parameters
    * resource for this search parameter.
    */
-  code?: string;
+  code: string;
 
   /**
    * The base resource type(s) that this search parameter can be used
    * against.
    */
-  base?: ResourceType[];
+  base: ResourceType[];
 
   /**
    * The type of value that a search parameter may contain, and how the
    * content is interpreted.
    */
-  type?: 'number' | 'date' | 'string' | 'token' | 'reference' | 'composite' | 'quantity' | 'uri' | 'special';
+  type: 'number' | 'date' | 'string' | 'token' | 'reference' | 'composite' | 'quantity' | 'uri' | 'special';
 
   /**
    * A FHIRPath expression that returns a set of elements for the search
@@ -315,11 +315,11 @@ export interface SearchParameterComponent {
   /**
    * The definition of the search parameter that describes this part.
    */
-  definition?: string;
+  definition: string;
 
   /**
    * A sub-expression that defines how to extract values for this component
    * from the output of the main SearchParameter.expression.
    */
-  expression?: string;
+  expression: string;
 }

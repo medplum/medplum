@@ -110,7 +110,7 @@ export interface Ingredient {
    * The status of this ingredient. Enables tracking the life-cycle of the
    * content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * The product which this ingredient is a constituent part of.
@@ -121,7 +121,7 @@ export interface Ingredient {
    * A classification of the ingredient identifying its purpose within the
    * product, e.g. active, inactive.
    */
-  role?: CodeableConcept;
+  role: CodeableConcept;
 
   /**
    * A classification of the ingredient identifying its precise purpose(s)
@@ -151,7 +151,7 @@ export interface Ingredient {
   /**
    * The substance that comprises this ingredient.
    */
-  substance?: IngredientSubstance;
+  substance: IngredientSubstance;
 }
 
 /**
@@ -210,7 +210,7 @@ export interface IngredientManufacturer {
   /**
    * An organization that manufactures this ingredient.
    */
-  manufacturer?: Reference<Organization>;
+  manufacturer: Reference<Organization>;
 }
 
 /**
@@ -256,7 +256,7 @@ export interface IngredientSubstance {
   /**
    * A code or full resource that represents the ingredient's substance.
    */
-  code?: CodeableReference;
+  code: CodeableReference;
 
   /**
    * The quantity of substance in the unit of presentation, or in the

@@ -254,7 +254,7 @@ export interface PatientCommunication {
    * upper case; e.g. &quot;en&quot; for English, or &quot;en-US&quot; for American English
    * versus &quot;en-EN&quot; for England English.
    */
-  language?: CodeableConcept;
+  language: CodeableConcept;
 
   /**
    * Indicates whether or not the patient prefers this language (over other
@@ -388,11 +388,11 @@ export interface PatientLink {
   /**
    * The other patient resource that the link refers to.
    */
-  other?: Reference<Patient | RelatedPerson>;
+  other: Reference<Patient | RelatedPerson>;
 
   /**
    * The type of link between this patient resource and another patient
    * resource.
    */
-  type?: 'replaced-by' | 'replaces' | 'refer' | 'seealso';
+  type: 'replaced-by' | 'replaces' | 'refer' | 'seealso';
 }
