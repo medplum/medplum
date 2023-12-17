@@ -20,7 +20,7 @@ export default function CaseStudiesPage(): JSX.Element {
             </p>
           </div>
           <div className={styles.heroImage}>
-            <img src="/img/medplum-overview.svg" alt="Medplum architecture diagram" width="488" height="384" />
+            <img src="/img/about-jumbotron.svg" alt="Medplum robot coding" width="488" height="384" />
           </div>
         </Jumbotron>
         <SectionHeader>
@@ -34,7 +34,7 @@ export default function CaseStudiesPage(): JSX.Element {
             </Feature>
             <Feature title="Specialty EHR" imgSrc="/img/icons/clinical-logic.svg">
               Medplum powers many specialty electronic health record systems and other purpose-built healthcare apps.
-              Implmentations include solutions across specialties: pediatrics, radiology, geriatrics, cardiac care and
+              Implmentations include solutions across specialties:pediatrics, radiology, geriatrics, cardiac care and
               more.
             </Feature>
             <Feature title="Diagnostics" imgSrc="/img/icons/cog-icon.svg">
@@ -52,16 +52,15 @@ export default function CaseStudiesPage(): JSX.Element {
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>Summer Health</h1>
             <p className={styles.heroText}>
-              Pediatric care 24 hours a day via SMS. Summer's custom EHR careOS features streamlined charting using AI
-              which enhances the experience for patients and clinicians. This application makes extensive use of patient
-              messaging workflows and is mobile optimized.
+              Pediatric care 24 hours a day via SMS. Their custom EHR features streamlined charting using AI which
+              enhances the experience for patients and clinicians.
             </p>
           </div>
           <div className={styles.heroImage}>
             <iframe
               width="560"
               height="315"
-              src="https://youtu.be/H2fJVYG8LvQ"
+              src="https://www.youtube.com/embed/H2fJVYG8LvQ?si=KIVtT_e-1WE2zzjs"
               title="YouTube video player"
               frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -87,8 +86,8 @@ export default function CaseStudiesPage(): JSX.Element {
             />
             <ProfileCard
               name="Ensage Health"
-              title="Geriatrics, Value Based Care, custom EHR"
-              imgUrl="/img/blog/ensage.jpg"
+              title="Geriatrics, Value Based Care"
+              imgUrl="/img/blog/ensage.jpeg"
               linkedInUrl="https://www.ensagehealth.com/"
               githubUrl="https://www.medplum.com/blog/ensage-case-study"
             />
