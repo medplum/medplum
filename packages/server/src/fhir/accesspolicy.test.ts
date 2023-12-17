@@ -19,12 +19,14 @@ import {
   Quantity,
   Questionnaire,
   ServiceRequest,
+  StructureDefinition,
   Task,
   User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
+import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
@@ -1868,5 +1870,36 @@ describe('AccessPolicy', () => {
       } catch (err) {
         expect(normalizeErrorString(err)).toEqual('Invalid reference (Not found) (Patient.generalPractitioner)');
       }
+    }));
+
+  test('Empty access policy allows reading StructureDefinitions', () =>
+    withTestContext(async () => {
+      const { project, login, membership } = await registerNew({
+        firstName: 'First',
+        lastName: 'Last',
+        projectName: 'Empty Access Policy Test',
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+
+      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: project.id },
+        name: 'Default Resource Types Test',
+        resource: [],
+      });
+
+      // Update the membership with the access policy
+      const updatedMembership = await systemRepo.updateResource<ProjectMembership>({
+        ...membership,
+        accessPolicy: createReference(accessPolicy),
+      });
+
+      // Get a repo for the user
+      const repo = await getRepoForLogin(login, updatedMembership, true, true, true);
+
+      // Try to search for StructureDefinitions, should succeed
+      const bundle = await repo.search<StructureDefinition>({ resourceType: 'StructureDefinition' });
+      expect(bundle).toBeDefined();
     }));
 });
