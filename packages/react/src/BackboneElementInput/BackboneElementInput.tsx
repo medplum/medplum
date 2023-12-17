@@ -2,7 +2,7 @@ import { tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useContext, useMemo, useState } from 'react';
 import { ElementsInput } from '../ElementsInput/ElementsInput';
-import { BackboneElementContext, buildBackboneElementContext } from './BackbonElementInput.utils';
+import { BackboneElementContext, buildBackboneElementContext } from './BackboneElementInput.utils';
 
 export interface BackboneElementInputProps {
   /** Type name the backbone element represents */
