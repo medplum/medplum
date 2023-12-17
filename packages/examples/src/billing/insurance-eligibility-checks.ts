@@ -7,6 +7,7 @@ const eligibilityCheck: CoverageEligibilityRequest =
     id: 'coverage-validation-request',
     status: 'active',
     purpose: ['validation'],
+    created: '2021-01-01T00:00:00.000Z',
     patient: {
       reference: 'Patient/homer-simpson',
     },
@@ -55,6 +56,7 @@ const generalBenefitsCheckRequest: CoverageEligibilityRequest =
     id: 'general-benefits-check',
     status: 'active',
     purpose: ['benefits', 'discovery'],
+    created: '2021-01-01T00:00:00.000Z',
     patient: {
       reference: 'Patient/jane-doe',
     },
@@ -93,6 +95,7 @@ const eligibilityResponse: CoverageEligibilityResponse =
     resourceType: 'CoverageEligibilityResponse',
     status: 'active',
     purpose: ['validation'],
+    created: '2021-01-01T00:00:00.000Z',
     patient: {
       reference: 'Patient/homer-simpson',
     },
@@ -173,6 +176,7 @@ const generalBenefitsCheckResponse: CoverageEligibilityResponse =
     resourceType: 'CoverageEligibilityResponse',
     status: 'active',
     purpose: ['benefits', 'discovery'],
+    created: '2021-01-01T00:00:00.000Z',
     patient: {
       reference: 'Patient/jane-doe',
     },

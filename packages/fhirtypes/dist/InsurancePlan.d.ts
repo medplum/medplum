@@ -290,7 +290,7 @@ export interface InsurancePlanCoverage {
    * Type of coverage  (Medical; Dental; Mental Health; Substance Abuse;
    * Vision; Drug; Short Term; Long Term Care; Hospice; Home Health).
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Reference to the network that providing the type of coverage.
@@ -300,7 +300,7 @@ export interface InsurancePlanCoverage {
   /**
    * Specific benefits under this type of coverage.
    */
-  benefit?: InsurancePlanCoverageBenefit[];
+  benefit: InsurancePlanCoverageBenefit[];
 }
 
 /**
@@ -347,7 +347,7 @@ export interface InsurancePlanCoverageBenefit {
    * Type of benefit (primary care; speciality care; inpatient;
    * outpatient).
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * The referral requirements to have access/coverage for this benefit.
@@ -592,7 +592,7 @@ export interface InsurancePlanPlanSpecificCost {
    * General category of benefit (Medical; Dental; Vision; Drug; Mental
    * Health; Substance Abuse; Hospice, Home Health).
    */
-  category?: CodeableConcept;
+  category: CodeableConcept;
 
   /**
    * List of the specific benefits under this category of benefit.
@@ -645,7 +645,7 @@ export interface InsurancePlanPlanSpecificCostBenefit {
    * speciality office visit; hospitalization; emergency room; urgent
    * care).
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * List of the costs associated with a specific benefit.
@@ -697,7 +697,7 @@ export interface InsurancePlanPlanSpecificCostBenefitCost {
    * Type of cost (copay; individual cap; family cap; coinsurance;
    * deductible).
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Whether the cost applies to in-network or out-of-network providers

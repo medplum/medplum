@@ -37,7 +37,7 @@ describe('BuilderPage', () => {
   test('PlanDefinition builder', async () => {
     const planDefinition = await medplum.createResource<PlanDefinition>({
       resourceType: 'PlanDefinition',
-    });
+    } as PlanDefinition);
 
     await setup(`/PlanDefinition/${planDefinition.id}/builder`);
     await waitFor(() => screen.getByRole('button', { name: 'Save' }));
@@ -52,7 +52,7 @@ describe('BuilderPage', () => {
   test('Questionnaire builder', async () => {
     const questionnaire = await medplum.createResource<Questionnaire>({
       resourceType: 'Questionnaire',
-    });
+    } as Questionnaire);
 
     await setup(`/Questionnaire/${questionnaire.id}/builder`);
     await waitFor(() => screen.getByRole('button', { name: 'Save' }));

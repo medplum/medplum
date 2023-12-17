@@ -113,7 +113,7 @@ export interface Invoice {
   /**
    * The current state of the Invoice.
    */
-  status?: 'draft' | 'issued' | 'balanced' | 'cancelled' | 'entered-in-error';
+  status: 'draft' | 'issued' | 'balanced' | 'cancelled' | 'entered-in-error';
 
   /**
    * In case of Invoice cancellation a reason must be given (entered in
@@ -323,7 +323,7 @@ export interface InvoiceLineItemPriceComponent {
   /**
    * This code identifies the type of the component.
    */
-  type?: 'base' | 'surcharge' | 'deduction' | 'discount' | 'tax' | 'informational';
+  type: 'base' | 'surcharge' | 'deduction' | 'discount' | 'tax' | 'informational';
 
   /**
    * A code that identifies the component. Codes may be used to
@@ -395,5 +395,5 @@ export interface InvoiceParticipant {
    * The device, practitioner, etc. who performed or participated in the
    * service.
    */
-  actor?: Reference<Practitioner | Organization | Patient | PractitionerRole | Device | RelatedPerson>;
+  actor: Reference<Practitioner | Organization | Patient | PractitionerRole | Device | RelatedPerson>;
 }

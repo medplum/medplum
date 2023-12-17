@@ -49,7 +49,7 @@ export interface Binary {
    * MimeType of the binary content represented as a standard MimeType (BCP
    * 13).
    */
-  contentType?: string;
+  contentType: string;
 
   /**
    * This element identifies another resource that can be used as a proxy

@@ -106,7 +106,7 @@ export interface DeviceMetric {
    * Describes the type of the metric. For example: Heart Rate, PEEP
    * Setting, etc.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Describes the unit that an observed value determined for this metric
@@ -151,7 +151,7 @@ export interface DeviceMetric {
    * DeviceMetric can be for example a setting, measurement, or
    * calculation.
    */
-  category?: 'measurement' | 'setting' | 'calculation' | 'unspecified';
+  category: 'measurement' | 'setting' | 'calculation' | 'unspecified';
 
   /**
    * Describes the measurement repetition time. This is not necessarily the

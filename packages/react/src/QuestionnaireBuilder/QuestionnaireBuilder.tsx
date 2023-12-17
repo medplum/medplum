@@ -27,7 +27,7 @@ import {
 import classes from './QuestionnaireBuilder.module.css';
 
 export interface QuestionnaireBuilderProps {
-  questionnaire: Questionnaire | Reference<Questionnaire>;
+  questionnaire: Partial<Questionnaire> | Reference<Questionnaire>;
   onSubmit: (result: Questionnaire) => void;
   autoSave?: boolean;
 }
@@ -56,7 +56,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
   }, [medplum]);
 
   useEffect(() => {
-    setValue(ensureQuestionnaireKeys(defaultValue ?? { resourceType: 'Questionnaire' }));
+    setValue(ensureQuestionnaireKeys(defaultValue ?? { resourceType: 'Questionnaire', status: 'active' }));
     document.addEventListener('mouseover', handleDocumentMouseOver);
     document.addEventListener('click', handleDocumentClick);
     return () => {
@@ -217,7 +217,14 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           <>
             {resource.title && <Title>{resource.title}</Title>}
             {item.text && <div>{item.text}</div>}
-            {!isContainer && <QuestionnaireFormItem item={item} index={0} onChange={() => undefined} response={{}} />}
+            {!isContainer && (
+              <QuestionnaireFormItem
+                item={item}
+                index={0}
+                onChange={() => undefined}
+                response={{ linkId: item.linkId }}
+              />
+            )}
           </>
         )}
       </div>
@@ -530,7 +537,7 @@ function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
               name="resourceType"
               placeholder="Resource Type"
               defaultValue={targetType}
-              onChange={(newValue: ResourceType | undefined) => {
+              onChange={(newValue) => {
                 props.onChange(
                   setQuestionnaireItemReferenceTargetTypes(
                     props.item,

@@ -149,7 +149,7 @@ export interface MessageHeader {
   /**
    * The source application from which this message originated.
    */
-  source?: MessageHeaderSource;
+  source: MessageHeaderSource;
 
   /**
    * The person or organization that accepts overall responsibility for the
@@ -236,7 +236,7 @@ export interface MessageHeaderDestination {
   /**
    * Indicates where the message should be routed to.
    */
-  endpoint?: string;
+  endpoint: string;
 
   /**
    * Allows data conveyed by a message to be addressed to a particular
@@ -291,13 +291,13 @@ export interface MessageHeaderResponse {
    * The MessageHeader.id of the message to which this message is a
    * response.
    */
-  identifier?: string;
+  identifier: string;
 
   /**
    * Code that identifies the type of response to the message - whether it
    * was successful or not, and whether it should be resent or not.
    */
-  code?: 'ok' | 'transient-error' | 'fatal-error';
+  code: 'ok' | 'transient-error' | 'fatal-error';
 
   /**
    * Full details of any issues found in the message.
@@ -370,5 +370,5 @@ export interface MessageHeaderSource {
   /**
    * Identifies the routing target to send acknowledgements to.
    */
-  endpoint?: string;
+  endpoint: string;
 }

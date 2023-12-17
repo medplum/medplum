@@ -92,6 +92,7 @@ describe('ServiceRequestTimeline', () => {
     // Create a comment
     const comment = await medplum.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'completed',
       basedOn: [createReference(HomerServiceRequest)],
       subject: createReference(HomerSimpson),
       payload: [{ contentString: randomUUID() }],
@@ -127,6 +128,7 @@ describe('ServiceRequestTimeline', () => {
     // Create a comment
     const comment = await medplum.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'completed',
       basedOn: [createReference(HomerServiceRequest)],
       subject: createReference(HomerSimpson),
       payload: [{ contentString: randomUUID() }],
@@ -152,6 +154,7 @@ describe('ServiceRequestTimeline', () => {
     // Create a comment
     const comment = await medplum.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'completed',
       basedOn: [createReference(HomerServiceRequest)],
       subject: createReference(HomerSimpson),
       payload: [{ contentString: randomUUID() }],
@@ -177,6 +180,7 @@ describe('ServiceRequestTimeline', () => {
     // Create a comment
     const comment = await medplum.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'completed',
       basedOn: [createReference(HomerServiceRequest)],
       subject: createReference(HomerSimpson),
       payload: [{ contentString: randomUUID() }],

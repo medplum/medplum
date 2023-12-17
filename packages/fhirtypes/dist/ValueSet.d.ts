@@ -144,7 +144,7 @@ export interface ValueSet {
    * definition (ValueSet.compose) and the associated ValueSet metadata.
    * Expansions do not have a state.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this value set is authored for
@@ -295,7 +295,7 @@ export interface ValueSetCompose {
   /**
    * Include one or more codes from a code system or other value set(s).
    */
-  include?: ValueSetComposeInclude[];
+  include: ValueSetComposeInclude[];
 
   /**
    * Exclude one or more codes from the value set based on code system
@@ -421,7 +421,7 @@ export interface ValueSetComposeIncludeConcept {
   /**
    * Specifies a code for the concept to be included or excluded.
    */
-  code?: string;
+  code: string;
 
   /**
    * The text to display to the user for this concept in the context of
@@ -493,7 +493,7 @@ export interface ValueSetComposeIncludeConceptDesignation {
   /**
    * The text value for this designation.
    */
-  value?: string;
+  value: string;
 }
 
 /**
@@ -543,12 +543,12 @@ export interface ValueSetComposeIncludeFilter {
    * A code that identifies a property or a filter defined in the code
    * system.
    */
-  property?: string;
+  property: string;
 
   /**
    * The kind of operation to perform as a part of the filter criteria.
    */
-  op?: '=' | 'is-a' | 'descendent-of' | 'is-not-a' | 'regex' | 'in' | 'not-in' | 'generalizes' | 'exists';
+  op: '=' | 'is-a' | 'descendent-of' | 'is-not-a' | 'regex' | 'in' | 'not-in' | 'generalizes' | 'exists';
 
   /**
    * The match value may be either a code defined by the system, or a
@@ -558,7 +558,7 @@ export interface ValueSetComposeIncludeFilter {
    * filter defined in CodeSystem) when the operation is 'regex', or one of
    * the values (true and false), when the operation is 'exists'.
    */
-  value?: string;
+  value: string;
 }
 
 /**
@@ -616,7 +616,7 @@ export interface ValueSetExpansion {
   /**
    * The time at which the expansion was produced by the expanding system.
    */
-  timestamp?: string;
+  timestamp: string;
 
   /**
    * The total number of concepts in the expansion. If the number of
@@ -791,7 +791,7 @@ export interface ValueSetExpansionParameter {
    * server-assigned name for additional default or other server-supplied
    * parameters used to control the expansion process.
    */
-  name?: string;
+  name: string;
 
   /**
    * The value of the parameter.

@@ -9,6 +9,7 @@ test('Success', async () => {
   const medplum = new MockClient();
   const input: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
+    status: 'completed',
     item: [
       { linkId: 'firstName', answer: [{ valueString: 'John' }] },
       { linkId: 'lastName', answer: [{ valueString: 'Smith' }] },
@@ -24,6 +25,7 @@ test('Missing first name', async () => {
   console.log = vi.fn();
   const input: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
+    status: 'completed',
     item: [
       { linkId: 'firstName', answer: [{ valueString: '' }] },
       { linkId: 'lastName', answer: [{ valueString: 'Smith' }] },
@@ -39,6 +41,7 @@ test('Missing last name', async () => {
   console.log = vi.fn();
   const input: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
+    status: 'completed',
     item: [
       { linkId: 'firstName', answer: [{ valueString: 'John' }] },
       { linkId: 'lastName', answer: [{ valueString: '' }] },

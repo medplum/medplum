@@ -124,13 +124,13 @@ export interface ExplanationOfBenefit {
   /**
    * The status of the resource instance.
    */
-  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
+  status: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * The category of claim, e.g. oral, pharmacy, vision, institutional,
    * professional.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * A finer grained suite of claim type codes which may convey additional
@@ -146,14 +146,14 @@ export interface ExplanationOfBenefit {
    * or requesting the non-binding adjudication of the listed products and
    * services which could be provided in the future.
    */
-  use?: 'claim' | 'preauthorization' | 'predetermination';
+  use: 'claim' | 'preauthorization' | 'predetermination';
 
   /**
    * The party to whom the professional services and/or products have been
    * supplied or are being considered and for whom actual for forecast
    * reimbursement is sought.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 
   /**
    * The period for which charges are being submitted.
@@ -163,7 +163,7 @@ export interface ExplanationOfBenefit {
   /**
    * The date this resource was created.
    */
-  created?: string;
+  created: string;
 
   /**
    * Individual who created the claim, predetermination or
@@ -175,13 +175,13 @@ export interface ExplanationOfBenefit {
    * The party responsible for authorization, adjudication and
    * reimbursement.
    */
-  insurer?: Reference<Organization>;
+  insurer: Reference<Organization>;
 
   /**
    * The provider which is responsible for the claim, predetermination or
    * preauthorization.
    */
-  provider?: Reference<Practitioner | PractitionerRole | Organization>;
+  provider: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The provider-required urgency of processing the request. Typical
@@ -252,7 +252,7 @@ export interface ExplanationOfBenefit {
    * The outcome of the claim, predetermination, or preauthorization
    * processing.
    */
-  outcome?: 'queued' | 'complete' | 'error' | 'partial';
+  outcome: 'queued' | 'complete' | 'error' | 'partial';
 
   /**
    * A human readable description of the status of the adjudication.
@@ -303,7 +303,7 @@ export interface ExplanationOfBenefit {
    * Financial instruments for reimbursement for the health care products
    * and services specified on the claim.
    */
-  insurance?: ExplanationOfBenefitInsurance[];
+  insurance: ExplanationOfBenefitInsurance[];
 
   /**
    * Details of a accident which resulted in injuries which required the
@@ -501,7 +501,7 @@ export interface ExplanationOfBenefitAddItem {
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  productOrService?: CodeableConcept;
+  productOrService: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
@@ -640,7 +640,7 @@ export interface ExplanationOfBenefitAddItemDetail {
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  productOrService?: CodeableConcept;
+  productOrService: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
@@ -736,7 +736,7 @@ export interface ExplanationOfBenefitAddItemDetailSubDetail {
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  productOrService?: CodeableConcept;
+  productOrService: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
@@ -826,7 +826,7 @@ export interface ExplanationOfBenefitBenefitBalance {
    * Code to identify the general type of benefits under which products and
    * services are provided.
    */
-  category?: CodeableConcept;
+  category: CodeableConcept;
 
   /**
    * True if the indicated class of service is excluded from the plan,
@@ -911,7 +911,7 @@ export interface ExplanationOfBenefitBenefitBalanceFinancial {
   /**
    * Classification of benefit being provided.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * The quantity of the benefit which is permitted under the coverage.
@@ -982,12 +982,12 @@ export interface ExplanationOfBenefitCareTeam {
   /**
    * A number to uniquely identify care team entries.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * Member of the team who provided the product or service.
    */
-  provider?: Reference<Practitioner | PractitionerRole | Organization>;
+  provider: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The party who is billing and/or responsible for the claimed products
@@ -1051,7 +1051,7 @@ export interface ExplanationOfBenefitDiagnosis {
   /**
    * A number to uniquely identify diagnosis entries.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * The nature of illness or problem in a coded form or as a reference to
@@ -1129,7 +1129,7 @@ export interface ExplanationOfBenefitInsurance {
    * A flag to indicate that this Coverage is to be used for adjudication
    * of this claim when set to true.
    */
-  focal?: boolean;
+  focal: boolean;
 
   /**
    * Reference to the insurance card level information contained in the
@@ -1137,7 +1137,7 @@ export interface ExplanationOfBenefitInsurance {
    * to locate the patient's actual coverage within the insurer's
    * information system.
    */
-  coverage?: Reference<Coverage>;
+  coverage: Reference<Coverage>;
 
   /**
    * Reference numbers previously provided by the insurer to the provider
@@ -1191,7 +1191,7 @@ export interface ExplanationOfBenefitItem {
   /**
    * A number to uniquely identify item entries.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * Care team members related to this service or product.
@@ -1231,7 +1231,7 @@ export interface ExplanationOfBenefitItem {
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  productOrService?: CodeableConcept;
+  productOrService: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
@@ -1388,7 +1388,7 @@ export interface ExplanationOfBenefitItemAdjudication {
    * amounts paid by other coverages, and the benefit payable for this
    * item.
    */
-  category?: CodeableConcept;
+  category: CodeableConcept;
 
   /**
    * A code supporting the understanding of the adjudication result and
@@ -1452,7 +1452,7 @@ export interface ExplanationOfBenefitItemDetail {
    * A claim detail line. Either a simple (a product or service) or a
    * 'group' of sub-details which are simple items.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * The type of revenue or cost center providing the product and/or
@@ -1471,7 +1471,7 @@ export interface ExplanationOfBenefitItemDetail {
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  productOrService?: CodeableConcept;
+  productOrService: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
@@ -1576,7 +1576,7 @@ export interface ExplanationOfBenefitItemDetailSubDetail {
    * A claim detail line. Either a simple (a product or service) or a
    * 'group' of sub-details which are simple items.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * The type of revenue or cost center providing the product and/or
@@ -1595,7 +1595,7 @@ export interface ExplanationOfBenefitItemDetailSubDetail {
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  productOrService?: CodeableConcept;
+  productOrService: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
@@ -1822,7 +1822,7 @@ export interface ExplanationOfBenefitProcedure {
   /**
    * A number to uniquely identify procedure entries.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * When the condition was observed or the relative ranking.
@@ -2016,13 +2016,13 @@ export interface ExplanationOfBenefitSupportingInfo {
   /**
    * A number to uniquely identify supporting information entries.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * The general class of the information supplied: information; exception;
    * accident, employment; onset, etc.
    */
-  category?: CodeableConcept;
+  category: CodeableConcept;
 
   /**
    * System and code pertaining to the specific information regarding
@@ -2131,10 +2131,10 @@ export interface ExplanationOfBenefitTotal {
    * amounts paid by other coverages, and the benefit payable for this
    * item.
    */
-  category?: CodeableConcept;
+  category: CodeableConcept;
 
   /**
    * Monetary total amount associated with the category.
    */
-  amount?: Money;
+  amount: Money;
 }

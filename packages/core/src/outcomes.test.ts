@@ -1,3 +1,4 @@
+import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import {
   accepted,
   allOk,
@@ -109,22 +110,25 @@ describe('Outcomes', () => {
   });
 
   test('operationOutcomeToString', () => {
-    expect(operationOutcomeToString({ resourceType: 'OperationOutcome' })).toEqual('Unknown error');
+    expect(operationOutcomeToString({ resourceType: 'OperationOutcome' } as OperationOutcome)).toEqual('Unknown error');
     expect(
-      operationOutcomeToString({ resourceType: 'OperationOutcome', issue: [{ details: { text: 'foo' } }] })
+      operationOutcomeToString({
+        resourceType: 'OperationOutcome',
+        issue: [{ details: { text: 'foo' } } as OperationOutcomeIssue],
+      })
     ).toEqual('foo');
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
-        issue: [{ details: { text: 'foo' }, expression: ['bar'] }],
+        issue: [{ details: { text: 'foo' }, expression: ['bar'] } as OperationOutcomeIssue],
       })
     ).toEqual('foo (bar)');
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
         issue: [
-          { details: { text: 'error1' }, expression: ['expr1'] },
-          { details: { text: 'error2' }, expression: ['expr2'] },
+          { details: { text: 'error1' }, expression: ['expr1'] } as OperationOutcomeIssue,
+          { details: { text: 'error2' }, expression: ['expr2'] } as OperationOutcomeIssue,
         ],
       })
     ).toEqual('error1 (expr1); error2 (expr2)');

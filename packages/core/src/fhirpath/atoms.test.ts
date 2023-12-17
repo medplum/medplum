@@ -84,11 +84,15 @@ describe('Atoms', () => {
   test('AsAtom', () => {
     const obs1: Observation = {
       resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'abc' },
       valueQuantity: { value: 100, unit: 'mg' },
     };
 
     const obs2: Observation = {
       resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'abc' },
       valueCodeableConcept: { coding: [{ code: 'xyz' }] },
     };
 

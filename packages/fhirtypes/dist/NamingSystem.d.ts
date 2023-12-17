@@ -100,19 +100,19 @@ export interface NamingSystem {
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  name?: string;
+  name: string;
 
   /**
    * The status of this naming system. Enables tracking the life-cycle of
    * the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * Indicates the purpose for the naming system - what kinds of things
    * does it make unique?
    */
-  kind?: 'codesystem' | 'identifier' | 'root';
+  kind: 'codesystem' | 'identifier' | 'root';
 
   /**
    * The date  (and optionally time) when the naming system was published.
@@ -120,7 +120,7 @@ export interface NamingSystem {
    * change if the status code changes. In addition, it should change when
    * the substantive content of the naming system changes.
    */
-  date?: string;
+  date: string;
 
   /**
    * The name of the organization or individual that published the naming
@@ -179,7 +179,7 @@ export interface NamingSystem {
    * Indicates how the system may be identified when referenced in
    * electronic exchange.
    */
-  uniqueId?: NamingSystemUniqueId[];
+  uniqueId: NamingSystemUniqueId[];
 }
 
 /**
@@ -227,13 +227,13 @@ export interface NamingSystemUniqueId {
    * Identifies the unique identifier scheme used for this particular
    * identifier.
    */
-  type?: 'oid' | 'uuid' | 'uri' | 'other';
+  type: 'oid' | 'uuid' | 'uri' | 'other';
 
   /**
    * The string that should be sent over the wire to identify the code
    * system or identifier system.
    */
-  value?: string;
+  value: string;
 
   /**
    * Indicates whether this identifier is the &quot;preferred&quot; identifier of

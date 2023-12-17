@@ -1,16 +1,16 @@
 import {
-  allOk,
   ClientStorage,
   ContentType,
-  getReferenceString,
-  indexSearchParameterBundle,
-  indexStructureDefinitionBundle,
   LoginState,
+  MockAsyncClientStorage,
   NewPatientRequest,
   NewProjectRequest,
   NewUserRequest,
   OperationOutcomeError,
-  MockAsyncClientStorage,
+  allOk,
+  getReferenceString,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, CodeableConcept, Patient, SearchParameter, ServiceRequest } from '@medplum/fhirtypes';
@@ -473,7 +473,7 @@ describe('MockClient', () => {
     const resource1 = await client.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
       orderDetail: [{ text: 'foo' }],
-    });
+    } as ServiceRequest);
     expect(resource1).toBeDefined();
 
     // Explicitly edit the resource in place

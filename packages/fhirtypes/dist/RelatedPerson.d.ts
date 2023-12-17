@@ -113,7 +113,7 @@ export interface RelatedPerson {
   /**
    * The patient this person is related to.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 
   /**
    * The nature of the relationship between a patient and the related
@@ -213,7 +213,7 @@ export interface RelatedPersonCommunication {
    * upper case; e.g. &quot;en&quot; for English, or &quot;en-US&quot; for American English
    * versus &quot;en-EN&quot; for England English.
    */
-  language?: CodeableConcept;
+  language: CodeableConcept;
 
   /**
    * Indicates whether or not the patient prefers this language (over other

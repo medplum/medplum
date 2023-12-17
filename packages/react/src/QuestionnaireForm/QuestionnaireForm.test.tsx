@@ -53,6 +53,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
       },
       onSubmit: jest.fn(),
     });
@@ -63,6 +64,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'display',
@@ -82,6 +84,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'group1',
@@ -181,6 +184,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -275,6 +279,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
       },
       onSubmit,
     });
@@ -308,6 +313,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -337,6 +343,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -364,6 +371,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -418,6 +426,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -469,6 +478,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -518,6 +528,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -545,6 +556,7 @@ describe('QuestionnaireForm', () => {
   test('Attachment input', async () => {
     const questionnaire: Questionnaire = {
       resourceType: 'Questionnaire',
+      status: 'active',
       id: randomUUID(),
       item: [
         {
@@ -557,6 +569,7 @@ describe('QuestionnaireForm', () => {
 
     const expectedResponse: QuestionnaireResponse = {
       resourceType: 'QuestionnaireResponse',
+      status: 'completed',
       questionnaire: 'Questionnaire/' + questionnaire.id,
       source: {
         display: 'Alice Smith',
@@ -612,6 +625,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -639,6 +653,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -722,6 +737,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -764,6 +780,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -789,6 +806,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -842,6 +860,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -902,6 +921,7 @@ describe('QuestionnaireForm', () => {
       questionnaire: {
         id: 'groups-example',
         resourceType: 'Questionnaire',
+        status: 'active',
         title: 'Groups Example',
         item: [
           {
@@ -994,6 +1014,7 @@ describe('QuestionnaireForm', () => {
       questionnaire: {
         id: 'groups-example',
         resourceType: 'Questionnaire',
+        status: 'active',
         title: 'Groups Example',
         item: [
           {
@@ -1072,6 +1093,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         id: 'value-set-example',
         title: 'Valueset',
         item: [
@@ -1126,6 +1148,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         id: 'default-values',
         title: 'Default Values Example',
         item: [
@@ -1183,6 +1206,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         id: 'enable-when',
         title: 'Enable When Example',
         item: [
@@ -1243,6 +1267,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         id: 'multi-select',
         title: 'Multi Select Example',
         item: [
@@ -1327,6 +1352,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -1367,6 +1393,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         id: 'pages-example',
         title: 'Pages Example',
         item: [
@@ -1432,6 +1459,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         id: 'repeatable-when',
         title: 'repeatable Questionnaire',
         item: [
@@ -1476,6 +1504,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         id: 'no-answers',
         title: 'No Answers Example',
         item: [
@@ -1511,6 +1540,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         id: 'empty-answers',
         title: 'Empty Answers Example',
         item: [
@@ -1547,6 +1577,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         id: 'empty-radio',
         title: 'Empty Radio Example',
         item: [
@@ -1568,6 +1599,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         id: 'reference-filter',
         item: [
           {

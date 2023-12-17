@@ -2,7 +2,7 @@ import { TextInput } from '@mantine/core';
 import { createReference } from '@medplum/core';
 import { Annotation } from '@medplum/fhirtypes';
 import { useMedplumProfile } from '@medplum/react-hooks';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 
 export interface AnnotationInputProps {
   name: string;
@@ -12,10 +12,7 @@ export interface AnnotationInputProps {
 
 export function AnnotationInput(props: AnnotationInputProps): JSX.Element {
   const author = useMedplumProfile();
-  const [value, setValue] = useState<Annotation>(props.defaultValue || {});
-
-  const valueRef = useRef<Annotation>();
-  valueRef.current = value;
+  const [value, setValue] = useState<Annotation>(props.defaultValue || ({} as Annotation));
 
   function setText(text: string): void {
     const newValue: Annotation = text
@@ -24,7 +21,7 @@ export function AnnotationInput(props: AnnotationInputProps): JSX.Element {
           authorReference: author && createReference(author),
           time: new Date().toISOString(),
         }
-      : {};
+      : ({} as Annotation);
 
     setValue(newValue);
     if (props.onChange) {

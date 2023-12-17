@@ -519,7 +519,7 @@ describe('Subscription Worker', () => {
           type: 'rest-hook',
           endpoint: 'https://example.com/subscription',
         },
-      });
+      } as Subscription);
       expect(subscription).toBeDefined();
 
       const queue = getSubscriptionQueue() as any;

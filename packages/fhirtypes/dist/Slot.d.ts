@@ -129,22 +129,22 @@ export interface Slot {
    * The schedule resource that this slot defines an interval of status
    * information.
    */
-  schedule?: Reference<Schedule>;
+  schedule: Reference<Schedule>;
 
   /**
    * busy | free | busy-unavailable | busy-tentative | entered-in-error.
    */
-  status?: 'busy' | 'free' | 'busy-unavailable' | 'busy-tentative' | 'entered-in-error';
+  status: 'busy' | 'free' | 'busy-unavailable' | 'busy-tentative' | 'entered-in-error';
 
   /**
    * Date/Time that the slot is to begin.
    */
-  start?: string;
+  start: string;
 
   /**
    * Date/Time that the slot is to conclude.
    */
-  end?: string;
+  end: string;
 
   /**
    * This slot has already been overbooked, appointments are unlikely to be

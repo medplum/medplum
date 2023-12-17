@@ -249,6 +249,7 @@ const internalReference: Bundle =
         resource: {
           resourceType: 'Encounter',
           status: 'finished',
+          class: { code: 'ambulatory' },
           subject: {
             // highlight-next-line
             reference: 'urn:uuid:f7c8d72c-e02a-4baf-ba04-038c9f753a1c',

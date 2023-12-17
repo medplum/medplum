@@ -1,3 +1,4 @@
+import { ImagingStudy } from '@medplum/fhirtypes';
 import { FhircastEventContext } from '.';
 import { OperationOutcomeError } from '../outcomes';
 import { createFhircastMessageContext } from './test-utils';
@@ -22,7 +23,7 @@ describe('FHIRcast Test Utils', () => {
         resource: {
           resourceType: 'ImagingStudy',
           id: 'imagingstudy-456',
-        },
+        } as ImagingStudy & { id: string },
       });
     });
 

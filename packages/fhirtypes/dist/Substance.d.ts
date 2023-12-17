@@ -113,7 +113,7 @@ export interface Substance {
   /**
    * A code (or set of codes) that identify this substance.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * A description of the substance - its appearance, handling

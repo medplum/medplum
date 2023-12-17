@@ -62,7 +62,7 @@ export interface ProductShelfLife {
    * using an appropriate controlled vocabulary The controlled term and the
    * controlled term identifier shall be specified.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * The shelf life time period can be specified using a numerical value
@@ -71,7 +71,7 @@ export interface ProductShelfLife {
    * resulting terminology The symbol and the symbol identifier shall be
    * used.
    */
-  period?: Quantity;
+  period: Quantity;
 
   /**
    * Special precautions for storage, if any, can be specified using an

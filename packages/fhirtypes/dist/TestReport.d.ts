@@ -107,19 +107,19 @@ export interface TestReport {
   /**
    * The current state of this test report.
    */
-  status?: 'completed' | 'in-progress' | 'waiting' | 'stopped' | 'entered-in-error';
+  status: 'completed' | 'in-progress' | 'waiting' | 'stopped' | 'entered-in-error';
 
   /**
    * Ideally this is an absolute URL that is used to identify the
    * version-specific TestScript that was executed, matching the
    * `TestScript.url`.
    */
-  testScript?: Reference<TestScript>;
+  testScript: Reference<TestScript>;
 
   /**
    * The overall result from the execution of the TestScript.
    */
-  result?: 'pass' | 'fail' | 'pending';
+  result: 'pass' | 'fail' | 'pending';
 
   /**
    * The final score (percentage of tests passed) resulting from the
@@ -205,12 +205,12 @@ export interface TestReportParticipant {
   /**
    * The type of participant.
    */
-  type?: 'test-engine' | 'client' | 'server';
+  type: 'test-engine' | 'client' | 'server';
 
   /**
    * The uri of the participant. An absolute URL is preferred.
    */
-  uri?: string;
+  uri: string;
 
   /**
    * The display name of the participant.
@@ -262,7 +262,7 @@ export interface TestReportSetup {
   /**
    * Action would contain either an operation or an assertion.
    */
-  action?: TestReportSetupAction[];
+  action: TestReportSetupAction[];
 }
 
 /**
@@ -359,7 +359,7 @@ export interface TestReportSetupActionAssert {
   /**
    * The result of this assertion.
    */
-  result?: 'pass' | 'skip' | 'fail' | 'warning' | 'error';
+  result: 'pass' | 'skip' | 'fail' | 'warning' | 'error';
 
   /**
    * An explanatory message associated with the result.
@@ -415,7 +415,7 @@ export interface TestReportSetupActionOperation {
   /**
    * The result of this operation.
    */
-  result?: 'pass' | 'skip' | 'fail' | 'warning' | 'error';
+  result: 'pass' | 'skip' | 'fail' | 'warning' | 'error';
 
   /**
    * An explanatory message associated with the result.
@@ -472,7 +472,7 @@ export interface TestReportTeardown {
   /**
    * The teardown action will only contain an operation.
    */
-  action?: TestReportTeardownAction[];
+  action: TestReportTeardownAction[];
 }
 
 /**
@@ -518,7 +518,7 @@ export interface TestReportTeardownAction {
   /**
    * An operation would involve a REST request to a server.
    */
-  operation?: TestReportSetupActionOperation;
+  operation: TestReportSetupActionOperation;
 }
 
 /**
@@ -576,7 +576,7 @@ export interface TestReportTest {
   /**
    * Action would contain either an operation or an assertion.
    */
-  action?: TestReportTestAction[];
+  action: TestReportTestAction[];
 }
 
 /**

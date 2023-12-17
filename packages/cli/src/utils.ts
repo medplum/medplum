@@ -226,12 +226,8 @@ export function safeTarExtractor(destinationDir: string): internal.Writable {
 
 export function getUnsupportedExtension(): Extension {
   return {
-    extension: [
-      {
-        url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason',
-        valueCode: 'unsupported',
-      },
-    ],
+    url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason',
+    valueCode: 'unsupported',
   };
 }
 

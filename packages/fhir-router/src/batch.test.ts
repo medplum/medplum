@@ -12,8 +12,10 @@ import {
 import { readJson } from '@medplum/definitions';
 import {
   AllergyIntolerance,
+  Binary,
   Bundle,
   BundleEntry,
+  BundleEntryRequest,
   Observation,
   OperationOutcome,
   Patient,
@@ -40,7 +42,7 @@ describe('Batch', () => {
 
   test('Process batch with missing bundle type', async () => {
     try {
-      await processBatch(router, repo, { resourceType: 'Bundle' });
+      await processBatch(router, repo, { resourceType: 'Bundle' } as Bundle);
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -237,7 +239,7 @@ describe('Batch', () => {
           },
           resource: {
             resourceType: 'Observation',
-          },
+          } as Observation,
         },
       ],
     });
@@ -754,7 +756,7 @@ describe('Batch', () => {
           },
           resource: {
             resourceType: 'Binary',
-          },
+          } as Binary,
         },
       ],
     });
@@ -844,7 +846,7 @@ describe('Batch', () => {
         {
           request: {
             url: 'Patient',
-          },
+          } as BundleEntryRequest,
           resource: {
             resourceType: 'Patient',
           },
@@ -894,7 +896,7 @@ describe('Batch', () => {
         {
           request: {
             method: 'POST',
-          },
+          } as BundleEntryRequest,
           resource: {
             resourceType: 'Patient',
           },

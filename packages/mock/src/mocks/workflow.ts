@@ -6,6 +6,7 @@ import { HomerSimpson } from './simpsons';
 export const ExampleWorkflowQuestionnaire1: Questionnaire = {
   resourceType: 'Questionnaire',
   id: 'workflow-questionnaire-1',
+  status: 'active',
   name: 'Patient Registration',
   title: 'Patient Registration',
   subjectType: ['Patient'],
@@ -21,6 +22,7 @@ export const ExampleWorkflowQuestionnaire1: Questionnaire = {
 export const ExampleWorkflowQuestionnaire2: Questionnaire = {
   resourceType: 'Questionnaire',
   id: 'workflow-questionnaire-2',
+  status: 'active',
   name: 'Surgery History',
   title: 'Surgery History',
   subjectType: ['Patient'],
@@ -36,6 +38,7 @@ export const ExampleWorkflowQuestionnaire2: Questionnaire = {
 export const ExampleWorkflowQuestionnaire3: Questionnaire = {
   resourceType: 'Questionnaire',
   id: 'workflow-questionnaire-3',
+  status: 'active',
   name: 'Family Health History',
   title: 'Family Health History',
   subjectType: ['Patient'],
@@ -51,6 +54,7 @@ export const ExampleWorkflowQuestionnaire3: Questionnaire = {
 export const ExampleWorkflowPlanDefinition: PlanDefinition = {
   resourceType: 'PlanDefinition',
   id: 'workflow-plan-definition-1',
+  status: 'active',
   title: 'Example Plan Definition',
   action: [
     {
@@ -71,6 +75,7 @@ export const ExampleWorkflowPlanDefinition: PlanDefinition = {
 export const ExampleWorkflowQuestionnaireResponse1: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
   id: 'workflow-questionnaire-response-1',
+  status: 'completed',
   questionnaire: getReferenceString(ExampleWorkflowQuestionnaire1),
   subject: createReference(HomerSimpson),
   source: createReference(HomerSimpson),
@@ -81,28 +86,51 @@ export const ExampleWorkflowTask1: Task = {
   resourceType: 'Task',
   id: 'workflow-task-1',
   status: 'completed',
+  intent: 'order',
   meta: { author: createReference(HomerSimpson) },
   requester: createReference(DrAliceSmith),
-  input: [{ valueReference: createReference(ExampleWorkflowQuestionnaire1) }],
-  output: [{ valueReference: createReference(ExampleWorkflowQuestionnaireResponse1) }],
+  input: [
+    {
+      type: { text: 'Questionnaire' },
+      valueReference: createReference(ExampleWorkflowQuestionnaire1),
+    },
+  ],
+  output: [
+    {
+      type: { text: 'QuestionnaireResponse' },
+      valueReference: createReference(ExampleWorkflowQuestionnaireResponse1),
+    },
+  ],
 };
 
 export const ExampleWorkflowTask2: Task = {
   resourceType: 'Task',
   id: 'workflow-task-2',
   status: 'requested',
+  intent: 'order',
   meta: { author: createReference(DrAliceSmith) },
   requester: createReference(DrAliceSmith),
-  input: [{ valueReference: createReference(ExampleWorkflowQuestionnaire2) }],
+  input: [
+    {
+      type: { text: 'Questionnaire' },
+      valueReference: createReference(ExampleWorkflowQuestionnaire2),
+    },
+  ],
 };
 
 export const ExampleWorkflowTask3: Task = {
   resourceType: 'Task',
   id: 'workflow-task-3',
   status: 'requested',
+  intent: 'order',
   meta: { author: createReference(DrAliceSmith) },
   requester: createReference(DrAliceSmith),
-  input: [{ valueReference: createReference(ExampleWorkflowQuestionnaire3) }],
+  input: [
+    {
+      type: { text: 'Questionnaire' },
+      valueReference: createReference(ExampleWorkflowQuestionnaire3),
+    },
+  ],
 };
 
 export const ExampleWorkflowRequestGroup: RequestGroup = {
@@ -110,6 +138,7 @@ export const ExampleWorkflowRequestGroup: RequestGroup = {
   id: 'workflow-request-group-1',
   instantiatesCanonical: [getReferenceString(ExampleWorkflowPlanDefinition)],
   status: 'active',
+  intent: 'order',
   action: [
     {
       title: ExampleWorkflowQuestionnaire1.title,

@@ -38,7 +38,7 @@ export interface DataRequirement {
    * resource. For profiles, this value is set to the type of the base
    * resource of the profile.
    */
-  type?: string;
+  type: string;
 
   /**
    * The profile of the required data, specified as the uri of the profile
@@ -266,10 +266,10 @@ export interface DataRequirementSort {
    * traverse multiple-cardinality sub-elements. Note that the index must
    * be an integer constant.
    */
-  path?: string;
+  path: string;
 
   /**
    * The direction of the sort, ascending or descending.
    */
-  direction?: 'ascending' | 'descending';
+  direction: 'ascending' | 'descending';
 }

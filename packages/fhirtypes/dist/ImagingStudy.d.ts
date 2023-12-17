@@ -131,7 +131,7 @@ export interface ImagingStudy {
   /**
    * The current state of the ImagingStudy.
    */
-  status?: 'registered' | 'available' | 'cancelled' | 'entered-in-error' | 'unknown';
+  status: 'registered' | 'available' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * A list of all the series.modality values that are actual acquisition
@@ -143,7 +143,7 @@ export interface ImagingStudy {
   /**
    * The subject, typically a patient, of the imaging study.
    */
-  subject?: Reference<Patient | Device | Group>;
+  subject: Reference<Patient | Device | Group>;
 
   /**
    * The healthcare event (e.g. a patient and healthcare provider
@@ -286,7 +286,7 @@ export interface ImagingStudySeries {
   /**
    * The DICOM Series Instance UID for the series.
    */
-  uid?: string;
+  uid: string;
 
   /**
    * The numeric identifier of this series in the study.
@@ -296,7 +296,7 @@ export interface ImagingStudySeries {
   /**
    * The modality of this series sequence.
    */
-  modality?: Coding;
+  modality: Coding;
 
   /**
    * A description of the series.
@@ -402,12 +402,12 @@ export interface ImagingStudySeriesInstance {
   /**
    * The DICOM SOP Instance UID for this image or other DICOM content.
    */
-  uid?: string;
+  uid: string;
 
   /**
    * DICOM instance  type.
    */
-  sopClass?: Coding;
+  sopClass: Coding;
 
   /**
    * The number of instance in the series.
@@ -468,5 +468,5 @@ export interface ImagingStudySeriesPerformer {
   /**
    * Indicates who or what performed the series.
    */
-  actor?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | Patient | Device | RelatedPerson>;
+  actor: Reference<Practitioner | PractitionerRole | Organization | CareTeam | Patient | Device | RelatedPerson>;
 }

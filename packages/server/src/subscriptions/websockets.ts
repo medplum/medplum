@@ -110,7 +110,7 @@ export function createSubEventNotification<ResourceType extends Resource = Resou
           resourceType: 'SubscriptionStatus',
           status,
           type: 'event-notification',
-          subscription: createReference({ resourceType: 'Subscription', id: subscriptionId }),
+          subscription: { reference: `Subscription/${subscriptionId}` },
           notificationEvent: [{ eventNumber: '0', timestamp, focus: createReference(resource) }],
         },
       },

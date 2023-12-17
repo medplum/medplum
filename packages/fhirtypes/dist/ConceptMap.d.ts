@@ -140,7 +140,7 @@ export interface ConceptMap {
    * The status of this concept map. Enables tracking the life-cycle of the
    * content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this concept map is authored for
@@ -305,7 +305,7 @@ export interface ConceptMapGroup {
    * Mappings for an individual concept in the source to one or more
    * concepts in the target.
    */
-  element?: ConceptMapGroupElement[];
+  element: ConceptMapGroupElement[];
 
   /**
    * What to do when there is no mapping for the source concept. &quot;Unmapped&quot;
@@ -429,7 +429,7 @@ export interface ConceptMapGroupElementTarget {
    * the dependencies and products). The equivalence is read from target to
    * source (e.g. the target is 'wider' than the source).
    */
-  equivalence?: 'relatedto' | 'equivalent' | 'equal' | 'wider' | 'subsumes' | 'narrower' | 'specializes' | 'inexact' | 'unmatched' | 'disjoint';
+  equivalence: 'relatedto' | 'equivalent' | 'equal' | 'wider' | 'subsumes' | 'narrower' | 'specializes' | 'inexact' | 'unmatched' | 'disjoint';
 
   /**
    * A description of status/issues in mapping that conveys additional
@@ -502,7 +502,7 @@ export interface ConceptMapGroupElementTargetDependsOn {
    * an element somewhere that is labeled to correspond with a code system
    * property.
    */
-  property?: string;
+  property: string;
 
   /**
    * An absolute URI that identifies the code system of the dependency code
@@ -514,7 +514,7 @@ export interface ConceptMapGroupElementTargetDependsOn {
    * Identity (code or path) or the element/item/ValueSet/text that the map
    * depends on / refers to.
    */
-  value?: string;
+  value: string;
 
   /**
    * The display for the code. The display is only provided to help editors
@@ -573,7 +573,7 @@ export interface ConceptMapGroupUnmapped {
    * fixed code (a default code), or alternatively, a reference to a
    * different concept map can be provided (by canonical URL).
    */
-  mode?: 'provided' | 'fixed' | 'other-map';
+  mode: 'provided' | 'fixed' | 'other-map';
 
   /**
    * The fixed code to use when the mode = 'fixed'  - all unmapped codes

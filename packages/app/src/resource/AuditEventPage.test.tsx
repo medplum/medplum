@@ -33,7 +33,7 @@ describe('AuditEventPage', () => {
           },
         },
       ],
-    });
+    } as AuditEvent);
 
     // load bot page
     await act(async () => {
@@ -71,7 +71,7 @@ describe('AuditEventPage', () => {
           },
         },
       ],
-    });
+    } as AuditEvent);
 
     // directly load bot audit event page
     await act(async () => {

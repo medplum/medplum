@@ -1,5 +1,5 @@
 import { ContentType, MedplumClient, createReference, getStatus, isOperationOutcome } from '@medplum/core';
-import { OperationOutcome, Patient, PatientLink, ServiceRequest } from '@medplum/fhirtypes';
+import { OperationOutcome, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { Mock, vi } from 'vitest';
 import {
   linkPatientRecords,
@@ -72,7 +72,7 @@ describe('Deduplication', () => {
       resourceType: 'Patient',
       id: 'target',
       name: [{ given: ['Lisa'], family: 'Simpson' }],
-      link: [{ other: createReference({ resourceType: 'Patient', id: '123' }), type: 'seealso' }] as PatientLink,
+      link: [{ other: [createReference({ resourceType: 'Patient', id: '123' })], type: 'seealso' }],
     } as Patient;
 
     const result = linkPatientRecords(srcPatient, targetPatient);

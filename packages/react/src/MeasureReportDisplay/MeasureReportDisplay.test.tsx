@@ -1,8 +1,8 @@
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
+import { MemoryRouter } from 'react-router-dom';
 import { act, render, screen } from '../test-utils/render';
 import { MeasureReportDisplay, MeasureReportDisplayProps } from './MeasureReportDisplay';
-import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '@medplum/react-hooks';
 
 const medplum = new MockClient();
 
@@ -26,6 +26,7 @@ describe('MeasureReportDisplay', () => {
       title: 'Test Measure',
       subtitle: 'Test Subtitle',
       url: 'http://example.com',
+      status: 'active',
     });
   });
 
@@ -33,6 +34,10 @@ describe('MeasureReportDisplay', () => {
     await setup({
       measureReport: {
         resourceType: 'MeasureReport',
+        measure: 'http://example.com',
+        status: 'complete',
+        type: 'individual',
+        period: { start: '2021-01-01', end: '2021-12-31' },
         group: [
           {
             id: 'group-1',
@@ -52,6 +57,10 @@ describe('MeasureReportDisplay', () => {
     await setup({
       measureReport: {
         resourceType: 'MeasureReport',
+        measure: 'http://example.com',
+        status: 'complete',
+        type: 'individual',
+        period: { start: '2021-01-01', end: '2021-12-31' },
         group: [
           {
             id: 'group-1',
@@ -80,6 +89,9 @@ describe('MeasureReportDisplay', () => {
       measureReport: {
         resourceType: 'MeasureReport',
         measure: 'http://example.com',
+        status: 'complete',
+        type: 'individual',
+        period: { start: '2021-01-01', end: '2021-12-31' },
         group: [
           {
             id: 'group-1',
@@ -102,6 +114,10 @@ describe('MeasureReportDisplay', () => {
       measureReport: {
         resourceType: 'MeasureReport',
         id: 'basic-example',
+        measure: 'http://example.com',
+        status: 'complete',
+        type: 'individual',
+        period: { start: '2021-01-01', end: '2021-12-31' },
         group: [
           {
             id: 'group-1',
@@ -148,6 +164,10 @@ describe('MeasureReportDisplay', () => {
       measureReport: {
         resourceType: 'MeasureReport',
         id: 'insufficient-example',
+        measure: 'http://example.com',
+        status: 'complete',
+        type: 'individual',
+        period: { start: '2021-01-01', end: '2021-12-31' },
         group: [
           {
             id: 'group-1',
@@ -183,6 +203,10 @@ describe('MeasureReportDisplay', () => {
       measureReport: {
         resourceType: 'MeasureReport',
         id: 'insufficient-example',
+        measure: 'http://example.com',
+        status: 'complete',
+        type: 'individual',
+        period: { start: '2021-01-01', end: '2021-12-31' },
         group: [
           {
             id: 'group-1',

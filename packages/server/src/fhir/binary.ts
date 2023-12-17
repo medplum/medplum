@@ -4,11 +4,11 @@ import { Request, Response, Router } from 'express';
 import internal from 'stream';
 import zlib from 'zlib';
 import { asyncWrap } from '../async';
+import { getAuthenticatedContext } from '../context';
+import { authenticateRequest } from '../oauth/middleware';
 import { sendOutcome } from './outcomes';
 import { getPresignedUrl } from './signer';
 import { getBinaryStorage } from './storage';
-import { authenticateRequest } from '../oauth/middleware';
-import { getAuthenticatedContext } from '../context';
 
 export const binaryRouter = Router().use(authenticateRequest);
 
@@ -18,7 +18,7 @@ binaryRouter.post(
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
     const filename = req.query['_filename'] as string | undefined;
-    const contentType = req.get('Content-Type');
+    const contentType = req.get('Content-Type') as string;
     const resource = await ctx.repo.createResource<Binary>({
       resourceType: 'Binary',
       contentType,
@@ -52,7 +52,7 @@ binaryRouter.put(
     const ctx = getAuthenticatedContext();
     const { id } = req.params;
     const filename = req.query['_filename'] as string | undefined;
-    const contentType = req.get('Content-Type');
+    const contentType = req.get('Content-Type') as string;
     const resource = await ctx.repo.updateResource<Binary>({
       resourceType: 'Binary',
       id,

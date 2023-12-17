@@ -16,7 +16,7 @@ import { killEvent } from '../utils/dom';
 import classes from './PlanDefinitionBuilder.module.css';
 
 export interface PlanDefinitionBuilderProps {
-  value: PlanDefinition | Reference<PlanDefinition>;
+  value: Partial<PlanDefinition> | Reference<PlanDefinition>;
   onSubmit: (result: PlanDefinition) => void;
 }
 
@@ -47,7 +47,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
   }, [medplum]);
 
   useEffect(() => {
-    setValue(ensurePlanDefinitionKeys(defaultValue ?? { resourceType: 'PlanDefinition' }));
+    setValue(ensurePlanDefinitionKeys(defaultValue ?? { resourceType: 'PlanDefinition', status: 'active' }));
     document.addEventListener('mouseover', handleDocumentMouseOver);
     document.addEventListener('click', handleDocumentClick);
     return () => {

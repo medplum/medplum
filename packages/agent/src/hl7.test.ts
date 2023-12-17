@@ -1,4 +1,4 @@
-import { allOk, createReference, Hl7Message, sleep } from '@medplum/core';
+import { allOk, ContentType, createReference, Hl7Message, sleep } from '@medplum/core';
 import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
@@ -23,7 +23,10 @@ describe('HL7', () => {
 
     endpoint = await medplum.createResource<Endpoint>({
       resourceType: 'Endpoint',
+      status: 'active',
       address: 'mllp://0.0.0.0:57000',
+      connectionType: { code: ContentType.HL7_V2 },
+      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
     });
   });
 
@@ -69,7 +72,7 @@ describe('HL7', () => {
           targetReference: createReference(bot),
         },
       ],
-    });
+    } as Agent);
 
     const app = new App(medplum, agent.id as string);
     await app.start();
@@ -121,11 +124,12 @@ describe('HL7', () => {
       resourceType: 'Agent',
       channel: [
         {
+          name: 'test',
           endpoint: createReference(endpoint),
           targetReference: createReference(bot),
         },
       ],
-    });
+    } as Agent);
 
     // Start an HL7 listener
     const hl7Messages = [];

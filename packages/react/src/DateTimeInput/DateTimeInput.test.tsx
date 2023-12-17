@@ -1,3 +1,4 @@
+import { badRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { DateTimeInput } from './DateTimeInput';
@@ -16,18 +17,7 @@ describe('DateTimeInput', () => {
   });
 
   test('Renders aria invalid', () => {
-    const outcome: OperationOutcome = {
-      resourceType: 'OperationOutcome',
-      issue: [
-        {
-          details: {
-            text: 'Bad',
-          },
-          expression: ['test'],
-        },
-      ],
-    };
-
+    const outcome: OperationOutcome = badRequest('Bad', 'test');
     render(<DateTimeInput name="test" placeholder="Placeholder" outcome={outcome} />);
     const input = screen.getByPlaceholderText('Placeholder');
     expect(input).toBeDefined();

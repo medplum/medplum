@@ -227,7 +227,9 @@ async function ensureSlots(medplum: MedplumClient, schedule: Schedule, slotDate:
     slotDate.setHours(hour, 0, 0, 0);
     await medplum.createResource({
       resourceType: 'Slot',
+      status: 'free',
       start: slotDate.toISOString(),
+      end: new Date(slotDate.getTime() + 30 * 60 * 1000).toISOString(),
       schedule: createReference(schedule),
     });
   }
@@ -347,6 +349,7 @@ async function createCarePlan(medplum: MedplumClient, patient: Patient, tasks: T
 function createA1CObservation(patient: Patient): Observation {
   return {
     resourceType: 'Observation',
+    status: 'final',
     subject: createReference(patient),
     code: {
       text: 'Hemoglobin A1c',
@@ -767,6 +770,7 @@ function createHeartRateObservation(patient: Patient, date: Date): Observation {
 function createWelcomeMessage(patient: Patient, practitioner: Practitioner): Communication {
   return {
     resourceType: 'Communication',
+    status: 'completed',
     subject: createReference(patient),
     recipient: [createReference(patient)],
     sender: createReference(practitioner),

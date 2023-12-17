@@ -143,7 +143,7 @@ export interface MessageDefinition {
    * The status of this message definition. Enables tracking the life-cycle
    * of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this message definition is authored
@@ -158,7 +158,7 @@ export interface MessageDefinition {
    * it must change if the status code changes. In addition, it should
    * change when the substantive content of the message definition changes.
    */
-  date?: string;
+  date: string;
 
   /**
    * The name of the organization or individual that published the message
@@ -307,7 +307,7 @@ export interface MessageDefinitionAllowedResponse {
    * A reference to the message definition that must be adhered to by this
    * supported response.
    */
-  message?: string;
+  message: string;
 
   /**
    * Provides a description of the circumstances in which this response
@@ -361,7 +361,7 @@ export interface MessageDefinitionFocus {
   /**
    * The kind of resource that must be the focus for this message.
    */
-  code?: ResourceType;
+  code: ResourceType;
 
   /**
    * A profile that reflects constraints for the focal resource (and
@@ -374,7 +374,7 @@ export interface MessageDefinitionFocus {
    * pointed to by a message in order for it to be valid against this
    * MessageDefinition.
    */
-  min?: number;
+  min: number;
 
   /**
    * Identifies the maximum number of resources of this type that must be

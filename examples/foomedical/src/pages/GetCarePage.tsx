@@ -11,6 +11,7 @@ export function GetCare(): JSX.Element {
         schedule={schedule as Schedule}
         questionnaire={{
           resourceType: 'Questionnaire',
+          status: 'active',
           name: 'Test',
           item: [
             {

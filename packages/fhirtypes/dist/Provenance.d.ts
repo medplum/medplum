@@ -116,7 +116,7 @@ export interface Provenance {
    * target if multiple resources were created/updated by the same
    * activity.
    */
-  target?: Reference<Resource>[];
+  target: Reference<Resource>[];
 
   /**
    * The period during which the activity occurred.
@@ -131,7 +131,7 @@ export interface Provenance {
   /**
    * The instant of time at which the activity was recorded.
    */
-  recorded?: string;
+  recorded: string;
 
   /**
    * Policy or plan the activity was defined by. Typically, a single
@@ -161,7 +161,7 @@ export interface Provenance {
    * An actor taking a role in an activity  for which it can be assigned
    * some degree of responsibility for the activity taking place.
    */
-  agent?: ProvenanceAgent[];
+  agent: ProvenanceAgent[];
 
   /**
    * An entity used in this activity.
@@ -230,7 +230,7 @@ export interface ProvenanceAgent {
   /**
    * The individual, device or organization that participated in the event.
    */
-  who?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
+  who: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
 
   /**
    * The individual, device, or organization for whom the change was made.
@@ -281,13 +281,13 @@ export interface ProvenanceEntity {
   /**
    * How the entity was used during the activity.
    */
-  role?: 'derivation' | 'revision' | 'quotation' | 'source' | 'removal';
+  role: 'derivation' | 'revision' | 'quotation' | 'source' | 'removal';
 
   /**
    * Identity of the  Entity used. May be a logical or physical uri and
    * maybe absolute or relative.
    */
-  what?: Reference<Resource>;
+  what: Reference<Resource>;
 
   /**
    * The entity is attributed to an agent to express the agent's

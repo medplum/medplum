@@ -1,4 +1,4 @@
-import { allOk, createReference, sleep } from '@medplum/core';
+import { ContentType, allOk, createReference, sleep } from '@medplum/core';
 import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
@@ -45,6 +45,8 @@ describe('App', () => {
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
     });
 
     const app = new App(medplum, agent.id as string);
@@ -101,6 +103,8 @@ describe('App', () => {
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
     });
 
     const app = new App(medplum, agent.id as string);
@@ -146,7 +150,10 @@ describe('App', () => {
 
     const endpoint = await medplum.createResource<Endpoint>({
       resourceType: 'Endpoint',
+      status: 'active',
       address: '', // invalid empty address
+      connectionType: { code: ContentType.HL7_V2 },
+      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
     });
 
     const mockServer = new Server('wss://example.com/ws/agent');
@@ -168,6 +175,8 @@ describe('App', () => {
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
+      status: 'active',
+      name: 'Test Agent',
       channel: [
         {
           name: 'test',
@@ -197,7 +206,10 @@ describe('App', () => {
 
     const endpoint = await medplum.createResource<Endpoint>({
       resourceType: 'Endpoint',
+      status: 'active',
       address: 'foo:', // unsupported protocol
+      connectionType: { code: ContentType.HL7_V2 },
+      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
     });
 
     const mockServer = new Server('wss://example.com/ws/agent');
@@ -219,6 +231,8 @@ describe('App', () => {
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
+      status: 'active',
+      name: 'Test Agent',
       channel: [
         {
           name: 'test',

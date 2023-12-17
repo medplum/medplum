@@ -7,7 +7,7 @@ import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInp
 import { FormSection } from '../FormSection/FormSection';
 
 export interface ResourceFormProps {
-  defaultValue: Resource | Reference;
+  defaultValue: Partial<Resource> | Reference;
   outcome?: OperationOutcome;
   onSubmit: (resource: Resource) => void;
   onDelete?: (resource: Resource) => void;

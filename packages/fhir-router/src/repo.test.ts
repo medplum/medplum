@@ -73,7 +73,7 @@ describe('MemoryRepository', () => {
 
   test('Count and offset', async () => {
     for (let i = 0; i < 10; i++) {
-      await repo.createResource<Observation>({ resourceType: 'Observation' });
+      await repo.createResource<Observation>({ resourceType: 'Observation' } as Observation);
     }
 
     const bundle = await repo.search({ resourceType: 'Observation', offset: 1, count: 1 });

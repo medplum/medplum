@@ -37,13 +37,13 @@ describe('Storage', () => {
     expect(storage).toBeDefined();
 
     // Write a file
-    const binary: Binary = {
+    const binary = {
       resourceType: 'Binary',
       id: '123',
       meta: {
         versionId: '456',
       },
-    };
+    } as Binary;
 
     // Create a request
     const req = new Readable();
@@ -73,13 +73,13 @@ describe('Storage', () => {
     expect(storage).toBeDefined();
 
     // Write a file
-    const binary: Binary = {
+    const binary = {
       resourceType: 'Binary',
       id: '123',
       meta: {
         versionId: '456',
       },
-    };
+    } as Binary;
     const req = new Readable();
     req.push('foo');
     req.push(null);
@@ -110,13 +110,13 @@ describe('Storage', () => {
     expect(storage).toBeDefined();
 
     // Write a file
-    const binary: Binary = {
+    const binary = {
       resourceType: 'Binary',
       id: '123',
       meta: {
         versionId: '456',
       },
-    };
+    } as Binary;
     const req = new Readable();
     req.push('foo');
     req.push(null);
@@ -180,13 +180,13 @@ describe('Storage', () => {
     expect(storage).toBeDefined();
 
     // Write a file
-    const binary: Binary = {
+    const binary = {
       resourceType: 'Binary',
       id: '123',
       meta: {
         versionId: '456',
       },
-    };
+    } as Binary;
 
     jest.spyOn(fs, 'existsSync').mockReturnValue(false);
 
@@ -205,13 +205,13 @@ describe('Storage', () => {
     expect(storage).toBeDefined();
 
     // Write a file
-    const binary: Binary = {
+    const binary = {
       resourceType: 'Binary',
       id: '123',
       meta: {
         versionId: '456',
       },
-    };
+    } as Binary;
     const req = new Readable();
     req.push('foo');
     req.push(null);
@@ -231,13 +231,13 @@ describe('Storage', () => {
     mockS3Client.reset();
 
     // Copy the object
-    const destinationBinary: Binary = {
+    const destinationBinary = {
       resourceType: 'Binary',
       id: '789',
       meta: {
         versionId: '012',
       },
-    };
+    } as Binary;
     await storage.copyBinary(binary, destinationBinary);
 
     expect(mockS3Client.send.callCount).toBe(1);
