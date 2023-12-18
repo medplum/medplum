@@ -10,6 +10,7 @@ import {
   FetchLike,
   InviteRequest,
   MedplumClient,
+  MedplumClientOptions,
   NewPatientRequest,
   NewProjectRequest,
   NewUserRequest,
@@ -2694,7 +2695,7 @@ describe('Passed in async-backed `ClientStorage`', () => {
   test('MedplumClient resolves initialized after storage is initialized', async () => {
     const fetch = mockFetch(200, { success: true });
     const storage = new MockAsyncClientStorage();
-    const medplum = new MedplumClient({ fetch, storage });
+    const medplum = new MedplumClient({ fetch, storage } as unknown as MedplumClientOptions);
     expect(storage.isInitialized).toEqual(false);
     expect(medplum.isInitialized).toEqual(false);
     storage.setInitialized();
