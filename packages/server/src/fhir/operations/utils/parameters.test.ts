@@ -53,6 +53,16 @@ const opDef: OperationDefinition = {
     { name: 'singleIn', use: 'in', min: 0, max: '1', type: 'string' },
     { name: 'requiredIn', use: 'in', min: 1, max: '1', type: 'boolean' },
     { name: 'multiIn', use: 'in', min: 0, max: '*', type: 'Reference' },
+    {
+      name: 'partsIn',
+      use: 'in',
+      min: 0,
+      max: '*',
+      part: [
+        { name: 'foo', min: 1, max: '1', type: 'string' },
+        { name: 'bar', min: 0, max: '1', type: 'boolean' },
+      ],
+    },
     { name: 'singleOut', use: 'out', min: 1, max: '1', type: 'Quantity' },
     { name: 'multiOut', use: 'out', min: 0, max: '*', type: 'Reference' },
   ],
@@ -64,20 +74,20 @@ describe('Operation Input Parameters parsing', () => {
   });
 
   test.each<[ParametersParameter[], Record<string, any>]>([
-    [[{ name: 'requiredIn', valueBoolean: true }], { requiredIn: true, singleIn: undefined, multiIn: [] }],
+    [[{ name: 'requiredIn', valueBoolean: true }], { requiredIn: true, singleIn: undefined, multiIn: [], partsIn: [] }],
     [
       [
         { name: 'requiredIn', valueBoolean: false },
         { name: 'singleIn', valueString: 'Hi!' },
       ],
-      { requiredIn: false, singleIn: 'Hi!', multiIn: [] },
+      { requiredIn: false, singleIn: 'Hi!', multiIn: [], partsIn: [] },
     ],
     [
       [
         { name: 'requiredIn', valueBoolean: true },
         { name: 'multiIn', valueReference: { reference: 'Patient/test' } },
       ],
-      { requiredIn: true, multiIn: [{ reference: 'Patient/test' }], singleIn: undefined },
+      { requiredIn: true, multiIn: [{ reference: 'Patient/test' }], singleIn: undefined, partsIn: [] },
     ],
     [
       [
@@ -89,6 +99,7 @@ describe('Operation Input Parameters parsing', () => {
         requiredIn: true,
         multiIn: [{ reference: 'Patient/test' }, { reference: 'Patient/example' }],
         singleIn: undefined,
+        partsIn: [],
       },
     ],
     [
@@ -102,6 +113,40 @@ describe('Operation Input Parameters parsing', () => {
         requiredIn: true,
         singleIn: 'Hello!',
         multiIn: [{ reference: 'Patient/test' }, { reference: 'Patient/example' }],
+        partsIn: [],
+      },
+    ],
+    [
+      [
+        { name: 'requiredIn', valueBoolean: true },
+        {
+          name: 'partsIn',
+          part: [
+            { name: 'foo', valueString: 'baz' },
+            { name: 'bar', valueBoolean: false },
+          ],
+        },
+      ],
+      {
+        requiredIn: true,
+        partsIn: [{ foo: 'baz', bar: false }],
+        singleIn: undefined,
+        multiIn: [],
+      },
+    ],
+    [
+      [
+        { name: 'requiredIn', valueBoolean: true },
+        {
+          name: 'partsIn',
+          part: [{ name: 'foo', valueString: 'baz' }],
+        },
+      ],
+      {
+        requiredIn: true,
+        partsIn: [{ foo: 'baz' }],
+        singleIn: undefined,
+        multiIn: [],
       },
     ],
   ])('Read input Parameters', (params, expected) => {
