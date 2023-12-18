@@ -1,5 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, StructureMap } from '@medplum/fhirtypes';
+import { readFileSync } from 'fs';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
 
@@ -125,12 +126,48 @@ describe('FHIR Mapping Language parser', () => {
     expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.listMode).toEqual('first');
   });
 
+  test('Rule source default', () => {
+    const input = `
+    map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
+
+    group tutorial(source src : TLeft, target tgt : TRight) {
+      src.a default "x" as a -> tgt.a = a "rule_a";
+    }`;
+
+    const result = parseMappingLanguage(input);
+    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.defaultValueString).toBe('x');
+  });
+
+  test('Rule source log', () => {
+    const input = `
+    map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
+
+    group tutorial(source src : TLeft, target tgt : TRight) {
+      src.a as a log "x" -> tgt.a = a "rule_a";
+    }`;
+
+    const result = parseMappingLanguage(input);
+    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.logMessage).toBe('x');
+  });
+
+  test('Multiple rule sources', () => {
+    const input = `
+    map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
+
+    group tutorial(source src : TLeft, target tgt : TRight) {
+      src.author as vs, src.name as vn -> tgt.contributor as vt, vt.type = 'author' then Contributor(vs, vt);
+    }`;
+
+    const result = parseMappingLanguage(input);
+    expect(result.group?.[0]?.rule?.[0]?.source).toHaveLength(2);
+  });
+
   test('Multiple rule targets', () => {
     const input = `
     map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
 
     group tutorial(source src : TLeft, target tgt : TRight) {
-      src.author as vs ->  tgt.contributor as vt,  vt.type = 'author' then Contributor(vs, vt);
+      src.author as vs -> tgt.contributor as vt, vt.type = 'author' then Contributor(vs, vt);
     }`;
 
     const result = parseMappingLanguage(input);
@@ -1589,5 +1626,12 @@ describe('FHIR Mapping Language parser', () => {
       'http://hl7.org/fhir/StructureMap/y',
       'http://hl7.org/fhir/StructureMap/z',
     ]);
+  });
+
+  test.skip('C-CDA mapping file', () => {
+    const mapFileName = 'C:\\Users\\cody\\dev\\cda-fhir-maps\\input\\maps\\CdaToBundle.map';
+    const mapFileContents = readFileSync(mapFileName, 'utf8');
+    const structureMap = parseMappingLanguage(mapFileContents);
+    expect(structureMap).toBeTruthy();
   });
 });
