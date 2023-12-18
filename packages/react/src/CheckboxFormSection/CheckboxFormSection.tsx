@@ -1,6 +1,6 @@
 import { Group, Input } from '@mantine/core';
 import { ReactNode, useContext } from 'react';
-import { BackboneElementContext } from '../BackboneElementInput/BackbonElementInput.utils';
+import { BackboneElementContext } from '../BackboneElementInput/BackboneElementInput.utils';
 
 export interface CheckboxFormSectionProps {
   htmlFor?: string;
