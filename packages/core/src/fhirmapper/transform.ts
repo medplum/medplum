@@ -68,12 +68,12 @@ function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: any[]
   let inputIndex = 0;
 
   for (const sourceDefinition of sourceDefinitions) {
-    variables[sourceDefinition.name as string] = input[inputIndex++];
+    safeAssign(variables, sourceDefinition.name as string, input[inputIndex++]);
   }
 
   for (const targetDefinition of targetDefinitions) {
     const output = input[inputIndex++] ?? {};
-    variables[targetDefinition.name as string] = output;
+    safeAssign(variables, targetDefinition.name as string, output);
     outputs.push(output);
   }
 
@@ -154,7 +154,7 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
 
   if (!target.transform) {
     targetValue = {};
-    targetContext[target.element as string] = targetValue;
+    safeAssign(targetContext, target.element as string, targetValue);
   } else {
     switch (target.transform) {
       case 'copy':
@@ -189,7 +189,7 @@ function evalCopy(ctx: TransformContext, target: StructureMapGroupRuleTarget, ta
   if (targetParameter.type === 'id') {
     targetValue = getVariable(ctx, targetParameter.value as string);
   }
-  targetContext[targetElement] = targetValue;
+  safeAssign(targetContext, targetElement, targetValue);
   return targetValue;
 }
 
@@ -200,7 +200,7 @@ function evalTruncate(ctx: TransformContext, target: StructureMapGroupRuleTarget
   if (targetValue && typeof targetValue === 'string') {
     targetValue = targetValue.substring(0, targetLength);
   }
-  targetContext[targetElement] = targetValue;
+  safeAssign(targetContext, targetElement, targetValue);
   return targetValue;
 }
 
@@ -234,5 +234,12 @@ function setVariable(ctx: TransformContext, name: string, value: any): void {
   if (!ctx.variables) {
     ctx.variables = {};
   }
-  ctx.variables[name] = value;
+  safeAssign(ctx.variables, name, value);
+}
+
+function safeAssign(target: Record<string, unknown>, key: string, value: unknown): void {
+  if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+    throw new Error('Invalid key: ' + key);
+  }
+  target[key] = value;
 }

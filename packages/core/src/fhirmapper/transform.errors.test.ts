@@ -70,7 +70,7 @@ describe('FHIR Mapper transform - errors', () => {
     const map = `
       uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
       uses "http://hl7.org/fhir/StructureDefinition/tutorial-right" as target
-      
+
       group tutorial(source src : TLeft, target tgt : TRight) {
         src.a as a -> notFound.a = a "rule_a";
       }
@@ -81,6 +81,24 @@ describe('FHIR Mapper transform - errors', () => {
       throw new Error('Expected error');
     } catch (err: any) {
       expect(err.message).toEqual('Target not found: notFound');
+    }
+  });
+
+  test('Invalid property', () => {
+    const map = `
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-right" as target
+
+      group tutorial(source src : TLeft, target tgt : TRight) {
+        src.a as a -> tgt.prototype = a "rule_a";
+      }
+    `;
+
+    try {
+      structureMapTransform(parseMappingLanguage(map), [{}]);
+      throw new Error('Expected error');
+    } catch (err: any) {
+      expect(err.message).toEqual('Invalid key: prototype');
     }
   });
 });
