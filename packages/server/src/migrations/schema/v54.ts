@@ -13,7 +13,7 @@ const statements = [
     code TEXT NOT NULL,
     display TEXT
   )`,
-  `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "Coding_system_code_idx" ON "Coding" (system, code)`,
+  `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "Coding_system_code_idx" ON "Coding" (system, code) INCLUDE (id)`,
   `CREATE INDEX CONCURRENTLY IF NOT EXISTS "Coding_display_idx" ON "Coding" USING gin ((system::uuid), to_tsvector('english', display)) WHERE display IS NOT NULL`,
 
   `CREATE TABLE IF NOT EXISTS "CodeSystem_Property" (
@@ -24,6 +24,7 @@ const statements = [
     uri TEXT,
     description TEXT
   )`,
+  `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "CodeSystem_Property_idx" ON "CodeSystem_Property" (system, code) INCLUDE (id)`,
 
   `CREATE TABLE IF NOT EXISTS "Coding_Property" (
     coding BIGINT NOT NULL, -- reference to "Coding".id
