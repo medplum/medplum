@@ -14,6 +14,7 @@ import {
   ServiceRequest,
   SpecimenDefinition,
 } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../../app';
@@ -103,11 +104,11 @@ describe('Resource $graph', () => {
         resourceType: 'GraphDefinition',
         status: 'active',
         name: graphName,
-        start: 'ServiceRequest',
-        link: [],
+        start: 'PlanDefinition',
+        link: [{ path: 'PlanDefinition.action.definition', target: [{ type: 'Questionnaire' }] }],
       });
 
-      await getResourceGraph(undefined, graphName, 404);
+      await getResourceGraph({ resourceType: 'PlanDefinition', id: randomUUID() }, graphName, 404);
     });
 
     test('Missing Target', async () => {
@@ -179,6 +180,45 @@ describe('Resource $graph', () => {
       const outcome = await getResourceGraph(patient, graphName, 400);
       expect(normalizeErrorString(outcome)).toContain('Missing or incorrect `start` type');
     });
+
+    test('Invalid link type', async () => {
+      const graphName = 'test-invalid-link-type';
+      const patient = await createResource({
+        resourceType: 'Patient',
+        name: [{ given: ['Graph'], family: 'Demo' }],
+      } as Patient);
+
+      await createResource<GraphDefinition>({
+        resourceType: 'GraphDefinition',
+        status: 'active',
+        name: graphName,
+        start: 'Patient',
+        link: [
+          {
+            path: 'Patient.name',
+            target: [{ type: 'Practitioner' }],
+          },
+        ],
+      });
+
+      const outcome = await getResourceGraph(patient, graphName, 400);
+      expect(normalizeErrorString(outcome)).toContain('Invalid link path. Must return a path to a Reference type');
+    });
+
+    test('Missing ref', async () => {
+      const graphName = 'test-missing-ref';
+
+      const graphDefinition = await createResource<GraphDefinition>({
+        resourceType: 'GraphDefinition',
+        status: 'active',
+        name: graphName,
+        start: 'GraphDefinition',
+        link: [{ target: [{ type: 'GraphDefinition', params: 'url=x' }] }],
+      });
+
+      const outcome = await getResourceGraph(graphDefinition, graphName, 400);
+      expect(normalizeErrorString(outcome)).toContain('Link target search params must include {ref}');
+    });
   });
 
   test('Canonical Link', async () => {
@@ -208,12 +248,22 @@ describe('Resource $graph', () => {
       url: 'http://example.com/MedicalHistory',
     } as Questionnaire);
 
+    const q3 = await createResource({
+      resourceType: 'Questionnaire',
+      status: 'active',
+      name: 'Medical History',
+      title: 'Medical History',
+      url: 'http://example.com/MedicalHistory',
+    } as Questionnaire);
+
     // 3. Create a PlanDefinition
     const planDefinition = await createResource({
       resourceType: 'PlanDefinition',
       status: 'active',
+      url: 'http://example.com/PlanDefinition',
       action: [
         { definitionCanonical: 'http://example.com/PatientRegistration' },
+        { definitionCanonical: 'http://example.com/MedicalHistory' },
         { definitionCanonical: 'http://example.com/MedicalHistory' },
       ],
     } as PlanDefinition);
@@ -222,10 +272,11 @@ describe('Resource $graph', () => {
     const bundle = await getResourceGraph(planDefinition, graphName);
     const resources = bundle.entry?.map((entry) => entry.resource);
 
-    expect(resources).toHaveLength(3);
+    expect(resources).toHaveLength(4);
     expect(resources?.[0]).toMatchObject(planDefinition);
     expect(resources?.[1]).toMatchObject(q1);
     expect(resources?.[2]).toMatchObject(q2);
+    expect(resources?.[3]).toMatchObject(q3);
   });
 
   test('Two Levels Deep', async () => {
@@ -390,7 +441,7 @@ describe('Resource $graph', () => {
       status: 'active',
       name: graphName,
       start: 'ServiceRequest',
-      link: [{ target: [{ type: 'DiagnosticReport', params: 'based-on={ref}' }] }],
+      link: [{ target: [{ type: 'DiagnosticReport', params: 'based-on={ref}' }], max: '*' }],
     } as GraphDefinition);
 
     const patient = await createResource({
@@ -486,8 +537,8 @@ describe('Resource $graph', () => {
   });
 });
 
-async function getResourceGraph<T extends Resource>(
-  resource: T | undefined,
+async function getResourceGraph(
+  resource: Resource,
   graphName: string,
   expectedReturnCode = 200,
   token: string | undefined = undefined

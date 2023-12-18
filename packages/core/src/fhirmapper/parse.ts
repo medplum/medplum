@@ -6,11 +6,12 @@ import {
   StructureMapGroupRuleDependent,
   StructureMapGroupRuleSource,
   StructureMapGroupRuleTarget,
+  StructureMapGroupRuleTargetParameter,
   StructureMapStructure,
 } from '@medplum/fhirtypes';
-import { Parser } from '../fhirlexer/parse';
+import { Atom, Parser } from '../fhirlexer/parse';
 import { FunctionAtom, LiteralAtom, SymbolAtom } from '../fhirpath/atoms';
-import { initFhirPathParserBuilder, OperatorPrecedence } from '../fhirpath/parse';
+import { OperatorPrecedence, initFhirPathParserBuilder } from '../fhirpath/parse';
 import { tokenize } from './tokenize';
 
 class StructureMapParser {
@@ -18,15 +19,12 @@ class StructureMapParser {
   constructor(readonly parser: Parser) {}
 
   parse(): StructureMap {
-    // 'map' url '=' identifier
-    // map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
-    this.parser.consume('Symbol', 'map');
-    this.structureMap.url = this.parser.consume('String').value;
-    this.parser.consume('=');
-    this.structureMap.name = this.parser.consume().value;
     while (this.parser.hasMore()) {
       const next = this.parser.peek()?.value;
       switch (next) {
+        case 'map':
+          this.parseMap();
+          break;
         case 'uses':
           this.parseUses();
           break;
@@ -44,6 +42,15 @@ class StructureMapParser {
       }
     }
     return this.structureMap;
+  }
+
+  private parseMap(): void {
+    // 'map' url '=' identifier
+    // map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
+    this.parser.consume('Symbol', 'map');
+    this.structureMap.url = this.parser.consume('String').value;
+    this.parser.consume('=');
+    this.structureMap.name = this.parser.consume().value;
   }
 
   private parseUses(): void {
@@ -184,13 +191,9 @@ class StructureMapParser {
     const result: StructureMapGroupRuleSource = {};
 
     const context = this.parseRuleContext();
-    if (context.includes('.')) {
-      const parts = context.split('.');
-      result.context = parts[0];
-      result.element = parts[1];
-    } else {
-      result.context = context;
-    }
+    const parts = context.split('.');
+    result.context = parts[0];
+    result.element = parts[1];
 
     if (this.parser.hasMore() && this.parser.peek()?.value === ':') {
       this.parser.consume(':');
@@ -198,8 +201,9 @@ class StructureMapParser {
     }
 
     if (this.parser.hasMore() && this.parser.peek()?.value === 'default') {
-      this.parser.consume('default');
-      this.parser.consumeAndParse();
+      this.parser.consume('Symbol', 'default');
+      // this.parser.consumeAndParse();
+      result.defaultValueString = this.parser.consume('String').value;
     }
 
     if (
@@ -215,6 +219,11 @@ class StructureMapParser {
     if (this.parser.peek()?.value === 'as') {
       this.parser.consume('Symbol', 'as');
       result.variable = this.parser.consume().value;
+    }
+
+    if (this.parser.peek()?.value === 'log') {
+      this.parser.consume('Symbol', 'log');
+      result.logMessage = this.parser.consume('String').value;
     }
 
     if (this.parser.peek()?.value === 'where') {
@@ -245,14 +254,10 @@ class StructureMapParser {
     const result: StructureMapGroupRuleTarget = {};
 
     const context = this.parseRuleContext();
-    if (context.includes('.')) {
-      const parts = context.split('.');
-      result.contextType = 'variable';
-      result.context = parts[0];
-      result.element = parts[1];
-    } else {
-      result.context = context;
-    }
+    const parts = context.split('.');
+    result.contextType = 'variable';
+    result.context = parts[0];
+    result.element = parts[1];
 
     if (this.parser.peek()?.value === '=') {
       this.parser.consume('=');
@@ -287,7 +292,7 @@ class StructureMapParser {
     } else if (transformFhirPath instanceof LiteralAtom) {
       this.parseRuleTargetLiteral(result, transformFhirPath);
     } else {
-      throw new Error(`Unexpected FHIRPath: ${transformFhirPath}`);
+      result.parameter = [{ valueId: transformFhirPath.toString() }];
     }
   }
 
@@ -296,39 +301,13 @@ class StructureMapParser {
   }
 
   private parseRuleTargetFunction(result: StructureMapGroupRuleTarget, functionAtom: FunctionAtom): void {
-    const functionName = functionAtom.name;
-    switch (functionName) {
-      case 'create':
-        result.parameter = [
-          {
-            valueString: (functionAtom.args[0] as LiteralAtom).value.value as string,
-          },
-        ];
-        break;
-
-      case 'translate':
-        result.parameter = [{}];
-        break;
-
-      default:
-        throw new Error('Unknown target function: ' + functionName);
-    }
+    // https://hl7.org/fhir/r4/valueset-map-transform.html
+    result.transform = functionAtom.name as 'copy';
+    result.parameter = functionAtom.args?.map(atomToParameter);
   }
 
   private parseRuleTargetLiteral(result: StructureMapGroupRuleTarget, literalAtom: LiteralAtom): void {
-    switch (literalAtom.value.type) {
-      case 'boolean':
-        result.parameter = [{ valueBoolean: literalAtom.value.value as boolean }];
-        break;
-      case 'decimal':
-        result.parameter = [{ valueDecimal: literalAtom.value.value as number }];
-        break;
-      case 'string':
-        result.parameter = [{ valueString: literalAtom.value.value as string }];
-        break;
-      default:
-        throw new Error('Unknown target literal type: ' + literalAtom.value.type);
-    }
+    result.parameter = [literalToParameter(literalAtom)];
   }
 
   private parseRuleContext(): string {
@@ -355,6 +334,31 @@ class StructureMapParser {
       this.parser.consume();
     }
     this.parser.consume('}');
+  }
+}
+
+function atomToParameter(atom: Atom): StructureMapGroupRuleTargetParameter {
+  if (atom instanceof SymbolAtom) {
+    return { valueId: atom.name };
+  }
+  if (atom instanceof LiteralAtom) {
+    return literalToParameter(atom);
+  }
+  throw new Error('Unexpected atom: ' + atom.constructor.name);
+}
+
+function literalToParameter(literalAtom: LiteralAtom): StructureMapGroupRuleTargetParameter {
+  switch (literalAtom.value.type) {
+    case 'boolean':
+      return { valueBoolean: literalAtom.value.value as boolean };
+    case 'decimal':
+      return { valueDecimal: literalAtom.value.value as number };
+    case 'integer':
+      return { valueInteger: literalAtom.value.value as number };
+    case 'string':
+      return { valueString: literalAtom.value.value as string };
+    default:
+      throw new Error('Unknown target literal type: ' + literalAtom.value.type);
   }
 }
 
