@@ -202,7 +202,6 @@ class StructureMapParser {
 
     if (this.parser.hasMore() && this.parser.peek()?.value === 'default') {
       this.parser.consume('Symbol', 'default');
-      // this.parser.consumeAndParse();
       result.defaultValueString = this.parser.consume('String').value;
     }
 
