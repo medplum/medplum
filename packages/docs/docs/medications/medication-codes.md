@@ -10,6 +10,9 @@ tags:
   - rxnorm
 ---
 
+import ExampleCode from '!!raw-loader!@site/..//examples/src/medications/medication-codes.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
 # Medication Code Systems
 
 ## Introduction
@@ -66,21 +69,9 @@ Unlike RXNorm, NDC operates as a flat code system and only refers to the "leaf n
 
 However, there are connections between the two code systems, as a drug product can have both NDC and RXNorm codes. Below is an example of the a [CodeableConcept](/docs/fhir-basics#codeable-concepts-standarding-data) for Tylenol, with both NDC and RxNorm codes
 
-```ts
-{
-  text: 'Tylenol 325 MG Oral Tablet'
-  coding: [
-    {
-      system: 'http://hl7.org/fhir/sid/ndc',
-      code: '50580045850'
-    }
-    {
-      system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
-      code: '209387'
-    }
-  ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="tylenol-example">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ## Other Drug databases
 
