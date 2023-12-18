@@ -52,3 +52,17 @@ export const updateStatusQuestionnaire: Questionnaire = {
     },
   ],
 };
+
+export const assignRoleQuestionnaire: Questionnaire = {
+  resourceType: 'Questionnaire',
+  id: 'assign-role',
+  title: 'Assign to a Role',
+  item: [
+    {
+      linkId: 'assign-role',
+      text: 'Select Role',
+      type: 'choice',
+      answerValueSet: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1099.30',
+    },
+  ],
+};

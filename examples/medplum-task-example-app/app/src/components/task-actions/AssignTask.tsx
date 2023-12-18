@@ -8,7 +8,7 @@ import { assignTaskQuestionnaire } from './questionnaires';
 
 interface AssignTaskProps {
   task: Task;
-  onChange: () => void;
+  onChange: (updatedTask: Task) => void;
 }
 
 type OwnerTypes = Task['owner'];
@@ -62,7 +62,9 @@ export function AssignTask(props: AssignTaskProps): JSX.Element {
 
   return (
     <div>
-      <Button onClick={handleOpenClose}>{props.task.owner ? 'Reassign Task' : 'Assign Task'}</Button>
+      <Button fullWidth onClick={handleOpenClose}>
+        {props.task.owner ? 'Reassign Task' : 'Assign Task'}
+      </Button>
       <Modal opened={isOpen} onClose={handleOpenClose}>
         <QuestionnaireForm questionnaire={assignTaskQuestionnaire} onSubmit={onQuestionnaireSubmit} />
       </Modal>

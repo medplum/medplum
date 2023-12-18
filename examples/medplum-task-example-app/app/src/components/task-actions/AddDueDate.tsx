@@ -8,7 +8,7 @@ import { dueDateQuestionnaire } from './questionnaires';
 
 interface AddDueDateProps {
   task: Task;
-  onChange: () => void;
+  onChange: (updatedTask: Task) => void;
 }
 
 export function AddDueDate(props: AddDueDateProps): JSX.Element {
@@ -61,9 +61,13 @@ export function AddDueDate(props: AddDueDateProps): JSX.Element {
   return (
     <div>
       {props.task.restriction?.period?.end ? (
-        <Button onClick={handleOpenClose}>Change Due-Date</Button>
+        <Button fullWidth onClick={handleOpenClose}>
+          Change Due-Date
+        </Button>
       ) : (
-        <Button onClick={handleOpenClose}>Add Due-Date</Button>
+        <Button fullWidth onClick={handleOpenClose}>
+          Add Due-Date
+        </Button>
       )}
       <Modal opened={isOpen} onClose={handleOpenClose}>
         <QuestionnaireForm questionnaire={dueDateQuestionnaire} onSubmit={onQuestionnaireSubmit} />

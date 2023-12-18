@@ -9,7 +9,7 @@ import { NavigateFunction, useNavigate } from 'react-router-dom';
 
 interface DeleteTaskProps {
   task: Task;
-  onChange: () => void;
+  onChange: (updatedTask: Task) => void;
 }
 
 export function DeleteTask(props: DeleteTaskProps): JSX.Element {
@@ -45,7 +45,7 @@ export function DeleteTask(props: DeleteTaskProps): JSX.Element {
 
   return (
     <div>
-      <Button onClick={handleOpenClose} color="red">
+      <Button fullWidth onClick={handleOpenClose} color="red">
         Delete Task
       </Button>
       <Modal opened={isOpen} onClose={handleOpenClose} withCloseButton={false}>

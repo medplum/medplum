@@ -7,7 +7,7 @@ import { useState } from 'react';
 
 interface ClaimTaskProps {
   task: Task;
-  onChange: () => void;
+  onChange: (updatedTask: Task) => void;
 }
 
 export function ClaimTask(props: ClaimTaskProps): JSX.Element {
@@ -31,25 +31,32 @@ export function ClaimTask(props: ClaimTaskProps): JSX.Element {
     // Update the owner to the current user. For more details see https://www.medplum.com/docs/careplans/tasks#task-assignment
     updatedTask.owner = {
       reference: `Practitioner/${currentUser.id}`,
-      resource: currentUser,
+      // resource: currentUser,
     };
 
-    await medplum.updateResource(updatedTask).catch((error) =>
-      notifications.show({
-        title: 'Error',
-        message: `Error: ${error}`,
-      })
-    );
-    notifications.show({
-      title: 'Success',
-      message: 'You have claimed this task.',
-    });
+    await medplum
+      .updateResource(updatedTask)
+      .then(() =>
+        notifications.show({
+          title: 'Success',
+          message: 'You have claimed this task.',
+        })
+      )
+      .catch((error) =>
+        notifications.show({
+          title: 'Error',
+          message: `Error: ${error}`,
+        })
+      );
     onChange(updatedTask);
+    handleOpenClose();
   };
 
   return (
     <div>
-      {!props.task.owner ? <Button onClick={handleOpenClose}>Claim Task</Button> : null}
+      <Button fullWidth onClick={handleOpenClose}>
+        Claim Task
+      </Button>
       <Modal opened={isOpen} onClose={handleOpenClose}>
         <Text fw={700}>Are you sure you want to assign this task to yourself?</Text>
         <Group>

@@ -2,13 +2,13 @@ import { Button, Stack, Title } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { CodeableConcept, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum, useResource } from '@medplum/react';
-import { AddComment } from './task-actions/AddComment';
-import { AddDueDate } from './task-actions/AddDueDate';
-import { UpdateStatus } from './task-actions/UpdateStatus';
-import { AssignTask } from './task-actions/AssignTask';
-import { AssignRole } from './task-actions/AssignRole';
-import { ClaimTask } from './task-actions/ClaimTask';
-import { DeleteTask } from './task-actions/DeleteTask';
+import { AddComment } from './AddComment';
+import { AddDueDate } from './AddDueDate';
+import { UpdateStatus } from './UpdateStatus';
+import { AssignTask } from './AssignTask';
+import { AssignRole } from './AssignRole';
+import { ClaimTask } from './ClaimTask';
+import { DeleteTask } from './DeleteTask';
 
 interface TaskActionsProps {
   task: Task;
@@ -69,19 +69,19 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
     <Stack>
       <Title>Task Actions</Title>
       <Stack>
-        <AddComment task={task} onChange={() => props.onChange(task)} />
-        <AddDueDate task={task} onChange={() => props.onChange(task)} />
-        <UpdateStatus task={task} onChange={() => props.onChange(task)} />
-        <AssignTask task={task} onChange={() => props.onChange(task)} />
-        <AssignRole task={task} onChange={() => props.onChange(task)} />
-        <ClaimTask task={task} onChange={() => props.onChange(task)} />
+        <AddComment task={task} onChange={props.onChange} />
+        <AddDueDate task={task} onChange={props.onChange} />
+        <UpdateStatus task={task} onChange={props.onChange} />
+        <AssignTask task={task} onChange={props.onChange} />
+        <AssignRole task={task} onChange={props.onChange} />
+        {!task.owner ? <ClaimTask task={task} onChange={props.onChange} /> : null}
         {task.status === 'on-hold' ? (
           <Button onClick={handleChangeTaskStatus}>Resume Task</Button>
         ) : (
           <Button onClick={handleChangeTaskStatus}>Pause Task</Button>
         )}
         {task.status === 'completed' ? null : <Button onClick={handleCompleteTask}>Complete Task</Button>}
-        <DeleteTask task={task} onChange={() => props.onChange(task)} />
+        <DeleteTask task={task} onChange={props.onChange} />
       </Stack>
     </Stack>
   );

@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PatientChart } from '../components/PatientChart';
 
-import { TaskActions } from '../components/TaskActions';
+import { TaskActions } from '../components/task-actions/TaskActions';
 import { NotesPage } from './NotesPage';
 
 export function TaskPage(): JSX.Element {

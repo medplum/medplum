@@ -8,7 +8,7 @@ import { updateStatusQuestionnaire } from './questionnaires';
 
 interface UpdateStatusProps {
   task: Task;
-  onChange: () => void;
+  onChange: (updatedTask: Task) => void;
 }
 
 export function UpdateStatus(props: UpdateStatusProps): JSX.Element {
@@ -61,7 +61,9 @@ export function UpdateStatus(props: UpdateStatusProps): JSX.Element {
 
   return (
     <div>
-      <Button onClick={handleOpenClose}>Update Status</Button>
+      <Button fullWidth onClick={handleOpenClose}>
+        Update Status
+      </Button>
       <Modal opened={isOpen} onClose={handleOpenClose}>
         <QuestionnaireForm questionnaire={updateStatusQuestionnaire} onSubmit={onQuestionnaireSubmit} />
       </Modal>

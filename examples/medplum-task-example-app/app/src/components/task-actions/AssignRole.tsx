@@ -2,10 +2,11 @@ import { Button, Modal } from '@mantine/core';
 import { Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { useState } from 'react';
+import { assignRoleQuestionnaire } from './questionnaires';
 
 interface AssignTaskProps {
   task: Task;
-  onChange: () => void;
+  onChange: (updatedTask: Task) => void;
 }
 
 export function AssignRole(props: AssignTaskProps): JSX.Element {
@@ -20,24 +21,11 @@ export function AssignRole(props: AssignTaskProps): JSX.Element {
 
   return (
     <div>
-      <Button onClick={handleOpenClose}>Assign to a Role</Button>
+      <Button fullWidth onClick={handleOpenClose}>
+        Assign to a Role
+      </Button>
       <Modal opened={isOpen} onClose={handleOpenClose}>
-        <QuestionnaireForm
-          questionnaire={{
-            resourceType: 'Questionnaire',
-            id: 'assign-role',
-            title: 'Assign to a Role',
-            item: [
-              {
-                linkId: 'assign-role',
-                text: 'Select Role',
-                type: 'choice',
-                answerValueSet: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1099.30',
-              },
-            ],
-          }}
-          onSubmit={onQuestionnaireSubmit}
-        />
+        <QuestionnaireForm questionnaire={assignRoleQuestionnaire} onSubmit={onQuestionnaireSubmit} />
       </Modal>
     </div>
   );

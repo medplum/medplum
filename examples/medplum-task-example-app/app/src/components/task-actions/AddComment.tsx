@@ -8,7 +8,7 @@ import { commentQuestionnaire } from './questionnaires';
 
 interface AddCommentProps {
   task: Task;
-  onChange: () => void;
+  onChange: (updatedTask: Task) => void;
 }
 
 export function AddComment(props: AddCommentProps): JSX.Element {
@@ -80,7 +80,9 @@ export function AddComment(props: AddCommentProps): JSX.Element {
 
   return (
     <div>
-      <Button onClick={handleOpenClose}>Add a Comment</Button>
+      <Button fullWidth onClick={handleOpenClose}>
+        Add a Comment
+      </Button>
       <Modal opened={isOpen} onClose={handleOpenClose}>
         <QuestionnaireForm questionnaire={commentQuestionnaire} onSubmit={onQuestionnaireSubmit} />
       </Modal>
