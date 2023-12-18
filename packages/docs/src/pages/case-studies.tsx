@@ -40,7 +40,7 @@ export default function CaseStudiesPage(): JSX.Element {
             </Feature>
             <Feature title="Diagnostics" imgSrc="/img/icons/cog-icon.svg">
               Diagnostics providers need highly programmable system that can manage data securely at scale. Medplum
-              provides solutions for <a href="/blog/ro-case-study">laboratory</a>, medical device, imaging,
+              provides solutions for <a href="/blog/ro-case-study">laboratory</a>, medical device, imaging,{' '}
               <a href="/blog/codex-and-the-power-of-g10">remote patient monitoring</a> and more.
             </Feature>
             <Feature title="Interop" imgSrc="/img/icons/interoperability.svg">
@@ -77,14 +77,14 @@ export default function CaseStudiesPage(): JSX.Element {
               name="Ro Diagnostics"
               title="Lab, integrations, workflow"
               imgUrl="/img/blog/ro-logo.png"
-              webUrl="https://www.medplum.com/blog/ro-case-study"
+              webUrl="/blog/ro-case-study"
               youtubeUrl="https://youtu.be/q-22Y7Ox2jY"
             />
             <ProfileCard
               name="Titan Intake"
               title="AI, scheduling, interop"
               imgUrl="/img/blog/titan-logo.jpeg"
-              webUrl="https://www.medplum.com/blog/titan-case-study"
+              webUrl="/blog/titan-case-study"
               youtubeUrl="https://youtu.be/sy3YKRFyPII"
             />
             <ProfileCard
@@ -92,7 +92,7 @@ export default function CaseStudiesPage(): JSX.Element {
               title="Geriatrics, Value Based Care"
               imgUrl="/img/blog/ensage.jpeg"
               youtubeUrl="https://youtu.be/GIlmd7OMZ5g"
-              webUrl="https://www.medplum.com/blog/ensage-case-study"
+              webUrl="/blog/ensage-case-study"
             />
           </CardContainer>
         </Section>

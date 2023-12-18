@@ -1,5 +1,7 @@
 import GitHubSvg from './github.svg';
 import LinkedInSvg from './linkedin.svg';
+import LinkSvg from './link.svg';
+import YouTubeSvg from './youtube.svg';
 import styles from './ProfileCard.module.css';
 
 export interface ProfileCardProps {
@@ -35,13 +37,13 @@ export function ProfileCard(props: ProfileCardProps): JSX.Element {
         )}
         {props.webUrl && (
           <a href={props.webUrl} target="_blank" className={styles.profileLink}>
-            <LinkedInSvg />
+            <LinkSvg />
             <div>Web</div>
           </a>
         )}
         {props.youtubeUrl && (
           <a href={props.youtubeUrl} target="_blank" className={styles.profileLink}>
-            <GitHubSvg />
+            <YouTubeSvg />
             <div>YouTube</div>
           </a>
         )}
