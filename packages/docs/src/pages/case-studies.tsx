@@ -29,22 +29,25 @@ export default function CaseStudiesPage(): JSX.Element {
         <Section>
           <FeatureGrid columns={2}>
             <Feature title="AI" imgSrc="/img/icons/code.svg">
-              Medplum is a best of breed EHR for integrating AI. Our customers build sophisticated, high-fidelity AI
-              driven applications on an open source platform with much attention to detail.
+              Medplum is a best of breed EHR for integrating AI. Our customers build sophisticated, high-fidelity{' '}
+              <a href="/blog/tags/ai">AI driven applications</a> on an open source platform with much attention to
+              detail.
             </Feature>
             <Feature title="Specialty EHR" imgSrc="/img/icons/clinical-logic.svg">
               Medplum powers many specialty electronic health record systems and other purpose-built healthcare apps.
-              Implmentations include solutions across specialties:pediatrics, radiology, geriatrics, cardiac care and
-              more.
+              Implmentations include solutions across specialties: <a href="/blog/tags/pediatrics">pediatrics</a>,
+              radiology, <a href="/blog/ensage-case-study">geriatrics</a>, cardiac care and more.
             </Feature>
             <Feature title="Diagnostics" imgSrc="/img/icons/cog-icon.svg">
               Diagnostics providers need highly programmable system that can manage data securely at scale. Medplum
-              provides solutions for laboratory, medical device, imaging, remote patient monitoring and more.
+              provides solutions for <a href="/blog/ro-case-study">laboratory</a>, medical device, imaging,
+              <a href="/blog/codex-and-the-power-of-g10">remote patient monitoring</a> and more.
             </Feature>
             <Feature title="Interop" imgSrc="/img/icons/interoperability.svg">
-              Reliable and transparent integrations are built on Medplum. Integrate many systems on the same unified
-              platform. Medplum's bot framework and industry standard authentication offering speed up development and
-              ensure that integrations really work.
+              Reliable and transparent <a href="/docs/integration">integrations</a> are built on Medplum. Integrate many
+              systems on the same unified platform. Medplum's <a href="/docs/bots">bot framework</a> and{' '}
+              <a href="/docs/auth">industry standard authentication</a> offering speed up development and ensure that
+              integrations really work.
             </Feature>
           </FeatureGrid>
         </Section>
@@ -52,8 +55,8 @@ export default function CaseStudiesPage(): JSX.Element {
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>Summer Health</h1>
             <p className={styles.heroText}>
-              Pediatric care 24 hours a day via SMS. Their custom EHR features streamlined charting using AI which
-              enhances the experience for patients and clinicians.
+              <a href="blog/summer-case-study">Pediatric care</a> 24 hours a day via SMS. Their custom EHR features
+              streamlined charting using AI which enhances the experience for patients and clinicians.
             </p>
           </div>
           <div className={styles.heroImage}>
@@ -62,9 +65,9 @@ export default function CaseStudiesPage(): JSX.Element {
               height="315"
               src="https://www.youtube.com/embed/H2fJVYG8LvQ?si=KIVtT_e-1WE2zzjs"
               title="YouTube video player"
-              frameborder="0"
+              frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
+              allowFullScreen
             ></iframe>
           </div>
         </Jumbotron>
@@ -74,22 +77,22 @@ export default function CaseStudiesPage(): JSX.Element {
               name="Ro Diagnostics"
               title="Lab, integrations, workflow"
               imgUrl="/img/blog/ro-logo.png"
-              linkedInUrl="https://ro.co/"
-              githubUrl="https://www.medplum.com/blog/ro-case-study"
+              webUrl="https://www.medplum.com/blog/ro-case-study"
+              youtubeUrl="https://youtu.be/q-22Y7Ox2jY"
             />
             <ProfileCard
               name="Titan Intake"
               title="AI, scheduling, interop"
               imgUrl="/img/blog/titan-logo.jpeg"
-              linkedInUrl="https://www.titanintake.com/"
-              githubUrl="https://www.medplum.com/blog/titan-case-study"
+              webUrl="https://www.medplum.com/blog/titan-case-study"
+              youtubeUrl="https://youtu.be/sy3YKRFyPII"
             />
             <ProfileCard
               name="Ensage Health"
               title="Geriatrics, Value Based Care"
               imgUrl="/img/blog/ensage.jpeg"
-              linkedInUrl="https://www.ensagehealth.com/"
-              githubUrl="https://www.medplum.com/blog/ensage-case-study"
+              youtubeUrl="https://youtu.be/GIlmd7OMZ5g"
+              webUrl="https://www.medplum.com/blog/ensage-case-study"
             />
           </CardContainer>
         </Section>

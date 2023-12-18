@@ -6,8 +6,10 @@ export interface ProfileCardProps {
   name: string;
   title: string;
   imgUrl: string;
-  linkedInUrl: string;
-  githubUrl: string;
+  linkedInUrl?: string;
+  githubUrl?: string;
+  webUrl?: string;
+  youtubeUrl?: string;
 }
 
 export function ProfileCard(props: ProfileCardProps): JSX.Element {
@@ -19,14 +21,30 @@ export function ProfileCard(props: ProfileCardProps): JSX.Element {
       <h3>{props.name}</h3>
       <p>{props.title}</p>
       <div className={styles.profileLinks}>
-        <a href={props.linkedInUrl} target="_blank" className={styles.profileLink}>
-          <LinkedInSvg />
-          <div>LinkedIn</div>
-        </a>
-        <a href={props.githubUrl} target="_blank" className={styles.profileLink}>
-          <GitHubSvg />
-          <div>GitHub</div>
-        </a>
+        {props.linkedInUrl && (
+          <a href={props.linkedInUrl} target="_blank" className={styles.profileLink}>
+            <LinkedInSvg />
+            <div>LinkedIn</div>
+          </a>
+        )}
+        {props.githubUrl && (
+          <a href={props.githubUrl} target="_blank" className={styles.profileLink}>
+            <GitHubSvg />
+            <div>GitHub</div>
+          </a>
+        )}
+        {props.webUrl && (
+          <a href={props.webUrl} target="_blank" className={styles.profileLink}>
+            <LinkedInSvg />
+            <div>Web</div>
+          </a>
+        )}
+        {props.youtubeUrl && (
+          <a href={props.youtubeUrl} target="_blank" className={styles.profileLink}>
+            <GitHubSvg />
+            <div>YouTube</div>
+          </a>
+        )}
       </div>
     </div>
   );

@@ -152,7 +152,7 @@ const config = {
             items: [
               {
                 label: 'Case Studies',
-                to: '/casestudies',
+                to: '/case-studies',
               },
               {
                 label: 'Discord',

@@ -6,7 +6,7 @@ authors:
   title: Medplum Core Team
   url: https://github.com/reshmakh
   image_url: https://github.com/reshmakh.png
-tags: [pediatrics, auth, case-study]
+tags: [pediatrics, auth, case-study, ai]
 ---
 
 # Summer Health: 24/7 Pediatrician Access
