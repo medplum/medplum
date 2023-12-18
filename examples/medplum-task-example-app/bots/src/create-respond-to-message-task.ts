@@ -21,20 +21,18 @@ export async function handler(medplum: MedplumClient): Promise<any> {
     'part-of:Communication.status': 'in-progress',
   });
 
-  // Filter for messages that have not been responded to
-  const unrespondedMessages = messages.filter(
-    (message) => getMessageSenderType(message) === 'Patient' && !message.inResponseTo
-  );
+  // Filter for messages sent by patients
+  const patientMessages = messages.filter((message) => getMessageSenderType(message) === 'Patient');
 
-  // If all messages have been responded to, return
-  if (unrespondedMessages.length === 0) {
+  // If no messages from patients, return
+  if (patientMessages.length === 0) {
     console.log('No messages in the last 30 minutes that require a response.');
     return false;
   }
 
-  const searchBundle = buildSearchBundle(unrespondedMessages);
+  // Create and execute a batch search for all thread messages
+  const searchBundle = buildSearchBundle(patientMessages);
 
-  // Execute a batch search for all thread messages
   const threadMessages = await medplum.executeBatch(searchBundle);
 
   const threads: Record<string, Communication[]> = {};
@@ -49,9 +47,17 @@ export async function handler(medplum: MedplumClient): Promise<any> {
     if (Object.hasOwn(threads, thread)) {
       const messages = threads[thread];
 
+      // If the most recent message is not by a patient, the thread has been responded to, and no task should be created
+      if (getMessageSenderType(messages[0]) !== 'Patient') {
+        continue;
+      }
+
       // Check if there is already an existing task to respond to this message
       if (await checkNoExistingTask(medplum, thread)) {
+        // Get the most recent employee to respond to this thread, if anyone has
         const sender = getMostRecentResponder(messages) as Reference<Practitioner> | undefined;
+
+        // Define a task to respond to the message
         const task: Task = {
           resourceType: 'Task',
           focus: {
@@ -89,6 +95,7 @@ export async function handler(medplum: MedplumClient): Promise<any> {
   return true;
 }
 
+// Organize a bundle of communication search responses into an object of the thread header and all messages
 function organizeThreads(messages: BundleEntry[], threads: Record<string, Communication[]>): void {
   for (const message of messages) {
     const communication = message.resource;
@@ -96,8 +103,14 @@ function organizeThreads(messages: BundleEntry[], threads: Record<string, Commun
       continue;
     }
 
-    const threadReferenceString = getReferenceString(communication.partOf[0]);
+    // Get the communication's thread header as a reference string
+    const partOf = communication.partOf;
 
+    const threadHeader = partOf.filter((resource) => resource.resource?.resourceType === 'Communication')[0];
+
+    const threadReferenceString = getReferenceString(threadHeader);
+
+    // Group the communication with the rest of it's thread
     if (!threads[threadReferenceString]) {
       threads[threadReferenceString] = [];
     }
@@ -144,10 +157,14 @@ function buildSearchBundle(messages: Communication[]): Bundle {
       continue;
     }
     // Get the parent communication representing the thread
-    const threadHeader = getReferenceString(message.partOf[0]);
+    const partOf = message.partOf;
+
+    const threadHeader = partOf.filter((resource) => resource.resource?.resourceType === 'Communication')[0];
+
+    const threadHeaderReference = getReferenceString(threadHeader);
 
     // Query for all of the messages in the thread
-    const searchQuery = `Communication?part-of=${threadHeader}&_sort=-sent`;
+    const searchQuery = `Communication?part-of=${threadHeaderReference}&_sort=-sent`;
 
     // Add the search to a bundle to execute a batch request to get all threads with messages that haven't been responded to
     const entry: BundleEntry = {
