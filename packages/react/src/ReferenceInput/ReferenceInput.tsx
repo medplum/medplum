@@ -39,17 +39,20 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   const medplum = useMedplum();
   const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
   const [targetTypes, setTargetTypes] = useState<TargetType[] | undefined>(() => createTargetTypes(props.targetTypes));
-  const [targetType, setTargetType] = useState<TargetType | undefined>(() =>
-    getInitialTargetType(props.defaultValue, targetTypes)
-  );
-  const [resourceType, setResourceType] = useState<ResourceType | undefined>(targetType?.resourceType as ResourceType);
+  const [state, setState] = useState<{
+    targetType?: TargetType;
+    resourceType?: ResourceType;
+  }>(() => {
+    const targetType = getInitialTargetType(props.defaultValue, targetTypes);
+    return { targetType, resourceType: targetType?.resourceType as ResourceType };
+  });
 
   const searchCriteria = useMemo<ReferenceInputProps['searchCriteria']>(() => {
-    if (targetType?.type === 'profile') {
-      return { ...props.searchCriteria, _profile: targetType.value };
+    if (state.targetType?.type === 'profile') {
+      return { ...props.searchCriteria, _profile: state.targetType.value };
     }
     return props.searchCriteria;
-  }, [props.searchCriteria, targetType]);
+  }, [props.searchCriteria, state.targetType]);
 
   useEffect(() => {
     if (!targetTypes) {
@@ -60,7 +63,7 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
       return;
     }
 
-    const promises: Promise<TargetType>[] = targetTypes.map((tt) => {
+    const newTargetTypePromises: Promise<TargetType>[] = targetTypes.map((tt) => {
       if (shouldFetchResourceType(tt)) {
         return fetchResourceTypeOfProfile(medplum, tt.value)
           .then((profile) => {
@@ -89,31 +92,26 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
       }
     });
 
-    Promise.all(promises)
+    Promise.all(newTargetTypePromises)
       .then((newTargetTypes) => {
         setTargetTypes(newTargetTypes);
-        if (targetType) {
-          const needle: string = targetType.value;
+        if (state.targetType) {
+          const needle: string = state.targetType.value;
           const index = newTargetTypes.findIndex((tt) => tt.value === needle);
           if (index >= 0) {
             // orphaned targetType has been resolved
-            setTargetType(newTargetTypes[index]);
-            setResourceType(newTargetTypes[index].resourceType as ResourceType);
+            setState({
+              ...state,
+              targetType: newTargetTypes[index],
+              resourceType: newTargetTypes[index].resourceType as ResourceType,
+            });
           } else {
-            console.log(`defaultValue had unexpected resourceType: ${targetType.resourceType}`);
+            console.log(`defaultValue had unexpected resourceType: ${state.targetType.resourceType}`);
           }
         }
       })
       .catch(console.error);
-  }, [medplum, targetType, targetTypes]);
-
-  // This effect shouldn't actually be needed if setResourceType is always called when setTargetType is,
-  // but acts as a fallback incase that doesn't
-  useEffect(() => {
-    if (targetType?.resourceType !== resourceType) {
-      setResourceType(targetType?.resourceType as ResourceType);
-    }
-  }, [resourceType, targetType?.resourceType]);
+  }, [medplum, state, state.targetType, targetTypes]);
 
   const setValueHelper = useCallback(
     (item: Resource | undefined) => {
@@ -147,13 +145,15 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
         <NativeSelect
           data-autofocus={props.autoFocus}
           data-testid="reference-input-resource-type-select"
-          defaultValue={resourceType}
+          defaultValue={state.resourceType}
           autoFocus={props.autoFocus}
           onChange={(e) => {
             const newValue = e.currentTarget.value;
             const newTargetType = targetTypes.find((tt) => tt.value === newValue);
-            setTargetType(newTargetType);
-            setResourceType(newTargetType?.resourceType as ResourceType);
+            setState({
+              targetType: newTargetType,
+              resourceType: newTargetType?.resourceType as ResourceType,
+            });
           }}
           data={typeSelectOptions}
         />
@@ -162,14 +162,16 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
         <ResourceTypeInput
           autoFocus={props.autoFocus}
           testId="reference-input-resource-type-input"
-          defaultValue={resourceType}
-          onChange={setResourceType}
+          defaultValue={state.resourceType}
+          onChange={(newResourceType) => {
+            setState({ ...state, resourceType: newResourceType });
+          }}
           name={props.name + '-resourceType'}
           placeholder="Resource Type"
         />
       )}
       <ResourceInput
-        resourceType={resourceType as ResourceType}
+        resourceType={state.resourceType as ResourceType}
         name={props.name + '-id'}
         required={props.required}
         placeholder={props.placeholder}
@@ -192,7 +194,7 @@ function createTargetTypes(resourceTypesAndProfileUrls: string[] | undefined): T
 
   const results: TargetType[] = [];
   for (const value of resourceTypesAndProfileUrls) {
-    // TODO is there a less hacky way to distinguish resourceType from URLs?
+    // is there a less hacky way to distinguish resourceType from profile URLs?
     if (value.includes('/')) {
       results.push({ type: 'profile', value });
     } else {
