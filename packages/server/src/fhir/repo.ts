@@ -1,5 +1,10 @@
 import {
   AccessPolicyInteraction,
+  OperationOutcomeError,
+  Operator,
+  SearchParameterDetails,
+  SearchParameterType,
+  SearchRequest,
   allOk,
   badRequest,
   canReadResourceType,
@@ -7,7 +12,6 @@ import {
   deepEquals,
   evalFhirPath,
   evalFhirPathTyped,
-  Operator,
   forbidden,
   formatSearchQuery,
   getSearchParameterDetails,
@@ -20,14 +24,10 @@ import {
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
-  OperationOutcomeError,
   parseCriteriaAsSearchRequest,
   protectedResourceTypes,
   resolveId,
   satisfiedAccessPolicy,
-  SearchParameterDetails,
-  SearchParameterType,
-  SearchRequest,
   stringify,
   tooManyRequests,
   validateResource,
@@ -48,7 +48,7 @@ import {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Pool, PoolClient } from 'pg';
-import { applyPatch, Operation } from 'rfc6902';
+import { Operation, applyPatch } from 'rfc6902';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getRequestContext } from '../context';
@@ -61,12 +61,12 @@ import {
   CreateInteraction,
   DeleteInteraction,
   HistoryInteraction,
-  logRestfulEvent,
   PatchInteraction,
   ReadInteraction,
   SearchInteraction,
   UpdateInteraction,
   VreadInteraction,
+  logRestfulEvent,
 } from '../util/auditevent';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
@@ -74,14 +74,14 @@ import { validateResourceWithJsonSchema } from './jsonschema';
 import { AddressTable } from './lookups/address';
 import { HumanNameTable } from './lookups/humanname';
 import { LookupTable } from './lookups/lookuptable';
+import { ReferenceTable } from './lookups/reference';
 import { TokenTable } from './lookups/token';
 import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatients } from './patient';
 import { validateReferences } from './references';
-import { rewriteAttachments, RewriteMode } from './rewrite';
+import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, SelectQuery } from './sql';
-import { ReferenceTable } from './lookups/reference';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -823,7 +823,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     try {
       const resource = await this.readResourceImpl(resourceType, id);
 
-      if (!this.canWriteResourceType(resourceType)) {
+      if (!this.canWriteResourceType(resourceType) || !this.isResourceWriteable(undefined, resource)) {
         throw new OperationOutcomeError(forbidden);
       }
 
@@ -1564,10 +1564,20 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @returns True if the current user can write the specified resource type.
    */
   private isResourceWriteable(previous: Resource | undefined, current: Resource): boolean {
+    if (this.isSuperAdmin()) {
+      return true;
+    }
+
+    if (current.meta?.project !== this.context.project) {
+      return false;
+    }
+
     const matchingPolicy = satisfiedAccessPolicy(current, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
     if (!matchingPolicy) {
       return false;
-    } else if (matchingPolicy?.writeConstraint) {
+    }
+
+    if (matchingPolicy?.writeConstraint) {
       return matchingPolicy.writeConstraint.every((constraint) => {
         const invariant = evalFhirPathTyped(
           constraint.expression as string,
@@ -1579,9 +1589,9 @@ export class Repository extends BaseRepository implements FhirRepository {
         );
         return invariant.length === 1 && invariant[0].value === true;
       });
-    } else {
-      return true;
     }
+
+    return true;
   }
 
   /**
