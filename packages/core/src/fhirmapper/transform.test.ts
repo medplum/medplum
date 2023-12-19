@@ -77,7 +77,7 @@ describe('FHIR Mapper transform', () => {
     `;
 
     const input1 = [{ a2: 'abcdef' }];
-    const expected1 = [{ a2: undefined }];
+    const expected1 = [{}];
     const actual1 = structureMapTransform(parseMappingLanguage(map), input1);
     expect(actual1).toMatchObject(expected1);
 

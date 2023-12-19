@@ -222,7 +222,7 @@ class StructureMapParser {
 
     if (this.parser.peek()?.value === 'log') {
       this.parser.consume('Symbol', 'log');
-      result.logMessage = this.parser.consume('String').value;
+      result.logMessage = this.parser.consume().value;
     }
 
     if (this.parser.peek()?.value === 'where') {
@@ -268,45 +268,32 @@ class StructureMapParser {
       result.variable = this.parser.consume().value;
     }
 
+    if (this.parser.peek()?.value === 'share') {
+      this.parser.consume('Symbol', 'share');
+      result.listMode = ['share'];
+      this.parser.consume('Symbol'); // NB: Not in the spec, but used by FHIRCH maps
+    }
+
     if (
       this.parser.peek()?.value === 'first' ||
-      this.parser.peek()?.value === 'share' ||
       this.parser.peek()?.value === 'last' ||
       this.parser.peek()?.value === 'collate'
     ) {
-      result.listMode = [this.parser.consume().value as 'first' | 'share' | 'last' | 'collate'];
+      result.listMode = [this.parser.consume().value as 'first' | 'last' | 'collate'];
     }
 
     return result;
   }
 
   private parseRuleTargetTransform(result: StructureMapGroupRuleTarget): void {
-    result.transform = 'copy';
-
-    const transformFhirPath = this.parser.consumeAndParse(OperatorPrecedence.As);
-    if (transformFhirPath instanceof SymbolAtom) {
-      this.parseRuleTargetSymbol(result, transformFhirPath);
-    } else if (transformFhirPath instanceof FunctionAtom) {
-      this.parseRuleTargetFunction(result, transformFhirPath);
-    } else if (transformFhirPath instanceof LiteralAtom) {
-      this.parseRuleTargetLiteral(result, transformFhirPath);
+    const transformAtom = this.parser.consumeAndParse(OperatorPrecedence.As);
+    if (transformAtom instanceof FunctionAtom) {
+      result.transform = transformAtom.name as 'append' | 'truncate';
+      result.parameter = transformAtom.args?.map(atomToParameter);
     } else {
-      result.parameter = [{ valueId: transformFhirPath.toString() }];
+      result.transform = 'copy';
+      result.parameter = [atomToParameter(transformAtom)];
     }
-  }
-
-  private parseRuleTargetSymbol(result: StructureMapGroupRuleTarget, literalAtom: SymbolAtom): void {
-    result.parameter = [{ valueId: literalAtom.name }];
-  }
-
-  private parseRuleTargetFunction(result: StructureMapGroupRuleTarget, functionAtom: FunctionAtom): void {
-    // https://hl7.org/fhir/r4/valueset-map-transform.html
-    result.transform = functionAtom.name as 'copy';
-    result.parameter = functionAtom.args?.map(atomToParameter);
-  }
-
-  private parseRuleTargetLiteral(result: StructureMapGroupRuleTarget, literalAtom: LiteralAtom): void {
-    result.parameter = [literalToParameter(literalAtom)];
   }
 
   private parseRuleContext(): string {
@@ -343,7 +330,13 @@ function atomToParameter(atom: Atom): StructureMapGroupRuleTargetParameter {
   if (atom instanceof LiteralAtom) {
     return literalToParameter(atom);
   }
-  throw new Error('Unexpected atom: ' + atom.constructor.name);
+
+  // Unclear how this should be represented in a StructureMap.
+  // The situation is that the target is a complex FHIRPath expression, such as a math operation.
+  // "value[x]" is choice-of-type, but the only options are:
+  // valueId, valueString, valueBoolean, valueInteger, valueDecimal
+  // Ideally there would be "valueExpression".
+  return { valueId: atom.toString() };
 }
 
 function literalToParameter(literalAtom: LiteralAtom): StructureMapGroupRuleTargetParameter {
