@@ -1,25 +1,32 @@
-import { ActionIcon, Group, Stack } from '@mantine/core';
+import { ActionIcon, Button, Group, Stack, createStyles } from '@mantine/core';
 import {
   InternalSchemaElement,
-  InternalTypeSchema,
-  SliceDiscriminator,
-  SlicingRules,
-  TypedValue,
-  arrayify,
-  getElementDefinitionFromElements,
-  getTypedPropertyValueWithSchema,
+  getPathDisplayName,
+  getPropertyDisplayName,
   isEmpty,
-  matchDiscriminant,
   tryGetProfile,
 } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
 import { MouseEvent, useEffect, useState } from 'react';
-import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
-import { SliceInput } from '../SliceInput/SliceInput';
-import { SupportedSliceDefinition, isSupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
+import { ElementDefinitionTypeInput, ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { killEvent } from '../utils/dom';
+import {
+  SupportedSliceDefinition,
+  assignValuesIntoSlices,
+  isSupportedSliceDefinition,
+} from './ResourceArrayInput.utils';
+import { FormSection } from '../FormSection/FormSection';
+import { ElementsInput } from '../ElementsInput/ElementsInput';
+
+const useStyles = createStyles((theme) => ({
+  indented: {
+    marginTop: '0.5rem',
+    borderLeft: `3px solid ${theme.colors.gray[4]}`,
+    padding: '0.5rem 0 0.5rem 0.5rem',
+  },
+}));
 
 export interface ResourceArrayInputProps {
   property: InternalSchemaElement;
@@ -32,90 +39,6 @@ export interface ResourceArrayInputProps {
   hideNonSliceValues?: boolean;
 }
 
-function getValueSliceName(
-  value: any,
-  slices: SupportedSliceDefinition[],
-  discriminators: SliceDiscriminator[]
-): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  for (const slice of slices) {
-    let typedValue: TypedValue;
-    if (slice.typeSchema) {
-      typedValue = { type: slice.typeSchema.name, value };
-    } else {
-      typedValue = { type: slice.type[0].code, value };
-    }
-
-    if (
-      discriminators.every((discriminator) => {
-        let nestedProp: TypedValue | TypedValue[] | undefined;
-        let elements: InternalTypeSchema['elements'] = slice.elements;
-
-        if (!isEmpty(slice.elements)) {
-          const ed = getElementDefinitionFromElements(slice.elements, discriminator.path);
-          if (ed) {
-            nestedProp = getTypedPropertyValueWithSchema(typedValue.value, discriminator.path, ed);
-          }
-        }
-
-        if (!nestedProp && slice.typeSchema && !isEmpty(slice.typeSchema?.elements)) {
-          elements = slice.typeSchema.elements;
-          const ed = getElementDefinitionFromElements(slice.typeSchema.elements, discriminator.path);
-          if (ed) {
-            nestedProp = getTypedPropertyValueWithSchema(typedValue.value, discriminator.path, ed);
-          }
-        }
-
-        if (!nestedProp) {
-          return undefined;
-        }
-
-        return arrayify(nestedProp)?.some((v: any) => matchDiscriminant(v, discriminator, slice, elements));
-      })
-    ) {
-      return slice.name;
-    }
-  }
-  return undefined;
-}
-
-function assignValuesIntoSlices(
-  values: any[],
-  slices: SupportedSliceDefinition[],
-  slicing: SlicingRules | undefined
-): any[][] {
-  if (!slicing || slicing.slices.length === 0) {
-    return [values];
-  }
-
-  // store values in an array of arrays: one for each slice plus another for non-sliced values
-  const slicedValues: any[][] = new Array(slices.length + 1);
-  for (let i = 0; i < slicedValues.length; i++) {
-    slicedValues[i] = [];
-  }
-
-  for (const value of values) {
-    const sliceName = getValueSliceName(value, slices, slicing.discriminator);
-    let sliceIndex = sliceName ? slices.findIndex((slice) => slice.name === sliceName) : -1;
-    if (sliceIndex === -1) {
-      sliceIndex = slices.length; // values not matched to a slice go in the last entry for non-slice
-    }
-    slicedValues[sliceIndex].push(value);
-  }
-
-  // for slices without existing values, add a placeholder empty value
-  for (let i = 0; i < slices.length; i++) {
-    if (slicedValues[i].length === 0) {
-      slicedValues[i].push(undefined);
-    }
-  }
-
-  return slicedValues;
-}
-
 export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element {
   const { property } = props;
   const medplum = useMedplum();
@@ -124,6 +47,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
   // props.defaultValue should NOT be used after this; prefer the defaultValue state
   const [defaultValue] = useState<any[]>(() => (Array.isArray(props.defaultValue) ? props.defaultValue : []));
   const [slicedValues, setSlicedValues] = useState<any[][]>([[]]);
+  const { classes } = useStyles();
 
   const propertyTypeCode = property.type[0]?.code;
   useEffect(() => {
@@ -203,9 +127,10 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
 
   // Hide non-sliced values when handling sliced extensions
   const showNonSliceValues = !(props.hideNonSliceValues ?? (propertyTypeCode === 'Extension' && slices.length > 0));
+  const propertyDisplayName = getPathDisplayName(property.path);
 
   return (
-    <Stack style={props.indent ? { marginTop: '1rem', marginLeft: '1rem' } : undefined}>
+    <Stack className={props.indent ? classes.indented : undefined}>
       {slices.map((slice, sliceIndex) => {
         return (
           <SliceInput
@@ -239,43 +164,180 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
                 outcome={props.outcome}
               />
             </div>
-            <div>
-              <ActionIcon
-                title="Remove"
-                size="sm"
-                data-testid={`nonsliced-remove-${valueIndex}`}
-                onClick={(e: MouseEvent) => {
-                  killEvent(e);
-                  const newNonSliceValues = [...nonSliceValues];
-                  newNonSliceValues.splice(valueIndex, 1);
-                  setValuesWrapper(newNonSliceValues, nonSliceIndex);
-                }}
-              >
-                <IconCircleMinus />
-              </ActionIcon>
-            </div>
-          </Group>
-        ))}
-      {showNonSliceValues && slicedValues.flat().length < property.max && (
-        <Group noWrap style={{ justifyContent: 'flex-end' }}>
-          <div>
-            <ActionIcon
-              title="Add"
-              size="sm"
-              color="green"
-              data-testid={`nonsliced-add`}
+            <RemoveButton
+              propertyDisplayName={propertyDisplayName}
+              testId={`nonsliced-remove-${valueIndex}`}
               onClick={(e: MouseEvent) => {
                 killEvent(e);
                 const newNonSliceValues = [...nonSliceValues];
-                newNonSliceValues.push(undefined);
+                newNonSliceValues.splice(valueIndex, 1);
                 setValuesWrapper(newNonSliceValues, nonSliceIndex);
               }}
-            >
-              <IconCirclePlus />
-            </ActionIcon>
-          </div>
+            />
+          </Group>
+        ))}
+      {showNonSliceValues && slicedValues.flat().length < property.max && (
+        <Group noWrap style={{ justifyContent: 'flex-start' }}>
+          <AddButton
+            propertyDisplayName={propertyDisplayName}
+            onClick={(e: MouseEvent) => {
+              killEvent(e);
+              const newNonSliceValues = [...nonSliceValues];
+              newNonSliceValues.push(undefined);
+              setValuesWrapper(newNonSliceValues, nonSliceIndex);
+            }}
+            testId="nonsliced-add"
+          />
         </Group>
       )}
     </Stack>
+  );
+}
+
+type SliceInputProps = {
+  slice: SupportedSliceDefinition;
+  property: InternalSchemaElement;
+  defaultValue: any[];
+  onChange: (newValue: any[]) => void;
+  outcome?: OperationOutcome;
+  testId?: string;
+};
+function SliceInput(props: SliceInputProps): JSX.Element | null {
+  const { slice, property } = props;
+  const [values, setValues] = useState<any[]>(() => {
+    return props.defaultValue.map((v) => v ?? {});
+  });
+  const { classes } = useStyles();
+
+  function setValuesWrapper(newValues: any[]): void {
+    setValues(newValues);
+    if (props.onChange) {
+      props.onChange(newValues);
+    }
+  }
+
+  const required = slice.min > 0;
+
+  // this is a bit of a hack targeted at nested extensions; indentation would ideally be controlled elsewhere
+  // e.g. USCorePatientProfile -> USCoreEthnicityExtension -> {ombCategory, detailed, text}
+  const indentedStack = isEmpty(slice.elements);
+  const propertyDisplayName = getPropertyDisplayName(slice.name);
+  return (
+    <FormSection
+      title={propertyDisplayName}
+      description={slice.definition}
+      withAsterisk={required}
+      fhirPath={`${property.path}:${slice.name}`}
+      testId={props.testId}
+    >
+      <Stack className={indentedStack ? classes.indented : undefined}>
+        {values.map((value, valueIndex) => {
+          return (
+            <Group key={`${valueIndex}-${values.length}`} noWrap>
+              <div style={{ flexGrow: 1 }}>
+                <Stack>
+                  {!isEmpty(slice.elements) ? (
+                    <ElementsInput
+                      type={slice.type[0].code}
+                      elements={slice.elements}
+                      defaultValue={value}
+                      outcome={props.outcome}
+                      onChange={(newValue) => {
+                        const newValues = [...values];
+                        newValues[valueIndex] = newValue;
+                        setValuesWrapper(newValues);
+                      }}
+                      testId={props.testId && `${props.testId}-elements-${valueIndex}`}
+                    />
+                  ) : (
+                    <ElementDefinitionTypeInput
+                      elementDefinitionType={slice.type[0]}
+                      name={slice.name}
+                      defaultValue={value}
+                      onChange={(newValue) => {
+                        const newValues = [...values];
+                        newValues[valueIndex] = newValue;
+                        setValuesWrapper(newValues);
+                      }}
+                      outcome={undefined}
+                      min={slice.min}
+                      max={slice.max}
+                      binding={undefined}
+                      path={slice.path}
+                    />
+                  )}
+                </Stack>
+              </div>
+              {values.length > slice.min && (
+                <RemoveButton
+                  propertyDisplayName={propertyDisplayName}
+                  testId={props.testId && `${props.testId}-remove-${valueIndex}`}
+                  onClick={(e: React.MouseEvent) => {
+                    killEvent(e);
+                    const newValues = [...values];
+                    newValues.splice(valueIndex, 1);
+                    setValuesWrapper(newValues);
+                  }}
+                />
+              )}
+            </Group>
+          );
+        })}
+        {values.length < slice.max && (
+          <Group noWrap style={{ justifyContent: 'flex-start' }}>
+            <AddButton
+              propertyDisplayName={propertyDisplayName}
+              onClick={(e: React.MouseEvent) => {
+                killEvent(e);
+                const newValues = [...values, undefined];
+                setValuesWrapper(newValues);
+              }}
+              testId={props.testId && `${props.testId}-add`}
+            />
+          </Group>
+        )}
+      </Stack>
+    </FormSection>
+  );
+}
+
+type ButtonProps = {
+  propertyDisplayName?: string;
+  onClick: React.MouseEventHandler;
+  testId?: string;
+};
+
+function AddButton({ propertyDisplayName, onClick, testId }: ButtonProps): JSX.Element {
+  const text = propertyDisplayName ? `Add ${propertyDisplayName}` : 'Add';
+
+  return propertyDisplayName ? (
+    <Button
+      title={text}
+      size="sm"
+      color="green.6"
+      variant="subtle"
+      data-testid={testId}
+      leftIcon={<IconCirclePlus size="1.25rem" />}
+      onClick={onClick}
+    >
+      {text}
+    </Button>
+  ) : (
+    <ActionIcon title={text} color="green.6" data-testid={testId} onClick={onClick}>
+      <IconCirclePlus size="1.25rem" />
+    </ActionIcon>
+  );
+}
+
+function RemoveButton({ propertyDisplayName, onClick, testId }: ButtonProps): JSX.Element {
+  return (
+    <ActionIcon
+      title={propertyDisplayName ? `Remove ${propertyDisplayName}` : 'Remove'}
+      color="red.5"
+      data-testid={testId}
+      onClick={onClick}
+    >
+      <IconCircleMinus size="1.25rem" />
+    </ActionIcon>
   );
 }

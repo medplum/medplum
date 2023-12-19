@@ -1,0 +1,105 @@
+import {
+  SliceDefinition,
+  SliceDiscriminator,
+  TypedValue,
+  InternalTypeSchema,
+  isEmpty,
+  getElementDefinitionFromElements,
+  getTypedPropertyValueWithSchema,
+  arrayify,
+  matchDiscriminant,
+  SlicingRules,
+} from '@medplum/core';
+
+function getValueSliceName(
+  value: any,
+  slices: SupportedSliceDefinition[],
+  discriminators: SliceDiscriminator[]
+): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  for (const slice of slices) {
+    let typedValue: TypedValue;
+    if (slice.typeSchema) {
+      typedValue = { type: slice.typeSchema.name, value };
+    } else {
+      typedValue = { type: slice.type[0].code, value };
+    }
+
+    if (
+      discriminators.every((discriminator) => {
+        let nestedProp: TypedValue | TypedValue[] | undefined;
+        let elements: InternalTypeSchema['elements'] = slice.elements;
+
+        if (!isEmpty(slice.elements)) {
+          const ed = getElementDefinitionFromElements(slice.elements, discriminator.path);
+          if (ed) {
+            nestedProp = getTypedPropertyValueWithSchema(typedValue.value, discriminator.path, ed);
+          }
+        }
+
+        if (!nestedProp && slice.typeSchema && !isEmpty(slice.typeSchema?.elements)) {
+          elements = slice.typeSchema.elements;
+          const ed = getElementDefinitionFromElements(slice.typeSchema.elements, discriminator.path);
+          if (ed) {
+            nestedProp = getTypedPropertyValueWithSchema(typedValue.value, discriminator.path, ed);
+          }
+        }
+
+        if (!nestedProp) {
+          return undefined;
+        }
+
+        return arrayify(nestedProp)?.some((v: any) => matchDiscriminant(v, discriminator, slice, elements));
+      })
+    ) {
+      return slice.name;
+    }
+  }
+  return undefined;
+}
+
+export function assignValuesIntoSlices(
+  values: any[],
+  slices: SupportedSliceDefinition[],
+  slicing: SlicingRules | undefined
+): any[][] {
+  if (!slicing || slicing.slices.length === 0) {
+    return [values];
+  }
+
+  // store values in an array of arrays: one for each slice plus another for non-sliced values
+  const slicedValues: any[][] = new Array(slices.length + 1);
+  for (let i = 0; i < slicedValues.length; i++) {
+    slicedValues[i] = [];
+  }
+
+  for (const value of values) {
+    const sliceName = getValueSliceName(value, slices, slicing.discriminator);
+    let sliceIndex = sliceName ? slices.findIndex((slice) => slice.name === sliceName) : -1;
+    if (sliceIndex === -1) {
+      sliceIndex = slices.length; // values not matched to a slice go in the last entry for non-slice
+    }
+    slicedValues[sliceIndex].push(value);
+  }
+
+  // for slices without existing values, add a placeholder empty value
+  for (let i = 0; i < slices.length; i++) {
+    if (slicedValues[i].length === 0) {
+      slicedValues[i].push(undefined);
+    }
+  }
+
+  return slicedValues;
+}
+
+export type SupportedSliceDefinition = SliceDefinition & {
+  type: NonNullable<SliceDefinition['type']>;
+  typeSchema?: InternalTypeSchema;
+};
+
+export function isSupportedSliceDefinition(slice: SliceDefinition): slice is SupportedSliceDefinition {
+  return slice.type !== undefined && slice.type.length > 0;
+}
