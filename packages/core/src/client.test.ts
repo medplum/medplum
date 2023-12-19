@@ -1,5 +1,4 @@
 import { Bot, Bundle, Identifier, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
-import { MockAsyncClientStorage } from '@medplum/mock';
 import { randomUUID, webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -17,6 +16,7 @@ import {
 import { mockFetch } from './client-test-utils';
 import { ContentType } from './contenttype';
 import { OperationOutcomeError, notFound, unauthorized } from './outcomes';
+import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
 import { ProfileResource, createReference } from './utils';
 

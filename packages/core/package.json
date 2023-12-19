@@ -50,7 +50,7 @@
   "scripts": {
     "api-documenter": "api-documenter markdown --input-folder ./dist/api/ --output-folder ./dist/docs/",
     "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor && npm run api-documenter",
+    "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor && npm run api-documenter",
     "clean": "rimraf dist",
     "test": "jest"
   },
