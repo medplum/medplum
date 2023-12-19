@@ -43,9 +43,26 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
       props.onChange(newValue);
     }
   }
+
+  const orderedElements = useMemo<[string, InternalSchemaElement][]>(() => {
+    const result = Object.entries(elements);
+    result.sort((a, b) => {
+      const aElem = a[1];
+      const bElem = b[1];
+
+      // required elements go first
+      if (aElem.min > 0 || bElem.min > 0) {
+        return bElem.min - aElem.min;
+      }
+
+      return 0;
+    });
+
+    return result;
+  }, [elements]);
   return (
     <Stack style={{ flexGrow: 1 }} data-testid={props.testId}>
-      {Object.entries(elements).map(([key, element]) => {
+      {orderedElements.map(([key, element]) => {
         if (!element.type) {
           return null;
         }
