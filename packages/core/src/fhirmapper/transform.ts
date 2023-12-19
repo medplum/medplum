@@ -12,24 +12,42 @@ import { getTypedPropertyValue, toJsBoolean, toTypedValue } from '../fhirpath/ut
 import { TypedValue } from '../types';
 
 interface TransformContext {
+  loader?: (url: string) => StructureMap[];
   parent?: TransformContext;
   variables?: Record<string, any>;
 }
 
-export function structureMapTransform(structureMap: StructureMap, input: any[]): any[] {
-  return evalStructureMap({}, structureMap, input);
+export function structureMapTransform(
+  structureMap: StructureMap,
+  input: any[],
+  loader?: (url: string) => StructureMap[]
+): any[] {
+  return evalStructureMap({ loader }, structureMap, input);
 }
 
 function evalStructureMap(ctx: TransformContext, structureMap: StructureMap, input: any[]): any[] {
-  const groups = structureMap.group as StructureMapGroup[];
+  evalImports(ctx, structureMap);
+  hoistGroups(ctx, structureMap);
+  return evalGroup(ctx, (structureMap.group as StructureMapGroup[])[0], input);
+}
 
-  // Hoist groups by name
-  for (const group of groups) {
-    setVariable(ctx, group.name as string, group);
+function evalImports(ctx: TransformContext, structureMap: StructureMap): void {
+  if (ctx.loader && structureMap.import) {
+    for (const url of structureMap.import) {
+      const importedMaps = ctx.loader(url as string);
+      for (const importedMap of importedMaps) {
+        hoistGroups(ctx, importedMap);
+      }
+    }
   }
+}
 
-  // Only execute the first group - other groups can be called by name
-  return evalGroup(ctx, groups[0], input);
+function hoistGroups(ctx: TransformContext, structureMap: StructureMap): void {
+  if (structureMap.group) {
+    for (const group of structureMap.group) {
+      setVariable(ctx, group.name as string, group);
+    }
+  }
 }
 
 function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: any[]): any[] {
@@ -153,8 +171,11 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
   let targetValue;
 
   if (!target.transform) {
-    targetValue = {};
-    safeAssign(targetContext, target.element as string, targetValue);
+    targetValue = targetContext[target.element as string];
+    if (targetValue === undefined) {
+      targetValue = {};
+      safeAssign(targetContext, target.element as string, targetValue);
+    }
   } else {
     switch (target.transform) {
       case 'copy':
