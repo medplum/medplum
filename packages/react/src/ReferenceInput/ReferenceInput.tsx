@@ -40,20 +40,16 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   const medplum = useMedplum();
   const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
   const [targetTypes, setTargetTypes] = useState<TargetType[] | undefined>(() => createTargetTypes(props.targetTypes));
-  const [state, setState] = useState<{
-    targetType?: TargetType;
-    resourceType?: ResourceType;
-  }>(() => {
-    const targetType = getInitialTargetType(props.defaultValue, targetTypes);
-    return { targetType, resourceType: targetType?.resourceType as ResourceType };
-  });
+  const [targetType, setTargetType] = useState<TargetType | undefined>(() =>
+    getInitialTargetType(props.defaultValue, targetTypes)
+  );
 
   const searchCriteria = useMemo<ReferenceInputProps['searchCriteria']>(() => {
-    if (state.targetType?.type === 'profile') {
-      return { ...props.searchCriteria, _profile: state.targetType.value };
+    if (targetType?.type === 'profile') {
+      return { ...props.searchCriteria, _profile: targetType.value };
     }
     return props.searchCriteria;
-  }, [props.searchCriteria, state.targetType]);
+  }, [props.searchCriteria, targetType]);
 
   useEffect(() => {
     if (!targetTypes) {
@@ -96,23 +92,19 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
     Promise.all(newTargetTypePromises)
       .then((newTargetTypes) => {
         setTargetTypes(newTargetTypes);
-        if (state.targetType) {
-          const needle: string = state.targetType.value;
+        if (targetType) {
+          const needle: string = targetType.value;
           const index = newTargetTypes.findIndex((tt) => tt.value === needle);
           if (index >= 0) {
             // orphaned targetType has been resolved
-            setState({
-              ...state,
-              targetType: newTargetTypes[index],
-              resourceType: newTargetTypes[index].resourceType as ResourceType,
-            });
+            setTargetType(newTargetTypes[index]);
           } else {
-            console.log(`defaultValue had unexpected resourceType: ${state.targetType.resourceType}`);
+            console.log(`defaultValue had unexpected resourceType: ${targetType.resourceType}`);
           }
         }
       })
       .catch(console.error);
-  }, [medplum, state, state.targetType, targetTypes]);
+  }, [medplum, targetType, targetTypes]);
 
   const setValueHelper = useCallback(
     (item: Resource | undefined) => {
@@ -143,15 +135,12 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
         <NativeSelect
           data-autofocus={props.autoFocus}
           data-testid="reference-input-resource-type-select"
-          defaultValue={state.resourceType}
+          defaultValue={targetType?.resourceType}
           autoFocus={props.autoFocus}
           onChange={(e) => {
             const newValue = e.currentTarget.value;
             const newTargetType = targetTypes.find((tt) => tt.value === newValue);
-            setState({
-              targetType: newTargetType,
-              resourceType: newTargetType?.resourceType as ResourceType,
-            });
+            setTargetType(newTargetType);
           }}
           data={typeSelectOptions}
         />
@@ -160,16 +149,20 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
         <ResourceTypeInput
           autoFocus={props.autoFocus}
           testId="reference-input-resource-type-input"
-          defaultValue={state.resourceType}
+          defaultValue={targetType?.resourceType as ResourceType}
           onChange={(newResourceType) => {
-            setState({ ...state, resourceType: newResourceType });
+            if (newResourceType) {
+              setTargetType({ type: 'resourceType', value: newResourceType, resourceType: newResourceType });
+            } else {
+              setTargetType(undefined);
+            }
           }}
           name={props.name + '-resourceType'}
           placeholder="Resource Type"
         />
       )}
       <ResourceInput
-        resourceType={state.resourceType as ResourceType}
+        resourceType={targetType?.resourceType as ResourceType}
         name={props.name + '-id'}
         required={props.required}
         placeholder={props.placeholder}
@@ -215,13 +208,13 @@ function getInitialTargetType(
 
     // An "orphaned" TargetType is created when defaultValue references a resourceType
     // that is not yet represented in targetTypes due to profile URL resolution to resource type
-    // that has yet to occur
-    const orphan: TargetType = {
+    // that has yet to occur. An orphan can also occur if a defaultValue is provided
+    // but targetTypes is not.
+    return {
       type: 'resourceType',
       value: defaultValueResourceType,
       resourceType: defaultValueResourceType,
     };
-    return orphan;
   }
 
   if (targetTypes && targetTypes.length > 0) {
