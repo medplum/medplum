@@ -36,6 +36,7 @@ type ResourceTypeTargetType = BaseTargetType & {
 type TargetType = ResourceTypeTargetType | ProfileTargetType;
 
 export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
+  const { onChange } = props;
   const medplum = useMedplum();
   const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
   const [targetTypes, setTargetTypes] = useState<TargetType[] | undefined>(() => createTargetTypes(props.targetTypes));
@@ -117,14 +118,11 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
     (item: Resource | undefined) => {
       const newValue = item ? createReference(item) : undefined;
       setValue(newValue);
-      if (props.onChange) {
-        props.onChange(newValue);
+      if (onChange) {
+        onChange(newValue);
       }
     },
-    // exhaustive deps wants this to be [props] instead of [props.onChange], but it's
-    // unclear why.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [props.onChange]
+    [onChange]
   );
 
   const typeSelectOptions = useMemo(() => {
