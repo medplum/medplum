@@ -67,10 +67,10 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
             const newTargetType = { ...tt };
 
             if (!profile) {
-              console.debug(`StructureDefinition for ${tt.value} not found`);
+              console.error(`StructureDefinition for ${tt.value} not found`);
               newTargetType.error = 'StructureDefinition not found';
             } else if (!profile.type || isEmpty(profile.type)) {
-              console.debug(`resourceType for ${tt.value} unexpectedly missing`);
+              console.error(`resourceType for ${tt.value} StructureDefinition missing`);
               newTargetType.error = 'resourceType unavailable';
             } else {
               newTargetType.resourceType = profile.type satisfies string;
@@ -241,7 +241,6 @@ async function fetchResourceTypeOfProfile(
     return { type: profile.type, name: profile.name, title: profile.title };
   }
 
-  // TODO{profiles}: centralize _sort for profiles
   const query = `{
       StructureDefinitionList(url: "${profileUrl}", _sort: "_lastUpdated", _count: 1) {
         type,
