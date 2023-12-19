@@ -24,25 +24,25 @@ export function ProfileCard(props: ProfileCardProps): JSX.Element {
       <p>{props.title}</p>
       <div className={styles.profileLinks}>
         {props.linkedInUrl && (
-          <a href={props.linkedInUrl} target="_blank" className={styles.profileLink}>
+          <a href={props.linkedInUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
             <LinkedInSvg />
             <div>LinkedIn</div>
           </a>
         )}
         {props.githubUrl && (
-          <a href={props.githubUrl} target="_blank" className={styles.profileLink}>
+          <a href={props.githubUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
             <GitHubSvg />
             <div>GitHub</div>
           </a>
         )}
         {props.webUrl && (
-          <a href={props.webUrl} target="_blank" className={styles.profileLink}>
+          <a href={props.webUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
             <LinkSvg />
             <div>Web</div>
           </a>
         )}
         {props.youtubeUrl && (
-          <a href={props.youtubeUrl} target="_blank" className={styles.profileLink}>
+          <a href={props.youtubeUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
             <YouTubeSvg />
             <div>YouTube</div>
           </a>
