@@ -2,7 +2,7 @@ import { Group, TextInput } from '@mantine/core';
 import { Identifier } from '@medplum/fhirtypes';
 import { useContext, useMemo, useState } from 'react';
 import { getErrorsForInput } from '../utils/outcomes';
-import { BackboneElementContext } from '../BackboneElementInput/BackbonElementInput.utils';
+import { BackboneElementContext } from '../BackboneElementInput/BackboneElementInput.utils';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export type IdentifierInputProps = ComplexTypeInputProps<Identifier>;

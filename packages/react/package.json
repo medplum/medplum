@@ -54,7 +54,7 @@
   ],
   "scripts": {
     "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
+    "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist storybook-static",
     "dev": "storybook dev -p 6006",
     "storybook": "storybook build",

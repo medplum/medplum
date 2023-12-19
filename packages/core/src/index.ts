@@ -14,6 +14,7 @@ export * from './fhircast';
 export * from './fhirlexer/parse';
 export * from './fhirlexer/tokenize';
 export * from './fhirmapper/parse';
+export * from './fhirmapper/transform';
 export * from './fhirpath/atoms';
 export * from './fhirpath/parse';
 export * from './fhirpath/utils';

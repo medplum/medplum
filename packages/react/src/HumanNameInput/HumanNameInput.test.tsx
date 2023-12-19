@@ -4,7 +4,15 @@ import { HumanNameInput } from './HumanNameInput';
 
 describe('HumanNameInput', () => {
   test('Renders', () => {
-    render(<HumanNameInput name="test" defaultValue={{ given: ['Alice'], family: 'Smith' }} />);
+    render(
+      <HumanNameInput
+        name="test"
+        path="test"
+        onChange={jest.fn()}
+        outcome={undefined}
+        defaultValue={{ given: ['Alice'], family: 'Smith' }}
+      />
+    );
 
     const given = screen.getByPlaceholderText('Given') as HTMLInputElement;
     expect(given).toBeDefined();
@@ -18,7 +26,15 @@ describe('HumanNameInput', () => {
   test('Change events', async () => {
     let lastValue = undefined;
 
-    render(<HumanNameInput name="test" defaultValue={{}} onChange={(value) => (lastValue = value)} />);
+    render(
+      <HumanNameInput
+        name="test"
+        path="test"
+        outcome={undefined}
+        defaultValue={{}}
+        onChange={(value) => (lastValue = value)}
+      />
+    );
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('use'), {
@@ -65,6 +81,8 @@ describe('HumanNameInput', () => {
     render(
       <HumanNameInput
         name="test"
+        path="test"
+        outcome={undefined}
         defaultValue={{
           use: 'official',
           prefix: ['Mr'],

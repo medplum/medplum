@@ -2,7 +2,7 @@ import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { ContactPoint } from '@medplum/fhirtypes';
 import { useContext, useMemo, useRef, useState } from 'react';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
-import { BackboneElementContext } from '../BackboneElementInput/BackbonElementInput.utils';
+import { BackboneElementContext } from '../BackboneElementInput/BackboneElementInput.utils';
 import { getErrorsForInput } from '../utils/outcomes';
 
 export type ContactPointInputProps = ComplexTypeInputProps<ContactPoint> & {

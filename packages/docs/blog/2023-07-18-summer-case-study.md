@@ -6,7 +6,7 @@ authors:
   title: Medplum Core Team
   url: https://github.com/reshmakh
   image_url: https://github.com/reshmakh.png
-tags: [pediatrics, auth, case-study]
+tags: [pediatrics, auth, case-study, ai]
 ---
 
 # Summer Health: 24/7 Pediatrician Access
@@ -60,3 +60,4 @@ The following Medplum features were used to build this product.
 
 - [Summer Health](https://www.summerhealth.com/) Website
 - [Analyze FHIR in Bigquery](https://cloud.google.com/architecture/analyzing-fhir-data-in-bigquery)
+- [Open AI Blog features Summer Health](https://openai.com/customer-stories/summer-health)

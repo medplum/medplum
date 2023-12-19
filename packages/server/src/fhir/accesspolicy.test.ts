@@ -3,6 +3,7 @@ import {
   getReferenceString,
   LOINC,
   normalizeErrorString,
+  normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
@@ -1899,7 +1900,65 @@ describe('AccessPolicy', () => {
       const repo = await getRepoForLogin(login, updatedMembership, true, true, true);
 
       // Try to search for StructureDefinitions, should succeed
-      const bundle = await repo.search<StructureDefinition>({ resourceType: 'StructureDefinition' });
-      expect(bundle).toBeDefined();
+      const bundle1 = await repo.search<StructureDefinition>({ resourceType: 'StructureDefinition' });
+      expect(bundle1).toBeDefined();
+
+      const sd = bundle1.entry?.[0]?.resource as StructureDefinition;
+      expect(sd.resourceType).toEqual('StructureDefinition');
+
+      // Try to update StructureDefinition, should fail
+      try {
+        await repo.updateResource<StructureDefinition>({ ...sd, url: randomUUID() });
+        throw new Error('Expected error');
+      } catch (err) {
+        const outcome = normalizeOperationOutcome(err);
+        expect(outcome.issue?.[0]?.code).toEqual('forbidden');
+      }
+
+      // Try to delete StructureDefinition, should fail
+      try {
+        await repo.deleteResource('StructureDefinition', sd.id as string);
+        throw new Error('Expected error');
+      } catch (err) {
+        const outcome = normalizeOperationOutcome(err);
+        expect(outcome.issue?.[0]?.code).toEqual('forbidden');
+      }
+    }));
+
+  test('Shared project read only', () =>
+    withTestContext(async () => {
+      const repo = new Repository({
+        author: { reference: 'Practitioner/' + randomUUID() },
+        project: randomUUID(),
+        projectAdmin: true,
+        strictMode: true,
+        extendedMode: true,
+        checkReferencesOnWrite: true,
+      });
+
+      // Try to search for StructureDefinitions, should succeed
+      const bundle1 = await repo.search<StructureDefinition>({ resourceType: 'StructureDefinition' });
+      expect(bundle1).toBeDefined();
+
+      const sd = bundle1.entry?.[0]?.resource as StructureDefinition;
+      expect(sd.resourceType).toEqual('StructureDefinition');
+
+      // Try to update StructureDefinition, should fail
+      try {
+        await repo.updateResource<StructureDefinition>({ ...sd, url: randomUUID() });
+        throw new Error('Expected error');
+      } catch (err) {
+        const outcome = normalizeOperationOutcome(err);
+        expect(outcome.issue?.[0]?.code).toEqual('forbidden');
+      }
+
+      // Try to delete StructureDefinition, should fail
+      try {
+        await repo.deleteResource('StructureDefinition', sd.id as string);
+        throw new Error('Expected error');
+      } catch (err) {
+        const outcome = normalizeOperationOutcome(err);
+        expect(outcome.issue?.[0]?.code).toEqual('forbidden');
+      }
     }));
 });

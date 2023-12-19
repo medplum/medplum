@@ -22,8 +22,8 @@ describe('FHIR Mapper transform', () => {
       }
     `;
 
-    const input = { a: 'a' };
-    const expected = { a: 'a' };
+    const input = [{ a: 'a' }];
+    const expected = [{ a: 'a' }];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toMatchObject(expected);
   });
@@ -40,8 +40,8 @@ describe('FHIR Mapper transform', () => {
       }
     `;
 
-    const input = { a1: 'a' };
-    const expected = { a2: 'a' };
+    const input = [{ a1: 'a' }];
+    const expected = [{ a2: 'a' }];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toMatchObject(expected);
   });
@@ -58,8 +58,8 @@ describe('FHIR Mapper transform', () => {
       }
     `;
 
-    const input = { a2: 'abcdef' };
-    const expected = { a2: 'abc' };
+    const input = [{ a2: 'abcdef' }];
+    const expected = [{ a2: 'abc' }];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toMatchObject(expected);
   });
@@ -76,13 +76,13 @@ describe('FHIR Mapper transform', () => {
       }
     `;
 
-    const input1 = { a2: 'abcdef' };
-    const expected1 = { a2: undefined };
+    const input1 = [{ a2: 'abcdef' }];
+    const expected1 = [{}];
     const actual1 = structureMapTransform(parseMappingLanguage(map), input1);
     expect(actual1).toMatchObject(expected1);
 
-    const input2 = { a2: 'abc' };
-    const expected2 = { a2: 'abc' };
+    const input2 = [{ a2: 'abc' }];
+    const expected2 = [{ a2: 'abc' }];
     const actual2 = structureMapTransform(parseMappingLanguage(map), input2);
     expect(actual2).toMatchObject(expected2);
   });
@@ -99,7 +99,7 @@ describe('FHIR Mapper transform', () => {
       }
     `;
 
-    const input1 = { a2: 'abcdef' };
+    const input1 = [{ a2: 'abcdef' }];
     try {
       structureMapTransform(parseMappingLanguage(map), input1);
       throw new Error('Expected error');
@@ -107,8 +107,8 @@ describe('FHIR Mapper transform', () => {
       expect(err.message).toBe('Check failed: a2.length() <= 3');
     }
 
-    const input2 = { a2: 'abc' };
-    const expected2 = { a2: 'abc' };
+    const input2 = [{ a2: 'abc' }];
+    const expected2 = [{ a2: 'abc' }];
     const actual2 = structureMapTransform(parseMappingLanguage(map), input2);
     expect(actual2).toMatchObject(expected2);
   });
@@ -125,8 +125,8 @@ describe('FHIR Mapper transform', () => {
       }
     `;
 
-    const input = { a3: 1 };
-    const expected = { a3: 123 };
+    const input = [{ a3: 1 }];
+    const expected = [{ a3: 123 }];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toMatchObject(expected);
   });
