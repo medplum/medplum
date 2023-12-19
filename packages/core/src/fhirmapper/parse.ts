@@ -354,6 +354,7 @@ function literalToParameter(literalAtom: LiteralAtom): StructureMapGroupRuleTarg
       return { valueDecimal: literalAtom.value.value as number };
     case 'integer':
       return { valueInteger: literalAtom.value.value as number };
+    case 'dateTime':
     case 'string':
       return { valueString: literalAtom.value.value as string };
     default:
