@@ -54,10 +54,27 @@ describe('FHIR Mapper transform - dependent', () => {
     }`;
 
     try {
-      structureMapTransform(parseMappingLanguage(map), [{}]);
+      structureMapTransform(parseMappingLanguage(map), [{ status: 'x', name: 'y' }]);
       throw new Error('Expected error');
     } catch (err: any) {
       expect(err.message).toBe('Dependent group not found: doesNotExist');
     }
+  });
+
+  test('Recursion', () => {
+    const map = `map "http://test.com" = test
+    group example(source src, target tgt) {
+      src.section as srcSection -> tgt.section as tgtSection then section(srcSection, tgtSection);
+    }
+
+    group section(source src, target tgt) {
+      src.name as srcName -> tgt.name = srcName;
+      src.section as srcSection -> tgt.section as tgtSection then section(srcSection, tgtSection);
+    }`;
+
+    const input = [{ section: { section: { name: 'foo' } } }];
+    const expected = [{ section: { section: { name: 'foo' } } }];
+    const actual = structureMapTransform(parseMappingLanguage(map), input);
+    expect(actual).toMatchObject(expected);
   });
 });

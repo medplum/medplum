@@ -3,13 +3,16 @@ import { Bundle } from '@medplum/fhirtypes';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
 
+// Based on: https://github.com/hl7ch/cda-fhir-maps/blob/master/input/maps/BundleToCda.map
+// Apache 2.0 License
+
 describe('FHIR Mapping Language parser - C-CDA maps', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   });
 
-  test('Simplest possible transform', () => {
+  test('CdaToBundle setup', () => {
     // https://build.fhir.org/mapping-tutorial.html#step1
 
     const map = `

@@ -77,7 +77,7 @@ describe('FHIR Mapper transform - errors', () => {
     `;
 
     try {
-      structureMapTransform(parseMappingLanguage(map), [{}]);
+      structureMapTransform(parseMappingLanguage(map), [{ a: 'abc' }]);
       throw new Error('Expected error');
     } catch (err: any) {
       expect(err.message).toEqual('Target not found: notFound');
@@ -95,7 +95,7 @@ describe('FHIR Mapper transform - errors', () => {
     `;
 
     try {
-      structureMapTransform(parseMappingLanguage(map), [{}]);
+      structureMapTransform(parseMappingLanguage(map), [{ a: 'abc' }]);
       throw new Error('Expected error');
     } catch (err: any) {
       expect(err.message).toEqual('Invalid key: prototype');
