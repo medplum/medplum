@@ -1,8 +1,8 @@
 import { Group, NativeSelect } from '@mantine/core';
-import { MedplumClient, createReference, isEmpty, tryGetProfile } from '@medplum/core';
+import { LRUCache, MedplumClient, ReadablePromise, createReference, isEmpty, tryGetProfile } from '@medplum/core';
 import { Reference, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 
@@ -44,6 +44,8 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
     getInitialTargetType(props.defaultValue, targetTypes)
   );
 
+  const promiseCache = useRef(new LRUCache<ReadablePromise<TargetType>>());
+
   const searchCriteria = useMemo<ReferenceInputProps['searchCriteria']>(() => {
     if (targetType?.type === 'profile') {
       return { ...props.searchCriteria, _profile: targetType.value };
@@ -62,7 +64,13 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
 
     const newTargetTypePromises: Promise<TargetType>[] = targetTypes.map((tt) => {
       if (shouldFetchResourceType(tt)) {
-        return fetchResourceTypeOfProfile(medplum, tt.value)
+        const cacheKey = tt.value;
+        const cached = promiseCache.current.get(cacheKey);
+        if (cached) {
+          return cached;
+        }
+
+        const promise = fetchResourceTypeOfProfile(medplum, tt.value)
           .then((profile) => {
             const newTargetType = { ...tt };
 
@@ -84,6 +92,11 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
             console.error(reason);
             return { ...tt, error: reason };
           });
+
+        const readablePromise = new ReadablePromise(promise);
+        promiseCache.current.set(cacheKey, readablePromise);
+
+        return readablePromise;
       } else {
         return Promise.resolve(tt);
       }
@@ -93,13 +106,14 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
       .then((newTargetTypes) => {
         setTargetTypes(newTargetTypes);
         if (targetType) {
-          const needle: string = targetType.value;
-          const index = newTargetTypes.findIndex((tt) => tt.value === needle);
+          const index = newTargetTypes.findIndex(
+            (tt) => tt.value === targetType.value || tt.resourceType === targetType.resourceType
+          );
           if (index >= 0) {
             // orphaned targetType has been resolved
             setTargetType(newTargetTypes[index]);
           } else {
-            console.log(`defaultValue had unexpected resourceType: ${targetType.resourceType}`);
+            console.debug(`defaultValue had unexpected resourceType: ${targetType.resourceType}`);
           }
         }
       })

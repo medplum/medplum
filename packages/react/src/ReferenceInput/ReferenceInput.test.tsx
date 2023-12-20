@@ -180,7 +180,7 @@ describe('ReferenceInput', () => {
     expect(screen.queryByTestId('reference-input-resource-type-select')).not.toBeInTheDocument();
   });
 
-  test.only('Handle profile target type', async () => {
+  test('Handle profile target type', async () => {
     const FishPatientProfileSD = FishPatientResources.getFishPatientProfileSD();
     const blinky = FishPatientResources.getBlinkyTheFish();
     await medplum.createResource(blinky);
