@@ -36,7 +36,8 @@ export default function CaseStudiesPage(): JSX.Element {
             <Feature title="Specialty EHR" imgSrc="/img/icons/clinical-logic.svg">
               Medplum powers many specialty electronic health record systems and other purpose-built healthcare apps.
               Implmentations include solutions across specialties: <a href="/blog/tags/pediatrics">pediatrics</a>,
-              radiology, <a href="/blog/ensage-case-study">geriatrics</a>, cardiac care and more.
+              <a href="/blog/tags/radiology">radiology</a>, <a href="/blog/ensage-case-study">geriatrics</a>, cardiac
+              care and more.
             </Feature>
             <Feature title="Diagnostics" imgSrc="/img/icons/cog-icon.svg">
               Diagnostics providers need highly programmable system that can manage data securely at scale. Medplum
@@ -96,6 +97,26 @@ export default function CaseStudiesPage(): JSX.Element {
             />
           </CardContainer>
         </Section>
+        <Jumbotron>
+          <div className={styles.heroContent}>
+            <h1 className={styles.heroTitle}>Rad AI</h1>
+            <p className={styles.heroText}>
+              <a href="blog/radai-case-study">Omni Reporting</a> is an AI powered application that saves time and
+              reduces burnout - allowing clinicians to speak less, say more.
+            </p>
+          </div>
+          <div className={styles.heroImage}>
+            <iframe
+              width="560"
+              height="315"
+              src="https://www.youtube.com/embed/N5ZocZhdPZ0"
+              title="YouTube video player"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
+          </div>
+        </Jumbotron>
       </Container>
     </Layout>
   );
