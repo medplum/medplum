@@ -2,6 +2,7 @@ import { Accordion, Button, Chip, Group, Title } from '@mantine/core';
 import { createReference, parseJWTPayload } from '@medplum/core';
 import { Bundle, Communication, Parameters, Practitioner, Subscription } from '@medplum/fhirtypes';
 import { Document, ResourceName, useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconArrowNarrowRight } from '@tabler/icons-react';
 import { useState } from 'react';
 
 const patientId = 'pat-123';
@@ -19,7 +20,7 @@ function BundleDisplay(props: BundleDisplayProps): JSX.Element {
       <Accordion.Control>
         <Group>
           {bundle.timestamp} <Chip>{communication?.sender?.reference}</Chip>
-          {' => '}
+          <IconArrowNarrowRight />
           <Chip>{communication?.recipient?.[0].reference}</Chip>
         </Group>
       </Accordion.Control>
