@@ -141,6 +141,8 @@ describe('Core Utils', () => {
     expect(isPopulated('foo')).toBe(true);
     expect(isPopulated({})).toBe(false);
     expect(isPopulated({ foo: 'bar' })).toBe(true);
+    expect(isPopulated({ length: 0 })).toBe(true);
+    expect(isPopulated({ length: 1 })).toBe(true);
 
     expect(isPopulated([])).toBe(false);
     expect(isPopulated([undefined])).toBe(true);
