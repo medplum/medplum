@@ -54,53 +54,51 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   }, [props.searchCriteria, targetType]);
 
   useEffect(() => {
-    if (!targetTypes) {
-      return;
-    }
-
-    if (targetTypes.filter(shouldFetchResourceType).length === 0) {
-      return;
-    }
-
-    const newTargetTypePromises: Promise<TargetType>[] = targetTypes.map((tt) => {
-      if (shouldFetchResourceType(tt)) {
-        const cacheKey = tt.value;
-        const cached = promiseCache.current.get(cacheKey);
-        if (cached) {
-          return cached;
-        }
-
-        const promise = fetchResourceTypeOfProfile(medplum, tt.value)
-          .then((profile) => {
-            const newTargetType = { ...tt };
-
-            if (!profile) {
-              console.error(`StructureDefinition for ${tt.value} not found`);
-              newTargetType.error = 'StructureDefinition not found';
-            } else if (!profile.type || isEmpty(profile.type)) {
-              console.error(`resourceType for ${tt.value} StructureDefinition missing`);
-              newTargetType.error = 'resourceType unavailable';
-            } else {
-              newTargetType.resourceType = profile.type satisfies string;
-              newTargetType.name = profile.name;
-              newTargetType.title = profile.title;
-            }
-
-            return newTargetType;
-          })
-          .catch((reason) => {
-            console.error(reason);
-            return { ...tt, error: reason };
-          });
-
-        const readablePromise = new ReadablePromise(promise);
-        promiseCache.current.set(cacheKey, readablePromise);
-
-        return readablePromise;
-      } else {
+    let anyToFetch = false;
+    const newTargetTypePromises: Promise<TargetType>[] | undefined = targetTypes?.map((tt) => {
+      if (!shouldFetchResourceType(tt)) {
         return Promise.resolve(tt);
       }
+
+      anyToFetch = true;
+      const cacheKey = tt.value;
+      const cached = promiseCache.current.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
+      const promise = fetchResourceTypeOfProfile(medplum, tt.value)
+        .then((profile) => {
+          const newTargetType = { ...tt };
+
+          if (!profile) {
+            console.error(`StructureDefinition for ${tt.value} not found`);
+            newTargetType.error = 'StructureDefinition not found';
+          } else if (!profile.type || isEmpty(profile.type)) {
+            console.error(`resourceType for ${tt.value} StructureDefinition missing`);
+            newTargetType.error = 'resourceType unavailable';
+          } else {
+            newTargetType.resourceType = profile.type satisfies string;
+            newTargetType.name = profile.name;
+            newTargetType.title = profile.title;
+          }
+
+          return newTargetType;
+        })
+        .catch((reason) => {
+          console.error(reason);
+          return { ...tt, error: reason };
+        });
+
+      const readablePromise = new ReadablePromise(promise);
+      promiseCache.current.set(cacheKey, readablePromise);
+
+      return readablePromise;
     });
+
+    if (!newTargetTypePromises || !anyToFetch) {
+      return;
+    }
 
     Promise.all(newTargetTypePromises)
       .then((newTargetTypes) => {
