@@ -26,6 +26,7 @@ import {
   getQuestionnaireAnswers,
   getReferenceString,
   isLowerCase,
+  isPopulated,
   isProfileResource,
   isUUID,
   parseReference,
@@ -132,6 +133,27 @@ describe('Core Utils', () => {
     expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [] })).toEqual('Device/123');
     expect(getDisplayString({ resourceType: 'User', email: 'foo@example.com' })).toEqual('foo@example.com');
     expect(getDisplayString({ resourceType: 'User', id: '123' })).toEqual('User/123');
+  });
+
+  test('isPopulated', () => {
+    expect(isPopulated('')).toBe(false);
+    expect(isPopulated(' ')).toBe(true);
+    expect(isPopulated('foo')).toBe(true);
+    expect(isPopulated({})).toBe(false);
+    expect(isPopulated({ foo: 'bar' })).toBe(true);
+
+    expect(isPopulated([])).toBe(false);
+    expect(isPopulated([undefined])).toBe(true);
+    expect(isPopulated([null])).toBe(true);
+    expect(isPopulated([0])).toBe(true);
+    expect(isPopulated([1, 2, 3])).toBe(true);
+
+    const obj = Object.create(null);
+    expect(isPopulated(obj)).toBe(false);
+    obj.foo = 'baz';
+    expect(isPopulated(obj)).toBe(true);
+    delete obj.foo;
+    expect(isPopulated(obj)).toBe(false);
   });
 
   test('getImageSrc', () => {
