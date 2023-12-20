@@ -1,5 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle } from '@medplum/fhirtypes';
+import { toTypedValue } from '../fhirpath/utils';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
 import { structureMapTransform } from './transform';
@@ -59,7 +60,7 @@ describe('FHIR Mapper transform - errors', () => {
     }`;
 
     try {
-      structureMapTransform(parseMappingLanguage(map), [{}, {}, {}]);
+      structureMapTransform(parseMappingLanguage(map), [toTypedValue({}), toTypedValue({}), toTypedValue({})]);
       throw new Error('Expected error');
     } catch (err: any) {
       expect(err.message).toEqual('Too many arguments (got 3, max 2)');
@@ -77,7 +78,7 @@ describe('FHIR Mapper transform - errors', () => {
     `;
 
     try {
-      structureMapTransform(parseMappingLanguage(map), [{ a: 'abc' }]);
+      structureMapTransform(parseMappingLanguage(map), [toTypedValue({ a: 'abc' })]);
       throw new Error('Expected error');
     } catch (err: any) {
       expect(err.message).toEqual('Target not found: notFound');
@@ -95,7 +96,7 @@ describe('FHIR Mapper transform - errors', () => {
     `;
 
     try {
-      structureMapTransform(parseMappingLanguage(map), [{ a: 'abc' }]);
+      structureMapTransform(parseMappingLanguage(map), [toTypedValue({ a: 'abc' })]);
       throw new Error('Expected error');
     } catch (err: any) {
       expect(err.message).toEqual('Invalid key: prototype');

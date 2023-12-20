@@ -1,5 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle } from '@medplum/fhirtypes';
+import { toTypedValue } from '../fhirpath/utils';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
 import { structureMapTransform } from './transform';
@@ -19,8 +20,8 @@ describe('FHIR Mapper transform - copy', () => {
       src.name as v -> tgt.name = v;
     }`;
 
-    const input = [{ name: 'bob' }];
-    const expected = [{ name: 'bob' }];
+    const input = [toTypedValue({ name: 'bob' })];
+    const expected = [toTypedValue({ name: 'bob' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toEqual(expected);
   });
@@ -31,8 +32,8 @@ describe('FHIR Mapper transform - copy', () => {
       src.name as v -> tgt.name = v;
     }`;
 
-    const input = [{ name: 'bob' }, { size: 'average' }];
-    const expected = [{ name: 'bob', size: 'average' }];
+    const input = [toTypedValue({ name: 'bob' }), toTypedValue({ size: 'average' })];
+    const expected = [toTypedValue({ name: 'bob', size: 'average' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toEqual(expected);
   });
@@ -43,8 +44,8 @@ describe('FHIR Mapper transform - copy', () => {
       src.name as v, src.size as s -> tgt.firstName = v, tgt.size = s;
     }`;
 
-    const input = [{ name: 'bob', size: 'small' }];
-    const expected = [{ firstName: 'bob', size: 'small' }];
+    const input = [toTypedValue({ name: 'bob', size: 'small' })];
+    const expected = [toTypedValue({ firstName: 'bob', size: 'small' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toEqual(expected);
   });
@@ -55,8 +56,8 @@ describe('FHIR Mapper transform - copy', () => {
       src.name as v -> tgt.name = v, tgt.oldName = v;
     }`;
 
-    const input = [{ name: 'bob' }];
-    const expected = [{ name: 'bob', oldName: 'bob' }];
+    const input = [toTypedValue({ name: 'bob' })];
+    const expected = [toTypedValue({ name: 'bob', oldName: 'bob' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toEqual(expected);
   });
@@ -69,8 +70,8 @@ describe('FHIR Mapper transform - copy', () => {
       src.active as sa -> tgt.activeStatus = sa;
     }`;
 
-    const input = [{ name: 'bob', size: 'small', active: true }];
-    const expected = [{ name: 'bob', size: 'small', activeStatus: true }];
+    const input = [toTypedValue({ name: 'bob', size: 'small', active: true })];
+    const expected = [toTypedValue({ name: 'bob', size: 'small', activeStatus: true })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toEqual(expected);
   });
@@ -82,8 +83,8 @@ describe('FHIR Mapper transform - copy', () => {
       src2.size as v -> tgt.size = v;
     }`;
 
-    const input = [{ name: 'bob' }, { size: 'small' }];
-    const expected = [{ name: 'bob', size: 'small' }];
+    const input = [toTypedValue({ name: 'bob' }), toTypedValue({ size: 'small' })];
+    const expected = [toTypedValue({ name: 'bob', size: 'small' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toEqual(expected);
   });
@@ -95,8 +96,8 @@ describe('FHIR Mapper transform - copy', () => {
       src.size as v -> tgt2.size = v;
     }`;
 
-    const input = [{ name: 'bob', size: 'small' }];
-    const expected = [{ name: 'bob' }, { size: 'small' }];
+    const input = [toTypedValue({ name: 'bob', size: 'small' })];
+    const expected = [toTypedValue({ name: 'bob' }), toTypedValue({ size: 'small' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toEqual(expected);
   });
@@ -109,10 +110,15 @@ describe('FHIR Mapper transform - copy', () => {
       src2.size as ss -> tgt2.size = ss;
     }`;
 
-    const input = [{ name: 'bob' }, { size: 'small' }, { active: true }, { active: true }];
+    const input = [
+      toTypedValue({ name: 'bob' }),
+      toTypedValue({ size: 'small' }),
+      toTypedValue({ active: true }),
+      toTypedValue({ active: true }),
+    ];
     const expected = [
-      { name: 'bob', active: true },
-      { name: 'bob', size: 'small', active: true },
+      toTypedValue({ name: 'bob', active: true }),
+      toTypedValue({ name: 'bob', size: 'small', active: true }),
     ];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toEqual(expected);

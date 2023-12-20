@@ -1,5 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle } from '@medplum/fhirtypes';
+import { toTypedValue } from '../fhirpath/utils';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
 import { structureMapTransform } from './transform';
@@ -27,9 +28,10 @@ describe('FHIR Mapper transform - C-CDA', () => {
     }
     `;
 
-    const input = [{}, { entry: [] }];
+    const input = [toTypedValue({}), toTypedValue({ resourceType: 'Bundle', entry: [] })];
     const expected = [
-      {
+      toTypedValue({
+        resourceType: 'Bundle',
         entry: [
           {
             fullUrl: expect.stringMatching(/^urn:uuid:[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$/),
@@ -46,7 +48,7 @@ describe('FHIR Mapper transform - C-CDA', () => {
             },
           },
         ],
-      },
+      }),
     ];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toMatchObject(expected);

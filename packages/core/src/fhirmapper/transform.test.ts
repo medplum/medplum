@@ -1,5 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle } from '@medplum/fhirtypes';
+import { toTypedValue } from '../fhirpath/utils';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
 import { structureMapTransform } from './transform';
@@ -22,8 +23,8 @@ describe('FHIR Mapper transform', () => {
       }
     `;
 
-    const input = [{ a: 'a' }];
-    const expected = [{ a: 'a' }];
+    const input = [toTypedValue({ a: 'a' })];
+    const expected = [toTypedValue({ a: 'a' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toMatchObject(expected);
   });
@@ -40,8 +41,8 @@ describe('FHIR Mapper transform', () => {
       }
     `;
 
-    const input = [{ a1: 'a' }];
-    const expected = [{ a2: 'a' }];
+    const input = [toTypedValue({ a1: 'a' })];
+    const expected = [toTypedValue({ a2: 'a' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toMatchObject(expected);
   });
@@ -58,8 +59,8 @@ describe('FHIR Mapper transform', () => {
       }
     `;
 
-    const input = [{ a2: 'abcdef' }];
-    const expected = [{ a2: 'abc' }];
+    const input = [toTypedValue({ a2: 'abcdef' })];
+    const expected = [toTypedValue({ a2: 'abc' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toMatchObject(expected);
   });
@@ -76,13 +77,13 @@ describe('FHIR Mapper transform', () => {
       }
     `;
 
-    const input1 = [{ a2: 'abcdef' }];
-    const expected1 = [{}];
+    const input1 = [toTypedValue({ a2: 'abcdef' })];
+    const expected1 = [toTypedValue({})];
     const actual1 = structureMapTransform(parseMappingLanguage(map), input1);
     expect(actual1).toMatchObject(expected1);
 
-    const input2 = [{ a2: 'abc' }];
-    const expected2 = [{ a2: 'abc' }];
+    const input2 = [toTypedValue({ a2: 'abc' })];
+    const expected2 = [toTypedValue({ a2: 'abc' })];
     const actual2 = structureMapTransform(parseMappingLanguage(map), input2);
     expect(actual2).toMatchObject(expected2);
   });
@@ -99,7 +100,7 @@ describe('FHIR Mapper transform', () => {
       }
     `;
 
-    const input1 = [{ a2: 'abcdef' }];
+    const input1 = [toTypedValue({ a2: 'abcdef' })];
     try {
       structureMapTransform(parseMappingLanguage(map), input1);
       throw new Error('Expected error');
@@ -107,8 +108,8 @@ describe('FHIR Mapper transform', () => {
       expect(err.message).toBe('Check failed: a2.length() <= 3');
     }
 
-    const input2 = [{ a2: 'abc' }];
-    const expected2 = [{ a2: 'abc' }];
+    const input2 = [toTypedValue({ a2: 'abc' })];
+    const expected2 = [toTypedValue({ a2: 'abc' })];
     const actual2 = structureMapTransform(parseMappingLanguage(map), input2);
     expect(actual2).toMatchObject(expected2);
   });
@@ -125,8 +126,8 @@ describe('FHIR Mapper transform', () => {
       }
     `;
 
-    const input = [{ a3: 1 }];
-    const expected = [{ a3: 123 }];
+    const input = [toTypedValue({ a3: 1 })];
+    const expected = [toTypedValue({ a3: 123 })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toMatchObject(expected);
   });
