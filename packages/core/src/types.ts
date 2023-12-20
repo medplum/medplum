@@ -292,29 +292,45 @@ export function getPathDisplayName(path: string): string {
 }
 
 /**
- * Return s a human friendly display name for a FHIR element property or slice name
+ * Returns a human friendly display name for a FHIR element property or slice name
  * @param propertyName - The FHIR element property or slice name
  * @returns The best guess of the display name.
  */
 export function getPropertyDisplayName(propertyName: string): string {
-  // Split by capital letters
+  /*
+  Split into words looking for acronyms and camelCase
+
+  [A-Z]+(?![a-z])
+  This part of the regular expression matches a sequence of one or more uppercase letters ([A-Z]+)
+  but only if they are not followed by a lowercase letter. The (?![a-z]) is a negative lookahead assertion,
+  meaning it checks for the absence of a lowercase letter ([a-z]) following the uppercase letters but does
+  not include it in the match. This effectively captures acronyms or any series of consecutive uppercase letters.
+
+  [A-Z]?[a-z]+
+  This part matches a single, optional, uppercase letter followed by one or more lowercase letters ([a-z]+).
+  This pattern is suitable for matching words in camelCase format, where a word begins with a lowercase letter
+  but can optionally start with an uppercase letter (like in the middle of camelCase).
+
+  \d+
+  Matches a sequence of one or more digits into their own word
+  */
+  const words = propertyName.match(/[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\d+/g) ?? [];
+
   // Capitalize the first letter of each word
   // Join together with spaces in between
   // Then normalize whitespace to single space character
   // For example, for property name "birthDate",
   // the display name is "Birth Date".
-  return propertyName
-    .split(/(?=[A-Z])/)
-    .map(capitalizeDisplayWord)
-    .join(' ')
-    .replace('_', ' ')
-    .replace(/\s+/g, ' ');
+  return words.map(capitalizeDisplayWord).join(' ').replace('_', ' ').replace(/\s+/g, ' ');
 }
 
-const capitalizedWords = new Set(['ID', 'IP', 'PKCE', 'JWKS', 'URI', 'URL', 'OMB']);
+const capitalizedWords = new Set(['ID', 'IP', 'PKCE', 'JWKS', 'URI', 'URL', 'OMB', 'UDI']);
 
 function capitalizeDisplayWord(word: string): string {
   const upper = word.toUpperCase();
+  if (word === upper) {
+    return word;
+  }
   if (capitalizedWords.has(upper)) {
     return upper;
   }
