@@ -23,6 +23,7 @@ import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
+import { createSubEventNotification } from '../subscriptions/websockets';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext, BackgroundJobInteraction } from './context';
 import { createAuditEvent, findProjectMembership, isFhirCriteriaMet, isJobSuccessful } from './utils';
@@ -326,7 +327,10 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
         }
         break;
       case 'websocket':
-        await getRedis().publish(subscription.id as string, JSON.stringify(versionedResource));
+        await getRedis().publish(
+          subscriptionId as string,
+          JSON.stringify(createSubEventNotification(versionedResource, subscriptionId, { includeResource: true }))
+        );
         break;
       default:
         throw new OperationOutcomeError(serverError(new Error('Subscription type not currently supported.')));

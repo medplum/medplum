@@ -1,12 +1,18 @@
-import { allOk, badRequest, createReference, parseJWTPayload } from '@medplum/core';
+import { allOk, badRequest, resolveId } from '@medplum/core';
 import { Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
-import { getAuthTokens } from '../../oauth/utils';
+import { generateAccessToken } from '../../oauth/keys';
 import { getRedis } from '../../redis';
 import { sendOutcome } from '../outcomes';
 import { sendResponse } from '../routes';
+
+const ONE_HOUR = 60 * 60 * 1000;
+
+export type AdditionalWsBindingClaims = {
+  subscription_id: string;
+};
 
 /**
  * Handles a GetWsBindingToken request.
@@ -22,26 +28,37 @@ import { sendResponse } from '../routes';
  * @param res - The HTTP response.
  */
 export async function getWsBindingTokenHandler(req: Request, res: Response): Promise<void> {
-  const { login, membership, profile, accessToken } = getAuthenticatedContext();
+  const { login, profile } = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const redis = getRedis();
-  const loginId = login.id as string;
 
-  let token: string;
-  if (!accessToken) {
-    const tokens = await getAuthTokens(
-      {
-        ...login,
-        membership: createReference(membership),
-      },
-      profile
-    );
-    token = tokens.accessToken;
-  } else {
-    token = accessToken;
+  const clientId = login.client && resolveId(login.client);
+  const userId = resolveId(login.user);
+  if (!userId) {
+    await sendOutcome(res, badRequest('Login missing user'));
+    return;
   }
 
-  const tokenPayload = parseJWTPayload(token);
+  const subscriptionId = req.params.id;
+  const subExists = await redis.exists(`Subscription/${subscriptionId}`);
+  if (!subExists) {
+    await sendOutcome(res, badRequest('Content could not be parsed'));
+    return;
+  }
+
+  const token = await generateAccessToken(
+    {
+      client_id: clientId,
+      login_id: login.id as string,
+      sub: userId,
+      username: userId,
+      scope: login.scope as string,
+      profile: profile.reference as string,
+    },
+    {
+      subscription_id: subscriptionId,
+    } satisfies AdditionalWsBindingClaims
+  );
 
   // Create params to send back
   const tokenParams = {
@@ -53,7 +70,7 @@ export async function getWsBindingTokenHandler(req: Request, res: Response): Pro
       },
       {
         name: 'expiration',
-        valueDateTime: new Date((tokenPayload.exp as number) * 1000).toISOString(),
+        valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString(),
       },
       {
         name: 'websocket-url',
@@ -62,14 +79,5 @@ export async function getWsBindingTokenHandler(req: Request, res: Response): Pro
     ],
   } satisfies Parameters;
 
-  // Create tentative binding for this user
-  // When user connects to WebSocket, get all of the tentative bindings
-  const subscriptionId = req.params.id;
-  const subExists = await redis.exists(`Subscription/${subscriptionId}`);
-  if (!subExists) {
-    await sendOutcome(res, badRequest('Content could not be parsed'));
-    return;
-  }
-  await redis.sadd(`::subscriptions/r4::bindings::${loginId}`, subscriptionId);
   await sendResponse(res, allOk, tokenParams);
 }

@@ -116,12 +116,20 @@ class Redis {
     return added;
   }
 
-  async sscan(setKey: string, _cursor: string | number): Promise<[string | number, string[]]> {
+  async smembers(setKey: string): Promise<string[]> {
     const set = sets.get(setKey);
     if (!set) {
-      return [0, []];
+      return [];
     }
-    return [0, Array.from(set.keys())];
+    return Array.from(set.keys());
+  }
+
+  async scard(setKey: string): Promise<number> {
+    const set = sets.get(setKey);
+    if (!set) {
+      return 0;
+    }
+    return set.size;
   }
 }
 

@@ -1,5 +1,5 @@
 import { ContentType } from '@medplum/core';
-import { Subscription } from '@medplum/fhirtypes';
+import { Parameters, Subscription } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -45,5 +45,20 @@ describe('Get WebSocket binding token', () => {
       .get(`/fhir/R4/Subscription/${createdSub.id}/$get-ws-binding-token`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
+    expect(res2.body).toBeDefined();
+
+    const params = res2.body as Parameters;
+    expect(params.resourceType).toEqual('Parameters');
+    expect(params.parameter?.length).toEqual(3);
+    expect(params.parameter?.[0]).toBeDefined();
+    expect(params.parameter?.[0].name).toEqual('token');
+    expect(params.parameter?.[0].valueString).toBeDefined();
+    expect(params.parameter?.[1]).toBeDefined();
+    expect(params.parameter?.[1].name).toEqual('expiration');
+    expect(params.parameter?.[1].valueDateTime).toBeDefined();
+    expect(new Date(params.parameter?.[1].valueDateTime as string).getTime()).toBeGreaterThanOrEqual(Date.now());
+    expect(params.parameter?.[2]).toBeDefined();
+    expect(params.parameter?.[2].name).toEqual('websocket-url');
+    expect(params.parameter?.[2].valueUrl).toBeDefined();
   });
 });
