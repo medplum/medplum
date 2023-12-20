@@ -297,24 +297,33 @@ export function getPathDisplayName(path: string): string {
  * @returns The best guess of the display name.
  */
 export function getPropertyDisplayName(propertyName: string): string {
-  /*
-  Split into words looking for acronyms and camelCase
+  let words: string[];
 
-  [A-Z]+(?![a-z])
-  This part of the regular expression matches a sequence of one or more uppercase letters ([A-Z]+)
-  but only if they are not followed by a lowercase letter. The (?![a-z]) is a negative lookahead assertion,
-  meaning it checks for the absence of a lowercase letter ([a-z]) following the uppercase letters but does
-  not include it in the match. This effectively captures acronyms or any series of consecutive uppercase letters.
+  // CodeQL flags the regex below for potential ReDoS (Regex Denial of Service), so limit input size
+  // https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+  if (propertyName.length < 100) {
+    /*
+    Split into words looking for acronyms and camelCase
 
-  [A-Z]?[a-z]+
-  This part matches a single, optional, uppercase letter followed by one or more lowercase letters ([a-z]+).
-  This pattern is suitable for matching words in camelCase format, where a word begins with a lowercase letter
-  but can optionally start with an uppercase letter (like in the middle of camelCase).
+    [A-Z]+(?![a-z])
+    This part of the regular expression matches a sequence of one or more uppercase letters ([A-Z]+)
+    but only if they are not followed by a lowercase letter. The (?![a-z]) is a negative lookahead assertion,
+    meaning it checks for the absence of a lowercase letter ([a-z]) following the uppercase letters but does
+    not include it in the match. This effectively captures acronyms or any series of consecutive uppercase letters.
 
-  \d+
-  Matches a sequence of one or more digits into their own word
-  */
-  const words = propertyName.match(/[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\d+/g) ?? [];
+    [A-Z]?[a-z]+
+    This part matches a single, optional, uppercase letter followed by one or more lowercase letters ([a-z]+).
+    This pattern is suitable for matching words in camelCase format, where a word begins with a lowercase letter
+    but can optionally start with an uppercase letter (like in the middle of camelCase).
+
+    \d+
+    Matches a sequence of one or more digits into their own word
+    */
+    words = propertyName.match(/[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\d+/g) ?? [];
+  } else {
+    // otherwisze fallback to splitting on capital letters
+    words = propertyName.split(/(?=[A-Z])/);
+  }
 
   // Capitalize the first letter of each word
   // Join together with spaces in between
