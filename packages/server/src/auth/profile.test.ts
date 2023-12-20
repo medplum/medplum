@@ -1,4 +1,4 @@
-import { getReferenceString, ProfileResource } from '@medplum/core';
+import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
 import { Login, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -7,8 +7,8 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { registerNew } from './register';
 import { withTestContext } from '../test.setup';
+import { registerNew } from './register';
 
 jest.mock('@aws-sdk/client-sesv2');
 
@@ -34,12 +34,19 @@ describe('Profile', () => {
         password,
       });
 
+      const otherProfile = await systemRepo.createResource<ProfileResource>({
+        resourceType: 'Practitioner',
+        meta: { project: registerResult.project.id },
+        name: [{ text: 'Other' }],
+      });
+
       const inviteResult = await inviteUser({
         project: registerResult.project,
         resourceType: 'Practitioner',
         firstName: 'Multi2',
         lastName: 'Multi2',
         email,
+        membership: { profile: createReference(otherProfile) },
       });
 
       profile1 = registerResult.profile;
