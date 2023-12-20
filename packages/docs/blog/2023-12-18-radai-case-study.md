@@ -35,7 +35,7 @@ Rad AI Omni Reporting uses the [Integrated Reporting Application (IRA)](https://
 
 > Rad AI is excited to use open source FHIRcast for context syncing and data passing with our imaging and worklist partners. Having an open-source, standards-based FHIRcast hub lowers the barrier of entry for products to work together.
 >
-> [John Paulett](https://www.linkedin.com/in/jpaulett) Direct of Engineering, [Rad AI](https://www.radai.com/)
+> [John Paulett](https://www.linkedin.com/in/jpaulett) Director of Engineering, [Rad AI](https://www.radai.com/)
 
 ## About Rad AI
 
