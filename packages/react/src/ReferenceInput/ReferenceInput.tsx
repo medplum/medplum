@@ -1,7 +1,8 @@
 import { Group, NativeSelect } from '@mantine/core';
-import { createReference } from '@medplum/core';
-import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import { useState } from 'react';
+import { LRUCache, MedplumClient, ReadablePromise, createReference, isEmpty, tryGetProfile } from '@medplum/core';
+import { Reference, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 
@@ -16,18 +17,129 @@ export interface ReferenceInputProps {
   onChange?: (value: Reference | undefined) => void;
 }
 
-export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
-  const targetTypes = getTargetTypes(props.targetTypes);
-  const initialResourceType = getInitialResourceType(props.defaultValue, targetTypes);
-  const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
-  const [resourceType, setResourceType] = useState<ResourceType | undefined>(initialResourceType);
+interface BaseTargetType {
+  value: string;
+}
 
-  function setValueHelper(newValue: Reference | undefined): void {
-    setValue(newValue);
-    if (props.onChange) {
-      props.onChange(newValue);
+type ProfileTargetType = BaseTargetType & {
+  type: 'profile';
+  name?: string;
+  title?: string;
+  resourceType?: string;
+  error?: any;
+};
+
+type ResourceTypeTargetType = BaseTargetType & {
+  type: 'resourceType';
+  resourceType: string;
+};
+type TargetType = ResourceTypeTargetType | ProfileTargetType;
+
+export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
+  const { onChange } = props;
+  const medplum = useMedplum();
+  const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
+  const [targetTypes, setTargetTypes] = useState<TargetType[] | undefined>(() => createTargetTypes(props.targetTypes));
+  const [targetType, setTargetType] = useState<TargetType | undefined>(() =>
+    getInitialTargetType(props.defaultValue, targetTypes)
+  );
+
+  const promiseCache = useRef(new LRUCache<ReadablePromise<TargetType>>());
+
+  const searchCriteria = useMemo<ReferenceInputProps['searchCriteria']>(() => {
+    if (targetType?.type === 'profile') {
+      return { ...props.searchCriteria, _profile: targetType.value };
     }
-  }
+    return props.searchCriteria;
+  }, [props.searchCriteria, targetType]);
+
+  useEffect(() => {
+    let anyToFetch = false;
+    const newTargetTypePromises: Promise<TargetType>[] | undefined = targetTypes?.map((tt) => {
+      if (!shouldFetchResourceType(tt)) {
+        return Promise.resolve(tt);
+      }
+
+      anyToFetch = true;
+      const cacheKey = tt.value;
+      const cached = promiseCache.current.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
+      const promise = fetchResourceTypeOfProfile(medplum, tt.value)
+        .then((profile) => {
+          const newTargetType = { ...tt };
+
+          if (!profile) {
+            console.error(`StructureDefinition for ${tt.value} not found`);
+            newTargetType.error = 'StructureDefinition not found';
+          } else if (!profile.type || isEmpty(profile.type)) {
+            console.error(`resourceType for ${tt.value} StructureDefinition missing`);
+            newTargetType.error = 'resourceType unavailable';
+          } else {
+            newTargetType.resourceType = profile.type satisfies string;
+            newTargetType.name = profile.name;
+            newTargetType.title = profile.title;
+          }
+
+          return newTargetType;
+        })
+        .catch((reason) => {
+          console.error(reason);
+          return { ...tt, error: reason };
+        });
+
+      const readablePromise = new ReadablePromise(promise);
+      promiseCache.current.set(cacheKey, readablePromise);
+
+      return readablePromise;
+    });
+
+    if (!newTargetTypePromises || !anyToFetch) {
+      return;
+    }
+
+    Promise.all(newTargetTypePromises)
+      .then((newTargetTypes) => {
+        setTargetTypes(newTargetTypes);
+        if (targetType) {
+          const index = newTargetTypes.findIndex(
+            (tt) => tt.value === targetType.value || tt.resourceType === targetType.resourceType
+          );
+          if (index >= 0) {
+            // orphaned targetType has been resolved
+            setTargetType(newTargetTypes[index]);
+          } else {
+            console.debug(`defaultValue had unexpected resourceType: ${targetType.resourceType}`);
+          }
+        }
+      })
+      .catch(console.error);
+  }, [medplum, targetType, targetTypes]);
+
+  const setValueHelper = useCallback(
+    (item: Resource | undefined) => {
+      const newValue = item ? createReference(item) : undefined;
+      setValue(newValue);
+      if (onChange) {
+        onChange(newValue);
+      }
+    },
+    [onChange]
+  );
+
+  const typeSelectOptions = useMemo(() => {
+    if (targetTypes) {
+      return targetTypes.map((tt) => {
+        return {
+          value: tt.value,
+          label: tt.type === 'profile' ? tt.title ?? tt.name ?? tt.resourceType ?? tt.value : tt.value,
+        };
+      });
+    }
+    return [];
+  }, [targetTypes]);
 
   return (
     <Group spacing="xs" grow noWrap>
@@ -35,56 +147,125 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
         <NativeSelect
           data-autofocus={props.autoFocus}
           data-testid="reference-input-resource-type-select"
-          defaultValue={resourceType}
+          defaultValue={targetType?.resourceType}
           autoFocus={props.autoFocus}
-          onChange={(e) => setResourceType(e.currentTarget.value as ResourceType)}
-          data={targetTypes}
+          onChange={(e) => {
+            const newValue = e.currentTarget.value;
+            const newTargetType = targetTypes.find((tt) => tt.value === newValue);
+            setTargetType(newTargetType);
+          }}
+          data={typeSelectOptions}
         />
       )}
       {!targetTypes && (
         <ResourceTypeInput
           autoFocus={props.autoFocus}
           testId="reference-input-resource-type-input"
-          defaultValue={resourceType}
-          onChange={setResourceType}
+          defaultValue={targetType?.resourceType as ResourceType}
+          onChange={(newResourceType) => {
+            if (newResourceType) {
+              setTargetType({ type: 'resourceType', value: newResourceType, resourceType: newResourceType });
+            } else {
+              setTargetType(undefined);
+            }
+          }}
           name={props.name + '-resourceType'}
           placeholder="Resource Type"
         />
       )}
       <ResourceInput
-        resourceType={resourceType as ResourceType}
+        resourceType={targetType?.resourceType as ResourceType}
         name={props.name + '-id'}
         required={props.required}
         placeholder={props.placeholder}
         defaultValue={value}
-        searchCriteria={props.searchCriteria}
-        onChange={(item: Resource | undefined) => {
-          setValueHelper(item ? createReference(item) : undefined);
-        }}
+        searchCriteria={searchCriteria}
+        onChange={setValueHelper}
       />
     </Group>
   );
 }
 
-function getTargetTypes(targetTypes: string[] | undefined): string[] | undefined {
-  if (!targetTypes || targetTypes.length === 0 || (targetTypes.length === 1 && targetTypes[0] === 'Resource')) {
+function createTargetTypes(resourceTypesAndProfileUrls: string[] | undefined): TargetType[] | undefined {
+  if (
+    !resourceTypesAndProfileUrls ||
+    resourceTypesAndProfileUrls.length === 0 ||
+    (resourceTypesAndProfileUrls.length === 1 && resourceTypesAndProfileUrls[0] === 'Resource')
+  ) {
     return undefined;
   }
-  return targetTypes;
+
+  const results: TargetType[] = [];
+  for (const value of resourceTypesAndProfileUrls) {
+    // is there a less hacky way to distinguish resourceType from profile URLs?
+    if (value.includes('/')) {
+      results.push({ type: 'profile', value });
+    } else {
+      results.push({ type: 'resourceType', value, resourceType: value });
+    }
+  }
+  return results;
 }
 
-function getInitialResourceType(
+function getInitialTargetType(
   defaultValue: Reference | undefined,
-  targetTypes: string[] | undefined
-): ResourceType | undefined {
+  targetTypes: TargetType[] | undefined
+): TargetType | undefined {
   const defaultValueResourceType = defaultValue?.reference?.split('/')[0];
   if (defaultValueResourceType) {
-    return defaultValueResourceType as ResourceType;
+    const targetType = targetTypes?.find((tt) => tt.resourceType === defaultValueResourceType);
+    if (targetType) {
+      return targetType;
+    }
+
+    // An "orphaned" TargetType is created when defaultValue references a resourceType
+    // that is not yet represented in targetTypes due to profile URL resolution to resource type
+    // that has yet to occur. An orphan can also occur if a defaultValue is provided
+    // but targetTypes is not.
+    return {
+      type: 'resourceType',
+      value: defaultValueResourceType,
+      resourceType: defaultValueResourceType,
+    };
   }
 
   if (targetTypes && targetTypes.length > 0) {
-    return targetTypes[0] as ResourceType;
+    return targetTypes[0];
   }
 
   return undefined;
+}
+
+type PartialStructureDefinition = Pick<StructureDefinition, 'type' | 'name' | 'title'>;
+
+interface ResourceTypeGraphQLResponse {
+  readonly data: {
+    readonly StructureDefinitionList: PartialStructureDefinition[];
+  };
+}
+
+async function fetchResourceTypeOfProfile(
+  medplum: MedplumClient,
+  profileUrl: string
+): Promise<PartialStructureDefinition | undefined> {
+  const profile = tryGetProfile(profileUrl);
+  if (profile) {
+    return { type: profile.type, name: profile.name, title: profile.title };
+  }
+
+  const query = `{
+      StructureDefinitionList(url: "${profileUrl}", _sort: "_lastUpdated", _count: 1) {
+        type,
+        name,
+        title,
+      }
+    }`.replace(/\s+/g, ' ');
+
+  const response = (await medplum.graphql(query)) as ResourceTypeGraphQLResponse;
+
+  return response.data.StructureDefinitionList[0];
+}
+
+function shouldFetchResourceType(targetType: TargetType): targetType is ProfileTargetType {
+  return targetType.type === 'profile' && !targetType?.error && isEmpty(targetType.resourceType);
 }

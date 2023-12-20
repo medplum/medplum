@@ -1,9 +1,28 @@
-import { deepClone } from '@medplum/core';
+import { ContentType, deepClone } from '@medplum/core';
 import { Patient, StructureDefinition } from '@medplum/fhirtypes';
 
 export type ProfileStructureDefinition = StructureDefinition & {
   url: string;
   name: string;
+};
+
+export const BlinkyTheFish: Patient = {
+  resourceType: 'Patient',
+  id: 'Blinky',
+  meta: {
+    profile: ['http://example.org/fhir/fish/StructureDefinition/fish-patient'],
+  },
+  name: [
+    {
+      given: ['Blinky'],
+    },
+  ],
+  photo: [
+    {
+      contentType: ContentType.PNG,
+      url: 'https://www.medplum.com/img/blinky-the-fish.png',
+    },
+  ],
 };
 
 const SAMPLE_FISH_PATIENT: Patient = {
@@ -2655,4 +2674,5 @@ export const FishPatientResources = {
   getFishPatientProfileSD: () => deepClone(FISH_PATIENT_PROFILE_SD),
   getFishSpeciesExtensionSD: () => deepClone(FISH_SPECIES_EXTENSION_SD),
   getSampleFishPatient: () => deepClone(SAMPLE_FISH_PATIENT),
+  getBlinkyTheFish: () => deepClone(BlinkyTheFish),
 };

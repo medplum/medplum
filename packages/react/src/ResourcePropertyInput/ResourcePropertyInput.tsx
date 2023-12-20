@@ -313,6 +313,13 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
   }
 }
 
+const RESOURCE_TYPE_URL_PREFIX = 'http://hl7.org/fhir/StructureDefinition/';
 function getTargetTypes(elementDefinitionType?: ElementDefinitionType): string[] | undefined {
-  return elementDefinitionType?.targetProfile?.map((p) => p.split('/').pop() as string);
+  return elementDefinitionType?.targetProfile?.map((p) => {
+    if (p.startsWith(RESOURCE_TYPE_URL_PREFIX)) {
+      return p.slice(RESOURCE_TYPE_URL_PREFIX.length);
+    } else {
+      return p;
+    }
+  });
 }
