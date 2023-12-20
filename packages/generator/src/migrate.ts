@@ -68,7 +68,7 @@ export async function main(): Promise<void> {
   const targetDefinition = buildTargetDefinition();
   const b = new FileBuilder();
   writeMigrations(b, startDefinition, targetDefinition);
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/schema/v52.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/schema/v54.ts'), b.toString(), 'utf8');
 }
 
 async function buildStartDefinition(): Promise<SchemaDefinition> {
@@ -438,7 +438,7 @@ function writeCreateTable(b: FileBuilder, tableDefinition: TableDefinition): voi
     );
   }
   b.indentCount--;
-  b.append('`);');
+  b.append(')`);');
   b.newLine();
 
   for (const indexDefinition of tableDefinition.indexes) {

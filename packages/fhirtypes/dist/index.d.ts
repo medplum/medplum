@@ -189,6 +189,7 @@ export * from './SpecimenDefinition';
 export * from './StructureDefinition';
 export * from './StructureMap';
 export * from './Subscription';
+export * from './SubscriptionStatus';
 export * from './Substance';
 export * from './SubstanceAmount';
 export * from './SubstanceNucleicAcid';
