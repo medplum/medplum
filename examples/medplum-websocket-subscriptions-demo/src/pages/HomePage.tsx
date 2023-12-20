@@ -66,12 +66,6 @@ export function HomePage(): JSX.Element {
 
     setWorking(true);
 
-    // const subscription = await medplum.searchResources<'Subscription'>('Subscription', {
-    //   criteria: `Communication?sender=Patient/${patientId}`,
-    // });
-
-    // console.log(subscription);
-
     const subscription1 = await medplum.createResource<Subscription>({
       resourceType: 'Subscription',
       criteria: `Communication?sender=Patient/${patientId}`,
@@ -92,9 +86,8 @@ export function HomePage(): JSX.Element {
       },
     });
 
-    setWorking(false);
-    // setSubscriptions([subscription1]);
     setSubscriptions([subscription1, subscription2]);
+    setWorking(false);
   }
 
   async function listenForSubs(): Promise<void> {
@@ -143,8 +136,8 @@ export function HomePage(): JSX.Element {
       setBundles((s) => [...s, bundle]);
     });
 
-    setWorking(false);
     setWebSocket(ws);
+    setWorking(false);
   }
 
   async function createOutgoingMessage(): Promise<void> {
@@ -165,6 +158,27 @@ export function HomePage(): JSX.Element {
     });
   }
 
+  function closeWebSocket(): void {
+    if (!webSocket) {
+      return;
+    }
+    webSocket.close();
+    setWebSocket(undefined);
+  }
+
+  async function deleteSubscriptions(): Promise<void> {
+    if (working || !subscriptions) {
+      return;
+    }
+
+    setWorking(true);
+    for (const subscription of subscriptions) {
+      await medplum.deleteResource('Subscription', subscription.id as string);
+    }
+    setSubscriptions(undefined);
+    setWorking(false);
+  }
+
   return (
     <Document>
       <Title>
@@ -175,14 +189,14 @@ export function HomePage(): JSX.Element {
           onClick={!subscriptions ? () => createSubscriptions().catch(console.error) : undefined}
           disabled={working || !!subscriptions}
         >
-          Create Subscription
+          Create Subscriptions
         </Button>
         <Button
           onClick={subscriptions ? () => listenForSubs().catch(console.error) : undefined}
           disabled={working || !subscriptions || !!webSocket}
           mx={10}
         >
-          Connect via WebSockets
+          Connect via WebSocket
         </Button>
         <Button
           onClick={webSocket ? () => createOutgoingMessage().catch(console.error) : undefined}
@@ -195,6 +209,18 @@ export function HomePage(): JSX.Element {
           disabled={working || !webSocket}
         >
           Create Incoming Message
+        </Button>
+      </Group>
+      <Group position="center" pt="xl">
+        <Button onClick={webSocket ? closeWebSocket : undefined} disabled={!webSocket} variant="outline">
+          Disconnect from WebSocket
+        </Button>
+        <Button
+          onClick={subscriptions && !webSocket ? () => deleteSubscriptions().catch(console.error) : undefined}
+          disabled={working || !subscriptions || !!webSocket}
+          variant="outline"
+        >
+          Delete Subscriptions
         </Button>
       </Group>
       <Accordion mt={50}>
