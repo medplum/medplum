@@ -43,7 +43,7 @@ function deployServerUpdate(tag: string, config: MedplumInfraConfig): void {
 
   const cmd = `npx cdk deploy -c config=${configFile}${config.region !== 'us-east-1' ? ' --all' : ''}`;
   console.log('> ' + cmd);
-  const deploy = spawnSync(cmd);
+  const deploy = spawnSync(cmd, { stdio: 'inherit' });
 
   if (deploy.status !== 0) {
     throw new Error(`Deploy of ${config.serverImage} failed (exit code ${deploy.status}): ${deploy.stderr}`);
