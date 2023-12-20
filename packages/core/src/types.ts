@@ -298,7 +298,6 @@ export function getPathDisplayName(path: string): string {
  */
 export function getPropertyDisplayName(propertyName: string): string {
   let words: string[];
-
   // CodeQL flags the regex below for potential ReDoS (Regex Denial of Service), so limit input size
   // https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
   if (propertyName.length < 100) {
@@ -321,7 +320,7 @@ export function getPropertyDisplayName(propertyName: string): string {
     */
     words = propertyName.match(/[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\d+/g) ?? [];
   } else {
-    // otherwisze fallback to splitting on capital letters
+    // fallback to splitting on capital letters
     words = propertyName.split(/(?=[A-Z])/);
   }
 
