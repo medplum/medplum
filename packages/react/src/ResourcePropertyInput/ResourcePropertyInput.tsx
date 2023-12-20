@@ -245,10 +245,12 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           }}
         />
       );
+    case PropertyType.base64Binary:
     case PropertyType.markdown:
       return (
         <Textarea
           id={name}
+          spellCheck={propertyType !== PropertyType.base64Binary}
           name={name}
           data-testid={name}
           defaultValue={defaultValue}
