@@ -40,12 +40,7 @@ export function SetPasswordPage(): JSX.Element {
           medplum
             .post('auth/setpassword', body)
             .then(() => setSuccess(true))
-            .catch((err) => {
-              console.log(err);
-              console.log(normalizeOperationOutcome(err));
-
-              setOutcome(normalizeOperationOutcome(err));
-            });
+            .catch((err) => setOutcome(normalizeOperationOutcome(err)));
         }}
       >
         <Center sx={{ flexDirection: 'column' }}>
