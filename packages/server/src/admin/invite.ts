@@ -197,10 +197,14 @@ async function createOrUpdateProjectMembership(
   membershipTemplate: Partial<ProjectMembership>,
   upsert: boolean
 ): Promise<ProjectMembership> {
-  const existingMembership = await searchForExistingMembership(user, project, profile);
+  const existingMembership = await searchForExistingMembership(user, project);
   if (existingMembership) {
     if (!upsert) {
       throw new OperationOutcomeError(badRequest('User is already a member of this project'));
+    }
+
+    if (existingMembership.profile?.reference !== getReferenceString(profile)) {
+      throw new OperationOutcomeError(badRequest('User is already a member of this project with a different profile'));
     }
 
     // Update the existing membership
@@ -220,11 +224,7 @@ async function createOrUpdateProjectMembership(
   return createProjectMembership(user, project, profile, membershipTemplate);
 }
 
-async function searchForExistingMembership(
-  user: User,
-  project: Project,
-  profile: ProfileResource
-): Promise<ProjectMembership | undefined> {
+async function searchForExistingMembership(user: User, project: Project): Promise<ProjectMembership | undefined> {
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
@@ -237,11 +237,6 @@ async function searchForExistingMembership(
         code: 'project',
         operator: Operator.EQUALS,
         value: getReferenceString(project),
-      },
-      {
-        code: 'profile',
-        operator: Operator.EQUALS,
-        value: getReferenceString(profile),
       },
     ],
   });

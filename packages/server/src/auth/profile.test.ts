@@ -1,9 +1,8 @@
-import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
+import { getReferenceString, ProfileResource } from '@medplum/core';
 import { Login, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
@@ -25,7 +24,7 @@ describe('Profile', () => {
       await initApp(app, config);
 
       // Create a user with multiple profiles
-      // Use the same user/email in the same project
+      // Use the same user/email
       const registerResult = await registerNew({
         firstName: 'Multi1',
         lastName: 'Multi1',
@@ -34,23 +33,17 @@ describe('Profile', () => {
         password,
       });
 
-      const otherProfile = await systemRepo.createResource<ProfileResource>({
-        resourceType: 'Practitioner',
-        meta: { project: registerResult.project.id },
-        name: [{ text: 'Other' }],
-      });
-
-      const inviteResult = await inviteUser({
-        project: registerResult.project,
-        resourceType: 'Practitioner',
-        firstName: 'Multi2',
-        lastName: 'Multi2',
-        email,
-        membership: { profile: createReference(otherProfile) },
-      });
-
       profile1 = registerResult.profile;
-      profile2 = inviteResult.profile;
+
+      const registerResult2 = await registerNew({
+        firstName: 'Multi12',
+        lastName: 'Multi12',
+        projectName: 'Multi Project 2',
+        email,
+        password,
+      });
+
+      profile2 = registerResult2.profile;
     })
   );
 

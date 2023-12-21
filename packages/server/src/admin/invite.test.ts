@@ -611,7 +611,7 @@ describe('Admin Invite', () => {
   });
 
   test('Invite user with existing membership', async () => {
-    const { project, accessToken } = await withTestContext(() =>
+    const { project, accessToken, profile } = await withTestContext(() =>
       registerNew({
         firstName: 'Alice',
         lastName: 'Smith',
@@ -662,5 +662,22 @@ describe('Admin Invite', () => {
     expect(res4.status).toBe(200);
     expect(res4.body.resourceType).toBe('ProjectMembership');
     expect(res4.body.id).toEqual(res2.body.id);
+
+    // Invite Bob again with different profiile - should fail
+    const res5 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        upsert: true,
+        membership: { profile: createReference(profile) },
+      });
+    expect(res5.status).toBe(400);
+    expect(normalizeErrorString(res5.body)).toEqual(
+      'User is already a member of this project with a different profile'
+    );
   });
 });
