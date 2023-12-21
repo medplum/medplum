@@ -1,5 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, StructureMap } from '@medplum/fhirtypes';
+import { toTypedValue } from '../fhirpath/utils';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
 import { structureMapTransform } from './transform';
@@ -29,7 +30,7 @@ describe('FHIR Mapper transform - import', () => {
 
     const maps = new StructureMapCollection([map1, map2]);
 
-    const input = [{ name: { firstName: 'Bob' } }];
+    const input = [toTypedValue({ name: { firstName: 'Bob' } })];
     const actual = structureMapTransform(map1, input, (url) => maps.get(url));
     const expected = input;
     expect(actual).toMatchObject(expected);
@@ -57,7 +58,7 @@ describe('FHIR Mapper transform - import', () => {
 
     const maps = new StructureMapCollection([map1, map2, map3]);
 
-    const input = [{ name: { firstName: 'Bob', lastName: 'Smith' } }];
+    const input = [toTypedValue({ name: { firstName: 'Bob', lastName: 'Smith' } })];
     const actual = structureMapTransform(map1, input, (url) => maps.get(url));
     const expected = input;
     expect(actual).toMatchObject(expected);

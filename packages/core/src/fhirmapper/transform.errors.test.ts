@@ -1,5 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle } from '@medplum/fhirtypes';
+import { toTypedValue } from '../fhirpath/utils';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
 import { structureMapTransform } from './transform';
@@ -59,11 +60,27 @@ describe('FHIR Mapper transform - errors', () => {
     }`;
 
     try {
-      structureMapTransform(parseMappingLanguage(map), [{}, {}, {}]);
+      structureMapTransform(parseMappingLanguage(map), [toTypedValue({}), toTypedValue({}), toTypedValue({})]);
       throw new Error('Expected error');
     } catch (err: any) {
       expect(err.message).toEqual('Too many arguments (got 3, max 2)');
     }
+  });
+
+  test('Source not found', () => {
+    const map = `
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-right" as target
+
+      group tutorial(source src : TLeft, target tgt : TRight) {
+        notFound.a as a -> tgt.a = a "rule_a";
+      }
+    `;
+
+    const input = [toTypedValue({ a: 'abc' })];
+    const expected = [toTypedValue({})];
+    const actual = structureMapTransform(parseMappingLanguage(map), input);
+    expect(actual).toEqual(expected);
   });
 
   test('Target not found', () => {
@@ -77,7 +94,7 @@ describe('FHIR Mapper transform - errors', () => {
     `;
 
     try {
-      structureMapTransform(parseMappingLanguage(map), [{ a: 'abc' }]);
+      structureMapTransform(parseMappingLanguage(map), [toTypedValue({ a: 'abc' })]);
       throw new Error('Expected error');
     } catch (err: any) {
       expect(err.message).toEqual('Target not found: notFound');
@@ -95,10 +112,64 @@ describe('FHIR Mapper transform - errors', () => {
     `;
 
     try {
-      structureMapTransform(parseMappingLanguage(map), [{ a: 'abc' }]);
+      structureMapTransform(parseMappingLanguage(map), [toTypedValue({ a: 'abc' })]);
       throw new Error('Expected error');
     } catch (err: any) {
       expect(err.message).toEqual('Invalid key: prototype');
+    }
+  });
+
+  test('Unsupported transform', () => {
+    const map = `
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-right" as target
+
+      group tutorial(source src : TLeft, target tgt : TRight) {
+        src.a as a -> tgt.a = unsupported(a);
+      }
+    `;
+
+    try {
+      structureMapTransform(parseMappingLanguage(map), [toTypedValue({ a: 'abc' })]);
+      throw new Error('Expected error');
+    } catch (err: any) {
+      expect(err.message).toEqual('Unsupported transform: unsupported');
+    }
+  });
+
+  test('Missing target param', () => {
+    const map = `
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-right" as target
+
+      group tutorial(source src : TLeft, target tgt : TRight) {
+        src.a as a -> tgt.a = truncate();
+      }
+    `;
+
+    try {
+      structureMapTransform(parseMappingLanguage(map), [toTypedValue({ a: 'abc' })]);
+      throw new Error('Expected error');
+    } catch (err: any) {
+      expect(err.message).toEqual('Missing target parameter: undefined');
+    }
+  });
+
+  test('Variable not found', () => {
+    const map = `
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-right" as target
+
+      group tutorial(source src : TLeft, target tgt : TRight) {
+        src.a as a -> tgt.a = truncate(x);
+      }
+    `;
+
+    try {
+      structureMapTransform(parseMappingLanguage(map), [toTypedValue({ a: 'abc' })]);
+      throw new Error('Expected error');
+    } catch (err: any) {
+      expect(err.message).toEqual('Variable not found: x');
     }
   });
 });

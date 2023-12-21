@@ -1,5 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle } from '@medplum/fhirtypes';
+import { toTypedValue } from '../fhirpath/utils';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
 import { structureMapTransform } from './transform';
@@ -22,8 +23,8 @@ describe('FHIR Mapper transform - dependent', () => {
       };
     }`;
 
-    const input = [{ name: { firstName: 'bob', lastName: 'smith' } }];
-    const expected = [{ name: { firstName: 'bob', familyName: 'smith' } }];
+    const input = [toTypedValue({ name: { firstName: 'bob', lastName: 'smith' } })];
+    const expected = [toTypedValue({ name: { firstName: 'bob', familyName: 'smith' } })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toMatchObject(expected);
   });
@@ -40,8 +41,8 @@ describe('FHIR Mapper transform - dependent', () => {
       src.lastName as ln -> tgt.familyName = ln;
     }`;
 
-    const input = [{ status: 'active', name: { firstName: 'bob', lastName: 'smith' } }];
-    const expected = [{ statusCode: 'active', name: { firstName: 'bob', familyName: 'smith' } }];
+    const input = [toTypedValue({ status: 'active', name: { firstName: 'bob', lastName: 'smith' } })];
+    const expected = [toTypedValue({ statusCode: 'active', name: { firstName: 'bob', familyName: 'smith' } })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toMatchObject(expected);
   });
@@ -54,7 +55,7 @@ describe('FHIR Mapper transform - dependent', () => {
     }`;
 
     try {
-      structureMapTransform(parseMappingLanguage(map), [{ status: 'x', name: 'y' }]);
+      structureMapTransform(parseMappingLanguage(map), [toTypedValue({ status: 'x', name: 'y' })]);
       throw new Error('Expected error');
     } catch (err: any) {
       expect(err.message).toBe('Dependent group not found: doesNotExist');
@@ -72,8 +73,8 @@ describe('FHIR Mapper transform - dependent', () => {
       src.section as srcSection -> tgt.section as tgtSection then section(srcSection, tgtSection);
     }`;
 
-    const input = [{ section: { section: { name: 'foo' } } }];
-    const expected = [{ section: { section: { name: 'foo' } } }];
+    const input = [toTypedValue({ section: { section: { name: 'foo' } } })];
+    const expected = [toTypedValue({ section: { section: { name: 'foo' } } })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toMatchObject(expected);
   });

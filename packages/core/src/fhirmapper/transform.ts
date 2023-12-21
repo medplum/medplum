@@ -16,18 +16,18 @@ import { TypedValue } from '../types';
 interface TransformContext {
   loader?: (url: string) => StructureMap[];
   parent?: TransformContext;
-  variables?: Record<string, any>;
+  variables?: Record<string, TypedValue>;
 }
 
 export function structureMapTransform(
   structureMap: StructureMap,
-  input: any[],
+  input: TypedValue[],
   loader?: (url: string) => StructureMap[]
-): any[] {
+): TypedValue[] {
   return evalStructureMap({ loader }, structureMap, input);
 }
 
-function evalStructureMap(ctx: TransformContext, structureMap: StructureMap, input: any[]): any[] {
+function evalStructureMap(ctx: TransformContext, structureMap: StructureMap, input: TypedValue[]): TypedValue[] {
   evalImports(ctx, structureMap);
   hoistGroups(ctx, structureMap);
   return evalGroup(ctx, (structureMap.group as StructureMapGroup[])[0], input);
@@ -47,12 +47,12 @@ function evalImports(ctx: TransformContext, structureMap: StructureMap): void {
 function hoistGroups(ctx: TransformContext, structureMap: StructureMap): void {
   if (structureMap.group) {
     for (const group of structureMap.group) {
-      setVariable(ctx, group.name as string, group);
+      setVariable(ctx, group.name as string, { type: 'StructureMapGroup', value: group });
     }
   }
 }
 
-function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: any[]): any[] {
+function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: TypedValue[]): TypedValue[] {
   const sourceDefinitions: StructureMapGroupInput[] = [];
   const targetDefinitions: StructureMapGroupInput[] = [];
 
@@ -83,7 +83,7 @@ function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: any[]
     );
   }
 
-  const variables: Record<string, any> = {};
+  const variables: Record<string, TypedValue> = {};
   const outputs = [];
   let inputIndex = 0;
 
@@ -92,7 +92,7 @@ function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: any[]
   }
 
   for (const targetDefinition of targetDefinitions) {
-    const output = input[inputIndex++] ?? {};
+    const output = input[inputIndex++] ?? toTypedValue({});
     safeAssign(variables, targetDefinition.name as string, output);
     outputs.push(output);
   }
@@ -141,12 +141,16 @@ function evalRule(ctx: TransformContext, rule: StructureMapGroupRule): void {
 
 function evalSource(ctx: TransformContext, source: StructureMapGroupRuleSource): boolean {
   const sourceContext = getVariable(ctx, source.context as string);
+  if (!sourceContext) {
+    return false;
+  }
+
   const sourceElement = source.element;
   if (!sourceElement) {
     return true;
   }
 
-  const sourceValue = evalFhirPathTyped(sourceElement, [toTypedValue(sourceContext)]);
+  const sourceValue = evalFhirPathTyped(sourceElement, [sourceContext]);
   if (!sourceValue || sourceValue.length === 0) {
     return false;
   }
@@ -164,14 +168,14 @@ function evalSource(ctx: TransformContext, source: StructureMapGroupRuleSource):
   }
 
   if (source.variable) {
-    setVariable(ctx, source.variable, sourceValue[0].value);
+    setVariable(ctx, source.variable, sourceValue[0]);
   }
 
   return true;
 }
 
-function evalCondition(input: any, variables: Record<string, TypedValue>, condition: string): boolean {
-  return toJsBoolean(evalFhirPathTyped(condition, [toTypedValue(input)], variables));
+function evalCondition(input: TypedValue, variables: Record<string, TypedValue>, condition: string): boolean {
+  return toJsBoolean(evalFhirPathTyped(condition, [input], variables));
 }
 
 function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget): void {
@@ -180,14 +184,16 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
     throw new Error('Target not found: ' + target.context);
   }
 
-  const originalValue = targetContext[target.element as string];
-  let targetValue;
+  const originalValue = targetContext.value[target.element as string];
+  let targetValue: TypedValue;
 
   if (!target.transform) {
+    // TODO: Need to determine whether "targetValue" should be an object or an array
+    // To do this, we'll need to look at the StructureDefinition for the target element
     if (Array.isArray(originalValue) || originalValue === undefined) {
-      targetValue = {};
+      targetValue = toTypedValue({});
     } else {
-      targetValue = originalValue;
+      targetValue = toTypedValue(originalValue);
     }
   } else {
     switch (target.transform) {
@@ -208,19 +214,17 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
         targetValue = evalTruncate(ctx, target);
         break;
       case 'uuid':
-        targetValue = generateId();
+        targetValue = { type: 'string', value: generateId() };
         break;
       default:
-        console.warn(
-          `Unsupported transform: ${target.transform} (context=${target.context} element=${target.element})`
-        );
+        throw new Error(`Unsupported transform: ${target.transform}`);
     }
   }
 
   if (Array.isArray(originalValue)) {
-    originalValue.push(targetValue);
+    originalValue.push(targetValue.value);
   } else {
-    safeAssign(targetContext, target.element as string, targetValue);
+    safeAssign(targetContext.value, target.element as string, targetValue.value);
   }
 
   if (target.variable) {
@@ -228,29 +232,29 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
   }
 }
 
-function evalAppend(ctx: TransformContext, target: StructureMapGroupRuleTarget): any {
-  const arg1 = resolveParameter(ctx, target.parameter?.[0]) as string | undefined;
-  const arg2 = resolveParameter(ctx, target.parameter?.[1]) as string | undefined;
-  return (arg1 ?? '').toString() + (arg2 ?? '').toString();
+function evalAppend(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue {
+  const arg1 = resolveParameter(ctx, target.parameter?.[0])?.value;
+  const arg2 = resolveParameter(ctx, target.parameter?.[1])?.value;
+  return { type: 'string', value: (arg1 ?? '').toString() + (arg2 ?? '').toString() };
 }
 
-function evalCopy(ctx: TransformContext, target: StructureMapGroupRuleTarget): any {
+function evalCopy(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue {
   return resolveParameter(ctx, target.parameter?.[0]);
 }
 
-function evalCreate(ctx: TransformContext, target: StructureMapGroupRuleTarget): any {
-  const targetValue: Record<string, unknown> = {};
+function evalCreate(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue {
+  const result: Record<string, unknown> = {};
   if (target.parameter && target.parameter.length > 0) {
-    targetValue.resourceType = resolveParameter(ctx, target.parameter?.[0]);
+    result.resourceType = resolveParameter(ctx, target.parameter?.[0])?.value;
   }
-  return targetValue;
+  return toTypedValue(result);
 }
 
-function evalTruncate(ctx: TransformContext, target: StructureMapGroupRuleTarget): any {
-  let targetValue = resolveParameter(ctx, target.parameter?.[0]) as string | undefined;
-  const targetLength = resolveParameter(ctx, target.parameter?.[1]) as number;
-  if (targetValue && typeof targetValue === 'string') {
-    targetValue = targetValue.substring(0, targetLength);
+function evalTruncate(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue {
+  const targetValue = resolveParameter(ctx, target.parameter?.[0]);
+  const targetLength = resolveParameter(ctx, target.parameter?.[1])?.value as number;
+  if (targetValue.type === 'string') {
+    return { type: 'string', value: targetValue.value.substring(0, targetLength) };
   }
   return targetValue;
 }
@@ -262,16 +266,23 @@ function evalDependent(ctx: TransformContext, dependent: StructureMapGroupRuleDe
   }
 
   const variables = dependent.variable as string[];
-  const args = [];
+  const args: TypedValue[] = [];
   for (const variable of variables) {
-    args.push(getVariable(ctx, variable));
+    const variableValue = getVariable(ctx, variable);
+    if (!variableValue) {
+      throw new Error('Dependent variable not found: ' + variable);
+    }
+    args.push(variableValue);
   }
 
   const newContext: TransformContext = { parent: ctx, variables: {} };
-  evalGroup(newContext, dependentGroup as StructureMapGroup, args);
+  evalGroup(newContext, dependentGroup.value as StructureMapGroup, args);
 }
 
-function resolveParameter(ctx: TransformContext, parameter: StructureMapGroupRuleTargetParameter | undefined): any {
+function resolveParameter(
+  ctx: TransformContext,
+  parameter: StructureMapGroupRuleTargetParameter | undefined
+): TypedValue {
   const typedParameter = { type: 'StructureMapGroupRuleTargetParameter', value: parameter };
   let paramValue = getTypedPropertyValue(typedParameter, 'value');
 
@@ -283,15 +294,18 @@ function resolveParameter(ctx: TransformContext, parameter: StructureMapGroupRul
     throw new Error('Missing target parameter: ' + JSON.stringify(parameter));
   }
 
-  let targetValue = paramValue.value;
   if (paramValue.type === 'id') {
-    targetValue = getVariable(ctx, paramValue.value as string);
+    const variableValue = getVariable(ctx, paramValue.value as string);
+    if (!variableValue) {
+      throw new Error('Variable not found: ' + paramValue.value);
+    }
+    return variableValue;
   }
 
-  return targetValue;
+  return paramValue;
 }
 
-function getVariable(ctx: TransformContext, name: string): any {
+function getVariable(ctx: TransformContext, name: string): TypedValue | undefined {
   const value = ctx.variables?.[name];
   if (value) {
     return value;
@@ -302,7 +316,7 @@ function getVariable(ctx: TransformContext, name: string): any {
   return undefined;
 }
 
-function setVariable(ctx: TransformContext, name: string, value: any): void {
+function setVariable(ctx: TransformContext, name: string, value: TypedValue): void {
   if (!ctx.variables) {
     ctx.variables = {};
   }
