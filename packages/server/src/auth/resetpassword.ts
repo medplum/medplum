@@ -63,7 +63,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
-  const url = await resetPassword(user, 'reset');
+  const url = await resetPassword(user, 'reset', req.body.redirectUri);
 
   if (req.body.sendEmail !== false) {
     await sendEmail(systemRepo, {
@@ -93,9 +93,10 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
  * Returns the URL to the password change request.
  * @param user - The user to create the password change request for.
  * @param type - The type of password change request.
+ * @param redirectUri - Optional URI for redirection to the client application.
  * @returns The URL to reset the password.
  */
-export async function resetPassword(user: User, type: 'invite' | 'reset'): Promise<string> {
+export async function resetPassword(user: User, type: 'invite' | 'reset', redirectUri?: string): Promise<string> {
   // Create the password change request
   const pcr = await systemRepo.createResource<PasswordChangeRequest>({
     resourceType: 'PasswordChangeRequest',
@@ -105,6 +106,7 @@ export async function resetPassword(user: User, type: 'invite' | 'reset'): Promi
     type,
     user: createReference(user),
     secret: generateSecret(16),
+    redirectUri,
   });
 
   // Build the reset URL
