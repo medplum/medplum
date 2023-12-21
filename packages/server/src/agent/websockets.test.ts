@@ -395,4 +395,41 @@ describe('Agent WebSockets', () => {
       .close()
       .expectClosed();
   });
+
+  test('Ping', async () => {
+    await request(server)
+      .ws('/ws/agent')
+      .sendText(
+        JSON.stringify({
+          type: 'agent:connect:request',
+          accessToken,
+          agentId: agent.id,
+        })
+      )
+      .expectText('{"type":"agent:connect:response"}')
+      // Send a ping
+      .sendText(JSON.stringify({ type: 'agent:ping:request' }))
+      .expectText('{"type":"agent:ping:response"}')
+      // Simulate a ping response
+      .sendText(JSON.stringify({ type: 'agent:ping:response' }))
+      .close()
+      .expectClosed();
+  });
+
+  test('Unknown message type', async () => {
+    await request(server)
+      .ws('/ws/agent')
+      .sendText(
+        JSON.stringify({
+          type: 'agent:connect:request',
+          accessToken,
+          agentId: agent.id,
+        })
+      )
+      .expectText('{"type":"agent:connect:response"}')
+      .sendText(JSON.stringify({ type: 'asdfasdf' }))
+      .expectText('{"type":"agent:error","body":"Unknown message type: asdfasdf"}')
+      .close()
+      .expectClosed();
+  });
 });

@@ -6,7 +6,7 @@ import {
   MedplumClient,
   normalizeErrorString,
 } from '@medplum/core';
-import { AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
+import { Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { EventLogger } from 'node-windows';
 import WebSocket from 'ws';
@@ -91,7 +91,7 @@ export class App {
 
     const agent = await this.medplum.readResource('Agent', this.agentId);
 
-    for (const definition of agent.channel as AgentChannel[]) {
+    for (const definition of agent.channel ?? []) {
       const endpoint = await this.medplum.readReference(definition.endpoint as Reference<Endpoint>);
       let channel: Channel | undefined = undefined;
 
