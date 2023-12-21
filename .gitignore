@@ -39,6 +39,9 @@ packages/server/dist/
 # Storybook output
 storybook-static/
 
+# Chromatic
+packages/react/build-storybook.log
+
 # Jest code coverage
 coverage/
 
