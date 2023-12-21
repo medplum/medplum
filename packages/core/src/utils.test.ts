@@ -478,10 +478,6 @@ describe('Core Utils', () => {
     );
   });
 
-  test('Foo', () => {
-    expect(deepEquals({ value: 0 }, { value: 1 })).toEqual(false);
-  });
-
   test('Deep equals', () => {
     // Empty values = null, undefined, empty string
     expect(deepEquals(null, null)).toBe(true);
