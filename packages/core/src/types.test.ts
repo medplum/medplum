@@ -15,6 +15,7 @@ import {
   getElementDefinitionFromElements,
   getElementDefinitionTypeName,
   getPathDisplayName,
+  getPropertyDisplayName,
   isReference,
   isResource,
   stringifyTypedValue,
@@ -29,6 +30,17 @@ describe('Type Utils', () => {
     expect(getPathDisplayName('DeviceDefinition.manufacturer[x]')).toEqual('Manufacturer');
     expect(getPathDisplayName('ClientApplication.jwksUri')).toEqual('JWKS URI');
     expect(getPathDisplayName('ClientApplication.redirectUri')).toEqual('Redirect URI');
+    expect(getPathDisplayName('Device.udiCarrier')).toEqual('UDI Carrier');
+    expect(getPathDisplayName('Patient.withASingleCharacterWord')).toEqual('With A Single Character Word');
+    expect(getPathDisplayName('Device.udiCarrier.carrierAIDC')).toEqual('Carrier AIDC');
+    expect(getPathDisplayName('Device.udiCarrier.carrierHRF')).toEqual('Carrier HRF');
+    expect(getPathDisplayName('Patient.digitAtEnd8')).toEqual('Digit At End 8');
+    expect(getPathDisplayName('Patient.8digitAtStart')).toEqual('8 Digit At Start');
+    expect(getPathDisplayName('Patient.digit8InMiddle')).toEqual('Digit 8 In Middle');
+  });
+
+  test('getPropertyDisplayName', () => {
+    expect(getPropertyDisplayName('_lastUpdated')).toEqual('Last Updated');
   });
 
   test('getElementDefinitionTypeName', () => {

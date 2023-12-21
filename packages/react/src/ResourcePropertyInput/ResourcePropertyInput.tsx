@@ -46,7 +46,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
 
   const propertyTypes = property.type as ElementDefinitionType[];
 
-  if (property.max > 1 && !props.arrayElement) {
+  if ((property.isArray || property.max > 1) && !props.arrayElement) {
     if (defaultPropertyType === PropertyType.Attachment) {
       return <AttachmentArrayInput name={name} defaultValue={defaultValue} onChange={onChange} />;
     }
@@ -245,10 +245,12 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           }}
         />
       );
+    case PropertyType.base64Binary:
     case PropertyType.markdown:
       return (
         <Textarea
           id={name}
+          spellCheck={propertyType !== PropertyType.base64Binary}
           name={name}
           data-testid={name}
           defaultValue={defaultValue}
