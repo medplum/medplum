@@ -145,10 +145,6 @@ function evalSource(ctx: TransformContext, source: StructureMapGroupRuleSource):
     return false;
   }
 
-  if (!sourceContext.type) {
-    throw new Error('Source context has no type: ' + source.context);
-  }
-
   const sourceElement = source.element;
   if (!sourceElement) {
     return true;
@@ -193,8 +189,7 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
 
   if (!target.transform) {
     // TODO: Need to determine whether "targetValue" should be an object or an array
-    // To do this, we'll need to look at the StructureDefinition for the target
-    // What is the "path" at this point?
+    // To do this, we'll need to look at the StructureDefinition for the target element
     if (Array.isArray(originalValue) || originalValue === undefined) {
       targetValue = toTypedValue({});
     } else {
@@ -222,14 +217,8 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
         targetValue = { type: 'string', value: generateId() };
         break;
       default:
-        throw new Error(
-          `Unsupported transform: ${target.transform} (context=${target.context} element=${target.element})`
-        );
+        throw new Error(`Unsupported transform: ${target.transform}`);
     }
-  }
-
-  if (!targetValue.type) {
-    throw new Error('Missing type: ' + JSON.stringify(targetValue));
   }
 
   if (Array.isArray(originalValue)) {
@@ -328,9 +317,6 @@ function getVariable(ctx: TransformContext, name: string): TypedValue | undefine
 }
 
 function setVariable(ctx: TransformContext, name: string, value: TypedValue): void {
-  if (!value.type) {
-    throw new Error('Missing type: ' + JSON.stringify(value));
-  }
   if (!ctx.variables) {
     ctx.variables = {};
   }
