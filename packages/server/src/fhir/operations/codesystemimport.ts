@@ -78,19 +78,18 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
   const db = getClient();
   await db.query('BEGIN');
   if (params.concept) {
-    const concepts = [];
     for (const concept of params.concept) {
-      concepts.push({
+      const row = {
         system: codeSystem.id,
         code: concept.code,
         display: concept.display,
-      });
+      };
+      const query = new InsertQuery('Coding', [row]).mergeOnConflict(['system', 'code']);
+      await query.execute(db);
     }
-    const query = new InsertQuery('Coding', concepts).mergeOnConflict(['system', 'code']);
-    await query.execute(db);
   }
 
-  if (params.property) {
+  if (params.property?.length) {
     try {
       await processProperties(params.property, codeSystem, db);
     } catch (err: any) {
@@ -109,7 +108,6 @@ async function processProperties(
   db: Pool
 ): Promise<void> {
   const cache: Record<string, number> = Object.create(null);
-  const properties = [];
   for (const imported of importedProperties) {
     const codingId = (
       await new SelectQuery('Coding')
@@ -119,7 +117,7 @@ async function processProperties(
         .execute(db)
     )[0]?.id;
     if (!codingId) {
-      throw new OperationOutcomeError(badRequest('Unknown code: ' + imported.code));
+      throw new OperationOutcomeError(badRequest(`Unknown code: ${codeSystem.url}|${imported.code}`));
     }
 
     const propertyCode = imported.property;
@@ -148,14 +146,13 @@ async function processProperties(
       if (targetId) {
         property.target = targetId;
       } else {
-        throw new OperationOutcomeError(badRequest('Unknown code: ' + imported.code));
+        // throw new OperationOutcomeError(badRequest('Unknown code: ' + imported.code));
       }
     }
 
-    properties.push(property);
+    const query = new InsertQuery('Coding_Property', [property]);
+    await query.execute(db);
   }
-  const query = new InsertQuery('Coding_Property', properties);
-  await query.execute(db);
 }
 
 async function resolveProperty(codeSystem: CodeSystem, code: string, db: Pool): Promise<[number, boolean]> {
