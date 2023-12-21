@@ -413,6 +413,7 @@ export interface InviteRequest {
   password?: string;
   sendEmail?: boolean;
   membership?: Partial<ProjectMembership>;
+  upsert?: boolean;
   /** @deprecated Use membership.accessPolicy instead. */
   accessPolicy?: Reference<AccessPolicy>;
   /** @deprecated Use membership.access instead. */
