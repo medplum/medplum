@@ -1,4 +1,4 @@
-import { Coding, Period, Quantity } from '@medplum/fhirtypes';
+import { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
 import { PropertyType, TypedValue, getElementDefinition, isResource } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
 import { capitalize, isEmpty } from '../utils';
@@ -121,16 +121,17 @@ export function getTypedPropertyValueWithSchema(
 
   // The path parameter can be in both "value[x]" form and "valueBoolean" form.
   // So we need to use the element path to find the type.
-  let resultPath = path;
   let resultValue: any = undefined;
   let resultType = 'undefined';
+  let primitiveExtension: Extension[] | undefined = undefined;
 
   if (element.path.endsWith('[x]')) {
     const elementBasePath = (element.path.split('.').pop() as string).replace('[x]', '');
     for (const type of types) {
-      resultPath = elementBasePath + capitalize(type.code);
-      resultValue = value[resultPath];
-      if (resultValue !== undefined) {
+      const candidatePath = elementBasePath + capitalize(type.code);
+      resultValue = value[candidatePath];
+      primitiveExtension = value['_' + candidatePath];
+      if (resultValue !== undefined || primitiveExtension !== undefined) {
         resultType = type.code;
         break;
       }
@@ -139,16 +140,18 @@ export function getTypedPropertyValueWithSchema(
     console.assert(types.length === 1, 'Expected single type', element.path);
     resultValue = value[path];
     resultType = types[0].code;
+    primitiveExtension = value['_' + path];
   }
 
   // When checking for primitive extensions, we must use the "resolved" path.
   // In the case of [x] choice-of-type, the type must be resolved to a single type.
-  const primitiveExtension = value['_' + resultPath];
   if (primitiveExtension) {
     if (Array.isArray(resultValue)) {
-      resultValue = resultValue.map((v, i) => (primitiveExtension[i] ? safeAssign(v ?? {}, primitiveExtension[i]) : v));
+      for (let i = 0; i < Math.max(resultValue.length, primitiveExtension.length); i++) {
+        resultValue[i] = assignPrimitiveExtension(resultValue[i], primitiveExtension[i]);
+      }
     } else {
-      resultValue = safeAssign(resultValue ?? {}, primitiveExtension);
+      resultValue = assignPrimitiveExtension(resultValue, primitiveExtension);
     }
   }
 
@@ -464,6 +467,16 @@ function deepEquals<T1 extends object, T2 extends object>(object1: T1, object2: 
 
 function isObject(obj: unknown): obj is object {
   return obj !== null && typeof obj === 'object';
+}
+
+function assignPrimitiveExtension(target: any, primitiveExtension: any): any {
+  if (primitiveExtension) {
+    if (typeof primitiveExtension !== 'object') {
+      throw new Error('Primitive extension must be an object');
+    }
+    return safeAssign(target ?? {}, primitiveExtension);
+  }
+  return target;
 }
 
 function safeAssign(target: any, source: any): any {
