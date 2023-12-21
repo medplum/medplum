@@ -25,6 +25,7 @@ import {
   getImageSrc,
   getQuestionnaireAnswers,
   getReferenceString,
+  isEmpty,
   isLowerCase,
   isPopulated,
   isProfileResource,
@@ -135,27 +136,38 @@ describe('Core Utils', () => {
     expect(getDisplayString({ resourceType: 'User', id: '123' })).toEqual('User/123');
   });
 
-  test('isPopulated', () => {
-    expect(isPopulated('')).toBe(false);
-    expect(isPopulated(' ')).toBe(true);
-    expect(isPopulated('foo')).toBe(true);
-    expect(isPopulated({})).toBe(false);
-    expect(isPopulated({ foo: 'bar' })).toBe(true);
-    expect(isPopulated({ length: 0 })).toBe(true);
-    expect(isPopulated({ length: 1 })).toBe(true);
+  const EMPTY = [true, false];
+  const POPULATED = [false, true];
+  test.only.each([
+    [undefined, EMPTY],
+    [null, EMPTY],
 
-    expect(isPopulated([])).toBe(false);
-    expect(isPopulated([undefined])).toBe(true);
-    expect(isPopulated([null])).toBe(true);
-    expect(isPopulated([0])).toBe(true);
-    expect(isPopulated([1, 2, 3])).toBe(true);
+    ['', EMPTY],
+    [' ', POPULATED],
+    ['foo', POPULATED],
 
-    const obj = Object.create(null);
-    expect(isPopulated(obj)).toBe(false);
-    obj.foo = 'baz';
-    expect(isPopulated(obj)).toBe(true);
-    delete obj.foo;
-    expect(isPopulated(obj)).toBe(false);
+    [{}, EMPTY],
+    [Object.create(null), EMPTY],
+    [{ foo: 'bar' }, POPULATED],
+    [{ length: 0 }, POPULATED],
+    [{ length: 1 }, POPULATED],
+
+    [[], EMPTY],
+    [[undefined], POPULATED],
+    [[null], POPULATED],
+    [[0], POPULATED],
+    [[1, 2, 3], POPULATED],
+
+    [NaN, [false, false]],
+    [123, [false, false]],
+    [5.5, [false, false]],
+    [true, [false, false]],
+    [false, [false, false]],
+  ])('for %j, [isEmpty, isPopulated] should be %j', (input: any, expected: any) => {
+    const [emptyExpected, populatedExpected] = expected;
+
+    expect(isEmpty(input)).toBe(emptyExpected);
+    expect(isPopulated(input)).toBe(populatedExpected);
   });
 
   test('getImageSrc', () => {
@@ -464,6 +476,10 @@ describe('Core Utils', () => {
     expect(stringify({ resourceType: 'Patient', address: [{ line: [''] }] })).toEqual(
       '{"resourceType":"Patient","address":[{"line":[""]}]}'
     );
+  });
+
+  test('Foo', () => {
+    expect(deepEquals({ value: 0 }, { value: 1 })).toEqual(false);
   });
 
   test('Deep equals', () => {

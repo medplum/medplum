@@ -456,12 +456,17 @@ function isArrayKey(k: string): boolean {
  * @param v - Any value.
  * @returns True if the value is an empty string or an empty object.
  */
-export function isEmpty(v: any): boolean {
+export function isEmpty(v: unknown): boolean {
   if (v === null || v === undefined) {
     return true;
   }
+
   const t = typeof v;
-  return (t === 'string' && v === '') || (t === 'object' && Object.keys(v).length === 0);
+  if (t === 'string' || t === 'object') {
+    return !isPopulated(v);
+  }
+
+  return false;
 }
 
 type CanBePopulated = { length: number } | object;
