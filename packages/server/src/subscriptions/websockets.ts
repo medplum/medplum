@@ -2,6 +2,7 @@ import { badRequest, createReference } from '@medplum/core';
 import { Bundle, Resource } from '@medplum/fhirtypes';
 import { Redis } from 'ioredis';
 import { JWTPayload } from 'jose';
+import crypto from 'node:crypto';
 import ws from 'ws';
 import { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
 import { getFullUrl } from '../fhir/search';
@@ -98,12 +99,14 @@ export function createSubEventNotification<ResourceType extends Resource = Resou
   } as { status: SubStatus; includeResource: boolean };
   const timestamp = new Date().toISOString();
   return {
+    id: crypto.randomUUID(),
     resourceType: 'Bundle',
     type: 'history',
     timestamp,
     entry: [
       {
         resource: {
+          id: crypto.randomUUID(),
           resourceType: 'SubscriptionStatus',
           status,
           type: 'event-notification',

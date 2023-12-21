@@ -1,12 +1,10 @@
 import { Accordion, Button, Chip, Group, Title } from '@mantine/core';
-import { createReference, parseJWTPayload } from '@medplum/core';
-import { Bundle, Communication, Parameters, Practitioner, Subscription } from '@medplum/fhirtypes';
+import { createReference, parseReference } from '@medplum/core';
+import { Bundle, Communication, Parameters, Patient, Practitioner, Reference, Subscription } from '@medplum/fhirtypes';
+import { DrAliceSmith, HomerSimpson } from '@medplum/mock';
 import { Document, ResourceName, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconArrowNarrowRight } from '@tabler/icons-react';
 import { useState } from 'react';
-
-const patientId = 'pat-123';
-const providerId = 'provider-456';
 
 interface BundleDisplayProps {
   bundle: Bundle;
@@ -15,13 +13,20 @@ interface BundleDisplayProps {
 function BundleDisplay(props: BundleDisplayProps): JSX.Element {
   const { bundle } = props;
   const communication = bundle?.entry?.[1].resource as Communication;
+  const [senderType, senderId] = parseReference(communication?.sender as Reference);
+  const [recipientType, recipientId] = parseReference(communication?.recipient?.[0] as Reference);
   return (
-    <Accordion.Item key={bundle.id} value={`${bundle?.timestamp ?? 'Unknown time'} Chat Notification`}>
+    <Accordion.Item value={`${bundle?.timestamp ?? 'Unknown time'}: Chat Notification`}>
       <Accordion.Control>
         <Group>
-          {bundle.timestamp} <Chip>{communication?.sender?.reference}</Chip>
+          {bundle.timestamp}{' '}
+          <Chip checked={false}>
+            {senderType}/{senderId.slice(0, 8)}
+          </Chip>
           <IconArrowNarrowRight />
-          <Chip>{communication?.recipient?.[0].reference}</Chip>
+          <Chip checked={false}>
+            {recipientType}/{recipientId.slice(0, 8)}
+          </Chip>
         </Group>
       </Accordion.Control>
       <Accordion.Panel>
@@ -54,21 +59,26 @@ export function HomePage(): JSX.Element {
   const profile = useMedplumProfile() as Practitioner;
   const medplum = useMedplum();
 
-  const [subscriptions, setSubscriptions] = useState<Subscription[] | undefined>(undefined);
+  const [subscription, setSubscription] = useState<Subscription | undefined>(undefined);
   const [working, setWorking] = useState(false);
   const [webSocket, setWebSocket] = useState<WebSocket | undefined>();
   const [bundles, setBundles] = useState<Bundle[]>([]);
+  const [patient, setPatient] = useState<Patient | undefined>();
+  const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
 
-  async function createSubscriptions(): Promise<void> {
+  async function createSubscription(): Promise<void> {
     if (working) {
       return;
     }
 
     setWorking(true);
 
-    const subscription1 = await medplum.createResource<Subscription>({
+    const homer = await medplum.createResourceIfNoneExist(HomerSimpson, 'name="Homer Simpson"');
+    const drAlice = await medplum.createResourceIfNoneExist(DrAliceSmith, 'name="Alice Smith"');
+
+    const subscription = await medplum.createResource<Subscription>({
       resourceType: 'Subscription',
-      criteria: `Communication?sender=Patient/${patientId}`,
+      criteria: `Communication?_compartment=Patient/${homer.id as string}`,
       status: 'active',
       reason: 'Watch for Communications for this user.',
       channel: {
@@ -76,45 +86,26 @@ export function HomePage(): JSX.Element {
       },
     });
 
-    const subscription2 = await medplum.createResource<Subscription>({
-      resourceType: 'Subscription',
-      criteria: `Communication?recipient=Patient/${patientId}`,
-      status: 'active',
-      reason: 'Watch for Communications for this user.',
-      channel: {
-        type: 'websocket',
-      },
-    });
-
-    setSubscriptions([subscription1, subscription2]);
+    setSubscription(subscription);
+    setPatient(homer);
+    setPractitioner(drAlice);
     setWorking(false);
   }
 
   async function listenForSubs(): Promise<void> {
-    if (working || !subscriptions) {
+    if (working || !subscription) {
       return;
     }
 
     setWorking(true);
+    // Create binding
+    const { parameter } = (await medplum.get(
+      `/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`
+    )) as Parameters;
 
-    const tokens = [] as string[];
-    let url: string | undefined;
-
-    for (const subscription of subscriptions) {
-      // Create binding
-      const { parameter } = (await medplum.get(
-        `/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`
-      )) as Parameters;
-      const token = parameter?.find((param) => param.name === 'token')?.valueString;
-      if (token && !tokens.includes(token)) {
-        tokens.push(token);
-      }
-      if (!url) {
-        url = parameter?.find((param) => param.name === 'websocket-url')?.valueUrl;
-      }
-    }
-
-    if (!tokens.length) {
+    const token = parameter?.find((param) => param.name === 'token')?.valueString;
+    const url = parameter?.find((param) => param.name === 'websocket-url')?.valueUrl;
+    if (!token) {
       throw new Error('Failed to get token!');
     }
     if (!url) {
@@ -123,16 +114,13 @@ export function HomePage(): JSX.Element {
 
     const ws = new WebSocket(url);
 
-    console.log('tokens[0] payload', parseJWTPayload(tokens[0]));
-
     ws.addEventListener('open', () => {
-      for (const token of tokens) {
-        ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
-      }
+      ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
     });
 
     ws.addEventListener('message', (event: MessageEvent<string>) => {
       const bundle = JSON.parse(event.data);
+      console.log(bundle);
       setBundles((s) => [...s, bundle]);
     });
 
@@ -141,20 +129,26 @@ export function HomePage(): JSX.Element {
   }
 
   async function createOutgoingMessage(): Promise<void> {
+    if (!(patient && practitioner)) {
+      return;
+    }
     await medplum.createResource<Communication>({
       resourceType: 'Communication',
       status: 'completed',
-      sender: createReference({ resourceType: 'Patient', id: patientId }),
-      recipient: [createReference({ resourceType: 'Practitioner', id: providerId })],
+      sender: createReference({ resourceType: 'Patient', id: patient.id as string }),
+      recipient: [createReference({ resourceType: 'Practitioner', id: practitioner.id as string })],
     });
   }
 
   async function createIncomingMessage(): Promise<void> {
+    if (!(patient && practitioner)) {
+      return;
+    }
     await medplum.createResource<Communication>({
       resourceType: 'Communication',
       status: 'completed',
-      sender: createReference({ resourceType: 'Practitioner', id: providerId }),
-      recipient: [createReference({ resourceType: 'Patient', id: patientId })],
+      sender: createReference({ resourceType: 'Practitioner', id: practitioner.id as string }),
+      recipient: [createReference({ resourceType: 'Patient', id: patient.id as string })],
     });
   }
 
@@ -166,16 +160,16 @@ export function HomePage(): JSX.Element {
     setWebSocket(undefined);
   }
 
-  async function deleteSubscriptions(): Promise<void> {
-    if (working || !subscriptions) {
+  async function deleteSubscription(): Promise<void> {
+    if (working || !subscription) {
       return;
     }
 
     setWorking(true);
-    for (const subscription of subscriptions) {
-      await medplum.deleteResource('Subscription', subscription.id as string);
-    }
-    setSubscriptions(undefined);
+    await medplum.deleteResource('Subscription', subscription.id as string);
+    setSubscription(undefined);
+    setPatient(undefined);
+    setPractitioner(undefined);
     setWorking(false);
   }
 
@@ -186,14 +180,14 @@ export function HomePage(): JSX.Element {
       </Title>
       <Group position="center" pt="xl">
         <Button
-          onClick={!subscriptions ? () => createSubscriptions().catch(console.error) : undefined}
-          disabled={working || !!subscriptions}
+          onClick={!subscription ? () => createSubscription().catch(console.error) : undefined}
+          disabled={working || !!subscription}
         >
-          Create Subscriptions
+          Create Subscription
         </Button>
         <Button
-          onClick={subscriptions ? () => listenForSubs().catch(console.error) : undefined}
-          disabled={working || !subscriptions || !!webSocket}
+          onClick={subscription ? () => listenForSubs().catch(console.error) : undefined}
+          disabled={working || !subscription || !!webSocket}
           mx={10}
         >
           Connect via WebSocket
@@ -216,11 +210,11 @@ export function HomePage(): JSX.Element {
           Disconnect from WebSocket
         </Button>
         <Button
-          onClick={subscriptions && !webSocket ? () => deleteSubscriptions().catch(console.error) : undefined}
-          disabled={working || !subscriptions || !!webSocket}
+          onClick={subscription && !webSocket ? () => deleteSubscription().catch(console.error) : undefined}
+          disabled={working || !subscription || !!webSocket}
           variant="outline"
         >
-          Delete Subscriptions
+          Delete Subscription
         </Button>
       </Group>
       <Accordion mt={50}>

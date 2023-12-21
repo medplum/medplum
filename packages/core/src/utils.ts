@@ -18,6 +18,7 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
+import { OperationOutcomeError, validationError } from './outcomes';
 import { isReference } from './types';
 
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
@@ -76,15 +77,13 @@ export function resolveId(input: Reference | Resource | undefined): string | und
  * @param reference - A reference to a FHIR resource.
  * @returns A tuple containing the `ResourceType` and the ID of the resource or `undefined` when `undefined` or an invalid reference is passed.
  */
-export function parseReference(reference: Reference): [ResourceType, string] | undefined;
-export function parseReference(reference: undefined): undefined;
-export function parseReference(reference: Reference | undefined): [ResourceType, string] | undefined {
+export function parseReference(reference: Reference | undefined): [ResourceType, string] {
   if (reference?.reference === undefined) {
-    return undefined;
+    throw new OperationOutcomeError(validationError('Reference missing reference property.'));
   }
   const [type, id] = reference.reference.split('/');
   if (type === '' || id === '' || id === undefined) {
-    return undefined;
+    throw new OperationOutcomeError(validationError('Unable to parse reference string.'));
   }
   return [type as ResourceType, id];
 }
