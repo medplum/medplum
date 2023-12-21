@@ -21,6 +21,14 @@ export interface AgentConnectResponse extends BaseAgentMessage {
   type: 'agent:connect:response';
 }
 
+export interface AgentPingRequest extends BaseAgentRequestMessage {
+  type: 'agent:ping:request';
+}
+
+export interface AgentPingResponse extends BaseAgentMessage {
+  type: 'agent:ping:response';
+}
+
 export interface AgentTransmitRequest extends BaseAgentRequestMessage {
   type: 'agent:transmit:request';
   channel?: string;
@@ -41,5 +49,7 @@ export type AgentMessage =
   | AgentError
   | AgentConnectRequest
   | AgentConnectResponse
+  | AgentPingRequest
+  | AgentPingResponse
   | AgentTransmitRequest
   | AgentTransmitResponse;

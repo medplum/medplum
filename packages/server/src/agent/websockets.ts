@@ -13,6 +13,7 @@ import { Redis } from 'ioredis';
 import ws from 'ws';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
+import { heartbeat } from '../heartbeat';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { getRedis } from '../redis';
 
@@ -32,6 +33,8 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
   let redisSubscriber: Redis | undefined = undefined;
 
+  const heartbeatHandler = (): void => sendMessage({ type: 'agent:ping:request' });
+
   socket.on(
     'message',
     AsyncLocalStorage.bind(async (data: ws.RawData) => {
@@ -42,6 +45,14 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
           case 'connect':
           case 'agent:connect:request':
             await handleConnect(command);
+            break;
+
+          case 'agent:ping:request':
+            sendMessage({ type: 'agent:ping:response' });
+            break;
+
+          case 'agent:ping:response':
+            // Do nothing
             break;
 
           // @ts-expect-error - Deprecated message type
@@ -67,6 +78,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
   );
 
   socket.on('close', () => {
+    heartbeat.removeEventListener('heartbeat', heartbeatHandler);
     redisSubscriber?.disconnect();
     redisSubscriber = undefined;
   });
@@ -101,6 +113,9 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       // When a message is received, send it to the agent
       socket.send(message, { binary: false });
     });
+
+    // Subscribe to heartbeat events
+    heartbeat.addEventListener('heartbeat', heartbeatHandler);
 
     // Send connected message
     sendMessage({ type: 'agent:connect:response' });

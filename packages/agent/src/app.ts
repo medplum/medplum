@@ -64,6 +64,9 @@ export class App {
             this.live = true;
             this.trySendToWebSocket();
             break;
+          case 'agent:ping:request':
+            this.sendToWebSocket({ type: 'agent:ping:response' });
+            break;
           // @ts-expect-error - Deprecated message type
           case 'transmit':
           case 'agent:transmit:response':

@@ -1,4 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import { createReference, getReferenceString, Operator, resolveId } from '@medplum/core';
 import { DomainConfiguration, PasswordChangeRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -6,7 +7,6 @@ import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
-import { createReference, resolveId, getReferenceString, Operator } from '@medplum/core';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
@@ -432,7 +432,7 @@ describe('Reset Password', () => {
     expect(SendEmailCommand).toHaveBeenCalledTimes(1); // Ensure SendEmailCommand is called once
 
     // Get newly created PasswordChangeRequest
-    const passwordChangeRequest = await withTestContext(async () => {
+    const passwordChangeRequest = (await withTestContext(async () => {
       const passwordChangeRequest = await systemRepo.searchOne<PasswordChangeRequest>({
         resourceType: 'PasswordChangeRequest',
         filters: [
@@ -444,7 +444,7 @@ describe('Reset Password', () => {
         ],
       });
       return passwordChangeRequest;
-    });
+    })) as PasswordChangeRequest;
 
     // Verify PasswordChangeRequest redirectUri
     expect(passwordChangeRequest.redirectUri).toBe('http://example.com');

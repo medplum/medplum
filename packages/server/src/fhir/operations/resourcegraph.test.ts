@@ -17,9 +17,8 @@ import {
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../../app';
+import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { closeDatabase } from '../../database';
 import { initTestAuth } from '../../test.setup';
 
 const app = express();
@@ -33,7 +32,7 @@ describe('Resource $graph', () => {
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Smoke Test', async () => {

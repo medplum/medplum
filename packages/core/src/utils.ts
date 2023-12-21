@@ -923,19 +923,3 @@ export function splitN(str: string, delim: string, n: number): string[] {
   }
   return result;
 }
-
-export type DeferredPromise = {
-  promise: Promise<void>;
-  resolve: () => void;
-  reject: (err: Error) => void;
-};
-
-export function createDeferredPromise(): DeferredPromise {
-  let _resolve!: () => void;
-  let _reject!: (err: Error) => void;
-  const promise = new Promise<void>((resolve, reject) => {
-    _resolve = resolve;
-    _reject = reject;
-  });
-  return { promise, resolve: _resolve, reject: _reject };
-}
