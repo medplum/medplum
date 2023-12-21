@@ -1,9 +1,15 @@
 import { CodeSystem, Coding } from '@medplum/fhirtypes';
-import { createReadStream, existsSync, mkdirSync } from 'node:fs';
+import { createReadStream } from 'node:fs';
 import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { cpt, cvx, icd10cm, icd10pcs, loinc, rxnorm, snomed } from './codesystems';
 import { env } from 'node:process';
+import { MedplumClient } from '@medplum/core';
+
+const client = new MedplumClient({
+  baseUrl: 'http://localhost:8103/',
+  accessToken: '',
+});
 
 /**
  * This utility generates data for ValueSet and ConceptMap resources from the UMLS Metathesaurus.
@@ -36,9 +42,7 @@ import { env } from 'node:process';
  */
 
 async function main(): Promise<void> {
-  if (!existsSync('./output')) {
-    mkdirSync('./output');
-  }
+  await addSources();
 
   const mappedCodes = await processConcepts();
   console.log('\n');
@@ -133,13 +137,23 @@ class UmlsConcept {
 
 const umlsSources: Record<string, { system: string; tty: string[]; resource: CodeSystem }> = {
   SNOMEDCT_US: { system: 'http://snomed.info/sct', tty: ['FN', 'PT', 'SY'], resource: snomed },
-  LNC: { system: 'http://loinc.org', tty: ['LC', 'LPDN', 'LA', 'DN', 'HC', 'LN'], resource: loinc },
-  RXNORM: { system: 'http://www.nlm.nih.gov/research/umls/rxnorm', tty: ['PSN'], resource: rxnorm },
-  CPT: { system: 'http://www.ama-assn.org/go/cpt', tty: ['PT'], resource: cpt },
+  LNC: { system: 'http://loinc.org', tty: ['LC', 'LPDN', 'LA', 'DN', 'HC', 'LN', 'LG'], resource: loinc },
+  RXNORM: {
+    system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+    tty: ['PSN', 'MIN', 'SBD', 'SCD', 'SBDG', 'SCDG', 'GPCK', 'SY'],
+    resource: rxnorm,
+  },
+  CPT: { system: 'http://www.ama-assn.org/go/cpt', tty: ['PT', 'HT', 'POS', 'MP', 'GLP'], resource: cpt },
   CVX: { system: 'http://hl7.org/fhir/sid/cvx', tty: ['PT'], resource: cvx },
-  ICD10PCS: { system: 'http://hl7.org/fhir/sid/icd-10-pcs', tty: ['PT'], resource: icd10pcs },
-  ICD10CM: { system: 'http://hl7.org/fhir/sid/icd-10-cm', tty: ['PT'], resource: icd10cm },
+  ICD10PCS: { system: 'http://hl7.org/fhir/sid/icd-10-pcs', tty: ['PT', 'HT'], resource: icd10pcs },
+  ICD10CM: { system: 'http://hl7.org/fhir/sid/icd-10-cm', tty: ['PT', 'HT'], resource: icd10cm },
 };
+
+async function addSources(): Promise<void> {
+  for (const source of Object.values(umlsSources)) {
+    await client.createResourceIfNoneExist(source.resource, 'url=' + source.system);
+  }
+}
 
 async function processConcepts(): Promise<Record<string, UmlsConcept>> {
   const inStream = createReadStream(resolve(__dirname, '2023AB/META/MRCONSO.RRF'));
@@ -221,6 +235,12 @@ async function sendCodings(codings: Coding[], system: string): Promise<void> {
     resourceType: 'Parameters',
     parameter: [{ name: 'system', valueUri: system }, ...codings.map((c) => ({ name: 'concept', valueCoding: c }))],
   };
+  try {
+    await client.post('fhir/R4/CodeSystem/$import', parameters, 'application/fhir+json');
+  } catch (err: any) {
+    console.error('Error sending batch for system', system, err.outcome.issue);
+    throw err;
+  }
   if (env.DEBUG) {
     console.log(`Processed ${parameters.parameter.length - 1} ${system} codings, ex:`, parameters.parameter[1]);
   }
@@ -602,6 +622,7 @@ async function sendProperties(properties: Property[], system: string): Promise<v
       })),
     ],
   };
+  await client.post('fhir/R4/CodeSystem/$import', parameters);
   if (env.DEBUG) {
     console.log(`Processed ${parameters.parameter.length - 1} ${system} properties, ex:`, parameters.parameter[1]);
   }

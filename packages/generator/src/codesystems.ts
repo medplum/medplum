@@ -1137,9 +1137,6 @@ export const loinc: CodeSystem = {
 
 export const cpt: CodeSystem = {
   resourceType: 'CodeSystem',
-  meta: {
-    profile: ['http://hl7.org/fhir/StructureDefinition/shareablecodesystem'],
-  },
   url: 'http://www.ama-assn.org/go/cpt',
   identifier: [
     {
@@ -1203,9 +1200,6 @@ export const cpt: CodeSystem = {
 
 export const rxnorm: CodeSystem = {
   resourceType: 'CodeSystem',
-  meta: {
-    profile: ['http://hl7.org/fhir/StructureDefinition/shareablecodesystem'],
-  },
   url: 'http://www.nlm.nih.gov/research/umls/rxnorm',
   identifier: [
     {
@@ -1257,9 +1251,6 @@ export const rxnorm: CodeSystem = {
 
 export const cvx: CodeSystem = {
   resourceType: 'CodeSystem',
-  meta: {
-    profile: ['http://hl7.org/fhir/StructureDefinition/shareablecodesystem'],
-  },
   url: 'http://hl7.org/fhir/sid/cvx',
   identifier: [
     {
@@ -1308,9 +1299,6 @@ export const cvx: CodeSystem = {
 
 export const icd10pcs: CodeSystem = {
   resourceType: 'CodeSystem',
-  meta: {
-    profile: ['http://hl7.org/fhir/StructureDefinition/shareablecodesystem'],
-  },
   url: 'http://hl7.org/fhir/sid/icd-10-pcs',
   identifier: [
     {
@@ -1337,9 +1325,6 @@ export const icd10pcs: CodeSystem = {
 
 export const icd10cm: CodeSystem = {
   resourceType: 'CodeSystem',
-  meta: {
-    profile: ['http://hl7.org/fhir/StructureDefinition/shareablecodesystem'],
-  },
   url: 'http://hl7.org/fhir/sid/icd-10-cm',
   identifier: [
     {
