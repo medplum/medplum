@@ -17,7 +17,7 @@ export const Basic = (): JSX.Element => (
         <HumanNameInput
           name="patient-name"
           path="name"
-          onChange={jest.fn()}
+          onChange={undefined}
           outcome={undefined}
           defaultValue={{ given: ['Homer'], family: 'Simpson' } as HumanName}
         />
