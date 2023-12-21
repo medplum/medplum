@@ -1,16 +1,37 @@
 import {
+  InternalTypeSchema,
   SliceDefinition,
   SliceDiscriminator,
+  SlicingRules,
   TypedValue,
-  InternalTypeSchema,
-  isEmpty,
+  arrayify,
   getElementDefinitionFromElements,
   getTypedPropertyValueWithSchema,
-  arrayify,
+  isPopulated,
   matchDiscriminant,
-  SlicingRules,
 } from '@medplum/core';
 
+function isDiscriminatorComponentMatch(
+  typedValue: TypedValue,
+  discriminator: SliceDiscriminator,
+  slice: SupportedSliceDefinition
+): boolean {
+  for (const elementList of [slice.elements, slice.typeSchema?.elements]) {
+    let nestedProp: TypedValue | TypedValue[] | undefined;
+    if (isPopulated(elementList)) {
+      const ed = getElementDefinitionFromElements(elementList, discriminator.path);
+      if (ed) {
+        nestedProp = getTypedPropertyValueWithSchema(typedValue.value, discriminator.path, ed);
+      }
+    }
+
+    if (nestedProp) {
+      return arrayify(nestedProp)?.some((v: any) => matchDiscriminant(v, discriminator, slice, elementList)) ?? false;
+    }
+  }
+
+  return false;
+}
 function getValueSliceName(
   value: any,
   slices: SupportedSliceDefinition[],
@@ -21,40 +42,11 @@ function getValueSliceName(
   }
 
   for (const slice of slices) {
-    let typedValue: TypedValue;
-    if (slice.typeSchema) {
-      typedValue = { type: slice.typeSchema.name, value };
-    } else {
-      typedValue = { type: slice.type[0].code, value };
-    }
-
-    if (
-      discriminators.every((discriminator) => {
-        let nestedProp: TypedValue | TypedValue[] | undefined;
-        let elements: InternalTypeSchema['elements'] = slice.elements;
-
-        if (!isEmpty(slice.elements)) {
-          const ed = getElementDefinitionFromElements(slice.elements, discriminator.path);
-          if (ed) {
-            nestedProp = getTypedPropertyValueWithSchema(typedValue.value, discriminator.path, ed);
-          }
-        }
-
-        if (!nestedProp && slice.typeSchema && !isEmpty(slice.typeSchema?.elements)) {
-          elements = slice.typeSchema.elements;
-          const ed = getElementDefinitionFromElements(slice.typeSchema.elements, discriminator.path);
-          if (ed) {
-            nestedProp = getTypedPropertyValueWithSchema(typedValue.value, discriminator.path, ed);
-          }
-        }
-
-        if (!nestedProp) {
-          return undefined;
-        }
-
-        return arrayify(nestedProp)?.some((v: any) => matchDiscriminant(v, discriminator, slice, elements));
-      })
-    ) {
+    const typedValue: TypedValue = {
+      value,
+      type: slice.typeSchema?.name ?? slice.type[0].code,
+    };
+    if (discriminators.every((d) => isDiscriminatorComponentMatch(typedValue, d, slice))) {
       return slice.name;
     }
   }

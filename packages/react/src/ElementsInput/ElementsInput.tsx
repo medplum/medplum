@@ -1,5 +1,5 @@
 import { Stack } from '@mantine/core';
-import { InternalSchemaElement, TypedValue, getPathDisplayName } from '@medplum/core';
+import { InternalSchemaElement, TypedValue, getPathDisplayName, isPopulated } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMemo, useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
@@ -76,11 +76,9 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
           return null;
         }
 
-        if (EXTENSION_KEYS.includes(key)) {
+        if (EXTENSION_KEYS.includes(key) && !isPopulated(element.slicing?.slices)) {
           // an extension property without slices has no nested extensions
-          if (!element.slicing || element.slicing.slices.length === 0) {
-            return null;
-          }
+          return null;
         } else if (key === 'id' || DEFAULT_IGNORED_PROPERTIES.includes(key)) {
           return null;
         } else if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && element.path.split('.').length === 2) {

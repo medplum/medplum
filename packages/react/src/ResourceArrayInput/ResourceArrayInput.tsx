@@ -10,6 +10,8 @@ import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
 import { MouseEvent, useEffect, useState } from 'react';
+import { ElementsInput } from '../ElementsInput/ElementsInput';
+import { FormSection } from '../FormSection/FormSection';
 import { ElementDefinitionTypeInput, ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { killEvent } from '../utils/dom';
 import {
@@ -17,8 +19,6 @@ import {
   assignValuesIntoSlices,
   isSupportedSliceDefinition,
 } from './ResourceArrayInput.utils';
-import { FormSection } from '../FormSection/FormSection';
-import { ElementsInput } from '../ElementsInput/ElementsInput';
 
 const useStyles = createStyles((theme) => ({
   indented: {
@@ -39,7 +39,7 @@ export interface ResourceArrayInputProps {
   hideNonSliceValues?: boolean;
 }
 
-export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element {
+export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JSX.Element {
   const { property } = props;
   const medplum = useMedplum();
   const [loading, setLoading] = useState(true);
@@ -194,14 +194,14 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
   );
 }
 
-type SliceInputProps = {
+type SliceInputProps = Readonly<{
   slice: SupportedSliceDefinition;
   property: InternalSchemaElement;
   defaultValue: any[];
   onChange: (newValue: any[]) => void;
   outcome?: OperationOutcome;
   testId?: string;
-};
+}>;
 function SliceInput(props: SliceInputProps): JSX.Element | null {
   const { slice, property } = props;
   const [values, setValues] = useState<any[]>(() => {
@@ -301,11 +301,11 @@ function SliceInput(props: SliceInputProps): JSX.Element | null {
   );
 }
 
-type ButtonProps = {
+type ButtonProps = Readonly<{
   propertyDisplayName?: string;
   onClick: React.MouseEventHandler;
   testId?: string;
-};
+}>;
 
 function AddButton({ propertyDisplayName, onClick, testId }: ButtonProps): JSX.Element {
   const text = propertyDisplayName ? `Add ${propertyDisplayName}` : 'Add';
