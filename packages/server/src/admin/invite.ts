@@ -1,6 +1,7 @@
 import {
   badRequest,
   createReference,
+  getReferenceString,
   InviteRequest,
   normalizeErrorString,
   OperationOutcomeError,
@@ -97,6 +98,11 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 
   let profile = await searchForExistingProfile(request);
   if (!profile) {
+    ctx.logger.info('Creating profile for invite request', {
+      project: getReferenceString(project),
+      email,
+      profileType: request.resourceType,
+    });
     profile = (await createProfile(
       project,
       request.resourceType,
@@ -104,6 +110,10 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
       request.lastName,
       email
     )) as Practitioner;
+
+    if (profile) {
+      ctx.logger.info('Profile  created', { profile: getReferenceString(profile) });
+    }
   }
 
   const membershipTemplate = request.membership ?? {};
