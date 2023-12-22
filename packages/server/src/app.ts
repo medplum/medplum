@@ -22,8 +22,8 @@ import { fhirRouter } from './fhir/routes';
 import { initBinaryStorage } from './fhir/storage';
 import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
-import { cleanupHeartbeat } from './fhircast/websocket';
 import { healthcheckHandler } from './healthcheck';
+import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
 import { globalLogger } from './logger';
 import { initKeys } from './oauth/keys';
@@ -196,6 +196,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
     await initKeys(config);
     initBinaryStorage(config.binaryStorage);
     initWorkers(config);
+    initHeartbeat();
   });
 }
 

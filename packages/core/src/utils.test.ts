@@ -7,7 +7,6 @@ import {
   calculateAge,
   calculateAgeString,
   capitalize,
-  createDeferredPromise,
   createReference,
   deepClone,
   deepEquals,
@@ -1054,26 +1053,5 @@ describe('Core Utils', () => {
       splitN('_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status', ':', 3)
     ).toEqual(['_has', 'Observation', 'subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status']);
     expect(splitN('organization', ':', 2)).toEqual(['organization']);
-  });
-
-  describe('createDeferredPromise', () => {
-    test('Created promise has all props', () => {
-      const deferredPromise = createDeferredPromise();
-      expect(deferredPromise.promise).toBeInstanceOf(Promise);
-      expect(deferredPromise.resolve).toBeInstanceOf(Function);
-      expect(deferredPromise.reject).toBeInstanceOf(Function);
-    });
-
-    test('Calling `resolve` resolves promise', async () => {
-      const deferredPromise = createDeferredPromise();
-      expect(() => deferredPromise.resolve()).not.toThrow();
-      await expect(deferredPromise.promise).resolves;
-    });
-
-    test('Calling `reject` rejects promise', async () => {
-      const deferredPromise = createDeferredPromise();
-      expect(() => deferredPromise.reject(new Error('Rejected!'))).not.toThrow();
-      await expect(deferredPromise.promise).rejects.toThrow(/Rejected!/);
-    });
   });
 });
