@@ -11,7 +11,7 @@ export function LandingPage(): JSX.Element {
         </Title>
         <Text>
           This "WebSocket Subscriptions" example demonstrates how to build a simple React application that utilizes the
-          Medplum FHIR websocket subscriptions. If you haven't already done so,{' '}
+          Medplum WebSocket subscriptions. If you haven't already done so,{' '}
           <Anchor href="https://app.medplum.com/register">register</Anchor> for Medplum Project. After that you can sign
           into your project by clicking the link below.
         </Text>

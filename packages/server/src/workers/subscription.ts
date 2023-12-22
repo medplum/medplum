@@ -208,9 +208,6 @@ async function matchesCriteria(
     return false;
   }
 
-  console.log('searchRequest', searchRequest);
-  console.log(resource.meta?.compartment);
-
   return matchesSearchRequest(resource, searchRequest);
 }
 

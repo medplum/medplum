@@ -1,25 +1,25 @@
-<h1 align="center">Medplum Hello World</h1>
-<p align="center">A starter application for using the Medplum platform.</p>
+<h1 align="center">Medplum WebSocket Subscription Demo</h1>
+<p align="center">An example demonstrating basic usage of WebSocket subscriptions</p>
 <p align="center">
-<a href="https://github.com/medplum/medplum-hello-world/blob/main/LICENSE.txt">
+<a href="https://github.com/medplum/medplum-websocket-subscriptions-demo/blob/main/LICENSE.txt">
     <img src="https://img.shields.io/badge/license-Apache-blue.svg" />
   </a>
 </p>
 
 This example app demonstrates the following:
 
-- Creating a new React app with Vite and TypeScript
-- Adding Medplum dependencies
-- Adding basic URL routing
-- Using the [Medplum client](https://www.medplum.com/docs/sdk/classes/MedplumClient) to search for FHIR resources
-- Using [Medplum GraphQL](https://graphiql.medplum.com/) queries to fetch linked resources
-- Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to display FHIR data
+- Creating WebSocket `Subscription` resources
+- Calling `$get-ws-binding-token` operation on created `Subscription`s in order to get a token to bind to
+- Connecting to the WebSocket subscription endpoint
+- Creating a `bind-with-token` message to start receiving subscription notifications for `Subscription`s associated with the provided token
+- Disconnecting from the endpoint
+- Cleaning up `Subscription`s after finishing the session
 
 ### Getting Started
 
 If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
 
-[Fork](https://github.com/medplum/medplum-hello-world/fork) and clone the repo.
+[Fork](https://github.com/medplum/medplum-websocket-subscriptions-demo/fork) and clone the repo.
 
 Next, install the dependencies
 
