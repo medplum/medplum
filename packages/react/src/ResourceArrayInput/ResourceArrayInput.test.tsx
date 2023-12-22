@@ -103,7 +103,7 @@ describe('ResourceArrayInput', () => {
       ...defaultProps,
     });
 
-    expect(screen.getByTitle('Add')).toBeInTheDocument();
+    expect(screen.getByTitle('Add Test')).toBeInTheDocument();
   });
 
   test('Renders empty', async () => {
@@ -112,7 +112,7 @@ describe('ResourceArrayInput', () => {
       defaultValue: [],
     });
 
-    expect(screen.getByTitle('Add')).toBeInTheDocument();
+    expect(screen.getByTitle('Add Test')).toBeInTheDocument();
   });
 
   test('Renders elements', async () => {
@@ -123,8 +123,8 @@ describe('ResourceArrayInput', () => {
 
     expect(screen.getByDisplayValue('foo')).toBeInTheDocument();
     expect(screen.getByDisplayValue('bar')).toBeInTheDocument();
-    expect(screen.getByTitle('Add')).toBeInTheDocument();
-    expect(screen.getAllByTitle('Remove')).toHaveLength(2);
+    expect(screen.getByTitle('Add Test')).toBeInTheDocument();
+    expect(screen.getAllByTitle('Remove Test')).toHaveLength(2);
   });
 
   test('Handles non-arrays', async () => {
@@ -133,7 +133,7 @@ describe('ResourceArrayInput', () => {
       defaultValue: 'x' as unknown as string[],
     });
 
-    expect(screen.getByTitle('Add')).toBeInTheDocument();
+    expect(screen.getByTitle('Add Test')).toBeInTheDocument();
   });
 
   test('Click add button', async () => {
@@ -142,10 +142,10 @@ describe('ResourceArrayInput', () => {
       defaultValue: [],
     });
 
-    expect(screen.getByTitle('Add')).toBeInTheDocument();
+    expect(screen.getByTitle('Add Test')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByTitle('Add'));
+      fireEvent.click(screen.getByTitle('Add Test'));
     });
 
     expect(screen.getByTestId('myProp.0')).toBeInTheDocument();
@@ -158,7 +158,7 @@ describe('ResourceArrayInput', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getAllByTitle('Remove')[0]);
+      fireEvent.click(screen.getAllByTitle('Remove Test')[0]);
     });
 
     expect(screen.queryByDisplayValue('foo')).toBeNull();

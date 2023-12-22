@@ -1,5 +1,13 @@
 import { Group, NativeSelect } from '@mantine/core';
-import { LRUCache, MedplumClient, ReadablePromise, createReference, isEmpty, tryGetProfile } from '@medplum/core';
+import {
+  LRUCache,
+  MedplumClient,
+  ReadablePromise,
+  createReference,
+  isEmpty,
+  isPopulated,
+  tryGetProfile,
+} from '@medplum/core';
 import { Reference, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -72,11 +80,11 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
           const newTargetType = { ...tt };
 
           if (!profile) {
-            console.error(`StructureDefinition for ${tt.value} not found`);
+            console.error(`StructureDefinition not found for ${tt.value}`);
             newTargetType.error = 'StructureDefinition not found';
-          } else if (!profile.type || isEmpty(profile.type)) {
-            console.error(`resourceType for ${tt.value} StructureDefinition missing`);
-            newTargetType.error = 'resourceType unavailable';
+          } else if (!isPopulated(profile.type)) {
+            console.error(`StructureDefinition.type missing for ${tt.value}`);
+            newTargetType.error = 'StructureDefinition.type missing';
           } else {
             newTargetType.resourceType = profile.type satisfies string;
             newTargetType.name = profile.name;
@@ -103,17 +111,19 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
     Promise.all(newTargetTypePromises)
       .then((newTargetTypes) => {
         setTargetTypes(newTargetTypes);
-        if (targetType) {
-          const index = newTargetTypes.findIndex(
-            (tt) => tt.value === targetType.value || tt.resourceType === targetType.resourceType
-          );
-          if (index >= 0) {
-            // orphaned targetType has been resolved
-            setTargetType(newTargetTypes[index]);
-          } else {
-            console.debug(`defaultValue had unexpected resourceType: ${targetType.resourceType}`);
-          }
+        if (!targetType) {
+          return;
         }
+
+        const index = newTargetTypes.findIndex(
+          (tt) => tt.value === targetType.value || tt.resourceType === targetType.resourceType
+        );
+        if (index === -1) {
+          console.debug(`defaultValue had unexpected resourceType: ${targetType.resourceType}`);
+          return;
+        }
+        // orphaned targetType has been resolved
+        setTargetType(newTargetTypes[index]);
       })
       .catch(console.error);
   }, [medplum, targetType, targetTypes]);
