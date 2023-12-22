@@ -1,7 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Resource, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { join, resolve } from 'path';
 
 const resourceTypes = [
   'Address',
@@ -81,6 +81,8 @@ export function main(): void {
   writeSearchParameters();
 }
 
+const BUILD_USCORE = false;
+
 function writeStructureDefinitions(): void {
   const output: StructureDefinition[] = [];
   addStructureDefinitions('fhir/r4/profiles-resources.json', output);
@@ -90,6 +92,16 @@ function writeStructureDefinitions(): void {
     JSON.stringify(output, keyReplacer, 2),
     'utf8'
   );
+
+  if (BUILD_USCORE) {
+    // To build USCore, download and expand a USCore Implementation Guide package file,
+    // such as https://hl7.org/fhir/us/core/STU5.0.1/package.tgz which is linked to
+    // from https://hl7.org/fhir/us/core/STU5.0.1/downloads.html
+    buildUSCoreStructureDefinitions(
+      'path/to/expanded/package-file',
+      '../../mock/src/mocks/uscore/uscore-v5.0.1-structuredefinitions.json'
+    );
+  }
 }
 
 function addStructureDefinitions(fileName: string, output: StructureDefinition[]): void {
@@ -132,4 +144,34 @@ function keyReplacer(key: string, value: any): any {
 
 if (process.argv[1].endsWith('storybook.ts')) {
   main();
+}
+
+const USCoreStructureDefinitionFiles = [
+  'StructureDefinition-us-core-patient.json',
+  'StructureDefinition-us-core-race.json',
+  'StructureDefinition-us-core-ethnicity.json',
+  'StructureDefinition-us-core-birthsex.json',
+  'StructureDefinition-us-core-genderIdentity.json',
+];
+
+// or with jq: jq 'del(.text, .differential, .mapping, .snapshot.element[].mapping)' <input-file.json>
+function cleanStructureDefinition(sd: StructureDefinition): void {
+  delete sd.text;
+  delete sd.differential;
+  delete sd.mapping;
+  if (sd?.snapshot?.element) {
+    for (const element of sd.snapshot.element) {
+      delete element.mapping;
+    }
+  }
+}
+
+function buildUSCoreStructureDefinitions(inputDirectory: string, outputFilename: string): void {
+  const sds = [];
+  for (const file of USCoreStructureDefinitionFiles) {
+    const sd = readJson(join(inputDirectory, file));
+    cleanStructureDefinition(sd);
+    sds.push(sd);
+  }
+  writeFileSync(outputFilename, JSON.stringify(sds));
 }
