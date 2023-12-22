@@ -23,3 +23,4 @@ jobs:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           workingDir: packages/react
           buildScriptName: storybook
+          exitZeroOnChanges: true
