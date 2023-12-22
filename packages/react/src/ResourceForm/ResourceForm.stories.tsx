@@ -1,19 +1,11 @@
-import {
-  DrAliceSmith,
-  HomerSimpson,
-  TestOrganization,
-  USCoreBirthSexExtension,
-  USCoreEthnicityExtension,
-  USCoreGenderIdentityExtension,
-  USCorePatientProfile,
-  USCoreRaceExtension,
-} from '@medplum/mock';
+import { DrAliceSmith, HomerSimpson, TestOrganization, USCoreStructureDefinitionList } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import { Document } from '../Document/Document';
 import { ResourceForm } from './ResourceForm';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useMemo, useState } from 'react';
-import { deepClone, indexStructureDefinitionBundle } from '@medplum/core';
+import { deepClone, loadDataType } from '@medplum/core';
+import { StructureDefinition } from '@medplum/fhirtypes';
 
 export default {
   title: 'Medplum/ResourceForm',
@@ -151,24 +143,27 @@ export const Specimen = (): JSX.Element => (
 export const USCorePatient = (): JSX.Element => {
   const medplum = useMedplum();
   const [loaded, setLoaded] = useState(false);
+  const patientProfileSD = useMemo<StructureDefinition>(() => {
+    const result = (USCoreStructureDefinitionList as StructureDefinition[]).find(
+      (sd) => sd.name === 'USCorePatientProfile'
+    );
+    if (!result) {
+      throw new Error('Could not find USCorePatientProfile');
+    }
+    return result;
+  }, []);
   useEffect(() => {
     (async (): Promise<boolean> => {
-      const sd = await medplum.createResource(USCorePatientProfile);
-      indexStructureDefinitionBundle([sd], sd.url);
-      [USCoreRaceExtension, USCoreEthnicityExtension, USCoreBirthSexExtension, USCoreGenderIdentityExtension].forEach(
-        (ext) => {
-          indexStructureDefinitionBundle([ext], ext.url);
-        }
-      );
-      // await medplum.createResource(FishPatientResources.getBlinkyTheFish());
-      // await medplum.createResource(FishPatientResources.getSampleFishPatient());
+      for (const sd of USCoreStructureDefinitionList as StructureDefinition[]) {
+        loadDataType(sd, sd.url);
+      }
       return true;
     })()
       .then(setLoaded)
       .catch(console.error);
-  }, [medplum]);
+  }, [medplum, patientProfileSD]);
 
-  const HomerSimpsonWithExtensions = useMemo(() => {
+  const HomerSimpsonUSCorePatient = useMemo(() => {
     const result = deepClone(HomerSimpson);
     result.extension = [
       {
@@ -181,18 +176,6 @@ export const USCorePatient = (): JSX.Element => {
             },
             url: 'ombCategory',
           },
-          {
-            valueCoding: {
-              system: 'http://terminology.hl7.org/CodeSystem/v3-NullFlavor',
-              code: 'OTH',
-              display: 'other',
-            },
-            url: 'detailed',
-          },
-          {
-            valueString: 'A text description',
-            url: 'text',
-          },
         ],
         url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
       },
@@ -201,46 +184,13 @@ export const USCorePatient = (): JSX.Element => {
           {
             valueCoding: {
               system: 'urn:oid:2.16.840.1.113883.6.238',
-              code: '2135-2',
-              display: 'Hispanic or Latino',
+              code: '2186-5',
+              display: 'Not Hispanic or Latino',
             },
             url: 'ombCategory',
           },
-          {
-            valueCoding: {
-              system: 'urn:oid:2.16.840.1.113883.6.238',
-              code: '2138-6',
-              display: 'Andalusian',
-            },
-            url: 'detailed',
-          },
-          {
-            valueString: 'This is an ethnicity description',
-            url: 'text',
-          },
         ],
         url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity',
-      },
-      {
-        extension: [
-          {
-            valueCodeableConcept: {
-              coding: [
-                {
-                  system: 'http://terminology.hl7.org/CodeSystem/v3-TribalEntityUS',
-                  code: '104',
-                  display: 'Hopi Tribe of Arizona',
-                },
-              ],
-            },
-            url: 'tribalAffiliation',
-          },
-          {
-            valueBoolean: true,
-            url: 'isEnrolled',
-          },
-        ],
-        url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-tribal-affiliation',
       },
       {
         valueCode: 'M',
@@ -274,11 +224,11 @@ export const USCorePatient = (): JSX.Element => {
   return (
     <Document>
       <ResourceForm
-        defaultValue={HomerSimpsonWithExtensions}
+        defaultValue={HomerSimpsonUSCorePatient}
         onSubmit={(formData: any) => {
           console.log('submit', formData);
         }}
-        profileUrl={USCorePatientProfile.url}
+        profileUrl={patientProfileSD.url}
       />
     </Document>
   );
