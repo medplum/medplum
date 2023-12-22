@@ -408,10 +408,10 @@ describe('Agent WebSockets', () => {
       )
       .expectText('{"type":"agent:connect:response"}')
       // Send a ping
-      .sendText(JSON.stringify({ type: 'agent:ping:request' }))
-      .expectText('{"type":"agent:ping:response"}')
+      .sendText(JSON.stringify({ type: 'agent:heartbeat:request' }))
+      .expectText('{"type":"agent:heartbeat:response"}')
       // Simulate a ping response
-      .sendText(JSON.stringify({ type: 'agent:ping:response' }))
+      .sendText(JSON.stringify({ type: 'agent:heartbeat:response' }))
       .close()
       .expectClosed();
   });

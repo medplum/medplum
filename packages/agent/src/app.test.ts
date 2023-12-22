@@ -21,7 +21,7 @@ describe('App', () => {
     const mockServer = new Server('wss://example.com/ws/agent');
     const state = {
       mySocket: undefined as Client | undefined,
-      gotPing: false,
+      gotHeartbeat: false,
     };
 
     mockServer.on('connection', (socket) => {
@@ -31,8 +31,8 @@ describe('App', () => {
         if (command.type === 'agent:connect:request') {
           socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
         }
-        if (command.type === 'agent:ping:response') {
-          state.gotPing = true;
+        if (command.type === 'agent:heartbeat:response') {
+          state.gotHeartbeat = true;
         }
       });
     });
@@ -49,12 +49,12 @@ describe('App', () => {
       await sleep(100);
     }
 
-    // Send a ping
+    // Send a heartbeat request
     const wsClient = state.mySocket as unknown as Client;
-    wsClient.send(Buffer.from(JSON.stringify({ type: 'agent:ping:request' })));
+    wsClient.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:request' })));
 
-    // Wait for ping response
-    while (!state.gotPing) {
+    // Wait for heartbeat response
+    while (!state.gotHeartbeat) {
       await sleep(100);
     }
 

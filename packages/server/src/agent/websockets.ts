@@ -33,7 +33,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
   let redisSubscriber: Redis | undefined = undefined;
 
-  const heartbeatHandler = (): void => sendMessage({ type: 'agent:ping:request' });
+  const heartbeatHandler = (): void => sendMessage({ type: 'agent:heartbeat:request' });
 
   socket.on(
     'message',
@@ -47,11 +47,11 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
             await handleConnect(command);
             break;
 
-          case 'agent:ping:request':
-            sendMessage({ type: 'agent:ping:response' });
+          case 'agent:heartbeat:request':
+            sendMessage({ type: 'agent:heartbeat:response' });
             break;
 
-          case 'agent:ping:response':
+          case 'agent:heartbeat:response':
             // Do nothing
             break;
 
