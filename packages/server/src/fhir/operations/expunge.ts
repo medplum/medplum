@@ -34,8 +34,8 @@ export async function expungeHandler(req: Request, res: Response): Promise<void>
     sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
   } else {
     await ctx.repo.expungeResource(resourceType, id);
+    sendOutcome(res, allOk);
   }
-  sendOutcome(res, allOk);
 }
 
 export class Expunger {
