@@ -1,12 +1,5 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import {
-  ContentType,
-  Operator,
-  createDeferredPromise,
-  createReference,
-  getReferenceString,
-  stringify,
-} from '@medplum/core';
+import { ContentType, Operator, createReference, getReferenceString, stringify } from '@medplum/core';
 import { AuditEvent, Bot, Observation, Patient, Project, ProjectMembership, Subscription } from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import { Job } from 'bullmq';
@@ -1339,12 +1332,15 @@ describe('Subscription Worker', () => {
       const subscriber = getRedis().duplicate();
       await subscriber.subscribe(subscription.id as string);
 
-      const deferredPromise = createDeferredPromise();
+      let resolve: () => void;
+      const deferredPromise = new Promise<void>((_resolve) => {
+        resolve = _resolve;
+      });
 
       subscriber.on('message', (topic, message) => {
         expect(topic).toEqual(subscription.id);
         expect(JSON.parse(message)).toEqual(expect.any(Object));
-        deferredPromise.resolve();
+        resolve();
       });
 
       const queue = getSubscriptionQueue() as any;
@@ -1379,6 +1375,6 @@ describe('Subscription Worker', () => {
 
       expect(queue.add).toHaveBeenCalled();
 
-      await deferredPromise.promise;
+      await deferredPromise;
     }));
 });
