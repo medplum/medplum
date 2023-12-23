@@ -174,7 +174,7 @@ export function HomePage(): JSX.Element {
             .catch(console.error);
         }
       }
-      setBundles((s) => [...s, bundle]);
+      setBundles((s) => [bundle, ...s]);
     });
 
     setWebSocket(ws);
