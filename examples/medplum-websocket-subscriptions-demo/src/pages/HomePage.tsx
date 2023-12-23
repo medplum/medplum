@@ -1,5 +1,5 @@
 import { Accordion, Button, Chip, Group, Title } from '@mantine/core';
-import { createReference, parseReference } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
@@ -22,8 +22,8 @@ interface BundleDisplayProps {
 function BundleDisplay(props: BundleDisplayProps): JSX.Element {
   const { bundle } = props;
   const communication = bundle?.entry?.[1].resource as Communication;
-  const [senderType, senderId] = parseReference(communication?.sender as Reference);
-  const [recipientType, recipientId] = parseReference(communication?.recipient?.[0] as Reference);
+  const [senderType, senderId] = ((communication.sender as Reference).reference as string).split('/');
+  const [recipientType, recipientId] = ((communication.recipient?.[0] as Reference).reference as string).split('/');
   return (
     <Accordion.Item value={`${bundle?.timestamp ?? 'Unknown time'}: Chat Notification`}>
       <Accordion.Control>
