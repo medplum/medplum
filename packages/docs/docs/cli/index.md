@@ -31,7 +31,7 @@ Use one of these authentication options:
 - `--client-id <clientId>`
   - FHIR server client id
 - `--client-secret <clientSecret>`
-  - FHIR server client id
+  - FHIR server client secret
 
 ## Usage
 
