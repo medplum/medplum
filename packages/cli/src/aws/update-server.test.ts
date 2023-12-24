@@ -109,7 +109,9 @@ describe('update-server command', () => {
     await main(['node', 'index.js', 'aws', 'update-server', 'dev']);
     expect(console.log).toBeCalledWith('Performing update to v2.5.0');
     expect(spawnSync).toHaveBeenCalledTimes(2);
-    expect(spawnSync).toHaveBeenCalledWith(`npx cdk deploy -c config=medplum.dev.config.json --all`);
+    expect(spawnSync).toHaveBeenCalledWith(`npx cdk deploy -c config=medplum.dev.config.json --all`, {
+      stdio: 'inherit',
+    });
     expect(medplum.startAsyncRequest).toHaveBeenCalledTimes(2);
     expect(medplum.startAsyncRequest).toHaveBeenCalledWith('/admin/super/migrate');
   });
