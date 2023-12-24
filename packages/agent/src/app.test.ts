@@ -11,6 +11,7 @@ const medplum = new MockClient();
 describe('App', () => {
   beforeAll(async () => {
     console.log = jest.fn();
+    console.error = jest.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -58,9 +59,14 @@ describe('App', () => {
       await sleep(100);
     }
 
+    // Send an unknown message type
+    wsClient.send(Buffer.from(JSON.stringify({ type: 'unknown' })));
+
     app.stop();
     app.stop();
     mockServer.stop();
+
+    expect(console.error).toHaveBeenCalledWith('Unknown message type: unknown');
   });
 
   test('Reconnect after connection closed', async () => {

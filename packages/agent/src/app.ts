@@ -20,8 +20,9 @@ export class App {
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
-  webSocket?: WebSocket;
-  live = false;
+  private webSocket?: WebSocket;
+  private live = false;
+  private shutdown = false;
 
   constructor(
     readonly medplum: MedplumClient,
@@ -48,7 +49,9 @@ export class App {
     this.webSocket.binaryType = 'nodebuffer';
 
     this.webSocket.addEventListener('error', (err) => {
-      this.log.error(normalizeErrorString(err.error));
+      if (!this.shutdown) {
+        this.log.error(normalizeErrorString(err.error));
+      }
     });
 
     this.webSocket.addEventListener('open', () => {
@@ -60,9 +63,11 @@ export class App {
     });
 
     this.webSocket.addEventListener('close', () => {
-      this.live = false;
-      this.log.info('WebSocket closed');
-      setTimeout(() => this.connectWebSocket(), 1000);
+      if (!this.shutdown) {
+        this.live = false;
+        this.log.info('WebSocket closed');
+        setTimeout(() => this.connectWebSocket(), 1000);
+      }
     });
 
     this.webSocket.addEventListener('message', (e) => {
@@ -130,7 +135,12 @@ export class App {
 
   stop(): void {
     this.log.info('Medplum service stopping...');
+    this.shutdown = true;
     this.channels.forEach((channel) => channel.stop());
+    if (this.webSocket) {
+      this.webSocket.close();
+      this.webSocket = undefined;
+    }
     this.log.info('Medplum service stopped successfully');
   }
 
