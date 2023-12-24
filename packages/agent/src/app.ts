@@ -17,11 +17,12 @@ import { AgentHl7Channel } from './hl7';
 export class App {
   static instance: App;
   readonly log: EventLogger;
-  readonly webSocket: WebSocket;
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
-  live = false;
+  private webSocket?: WebSocket;
+  private live = false;
+  private shutdown = false;
 
   constructor(
     readonly medplum: MedplumClient,
@@ -35,20 +36,38 @@ export class App {
       error: console.error,
     } as EventLogger;
 
-    const webSocketUrl = new URL(medplum.getBaseUrl());
+    this.connectWebSocket();
+  }
+
+  private connectWebSocket(): void {
+    const webSocketUrl = new URL(this.medplum.getBaseUrl());
     webSocketUrl.protocol = webSocketUrl.protocol === 'https:' ? 'wss:' : 'ws:';
     webSocketUrl.pathname = '/ws/agent';
     this.log.info(`Connecting to WebSocket: ${webSocketUrl.href}`);
 
     this.webSocket = new WebSocket(webSocketUrl);
     this.webSocket.binaryType = 'nodebuffer';
-    this.webSocket.addEventListener('error', (err) => this.log.error(err.message));
+
+    this.webSocket.addEventListener('error', (err) => {
+      if (!this.shutdown) {
+        this.log.error(normalizeErrorString(err.error));
+      }
+    });
+
     this.webSocket.addEventListener('open', () => {
       this.sendToWebSocket({
         type: 'agent:connect:request',
-        accessToken: medplum.getAccessToken() as string,
-        agentId,
+        accessToken: this.medplum.getAccessToken() as string,
+        agentId: this.agentId,
       });
+    });
+
+    this.webSocket.addEventListener('close', () => {
+      if (!this.shutdown) {
+        this.live = false;
+        this.log.info('WebSocket closed');
+        setTimeout(() => this.connectWebSocket(), 1000);
+      }
     });
 
     this.webSocket.addEventListener('message', (e) => {
@@ -116,7 +135,12 @@ export class App {
 
   stop(): void {
     this.log.info('Medplum service stopping...');
+    this.shutdown = true;
     this.channels.forEach((channel) => channel.stop());
+    if (this.webSocket) {
+      this.webSocket.close();
+      this.webSocket = undefined;
+    }
     this.log.info('Medplum service stopped successfully');
   }
 
@@ -154,6 +178,9 @@ export class App {
   }
 
   private sendToWebSocket(message: AgentMessage): void {
+    if (!this.webSocket) {
+      throw new Error('WebSocket not connected');
+    }
     this.webSocket.send(JSON.stringify(message));
   }
 
