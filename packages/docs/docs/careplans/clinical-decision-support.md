@@ -65,7 +65,7 @@ TODO: Link to the the [Smart-App-Launch react component](https://github.com/medp
 
 ## Related Reading
 
-- [ONC Certification](/docs/compliance/oncs)
+- [ONC Certification](/docs/compliance/onc)
 - [(a)(9) Clinical decision support (CDS)](https://www.healthit.gov/test-method/clinical-decision-support-cds)
 - [HL7 Infobutton Implementation Guidle](https://www.hl7.org/documentcenter/public/standards/dstu/V3IG_INFOBUTTON_DSTU_R4_2013JAN.pdf)
 - [HT1 Final Rule](https://www.healthit.gov/sites/default/files/page/2023-12/hti-1-final-rule.pdf) on predictive clinical decision support and algorithms
