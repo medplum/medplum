@@ -10,9 +10,9 @@ Clinical Decision support in the context of EHR has many potential applications 
 
 The guide will walk through the three major categories of Clinical Decision Support (CDS), as defined by the regulations and how to enable said CDS on Medplum.
 
-'''caution
-Medplum is not currently certified for (a)(9) but is pursuing certification. Subscribe to [github issue](https://github.com/medplum/medplum/issues/3003) for updates.
-'''
+```caution
+Medplum is not currently certified for (a)(9) but is pursuing certification. Contact us at info@medplum.com for details.
+```
 
 ## Predictive
 
@@ -20,17 +20,17 @@ Predictive clinical decision support technology is "intended to support decision
 
 Large language model based clinical decision support tools, as well as tools that use algorithms for risk assessment or triage fall in the predictive clinical decision support category.
 
-Medplum enables [many implementations](/case-studies) with predictive clinical decision support. Per the HTI final ruling, the predictive clinical decision support systems will become regulated in Dec. 2024. Any system certified to g10, b2, f1 or e1 will be required to provide **Insight Reports** as part of maintaining their certification.
+Medplum enables [many implementations](/case-studies) with predictive clinical decision support. Per the HTI final ruling, the predictive clinical decision support systems will become regulated in December 2024. Any system certified to g10, b2, f1 or e1 will be required to provide **Insight Reports** as part of maintaining their certification.
 
 The following sections are best practices for preparing for a predictive clinical decision support certification.
 
 ### Training Data
 
-Demonstrating which training data was used to train an algorithm, and keeping a record of the versioning on said data is part of the certification process. In the context of a Medplum implementation, be prepared to keep all of your training data in a [Medplum project](/docs/auth/user-management-guide#background-user-model) which will show which data was used to train the models and that the data is updated (feedback loops).
+Demonstrating which training data was used to train an algorithm, and keeping a record of the versioning on said data is part of the certification process. In the context of a Medplum implementation, be prepared to keep all of your training data in a [Medplum project](/docs/auth/user-management-guide#background-user-model) which will show which dataset was used to train the models and that the data is updated (feedback loops).
 
 ### Code Systems
 
-It is recommended that data is tagged with UMLS code systems, including LOINC, SNOMED and RxNorm. For certification, data must conform to [USCDI profiles](/docs/fhir-datastore/understanding-uscdi-dataclasses). Implementations of predictive clinical decision support sometimes include annotating data with code systems using an algorithm or large language model.
+It is recommended that data is tagged with UMLS code systems, including [LOINC](/docs/careplans/loinc), SNOMED and RxNorm. For certification, data must conform to [USCDI profiles](/docs/fhir-datastore/understanding-uscdi-dataclasses). Implementations of predictive clinical decision support sometimes include annotating data with code systems using an algorithm or large language model.
 
 ### Insights Reporting
 
@@ -38,15 +38,13 @@ Electronic health records that support predictive clinical decision support will
 
 ## Linked Referential
 
-Linked referential clinical decision support are hyperlinks that link to reference material that is specific to the clinical context of a specific patient or population. The ONC criteria that define this standard are 170.205(a)(3,4) amd relate to the retrieving context-aware knowledge using the HL7 Infobutton.
+Linked referential clinical decision support are hyperlinks that link to reference material that is specific to the clinical context of a specific patient or population. The ONC criteria that define this standard are 170.205(a)(3,4) and relate to the retrieving context-aware knowledge using the HL7 Infobutton.
 
 '''caution
 Medplum is not certified for (a)(3,4) but serves as a basis for those who wish to implement. The Clinical Profile and [Diagnostic Report](https://storybook.medplum.com/?path=/story/medplum-diagnosticreportdisplay--simple) react components serve as common launch points for Infobutton implementations.
 '''
 
 To support the linked referential clinical decision support the system should be capable of retrieving information based on one or more of the following data elements. The Clinical Profile react component highlights the data elements.
-
-TODO: Link to the [Clinical Profile](https://github.com/medplum/medplum/issues/3625) react component
 
 - Demographic information
 - Problems list (Conditions in FHIR)
@@ -59,7 +57,7 @@ TODO: Link to the [Clinical Profile](https://github.com/medplum/medplum/issues/3
 
 Evidence-based clinical decision support systems are largely related to medication administration, drug interactions (with other drugs, foods, OTC medications, etc.) and dosing. Evidence-based clinical decision support systems plug into health record systems via SMART-App-Launch links, iFrames or APIs, all of which are supported by Medplum.
 
-TODO: Link to the the [Smart-App-Launch react component](https://github.com/medplum/medplum/issues/3605)
+Medplum supports a Smart-App-Launch react component that serves as a launch point for evidence-based implementations.
 
 [DoseSpot](https://www.dosespot.com/) is a common provider for evidence based medication administration and supports recording and retrieving allergies, listing potential interactions for a specific prescription, listing drug interactions on a patient record, checking for known interactions at prescription creation time.
 
@@ -67,5 +65,5 @@ TODO: Link to the the [Smart-App-Launch react component](https://github.com/medp
 
 - [ONC Certification](/docs/compliance/onc)
 - [(a)(9) Clinical decision support (CDS)](https://www.healthit.gov/test-method/clinical-decision-support-cds)
-- [HL7 Infobutton Implementation Guidle](https://www.hl7.org/documentcenter/public/standards/dstu/V3IG_INFOBUTTON_DSTU_R4_2013JAN.pdf)
+- [HL7 Infobutton Implementation Guide](https://www.hl7.org/documentcenter/public/standards/dstu/V3IG_INFOBUTTON_DSTU_R4_2013JAN.pdf)
 - [HT1 Final Rule](https://www.healthit.gov/sites/default/files/page/2023-12/hti-1-final-rule.pdf) on predictive clinical decision support and algorithms
