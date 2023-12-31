@@ -1,5 +1,5 @@
 import { Atom, AtomContext, InfixOperatorAtom, PrefixOperatorAtom } from '../fhirlexer/parse';
-import { isResource, PropertyType, TypedValue } from '../types';
+import { PropertyType, TypedValue, isResource } from '../types';
 import { functions } from './functions';
 import {
   booleanToTypedValue,
@@ -64,6 +64,9 @@ export class SymbolAtom implements Atom {
         throw new Error(`Undefined variable ${this.name}`);
       }
       return [symbol];
+    }
+    if (this.name in context.variables) {
+      return [context.variables[this.name]];
     }
     return input.flatMap((e) => this.evalValue(e)).filter((e) => e?.value !== undefined) as TypedValue[];
   }

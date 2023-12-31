@@ -1655,6 +1655,16 @@ describe('FHIR Mapping Language parser', () => {
     ]);
   });
 
+  test('Evaluate FHIRPath', () => {
+    const input = `map "http://test.com" = test
+    group example(source src, target tgt) {
+      src -> tgt.value = src.value + '_test';
+    }`;
+    const result = parseMappingLanguage(input);
+    expect(result.group?.[0]?.rule?.[0]?.target?.[0]?.transform).toBe('evaluate');
+    expect(result.group?.[0]?.rule?.[0]?.target?.[0]?.parameter?.[0]?.valueString).toBe("src.value + '_test'");
+  });
+
   test.skip('C-CDA mapping file', () => {
     const mapFileName = 'C:\\Users\\cody\\dev\\cda-fhir-maps\\input\\maps\\CdaToBundle.map';
     const mapFileContents = readFileSync(mapFileName, 'utf8');

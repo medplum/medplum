@@ -290,9 +290,12 @@ class StructureMapParser {
     if (transformAtom instanceof FunctionAtom) {
       result.transform = transformAtom.name as 'append' | 'truncate';
       result.parameter = transformAtom.args?.map(atomToParameter);
-    } else {
+    } else if (transformAtom instanceof LiteralAtom || transformAtom instanceof SymbolAtom) {
       result.transform = 'copy';
       result.parameter = [atomToParameter(transformAtom)];
+    } else {
+      result.transform = 'evaluate';
+      result.parameter = [{ valueString: transformAtom.toString() }];
     }
   }
 
@@ -330,13 +333,7 @@ function atomToParameter(atom: Atom): StructureMapGroupRuleTargetParameter {
   if (atom instanceof LiteralAtom) {
     return literalToParameter(atom);
   }
-
-  // Unclear how this should be represented in a StructureMap.
-  // The situation is that the target is a complex FHIRPath expression, such as a math operation.
-  // "value[x]" is choice-of-type, but the only options are:
-  // valueId, valueString, valueBoolean, valueInteger, valueDecimal
-  // Ideally there would be "valueExpression".
-  return { valueId: atom.toString() };
+  throw new Error(`Unknown parameter atom type: ${atom.constructor.name} (${atom.toString()})`);
 }
 
 function literalToParameter(literalAtom: LiteralAtom): StructureMapGroupRuleTargetParameter {
