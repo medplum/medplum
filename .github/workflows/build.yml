@@ -2,11 +2,9 @@ name: Build
 # Limit a single job to run at a time for a given branch/PR to save resources and speed up CI
 # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
 concurrency:
-  group: ci-build-${{ github.ref_name == 'main' && github.sha || github.ref }}
+  group: ci-build-${{ github.ref }}
   cancel-in-progress: true
 on:
-  push:
-    branches: [main]
   pull_request:
     types: [opened, synchronize, reopened]
   merge_group:
@@ -59,12 +57,6 @@ jobs:
             ${{ runner.os }}-
       - name: Build Project
         run: ./scripts/build.sh
-        env:
-          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
-          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
-          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
-          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
-          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
       - name: Test
         run: ./scripts/test.sh
         env:
