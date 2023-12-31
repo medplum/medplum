@@ -1583,8 +1583,8 @@ export class Repository extends BaseRepository implements FhirRepository {
           constraint.expression as string,
           [{ type: current.resourceType, value: current }],
           {
-            before: { type: previous?.resourceType ?? 'undefined', value: previous },
-            after: { type: current.resourceType, value: current },
+            '%before': { type: previous?.resourceType ?? 'undefined', value: previous },
+            '%after': { type: current.resourceType, value: current },
           }
         );
         return invariant.length === 1 && invariant[0].value === true;

@@ -478,7 +478,7 @@ describe('FHIRPath parser', () => {
         { system: 'email', value: 'alice@example.com' },
       ],
     };
-    const variables = { current: toTypedValue(patient2), previous: toTypedValue(patient) };
+    const variables = { '%current': toTypedValue(patient2), '%previous': toTypedValue(patient) };
     const result = evalFhirPathTyped('%current=%previous', [toTypedValue(patient)], variables);
 
     expect(result).toEqual([
@@ -505,7 +505,7 @@ describe('FHIRPath parser', () => {
         { system: 'email', value: 'alice@example.com' },
       ],
     };
-    const variables = { current: toTypedValue(patient2), previous: toTypedValue(patient) };
+    const variables = { '%current': toTypedValue(patient2), '%previous': toTypedValue(patient) };
     const result = evalFhirPathTyped('%current!=%previous', [toTypedValue(patient)], variables);
 
     expect(result).toEqual([
@@ -532,7 +532,7 @@ describe('FHIRPath parser', () => {
         { system: 'email', value: 'alice@example.com' },
       ],
     };
-    const variables = { current: toTypedValue(patient2) };
+    const variables = { '%current': toTypedValue(patient2) };
 
     expect(() => evalFhirPathTyped('%current=%previous', [toTypedValue(patient)], variables)).toThrowError(
       `Undefined variable %previous`

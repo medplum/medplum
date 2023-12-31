@@ -12,6 +12,7 @@ import { generateId } from '../crypto';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toJsBoolean, toTypedValue } from '../fhirpath/utils';
 import { TypedValue } from '../types';
+import { tryGetDataType } from '../typeschema/types';
 
 interface TransformContext {
   loader?: (url: string) => StructureMap[];
@@ -19,6 +20,16 @@ interface TransformContext {
   variables?: Record<string, TypedValue>;
 }
 
+/**
+ * Transforms input values using a FHIR StructureMap.
+ *
+ * See: https://www.hl7.org/fhir/mapping-language.html
+ *
+ * @param structureMap - The StructureMap to transform.
+ * @param input - The input values.
+ * @param loader - Optional loader function for loading imported StructureMaps.
+ * @returns The transformed values.
+ */
 export function structureMapTransform(
   structureMap: StructureMap,
   input: TypedValue[],
@@ -184,13 +195,15 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
     throw new Error('Target not found: ' + target.context);
   }
 
-  const originalValue = targetContext.value[target.element as string];
+  let originalValue = targetContext.value[target.element as string];
   let targetValue: TypedValue;
 
+  // Determine if the target property is an array field or not
+  // If the target property is an array, then we need to append to the array
+  const isArray = isArrayProperty(targetContext, target.element as string) || Array.isArray(originalValue);
+
   if (!target.transform) {
-    // TODO: Need to determine whether "targetValue" should be an object or an array
-    // To do this, we'll need to look at the StructureDefinition for the target element
-    if (Array.isArray(originalValue) || originalValue === undefined) {
+    if (isArray || originalValue === undefined) {
       targetValue = toTypedValue({});
     } else {
       targetValue = toTypedValue(originalValue);
@@ -205,6 +218,9 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
         break;
       case 'create':
         targetValue = evalCreate(ctx, target);
+        break;
+      case 'evaluate':
+        targetValue = evalEvaluate(ctx, target);
         break;
       case 'translate':
         // TODO: Implement
@@ -221,7 +237,11 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
     }
   }
 
-  if (Array.isArray(originalValue)) {
+  if (isArray) {
+    if (!originalValue) {
+      originalValue = [];
+      safeAssign(targetContext.value, target.element as string, originalValue);
+    }
     originalValue.push(targetValue.value);
   } else {
     safeAssign(targetContext.value, target.element as string, targetValue.value);
@@ -230,6 +250,12 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
   if (target.variable) {
     setVariable(ctx, target.variable, targetValue);
   }
+}
+
+function isArrayProperty(targetContext: TypedValue, element: string): boolean | undefined {
+  const targetContextTypeDefinition = tryGetDataType(targetContext.type);
+  const targetPropertyTypeDefinition = targetContextTypeDefinition?.elements?.[element];
+  return targetPropertyTypeDefinition?.isArray;
 }
 
 function evalAppend(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue {
@@ -248,6 +274,17 @@ function evalCreate(ctx: TransformContext, target: StructureMapGroupRuleTarget):
     result.resourceType = resolveParameter(ctx, target.parameter?.[0])?.value;
   }
   return toTypedValue(result);
+}
+
+function evalEvaluate(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue {
+  const typedExpr = resolveParameter(ctx, target.parameter?.[0]);
+  const expr = typedExpr.value as string;
+  const allVariables = getAllVariables(ctx);
+  const result = evalFhirPathTyped(expr, [], allVariables);
+  if (!result || result.length === 0) {
+    return toTypedValue(undefined);
+  }
+  return result[0];
 }
 
 function evalTruncate(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue {
@@ -314,6 +351,13 @@ function getVariable(ctx: TransformContext, name: string): TypedValue | undefine
     return getVariable(ctx.parent, name);
   }
   return undefined;
+}
+
+function getAllVariables(ctx: TransformContext): Record<string, TypedValue> {
+  if (ctx.parent) {
+    return { ...getAllVariables(ctx.parent), ...ctx.variables };
+  }
+  return ctx.variables ?? {};
 }
 
 function setVariable(ctx: TransformContext, name: string, value: TypedValue): void {
