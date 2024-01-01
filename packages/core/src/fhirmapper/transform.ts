@@ -381,7 +381,6 @@ function buildFhirPathVariables(
   if (ctx.variables) {
     for (const [key, value] of Object.entries(ctx.variables)) {
       result[key] = value;
-      result[`%${key}`] = value;
     }
   }
   return result;
