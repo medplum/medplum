@@ -10,9 +10,9 @@ Clinical Decision support in the context of EHR has many potential applications 
 
 The guide will walk through the three major categories of Clinical Decision Support (CDS), as defined by the regulations and how to enable said CDS on Medplum.
 
-```caution
+:::warning
 Medplum is not currently certified for (a)(9) but is pursuing certification. Contact us at info@medplum.com for details.
-```
+:::
 
 ## Predictive
 
@@ -40,9 +40,9 @@ Electronic health records that support predictive clinical decision support will
 
 Linked referential clinical decision support are hyperlinks that link to reference material that is specific to the clinical context of a specific patient or population. The ONC criteria that define this standard are 170.205(a)(3,4) and relate to the retrieving context-aware knowledge using the HL7 Infobutton.
 
-'''caution
+:::warning
 Medplum is not certified for (a)(3,4) but serves as a basis for those who wish to implement. The Clinical Profile and [Diagnostic Report](https://storybook.medplum.com/?path=/story/medplum-diagnosticreportdisplay--simple) react components serve as common launch points for Infobutton implementations.
-'''
+:::
 
 To support the linked referential clinical decision support the system should be capable of retrieving information based on one or more of the following data elements. The Clinical Profile react component highlights the data elements.
 
