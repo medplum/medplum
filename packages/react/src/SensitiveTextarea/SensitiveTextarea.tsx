@@ -1,10 +1,10 @@
-import React, { useRef, useState } from 'react';
 import { ActionIcon, Flex, Textarea, TextareaProps } from '@mantine/core';
 import { useClipboard } from '@mantine/hooks';
-import { IconCopy, IconEye, IconEyeClosed } from '@tabler/icons-react';
 import { showNotification } from '@mantine/notifications';
+import { IconCopy } from '@tabler/icons-react';
+import { RefAttributes, useRef, useState } from 'react';
 
-interface SensitiveTextareaProps extends TextareaProps, React.RefAttributes<HTMLTextAreaElement> {}
+export interface SensitiveTextareaProps extends TextareaProps, RefAttributes<HTMLTextAreaElement> {}
 
 export function SensitiveTextarea(props: Omit<SensitiveTextareaProps, 'ref'>): JSX.Element {
   const [revealed, setRevealed] = useState(false);
@@ -23,7 +23,7 @@ export function SensitiveTextarea(props: Omit<SensitiveTextareaProps, 'ref'>): J
   }
 
   return (
-    <Flex>
+    <Flex gap="xs">
       <Textarea
         {...props}
         styles={{
@@ -34,21 +34,20 @@ export function SensitiveTextarea(props: Omit<SensitiveTextareaProps, 'ref'>): J
           },
         }}
         ref={ref}
+        autosize
+        minRows={1}
+        onFocus={() => setRevealed(true)}
+        onBlur={() => setRevealed(false)}
       />
-      <Flex direction="column" justify="space-between">
-        <ActionIcon title={revealed ? 'Conceal secret' : 'Reveal secret'} onClick={() => setRevealed((r) => !r)}>
-          {revealed ? <IconEyeClosed /> : <IconEye />}
-        </ActionIcon>
-        <ActionIcon
-          title="Copy secret"
-          onClick={() => {
-            clipboard.copy(ref.current?.value);
-            showNotification({ color: 'green', message: 'Copied' });
-          }}
-        >
-          <IconCopy />
-        </ActionIcon>
-      </Flex>
+      <ActionIcon
+        title="Copy secret"
+        onClick={() => {
+          clipboard.copy(ref.current?.value);
+          showNotification({ color: 'green', message: 'Copied' });
+        }}
+      >
+        <IconCopy />
+      </ActionIcon>
     </Flex>
   );
 }

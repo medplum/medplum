@@ -105,7 +105,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
   }
   const [selectedType, setSelectedType] = useState(initialPropertyType);
   return (
-    <Group spacing="xs" grow noWrap>
+    <Group spacing="xs" grow noWrap align="flex-start">
       <NativeSelect
         style={{ width: '200px' }}
         defaultValue={selectedType.code}
