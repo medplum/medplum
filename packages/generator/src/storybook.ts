@@ -82,6 +82,7 @@ const USCoreStructureDefinitionFiles = [
   'StructureDefinition-us-core-ethnicity.json',
   'StructureDefinition-us-core-birthsex.json',
   'StructureDefinition-us-core-genderIdentity.json',
+  'StructureDefinition-us-core-implantable-device.json',
 ];
 
 const BUILD_USCORE = false;

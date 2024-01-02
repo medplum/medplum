@@ -1,10 +1,17 @@
-import { DrAliceSmith, HomerSimpson, TestOrganization, USCoreStructureDefinitionList } from '@medplum/mock';
+import {
+  DrAliceSmith,
+  HomerSimpson,
+  HomerSimpsonUSCorePatient,
+  ImplantableDeviceKnee,
+  TestOrganization,
+  USCoreStructureDefinitionList,
+} from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import { Document } from '../Document/Document';
 import { ResourceForm } from './ResourceForm';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useMemo, useState } from 'react';
-import { deepClone, loadDataType } from '@medplum/core';
+import { MedplumClient, deepClone, loadDataType } from '@medplum/core';
 import { StructureDefinition } from '@medplum/fhirtypes';
 
 export default {
@@ -140,18 +147,8 @@ export const Specimen = (): JSX.Element => (
   </Document>
 );
 
-export const USCorePatient = (): JSX.Element => {
-  const medplum = useMedplum();
+function useUSCoreDataTypes({ medplum }: { medplum: MedplumClient }): { loaded: boolean } {
   const [loaded, setLoaded] = useState(false);
-  const patientProfileSD = useMemo<StructureDefinition>(() => {
-    const result = (USCoreStructureDefinitionList as StructureDefinition[]).find(
-      (sd) => sd.name === 'USCorePatientProfile'
-    );
-    if (!result) {
-      throw new Error('Could not find USCorePatientProfile');
-    }
-    return result;
-  }, []);
   useEffect(() => {
     (async (): Promise<boolean> => {
       for (const sd of USCoreStructureDefinitionList as StructureDefinition[]) {
@@ -161,60 +158,34 @@ export const USCorePatient = (): JSX.Element => {
     })()
       .then(setLoaded)
       .catch(console.error);
-  }, [medplum, patientProfileSD]);
+  }, [medplum]);
 
-  const HomerSimpsonUSCorePatient = useMemo(() => {
-    const result = deepClone(HomerSimpson);
-    result.extension = [
-      {
-        extension: [
-          {
-            valueCoding: {
-              system: 'urn:oid:2.16.840.1.113883.6.238',
-              code: '2106-3',
-              display: 'White',
-            },
-            url: 'ombCategory',
-          },
-        ],
-        url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
-      },
-      {
-        extension: [
-          {
-            valueCoding: {
-              system: 'urn:oid:2.16.840.1.113883.6.238',
-              code: '2186-5',
-              display: 'Not Hispanic or Latino',
-            },
-            url: 'ombCategory',
-          },
-        ],
-        url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity',
-      },
-      {
-        valueCode: 'M',
-        url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex',
-      },
-      {
-        valueCode: 'M',
-        url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-sex',
-      },
-      {
-        valueCodeableConcept: {
-          coding: [
-            {
-              system: 'urn:oid:2.16.840.1.113762.1.4.1021.32',
-              code: 'M',
-              display: 'Male',
-            },
-          ],
-        },
-        url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-genderIdentity',
-      },
-    ];
+  const result = useMemo(() => {
+    return { loaded };
+  }, [loaded]);
 
+  return result;
+}
+
+function useProfile(profileName: string): StructureDefinition {
+  const profileSD = useMemo<StructureDefinition>(() => {
+    const result = (USCoreStructureDefinitionList as StructureDefinition[]).find((sd) => sd.name === profileName);
+    if (!result) {
+      throw new Error(`Could not find ${profileName}`);
+    }
     return result;
+  }, [profileName]);
+
+  return profileSD;
+}
+
+export const USCorePatient = (): JSX.Element => {
+  const medplum = useMedplum();
+  const { loaded } = useUSCoreDataTypes({ medplum });
+  const profileSD = useProfile('USCorePatientProfile');
+
+  const homerSimpsonUSCorePatient = useMemo(() => {
+    return deepClone(HomerSimpsonUSCorePatient);
   }, []);
 
   if (!loaded) {
@@ -224,11 +195,37 @@ export const USCorePatient = (): JSX.Element => {
   return (
     <Document>
       <ResourceForm
-        defaultValue={HomerSimpsonUSCorePatient}
+        defaultValue={homerSimpsonUSCorePatient}
         onSubmit={(formData: any) => {
           console.log('submit', formData);
         }}
-        profileUrl={patientProfileSD.url}
+        profileUrl={profileSD.url}
+      />
+    </Document>
+  );
+};
+
+export const USCoreImplantableDevice = (): JSX.Element => {
+  const medplum = useMedplum();
+  const { loaded } = useUSCoreDataTypes({ medplum });
+  const profileSD = useProfile('USCoreImplantableDeviceProfile');
+
+  const implantedKnee = useMemo(() => {
+    return deepClone(ImplantableDeviceKnee);
+  }, []);
+
+  if (!loaded) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <Document>
+      <ResourceForm
+        defaultValue={implantedKnee}
+        onSubmit={(formData: any) => {
+          console.log('submit', formData);
+        }}
+        profileUrl={profileSD.url}
       />
     </Document>
   );
