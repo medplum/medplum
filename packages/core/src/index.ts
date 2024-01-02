@@ -13,6 +13,7 @@ export * from './eventtarget';
 export * from './fhircast';
 export * from './fhirlexer/parse';
 export * from './fhirlexer/tokenize';
+export * from './fhirmapper/conceptmaptranslate';
 export * from './fhirmapper/parse';
 export * from './fhirmapper/transform';
 export * from './fhirpath/atoms';

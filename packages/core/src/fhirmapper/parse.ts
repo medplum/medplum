@@ -1,4 +1,5 @@
 import {
+  ConceptMap,
   StructureMap,
   StructureMapGroup,
   StructureMapGroupInput,
@@ -13,6 +14,20 @@ import { Atom, Parser } from '../fhirlexer/parse';
 import { FunctionAtom, LiteralAtom, SymbolAtom } from '../fhirpath/atoms';
 import { OperatorPrecedence, initFhirPathParserBuilder } from '../fhirpath/parse';
 import { tokenize } from './tokenize';
+
+/**
+ * Mapping from FHIR Mapping Language equivalence operators to FHIR ConceptMap equivalence codes.
+ *
+ * See: https://build.fhir.org/mapping.g4 for FHIR Mapping Language operators.
+ *
+ * See: https://hl7.org/fhir/r4/valueset-concept-map-equivalence.html for ConceptMap equivalence codes.
+ *
+ * @internal
+ */
+const CONCEPT_MAP_EQUIVALENCE: Record<string, string> = {
+  '-': 'disjoint',
+  '==': 'equal',
+};
 
 class StructureMapParser {
   readonly structureMap: StructureMap = { resourceType: 'StructureMap' };
@@ -319,10 +334,69 @@ class StructureMapParser {
   }
 
   private parseConceptMap(): void {
-    while (this.parser.peek()?.value !== '}') {
-      this.parser.consume();
+    this.parser.consume('Symbol', 'conceptmap');
+
+    const conceptMap = { resourceType: 'ConceptMap', status: 'active' } as ConceptMap;
+    conceptMap.url = this.parser.consume('String').value;
+
+    this.parser.consume('{');
+
+    const prefixes: Record<string, string> = {};
+
+    let next = this.parser.peek()?.value;
+    while (next !== '}') {
+      if (next === 'prefix') {
+        this.parseConceptMapPrefix(prefixes);
+      } else {
+        this.parseConceptMapRule(conceptMap, prefixes);
+      }
+      next = this.parser.peek()?.value;
     }
     this.parser.consume('}');
+
+    if (!this.structureMap.contained) {
+      this.structureMap.contained = [];
+    }
+    this.structureMap.contained.push(conceptMap);
+  }
+
+  private parseConceptMapPrefix(prefixes: Record<string, string>): void {
+    this.parser.consume('Symbol', 'prefix');
+    const prefix = this.parser.consume().value;
+    this.parser.consume('=');
+    const uri = this.parser.consume().value;
+    prefixes[prefix] = uri;
+  }
+
+  private parseConceptMapRule(conceptMap: ConceptMap, prefixes: Record<string, string>): void {
+    const sourcePrefix = this.parser.consume().value;
+    const sourceSystem = prefixes[sourcePrefix];
+    this.parser.consume(':');
+    const sourceCode = this.parser.consume().value;
+    const equivalence = CONCEPT_MAP_EQUIVALENCE[this.parser.consume().value] as 'relatedto';
+    const targetPrefix = this.parser.consume().value;
+    const targetSystem = prefixes[targetPrefix];
+    this.parser.consume(':');
+    const targetCode = this.parser.consume().value;
+
+    let group = conceptMap?.group?.find((g) => g.source === sourceSystem && g.target === targetSystem);
+
+    if (!group) {
+      group = { source: sourceSystem, target: targetSystem };
+      if (!conceptMap.group) {
+        conceptMap.group = [];
+      }
+      conceptMap.group.push(group);
+    }
+
+    if (!group.element) {
+      group.element = [];
+    }
+
+    group.element.push({
+      code: sourceCode,
+      target: [{ code: targetCode, equivalence }],
+    });
   }
 }
 

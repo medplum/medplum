@@ -1,4 +1,5 @@
 import {
+  ConceptMap,
   StructureMap,
   StructureMapGroup,
   StructureMapGroupInput,
@@ -13,8 +14,10 @@ import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toJsBoolean, toTypedValue } from '../fhirpath/utils';
 import { TypedValue } from '../types';
 import { tryGetDataType } from '../typeschema/types';
+import { conceptMapTranslate } from './conceptmaptranslate';
 
 interface TransformContext {
+  root: StructureMap;
   loader?: (url: string) => StructureMap[];
   parent?: TransformContext;
   variables?: Record<string, TypedValue[] | TypedValue>;
@@ -35,7 +38,7 @@ export function structureMapTransform(
   input: TypedValue[],
   loader?: (url: string) => StructureMap[]
 ): TypedValue[] {
-  return evalStructureMap({ loader }, structureMap, input);
+  return evalStructureMap({ root: structureMap, loader }, structureMap, input);
 }
 
 function evalStructureMap(ctx: TransformContext, structureMap: StructureMap, input: TypedValue[]): TypedValue[] {
@@ -108,7 +111,7 @@ function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: Typed
     outputs.push(output);
   }
 
-  const newContext: TransformContext = { parent: ctx, variables };
+  const newContext: TransformContext = { root: ctx.root, parent: ctx, variables };
 
   if (group.rule) {
     for (const rule of group.rule) {
@@ -247,8 +250,7 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
         targetValue = evalEvaluate(ctx, target);
         break;
       case 'translate':
-        // TODO: Implement
-        targetValue = evalCopy(ctx, target);
+        targetValue = evalTranslate(ctx, target);
         break;
       case 'truncate':
         targetValue = evalTruncate(ctx, target);
@@ -259,6 +261,10 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
       default:
         throw new Error(`Unsupported transform: ${target.transform}`);
     }
+  }
+
+  if (targetValue.length === 0) {
+    return;
   }
 
   if (isArray) {
@@ -308,6 +314,18 @@ function evalEvaluate(ctx: TransformContext, target: StructureMapGroupRuleTarget
   return evalFhirPathTyped(expr, [], buildFhirPathVariables(ctx) as Record<string, TypedValue>);
 }
 
+function evalTranslate(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
+  const args = (target.parameter as StructureMapGroupRuleTargetParameter[]).flatMap((p) => resolveParameter(ctx, p));
+  const sourceValue = args[0].value;
+  const mapUri = args[1].value;
+  const conceptMap = ctx.root.contained?.find((r) => r.resourceType === 'ConceptMap' && r.url === mapUri) as ConceptMap;
+  // TODO: Verify whether system is actually required
+  // The FHIR Mapping Language spec does not say whether it is required
+  // But our current implementation requires it
+  const result = conceptMapTranslate(conceptMap, { system: conceptMap.group?.[0]?.source, code: sourceValue });
+  return [toTypedValue(result.match?.[0]?.concept?.code)];
+}
+
 function evalTruncate(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
   const targetValue = resolveParameter(ctx, target.parameter?.[0])?.[0];
   const targetLength = resolveParameter(ctx, target.parameter?.[1])?.[0]?.value as number;
@@ -333,7 +351,7 @@ function evalDependent(ctx: TransformContext, dependent: StructureMapGroupRuleDe
     args.push(variableValue);
   }
 
-  const newContext: TransformContext = { parent: ctx, variables: {} };
+  const newContext: TransformContext = { root: ctx.root, parent: ctx, variables: {} };
   evalGroup(newContext, dependentGroup.value as StructureMapGroup, args);
 }
 
@@ -381,6 +399,7 @@ function buildFhirPathVariables(
   if (ctx.variables) {
     for (const [key, value] of Object.entries(ctx.variables)) {
       result[key] = value;
+      result['%' + key] = value;
     }
   }
   return result;
