@@ -19,7 +19,7 @@ export function SensitiveTextarea(props: Omit<SensitiveTextareaProps, 'ref'>): J
       styles.input = {};
     }
 
-    styles.input['-webkit-text-security'] = 'disc';
+    styles.input['WebkitTextSecurity'] = 'disc';
   }
 
   return (
