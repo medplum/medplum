@@ -90,11 +90,11 @@
     "chromatic": "^10.1.0",
     "jest": "29.7.0",
     "jest-each": "29.7.0",
-    "mockdate": "^3.0.5",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "rfc6902": "5.1.1",
     "rimraf": "5.0.5",
+    "sinon": "^14.0.2",
     "storybook": "7.6.3",
     "typescript": "5.3.2"
   },

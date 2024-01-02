@@ -1,11 +1,11 @@
 import { DiagnosticReport } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { Document } from '../Document/Document';
 import { DefaultResourceTimeline } from './DefaultResourceTimeline';
-import { advanceTime, withMockedDate } from '../utils/storybook';
 import { Meta } from '@storybook/react';
 import { createIdGenerator } from '@medplum/core';
+import { withMockedDate, MockDateContext } from '../utils/MockDateWrapper';
 
 export default {
   title: 'Medplum/DefaultResourceTimeline',
@@ -16,6 +16,7 @@ export default {
 export const Basic = (): JSX.Element | null => {
   const medplum = useMedplum();
   const [resource, setResource] = useState<DiagnosticReport>();
+  const { advanceSystemTime } = useContext(MockDateContext);
 
   useEffect(() => {
     const uuid = createIdGenerator();
@@ -29,12 +30,12 @@ export const Basic = (): JSX.Element | null => {
       })
       .then((report) => {
         report.status = 'final';
-        advanceTime();
+        advanceSystemTime();
         return medplum.updateResource(report);
       })
       .then(setResource)
       .catch(console.error);
-  }, [medplum]);
+  }, [medplum, advanceSystemTime]);
 
   if (!resource) {
     return null;
