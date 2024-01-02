@@ -610,13 +610,24 @@ describe('ResourcePropertyInput', () => {
       type: [{ code: 'string' }],
     };
 
+    const onChange = jest.fn();
+
     await setup({
       ...defaultProps,
       name: 'secret',
       property,
+      onChange,
     });
 
-    expect(screen.getByTestId('secret')).toBeInTheDocument();
+    const input = screen.getByTestId('secret');
+    expect(input).toBeInTheDocument();
+
     expect(screen.getByTitle('Copy secret')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'hello' } });
+    });
+
+    expect(onChange).toHaveBeenCalledWith('hello', 'secret');
   });
 });
