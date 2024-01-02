@@ -79,7 +79,7 @@ import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatients } from './patient';
 import { validateReferences } from './references';
 import { rewriteAttachments, RewriteMode } from './rewrite';
-import { buildSearchExpression, getFullUrl, searchImpl } from './search';
+import { buildSearchFilterExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, SelectQuery } from './sql';
 
 /**
@@ -1003,7 +1003,10 @@ export class Repository extends BaseRepository implements FhirRepository {
         } else if (policy.criteria) {
           // Add subquery for access policy criteria.
           const searchRequest = parseCriteriaAsSearchRequest(policy.criteria);
-          const accessPolicyExpression = buildSearchExpression(builder, searchRequest);
+          let accessPolicyExpression;
+          if(searchRequest.filters){
+            accessPolicyExpression = buildSearchFilterExpression(builder, searchRequest.resourceType, searchRequest.resourceType, searchRequest.filters);
+          }
           if (accessPolicyExpression) {
             expressions.push(accessPolicyExpression);
           }
