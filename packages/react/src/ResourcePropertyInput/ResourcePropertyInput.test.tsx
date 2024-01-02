@@ -14,9 +14,9 @@ import {
   Ratio,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
-import { MedplumProvider } from '@medplum/react-hooks';
 import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
 
 const medplum = new MockClient();
@@ -601,5 +601,22 @@ describe('ResourcePropertyInput', () => {
 
     expect(screen.getByDisplayValue('integer')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('Quantity')).toBeNull();
+  });
+
+  test('Project secrets', async () => {
+    const property: InternalSchemaElement = {
+      ...baseProperty,
+      path: 'Project.secret.value[x]',
+      type: [{ code: 'string' }],
+    };
+
+    await setup({
+      ...defaultProps,
+      name: 'secret',
+      property,
+    });
+
+    expect(screen.getByTestId('secret')).toBeInTheDocument();
+    expect(screen.getByTitle('Copy secret')).toBeInTheDocument();
   });
 });
