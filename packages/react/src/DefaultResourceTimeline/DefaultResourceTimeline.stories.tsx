@@ -4,7 +4,6 @@ import { useEffect, useState, useContext } from 'react';
 import { Document } from '../Document/Document';
 import { DefaultResourceTimeline } from './DefaultResourceTimeline';
 import { Meta } from '@storybook/react';
-import { createIdGenerator } from '@medplum/core';
 import { withMockedDate, MockDateContext } from '../utils/MockDateWrapper';
 
 export default {
@@ -19,10 +18,9 @@ export const Basic = (): JSX.Element | null => {
   const { advanceSystemTime } = useContext(MockDateContext);
 
   useEffect(() => {
-    const uuid = createIdGenerator();
     medplum
       .createResource<DiagnosticReport>({
-        id: uuid(),
+        id: '12345',
         resourceType: 'DiagnosticReport',
         code: { text: 'test' },
         issued: '2021-01-01T00:00:00Z',
