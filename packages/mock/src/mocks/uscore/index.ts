@@ -1,6 +1,6 @@
 import { Device, Patient } from '@medplum/fhirtypes';
 import StructureDefinitionList from './uscore-v5.0.1-structuredefinitions.json';
-import { deepClone } from '@medplum/core';
+import { HTTP_HL7_ORG, deepClone } from '@medplum/core';
 import { HomerSimpson } from '../simpsons';
 
 export const USCoreStructureDefinitionList = StructureDefinitionList;
@@ -19,7 +19,7 @@ export const HomerSimpsonUSCorePatient: Patient = {
           url: 'ombCategory',
         },
       ],
-      url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
+      url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-race`,
     },
     {
       extension: [
@@ -32,15 +32,15 @@ export const HomerSimpsonUSCorePatient: Patient = {
           url: 'ombCategory',
         },
       ],
-      url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity',
+      url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-ethnicity`,
     },
     {
       valueCode: 'M',
-      url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex',
+      url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-birthsex`,
     },
     {
       valueCode: 'M',
-      url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-sex',
+      url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-sex`,
     },
     {
       valueCodeableConcept: {
@@ -52,7 +52,7 @@ export const HomerSimpsonUSCorePatient: Patient = {
           },
         ],
       },
-      url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-genderIdentity',
+      url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`,
     },
   ],
 };
@@ -64,17 +64,17 @@ export const ImplantableDeviceKnee: Device = {
   meta: {
     extension: [
       {
-        url: 'http://hl7.org/fhir/StructureDefinition/instance-name',
+        url: `${HTTP_HL7_ORG}/fhir/StructureDefinition/instance-name`,
         valueString: 'Device Knee Example',
       },
       {
-        url: 'http://hl7.org/fhir/StructureDefinition/instance-description',
+        url: `${HTTP_HL7_ORG}/fhir/StructureDefinition/instance-description`,
         valueMarkdown: 'This is a Device knee example for the *US Core Implantable Device Profile*.',
       },
     ],
     versionId: '2',
     lastUpdated: '2019-04-11T16:21:48.921+00:00',
-    profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-implantable-device'],
+    profile: [`${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-implantable-device`],
   },
   identifier: [
     {
