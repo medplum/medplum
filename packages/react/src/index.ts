@@ -87,6 +87,7 @@ export * from './SearchControl/SearchUtils';
 export * from './SearchFieldEditor/SearchFieldEditor';
 export * from './SearchFilterEditor/SearchFilterEditor';
 export * from './ServiceRequestTimeline/ServiceRequestTimeline';
+export * from './SmartAppLaunchLink/SmartAppLaunchLink';
 export * from './StatusBadge/StatusBadge';
 export * from './Timeline/Timeline';
 export * from './TimingInput/TimingInput';
