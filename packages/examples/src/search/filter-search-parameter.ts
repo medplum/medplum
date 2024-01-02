@@ -43,7 +43,7 @@ curl 'https://api.medplum.com/fhir/R4/Patient?filter=(gender eq "male" and name 
 
 // start-block logicalOrTs
 await medplum.searchResources('Patient', {
-  _filter: '(identifer eq 12345 or phone eq "555-6789")',
+  _filter: '(identifier eq 12345 or phone eq "555-6789")',
 });
 // end-block logicalOrTs
 

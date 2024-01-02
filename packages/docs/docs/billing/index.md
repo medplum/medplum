@@ -20,5 +20,5 @@ Through automation and integration, more complex scenarios like determining auth
 
 The [medplum-demo-bots](https://github.com/medplum/medplum-demo-bots) Github repository has sample billing integrations that demonstrate how to maintain and synchronize billing data.
 
-- [Stripe](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/stripe-bots) integration shows how to keep invoices and payments synchronized between Medplum and Stripe.
-- [Candid Health](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/candid-health) integration shows how to prepare an Encounter resource and associated metadata for submission.
+- [Stripe](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/stripe-bots) integration shows how to keep invoices and payments synchronized between Medplum and Stripe.
+- [Candid Health](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/candid-health) integration shows how to prepare an Encounter resource and associated metadata for submission.

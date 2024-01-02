@@ -31,6 +31,7 @@ describe('Seed', () => {
 
     const project = JSON.parse(rows[0].content) as Project;
     expect(project.superAdmin).toBe(true);
+    expect(project.strictMode).toBe(true);
 
     // Second time, seeder should silently ignore
     await seedDatabase();

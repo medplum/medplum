@@ -1,4 +1,5 @@
 export * from './access';
+export * from './agent';
 export * from './base-schema';
 export * from './base64';
 export * from './bundle';
@@ -13,6 +14,7 @@ export * from './fhircast';
 export * from './fhirlexer/parse';
 export * from './fhirlexer/tokenize';
 export * from './fhirmapper/parse';
+export * from './fhirmapper/transform';
 export * from './fhirpath/atoms';
 export * from './fhirpath/parse';
 export * from './fhirpath/utils';

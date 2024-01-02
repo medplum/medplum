@@ -2,11 +2,11 @@ import Layout from '@theme/Layout';
 import { Card } from '../components/Card';
 import { CardContainer } from '../components/CardContainer';
 import { Container } from '../components/Container';
+import { ProfileCard } from '../components/ProfileCard';
 import { Feature, FeatureGrid } from '../components/landing/FeatureGrid';
 import { Jumbotron } from '../components/landing/Jumbotron';
 import { Section } from '../components/landing/Section';
 import { SectionHeader } from '../components/landing/SectionHeader';
-import { ProfileCard } from '../components/ProfileCard';
 import styles from './about.module.css';
 
 export default function AboutPage(): JSX.Element {
@@ -102,11 +102,18 @@ export default function AboutPage(): JSX.Element {
               githubUrl="https://github.com/mattwiller"
             />
             <ProfileCard
-              name="James Touri"
+              name="Derrick Farris"
               title="Founding Engineer"
-              imgUrl="/img/people/jamestouri.jpg"
-              linkedInUrl="https://www.linkedin.com/in/jamestouri/"
-              githubUrl="https://github.com/jamestouri"
+              imgUrl="/img/people/derrickfarris.jpg"
+              linkedInUrl="https://www.linkedin.com/in/derrickfarris/"
+              githubUrl="https://github.com/ThatOneBro"
+            />
+            <ProfileCard
+              name="Matt Long"
+              title="Founding Engineer"
+              imgUrl="/img/people/mattlong.jpg"
+              linkedInUrl="https://www.linkedin.com/in/mateolargo/"
+              githubUrl="https://github.com/mattlong"
             />
           </CardContainer>
         </Section>

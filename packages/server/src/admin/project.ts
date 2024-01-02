@@ -1,19 +1,61 @@
 import { allOk, badRequest, forbidden, getReferenceString } from '@medplum/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
+import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
-import { sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
+import { getAuthenticatedContext } from '../context';
+import { setPassword } from '../auth/setpassword';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { createBotHandler, createBotValidator } from './bot';
 import { createClientHandler, createClientValidator } from './client';
 import { inviteHandler, inviteValidator } from './invite';
 import { verifyProjectAdmin } from './utils';
-import { getAuthenticatedContext } from '../context';
+import { getUserByEmail, isUserInProject } from '../oauth/utils';
 
 export const projectAdminRouter = Router();
 projectAdminRouter.use(authenticateRequest);
 projectAdminRouter.use(verifyProjectAdmin);
+
+// POST to /admin/projects/setpassword
+// to force set a User password associated to the project by the project admin.
+projectAdminRouter.post(
+  '/setpassword',
+  [
+    body('email').isEmail().withMessage('Valid email address is required'),
+    body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
+  ],
+  asyncWrap(async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    const ctx = getAuthenticatedContext();
+    const projectId = ctx.project.id;
+
+    if (projectId === undefined) {
+      sendOutcome(res, badRequest('Project not found'));
+      return;
+    }
+    const user = await getUserByEmail(req.body.email, projectId);
+    if (!user?.id) {
+      sendOutcome(res, badRequest('User not found'));
+      return;
+    }
+
+    const userInProject = await isUserInProject(user.id, projectId);
+
+    if (userInProject) {
+      await setPassword(user, req.body.password as string);
+      sendOutcome(res, allOk);
+    } else {
+      sendOutcome(res, badRequest('User not found in project'));
+    }
+  })
+);
+
 projectAdminRouter.post('/:projectId/bot', createBotValidator, asyncWrap(createBotHandler));
 projectAdminRouter.post('/:projectId/client', createClientValidator, asyncWrap(createClientHandler));
 projectAdminRouter.post('/:projectId/invite', inviteValidator, asyncWrap(inviteHandler));
@@ -92,7 +134,7 @@ projectAdminRouter.post(
       sendOutcome(res, forbidden);
       return;
     }
-    const result = await systemRepo.updateResource(resource);
+    const result = await ctx.repo.updateResource(resource);
     res.json(result);
   })
 );
@@ -113,7 +155,7 @@ projectAdminRouter.delete(
       return;
     }
 
-    await systemRepo.deleteResource('ProjectMembership', req.params.membershipId);
+    await ctx.repo.deleteResource('ProjectMembership', req.params.membershipId);
     sendOutcome(res, allOk);
   })
 );

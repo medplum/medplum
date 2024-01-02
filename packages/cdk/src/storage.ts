@@ -78,6 +78,16 @@ export class Storage extends Construct {
 
       // HTTP response headers policy
       this.responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'ResponseHeadersPolicy', {
+        customHeadersBehavior: {
+          customHeaders: [
+            {
+              header: 'Permission-Policy',
+              value:
+                'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()',
+              override: true,
+            },
+          ],
+        },
         securityHeadersBehavior: {
           contentSecurityPolicy: {
             contentSecurityPolicy:
@@ -85,11 +95,18 @@ export class Storage extends Construct {
             override: true,
           },
           contentTypeOptions: { override: true },
-          frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
-          referrerPolicy: { referrerPolicy: cloudfront.HeadersReferrerPolicy.NO_REFERRER, override: true },
+          frameOptions: {
+            frameOption: cloudfront.HeadersFrameOption.DENY,
+            override: true,
+          },
+          referrerPolicy: {
+            referrerPolicy: cloudfront.HeadersReferrerPolicy.NO_REFERRER,
+            override: true,
+          },
           strictTransportSecurity: {
             accessControlMaxAge: Duration.seconds(63072000),
             includeSubdomains: true,
+            preload: true,
             override: true,
           },
           xssProtection: {
@@ -141,9 +158,8 @@ export class Storage extends Construct {
 
       // DNS
       if (!config.skipDns) {
-        const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-          domainName: config.domainName.split('.').slice(-2).join('.'),
-        });
+        const hostedZoneName = config.hostedZoneName ?? config.domainName.split('.').slice(-2).join('.');
+        const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: hostedZoneName });
 
         // Route53 alias record for the CloudFront distribution
         this.dnsRecord = new route53.ARecord(this, 'StorageAliasRecord', {

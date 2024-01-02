@@ -210,7 +210,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   });
 
   return (
-    <div data-testid={action.id} className={className} onClick={onClick} onMouseOver={onHover}>
+    <div data-testid={action.id} className={className} onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
       {editing ? (
         <ActionEditor
           action={action}
@@ -433,6 +433,7 @@ function ActionTimingInput(props: ActionTimingInputProps): JSX.Element {
       onChange={(newValue: any, propName?: string) => {
         props.onChange(setPropertyValue(value, key, propName ?? key, timingProperty, newValue));
       }}
+      outcome={undefined}
     />
   );
 }

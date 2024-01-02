@@ -131,7 +131,11 @@ export function initFhirPathParserBuilder(): ParserBuilder {
       parse: (_, token) => new LiteralAtom({ type: PropertyType.Quantity, value: parseQuantity(token.value) }),
     })
     .registerPrefix('Number', {
-      parse: (_, token) => new LiteralAtom({ type: PropertyType.decimal, value: parseFloat(token.value) }),
+      parse: (_, token) =>
+        new LiteralAtom({
+          type: token.value.includes('.') ? PropertyType.decimal : PropertyType.integer,
+          value: parseFloat(token.value),
+        }),
     })
     .registerPrefix('true', { parse: () => new LiteralAtom({ type: PropertyType.boolean, value: true }) })
     .registerPrefix('false', { parse: () => new LiteralAtom({ type: PropertyType.boolean, value: false }) })

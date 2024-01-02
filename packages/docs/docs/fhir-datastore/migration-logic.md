@@ -23,7 +23,7 @@ When considering which option is best for you, we must consider some system char
 - How easy or difficult is it to modify the existing system?
   - Are engineers actively updating the existing system?
   - How frequently does the existing system deploy new releases?
-  - Is the existing system stable, or are changes avoided?
+  - Is the existing system stable, or is change frequent?
 - How easy or difficult is it to programmatically access the existing system?
   - Is there an API?
   - Is the API accessible on the open internet?

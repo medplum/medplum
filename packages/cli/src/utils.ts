@@ -93,7 +93,8 @@ export async function createBot(
   projectId: string,
   sourceFile: string,
   distFile: string,
-  runtimeVersion?: string
+  runtimeVersion?: string,
+  writeConfig?: boolean
 ): Promise<void> {
   try {
     const body = {
@@ -114,7 +115,9 @@ export async function createBot(
     await deployBot(medplum, botConfig as MedplumBotConfig, bot);
     console.log(`Success! Bot created: ${bot.id}`);
 
-    addBotToConfig(botConfig);
+    if (writeConfig) {
+      addBotToConfig(botConfig);
+    }
   } catch (err) {
     console.log('Error while creating new bot: ' + err);
   }

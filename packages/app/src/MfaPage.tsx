@@ -21,7 +21,7 @@ export function MfaPage(): JSX.Element | null {
         setQrCodeUrl(url.toString());
         setEnrolled(response.enrolled);
       })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum]);
 
   const enableMfa = useCallback(
@@ -32,7 +32,7 @@ export function MfaPage(): JSX.Element | null {
           setEnrolled(true);
           showNotification({ color: 'green', message: 'Success' });
         })
-        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
     },
     [medplum]
   );

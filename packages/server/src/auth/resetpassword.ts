@@ -9,7 +9,6 @@ import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
-import { getProjectByRecaptchaSiteKey, verifyRecaptcha } from './utils';
 
 export const resetPasswordValidator = makeValidationMiddleware([
   body('email')
@@ -26,46 +25,35 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
-  const recaptchaSiteKey = req.body.recaptchaSiteKey;
-  let secretKey: string | undefined = getConfig().recaptchaSecretKey;
+  // Define filters for searching users
+  const filters = [
+    {
+      code: 'email',
+      operator: Operator.EXACT,
+      value: email, // Set the email value for exact matching
+    },
+  ];
 
-  if (recaptchaSiteKey && recaptchaSiteKey !== getConfig().recaptchaSiteKey) {
-    // If the recaptcha site key is not the main Medplum recaptcha site key,
-    // then it must be associated with a Project.
-    // The user can only authenticate with that project.
-    const project = await getProjectByRecaptchaSiteKey(recaptchaSiteKey, req.body.projectId);
-    if (!project) {
-      sendOutcome(res, badRequest('Invalid recaptchaSiteKey'));
-      return;
-    }
-    secretKey = project.site?.find((s) => s.recaptchaSiteKey === recaptchaSiteKey)?.recaptchaSecretKey;
-    if (!secretKey) {
-      sendOutcome(res, badRequest('Invalid recaptchaSecretKey'));
-      return;
-    }
+  // If a specific project is associated with the request, add a project filter
+  if (req.body.projectId) {
+    filters.push({
+      code: 'project',
+      operator: Operator.EQUALS,
+      value: 'Project/' + req.body.projectId, // Set the project value for equality matching
+    });
+  } else {
+    // If project id not found in the request body then project should not present in the user
+    filters.push({
+      code: 'project',
+      operator: Operator.MISSING,
+      value: 'true',
+    });
   }
 
-  if (secretKey) {
-    if (!req.body.recaptchaToken) {
-      sendOutcome(res, badRequest('Recaptcha token is required'));
-      return;
-    }
-
-    if (!(await verifyRecaptcha(secretKey, req.body.recaptchaToken))) {
-      sendOutcome(res, badRequest('Recaptcha failed'));
-      return;
-    }
-  }
-
+  // Search for a user based on the defined filters
   const user = await systemRepo.searchOne<User>({
     resourceType: 'User',
-    filters: [
-      {
-        code: 'email',
-        operator: Operator.EXACT,
-        value: email,
-      },
-    ],
+    filters,
   });
 
   if (!user) {
@@ -75,7 +63,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
-  const url = await resetPassword(user, 'reset');
+  const url = await resetPassword(user, 'reset', req.body.redirectUri);
 
   if (req.body.sendEmail !== false) {
     await sendEmail(systemRepo, {
@@ -105,9 +93,10 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
  * Returns the URL to the password change request.
  * @param user - The user to create the password change request for.
  * @param type - The type of password change request.
+ * @param redirectUri - Optional URI for redirection to the client application.
  * @returns The URL to reset the password.
  */
-export async function resetPassword(user: User, type: 'invite' | 'reset'): Promise<string> {
+export async function resetPassword(user: User, type: 'invite' | 'reset', redirectUri?: string): Promise<string> {
   // Create the password change request
   const pcr = await systemRepo.createResource<PasswordChangeRequest>({
     resourceType: 'PasswordChangeRequest',
@@ -117,6 +106,7 @@ export async function resetPassword(user: User, type: 'invite' | 'reset'): Promi
     type,
     user: createReference(user),
     secret: generateSecret(16),
+    redirectUri,
   });
 
   // Build the reset URL

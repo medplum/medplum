@@ -36,7 +36,7 @@ for path in examples/*; do
   git clone "$repo"
 
   # Copy changed files to the listening repo
-  rsync -a --delete --exclude .git/ --exclude tsconfig.json "${initial_working_directory}/${path%}"/ ${folder_name}/
+  rsync -a --delete --exclude .git/ "${initial_working_directory}/${path%}"/ ${folder_name}/
 
   # Copy the LICENSE file to the listening repo
   cp LICENSE.txt ${folder_name}/

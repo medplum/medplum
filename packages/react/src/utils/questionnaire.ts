@@ -1,14 +1,16 @@
 import {
+  TypedValue,
   deepClone,
   evalFhirPathTyped,
   formatCoding,
   getExtension,
-  getTypedPropertyValue,
-  TypedValue,
   getReferenceString,
+  getTypedPropertyValue,
+  splitN,
   stringify,
 } from '@medplum/core';
 import {
+  Encounter,
   Questionnaire,
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
@@ -17,6 +19,7 @@ import {
   QuestionnaireResponse,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
+  Reference,
   ResourceType,
 } from '@medplum/fhirtypes';
 
@@ -128,8 +131,8 @@ function evaluateMatch(actualAnswer: TypedValue | undefined, expectedAnswer: Typ
     // All other operators should be unmodified
     const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
     const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirPathOperator} %expectedAnswer`, [actualAnswer], {
-      actualAnswer,
-      expectedAnswer,
+      '%actualAnswer': actualAnswer,
+      '%expectedAnswer': expectedAnswer,
     });
     return value;
   }
@@ -220,6 +223,43 @@ export function setQuestionnaireItemReferenceTargetTypes(
     delete extension.valueCode;
   }
 
+  return result;
+}
+
+/**
+ * Returns the reference filter for the given questionnaire item.
+ * @see https://build.fhir.org/ig/HL7/fhir-extensions//StructureDefinition-questionnaire-referenceFilter-definitions.html
+ * @param item - The questionnaire item to get the reference filter for.
+ * @param subject - Optional subject reference.
+ * @param encounter - Optional encounter reference.
+ * @returns The reference filter as a map of key/value pairs.
+ */
+export function getQuestionnaireItemReferenceFilter(
+  item: QuestionnaireItem,
+  subject: Reference | undefined,
+  encounter: Reference<Encounter> | undefined
+): Record<string, string> | undefined {
+  const extension = getExtension(item, 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceFilter');
+  if (!extension?.valueString) {
+    return undefined;
+  }
+
+  // Replace variables
+  let filter = extension.valueString;
+  if (subject?.reference) {
+    filter = filter.replaceAll('$subj', subject.reference);
+  }
+  if (encounter?.reference) {
+    filter = filter.replaceAll('$encounter', encounter.reference);
+  }
+
+  // Parse the valueString into a map
+  const result: Record<string, string> = {};
+  const parts = filter.split('&');
+  for (const part of parts) {
+    const [key, value] = splitN(part, '=', 2);
+    result[key] = value;
+  }
   return result;
 }
 

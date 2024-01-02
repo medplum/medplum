@@ -25,7 +25,7 @@ Here is a full example. See the table below for details on each setting.
 | `stackName`                  | The long name of your environment. This will be included in many of the AWS resource names created by CDK. For example, `MyMedplumStack` or `MedplumStagingStack`.                                                                                                                                |
 | `accountNumber`              | Your AWS account number. A 12-digit number, such as 123456789012, that uniquely identifies an AWS account. Account IDs are not considered sensitive information.                                                                                                                                  |
 | `region`                     | The AWS region where you want to deploy.                                                                                                                                                                                                                                                          |
-| `domainName`                 | The domain name that represents your Route 53 Hosted Zone. For example, `medplum.com` or `my-med-app.io`.                                                                                                                                                                                         |
+| `domainName`                 | The domain name that represents the common root for all subdomains. For example, `medplum.com`, `staging.medplum.com`, or `my-med-app.io`.                                                                                                                                                        |
 | `vpcId`                      | Optional preexisting VPC ID. Use this to import an existing VPC. If this setting is not present or empty, a new VPC will be created.                                                                                                                                                              |
 | `apiDomainName`              | The domain name of the API server. This should be a subdomain of `domainName`. For example, `api.medplum.com` or `api.staging.medplum.com`.                                                                                                                                                       |
 | `apiPort`                    | The port number that the API server binds to inside the Docker image. By default, you should use `8103`. In some cases, you may need to use `5000`.                                                                                                                                               |
@@ -54,6 +54,7 @@ Here is a full example. See the table below for details on each setting.
 | `clamscanLoggingBucket`      | The logging bucket that you created before.                                                                                                                                                                                                                                                       |
 | `clamscanLoggingPrefix`      | A directory prefix to use for the S3 logs. For example, `clamscan`.                                                                                                                                                                                                                               |
 | `skipDns`                    | Optional flag to skip all DNS entries. Use this option if you do not use Route 53, or if the Route 53 hosted zone is in a different AWS account.                                                                                                                                                  |
+| `hostedZoneName`             | Optional Route 53 Hosted Zone name for DNS entries. By default, the CDK will use root domain name of the `domainName` setting (for example, if `domainName` is `staging.example.com`, the default hosted zone name is `example.com`).                                                             |
 
 Here is the server configuration for the Medplum staging environment:
 
@@ -143,6 +144,12 @@ You will also be prompted for a parameter "Type". The default option is "String"
 | `maxJsonSize`          | Maximum JSON size for API calls. String is parsed with the [bytes](https://www.npmjs.com/package/bytes) library. Default is `1mb`.                                                                    |          |            | `1mb`                               |
 | `smtp`                 | Optional SMTP email settings to use SMTP for email. See [Sending SMTP Emails](/docs/self-hosting/sendgrid) for more details.                                                                          |          |            |                                     |
 | `awsRegion`            | The AWS Region identifier.                                                                                                                                                                            |          | `cdk`      | `us-east-1`                         |
+
+:::tip Local Config
+To make changes to the server config after your first deploy, you must the edit parameter values _directly in AWS parameter store_
+
+To make changes to settings that affect your deployed Medplum App, you must _also_ make this change to your local configuration json file.
+:::
 
 ### AWS Secrets
 

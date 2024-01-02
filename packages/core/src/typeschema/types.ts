@@ -7,20 +7,22 @@ import {
   ResourceType,
   StructureDefinition,
 } from '@medplum/fhirtypes';
-import { inflateBaseSchema } from '../base-schema';
+import { DataTypesMap, inflateBaseSchema } from '../base-schema';
 import baseSchema from '../base-schema.json';
 import { getTypedPropertyValue } from '../fhirpath/utils';
-import { OperationOutcomeError, serverError } from '../outcomes';
+import { OperationOutcomeError, badRequest } from '../outcomes';
 import { TypedValue, getElementDefinitionTypeName, isResourceTypeSchema } from '../types';
-import { capitalize, isEmpty } from '../utils';
+import { capitalize, getExtension, isEmpty } from '../utils';
 
 /**
  * Internal representation of a non-primitive FHIR type, suitable for use in resource validation
  */
 export interface InternalTypeSchema {
   name: string;
+  title?: string;
   url?: string;
   kind?: string;
+  type?: string;
   description?: string;
   elements: Record<string, InternalSchemaElement>;
   constraints?: Constraint[];
@@ -47,6 +49,7 @@ export interface InternalSchemaElement {
 export interface ElementType {
   code: string;
   targetProfile?: string[];
+  profile?: string[];
 }
 
 export interface Constraint {
@@ -65,6 +68,8 @@ export interface SlicingRules {
 
 export interface SliceDefinition {
   name: string;
+  path: string;
+  definition?: string;
   type?: ElementType[];
   elements: Record<string, InternalSchemaElement>;
   min: number;
@@ -87,16 +92,46 @@ export function parseStructureDefinition(sd: StructureDefinition): InternalTypeS
   return new StructureDefinitionParser(sd).parse();
 }
 
-const DATA_TYPES: Record<string, InternalTypeSchema> = inflateBaseSchema(baseSchema);
+const DATA_TYPES: DataTypesMap = inflateBaseSchema(baseSchema);
 
-export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | Bundle): void {
+// profiles are referenced by URL instead of name
+const PROFILE_SCHEMAS_BY_URL: { [profileUrl: string]: InternalTypeSchema } = Object.create(null);
+
+// Since profiles alter the schemas of their elements, a mapping of type names to schemas
+// is maintained per profile URL
+const PROFILE_DATA_TYPES: { [profileUrl: string]: DataTypesMap } = Object.create(null);
+
+function getDataTypesMap(profileUrl?: string): DataTypesMap {
+  let dataTypes: DataTypesMap;
+
+  if (profileUrl) {
+    dataTypes = PROFILE_DATA_TYPES[profileUrl];
+    if (!dataTypes) {
+      dataTypes = PROFILE_DATA_TYPES[profileUrl] = Object.create(null);
+    }
+  } else {
+    dataTypes = DATA_TYPES;
+  }
+
+  return dataTypes;
+}
+
+/**
+ * Parses and indexes structure definitions
+ * @param bundle - Bundle or array of structure definitions to be parsed and indexed
+ * @param profileUrl - (optional) URL of the profile the SDs are related to
+ */
+export function indexStructureDefinitionBundle(
+  bundle: StructureDefinition[] | Bundle,
+  profileUrl?: string | undefined
+): void {
   const sds = Array.isArray(bundle) ? bundle : bundle.entry?.map((e) => e.resource as StructureDefinition) ?? [];
   for (const sd of sds) {
-    loadDataType(sd);
+    loadDataType(sd, profileUrl);
   }
 }
 
-export function loadDataType(sd: StructureDefinition): void {
+export function loadDataType(sd: StructureDefinition, profileUrl?: string | undefined): void {
   if (!sd?.name) {
     throw new Error(`Failed loading StructureDefinition from bundle`);
   }
@@ -104,14 +139,22 @@ export function loadDataType(sd: StructureDefinition): void {
     return;
   }
   const schema = parseStructureDefinition(sd);
-  DATA_TYPES[sd.name] = schema;
+
+  const dataTypes = getDataTypesMap(profileUrl);
+
+  dataTypes[sd.name] = schema;
+
+  if (profileUrl && sd.url === profileUrl) {
+    PROFILE_SCHEMAS_BY_URL[profileUrl] = schema;
+  }
+
   for (const inner of schema.innerTypes) {
     inner.parentType = schema;
-    DATA_TYPES[inner.name] = inner;
+    dataTypes[inner.name] = inner;
   }
 }
 
-export function getAllDataTypes(): Record<string, InternalTypeSchema> {
+export function getAllDataTypes(): DataTypesMap {
   return DATA_TYPES;
 }
 
@@ -119,14 +162,14 @@ export function isDataTypeLoaded(type: string): boolean {
   return !!DATA_TYPES[type];
 }
 
-export function tryGetDataType(type: string): InternalTypeSchema | undefined {
-  return DATA_TYPES[type];
+export function tryGetDataType(type: string, profileUrl?: string): InternalTypeSchema | undefined {
+  return getDataTypesMap(profileUrl)[type];
 }
 
-export function getDataType(type: string): InternalTypeSchema {
-  const schema = DATA_TYPES[type];
+export function getDataType(type: string, profileUrl?: string): InternalTypeSchema {
+  const schema = getDataTypesMap(profileUrl)[type];
   if (!schema) {
-    throw new OperationOutcomeError(serverError(Error('Unknown data type: ' + type)));
+    throw new OperationOutcomeError(badRequest('Unknown data type: ' + type));
   }
   return schema;
 }
@@ -146,6 +189,14 @@ export function getDataType(type: string): InternalTypeSchema {
 export function isResourceType(resourceType: string): boolean {
   const typeSchema = DATA_TYPES[resourceType];
   return typeSchema && isResourceTypeSchema(typeSchema);
+}
+
+export function isProfileLoaded(profileUrl: string): boolean {
+  return !!PROFILE_SCHEMAS_BY_URL[profileUrl];
+}
+
+export function tryGetProfile(profileUrl: string): InternalTypeSchema | undefined {
+  return PROFILE_SCHEMAS_BY_URL[profileUrl];
 }
 
 interface BackboneContext {
@@ -182,6 +233,8 @@ class StructureDefinitionParser {
     this.index = 0;
     this.resourceSchema = {
       name: sd.name as ResourceType,
+      title: sd.title,
+      type: sd.type,
       url: sd.url as string,
       kind: sd.kind,
       description: getDescription(sd),
@@ -269,6 +322,7 @@ class StructureDefinitionParser {
     this.backboneContext = {
       type: {
         name: getElementDefinitionTypeName(element),
+        title: element.label,
         description: element.definition,
         elements: {},
         constraints: this.parseElementDefinition(element).constraints,
@@ -376,11 +430,38 @@ class StructureDefinitionParser {
     }
     this.slicingContext.current = {
       name: element.sliceName ?? '',
-      type: element.type?.map((t) => ({ code: t.code ?? '', targetProfile: t.targetProfile })),
+      path: element.path ?? '',
+      definition: element.definition,
+      type: this.parseElementDefinitionType(element),
       elements: {},
       min: element.min ?? 0,
       max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string, 10),
     };
+  }
+
+  private parseElementDefinitionType(ed: ElementDefinition): ElementType[] {
+    return (ed.type ?? []).map((type) => {
+      let code: string | undefined;
+
+      if (type.code === 'BackboneElement' || type.code === 'Element') {
+        code = getElementDefinitionTypeName(ed);
+      }
+
+      if (!code) {
+        // This is a low-level extension that we optimize handling for
+        code = getExtension(type, 'http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type')?.valueUrl;
+      }
+
+      if (!code) {
+        code = type.code ?? '';
+      }
+
+      return {
+        code: code satisfies string,
+        targetProfile: type.targetProfile,
+        profile: type.profile,
+      };
+    });
   }
 
   private parseElementDefinition(ed: ElementDefinition): InternalSchemaElement {
@@ -399,14 +480,9 @@ class StructureDefinitionParser {
         expression: c.expression ?? '',
         description: c.human ?? '',
       })),
-      type: (ed.type ?? []).map((t) => ({
-        code: ['BackboneElement', 'Element'].includes(t.code as string)
-          ? getElementDefinitionTypeName(ed)
-          : t.code ?? '',
-        targetProfile: t.targetProfile,
-      })),
-      fixed: firstValue(getTypedPropertyValue(typedElementDef, 'fixed')),
-      pattern: firstValue(getTypedPropertyValue(typedElementDef, 'pattern')),
+      type: this.parseElementDefinitionType(ed),
+      fixed: firstValue(getTypedPropertyValue(typedElementDef, 'fixed[x]')),
+      pattern: firstValue(getTypedPropertyValue(typedElementDef, 'pattern[x]')),
       binding: ed.binding,
     };
   }

@@ -5,7 +5,15 @@ import { ContactPointInput } from './ContactPointInput';
 
 describe('ContactPointInput', () => {
   test('Renders', () => {
-    render(<ContactPointInput name="test" defaultValue={{ system: 'email', value: 'abc@example.com' }} />);
+    render(
+      <ContactPointInput
+        name="test"
+        path="test"
+        onChange={jest.fn()}
+        outcome={undefined}
+        defaultValue={{ system: 'email', value: 'abc@example.com' }}
+      />
+    );
 
     const system = screen.getByTestId('system') as HTMLInputElement;
     expect(system).toBeDefined();
@@ -19,7 +27,15 @@ describe('ContactPointInput', () => {
   test('Change events', async () => {
     let lastValue: ContactPoint | undefined = undefined;
 
-    render(<ContactPointInput name="test" defaultValue={{}} onChange={(value) => (lastValue = value)} />);
+    render(
+      <ContactPointInput
+        name="test"
+        path="test"
+        outcome={undefined}
+        defaultValue={{}}
+        onChange={(value) => (lastValue = value)}
+      />
+    );
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('use'), {
@@ -53,6 +69,8 @@ describe('ContactPointInput', () => {
     render(
       <ContactPointInput
         name="test"
+        path="test"
+        outcome={undefined}
         defaultValue={{
           use: 'home',
           system: 'email',

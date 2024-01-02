@@ -456,12 +456,35 @@ function isArrayKey(k: string): boolean {
  * @param v - Any value.
  * @returns True if the value is an empty string or an empty object.
  */
-export function isEmpty(v: any): boolean {
+export function isEmpty(v: unknown): boolean {
   if (v === null || v === undefined) {
     return true;
   }
+
   const t = typeof v;
-  return (t === 'string' && v === '') || (t === 'object' && Object.keys(v).length === 0);
+  if (t === 'string' || t === 'object') {
+    return !isPopulated(v);
+  }
+
+  return false;
+}
+
+type CanBePopulated = { length: number } | object;
+/**
+ * Returns true if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
+ * @param arg - Any value
+ * @returns True if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
+ */
+export function isPopulated<T extends { length: number } | object>(arg: CanBePopulated | undefined | null): arg is T {
+  if (arg === null || arg === undefined) {
+    return false;
+  }
+  const t = typeof arg;
+
+  return (
+    (t === 'string' && arg !== '') ||
+    (t === 'object' && (('length' in arg && arg.length > 0) || Object.keys(arg).length > 0))
+  );
 }
 
 /**
@@ -651,6 +674,9 @@ export function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
 }
 
 export function capitalize(word: string): string {
+  if (!word) {
+    return '';
+  }
   return word.charAt(0).toUpperCase() + word.substring(1);
 }
 

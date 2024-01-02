@@ -26,6 +26,7 @@ import { ProjectPage } from './admin/ProjectPage';
 import { SecretsPage } from './admin/SecretsPage';
 import { SitesPage } from './admin/SitesPage';
 import { SuperAdminPage } from './admin/SuperAdminPage';
+import { ProjectAdminConfigPage } from './admin/ProjectAdminConfigPage';
 import { UsersPage } from './admin/UsersPage';
 import { AssaysPage } from './lab/AssaysPage';
 import { PanelsPage } from './lab/PanelsPage';
@@ -52,6 +53,7 @@ import { SubscriptionsPage } from './resource/SubscriptionsPage';
 import { TimelinePage } from './resource/TimelinePage';
 import { FormCreatePage } from './resource/FormCreatePage';
 import { JsonCreatePage } from './resource/JsonCreatePage';
+import { ProfilesPage } from './resource/ProfilesPage';
 
 export function AppRoutes(): JSX.Element {
   return (
@@ -70,6 +72,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/smart" element={<SmartSearchPage />} />
         <Route path="/forms/:id" element={<FormPage />} />
         <Route path="/admin/super" element={<SuperAdminPage />} />
+        <Route path="/admin/config" element={<ProjectAdminConfigPage />} />
         <Route path="/admin" element={<ProjectPage />}>
           <Route path="patients" element={<PatientsPage />} />
           <Route path="bots/new" element={<CreateBotPage />} />
@@ -114,6 +117,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="ranges" element={<ReferenceRangesPage />} />
           <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="timeline" element={<TimelinePage />} />
+          <Route path="profiles" element={<ProfilesPage />} />
         </Route>
         <Route path="/:resourceType" element={<HomePage />} />
         <Route path="/" element={<HomePage />} />

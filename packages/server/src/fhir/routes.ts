@@ -26,6 +26,8 @@ import { sendOutcome } from './outcomes';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { getFullUrl } from './search';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { projectInitHandler } from './operations/projectinit';
+import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 
 export const fhirRouter = Router();
 
@@ -88,6 +90,13 @@ protectedRoutes.post('/([$]|%24)export', bulkExportHandler);
 
 // Project $clone
 protectedRoutes.post('/Project/:id/([$]|%24)clone', asyncWrap(projectCloneHandler));
+
+// Project $init
+protectedRoutes.post('/Project/([$]|%24)init', asyncWrap(projectInitHandler));
+
+// ConceptMap $translate
+protectedRoutes.post('/ConceptMap/([$]|%24)translate', asyncWrap(conceptMapTranslateHandler));
+protectedRoutes.post('/ConceptMap/:id/([$]|%24)translate', asyncWrap(conceptMapTranslateHandler));
 
 // ValueSet $expand operation
 protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);

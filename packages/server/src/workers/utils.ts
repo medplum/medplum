@@ -10,9 +10,9 @@ import {
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
+import { getRequestContext } from '../context';
 import { systemRepo } from '../fhir/repo';
 import { AuditEventOutcome } from '../util/auditevent';
-import { getRequestContext } from '../context';
 
 export function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
   return systemRepo.searchOne<ProjectMembership>({
@@ -106,14 +106,6 @@ export function getAuditEventEntityRole(resource: Resource): Coding {
   }
 }
 
-export function isDeleteInteraction(subscription: Subscription): boolean {
-  const supportedInteractionExtension = getExtension(
-    subscription,
-    'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
-  );
-  return supportedInteractionExtension?.valueCode === 'delete';
-}
-
 export async function isFhirCriteriaMet(subscription: Subscription, currentResource: Resource): Promise<boolean> {
   const criteria = getExtension(
     subscription,
@@ -123,10 +115,13 @@ export async function isFhirCriteriaMet(subscription: Subscription, currentResou
     return true;
   }
   const history = await systemRepo.readHistory(currentResource.resourceType, currentResource?.id as string);
-  const evalInput = { current: toTypedValue(currentResource), previous: toTypedValue({}) };
+  const evalInput = {
+    '%current': toTypedValue(currentResource),
+    '%previous': toTypedValue({}),
+  };
   const previousResource = history.entry?.[1]?.resource as Resource;
   if (previousResource) {
-    evalInput.previous = toTypedValue(previousResource);
+    evalInput['%previous'] = toTypedValue(previousResource);
   }
   const evalValue = evalFhirPathTyped(criteria.valueString, [toTypedValue(currentResource)], evalInput);
   if (evalValue?.[0]?.value === true) {

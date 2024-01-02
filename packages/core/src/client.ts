@@ -67,7 +67,7 @@ import {
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage, IClientStorage } from './storage';
 import { indexSearchParameter } from './types';
-import { indexStructureDefinitionBundle, isDataTypeLoaded } from './typeschema/types';
+import { indexStructureDefinitionBundle, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
 import {
   CodeChallengeMethod,
   ProfileResource,
@@ -180,7 +180,7 @@ export interface MedplumClientOptions {
   /**
    * The length of time in milliseconds to cache resources.
    *
-   * Default value is 10000 (10 seconds).
+   * Default value is 60000 (60 seconds).
    *
    * Cache time of zero disables all caching.
    *
@@ -413,6 +413,7 @@ export interface InviteRequest {
   password?: string;
   sendEmail?: boolean;
   membership?: Partial<ProjectMembership>;
+  upsert?: boolean;
   /** @deprecated Use membership.accessPolicy instead. */
   accessPolicy?: Reference<AccessPolicy>;
   /** @deprecated Use membership.access instead. */
@@ -1191,7 +1192,7 @@ export class MedplumClient extends EventTarget {
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('client_id', clientId);
     url.searchParams.set('redirect_uri', redirectUri);
-    url.searchParams.set('scope', 'openid profile email');
+    url.searchParams.set('scope', loginRequest.scope ?? 'openid profile email');
     url.searchParams.set('state', JSON.stringify(loginRequest));
 
     if (pkceEnabled) {
@@ -1570,6 +1571,7 @@ export class MedplumClient extends EventTarget {
         name,
         kind,
         description,
+        type,
         snapshot {
           element {
             id,
@@ -1585,6 +1587,7 @@ export class MedplumClient extends EventTarget {
             contentReference,
             type {
               code,
+              profile,
               targetProfile
             },
             binding {
@@ -1609,6 +1612,44 @@ export class MedplumClient extends EventTarget {
 
         for (const searchParameter of response.data.SearchParameterList) {
           indexSearchParameter(searchParameter);
+        }
+      })()
+    );
+    this.setCacheEntry(cacheKey, promise);
+    return promise;
+  }
+
+  /**
+   * Requests the schema for a profile.
+   * If the schema is already cached, the promise is resolved immediately.
+   * @category Schema
+   * @param profileUrl - The FHIR URL of the profile
+   * @returns Promise to a schema with the requested profile.
+   */
+  requestProfileSchema(profileUrl: string): Promise<void> {
+    if (isProfileLoaded(profileUrl)) {
+      return Promise.resolve();
+    }
+
+    const cacheKey = profileUrl + '-requestSchema';
+    const cached = this.getCacheEntry(cacheKey, undefined);
+    if (cached) {
+      return cached.value;
+    }
+
+    const promise = new ReadablePromise<void>(
+      (async () => {
+        // Just sort by lastUpdated. Ideally, it would also be based on a logical sort of version
+        // See https://hl7.org/fhir/references.html#canonical-matching for more discussion
+        const sd = await this.searchOne('StructureDefinition', {
+          url: profileUrl,
+          _sort: '-_lastUpdated',
+        });
+
+        if (!sd) {
+          console.warn(`No StructureDefinition found for ${profileUrl}!`);
+        } else {
+          indexStructureDefinitionBundle([sd], profileUrl);
         }
       })()
     );
@@ -1794,16 +1835,18 @@ export class MedplumClient extends EventTarget {
    * @param data - The binary data to upload.
    * @param filename - Optional filename for the binary.
    * @param contentType - Content type for the binary.
-   * @param onProgress - Optional callback for progress events.
+   * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
+   * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @returns The result of the create operation.
    */
   async createAttachment(
     data: BinarySource,
     filename: string | undefined,
     contentType: string,
-    onProgress?: (e: ProgressEvent) => void
+    onProgress?: (e: ProgressEvent) => void,
+    options?: RequestInit
   ): Promise<Attachment> {
-    const binary = await this.createBinary(data, filename, contentType, onProgress);
+    const binary = await this.createBinary(data, filename, contentType, onProgress, options);
     return {
       contentType,
       url: binary.url,
@@ -1833,14 +1876,16 @@ export class MedplumClient extends EventTarget {
    * @param data - The binary data to upload.
    * @param filename - Optional filename for the binary.
    * @param contentType - Content type for the binary.
-   * @param onProgress - Optional callback for progress events.
+   * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
+   * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @returns The result of the create operation.
    */
   createBinary(
     data: BinarySource,
     filename: string | undefined,
     contentType: string,
-    onProgress?: (e: ProgressEvent) => void
+    onProgress?: (e: ProgressEvent) => void,
+    options?: RequestInit
   ): Promise<Binary> {
     const url = this.fhirUrl('Binary');
     if (filename) {
@@ -1848,9 +1893,9 @@ export class MedplumClient extends EventTarget {
     }
 
     if (onProgress) {
-      return this.uploadwithProgress(url, data, contentType, onProgress);
+      return this.uploadwithProgress(url, data, contentType, onProgress, options);
     } else {
-      return this.post(url, data, contentType);
+      return this.post(url, data, contentType, options);
     }
   }
 
@@ -1858,13 +1903,29 @@ export class MedplumClient extends EventTarget {
     url: URL,
     data: BinarySource,
     contentType: string,
-    onProgress: (e: ProgressEvent) => void
+    onProgress: (e: ProgressEvent) => void,
+    options?: RequestInit
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
+
+      // Ensure the 'abort' event listener is removed from the signal to prevent memory leaks,
+      // especially in scenarios where there is a long-lived signal across multiple requests.
+      const handleSignalAbort = (): void => xhr.abort();
+      options?.signal?.addEventListener('abort', handleSignalAbort);
+      const sendResult = (result: any): void => {
+        options?.signal?.removeEventListener('abort', handleSignalAbort);
+
+        if (result instanceof Error) {
+          reject(result);
+        } else {
+          resolve(result);
+        }
+      };
+
       xhr.responseType = 'json';
-      xhr.onabort = () => reject(new Error('Request aborted'));
-      xhr.onerror = () => reject(new Error('Request error'));
+      xhr.onabort = () => sendResult(new Error('Request aborted'));
+      xhr.onerror = () => sendResult(new Error('Request error'));
 
       if (onProgress) {
         xhr.upload.onprogress = (e) => onProgress(e);
@@ -1873,9 +1934,9 @@ export class MedplumClient extends EventTarget {
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(xhr.response);
+          sendResult(xhr.response);
         } else {
-          reject(new OperationOutcomeError(normalizeOperationOutcome(xhr.response || xhr.statusText)));
+          sendResult(new OperationOutcomeError(normalizeOperationOutcome(xhr.response || xhr.statusText)));
         }
       };
 
@@ -2003,15 +2064,15 @@ export class MedplumClient extends EventTarget {
     if (!resource.id) {
       throw new Error('Missing id');
     }
-    this.invalidateSearches(resource.resourceType);
     let result = await this.put(this.fhirUrl(resource.resourceType, resource.id), resource, undefined, options);
     if (!result) {
       // On 304 not modified, result will be undefined
       // Return the user input instead
-      // return result ?? resource;
       result = resource;
     }
     this.cacheResource(result);
+    this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id, '_history'));
+    this.invalidateSearches(resource.resourceType);
     return result;
   }
 
@@ -2296,22 +2357,25 @@ export class MedplumClient extends EventTarget {
    * @param destination - The destination device.
    * @param body - The message body.
    * @param contentType - Optional message content type.
+   * @param waitForResponse - Optional wait for response flag.
    * @param options - Optional fetch options.
-   * @returns Promise to the operation outcome.
+   * @returns Promise to the result. If waiting for response, the result is the response body. Otherwise, it is an operation outcome.
    */
   pushToAgent(
     agent: Agent | Reference<Agent>,
     destination: Device | Reference<Device>,
     body: any,
     contentType?: string,
+    waitForResponse?: boolean,
     options?: RequestInit
-  ): Promise<OperationOutcome> {
+  ): Promise<any> {
     return this.post(
       this.fhirUrl('Agent', resolveId(agent) as string, '$push'),
       {
         destination: getReferenceString(destination),
         body,
         contentType,
+        waitForResponse,
       },
       ContentType.FHIR_JSON,
       options

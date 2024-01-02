@@ -23,9 +23,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install NSIS
-        run: sudo apt-get install -y nsis
-
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -51,7 +48,7 @@ jobs:
             {"text": "Starting publish: ${{ github.ref_name }}"}
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --maxsockets 1
 
       - name: Build
         run: npm run build:all
@@ -68,8 +65,21 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Sync example repos
-        run: |
-          ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}"
+        run: ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push Docker images
+        run: ./scripts/build-docker.sh --release
+        env:
+          DOCKERHUB_REPOSITORY: ${{ secrets.DOCKERHUB_REPOSITORY }}
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -81,14 +91,59 @@ jobs:
       - name: Deploy bot layer
         run: ./scripts/deploy-bot-layer.sh
 
+  build_agent:
+    runs-on: windows-latest
+    env:
+      NODE_VERSION: '18'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: 'medplum'
+      TURBO_REMOTE_ONLY: true
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install NSIS
+        run: choco install nsis
+
+      - name: Install Wget
+        run: choco install wget
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci --maxsockets 1
+
+      - name: Build
+        run: npm run build -- --filter=@medplum/agent
+
       - name: Build Agent installer
-        working-directory: ./packages/agent
-        run: npm run build:all
+        shell: bash
+        run: ./scripts/build-agent-installer.sh
+        env:
+          SM_HOST: ${{ secrets.SM_HOST }}
+          SM_API_KEY: ${{ secrets.SM_API_KEY }}
+          SM_CLIENT_CERT_FILE_BASE64: ${{ secrets.SM_CLIENT_CERT_FILE_BASE64 }}
+          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+          SM_CERT_ALIAS: ${{ secrets.SM_CERT_ALIAS }}
 
       - name: Upload Agent installer
         uses: actions/github-script@v6
         with:
           script: |
+            const packageJson = require('./packages/agent/package.json');
             const fs = require('fs');
             const tag = context.ref.replace("refs/tags/", "");
             const release = await github.rest.repos.getReleaseByTag({
@@ -100,6 +155,13 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-installer.exe",
-              data: await fs.readFileSync("packages/agent/medplum-agent-installer.exe")
+              name: "medplum-agent-installer-" + packageJson.version + ".exe",
+              data: await fs.readFileSync("packages/agent/medplum-agent-installer-" + packageJson.version + ".exe")
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-installer-" + packageJson.version + ".exe.sha256",
+              data: await fs.readFileSync("packages/agent/medplum-agent-installer-" + packageJson.version + ".exe.sha256")
             });

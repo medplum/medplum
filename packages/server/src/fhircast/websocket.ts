@@ -1,6 +1,8 @@
+import { generateId } from '@medplum/core';
 import { AsyncLocalStorage } from 'async_hooks';
 import { IncomingMessage } from 'http';
 import ws from 'ws';
+import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 
@@ -17,10 +19,26 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   // According to Redis documentation: http://redis.io/commands/subscribe
   // Once the client enters the subscribed state it is not supposed to issue any other commands,
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
-  const redisSubscriber = getRedis().duplicate();
+  const redis = getRedis();
+  const redisSubscriber = redis.duplicate();
 
   // Subscribe to the topic
   await redisSubscriber.subscribe(topic);
+
+  // Subscribe to heartbeat events
+  function heartbeatHandler(): void {
+    const heartbeatPayload = {
+      timestamp: new Date().toISOString(),
+      id: generateId(),
+      event: {
+        context: [{ key: 'period', decimal: `${Math.ceil(DEFAULT_HEARTBEAT_MS / 1000)}` }],
+        'hub.topic': topic,
+        'hub.event': 'heartbeat',
+      },
+    };
+    redis.publish(topic, JSON.stringify(heartbeatPayload)).catch(console.error);
+  }
+  heartbeat.addEventListener('heartbeat', heartbeatHandler);
 
   redisSubscriber.on('message', (_channel: string, message: string) => {
     // Forward the message to the client
@@ -36,7 +54,8 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   );
 
   socket.on('close', () => {
-    redisSubscriber.disconnect();
+    heartbeat.removeEventListener('heartbeat', heartbeatHandler);
+    redisSubscriber.unsubscribe(topic).catch(console.error);
   });
 
   // Send initial connection verification

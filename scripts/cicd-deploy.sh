@@ -28,12 +28,6 @@ if [[ "$FILES_CHANGED" =~ Dockerfile ]]; then
   DEPLOY_SERVER=true
 fi
 
-if [[ "$FILES_CHANGED" =~ package-lock.json ]]; then
-  DEPLOY_APP=true
-  DEPLOY_GRAPHIQL=true
-  DEPLOY_SERVER=true
-fi
-
 if [[ "$FILES_CHANGED" =~ cicd-deploy.sh ]]; then
   DEPLOY_APP=true
   DEPLOY_GRAPHIQL=true
@@ -119,5 +113,6 @@ fi
 if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
   npm run build -- --force --filter=@medplum/server
+  source ./scripts/build-docker.sh
   source ./scripts/deploy-server.sh
 fi

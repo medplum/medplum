@@ -8,6 +8,10 @@ import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/fhir
 
 FHIR allows users to create batch requests to bundle multiple API calls into a single HTTP request. Batch requests can improve speed and efficiency and can reduce HTTP traffic when working with many resources.
 
+:::tip Cloning a project
+If you want to create a copy of a project, say for a new environment, this can be done using the `$clone` operation rather than by creating a batch request. For more details [see the Projects guide](/docs/access/projects##cloning-and-expunging-projects).
+:::
+
 ## How to Perform a Batch Request
 
 Batch requests are modeled using the `Bundle` resource by setting `Bundle.type` to `"batch"`.
@@ -59,6 +63,10 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
   </MedplumCodeBlock>
 </details>
 
+:::danger Batch vs Transaction
+Medplum does not currently distinguish between `'batch'` and `'transaction'` type [`Bundle`](/docs/api/fhir/resources/bundle) resources and does not provide atomic transactions. This is currently being worked on, and you can track progress on the issue [here](https://github.com/medplum/medplum/issues/1369).
+:::
+
 ## Creating Internal References
 
 A common workflow when using batch requests is creating a resource that references another resource that is being created in the same batch. For example, you may create a `Patient` resource that is the `subject` of an `Encounter` created in the same batch request.
@@ -78,13 +86,6 @@ Batches are processed in order, so resources must be created in your bundle prio
   </MedplumCodeBlock>
 </details>
 
-<details>
-  <summary>Example: Create a patient and update it in the same batch request</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="createThenUpdate">
-    {ExampleCode}
-  </MedplumCodeBlock>
-</details>
-
 ## Conditional Batch Actions
 
 There may be situations where you would only like to create a a resource as part of a batch request if it does not already exist.
@@ -96,6 +97,29 @@ The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#se
 <details>
   <summary>Example: Create a patient and organization, only if the organization does not already exist</summary>
   <MedplumCodeBlock language="ts" selectBlocks="conditionalCreate">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+## Performing Upserts
+
+You can combine conditional creates and internal references to perform an "upsert" operation to either create a resource or update it in place.
+
+The example below first uses a `POST` request to conditionally create create a patient, and then performs a `PUT` with the _same patient data_ to perform an in-place update.
+
+If the patient doesn't exist:
+
+- `POST` creates the `Patient`
+- `PUT` updates the `Patient` with the exact same data (no-op)
+
+If the patient does exist:
+
+- `POST` doesn't create a new `Patient` (no-op)
+- `PUT` updates the `Patient`
+
+<details>
+  <summary>Example: Create a patient and update it in the same batch request</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="upsert">
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
@@ -115,7 +139,9 @@ Instead you should create the queue of `Promise` requests and then use `Promise.
   <MedplumCodeBlock language="ts" selectBlocks="autobatchingWrong">
     {ExampleCode}
   </MedplumCodeBlock>
-  ✅ CORRECT
+
+✅ CORRECT
+
   <MedplumCodeBlock language="ts" selectBlocks="autobatchingCorrect">
     {ExampleCode}
   </MedplumCodeBlock>

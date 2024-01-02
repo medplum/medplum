@@ -54,6 +54,7 @@ export interface MedplumSourceInfraConfig {
   clamscanLoggingBucket: ValueOrExternalSecret<string>;
   clamscanLoggingPrefix: ValueOrExternalSecret<string>;
   skipDns?: ValueOrExternalSecret<boolean>;
+  hostedZoneName?: ValueOrExternalSecret<string>;
   additionalContainers?: {
     name: ValueOrExternalSecret<string>;
     image: ValueOrExternalSecret<string>;
@@ -113,6 +114,7 @@ export interface MedplumInfraConfig {
   clamscanLoggingBucket: string;
   clamscanLoggingPrefix: string;
   skipDns?: boolean;
+  hostedZoneName?: string;
   additionalContainers?: {
     name: string;
     image: string;

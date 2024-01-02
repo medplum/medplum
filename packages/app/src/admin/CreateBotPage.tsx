@@ -35,7 +35,7 @@ export function CreateBotPage(): JSX.Element {
               showNotification({ color: 'green', message: 'Bot created' });
             })
             .catch((err) => {
-              showNotification({ color: 'red', message: normalizeErrorString(err) });
+              showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
               setOutcome(normalizeOperationOutcome(err));
             });
         }}

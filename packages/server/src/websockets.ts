@@ -84,7 +84,7 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
   });
 }
 
-export function closeWebSockets(): void {
+export async function closeWebSockets(): Promise<void> {
   if (wsServer) {
     wsServer.close();
     wsServer = undefined;

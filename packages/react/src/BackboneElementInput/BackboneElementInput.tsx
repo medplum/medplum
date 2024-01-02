@@ -1,23 +1,36 @@
-import { Stack } from '@mantine/core';
-import { getPropertyDisplayName, tryGetDataType } from '@medplum/core';
+import { tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { useState } from 'react';
-import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
-import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
-import { FormSection } from '../FormSection/FormSection';
-import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
-import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
-import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
+import { useContext, useMemo, useState } from 'react';
+import { ElementsInput } from '../ElementsInput/ElementsInput';
+import { BackboneElementContext, buildBackboneElementContext } from './BackboneElementInput.utils';
 
 export interface BackboneElementInputProps {
+  /** Type name the backbone element represents */
   typeName: string;
+  /** (optional) The contents of the resource represented by the backbone element */
   defaultValue?: any;
+  /** (optional) OperationOutcome from the last attempted system action*/
   outcome?: OperationOutcome;
+  /** (optional) callback function that is called when the value of the backbone element changes */
   onChange?: (value: any) => void;
+  /** (optional) Profile URL of the structure definition represented by the backbone element */
+  profileUrl?: string;
 }
 
 export function BackboneElementInput(props: BackboneElementInputProps): JSX.Element {
+  const { typeName } = props;
   const [value, setValue] = useState<any>(props.defaultValue ?? {});
+  const backboneContext = useContext(BackboneElementContext);
+  const profileUrl = props.profileUrl ?? backboneContext.profileUrl;
+  const typeSchema = useMemo(() => tryGetDataType(typeName, profileUrl), [typeName, profileUrl]);
+
+  const context = useMemo(() => {
+    return buildBackboneElementContext(typeSchema, profileUrl);
+  }, [typeSchema, profileUrl]);
+
+  if (!typeSchema) {
+    return <div>{typeName}&nbsp;not implemented</div>;
+  }
 
   function setValueWrapper(newValue: any): void {
     setValue(newValue);
@@ -26,73 +39,15 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
     }
   }
 
-  const typeName = props.typeName;
-  const typeSchema = tryGetDataType(typeName);
-  if (!typeSchema) {
-    return <div>{typeName}&nbsp;not implemented</div>;
-  }
-
-  const typedValue = { type: typeName, value };
-
   return (
-    <Stack>
-      {Object.entries(typeSchema.elements).map(([key, property]) => {
-        if (key === 'id' || DEFAULT_IGNORED_PROPERTIES.includes(key)) {
-          return null;
-        }
-        if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && property.path.split('.').length === 2) {
-          return null;
-        }
-        if (!property.type) {
-          return null;
-        }
-
-        const [propertyValue, propertyType] = getValueAndType(typedValue, key);
-        const required = property.min !== undefined && property.min > 0;
-
-        if (property.type.length === 1 && property.type[0].code === 'boolean') {
-          return (
-            <CheckboxFormSection
-              key={key}
-              title={getPropertyDisplayName(key)}
-              description={property.description}
-              htmlFor={key}
-            >
-              <ResourcePropertyInput
-                property={property}
-                name={key}
-                defaultValue={propertyValue}
-                defaultPropertyType={propertyType}
-                outcome={props.outcome}
-                onChange={(newValue: any, propName?: string) => {
-                  setValueWrapper(setPropertyValue(value, key, propName ?? key, property, newValue));
-                }}
-              />
-            </CheckboxFormSection>
-          );
-        }
-
-        return (
-          <FormSection
-            key={key}
-            title={getPropertyDisplayName(key)}
-            description={property.description}
-            withAsterisk={required}
-            htmlFor={key}
-            outcome={props.outcome}
-          >
-            <ResourcePropertyInput
-              property={property}
-              name={key}
-              defaultValue={propertyValue}
-              defaultPropertyType={propertyType}
-              onChange={(newValue: any, propName?: string) => {
-                setValueWrapper(setPropertyValue(value, key, propName ?? key, property, newValue));
-              }}
-            />
-          </FormSection>
-        );
-      })}
-    </Stack>
+    <BackboneElementContext.Provider value={context}>
+      <ElementsInput
+        type={typeSchema.type}
+        elements={typeSchema.elements}
+        defaultValue={value}
+        onChange={setValueWrapper}
+        outcome={props.outcome}
+      />
+    </BackboneElementContext.Provider>
   );
 }

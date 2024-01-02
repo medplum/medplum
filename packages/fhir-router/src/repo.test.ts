@@ -7,8 +7,8 @@ import {
   parseSearchDefinition,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { Bundle, Observation, Patient, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { randomInt, randomUUID } from 'crypto';
 import { MemoryRepository } from './repo';
 
 const repo = new MemoryRepository();
@@ -110,5 +110,33 @@ describe('MemoryRepository', () => {
     // This is different than the real server environment, which will throw an error
     const bundle = await repo.search({ resourceType: 'Patient', sortRules: [{ code: 'xyz' }] });
     expect(bundle.entry).toBeDefined();
+  });
+
+  test('clears all resources', async () => {
+    repo.clear();
+
+    const resourceTypes: ResourceType[] = ['Patient', 'Observation', 'AccessPolicy', 'Account', 'Binary', 'Bot'];
+    let expectedTotalResourceCount = 0;
+    await Promise.all(
+      resourceTypes.map(async (rt) => {
+        const count = randomInt(9) + 1;
+        for (let i = 0; i < count; i++) {
+          await repo.createResource<any>({ resourceType: rt });
+        }
+        expectedTotalResourceCount += count;
+      })
+    );
+
+    const resourcesListBefore = await Promise.all(
+      resourceTypes.map((rt) => repo.searchResources({ resourceType: rt }))
+    );
+    const actualResourceCountBefore = resourcesListBefore.reduce((count, resources) => (count += resources.length), 0);
+    expect(actualResourceCountBefore).toBe(expectedTotalResourceCount);
+
+    repo.clear();
+
+    const resourcesListAfter = await Promise.all(resourceTypes.map((rt) => repo.searchResources({ resourceType: rt })));
+    const actualResourceCountAfter = resourcesListAfter.reduce((count, resources) => (count += resources.length), 0);
+    expect(actualResourceCountAfter).toBe(0);
   });
 });

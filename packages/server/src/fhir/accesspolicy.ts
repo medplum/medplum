@@ -108,6 +108,8 @@ async function buildAccessPolicy(membership: ProjectMembership): Promise<AccessP
     }
   }
 
+  addDefaultResourceTypes(resourcePolicies);
+
   return {
     resourceType: 'AccessPolicy',
     compartment,
@@ -142,6 +144,26 @@ async function buildAccessPolicyResources(
     }
   }
   return JSON.parse(json) as AccessPolicy;
+}
+
+/**
+ * Adds default resource types to the access policy.
+ * Once upon a time, all users automatically had access to "system" resource types such as StructureDefinition.
+ * But now, users must have explicit access to these resource types.
+ * Unfortunately, there are many clients that depend on this behavior.
+ * So, we add these resource types to the access policy if they are not already present.
+ * @param resourcePolicies - The existing set of resource policies.
+ */
+function addDefaultResourceTypes(resourcePolicies: AccessPolicyResource[]): void {
+  const defaultResourceTypes = ['SearchParameter', 'StructureDefinition'];
+  for (const resourceType of defaultResourceTypes) {
+    if (!resourcePolicies.find((r) => r.resourceType === resourceType)) {
+      resourcePolicies.push({
+        resourceType,
+        readonly: true,
+      });
+    }
+  }
 }
 
 /**

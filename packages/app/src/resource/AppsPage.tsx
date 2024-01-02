@@ -58,7 +58,7 @@ export function AppsPage(): JSX.Element | null {
         url.searchParams.set('launch', result.id as string);
         window.location.assign(url.toString());
       })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   return (

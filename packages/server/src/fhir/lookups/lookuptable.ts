@@ -94,7 +94,7 @@ export abstract class LookupTable<T> {
       joinOnExpression.expressions.push(disjunction);
     }
 
-    selectQuery.innerJoin(tableName, joinName, joinOnExpression);
+    selectQuery.leftJoin(tableName, joinName, joinOnExpression);
     selectQuery.orderBy(new Column(joinName, columnName));
     return new Condition(new Column(joinName, 'resourceId'), '!=', null);
   }
@@ -150,7 +150,8 @@ export abstract class LookupTable<T> {
       return;
     }
     const tableName = this.getTableName(resourceType);
-    await new InsertQuery(tableName, values).execute(client);
+    const insert = new InsertQuery(tableName, values);
+    await insert.execute(client);
   }
 
   /**

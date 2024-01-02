@@ -16,7 +16,7 @@ import {
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
 } from '@medplum/fhirtypes';
-import { ChangeEvent } from 'react';
+import { ChangeEvent, useContext } from 'react';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
 import { CodingInput } from '../../CodingInput/CodingInput';
@@ -27,9 +27,11 @@ import { ResourcePropertyDisplay } from '../../ResourcePropertyDisplay/ResourceP
 import {
   formatReferenceString,
   getNewMultiSelectValues,
+  getQuestionnaireItemReferenceFilter,
   getQuestionnaireItemReferenceTargetTypes,
   QuestionnaireItemType,
 } from '../../utils/questionnaire';
+import { QuestionnaireFormContext } from '../QuestionnaireForm.context';
 
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
@@ -39,6 +41,7 @@ export interface QuestionnaireFormItemProps {
 }
 
 export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element | null {
+  const context = useContext(QuestionnaireFormContext);
   const item = props.item;
   const response = props.response;
 
@@ -188,6 +191,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           required={item.required}
           targetTypes={getQuestionnaireItemReferenceTargetTypes(item)}
+          searchCriteria={getQuestionnaireItemReferenceFilter(item, context.subject, context.encounter)}
           defaultValue={defaultValue?.value}
           onChange={(newValue) => onChangeAnswer({ valueReference: newValue })}
         />
@@ -347,6 +351,10 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
         { type: 'QuestionnaireItemAnswerOption', value: option },
         'value'
       ) as TypedValue;
+
+      if (!optionValue?.value) {
+        continue;
+      }
 
       if (initialValue && stringify(optionValue) === stringify(initialValue)) {
         defaultValue = optionName;

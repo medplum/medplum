@@ -200,6 +200,11 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     this.history = new Map();
   }
 
+  clear(): void {
+    this.resources.clear();
+    this.history.clear();
+  }
+
   async createResource<T extends Resource>(resource: T): Promise<T> {
     const result = deepClone(resource);
 

@@ -1,5 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { ContentType, createReference, getReferenceString } from '@medplum/core';
+import { ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { BundleEntry, Practitioner, ProjectMembership } from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
@@ -538,9 +538,7 @@ describe('Admin Invite', () => {
       });
     expect(res2.status).toBe(200);
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(res2.body.error.outcome.issue?.[0].details.text).toBe(
-      'Could not send email. Make sure you have AWS SES set up.'
-    );
+    expect(res2.body.issue?.[0].details.text).toBe('Could not send email. Make sure you have AWS SES set up.');
   });
 
   test('Super admin invite to different project', async () => {
@@ -610,5 +608,76 @@ describe('Admin Invite', () => {
 
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
     expect(parsed.subject).toBe('Welcome to Medplum');
+  });
+
+  test('Invite user with existing membership', async () => {
+    const { project, accessToken, profile } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Invite Bob first time - should succeed
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toBe('ProjectMembership');
+
+    // Invite Bob second time - should fail
+    const res3 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+      });
+    expect(res3.status).toBe(400);
+    expect(normalizeErrorString(res3.body)).toEqual('User is already a member of this project');
+
+    // Invite Bob third time with "upsert = true" - should succeed
+    const res4 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        upsert: true,
+      });
+    expect(res4.status).toBe(200);
+    expect(res4.body.resourceType).toBe('ProjectMembership');
+    expect(res4.body.id).toEqual(res2.body.id);
+
+    // Invite Bob again with different profiile - should fail
+    const res5 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        upsert: true,
+        membership: { profile: createReference(profile) },
+      });
+    expect(res5.status).toBe(400);
+    expect(normalizeErrorString(res5.body)).toEqual(
+      'User is already a member of this project with a different profile'
+    );
   });
 });

@@ -149,9 +149,6 @@ export class Condition implements Expression {
 
   buildSql(sql: SqlBuilder): void {
     const operator = Operator[this.operator];
-    if (!operator) {
-      throw new Error('Unrecognized SQL operator: ' + this.operator);
-    }
     operator(sql, this.column, this.parameter, this.parameterType);
   }
 }
@@ -204,7 +201,7 @@ export class Disjunction extends Connective {
 export class Join {
   constructor(
     readonly joinType: 'LEFT JOIN' | 'INNER JOIN',
-    readonly joinItem: string | SelectQuery,
+    readonly joinItem: string,
     readonly joinAlias: string,
     readonly onExpression: Expression
   ) {}
@@ -228,6 +225,7 @@ export interface Expression {
 export class SqlBuilder {
   private readonly sql: string[];
   private readonly values: any[];
+  debug = DEBUG;
 
   constructor() {
     this.sql = [];
@@ -298,13 +296,13 @@ export class SqlBuilder {
   async execute(conn: Client | Pool | PoolClient): Promise<any[]> {
     const sql = this.toString();
     let startTime = 0;
-    if (DEBUG) {
+    if (this.debug) {
       console.log('sql', sql);
       console.log('values', this.values);
       startTime = Date.now();
     }
     const result = await conn.query(sql, this.values);
-    if (DEBUG) {
+    if (this.debug) {
       const endTime = Date.now();
       const duration = endTime - startTime;
       console.log(`result: ${result.rows.length} rows (${duration} ms)`);
@@ -382,12 +380,12 @@ export class SelectQuery extends BaseQuery {
     return `T${this.joinCount}`;
   }
 
-  innerJoin(joinItem: string | SelectQuery, joinAlias: string, onExpression: Expression): this {
+  innerJoin(joinItem: string, joinAlias: string, onExpression: Expression): this {
     this.joins.push(new Join('INNER JOIN', joinItem, joinAlias, onExpression));
     return this;
   }
 
-  leftJoin(joinItem: string | SelectQuery, joinAlias: string, onExpression: Expression): this {
+  leftJoin(joinItem: string, joinAlias: string, onExpression: Expression): this {
     this.joins.push(new Join('LEFT JOIN', joinItem, joinAlias, onExpression));
     return this;
   }
@@ -500,13 +498,7 @@ export class SelectQuery extends BaseQuery {
 
     for (const join of this.joins) {
       sql.append(` ${join.joinType} `);
-      if (typeof join.joinItem === 'string') {
-        sql.appendIdentifier(join.joinItem);
-      } else {
-        sql.append(' ( ');
-        join.joinItem.buildSql(sql);
-        sql.append(' ) ');
-      }
+      sql.appendIdentifier(join.joinItem);
       sql.append(' AS ');
       sql.appendIdentifier(join.joinAlias);
       sql.append(' ON ');
@@ -579,8 +571,8 @@ export class InsertQuery extends BaseQuery {
     this.values = values;
   }
 
-  mergeOnConflict(merge: boolean): this {
-    this.merge = merge;
+  mergeOnConflict(): this {
+    this.merge = true;
     return this;
   }
 

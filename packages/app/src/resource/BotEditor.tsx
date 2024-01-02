@@ -59,7 +59,7 @@ export function BotEditor(): JSX.Element | null {
         setBot(newBot);
         setDefaultCode(await getBotCode(medplum, newBot));
       })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum, id]);
 
   const getCode = useCallback(() => {
@@ -103,7 +103,7 @@ export function BotEditor(): JSX.Element | null {
         await medplum.patchResource('Bot', id, operations);
         showNotification({ color: 'green', message: 'Saved' });
       } catch (err) {
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       } finally {
         setLoading(false);
       }
@@ -121,7 +121,7 @@ export function BotEditor(): JSX.Element | null {
         await medplum.post(medplum.fhirUrl('Bot', id, '$deploy'), { code });
         showNotification({ color: 'green', message: 'Deployed' });
       } catch (err) {
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       } finally {
         setLoading(false);
       }
@@ -143,7 +143,7 @@ export function BotEditor(): JSX.Element | null {
         });
         showNotification({ color: 'green', message: 'Success' });
       } catch (err) {
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       } finally {
         setLoading(false);
       }

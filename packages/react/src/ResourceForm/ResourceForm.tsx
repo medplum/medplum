@@ -1,5 +1,5 @@
 import { Button, Group, Stack, TextInput } from '@mantine/core';
-import { deepClone } from '@medplum/core';
+import { deepClone, tryGetProfile } from '@medplum/core';
 import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { FormEvent, useEffect, useState } from 'react';
@@ -11,23 +11,43 @@ export interface ResourceFormProps {
   outcome?: OperationOutcome;
   onSubmit: (resource: Resource) => void;
   onDelete?: (resource: Resource) => void;
+  schemaName?: string;
+  /** (optional) URL of the resource profile used to display the form. Takes priority over schemaName. */
+  profileUrl?: string;
 }
 
 export function ResourceForm(props: ResourceFormProps): JSX.Element {
+  const { outcome } = props;
   const medplum = useMedplum();
   const defaultValue = useResource(props.defaultValue);
-  const [schemaLoaded, setSchemaLoaded] = useState(false);
-  const [value, setValue] = useState<Resource | undefined>();
+  const [schemaLoaded, setSchemaLoaded] = useState<string>();
+  const [value, setValue] = useState<Resource>();
 
   useEffect(() => {
     if (defaultValue) {
       setValue(deepClone(defaultValue));
-      medplum
-        .requestSchema(defaultValue.resourceType)
-        .then(() => setSchemaLoaded(true))
-        .catch(console.log);
+      if (props.profileUrl) {
+        const profileUrl: string = props.profileUrl;
+        medplum
+          .requestProfileSchema(props.profileUrl)
+          .then(() => {
+            const profile = tryGetProfile(profileUrl);
+            if (profile) {
+              setSchemaLoaded(profile.name);
+            } else {
+              console.log(`Schema not found for ${profileUrl}`);
+            }
+          })
+          .catch(console.log);
+      } else {
+        const schemaName = props.schemaName ?? defaultValue?.resourceType;
+        medplum
+          .requestSchema(schemaName)
+          .then(() => setSchemaLoaded(schemaName))
+          .catch(console.log);
+      }
     }
-  }, [medplum, defaultValue]);
+  }, [medplum, defaultValue, props.schemaName, props.profileUrl]);
 
   if (!schemaLoaded || !value) {
     return <div>Loading...</div>;
@@ -45,18 +65,19 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
       }}
     >
       <Stack mb="xl">
-        <FormSection title="Resource Type" htmlFor="resourceType" outcome={props.outcome}>
+        <FormSection title="Resource Type" htmlFor="resourceType" outcome={outcome}>
           <TextInput name="resourceType" defaultValue={value.resourceType} disabled={true} />
         </FormSection>
-        <FormSection title="ID" htmlFor="id" outcome={props.outcome}>
+        <FormSection title="ID" htmlFor="id" outcome={outcome}>
           <TextInput name="id" defaultValue={value.id} disabled={true} />
         </FormSection>
       </Stack>
       <BackboneElementInput
-        typeName={value.resourceType}
+        typeName={schemaLoaded}
         defaultValue={value}
-        outcome={props.outcome}
+        outcome={outcome}
         onChange={setValue}
+        profileUrl={props.profileUrl}
       />
       <Group position="right" mt="xl">
         <Button type="submit">OK</Button>

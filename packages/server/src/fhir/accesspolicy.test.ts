@@ -3,6 +3,7 @@ import {
   getReferenceString,
   LOINC,
   normalizeErrorString,
+  normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
@@ -19,12 +20,14 @@ import {
   Quantity,
   Questionnaire,
   ServiceRequest,
+  StructureDefinition,
   Task,
   User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
+import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
@@ -1867,6 +1870,95 @@ describe('AccessPolicy', () => {
         throw new Error('Should have failed reference check');
       } catch (err) {
         expect(normalizeErrorString(err)).toEqual('Invalid reference (Not found) (Patient.generalPractitioner)');
+      }
+    }));
+
+  test('Empty access policy allows reading StructureDefinitions', () =>
+    withTestContext(async () => {
+      const { project, login, membership } = await registerNew({
+        firstName: 'First',
+        lastName: 'Last',
+        projectName: 'Empty Access Policy Test',
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+
+      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: project.id },
+        name: 'Default Resource Types Test',
+        resource: [],
+      });
+
+      // Update the membership with the access policy
+      const updatedMembership = await systemRepo.updateResource<ProjectMembership>({
+        ...membership,
+        accessPolicy: createReference(accessPolicy),
+      });
+
+      // Get a repo for the user
+      const repo = await getRepoForLogin(login, updatedMembership, true, true, true);
+
+      // Try to search for StructureDefinitions, should succeed
+      const bundle1 = await repo.search<StructureDefinition>({ resourceType: 'StructureDefinition' });
+      expect(bundle1).toBeDefined();
+
+      const sd = bundle1.entry?.[0]?.resource as StructureDefinition;
+      expect(sd.resourceType).toEqual('StructureDefinition');
+
+      // Try to update StructureDefinition, should fail
+      try {
+        await repo.updateResource<StructureDefinition>({ ...sd, url: randomUUID() });
+        throw new Error('Expected error');
+      } catch (err) {
+        const outcome = normalizeOperationOutcome(err);
+        expect(outcome.issue?.[0]?.code).toEqual('forbidden');
+      }
+
+      // Try to delete StructureDefinition, should fail
+      try {
+        await repo.deleteResource('StructureDefinition', sd.id as string);
+        throw new Error('Expected error');
+      } catch (err) {
+        const outcome = normalizeOperationOutcome(err);
+        expect(outcome.issue?.[0]?.code).toEqual('forbidden');
+      }
+    }));
+
+  test('Shared project read only', () =>
+    withTestContext(async () => {
+      const repo = new Repository({
+        author: { reference: 'Practitioner/' + randomUUID() },
+        project: randomUUID(),
+        projectAdmin: true,
+        strictMode: true,
+        extendedMode: true,
+        checkReferencesOnWrite: true,
+      });
+
+      // Try to search for StructureDefinitions, should succeed
+      const bundle1 = await repo.search<StructureDefinition>({ resourceType: 'StructureDefinition' });
+      expect(bundle1).toBeDefined();
+
+      const sd = bundle1.entry?.[0]?.resource as StructureDefinition;
+      expect(sd.resourceType).toEqual('StructureDefinition');
+
+      // Try to update StructureDefinition, should fail
+      try {
+        await repo.updateResource<StructureDefinition>({ ...sd, url: randomUUID() });
+        throw new Error('Expected error');
+      } catch (err) {
+        const outcome = normalizeOperationOutcome(err);
+        expect(outcome.issue?.[0]?.code).toEqual('forbidden');
+      }
+
+      // Try to delete StructureDefinition, should fail
+      try {
+        await repo.deleteResource('StructureDefinition', sd.id as string);
+        throw new Error('Expected error');
+      } catch (err) {
+        const outcome = normalizeOperationOutcome(err);
+        expect(outcome.issue?.[0]?.code).toEqual('forbidden');
       }
     }));
 });

@@ -39,6 +39,9 @@ packages/server/dist/
 # Storybook output
 storybook-static/
 
+# Chromatic
+packages/react/build-storybook.log
+
 # Jest code coverage
 coverage/
 
@@ -59,3 +62,10 @@ medplum-server.tar.gz
 
 # All executables
 *.exe
+
+# All Java JAR files
+*.jar
+
+# All certificate files
+*.p12
+

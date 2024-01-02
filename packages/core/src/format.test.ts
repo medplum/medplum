@@ -386,6 +386,7 @@ test('Format Coding', () => {
   expect(formatCoding({})).toBe('');
   expect(formatCoding({ display: 'foo' })).toBe('foo');
   expect(formatCoding({ code: 'foo' })).toBe('foo');
+  expect(formatCoding({ code: { foo: 'bar' } as unknown as string })).toBe('');
 });
 
 test('Format Observation value', () => {

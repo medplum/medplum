@@ -294,6 +294,28 @@ describe('CLI Bots', () => {
     expect(console.log).toBeCalledWith(expect.stringMatching('Error while creating new bot'));
   });
 
+  test('Create bot do not write to config', async () => {
+    // No bot config
+    (fs.existsSync as unknown as jest.Mock).mockReturnValue(false);
+    (fs.readFileSync as unknown as jest.Mock).mockReturnValue('');
+    (fs.writeFileSync as unknown as jest.Mock).mockImplementation(() => {});
+
+    await main([
+      'node',
+      'index.js',
+      'bot',
+      'create',
+      'test-bot',
+      '1',
+      'src/hello-world.ts',
+      'dist/src/hello-world.ts',
+      '--no-write-config',
+    ]);
+    expect(console.log).toBeCalledWith(expect.stringMatching('Success! Bot created:'));
+    expect(fs.existsSync).toHaveBeenCalled();
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
+
   // Deprecated bot commands
 
   test('Deprecate Deploy bot missing name', async () => {

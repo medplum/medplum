@@ -1,6 +1,6 @@
 {
   "name": "@medplum/graphiql",
-  "version": "2.1.17",
+  "version": "2.2.5",
   "description": "Medplum GraphiQL",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -13,6 +13,7 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "scripts": {
     "build": "npm run clean && tsc && vite build",
     "clean": "rimraf dist",
@@ -29,14 +30,14 @@
     "@medplum/core": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/react": "*",
-    "@types/react": "18.2.37",
-    "@types/react-dom": "18.2.15",
-    "graphiql": "3.0.9",
+    "@types/react": "18.2.42",
+    "@types/react-dom": "18.2.17",
+    "graphiql": "3.0.10",
     "graphql": "16.8.1",
     "graphql-ws": "5.14.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "vite": "4.5.0"
+    "vite": "5.0.5"
   },
   "engines": {
     "node": ">=18.0.0"

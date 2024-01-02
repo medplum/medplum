@@ -1,4 +1,4 @@
-import { Button, Paper, ScrollArea, Tabs, Title } from '@mantine/core';
+import { Badge, Button, Group, Paper, ScrollArea, Tabs, Title, useMantineTheme } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, isGone, normalizeErrorString } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
@@ -40,9 +40,11 @@ function getTabs(resourceType: string): string[] {
     result.push('Ranges');
   }
 
-  result.push('Details', 'Edit', 'Event', 'History', 'Blame', 'JSON', 'Apps');
+  result.push('Details', 'Edit', 'Event', 'History', 'Blame', 'JSON', 'Apps', 'Profiles');
   return result;
 }
+
+const BETA_TABS = ['Profiles'];
 
 export function ResourcePage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -56,6 +58,7 @@ export function ResourcePage(): JSX.Element | null {
     const tab = window.location.pathname.split('/').pop();
     return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
   });
+  const theme = useMantineTheme();
 
   async function restoreResource(): Promise<void> {
     const historyBundle = await medplum.readHistory(resourceType, id);
@@ -63,7 +66,7 @@ export function ResourcePage(): JSX.Element | null {
     if (restoredResource) {
       onSubmit(restoredResource);
     } else {
-      showNotification({ color: 'red', message: 'No history to restore' });
+      showNotification({ color: 'red', message: 'No history to restore', autoClose: false });
     }
   }
 
@@ -75,7 +78,7 @@ export function ResourcePage(): JSX.Element | null {
         showNotification({ color: 'green', message: 'Success' });
       })
       .catch((err) => {
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       });
   }
 
@@ -140,7 +143,16 @@ export function ResourcePage(): JSX.Element | null {
               <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
                 {tabs.map((t) => (
                   <Tabs.Tab key={t} value={t.toLowerCase()}>
-                    {t}
+                    {BETA_TABS.includes(t) ? (
+                      <Group spacing={2} noWrap>
+                        {t}
+                        <Badge color={theme.primaryColor} size="sm">
+                          Beta
+                        </Badge>
+                      </Group>
+                    ) : (
+                      t
+                    )}
                   </Tabs.Tab>
                 ))}
               </Tabs.List>

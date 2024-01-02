@@ -20,11 +20,13 @@ Medplum supports the following first party integrations.
 | [Quest](https://www.questdiagnostics.com/)                             | Diagnostics     | Lab orders and results                        | [Bot and setup](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/health-gorilla) |
 | [Health Gorilla](https://www.healthgorilla.com/)                       | HIE/Diagnostics | Diagnostics orders - records - ADT            | [Bot and setup](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/health-gorilla) |
 | [Candid Health](https://www.joincandidhealth.com/)                     | Billing         | Revenue cycle and insurance eligibility check | [Candid bot](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/candid-health)     |
-| [Particle](https://www.particlehealth.com/)                            | HIE             | Read/Write from Exchanges                     | Open source coming soon                                                                                     |
+| [Particle](https://www.particlehealth.com/)                            | HIE             | Read/Write from Exchanges                     | Coming soon                                                                                                 |
 | [Epic Systems](https://www.epic.com/)                                  | EHR             | Read/Write via FHIR API                       | [Epic JWT authentication](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/epic) |
 | [Recaptcha](https://www.google.com/recaptcha/about/)                   | Security        | Enable recaptcha on patient registration      | [Setup recaptcha](/docs/auth/custom-emails#setup-recaptcha)                                                 |
 | [Datadog](https://www.datadoghq.com/)                                  | Observability   | Application monitoring                        | [Datadog sidecar setup](/docs/self-hosting/datadog)                                                         |
+| [Sumo Logic](https://www.sumologic.com/)                               | Observability   | Application monitoring                        | Coming soon                                                                                                 |
 | [Snowflake](https://www.datadoghq.com/)                                | Data warehouse  | Synchonize data to datawarehouse              | Documentation coming soon                                                                                   |
+| [OpenAI](https://www.openai.com/)                                      | AI              | Large language models                         | Documentation coming soon                                                                                   |
 
 ## Common Medical Integrations
 
@@ -41,7 +43,7 @@ Medplum provides templates and playbooks for common medical integrations.
 | PDF           | Binary Files | Upload and access PDF                                 | [Documentation](/docs/fhir-datastore/binary-data)                                                                                                                      |
 | Images        | Binary Files | Upload and access image files                         | [Documentation](/docs/fhir-datastore/binary-data)                                                                                                                      |
 | OAuth2        | Identity     | Plug in any oAuth2 provider                           | [Documentation](/docs/auth/methods/external-identity-providers)                                                                                                        |
-| Basic Auth    | Identity     | Support connections via Basic Auth for legacy systems | [Basic auth](/docs/sdk/core.medplumclient.setbasicauth)                                                                                                             |
+| Basic Auth    | Identity     | Support connections via Basic Auth for legacy systems | [Basic auth](/docs/sdk/core.medplumclient.setbasicauth)                                                                                                                |
 | BulkFHIR      | EHR/Payor    | Export FHIR Data for use by partners                  | [BulkFHIR documentation](/docs/api/fhir/operations/bulk-fhir)                                                                                                          |
 | SMART-on-FHIR | EHR          | SMART app launch from Medplum or another EHR          | [SMART App Launch](/docs/integration/smart-app-launch)                                                                                                                 |
 

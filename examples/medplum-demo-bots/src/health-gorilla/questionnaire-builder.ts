@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from 'fs';
 interface Lab {
   id: string;
   name: string;
+  healthGorillaId: string;
   tests: LabTest[];
 }
 
@@ -21,6 +22,7 @@ const labs: Lab[] = [
   {
     id: 'test',
     name: 'Testing',
+    healthGorillaId: 'f-4f0235627ac2d59b49e5575c',
     tests: [
       { code: '1234-5', name: 'Test 1' },
       { code: '11119', name: 'ABN TEST REFUSAL' },
@@ -30,6 +32,7 @@ const labs: Lab[] = [
   {
     id: 'labcorp',
     name: 'Labcorp',
+    healthGorillaId: 'f-a855594f43fe879c6570b92e',
     tests: [
       { code: '001453', name: 'Hemoglobin A1c' },
       { code: '010322', name: 'Prostate-Specific Ag' },
@@ -42,11 +45,18 @@ const labs: Lab[] = [
       { code: '083935', name: 'HIV Ab/p24 Ag with Reflex' },
       { code: '322758', name: 'Basic Metabolic Panel (8)' },
       { code: '164922', name: 'HSV 1 and 2-Spec Ab, IgG w/Rfx' },
+      { code: '000810', name: 'Vitamin B12 and Folate' },
+      { code: '322777', name: 'Renal Panel (10)' },
+      { code: '480772', name: 'PSA Total (Reflex To Free)' },
+      { code: '007625', name: 'Lead, Blood (Adult)' },
+      { code: '192005', name: 'Pap Lb (Liquid-based)' },
+      { code: '008623', name: 'Ova + Parasite Exam' },
     ],
   },
   {
     id: 'quest',
     name: 'Quest',
+    healthGorillaId: 'f-6927735e92bc9c4cc2599d15',
     tests: [
       { code: '866', name: 'Free T4' },
       { code: '899', name: 'TSH' },
@@ -58,14 +68,19 @@ const labs: Lab[] = [
       { code: '229', name: 'Aldosterone, 24hr (U) (Diagnosis E04.2, Z00.00) Total Volume - 1200' },
       { code: '4112', name: 'FTA' },
       { code: '6399', name: 'CBC w/Diff' },
+      { code: '747', name: 'Protein, Total and Protein Electrophoresis' },
+      { code: '249', name: 'ANA' },
+      { code: '3020', name: 'Urinalysis Complete' },
+      { code: '5149', name: 'Antibody ID and Titer' },
+      { code: '4446', name: 'Culture Anaerobic and Aerobic' },
+      { code: '18811', name: 'Surepath Pap/w rfl HPV' },
+      { code: '11363', name: 'Chlamydia trachomatis/Neisseria gonorrhoeae RNA, TMA' },
+      { code: '3542', name: 'Tissue Pathology' },
       { code: '16814', name: 'ANA Scr, IFA w/Reflex Titer / Pattern / MPX AB Cascade' },
       { code: '7573', name: 'Iron Total/IBC Diagnosis code D64.9' },
     ],
   },
 ];
-
-// Codes for test 2 Send these ICD10 Diagnosis Codes:
-// E04.2 , D63.1, E11.42,  Z00.00, Z34.90, M10.9, R53.83, D64.9, N13.5, I10, E88.89, F06.8
 
 const diagnosticCodes: Coding[] = [
   { code: 'D63.1', display: 'Anemia in chronic kidney disease' },
@@ -78,6 +93,7 @@ const diagnosticCodes: Coding[] = [
   { code: 'E78.2', display: 'Mixed hyperlipidemia' },
   { code: 'E88.89', display: 'Other specified metabolic disorders' },
   { code: 'F06.8', display: 'Other specified mental disorders due to known physiological condition' },
+  { code: 'G30.0', display: "Alzheimer's disease with early onset" },
   { code: 'I10', display: 'Essential (primary) hypertension' },
   { code: 'K70.30', display: 'Alcoholic cirrhosis of liver without ascites' },
   { code: 'K76.0', display: 'Fatty (change of) liver, not elsewhere classified' },
@@ -85,6 +101,11 @@ const diagnosticCodes: Coding[] = [
   { code: 'N13.5', display: 'Crossing vessel and stricture of ureter' },
   { code: 'N18.3', display: 'Chronic kidney disease, stage 3 (moderate)' },
   { code: 'R53.83', display: 'Other fatigue' },
+  { code: 'T67.4XXS', display: 'Heat exhaustion due to salt depletion, sequela' },
+  {
+    code: 'T84.81XD',
+    display: 'Embolism due to internal orthopedic prosthetic devices, implants and grafts, subsequent encounter',
+  },
   { code: 'Z00.00', display: 'Encounter for general adult medical examination without abnormal findings' },
   { code: 'Z34.90', display: 'Encounter for supervision of normal pregnancy, unspecified trimester' },
 ];
@@ -225,6 +246,12 @@ const q: Questionnaire = {
             },
           ],
         },
+        {
+          id: 'dryRun',
+          linkId: 'dryRun',
+          type: 'boolean',
+          text: 'Dry Run (order contents will not be sent to Health Gorilla)',
+        },
       ],
     },
   ],
@@ -306,7 +333,7 @@ for (const lab of labs) {
     };
 
     // Check for AOE Questionnaire
-    const aoeFileName = `./questionnaire-f-388554647b89801ea5e8320b-${test.code}.json`;
+    const aoeFileName = `./questionnaire-${lab.healthGorillaId}-${test.code}.json`;
     if (existsSync(aoeFileName)) {
       const aoeQuestionnaire = JSON.parse(readFileSync(aoeFileName, 'utf8'));
       if (aoeQuestionnaire.item) {
@@ -315,6 +342,7 @@ for (const lab of labs) {
             ...i,
             id: `${fullTestId}-aoe-${i.id}`,
             linkId: `${fullTestId}-aoe-${i.id}`,
+            initial: i.answerOption ? undefined : i.initial,
           }))
         );
       }

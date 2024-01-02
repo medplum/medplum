@@ -1,6 +1,7 @@
 import { Attachment, CodeableConcept, ObservationDefinition, Patient, Resource } from '@medplum/fhirtypes';
 import { ContentType } from './contenttype';
 import {
+  ResourceWithCode,
   arrayBufferToBase64,
   arrayBufferToHex,
   calculateAge,
@@ -23,7 +24,9 @@ import {
   getImageSrc,
   getQuestionnaireAnswers,
   getReferenceString,
+  isEmpty,
   isLowerCase,
+  isPopulated,
   isProfileResource,
   isUUID,
   parseReference,
@@ -34,7 +37,6 @@ import {
   preciseLessThanOrEquals,
   preciseRound,
   resolveId,
-  ResourceWithCode,
   setCodeBySystem,
   setIdentifier,
   splitN,
@@ -131,6 +133,40 @@ describe('Core Utils', () => {
     expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [] })).toEqual('Device/123');
     expect(getDisplayString({ resourceType: 'User', email: 'foo@example.com' })).toEqual('foo@example.com');
     expect(getDisplayString({ resourceType: 'User', id: '123' })).toEqual('User/123');
+  });
+
+  const EMPTY = [true, false];
+  const POPULATED = [false, true];
+  test.only.each([
+    [undefined, EMPTY],
+    [null, EMPTY],
+
+    ['', EMPTY],
+    [' ', POPULATED],
+    ['foo', POPULATED],
+
+    [{}, EMPTY],
+    [Object.create(null), EMPTY],
+    [{ foo: 'bar' }, POPULATED],
+    [{ length: 0 }, POPULATED],
+    [{ length: 1 }, POPULATED],
+
+    [[], EMPTY],
+    [[undefined], POPULATED],
+    [[null], POPULATED],
+    [[0], POPULATED],
+    [[1, 2, 3], POPULATED],
+
+    [NaN, [false, false]],
+    [123, [false, false]],
+    [5.5, [false, false]],
+    [true, [false, false]],
+    [false, [false, false]],
+  ])('for %j, [isEmpty, isPopulated] should be %j', (input: any, expected: any) => {
+    const [emptyExpected, populatedExpected] = expected;
+
+    expect(isEmpty(input)).toBe(emptyExpected);
+    expect(isPopulated(input)).toBe(populatedExpected);
   });
 
   test('getImageSrc', () => {

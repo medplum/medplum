@@ -1,7 +1,16 @@
 import { Button, Center, Group, PasswordInput, Stack, Title } from '@mantine/core';
 import { badRequest, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Document, Form, getErrorsForInput, Logo, MedplumLink, useMedplum } from '@medplum/react';
+import {
+  Document,
+  Form,
+  getErrorsForInput,
+  getIssuesForExpression,
+  Logo,
+  MedplumLink,
+  OperationOutcomeAlert,
+  useMedplum,
+} from '@medplum/react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -10,9 +19,11 @@ export function SetPasswordPage(): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
+  const issues = getIssuesForExpression(outcome, undefined);
 
   return (
     <Document width={450}>
+      <OperationOutcomeAlert issues={issues} />
       <Form
         style={{ maxWidth: 400 }}
         onSubmit={(formData: Record<string, string>) => {

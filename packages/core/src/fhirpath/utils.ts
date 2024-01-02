@@ -1,5 +1,5 @@
-import { Coding, Period, Quantity } from '@medplum/fhirtypes';
-import { getElementDefinition, isResource, PropertyType, TypedValue } from '../types';
+import { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
+import { PropertyType, TypedValue, getElementDefinition, isResource } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
 import { capitalize, isEmpty } from '../utils';
 
@@ -75,7 +75,7 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
 
   const elementDefinition = getElementDefinition(input.type, path);
   if (elementDefinition) {
-    return getTypedPropertyValueWithSchema(input, path, elementDefinition);
+    return getTypedPropertyValueWithSchema(input.value, path, elementDefinition);
   }
 
   return getTypedPropertyValueWithoutSchema(input, path);
@@ -83,43 +83,75 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
 
 /**
  * Returns the value of the property and the property type using a type schema.
- * @param input - The base context (FHIR resource or backbone element).
+ * @param value - The base context (FHIR resource or backbone element).
  * @param path - The property path.
  * @param element - The property element definition.
  * @returns The value of the property and the property type.
  */
-function getTypedPropertyValueWithSchema(
-  input: TypedValue,
+export function getTypedPropertyValueWithSchema(
+  value: TypedValue['value'],
   path: string,
   element: InternalSchemaElement
 ): TypedValue[] | TypedValue | undefined {
+  // Consider the following cases of the inputs:
+
+  // "path" input types:
+  // 1. Simple path, e.g., "name"
+  // 2. Choice-of-type without type, e.g., "value[x]"
+  // 3. Choice-of-type with type, e.g., "valueBoolean"
+
+  // "element" can be either:
+  // 1. Full ElementDefinition from a well-formed StructureDefinition
+  // 2. Partial ElementDefinition from base-schema.json
+
+  // "types" input types:
+  // 1. Simple single type, e.g., "string"
+  // 2. Choice-of-type with full array of types, e.g., ["string", "integer", "Quantity"]
+  // 3. Choice-of-type with single array of types, e.g., ["Quantity"]
+
+  // Note that FHIR Profiles can define a single type for a choice-of-type element.
+  // e.g. https://build.fhir.org/ig/HL7/US-Core/StructureDefinition-us-core-birthsex.html
+  // Therefore, cannot only check for endsWith('[x]') since FHIRPath uses this code path
+  // with a path of 'value' and expects Choice of Types treatment
+
   const types = element.type;
   if (!types || types.length === 0) {
     return undefined;
   }
 
+  // The path parameter can be in both "value[x]" form and "valueBoolean" form.
+  // So we need to use the element path to find the type.
   let resultValue: any = undefined;
   let resultType = 'undefined';
+  let primitiveExtension: Extension[] | undefined = undefined;
 
-  if (types.length === 1) {
-    resultValue = input.value[path];
-    resultType = types[0].code;
-  } else {
+  if (element.path.endsWith('[x]')) {
+    const elementBasePath = (element.path.split('.').pop() as string).replace('[x]', '');
     for (const type of types) {
-      const path2 = path.replace('[x]', '') + capitalize(type.code);
-      if (path2 in input.value) {
-        resultValue = input.value[path2];
+      const candidatePath = elementBasePath + capitalize(type.code);
+      resultValue = value[candidatePath];
+      primitiveExtension = value['_' + candidatePath];
+      if (resultValue !== undefined || primitiveExtension !== undefined) {
         resultType = type.code;
         break;
       }
     }
+  } else {
+    console.assert(types.length === 1, 'Expected single type', element.path);
+    resultValue = value[path];
+    resultType = types[0].code;
+    primitiveExtension = value['_' + path];
   }
-  const primitiveExtension = input.value['_' + path];
+
+  // When checking for primitive extensions, we must use the "resolved" path.
+  // In the case of [x] choice-of-type, the type must be resolved to a single type.
   if (primitiveExtension) {
     if (Array.isArray(resultValue)) {
-      resultValue = resultValue.map((v, i) => (primitiveExtension[i] ? safeAssign(v ?? {}, primitiveExtension[i]) : v));
+      for (let i = 0; i < Math.max(resultValue.length, primitiveExtension.length); i++) {
+        resultValue[i] = assignPrimitiveExtension(resultValue[i], primitiveExtension[i]);
+      }
     } else {
-      resultValue = safeAssign(resultValue ?? {}, primitiveExtension);
+      resultValue = assignPrimitiveExtension(resultValue, primitiveExtension);
     }
   }
 
@@ -435,6 +467,16 @@ function deepEquals<T1 extends object, T2 extends object>(object1: T1, object2: 
 
 function isObject(obj: unknown): obj is object {
   return obj !== null && typeof obj === 'object';
+}
+
+function assignPrimitiveExtension(target: any, primitiveExtension: any): any {
+  if (primitiveExtension) {
+    if (typeof primitiveExtension !== 'object') {
+      throw new Error('Primitive extension must be an object');
+    }
+    return safeAssign(target ?? {}, primitiveExtension);
+  }
+  return target;
 }
 
 function safeAssign(target: any, source: any): any {

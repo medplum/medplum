@@ -1,4 +1,11 @@
-import { ContentType, getReferenceString, normalizeErrorString } from '@medplum/core';
+import {
+  AgentConnectRequest,
+  AgentMessage,
+  AgentTransmitRequest,
+  ContentType,
+  getReferenceString,
+  normalizeErrorString,
+} from '@medplum/core';
 import { Agent, Bot, Reference } from '@medplum/fhirtypes';
 import { AsyncLocalStorage } from 'async_hooks';
 import { IncomingMessage } from 'http';
@@ -6,6 +13,7 @@ import { Redis } from 'ioredis';
 import ws from 'ws';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
+import { heartbeat } from '../heartbeat';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { getRedis } from '../redis';
 
@@ -25,28 +33,54 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
   let redisSubscriber: Redis | undefined = undefined;
 
+  const heartbeatHandler = (): void => sendMessage({ type: 'agent:heartbeat:request' });
+
   socket.on(
     'message',
     AsyncLocalStorage.bind(async (data: ws.RawData) => {
       try {
-        const command = JSON.parse((data as Buffer).toString('utf8'));
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
         switch (command.type) {
+          // @ts-expect-error - Deprecated message type
           case 'connect':
+          case 'agent:connect:request':
             await handleConnect(command);
             break;
 
+          case 'agent:heartbeat:request':
+            sendMessage({ type: 'agent:heartbeat:response' });
+            break;
+
+          case 'agent:heartbeat:response':
+            // Do nothing
+            break;
+
+          // @ts-expect-error - Deprecated message type
           case 'transmit':
+          case 'agent:transmit:request':
             await handleTransmit(command);
             break;
+
+          case 'agent:transmit:response':
+            if (command.callback) {
+              const redis = getRedis();
+              await redis.publish(command.callback, JSON.stringify(command));
+            }
+            break;
+
+          default:
+            sendError(`Unknown message type: ${command.type}`);
         }
       } catch (err) {
-        socket.send(JSON.stringify({ type: 'error', body: normalizeErrorString(err) }));
+        sendError(normalizeErrorString(err));
       }
     })
   );
 
   socket.on('close', () => {
+    heartbeat.removeEventListener('heartbeat', heartbeatHandler);
     redisSubscriber?.disconnect();
+    redisSubscriber = undefined;
   });
 
   /**
@@ -55,18 +89,18 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
    * The command includes the access token and bot ID.
    * @param command - The connect command.
    */
-  async function handleConnect(command: any): Promise<void> {
+  async function handleConnect(command: AgentConnectRequest): Promise<void> {
     if (!command.accessToken) {
-      sendError(socket, 'Missing access token');
+      sendError('Missing access token');
       return;
     }
 
     if (!command.agentId) {
-      sendError(socket, 'Missing agent ID');
+      sendError('Missing agent ID');
       return;
     }
 
-    agentId = command.agentId as string;
+    agentId = command.agentId;
 
     const { login, project, membership } = await getLoginForAccessToken(command.accessToken);
     const repo = await getRepoForLogin(login, membership, project.strictMode, true, project.checkReferencesOnWrite);
@@ -80,8 +114,11 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       socket.send(message, { binary: false });
     });
 
+    // Subscribe to heartbeat events
+    heartbeat.addEventListener('heartbeat', heartbeatHandler);
+
     // Send connected message
-    socket.send(JSON.stringify({ type: 'connected' }));
+    sendMessage({ type: 'agent:connect:response' });
   }
 
   /**
@@ -89,24 +126,24 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
    * This command is sent by the agent to transmit a message.
    * @param command - The transmit command.
    */
-  async function handleTransmit(command: any): Promise<void> {
+  async function handleTransmit(command: AgentTransmitRequest): Promise<void> {
     if (!agentId) {
-      sendError(socket, 'Not connected');
+      sendError('Not connected');
       return;
     }
 
     if (!command.accessToken) {
-      sendError(socket, 'Missing access token');
+      sendError('Missing access token');
       return;
     }
 
     if (!command.channel) {
-      sendError(socket, 'Missing channel');
+      sendError('Missing channel');
       return;
     }
 
     if (!command.body) {
-      sendError(socket, 'Missing body');
+      sendError('Missing body');
       return;
     }
 
@@ -115,7 +152,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     const agent = await repo.readResource<Agent>('Agent', agentId);
     const channel = agent?.channel?.find((c) => c.name === command.channel);
     if (!channel) {
-      socket.send(JSON.stringify({ type: 'error', body: 'Channel not found' }));
+      sendError('Channel not found');
       return;
     }
 
@@ -131,18 +168,20 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       forwardedFor: command.remote,
     });
 
-    socket.send(
-      JSON.stringify({
-        type: 'transmit',
-        channel: command.channel,
-        remote: command.remote,
-        body: result.returnValue,
-      }),
-      { binary: false }
-    );
+    sendMessage({
+      type: 'agent:transmit:response',
+      channel: command.channel,
+      remote: command.remote,
+      contentType: ContentType.HL7_V2,
+      body: result.returnValue,
+    });
   }
-}
 
-function sendError(socket: ws.WebSocket, body: string): void {
-  socket.send(JSON.stringify({ type: 'error', body }));
+  function sendMessage(message: AgentMessage): void {
+    socket.send(JSON.stringify(message), { binary: false });
+  }
+
+  function sendError(body: string): void {
+    sendMessage({ type: 'agent:error', body });
+  }
 }
