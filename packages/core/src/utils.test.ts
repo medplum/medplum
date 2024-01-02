@@ -137,7 +137,7 @@ describe('Core Utils', () => {
 
   const EMPTY = [true, false];
   const POPULATED = [false, true];
-  test.only.each([
+  test.each([
     [undefined, EMPTY],
     [null, EMPTY],
 
