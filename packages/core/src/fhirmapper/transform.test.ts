@@ -303,13 +303,21 @@ describe('FHIR Mapper transform', () => {
       uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
       uses "http://hl7.org/fhir/StructureDefinition/tutorial-right" as target
 
+      conceptmap "uri-of-concept-map" {
+        prefix s = "http://terminology.hl7.org/ValueSet/v3-AdministrativeGender"
+        prefix t = "http://hl7.org/fhir/ValueSet/administrative-gender"
+
+        s:M == t:male
+        s:F == t:female
+      }
+
       group tutorial(source src : TLeft, target tgt : TRight) {
         src.d as d -> tgt.d = translate(d, 'uri-of-concept-map', 'code');
       }
     `;
 
-    const input = [toTypedValue({ aa: { ab: 'a' } })];
-    const expected = [toTypedValue({ aa: { ab: 'a' } })];
+    const input = [toTypedValue({ d: 'M' })];
+    const expected = [toTypedValue({ d: 'male' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toMatchObject(expected);
   });

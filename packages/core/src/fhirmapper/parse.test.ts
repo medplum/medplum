@@ -1665,6 +1665,68 @@ describe('FHIR Mapping Language parser', () => {
     expect(result.group?.[0]?.rule?.[0]?.target?.[0]?.parameter?.[0]?.valueString).toBe("src.value + '_test'");
   });
 
+  test('CCDA ConceptMaps', () => {
+    const input = `
+    map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
+
+    conceptmap "cm-v3-administrative-gender" {
+      prefix s = "http://terminology.hl7.org/ValueSet/v3-AdministrativeGender"
+      prefix t = "http://hl7.org/fhir/ValueSet/administrative-gender"
+
+      s:M == t:male
+      s:F == t:female
+    }
+
+    conceptmap "addressUse" {
+      prefix s = "http://terminology.hl7.org/ValueSet/v3-AddressUse"
+      prefix t = "http://hl7.org/fhir/valueset-address-use.html"
+
+      s:"H" == t:"home" // home address -> home
+      s:"HP" == t: "home" // primary home -> home, http://hl7.org/fhir/v3/AddressUse/cs.html
+      s:"HV" == t: "home" // vacation home	 -> home, http://hl7.org/fhir/v3/AddressUse/cs.html
+    }
+
+    group tutorial(source src : TLeft, target tgt : TRight) {
+      src.a as a log "x" -> tgt.a = a "rule_a";
+    }`;
+
+    const result = parseMappingLanguage(input);
+    expect(result.contained).toHaveLength(2);
+    expect(result.contained).toMatchObject([
+      {
+        resourceType: 'ConceptMap',
+        status: 'active',
+        url: 'cm-v3-administrative-gender',
+        group: [
+          {
+            source: 'http://terminology.hl7.org/ValueSet/v3-AdministrativeGender',
+            target: 'http://hl7.org/fhir/ValueSet/administrative-gender',
+            element: [
+              { code: 'M', target: [{ code: 'male' }] },
+              { code: 'F', target: [{ code: 'female' }] },
+            ],
+          },
+        ],
+      },
+      {
+        resourceType: 'ConceptMap',
+        status: 'active',
+        url: 'addressUse',
+        group: [
+          {
+            source: 'http://terminology.hl7.org/ValueSet/v3-AddressUse',
+            target: 'http://hl7.org/fhir/valueset-address-use.html',
+            element: [
+              { code: 'H', target: [{ code: 'home' }] },
+              { code: 'HP', target: [{ code: 'home' }] },
+              { code: 'HV', target: [{ code: 'home' }] },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
   test.skip('C-CDA mapping file', () => {
     const mapFileName = 'C:\\Users\\cody\\dev\\cda-fhir-maps\\input\\maps\\CdaToBundle.map';
     const mapFileContents = readFileSync(mapFileName, 'utf8');
