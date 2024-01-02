@@ -469,7 +469,7 @@ export function isEmpty(v: unknown): boolean {
   return false;
 }
 
-type CanBePopulated = { length: number } | object;
+export type CanBePopulated = { length: number } | object;
 /**
  * Returns true if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
  * @param arg - Any value
