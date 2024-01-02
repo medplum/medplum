@@ -57,13 +57,15 @@ To support the linked referential clinical decision support the system should be
 
 Evidence-based clinical decision support systems are largely related to medication administration, drug interactions (with other drugs, foods, OTC medications, etc.) and dosing. Evidence-based clinical decision support systems plug into health record systems via SMART-App-Launch links, iFrames or APIs, all of which are supported by Medplum.
 
-Medplum supports a Smart-App-Launch react component that serves as a launch point for evidence-based implementations.
+Medplum supports a [Smart-App-Launch react component]([Smart App Launch Link](https://storybook.medplum.com/?path=/story/medplum-smartapplaunchlink--basic) react component.
+) that serves as a launch point for evidence-based implementations.
 
 [DoseSpot](https://www.dosespot.com/) is a common provider for evidence based medication administration and supports recording and retrieving allergies, listing potential interactions for a specific prescription, listing drug interactions on a patient record, checking for known interactions at prescription creation time.
 
 ## Related Reading
 
 - [ONC Certification](/docs/compliance/onc)
+- [Smart App Launch](/docs/integration/smart-app-launch) in Integrations
 - [(a)(9) Clinical decision support (CDS)](https://www.healthit.gov/test-method/clinical-decision-support-cds)
 - [HL7 Infobutton Implementation Guide](https://www.hl7.org/documentcenter/public/standards/dstu/V3IG_INFOBUTTON_DSTU_R4_2013JAN.pdf)
 - [HT1 Final Rule](https://www.healthit.gov/sites/default/files/page/2023-12/hti-1-final-rule.pdf) on predictive clinical decision support and algorithms

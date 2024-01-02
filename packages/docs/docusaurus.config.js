@@ -196,6 +196,10 @@ const config = {
                 to: '/pricing',
               },
               {
+                label: 'Enterprise',
+                to: '/enterprise',
+              },
+              {
                 label: 'Careers',
                 to: '/careers',
               },
