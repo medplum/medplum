@@ -5,6 +5,9 @@ import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
 import { structureMapTransform } from './transform';
 
+// All examples from the FHIR Mapping Language Tutorial
+// See: https://build.fhir.org/mapping-tutorial.html
+
 describe('FHIR Mapper transform', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -268,5 +271,46 @@ describe('FHIR Mapper transform', () => {
     const expected2 = [toTypedValue({ a23: ['a', 'b'] })];
     const actual2 = structureMapTransform(parseMappingLanguage(map), input2);
     expect(actual2).toMatchObject(expected2);
+  });
+
+  test('Simple nesting', () => {
+    // https://build.fhir.org/mapping-tutorial.html#step7
+    // Most transformations involve nested content.
+    // Let's start with a simple case, where element aa contains ab:
+
+    const map = `
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-right" as target
+
+      group tutorial(source src : TLeft, target tgt : TRight) {
+        src.aa as s_aa -> tgt.aa as t_aa then { // make aa exist
+          s_aa.ab as ab -> t_aa.ab = ab; // copy ab inside aa
+        };
+      }
+    `;
+
+    const input = [toTypedValue({ aa: { ab: 'a' } })];
+    const expected = [toTypedValue({ aa: { ab: 'a' } })];
+    const actual = structureMapTransform(parseMappingLanguage(map), input);
+    expect(actual).toMatchObject(expected);
+  });
+
+  test('Translation', () => {
+    // https://build.fhir.org/mapping-tutorial.html#step8
+    // A common translation pattern is to perform a translation e.g. from one set of codes to another
+
+    const map = `
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-right" as target
+
+      group tutorial(source src : TLeft, target tgt : TRight) {
+        src.d as d -> tgt.d = translate(d, 'uri-of-concept-map', 'code');
+      }
+    `;
+
+    const input = [toTypedValue({ aa: { ab: 'a' } })];
+    const expected = [toTypedValue({ aa: { ab: 'a' } })];
+    const actual = structureMapTransform(parseMappingLanguage(map), input);
+    expect(actual).toMatchObject(expected);
   });
 });

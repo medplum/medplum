@@ -261,6 +261,10 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
     }
   }
 
+  if (targetValue.length === 0) {
+    return;
+  }
+
   if (isArray) {
     if (!originalValue) {
       originalValue = [];
@@ -305,6 +309,9 @@ function evalCreate(ctx: TransformContext, target: StructureMapGroupRuleTarget):
 function evalEvaluate(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
   const typedExpr = resolveParameter(ctx, target.parameter?.[0]);
   const expr = typedExpr[0].value as string;
+  if (expr === 'v.other') {
+    console.log(JSON.stringify(buildFhirPathVariables(ctx), null, 2));
+  }
   return evalFhirPathTyped(expr, [], buildFhirPathVariables(ctx) as Record<string, TypedValue>);
 }
 
@@ -381,6 +388,7 @@ function buildFhirPathVariables(
   if (ctx.variables) {
     for (const [key, value] of Object.entries(ctx.variables)) {
       result[key] = value;
+      result['%' + key] = value;
     }
   }
   return result;
