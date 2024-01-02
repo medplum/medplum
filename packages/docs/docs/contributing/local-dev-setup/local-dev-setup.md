@@ -46,4 +46,9 @@ When you first open with workspace, Visual Studio will automatically prompt you 
 ![install recommended extensions](install-recommended-extensions.png)
 
 Alternatively, you can search for the "Recommended Extensions" in the Visual Studio extension manager and install from there.
-![filter recommended extensions](recommended-extensions.gif)
+
+import videoUrl from './recommended-extensions.webm';
+
+  <video width="100%"  playsInline autoPlay muted loop preload="auto" >
+    <source src={videoUrl} type="video/webm"/>
+  </video>
