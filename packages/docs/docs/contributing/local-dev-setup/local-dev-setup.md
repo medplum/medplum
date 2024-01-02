@@ -31,3 +31,19 @@ git clone https://github.com/{YOUR GITHUB USERNAME}/medplum.git medplum
 That will create a complete copy of the project source code on your local machine, including code for the Medplum Server, Medplum App, and associated libraries.
 
 In the next step, we'll build the application and run the tests.
+
+## (Optional) Set up [Prettier](https://prettier.io/) and [ESLint](https://eslint.org/) in your IDE
+
+The Medplum CI system uses the tools [Prettier](https://prettier.io/) and [ESLint](https://eslint.org/) to enforce its code style and ensure consistent coding standards.
+
+If you are planning on submitting a PR, we highly suggest setting up these tools in your IDE to receive feedback and fix errors while developing.
+
+### On Visual Studio Code
+
+The medplum repo comes with configured recommended Visual Studio Code extensions.
+
+When you first open with workspace, Visual Studio will automatically prompt you to install the recommended extensions.
+![install recommended extensions](install-recommended-extensions.png)
+
+Alternatively, you can search for the "Recommended Extensions" in the Visual Studio extension manager and install from there.
+![filter recommended extensions](recommended-extensions.gif)
