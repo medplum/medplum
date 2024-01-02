@@ -1,5 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
-
 import sinon from 'sinon';
 import { ReactNode, useEffect, createContext, useMemo, useRef } from 'react';
 import { Decorator } from '@storybook/react';
@@ -12,7 +10,7 @@ type MockDateContextType = {
 // cast undefined so that attempting to use this context without the withMockedDate decorator will crash
 export const MockDateContext = createContext<MockDateContextType>(undefined as unknown as MockDateContextType);
 
-export function MockDateWrapper({ children }: { children: ReactNode }): JSX.Element {
+function MockDateWrapper({ children }: { children: ReactNode }): JSX.Element {
   const clockRef = useRef<sinon.SinonFakeTimers>(sinon.useFakeTimers(new Date('2020-05-04T12:00:00.000Z')));
   const clock = clockRef.current;
   useEffect(() => {
@@ -33,6 +31,7 @@ export function MockDateWrapper({ children }: { children: ReactNode }): JSX.Elem
   return <MockDateContext.Provider value={contextValue}>{children}</MockDateContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const withMockedDate: Decorator = (Story) => {
   return (
     <MockDateWrapper>
