@@ -29,6 +29,7 @@ import {
   isPopulated,
   isProfileResource,
   isUUID,
+  lazy,
   parseReference,
   preciseEquals,
   preciseGreaterThan,
@@ -1053,5 +1054,23 @@ describe('Core Utils', () => {
       splitN('_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status', ':', 3)
     ).toEqual(['_has', 'Observation', 'subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status']);
     expect(splitN('organization', ':', 2)).toEqual(['organization']);
+  });
+
+  test('lazy', () => {
+    it('should lazily execute and memoize the result', () => {
+      const mockFn = jest.fn().mockReturnValue('test result');
+      const lazyFn = lazy(mockFn);
+
+      // the mock function should not have been called
+      expect(mockFn).not.toHaveBeenCalled();
+
+      // Call the lazy function for the first time
+      expect(lazyFn()).toBe('test result');
+      expect(mockFn).toHaveBeenCalledTimes(1);
+
+      // Call the lazy function for the second time, wrapped fn still only called once
+      expect(lazyFn()).toBe('test result');
+      expect(mockFn).toHaveBeenCalledTimes(1);
+    });
   });
 });

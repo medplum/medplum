@@ -946,3 +946,21 @@ export function splitN(str: string, delim: string, n: number): string[] {
   }
   return result;
 }
+
+/**
+ * Memoizes the result of a parameterless function
+ * @param fn - The function to be wrapped
+ * @returns The result of the first invocation of the wrapped function
+ */
+export function lazy<T>(fn: () => T): () => T {
+  let result: T;
+  let executed = false;
+
+  return function (): T {
+    if (!executed) {
+      result = fn();
+      executed = true;
+    }
+    return result;
+  };
+}
