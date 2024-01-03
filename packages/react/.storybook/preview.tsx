@@ -2,6 +2,7 @@ import { MantineProvider, MantineThemeOverride } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { BrowserRouter } from 'react-router-dom';
+import sinon from 'sinon';
 
 export const parameters = {
   layout: 'fullscreen',
@@ -15,7 +16,13 @@ export const parameters = {
   },
 };
 
+const clock = sinon.useFakeTimers({
+  now: new Date(2020, 4, 4, 3, 14),
+  shouldAdvanceTime: false,
+  toFake: ['Date'],
+});
 const medplum = new MockClient();
+clock.reset();
 medplum.get('/');
 
 const theme: MantineThemeOverride = {
