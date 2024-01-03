@@ -22,8 +22,9 @@ const clock = sinon.useFakeTimers({
   toFake: ['Date'],
 });
 const medplum = new MockClient();
-await medplum.get('/');
-clock.restore();
+medplum.get('/').then(() => {
+  clock.restore();
+});
 
 const theme: MantineThemeOverride = {
   headings: {
