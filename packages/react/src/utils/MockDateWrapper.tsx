@@ -13,7 +13,11 @@ function MockDateWrapper({ children }: { children: ReactNode }): JSX.Element | n
   const [ready, setReady] = useState(false);
   const clockRef = useRef<sinon.SinonFakeTimers>();
   useEffect(() => {
-    clockRef.current = sinon.useFakeTimers(new Date('2020-05-04T12:00:00.000Z'));
+    clockRef.current = sinon.useFakeTimers({
+      now: new Date(2020, 5, 4, 12, 5),
+      shouldAdvanceTime: false,
+      toFake: ['Date'],
+    });
     setReady(true);
     return () => {
       if (clockRef.current) {
