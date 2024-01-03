@@ -18,7 +18,7 @@ export const parameters = {
 
 // wrap intialization of MockClient and initial page navigation
 // so that resources created in MockFetchClient#initMockRepo have
-// consistent timestampt between storybook runs
+// consistent timestamps between storybook runs
 const clock = createGlobalTimer();
 const medplum = new MockClient();
 medplum.get('/').then(() => {
