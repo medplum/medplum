@@ -532,7 +532,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
       }
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
-      const currentWsSubscriptionsStr = await redis.get(`::subscriptions/r4::project::${project}`);
+      const currentWsSubscriptionsStr = await redis.get(`medplum:subscriptions:r4:project:${project}`);
       const currentWsSubscriptions = (
         currentWsSubscriptionsStr ? JSON.parse(currentWsSubscriptionsStr) : []
       ) as Subscription[];
@@ -544,7 +544,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       } else {
         currentWsSubscriptions.push(result);
       }
-      await redis.set(`::subscriptions/r4::project::${project}`, JSON.stringify(currentWsSubscriptions));
+      await redis.set(`medplum:subscriptions:r4:project:${project}`, JSON.stringify(currentWsSubscriptions));
     }
   }
 

@@ -1,5 +1,6 @@
 import { Attachment, CodeableConcept, ObservationDefinition, Patient, Resource } from '@medplum/fhirtypes';
 import { ContentType } from './contenttype';
+import { OperationOutcomeError } from './outcomes';
 import {
   ResourceWithCode,
   arrayBufferToBase64,
@@ -91,13 +92,18 @@ describe('Core Utils', () => {
   });
 
   test('parseReference', () => {
-    expect(parseReference(undefined)).toBeUndefined();
-    expect(parseReference({})).toBeUndefined();
-    expect(parseReference({ id: '123' })).toBeUndefined();
-    expect(parseReference({ reference: 'Patient' })).toBeUndefined();
-    expect(parseReference({ reference: '/' })).toBeUndefined();
-    expect(parseReference({ reference: 'Patient/' })).toBeUndefined();
+    expect(() => parseReference(undefined)).toThrow(OperationOutcomeError);
+    expect(() => parseReference({})).toThrow(OperationOutcomeError);
+    expect(() => parseReference({ id: '123' })).toThrow(OperationOutcomeError);
+    expect(() => parseReference({ reference: 'Patient' })).toThrow(OperationOutcomeError);
+    expect(() => parseReference({ reference: '/' })).toThrow(OperationOutcomeError);
+    expect(() => parseReference({ reference: 'Patient/' })).toThrow(OperationOutcomeError);
     expect(parseReference({ reference: 'Patient/123' })).toEqual(['Patient', '123']);
+
+    // Destructuring test
+    const [resourceType, id] = parseReference({ reference: 'Patient/123' });
+    expect(resourceType).toEqual('Patient');
+    expect(id).toEqual('123');
   });
 
   test('isProfileResource', () => {

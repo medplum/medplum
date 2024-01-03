@@ -276,7 +276,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
-  const inMemorySubscriptionsStr = await getRedis().get(`::subscriptions/r4::project::${project}`);
+  const inMemorySubscriptionsStr = await getRedis().get(`medplum:subscriptions:r4:project:${project}`);
   if (inMemorySubscriptionsStr) {
     const inMemorySubscriptions = JSON.parse(inMemorySubscriptionsStr) as Subscription[];
     subscriptions.push(...inMemorySubscriptions);
