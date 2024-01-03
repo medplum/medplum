@@ -473,28 +473,76 @@ async function getEstimateCount(
  * @param searchRequest - The search request.
  */
 function addSearchFilters(selectQuery: SelectQuery, searchRequest: SearchRequest): void {
-  const expr = buildSearchExpression(selectQuery, searchRequest);
+  let expr;
+  if(searchRequest.filters){
+    buildSearchFilterExpression(selectQuery, searchRequest.resourceType,searchRequest.resourceType,searchRequest.filters);
+  }
   if (expr) {
     selectQuery.predicate.expressions.push(expr);
   }
 }
 
-export function buildSearchExpression(selectQuery: SelectQuery, searchRequest: SearchRequest): Expression | undefined {
+/**
+ * Builds a single search filter as "WHERE" clause to the query builder.
+ * @param selectQuery - The select query builder.
+ * @param resourceType - The type of resources requested.
+ * @param table - The resource table.
+ * @param filters - The search filter.
+ * @returns The search query where expression
+ */
+export function buildSearchFilterExpression(
+  selectQuery: SelectQuery,
+  resourceType: ResourceType,
+  table: string,
+  filters: Filter[],  
+): Expression | undefined {
   const expressions: Expression[] = [];
-  if (searchRequest.filters) {
-    for (const filter of searchRequest.filters) {
+  if (filters) {
+    for (let filter of filters) {
       if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
-        const chain = parseChainedParameter(searchRequest.resourceType, filter.code, filter.value);
-        buildChainedSearch(selectQuery, searchRequest.resourceType, chain);
+        const chain = parseChainedParameter(resourceType, filter.code, filter.value);
+        buildChainedSearch(selectQuery, resourceType, chain);
         continue;
       }
 
-      const expr = buildSearchFilterExpression(
-        selectQuery,
-        searchRequest.resourceType,
-        searchRequest.resourceType,
-        filter
-      );
+      let expr;
+      if (typeof filter.value !== 'string') {
+        throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
+      }
+    
+      const specialParamExpression = trySpecialSearchParameter(selectQuery, resourceType, table, filter);
+      if (specialParamExpression) {
+        expr = specialParamExpression;
+        expressions.push(expr)
+        continue
+      }
+    
+      let param = getSearchParameter(resourceType, filter.code);
+      if (!param?.code) {
+        throw new OperationOutcomeError(badRequest(`Unknown search parameter: ${filter.code}`));
+      }
+    
+      if (filter.operator === Operator.IDENTIFIER) {
+        param = deriveIdentifierSearchParameter(param);
+        filter = {
+          code: param.code as string,
+          operator: Operator.EQUALS,
+          value: filter.value,
+        };
+      }
+    
+      const lookupTable = getLookupTable(resourceType, param);
+      if (lookupTable) {
+        expr = lookupTable.buildWhere(selectQuery, resourceType, table, filter);
+        if(expr){
+          expressions.push(expr)
+          continue
+        }
+      }
+    
+      // Not any special cases, just a normal search parameter.
+      expr = buildNormalSearchFilterExpression(resourceType, table, param, filter);
+
       if (expr) {
         expressions.push(expr);
       }
@@ -507,52 +555,6 @@ export function buildSearchExpression(selectQuery: SelectQuery, searchRequest: S
     return expressions[0];
   }
   return new Conjunction(expressions);
-}
-
-/**
- * Builds a single search filter as "WHERE" clause to the query builder.
- * @param selectQuery - The select query builder.
- * @param resourceType - The type of resources requested.
- * @param table - The resource table.
- * @param filter - The search filter.
- * @returns The search query where expression
- */
-function buildSearchFilterExpression(
-  selectQuery: SelectQuery,
-  resourceType: ResourceType,
-  table: string,
-  filter: Filter
-): Expression | undefined {
-  if (typeof filter.value !== 'string') {
-    throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
-  }
-
-  const specialParamExpression = trySpecialSearchParameter(selectQuery, resourceType, table, filter);
-  if (specialParamExpression) {
-    return specialParamExpression;
-  }
-
-  let param = getSearchParameter(resourceType, filter.code);
-  if (!param?.code) {
-    throw new OperationOutcomeError(badRequest(`Unknown search parameter: ${filter.code}`));
-  }
-
-  if (filter.operator === Operator.IDENTIFIER) {
-    param = deriveIdentifierSearchParameter(param);
-    filter = {
-      code: param.code as string,
-      operator: Operator.EQUALS,
-      value: filter.value,
-    };
-  }
-
-  const lookupTable = getLookupTable(resourceType, param);
-  if (lookupTable) {
-    return lookupTable.buildWhere(selectQuery, resourceType, table, filter);
-  }
-
-  // Not any special cases, just a normal search parameter.
-  return buildNormalSearchFilterExpression(resourceType, table, param, filter);
 }
 
 /**
@@ -670,11 +672,11 @@ function buildFilterParameterComparison(
   table: string,
   filterComparison: FhirFilterComparison
 ): Expression {
-  return buildSearchFilterExpression(selectQuery, resourceType, table, {
+  return buildSearchFilterExpression(selectQuery, resourceType, table, [{
     code: filterComparison.path,
     operator: filterComparison.operator as Operator,
     value: filterComparison.value,
-  }) as Expression;
+  }]) as Expression;
 }
 
 /**
@@ -892,7 +894,7 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
         selectQuery,
         link.resourceType as ResourceType,
         nextTable,
-        link.filter
+        [link.filter]
       );
       if (!endCondition) {
         throw new OperationOutcomeError(serverError(new Error(`Failed to build terminal filter for chained search`)));
