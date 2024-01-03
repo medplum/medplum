@@ -2,7 +2,7 @@ import { DrAliceSmithSchedule, ExampleQuestionnaire } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import { Document } from '../Document/Document';
 import { Scheduler } from './Scheduler';
-import { withMockedDate } from '../utils/MockDateWrapper';
+import { withMockedDate } from '../stories/MockDateWrapper';
 import { useEffect, useState } from 'react';
 import { createReference } from '@medplum/core';
 import { Slot } from '@medplum/fhirtypes';

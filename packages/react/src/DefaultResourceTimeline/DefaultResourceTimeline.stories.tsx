@@ -4,7 +4,8 @@ import { useEffect, useState, useContext } from 'react';
 import { Document } from '../Document/Document';
 import { DefaultResourceTimeline } from './DefaultResourceTimeline';
 import { Meta } from '@storybook/react';
-import { withMockedDate, MockDateContext } from '../utils/MockDateWrapper';
+import { withMockedDate } from '../stories/decorators';
+import { MockDateContext } from '../stories/MockDateWrapper.utils';
 
 export default {
   title: 'Medplum/DefaultResourceTimeline',

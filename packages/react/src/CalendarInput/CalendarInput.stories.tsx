@@ -2,7 +2,7 @@ import { Slot } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
 import { Document } from '../Document/Document';
 import { CalendarInput } from './CalendarInput';
-import { withMockedDate } from '../utils/MockDateWrapper';
+import { withMockedDate } from '../stories/decorators';
 
 export default {
   title: 'Medplum/CalendarInput',
