@@ -21,7 +21,7 @@ import {
   DrAliceSmith,
   DrAliceSmithPreviousVersion,
   DrAliceSmithSchedule,
-  DrAliceSmithSlots,
+  makeDrAliceSmithSlots,
   ExampleBot,
   ExampleClient,
   ExampleQuestionnaire,
@@ -527,7 +527,7 @@ export class MockFetchClient {
       await this.repo.createResource(searchParameter as SearchParameter);
     }
 
-    DrAliceSmithSlots.forEach((slot) => this.repo.createResource(slot));
+    makeDrAliceSmithSlots().forEach((slot) => this.repo.createResource(slot));
   }
 
   private async mockFhirHandler(method: HttpMethod, url: string, options: any): Promise<Resource> {

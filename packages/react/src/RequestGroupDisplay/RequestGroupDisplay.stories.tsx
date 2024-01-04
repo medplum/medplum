@@ -13,10 +13,12 @@ import {
   Covid19ReviewLabsTask,
 } from '../stories/covid19';
 import { RequestGroupDisplay } from './RequestGroupDisplay';
+import { withMockedDate } from '../stories/decorators';
 
 export default {
   title: 'Medplum/RequestGroupDisplay',
   component: RequestGroupDisplay,
+  decorators: [withMockedDate],
 } as Meta;
 
 export const Simple = (): JSX.Element => (
