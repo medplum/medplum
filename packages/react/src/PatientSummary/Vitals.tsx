@@ -6,6 +6,7 @@ import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { QuantityDisplay } from '../QuantityDisplay/QuantityDisplay';
+import { killEvent } from '../utils/dom';
 import {
   createCompoundObservation,
   createLoincCode,
@@ -136,7 +137,13 @@ export function Vitals(props: VitalsProps): JSX.Element {
         <Text fz="md" fw={700}>
           Vitals
         </Text>
-        <Anchor href="#" onClick={open}>
+        <Anchor
+          href="#"
+          onClick={(e) => {
+            killEvent(e);
+            open();
+          }}
+        >
           + Add
         </Anchor>
       </Group>

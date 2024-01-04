@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 
 const resourceTypes = [
+  'Resource',
   'Address',
   'Patient',
   'Organization',
@@ -26,6 +27,9 @@ const resourceTypes = [
   'Schedule',
   'Task',
   'Slot',
+  'AllergyIntolerance',
+  'Condition',
+  'MedicationRequest',
 ];
 
 const properties = [
@@ -39,6 +43,7 @@ const properties = [
   'max',
   'type',
   'code',
+  'target',
   'targetProfile',
   'valueSet',
   'address',
@@ -74,6 +79,9 @@ const searchParams = [
   'Task-identifier',
   'Slot-schedule',
   'Slot-start',
+  'clinical-patient',
+  'MedicationRequest-subject',
+  'Observation-subject',
 ];
 
 const USCoreStructureDefinitionFiles = [

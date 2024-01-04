@@ -4,25 +4,79 @@
     "id": "ActivityDefinition-name",
     "name": "name",
     "code": "name",
-    "base": ["ActivityDefinition"],
+    "base": [
+      "ActivityDefinition"
+    ],
     "type": "string",
     "expression": "ActivityDefinition.name"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "clinical-patient",
+    "name": "patient",
+    "code": "patient",
+    "base": [
+      "AllergyIntolerance",
+      "CarePlan",
+      "CareTeam",
+      "ClinicalImpression",
+      "Composition",
+      "Condition",
+      "Consent",
+      "DetectedIssue",
+      "DeviceRequest",
+      "DeviceUseStatement",
+      "DiagnosticReport",
+      "DocumentManifest",
+      "DocumentReference",
+      "Encounter",
+      "EpisodeOfCare",
+      "FamilyMemberHistory",
+      "Flag",
+      "Goal",
+      "ImagingStudy",
+      "Immunization",
+      "List",
+      "MedicationAdministration",
+      "MedicationDispense",
+      "MedicationRequest",
+      "MedicationStatement",
+      "NutritionOrder",
+      "Observation",
+      "Procedure",
+      "RiskAssessment",
+      "ServiceRequest",
+      "SupplyDelivery",
+      "VisionPrescription"
+    ],
+    "type": "reference",
+    "expression": "AllergyIntolerance.patient | CarePlan.subject.where(resolve() is Patient) | CareTeam.subject.where(resolve() is Patient) | ClinicalImpression.subject.where(resolve() is Patient) | Composition.subject.where(resolve() is Patient) | Condition.subject.where(resolve() is Patient) | Consent.patient | DetectedIssue.patient | DeviceRequest.subject.where(resolve() is Patient) | DeviceUseStatement.subject | DiagnosticReport.subject.where(resolve() is Patient) | DocumentManifest.subject.where(resolve() is Patient) | DocumentReference.subject.where(resolve() is Patient) | Encounter.subject.where(resolve() is Patient) | EpisodeOfCare.patient | FamilyMemberHistory.patient | Flag.subject.where(resolve() is Patient) | Goal.subject.where(resolve() is Patient) | ImagingStudy.subject.where(resolve() is Patient) | Immunization.patient | List.subject.where(resolve() is Patient) | MedicationAdministration.subject.where(resolve() is Patient) | MedicationDispense.subject.where(resolve() is Patient) | MedicationRequest.subject.where(resolve() is Patient) | MedicationStatement.subject.where(resolve() is Patient) | NutritionOrder.patient | Observation.subject.where(resolve() is Patient) | Procedure.subject.where(resolve() is Patient) | RiskAssessment.subject.where(resolve() is Patient) | ServiceRequest.subject.where(resolve() is Patient) | SupplyDelivery.patient | VisionPrescription.patient",
+    "target": [
+      "Patient"
+    ]
   },
   {
     "resourceType": "SearchParameter",
     "id": "Communication-encounter",
     "name": "encounter",
     "code": "encounter",
-    "base": ["Communication"],
+    "base": [
+      "Communication"
+    ],
     "type": "reference",
-    "expression": "Communication.encounter"
+    "expression": "Communication.encounter",
+    "target": [
+      "Encounter"
+    ]
   },
   {
     "resourceType": "SearchParameter",
     "id": "Encounter-length",
     "name": "length",
     "code": "length",
-    "base": ["Encounter"],
+    "base": [
+      "Encounter"
+    ],
     "type": "quantity",
     "expression": "Encounter.length"
   },
@@ -31,16 +85,55 @@
     "id": "Media-encounter",
     "name": "encounter",
     "code": "encounter",
-    "base": ["Media"],
+    "base": [
+      "Media"
+    ],
     "type": "reference",
-    "expression": "Media.encounter"
+    "expression": "Media.encounter",
+    "target": [
+      "Encounter"
+    ]
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "MedicationRequest-subject",
+    "name": "subject",
+    "code": "subject",
+    "base": [
+      "MedicationRequest"
+    ],
+    "type": "reference",
+    "expression": "MedicationRequest.subject",
+    "target": [
+      "Group",
+      "Patient"
+    ]
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Observation-subject",
+    "name": "subject",
+    "code": "subject",
+    "base": [
+      "Observation"
+    ],
+    "type": "reference",
+    "expression": "Observation.subject",
+    "target": [
+      "Group",
+      "Device",
+      "Patient",
+      "Location"
+    ]
   },
   {
     "resourceType": "SearchParameter",
     "id": "Observation-value-quantity",
     "name": "value-quantity",
     "code": "value-quantity",
-    "base": ["Observation"],
+    "base": [
+      "Observation"
+    ],
     "type": "quantity",
     "expression": "(Observation.value as Quantity) | (Observation.value as SampledData)"
   },
@@ -49,7 +142,9 @@
     "id": "Observation-value-string",
     "name": "value-string",
     "code": "value-string",
-    "base": ["Observation"],
+    "base": [
+      "Observation"
+    ],
     "type": "string",
     "expression": "(Observation.value as string) | (Observation.value as CodeableConcept).text"
   },
@@ -58,7 +153,9 @@
     "id": "Patient-active",
     "name": "active",
     "code": "active",
-    "base": ["Patient"],
+    "base": [
+      "Patient"
+    ],
     "type": "token",
     "expression": "Patient.active"
   },
@@ -67,7 +164,12 @@
     "id": "individual-address-city",
     "name": "address-city",
     "code": "address-city",
-    "base": ["Patient", "Person", "Practitioner", "RelatedPerson"],
+    "base": [
+      "Patient",
+      "Person",
+      "Practitioner",
+      "RelatedPerson"
+    ],
     "type": "string",
     "expression": "Patient.address.city | Person.address.city | Practitioner.address.city | RelatedPerson.address.city"
   },
@@ -76,7 +178,12 @@
     "id": "individual-address-state",
     "name": "address-state",
     "code": "address-state",
-    "base": ["Patient", "Person", "Practitioner", "RelatedPerson"],
+    "base": [
+      "Patient",
+      "Person",
+      "Practitioner",
+      "RelatedPerson"
+    ],
     "type": "string",
     "expression": "Patient.address.state | Person.address.state | Practitioner.address.state | RelatedPerson.address.state"
   },
@@ -85,7 +192,13 @@
     "id": "individual-email",
     "name": "email",
     "code": "email",
-    "base": ["Patient", "Person", "Practitioner", "PractitionerRole", "RelatedPerson"],
+    "base": [
+      "Patient",
+      "Person",
+      "Practitioner",
+      "PractitionerRole",
+      "RelatedPerson"
+    ],
     "type": "token",
     "expression": "Patient.telecom.where(system='email') | Person.telecom.where(system='email') | Practitioner.telecom.where(system='email') | PractitionerRole.telecom.where(system='email') | RelatedPerson.telecom.where(system='email')"
   },
@@ -94,7 +207,9 @@
     "id": "Patient-name",
     "name": "name",
     "code": "name",
-    "base": ["Patient"],
+    "base": [
+      "Patient"
+    ],
     "type": "string",
     "expression": "Patient.name"
   },
@@ -103,16 +218,27 @@
     "id": "Patient-organization",
     "name": "organization",
     "code": "organization",
-    "base": ["Patient"],
+    "base": [
+      "Patient"
+    ],
     "type": "reference",
-    "expression": "Patient.managingOrganization"
+    "expression": "Patient.managingOrganization",
+    "target": [
+      "Organization"
+    ]
   },
   {
     "resourceType": "SearchParameter",
     "id": "individual-phone",
     "name": "phone",
     "code": "phone",
-    "base": ["Patient", "Person", "Practitioner", "PractitionerRole", "RelatedPerson"],
+    "base": [
+      "Patient",
+      "Person",
+      "Practitioner",
+      "PractitionerRole",
+      "RelatedPerson"
+    ],
     "type": "token",
     "expression": "Patient.telecom.where(system='phone') | Person.telecom.where(system='phone') | Practitioner.telecom.where(system='phone') | PractitionerRole.telecom.where(system='phone') | RelatedPerson.telecom.where(system='phone')"
   },
@@ -121,7 +247,13 @@
     "id": "individual-telecom",
     "name": "telecom",
     "code": "telecom",
-    "base": ["Patient", "Person", "Practitioner", "PractitionerRole", "RelatedPerson"],
+    "base": [
+      "Patient",
+      "Person",
+      "Practitioner",
+      "PractitionerRole",
+      "RelatedPerson"
+    ],
     "type": "token",
     "expression": "Patient.telecom | Person.telecom | Practitioner.telecom | PractitionerRole.telecom | RelatedPerson.telecom"
   },
@@ -130,7 +262,9 @@
     "id": "Questionnaire-name",
     "name": "name",
     "code": "name",
-    "base": ["Questionnaire"],
+    "base": [
+      "Questionnaire"
+    ],
     "type": "string",
     "expression": "Questionnaire.name"
   },
@@ -139,7 +273,9 @@
     "id": "Schedule-identifier",
     "name": "identifier",
     "code": "identifier",
-    "base": ["Schedule"],
+    "base": [
+      "Schedule"
+    ],
     "type": "token",
     "expression": "Schedule.identifier"
   },
@@ -148,7 +284,9 @@
     "id": "ServiceRequest-authored",
     "name": "authored",
     "code": "authored",
-    "base": ["ServiceRequest"],
+    "base": [
+      "ServiceRequest"
+    ],
     "type": "date",
     "expression": "ServiceRequest.authoredOn"
   },
@@ -157,25 +295,40 @@
     "id": "ServiceRequest-subject",
     "name": "subject",
     "code": "subject",
-    "base": ["ServiceRequest"],
+    "base": [
+      "ServiceRequest"
+    ],
     "type": "reference",
-    "expression": "ServiceRequest.subject"
+    "expression": "ServiceRequest.subject",
+    "target": [
+      "Group",
+      "Device",
+      "Patient",
+      "Location"
+    ]
   },
   {
     "resourceType": "SearchParameter",
     "id": "Slot-schedule",
     "name": "schedule",
     "code": "schedule",
-    "base": ["Slot"],
+    "base": [
+      "Slot"
+    ],
     "type": "reference",
-    "expression": "Slot.schedule"
+    "expression": "Slot.schedule",
+    "target": [
+      "Schedule"
+    ]
   },
   {
     "resourceType": "SearchParameter",
     "id": "Slot-start",
     "name": "start",
     "code": "start",
-    "base": ["Slot"],
+    "base": [
+      "Slot"
+    ],
     "type": "date",
     "expression": "Slot.start"
   },
@@ -184,17 +337,10 @@
     "id": "Task-identifier",
     "name": "identifier",
     "code": "identifier",
-    "base": ["Task"],
+    "base": [
+      "Task"
+    ],
     "type": "token",
     "expression": "Task.identifier"
-  },
-  {
-    "resourceType": "SearchParameter",
-    "id": "Measure-url",
-    "name": "measure-url",
-    "code": "url",
-    "base": ["Measure"],
-    "type": "uri",
-    "expression": "Measure.url"
   }
 ]

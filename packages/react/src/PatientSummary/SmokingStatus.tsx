@@ -6,6 +6,7 @@ import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { Form } from '../Form/Form';
+import { killEvent } from '../utils/dom';
 
 // Smoking Status widget
 // See: https://build.fhir.org/ig/HL7/US-Core/StructureDefinition-us-core-smokingstatus.html
@@ -35,7 +36,6 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      console.log('handleSubmit', formData);
       medplum
         .createResource<Observation>({
           resourceType: 'Observation',
@@ -94,7 +94,13 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
         <Text fz="md" fw={700}>
           Smoking Status
         </Text>
-        <Anchor href="#" onClick={open}>
+        <Anchor
+          href="#"
+          onClick={(e) => {
+            killEvent(e);
+            open();
+          }}
+        >
           + Edit
         </Anchor>
       </Group>

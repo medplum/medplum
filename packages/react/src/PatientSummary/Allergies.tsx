@@ -7,6 +7,7 @@ import { useCallback, useState } from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
 import { Form } from '../Form/Form';
+import { killEvent } from '../utils/dom';
 
 export interface AllergiesProps {
   patient: Patient;
@@ -23,7 +24,6 @@ export function Allergies(props: AllergiesProps): JSX.Element {
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      console.log('handleSubmit', formData);
       medplum
         .createResource<AllergyIntolerance>({
           resourceType: 'AllergyIntolerance',
@@ -48,7 +48,13 @@ export function Allergies(props: AllergiesProps): JSX.Element {
         <Text fz="md" fw={700}>
           Allergies
         </Text>
-        <Anchor href="#" onClick={open}>
+        <Anchor
+          href="#"
+          onClick={(e) => {
+            killEvent(e);
+            open();
+          }}
+        >
           + Add
         </Anchor>
       </Group>

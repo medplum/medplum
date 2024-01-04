@@ -7,6 +7,7 @@ import { useCallback, useState } from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
 import { Form } from '../Form/Form';
+import { killEvent } from '../utils/dom';
 
 export interface MedicationsProps {
   patient: Patient;
@@ -22,7 +23,6 @@ export function Medications(props: MedicationsProps): JSX.Element {
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      console.log('handleSubmit', formData);
       const status = formData.status as 'active' | 'stopped';
       medplum
         .createResource<MedicationRequest>({
@@ -48,7 +48,13 @@ export function Medications(props: MedicationsProps): JSX.Element {
         <Text fz="md" fw={700}>
           Medications
         </Text>
-        <Anchor href="#" onClick={open}>
+        <Anchor
+          href="#"
+          onClick={(e) => {
+            killEvent(e);
+            open();
+          }}
+        >
           + Add
         </Anchor>
       </Group>

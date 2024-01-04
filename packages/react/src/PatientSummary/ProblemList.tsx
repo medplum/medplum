@@ -18,6 +18,7 @@ import { useMedplum } from '@medplum/react-hooks';
 import { Fragment, useCallback, useState } from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { Form } from '../Form/Form';
+import { killEvent } from '../utils/dom';
 
 export interface ProblemListProps {
   patient: Patient;
@@ -56,7 +57,13 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
         <Text fz="md" fw={700}>
           Problem List
         </Text>
-        <Anchor href="#" onClick={open}>
+        <Anchor
+          href="#"
+          onClick={(e) => {
+            killEvent(e);
+            open();
+          }}
+        >
           + Add
         </Anchor>
       </Group>
