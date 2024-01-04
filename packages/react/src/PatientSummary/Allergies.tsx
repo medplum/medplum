@@ -2,8 +2,11 @@ import { Anchor, Badge, Box, Button, Group, Modal, NativeSelect, Stack, Text, Te
 import { useDisclosure } from '@mantine/hooks';
 import { createReference } from '@medplum/core';
 import { AllergyIntolerance, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay, CodeableConceptInput, Form, useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
+import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
+import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
+import { Form } from '../Form/Form';
 
 export interface AllergiesProps {
   patient: Patient;

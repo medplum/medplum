@@ -2,8 +2,10 @@ import { Anchor, Button, Grid, Group, Modal, Stack, Text, Textarea, TextInput } 
 import { useDisclosure } from '@mantine/hooks';
 import { generateId } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
-import { Form, QuantityDisplay, useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
+import { Form } from '../Form/Form';
+import { QuantityDisplay } from '../QuantityDisplay/QuantityDisplay';
 import {
   createCompoundObservation,
   createLoincCode,

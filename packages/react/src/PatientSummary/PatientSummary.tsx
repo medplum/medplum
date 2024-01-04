@@ -1,18 +1,29 @@
 import { Anchor, Card, Divider, Flex, Group, Paper, Stack, Text } from '@mantine/core';
-import { calculateAgeString, formatHumanName, getDisplayString } from '@medplum/core';
-import { AllergyIntolerance, Condition, HumanName, MedicationRequest, Observation, Patient } from '@medplum/fhirtypes';
-import { ResourceAvatar, useMedplum, useResource } from '@medplum/react';
+import { calculateAgeString, formatHumanName, getDisplayString, resolveId } from '@medplum/core';
+import {
+  AllergyIntolerance,
+  Condition,
+  HumanName,
+  MedicationRequest,
+  Observation,
+  Patient,
+  Reference,
+} from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconGenderFemale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Medications } from './Medications';
 import { ProblemList } from './ProblemList';
 import { SmokingStatus } from './SmokingStatus';
 import { Vitals } from './Vitals';
 
-export function PatientChart(): JSX.Element | null {
-  const { id } = useParams();
+export interface PatientSummaryProps {
+  readonly patient: Patient | Reference<Patient>;
+}
+
+export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient>();
   const [allergies, setAllergies] = useState<AllergyIntolerance[]>();
@@ -23,7 +34,7 @@ export function PatientChart(): JSX.Element | null {
 
   useEffect(() => {
     const query = `{
-      Patient(id: "${id}") {
+      Patient(id: "${resolveId(props.patient)}") {
         resourceType,
         id,
         birthDate,
@@ -80,7 +91,7 @@ export function PatientChart(): JSX.Element | null {
         setVitals(observations.filter((obs) => obs.category?.[0]?.coding?.[0].code === 'vital-signs'));
       })
       .catch(console.error);
-  }, [medplum, id]);
+  }, [medplum, props]);
 
   if (!patient) {
     return null;

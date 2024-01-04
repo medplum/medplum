@@ -2,8 +2,10 @@ import { Anchor, Badge, Box, Button, Group, Modal, Radio, Stack, Text } from '@m
 import { useDisclosure } from '@mantine/hooks';
 import { createReference } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay, Form, useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
+import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
+import { Form } from '../Form/Form';
 
 // Smoking Status widget
 // See: https://build.fhir.org/ig/HL7/US-Core/StructureDefinition-us-core-smokingstatus.html

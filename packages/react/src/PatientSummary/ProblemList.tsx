@@ -14,8 +14,10 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { createReference } from '@medplum/core';
 import { Condition, Encounter, Patient } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay, Form, useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import { Fragment, useCallback, useState } from 'react';
+import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
+import { Form } from '../Form/Form';
 
 export interface ProblemListProps {
   patient: Patient;
@@ -31,7 +33,6 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      console.log('handleSubmit', formData);
       medplum
         .createResource<Condition>({
           resourceType: 'Condition',
