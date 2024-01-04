@@ -1,12 +1,8 @@
-import {
-  getSearchParameter,
-  getSearchParameterDetails, 
-  parseParameter, 
-  splitN,
-  SearchParameterDetails,
-  Filter
-} from '@medplum/core'
 import { ResourceType } from '@medplum/fhirtypes';
+import { SearchParameterDetails, getSearchParameterDetails } from './details';
+import { Filter, parseParameter } from './search';
+import { getSearchParameter } from '../types'
+import { splitN } from '../utils';
 
 export interface ChainedSearchLink {
   resourceType: string;
@@ -17,6 +13,13 @@ export interface ChainedSearchLink {
 
 export interface ChainedSearchParameter {
   chain: ChainedSearchLink[];
+}
+
+export function looksLikeChain(code: string): boolean {
+  if (code.includes('.') || code.includes(':has')) {
+    return true
+  }
+  return false 
 }
 
 export function parseChainedParameter(resourceType: string, key: string, value: string): ChainedSearchParameter {

@@ -27,6 +27,7 @@ import {
   subsetResource,
   toTypedValue,
   validateResourceType,
+  ChainedSearchLink, ChainedSearchParameter, parseChainedParameter
 } from '@medplum/core';
 import {
   Bundle,
@@ -53,7 +54,6 @@ import {
   SelectQuery,
   Operator as SQL,
 } from './sql';
-import { ChainedSearchLink, ChainedSearchParameter, parseChainedParameter } from './chain';
 
 /**
  * Defines the maximum number of resources returned in a single search result.

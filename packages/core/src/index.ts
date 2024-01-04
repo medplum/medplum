@@ -29,6 +29,7 @@ export * from './schema';
 export * from './search/details';
 export * from './search/match';
 export * from './search/search';
+export * from './search/chain'
 export * from './sftp';
 export * from './storage';
 export * from './types';

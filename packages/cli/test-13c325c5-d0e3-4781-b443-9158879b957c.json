@@ -1,0 +1,19 @@
+{
+  "apiPort": 8103,
+  "region": "us-east-1",
+  "name": "foo",
+  "accountNumber": "account-123",
+  "stackName": "TestStack",
+  "domainName": "test.example.com",
+  "apiDomainName": "api.test.example.com",
+  "baseUrl": "https://api.test.example.com/",
+  "appDomainName": "app.test.example.com",
+  "storageDomainName": "storage.test.example.com",
+  "storageBucketName": "storage.test.example.com",
+  "maxAzs": 2,
+  "rdsSecretsArn": "TODO",
+  "desiredServerCount": 1,
+  "serverMemory": 512,
+  "serverCpu": 256,
+  "serverImage": "medplum/medplum-server:latest"
+}

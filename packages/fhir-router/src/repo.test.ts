@@ -7,7 +7,7 @@ import {
   parseSearchDefinition,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, Patient, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, Observation, Patient, Practitioner, ProjectMembership, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { randomInt, randomUUID } from 'crypto';
 import { MemoryRepository } from './repo';
 
@@ -17,7 +17,13 @@ describe('MemoryRepository', () => {
   beforeAll(async () => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
     indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+    indexSearchParameterBundle(
+      readJson(
+          'fhir/r4/search-parameters-medplum.json'
+      ) as Bundle<SearchParameter>
+    )
   });
 
   test('Create resource', async () => {
@@ -100,6 +106,25 @@ describe('MemoryRepository', () => {
     const emptyResource = await repo.searchOne<Patient>(parseSearchDefinition('Patient?family=' + randomUUID()));
     expect(emptyResource).toBeUndefined();
   });
+
+  test('search via chain', async () => {
+    const practitioner = await repo.createResource<Practitioner>({ 
+        resourceType: 'Practitioner', 
+        telecom: [{
+          system: 'email',
+          value: 'john@asktia.com'
+        }] 
+    });
+
+    const projectMembership = await repo.createResource<ProjectMembership>({ 
+      resourceType: 'ProjectMembership', 
+      profile: {
+        reference: `Practitioner/${practitioner.id}`
+      }
+    })
+    const existingMembership = await repo.searchOne(parseSearchDefinition('ProjectMembership?profile:Practitioner.email=john@asktia.com'))
+    expect(existingMembership?.id).toEqual(projectMembership.id) 
+})
 
   test('Sort unknown search parameter', async () => {
     for (let i = 0; i < 10; i++) {
