@@ -41,7 +41,7 @@ The EHR also must have the option to collect the following data:
 
 ## User Interface
 
-Medplum provides React components for implantable devices that fulfill data collection requirements and can be embedded in your application.
+Medplum provides [React components for implantable devices](https://storybook.medplum.com/?path=/story/medplum-resourceform--us-core-implantable-device) that fulfill data collection requirements and can be embedded in your application.
 
 To obtain a list of embedded devices for a given patient in your application, embed a [search control](https://storybook.medplum.com/?path=/story/medplum-searchcontrol--checkboxes) for `Device` resources with for that patient. Documentation for constructing a [search by reference](/docs/search/basic-search#searching-by-reference) is described in the search documentation.
 
@@ -53,3 +53,4 @@ The FHIR Resource that represents the implanted device is a FHIR Device resource
 - [Sample device data bundle](https://drive.google.com/file/d/1tLJ4qyWNczAvcfhxMA6HyKETdwFlDYjV/view?usp=sharing) see sample devce data in accordance with USCDI.
 - [US Core Implantable Device Profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-implantable-device.html)
 - FDA [Global Unique Device Identification Database (GUDID)](https://www.fda.gov/medical-devices/global-unique-device-identification-database-gudid/accessgudid-public)
+- [Implantable Device](https://storybook.medplum.com/?path=/story/medplum-resourceform--us-core-implantable-device) react component on Storybook

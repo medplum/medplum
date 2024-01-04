@@ -71,6 +71,7 @@ const sidebars = {
       items: [
         { type: 'html', value: '<strong class="menu__link">Workflow</strong>' },
         { type: 'doc', id: 'careplans/tasks/tasks' },
+        { type: 'doc', id: 'careplans/clinical-decision-support' },
         { type: 'html', value: '<strong class="menu__link">Diagnostics</strong>' },
         { type: 'doc', id: 'careplans/diagnostic-catalog/diagnostic-catalog' },
         { type: 'doc', id: 'careplans/reference-ranges' },

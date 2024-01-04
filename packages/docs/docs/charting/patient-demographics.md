@@ -16,7 +16,7 @@ While some demographic data is straightforward to capture, some data require car
 
 ## User Interface
 
-Medplum provides React components for [Patient demographics](https://storybook.medplum.com/?path=/story/medplum-resourceform--patient) that fulfill demographic data collection requirements and can be embedded in your application to fulfill the requirements.
+Medplum provides React components for [Patient demographics](https://storybook.medplum.com/?path=/story/medplum-resourceform--us-core-patient) that fulfill demographic data collection requirements and can be embedded in your application to fulfill the requirements.
 
 ## Capturing Aliases
 
@@ -77,16 +77,11 @@ The [integration](/docs/integration) section has details on querying the exchang
 - [ONC (a)(5)](https://www.healthit.gov/test-method/demographics) official description and guide.
 - [Sample data](/docs/tutorials/importing-sample-data) see sample demographic data in accordance with USCDI.
 - [US Core Patient Profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-patient.html)
+- [US Core Patient](https://storybook.medplum.com/?path=/story/medplum-resourceform--us-core-patient) react component on Storybook
+- [ONC Certification for Medplum](/docs/compliance/onc)
 
 :::caution
 
 ONC (a)(5) certification is under development.
 
 :::
-
-TODO:
-
-- [ ] Place a profile aware react component on Storybook with sample data
-- [ ] Provide `ValueSets` for the bindings in the [Patient profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-patient.html)
-
-Certification for (a)(5) is in progress, follow [Github issue](https://github.com/medplum/medplum/issues/3001) for updates.

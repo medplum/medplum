@@ -36,8 +36,13 @@ Once you have saved your application you can launch it from the apps section of 
 
 The same launch links will be available on the [Encounter](https://app.medplum.com/Encounter/) resource page. You can browse your [SMART Launch History](https://app.medplum.com/SmartAppLaunch?_count=20&_fields=id,patient,encounter,_lastUpdated&_offset=0&_sort=-_lastUpdated) form the Medplum app.
 
+## Launching from a React component
+
+In addition to supporting Smart app launch from the [Medplum app](/docs/app), implementors can also embed Smart App Launch Links into their own custom applications. To see an example of how that works, refer to the [Smart App Launch Link](https://storybook.medplum.com/?path=/story/medplum-smartapplaunchlink--basic) react component.
+
 ## Related Reading
 
 - [SMART Scopes](/docs/access/smart-scopes) access control guide
 - [Inferno](https://inferno.healthit.gov/) reference application with [source](https://github.com/onc-healthit/inferno-program)
 - [ONC Compliance Documentation](/docs/compliance/onc)
+- [Smart App Launch Link](https://storybook.medplum.com/?path=/story/medplum-smartapplaunchlink--basic) on Storybook
