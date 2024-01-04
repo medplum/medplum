@@ -107,7 +107,7 @@ async function processProperties(
   codeSystem: CodeSystem,
   db: Pool
 ): Promise<void> {
-  const cache: Record<string, number> = Object.create(null);
+  const cache: Record<string, { id: number; isRelationship: boolean }> = Object.create(null);
   for (const imported of importedProperties) {
     const codingId = (
       await new SelectQuery('Coding')
@@ -122,11 +122,10 @@ async function processProperties(
 
     const propertyCode = imported.property;
     const cacheKey = codeSystem.url + '|' + propertyCode;
-    let propId = cache[cacheKey];
-    let isRelationship = false;
+    let { id: propId, isRelationship } = cache[cacheKey] ?? {};
     if (!propId) {
       [propId, isRelationship] = await resolveProperty(codeSystem, propertyCode, db);
-      cache[cacheKey] = propId;
+      cache[cacheKey] = { id: propId, isRelationship };
     }
 
     const property: Record<string, any> = {
@@ -146,7 +145,7 @@ async function processProperties(
       if (targetId) {
         property.target = targetId;
       } else {
-        // throw new OperationOutcomeError(badRequest('Unknown code: ' + imported.code));
+        // throw new OperationOutcomeError(badRequest('Unknown code: ' + imported.value));
       }
     }
 
