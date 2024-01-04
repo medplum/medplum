@@ -27,7 +27,9 @@ import {
   subsetResource,
   toTypedValue,
   validateResourceType,
-  ChainedSearchLink, ChainedSearchParameter, parseChainedParameter
+  ChainedSearchLink,
+  ChainedSearchParameter,
+  parseChainedParameter,
 } from '@medplum/core';
 import {
   Bundle,

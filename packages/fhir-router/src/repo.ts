@@ -325,49 +325,54 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
     const { resourceType } = searchRequest;
     // if we have a chain then we also need to resolve the reference types
-    // then we need to see if esch resolved reference matches the search type. 
+    // then we need to see if esch resolved reference matches the search type.
     // the problem is that matchesSearchRequest doesnt have a handle to a repo
     // or other way of resolving the resources.
 
-    // we _could_ re consitute two search requests, 
+    // we _could_ re consitute two search requests,
     // 1. to handle the non-chained
     // 2. another to handle the chained, using the new resolution logic.
     const resources = this.resources.get(resourceType) ?? new Map();
     const result = [];
 
-    const chainFilters: Filter[] = []
-    const normalFilters: Filter[] = []
-   
+    const chainFilters: Filter[] = [];
+    const normalFilters: Filter[] = [];
+
     if (searchRequest.filters) {
-       for(const filter of searchRequest.filters) {
-        if(looksLikeChain(filter.code)) {
-          chainFilters.push(filter)        
+      for (const filter of searchRequest.filters) {
+        if (looksLikeChain(filter.code)) {
+          chainFilters.push(filter);
         } else {
-          normalFilters.push(filter)
+          normalFilters.push(filter);
         }
-      }             
+      }
     }
 
     for (const resource of resources.values()) {
-      let matchesChain = true
-      for(const chainFilter of chainFilters) {
-         const chain = parseChainedParameter(searchRequest.resourceType, chainFilter.code, chainFilter.value)
-          for(const link of chain.chain) {
-            if(link.reverse) {
-              throw new Error('Unimplemented reverse chain')
-            }
+      let matchesChain = true;
+      for (const chainFilter of chainFilters) {
+        const chain = parseChainedParameter(searchRequest.resourceType, chainFilter.code, chainFilter.value);
+        for (const link of chain.chain) {
+          if (link.reverse) {
+            throw new Error('Unimplemented reverse chain');
+          }
 
-            const referencedResource = await this.readReference(resource[link.details.columnName])
-            if (referencedResource?.resourceType !== link.resourceType) {
-              matchesChain = false
-            }
-            if (!matchesSearchRequest(referencedResource, { resourceType: referencedResource.resourceType, filters: link.filter ? [link.filter] : []})) {
-              matchesChain = false
-            }
+          const referencedResource = await this.readReference(resource[link.details.columnName]);
+          if (referencedResource?.resourceType !== link.resourceType) {
+            matchesChain = false;
+          }
+          if (
+            !matchesSearchRequest(referencedResource, {
+              resourceType: referencedResource.resourceType,
+              filters: link.filter ? [link.filter] : [],
+            })
+          ) {
+            matchesChain = false;
+          }
         }
       }
 
-      if (matchesChain && matchesSearchRequest(resource, {...searchRequest, filters: normalFilters })) {
+      if (matchesChain && matchesSearchRequest(resource, { ...searchRequest, filters: normalFilters })) {
         result.push(resource);
       }
     }
