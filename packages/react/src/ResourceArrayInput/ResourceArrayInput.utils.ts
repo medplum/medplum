@@ -1,6 +1,4 @@
 import {
-  InternalTypeSchema,
-  SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
   TypedValue,
@@ -10,6 +8,7 @@ import {
   isPopulated,
   matchDiscriminant,
 } from '@medplum/core';
+import { SupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
 
 function isDiscriminatorComponentMatch(
   typedValue: TypedValue,
@@ -85,13 +84,4 @@ export function assignValuesIntoSlices(
   }
 
   return slicedValues;
-}
-
-export type SupportedSliceDefinition = SliceDefinition & {
-  type: NonNullable<SliceDefinition['type']>;
-  typeSchema?: InternalTypeSchema;
-};
-
-export function isSupportedSliceDefinition(slice: SliceDefinition): slice is SupportedSliceDefinition {
-  return slice.type !== undefined && slice.type.length > 0;
 }
