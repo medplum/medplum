@@ -1912,6 +1912,23 @@ describe('Client', () => {
     );
   });
 
+  test('ValueSet $expand', async () => {
+    const fetch = mockFetch(200, { resourceType: 'ValueSet' });
+    const client = new MedplumClient({ fetch });
+    const result = await client.valueSetExpand({ url: 'system', filter: 'filter', count: 20 });
+    expect(result).toBeDefined();
+    expect(result.resourceType).toBe('ValueSet');
+    expect(fetch).toBeCalledWith(
+      expect.stringContaining('https://api.medplum.com/fhir/R4/ValueSet/$expand'),
+      expect.objectContaining({ method: 'GET' })
+    );
+
+    const url = new URL(fetch.mock.calls[0][0] as string);
+    expect(url.searchParams.get('url')).toBe('system');
+    expect(url.searchParams.get('filter')).toBe('filter');
+    expect(url.searchParams.get('count')).toBe('20');
+  });
+
   describe('Batch', () => {
     const bundle: Bundle = {
       resourceType: 'Bundle',
