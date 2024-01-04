@@ -643,6 +643,10 @@ async function processRelationships(
       // Ignore unknown property
       skipped++;
       continue;
+    } else if (!source.resource.property?.find((p) => p.code === propertyName)) {
+      // Ignore unsupported property
+      skipped++;
+      continue;
     }
 
     const code = mappedCodes[rel.AUI1]?.CODE;
