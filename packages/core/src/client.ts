@@ -1111,9 +1111,8 @@ export class MedplumClient extends EventTarget {
     if (!code) {
       await this.requestAuthorization(loginParams);
       return undefined;
-    } else {
-      return this.processCode(code);
     }
+    return this.processCode(code);
   }
 
   /**
@@ -1894,9 +1893,8 @@ export class MedplumClient extends EventTarget {
 
     if (onProgress) {
       return this.uploadwithProgress(url, data, contentType, onProgress, options);
-    } else {
-      return this.post(url, data, contentType, options);
     }
+    return this.post(url, data, contentType, options);
   }
 
   uploadwithProgress(
@@ -2528,7 +2526,8 @@ export class MedplumClient extends EventTarget {
   async getProfileAsync(): Promise<ProfileResource | undefined> {
     if (this.profilePromise) {
       return this.profilePromise;
-    } else if (this.sessionDetails) {
+    }
+    if (this.sessionDetails) {
       return this.sessionDetails.profile;
     }
     return this.refreshProfile();

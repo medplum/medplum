@@ -29,6 +29,7 @@ import { timingSafeEqual } from 'crypto';
 import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
 import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
+import { getRequestContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { systemRepo } from '../fhir/repo';
 import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
@@ -41,7 +42,6 @@ import {
   verifyJwt,
 } from './keys';
 import { AuthState } from './middleware';
-import { getRequestContext } from '../context';
 
 export type CodeChallengeMethod = 'plain' | 'S256';
 
@@ -823,5 +823,5 @@ export async function getLoginForAccessToken(accessToken: string): Promise<AuthS
 
   const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
   const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
-  return { login, membership, project };
+  return { login, membership, project, accessToken };
 }

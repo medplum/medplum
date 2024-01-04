@@ -3,7 +3,7 @@ import { getRedis } from '../redis';
 
 export async function getTopicForUser(userId: string): Promise<string> {
   const newTopic = generateId();
-  const topicKey = `::fhircast::topic:${userId}`;
+  const topicKey = `medplum:fhircast:topic:${userId}`;
 
   // Sets the topic key to the new topic if it doesn't exist, then gets either existing or the new topic
   // 3600 seconds is the configured expiry time for the associated token, so this should work

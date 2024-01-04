@@ -8,11 +8,13 @@ import { RequestContext, requestContextStore } from './context';
 import { handleFhircastConnection } from './fhircast/websocket';
 import { globalLogger } from './logger';
 import { getRedis } from './redis';
+import { handleR4SubscriptionConnection } from './subscriptions/websockets';
 
 const handlerMap = new Map<string, (socket: ws.WebSocket, request: IncomingMessage) => Promise<void>>();
 handlerMap.set('echo', handleEchoConnection);
 handlerMap.set('agent', handleAgentConnection);
 handlerMap.set('fhircast', handleFhircastConnection);
+handlerMap.set('subscriptions-r4', handleR4SubscriptionConnection);
 
 let wsServer: ws.Server | undefined = undefined;
 
@@ -31,7 +33,8 @@ export function initWebSockets(server: http.Server): void {
     // See: https://github.com/websockets/ws/blob/master/doc/ws.md#websocketbinarytype
     socket.binaryType = 'nodebuffer';
 
-    const handler = handlerMap.get(getWebSocketPath(request.url as string));
+    const path = getWebSocketPath(request.url as string);
+    const handler = handlerMap.get(path);
     if (handler) {
       await requestContextStore.run(RequestContext.empty(), () => handler(socket, request));
     } else {

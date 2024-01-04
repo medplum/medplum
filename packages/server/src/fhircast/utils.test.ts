@@ -25,7 +25,7 @@ describe('FHIRcast Utils', () => {
     test('User has existing topic', async () => {
       const userId = generateId();
       const topic = generateId();
-      await getRedis().set(`::fhircast::topic:${userId}`, topic);
+      await getRedis().set(`medplum:fhircast:topic:${userId}`, topic);
 
       await expect(getTopicForUser(userId)).resolves.toBe(topic);
     });
