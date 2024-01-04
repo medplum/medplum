@@ -1,5 +1,5 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
-import { capitalize, InternalSchemaElement, PropertyType } from '@medplum/core';
+import { capitalize, HTTP_HL7_ORG, InternalSchemaElement, PropertyType } from '@medplum/core';
 import { ElementDefinitionBinding, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
 import { useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
@@ -334,11 +334,15 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
   }
 }
 
-const RESOURCE_TYPE_URL_PREFIX = 'http://hl7.org/fhir/StructureDefinition/';
+const RESOURCE_TYPE_URL_PREFIXES = [
+  `${HTTP_HL7_ORG}/fhir/StructureDefinition/`,
+  'https://medplum.com/fhir/StructureDefinition/',
+];
 function getTargetTypes(elementDefinitionType?: ElementDefinitionType): string[] | undefined {
   return elementDefinitionType?.targetProfile?.map((p) => {
-    if (p.startsWith(RESOURCE_TYPE_URL_PREFIX)) {
-      return p.slice(RESOURCE_TYPE_URL_PREFIX.length);
+    const resourceTypePrefix = RESOURCE_TYPE_URL_PREFIXES.find((prefix) => p.startsWith(prefix));
+    if (resourceTypePrefix) {
+      return p.slice(resourceTypePrefix.length);
     } else {
       return p;
     }
