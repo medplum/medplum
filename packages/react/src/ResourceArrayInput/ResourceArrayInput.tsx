@@ -1,25 +1,16 @@
-import { ActionIcon, Button, Group, Stack } from '@mantine/core';
-import {
-  InternalSchemaElement,
-  getPathDisplayName,
-  getPropertyDisplayName,
-  isEmpty,
-  tryGetProfile,
-} from '@medplum/core';
+import { Group, Stack } from '@mantine/core';
+import { InternalSchemaElement, getPathDisplayName, isEmpty, tryGetProfile } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
 import { MouseEvent, useEffect, useState } from 'react';
-import { ElementsInput } from '../ElementsInput/ElementsInput';
-import { FormSection } from '../FormSection/FormSection';
-import { ElementDefinitionTypeInput, ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
+import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
+import { SliceInput } from '../SliceInput/SliceInput';
+import { SupportedSliceDefinition, isSupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
+import { ArrayAddButton } from '../buttons/ArrayAddButton';
+import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 import { killEvent } from '../utils/dom';
 import classes from './ResourceArrayInput.module.css';
-import {
-  SupportedSliceDefinition,
-  assignValuesIntoSlices,
-  isSupportedSliceDefinition,
-} from './ResourceArrayInput.utils';
+import { assignValuesIntoSlices } from './ResourceArrayInput.utils';
 
 export interface ResourceArrayInputProps {
   property: InternalSchemaElement;
@@ -156,7 +147,7 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
                 outcome={props.outcome}
               />
             </div>
-            <RemoveButton
+            <ArrayRemoveButton
               propertyDisplayName={propertyDisplayName}
               testId={`nonsliced-remove-${valueIndex}`}
               onClick={(e: MouseEvent) => {
@@ -170,7 +161,7 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
         ))}
       {showNonSliceValues && slicedValues.flat().length < property.max && (
         <Group wrap="nowrap" style={{ justifyContent: 'flex-start' }}>
-          <AddButton
+          <ArrayAddButton
             propertyDisplayName={propertyDisplayName}
             onClick={(e: MouseEvent) => {
               killEvent(e);
@@ -183,153 +174,5 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
         </Group>
       )}
     </Stack>
-  );
-}
-
-type SliceInputProps = Readonly<{
-  slice: SupportedSliceDefinition;
-  property: InternalSchemaElement;
-  defaultValue: any[];
-  onChange: (newValue: any[]) => void;
-  outcome?: OperationOutcome;
-  testId?: string;
-}>;
-
-function SliceInput(props: SliceInputProps): JSX.Element | null {
-  const { slice, property } = props;
-  const [values, setValues] = useState<any[]>(() => {
-    return props.defaultValue.map((v) => v ?? {});
-  });
-
-  function setValuesWrapper(newValues: any[]): void {
-    setValues(newValues);
-    if (props.onChange) {
-      props.onChange(newValues);
-    }
-  }
-
-  const required = slice.min > 0;
-
-  // this is a bit of a hack targeted at nested extensions; indentation would ideally be controlled elsewhere
-  // e.g. USCorePatientProfile -> USCoreEthnicityExtension -> {ombCategory, detailed, text}
-  const indentedStack = isEmpty(slice.elements);
-  const propertyDisplayName = getPropertyDisplayName(slice.name);
-  return (
-    <FormSection
-      title={propertyDisplayName}
-      description={slice.definition}
-      withAsterisk={required}
-      fhirPath={`${property.path}:${slice.name}`}
-      testId={props.testId}
-    >
-      <Stack className={indentedStack ? classes.indented : undefined}>
-        {values.map((value, valueIndex) => {
-          return (
-            <Group key={`${valueIndex}-${values.length}`} wrap="nowrap">
-              <div style={{ flexGrow: 1 }}>
-                <Stack>
-                  {!isEmpty(slice.elements) ? (
-                    <ElementsInput
-                      type={slice.type[0].code}
-                      elements={slice.elements}
-                      defaultValue={value}
-                      outcome={props.outcome}
-                      onChange={(newValue) => {
-                        const newValues = [...values];
-                        newValues[valueIndex] = newValue;
-                        setValuesWrapper(newValues);
-                      }}
-                      testId={props.testId && `${props.testId}-elements-${valueIndex}`}
-                    />
-                  ) : (
-                    <ElementDefinitionTypeInput
-                      elementDefinitionType={slice.type[0]}
-                      name={slice.name}
-                      defaultValue={value}
-                      onChange={(newValue) => {
-                        const newValues = [...values];
-                        newValues[valueIndex] = newValue;
-                        setValuesWrapper(newValues);
-                      }}
-                      outcome={undefined}
-                      min={slice.min}
-                      max={slice.max}
-                      binding={undefined}
-                      path={slice.path}
-                    />
-                  )}
-                </Stack>
-              </div>
-              {values.length > slice.min && (
-                <RemoveButton
-                  propertyDisplayName={propertyDisplayName}
-                  testId={props.testId && `${props.testId}-remove-${valueIndex}`}
-                  onClick={(e: React.MouseEvent) => {
-                    killEvent(e);
-                    const newValues = [...values];
-                    newValues.splice(valueIndex, 1);
-                    setValuesWrapper(newValues);
-                  }}
-                />
-              )}
-            </Group>
-          );
-        })}
-        {values.length < slice.max && (
-          <Group wrap="nowrap" style={{ justifyContent: 'flex-start' }}>
-            <AddButton
-              propertyDisplayName={propertyDisplayName}
-              onClick={(e: React.MouseEvent) => {
-                killEvent(e);
-                const newValues = [...values, undefined];
-                setValuesWrapper(newValues);
-              }}
-              testId={props.testId && `${props.testId}-add`}
-            />
-          </Group>
-        )}
-      </Stack>
-    </FormSection>
-  );
-}
-
-type ButtonProps = Readonly<{
-  propertyDisplayName?: string;
-  onClick: React.MouseEventHandler;
-  testId?: string;
-}>;
-
-function AddButton({ propertyDisplayName, onClick, testId }: ButtonProps): JSX.Element {
-  const text = propertyDisplayName ? `Add ${propertyDisplayName}` : 'Add';
-
-  return propertyDisplayName ? (
-    <Button
-      title={text}
-      size="sm"
-      color="green.6"
-      variant="subtle"
-      data-testid={testId}
-      leftSection={<IconCirclePlus size="1.25rem" />}
-      onClick={onClick}
-    >
-      {text}
-    </Button>
-  ) : (
-    <ActionIcon title={text} color="green.6" data-testid={testId} onClick={onClick}>
-      <IconCirclePlus size="1.25rem" />
-    </ActionIcon>
-  );
-}
-
-function RemoveButton({ propertyDisplayName, onClick, testId }: ButtonProps): JSX.Element {
-  return (
-    <ActionIcon
-      title={propertyDisplayName ? `Remove ${propertyDisplayName}` : 'Remove'}
-      color="red.5"
-      data-testid={testId}
-      onClick={onClick}
-    >
-      <IconCircleMinus size="1.25rem" />
-    </ActionIcon>
   );
 }
