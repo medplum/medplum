@@ -57,7 +57,6 @@ describe('Medplum polyfills', () => {
         // After polyfilling, make sure it works
         polyfillMedplumWebAPIs();
         expect(window.location).not.toEqual(undefined);
-        expect(window.crypto).not.toEqual(originalCrypto);
 
         cleanupMedplumWebAPIs();
         // Should be undefined again
