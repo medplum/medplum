@@ -25,11 +25,8 @@ export type PolyfillEnabledConfig = {
 };
 
 export function cleanupMedplumWebAPIs(): void {
-  if (Platform.OS === 'web') {
+  if (Platform.OS === 'web' || !polyfilled) {
     return;
-  }
-  if (!polyfilled) {
-    throw new Error('Unable to cleanup polyfills if polyfills have not been setup.');
   }
   if (window.crypto) {
     Object.defineProperty(window, 'crypto', { configurable: true, enumerable: true, value: originalCrypto });
@@ -66,6 +63,8 @@ export function cleanupMedplumWebAPIs(): void {
   if (window.atob) {
     Object.defineProperty(window, 'atob', { configurable: true, enumerable: true, value: undefined });
   }
+
+  polyfilled = false;
 }
 
 export function polyfillMedplumWebAPIs(config?: PolyfillEnabledConfig): void {
