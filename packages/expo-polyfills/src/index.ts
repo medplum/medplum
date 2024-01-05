@@ -8,7 +8,6 @@ import { setupURLPolyfill } from 'react-native-url-polyfill';
 import { TextDecoder, TextEncoder } from 'text-encoding';
 
 let polyfilled = false;
-
 let originalCrypto: Crypto;
 
 export type ExtendedExpoCrypto = typeof expoWebCrypto & {
