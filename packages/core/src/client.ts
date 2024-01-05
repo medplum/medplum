@@ -574,6 +574,18 @@ interface SessionDetails {
 }
 
 /**
+ * ValueSet $expand operation parameters.
+ * See: https://hl7.org/fhir/r4/valueset-operation-expand.html
+ */
+export interface ValueSetExpandParams {
+  url?: string;
+  filter?: string;
+  date?: string;
+  offset?: number;
+  count?: number;
+}
+
+/**
  * The MedplumClient class provides a client for the Medplum FHIR server.
  *
  * The client can be used in the browser, in a Node.js application, or in a Medplum Bot.
@@ -1442,11 +1454,23 @@ export class MedplumClient extends EventTarget {
    * @param filter - The search string.
    * @param options - Optional fetch options.
    * @returns Promise to expanded ValueSet.
+   * @deprecated Use `valueSetExpand()` instead.
    */
   searchValueSet(system: string, filter: string, options?: RequestInit): ReadablePromise<ValueSet> {
+    return this.valueSetExpand({ url: system, filter }, options);
+  }
+
+  /**
+   * Searches a ValueSet resource using the "expand" operation.
+   * See: https://www.hl7.org/fhir/operation-valueset-expand.html
+   * @category Search
+   * @param params - The ValueSet expand parameters.
+   * @param options - Optional fetch options.
+   * @returns Promise to expanded ValueSet.
+   */
+  valueSetExpand(params: ValueSetExpandParams, options?: RequestInit): ReadablePromise<ValueSet> {
     const url = this.fhirUrl('ValueSet', '$expand');
-    url.searchParams.set('url', system);
-    url.searchParams.set('filter', filter);
+    url.search = new URLSearchParams(params as Record<string, string>).toString();
     return this.get(url.toString(), options);
   }
 
