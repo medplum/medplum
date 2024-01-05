@@ -16,7 +16,7 @@ export interface ChainedSearchParameter {
 }
 
 export function looksLikeChain(code: string): boolean {
-  if (code.includes('.') || code.includes(':has')) {
+  if (code.includes('.') || code.startsWith('_has:')) {
     return true;
   }
   return false;

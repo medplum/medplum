@@ -134,6 +134,31 @@ describe('MemoryRepository', () => {
     expect(existingMembership?.id).toEqual(projectMembership.id);
   });
 
+  test('search via chain (reverse)', async () => {
+    const practitioner = await repo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      telecom: [
+        {
+          system: 'email',
+          value: 'john@asktia.com',
+        },
+      ],
+    });
+
+    await repo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      profile: {
+        reference: `Practitioner/${practitioner.id}`,
+      },
+    });
+
+    const result = await repo.searchOne(
+      parseSearchDefinition(`Practitioner?_has:ProjectMembership:profile:profile=Practitioner/${practitioner.id}`)
+    );
+
+    expect(result?.id).toEqual(practitioner.id);
+  });
+
   test('Sort unknown search parameter', async () => {
     for (let i = 0; i < 10; i++) {
       await repo.createResource<Patient>({ resourceType: 'Patient' });

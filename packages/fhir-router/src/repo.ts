@@ -1,6 +1,7 @@
 import {
   Filter,
   OperationOutcomeError,
+  Operator,
   SearchRequest,
   SortRule,
   badRequest,
@@ -14,7 +15,7 @@ import {
   notFound,
   parseChainedParameter,
 } from '@medplum/core';
-import { Bundle, BundleEntry, Reference, Resource } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Operation, applyPatch } from 'rfc6902';
 
 /**
@@ -349,33 +350,12 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     }
 
     for (const resource of resources.values()) {
-      let matchesChain = true;
-      for (const chainFilter of chainFilters) {
-        const chain = parseChainedParameter(searchRequest.resourceType, chainFilter.code, chainFilter.value);
-        for (const link of chain.chain) {
-          if (link.reverse) {
-            throw new Error('Unimplemented reverse chain');
-          }
-
-          const referencedResource = await this.readReference(resource[link.details.columnName]);
-          if (referencedResource?.resourceType !== link.resourceType) {
-            matchesChain = false;
-          }
-          if (
-            !matchesSearchRequest(referencedResource, {
-              resourceType: referencedResource.resourceType,
-              filters: link.filter ? [link.filter] : [],
-            })
-          ) {
-            matchesChain = false;
-          }
-        }
-      }
-
+      const matchesChain = await this.matchesChain(resource, { ...searchRequest, filters: chainFilters });
       if (matchesChain && matchesSearchRequest(resource, { ...searchRequest, filters: normalFilters })) {
         result.push(resource);
       }
     }
+
     let entry = result.map((resource) => ({ resource: deepClone(resource) })) as BundleEntry<T>[];
     if (searchRequest.sortRules) {
       for (const sortRule of searchRequest.sortRules) {
@@ -394,6 +374,60 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
       entry,
       total: result.length,
     };
+  }
+
+  private async matchesChain<T extends Resource>(resource: T, searchRequest: SearchRequest<T>): Promise<boolean> {
+    let matchesChain = true;
+    for (const chainFilter of searchRequest.filters ?? []) {
+      const chain = parseChainedParameter(searchRequest.resourceType, chainFilter.code, chainFilter.value);
+      for (const link of chain.chain) {
+        const matchingResources: Resource[] = [];
+        if (link.reverse) {
+          const referencedResources = this.resources.get(link.resourceType) ?? new Map<string, Resource>();
+          for (const referencedResource of referencedResources.values()) {
+            const filters: Filter[] = [
+              {
+                code: link.details.columnName,
+                operator: Operator.EQUALS,
+                value: `${resource.resourceType}/${resource.id}`,
+              },
+            ];
+            if (link.filter) {
+              filters.push(link.filter);
+            }
+            const searchRequest: SearchRequest = {
+              resourceType: link.resourceType as ResourceType,
+              filters,
+            };
+            if (matchesSearchRequest(referencedResource, searchRequest)) {
+              matchingResources.push(referencedResource);
+            }
+          }
+
+          if (!matchingResources.length) {
+            matchesChain = false;
+          }
+        } else {
+          //TODO: hacky -- is there a safer way to access this?
+          // look into using the search param perhaps?
+          const reference = resource[link.details.columnName as keyof T] as Reference;
+          const referencedResource = await this.readReference(reference);
+          if (referencedResource?.resourceType !== link.resourceType) {
+            matchesChain = false;
+          }
+
+          if (
+            !matchesSearchRequest(referencedResource, {
+              resourceType: referencedResource.resourceType,
+              filters: link.filter ? [link.filter] : [],
+            })
+          ) {
+            matchesChain = false;
+          }
+        }
+      }
+    }
+    return matchesChain;
   }
 
   async deleteResource(resourceType: string, id: string): Promise<void> {
