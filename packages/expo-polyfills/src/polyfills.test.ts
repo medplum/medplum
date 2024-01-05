@@ -1,29 +1,62 @@
 import { Platform } from 'react-native';
 import { cleanupMedplumWebAPIs, polyfillMedplumWebAPIs } from '.';
 
+const originalWindow = window;
+
+beforeEach(() => {
+  Object.defineProperty(globalThis, 'window', {
+    value: { ...originalWindow },
+  });
+});
+
+afterAll(() => {
+  Object.defineProperty(globalThis, 'window', {
+    value: originalWindow,
+  });
+});
+
 describe('Medplum polyfills', () => {
-  afterEach(() => {
+  beforeEach(() => {
     cleanupMedplumWebAPIs();
   });
 
   if (Platform.OS !== 'web') {
-    describe('polyfillMedplumWebAPIs() - w/ Config', () => {
+    describe('polyfillMedplumWebAPIs()', () => {
+      beforeEach(() => {
+        cleanupMedplumWebAPIs();
+      });
+
       test('Not disabling location polyfill overrides existing location polyfill', () => {
-        // @ts-expect-error window.location should not be undefined normally
+        const originalLocation = window.location;
+        // @ts-expect-error TS expects location to always be defined
         window.location = undefined;
         polyfillMedplumWebAPIs({ location: true });
         expect(window.location).not.toEqual(undefined);
+        window.location = originalLocation;
       });
 
       test('Disable location polyfill', () => {
-        // @ts-expect-error window.location should not be undefined normally
+        const originalLocation = window.location;
+        // @ts-expect-error TS expects location to always be defined
         window.location = undefined;
         polyfillMedplumWebAPIs({ location: false });
         expect(window.location).toEqual(undefined);
+        window.location = originalLocation;
+      });
+
+      test('Polyfilling multiple times should not break', () => {
+        expect(() => polyfillMedplumWebAPIs()).not.toThrow();
+        expect(() => polyfillMedplumWebAPIs()).not.toThrow();
+        // There was specifically trouble with this object when calling polyfill multiple times before
+        expect(window.crypto.subtle).toBeDefined();
       });
     });
 
     describe('cleanupMedplumWebAPIs()', () => {
+      beforeEach(() => {
+        cleanupMedplumWebAPIs();
+      });
+
       test('Cleans up after polyfillMedplumWebAPIs()', () => {
         const originalCrypto = window.crypto;
         // Check that before polyfilling that these

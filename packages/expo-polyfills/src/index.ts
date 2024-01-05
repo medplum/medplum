@@ -8,7 +8,8 @@ import { setupURLPolyfill } from 'react-native-url-polyfill';
 import { TextDecoder, TextEncoder } from 'text-encoding';
 
 let polyfilled = false;
-let originalCrypto: Crypto;
+let originalCryptoIsSet = false;
+let originalCrypto: Crypto | undefined;
 
 export type ExtendedExpoCrypto = typeof expoWebCrypto & {
   subtle: {
@@ -29,7 +30,18 @@ export function cleanupMedplumWebAPIs(): void {
     return;
   }
   if (window.crypto) {
-    Object.defineProperty(window, 'crypto', { configurable: true, enumerable: true, value: originalCrypto });
+    Object.defineProperty(window, 'crypto', {
+      configurable: true,
+      enumerable: true,
+      value: originalCrypto,
+    });
+    Object.defineProperty(expoWebCrypto, 'subtle', {
+      configurable: true,
+      enumerable: false,
+      value: undefined,
+    });
+    originalCrypto = undefined;
+    originalCryptoIsSet = false;
   }
   if (window.location) {
     Object.defineProperty(window, 'location', { configurable: true, enumerable: true, value: undefined });
@@ -68,10 +80,9 @@ export function cleanupMedplumWebAPIs(): void {
 }
 
 export function polyfillMedplumWebAPIs(config?: PolyfillEnabledConfig): void {
-  if (Platform.OS === 'web') {
+  if (Platform.OS === 'web' || polyfilled) {
     return;
   }
-  polyfilled = true;
   if (
     config?.crypto !== false &&
     (typeof window.crypto?.subtle?.digest === 'undefined' || typeof window.crypto.getRandomValues === 'undefined')
@@ -81,11 +92,21 @@ export function polyfillMedplumWebAPIs(config?: PolyfillEnabledConfig): void {
       return digest(algorithm as CryptoDigestAlgorithm, data);
     }
 
-    originalCrypto = window.crypto;
+    // We can't do a check for `originalCrypto === undefined` because the original value for `window.crypto` could be undefined itself
+    // Resulting in an ambiguity and setting `originalCrypto = window.crypto` potentially after `window.crypto` has already been polyfilled
+    if (!originalCryptoIsSet) {
+      originalCrypto = window.crypto;
+      originalCryptoIsSet = true;
+    }
 
-    Object.assign(expoWebCrypto, {
-      subtle: { digest: polyfilledDigest },
-    }) satisfies ExtendedExpoCrypto;
+    // @ts-expect-error Subtle not polyfilled by default with ExpoWebCrypto
+    if (expoWebCrypto.subtle === undefined) {
+      const subtlePolyfill = { digest: polyfilledDigest };
+      Object.defineProperty(expoWebCrypto, 'subtle', {
+        configurable: true,
+        get: () => subtlePolyfill,
+      });
+    }
 
     Object.defineProperty(window, 'crypto', {
       configurable: true,
@@ -144,6 +165,8 @@ export function polyfillMedplumWebAPIs(config?: PolyfillEnabledConfig): void {
       get: () => decode,
     });
   }
+
+  polyfilled = true;
 }
 
 class SyncSecureStorage implements Storage {

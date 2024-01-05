@@ -4,6 +4,20 @@ import { Platform } from 'react-native';
 import { TextDecoder, TextEncoder } from 'text-encoding';
 import { ExpoClientStorage, cleanupMedplumWebAPIs, polyfillMedplumWebAPIs } from '.';
 
+const originalWindow = window;
+
+beforeAll(() => {
+  Object.defineProperty(globalThis, 'window', {
+    value: { ...originalWindow },
+  });
+});
+
+afterAll(() => {
+  Object.defineProperty(globalThis, 'window', {
+    value: originalWindow,
+  });
+});
+
 jest.mock('expo-secure-store', () => {
   const store = new Map<string, string>();
   return {
