@@ -22,10 +22,6 @@ describe('Medplum polyfills', () => {
 
   if (Platform.OS !== 'web') {
     describe('polyfillMedplumWebAPIs()', () => {
-      beforeEach(() => {
-        cleanupMedplumWebAPIs();
-      });
-
       test('Not disabling location polyfill overrides existing location polyfill', () => {
         const originalLocation = window.location;
         // @ts-expect-error TS expects location to always be defined
@@ -53,10 +49,6 @@ describe('Medplum polyfills', () => {
     });
 
     describe('cleanupMedplumWebAPIs()', () => {
-      beforeEach(() => {
-        cleanupMedplumWebAPIs();
-      });
-
       test('Cleans up after polyfillMedplumWebAPIs()', () => {
         const originalCrypto = window.crypto;
         // Check that before polyfilling that these
