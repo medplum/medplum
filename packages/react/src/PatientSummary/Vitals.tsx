@@ -1,6 +1,5 @@
 import { Anchor, Button, Grid, Group, Modal, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { generateId } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
@@ -87,45 +86,35 @@ export function Vitals(props: VitalsProps): JSX.Element {
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      const newAllergy: Observation = {
-        resourceType: 'Observation',
-        id: generateId(),
-        code: { coding: [{ code: formData.allergy, display: formData.allergy }] },
-      };
-
-      Promise.allSettled(
-        Object.entries(LOINC).map(([name, meta]) => {
+      const newObservations = Object.entries(LOINC)
+        .map(([name, meta]) => {
           if (name === 'bloodPressure') {
-            return medplum.createResource<Observation>(
-              createCompoundObservation(patient, encounter, meta.code, meta.title, [
-                {
-                  code: createLoincCode(SYSTOLIC, 'Systolic blood pressure'),
-                  valueQuantity: createQuantity(parseFloat(formData['systolic']), 'mm[Hg]'),
-                },
-                {
-                  code: createLoincCode(DIASTOLIC, 'Diastolic blood pressure'),
-                  valueQuantity: createQuantity(parseFloat(formData['diastolic']), 'mm[Hg]'),
-                },
-              ])
-            );
+            return createCompoundObservation(patient, encounter, meta.code, meta.title, [
+              {
+                code: createLoincCode(SYSTOLIC, 'Systolic blood pressure'),
+                valueQuantity: createQuantity(parseFloat(formData['systolic']), 'mm[Hg]'),
+              },
+              {
+                code: createLoincCode(DIASTOLIC, 'Diastolic blood pressure'),
+                valueQuantity: createQuantity(parseFloat(formData['diastolic']), 'mm[Hg]'),
+              },
+            ]);
           }
-          return medplum.createResource<Observation>(
-            createObservation(
-              patient,
-              encounter,
-              meta.code,
-              meta.title,
-              createQuantity(parseFloat(formData[name]), meta.unit)
-            )
+          return createObservation(
+            patient,
+            encounter,
+            meta.code,
+            meta.title,
+            createQuantity(parseFloat(formData[name]), meta.unit)
           );
         })
-      )
-        .then((result) => {
-          console.log('result', result);
-        })
+        .filter(Boolean) as Observation[];
+
+      // Execute all create requests in parallel to take advantage of autobatching
+      Promise.all(newObservations.map((obs) => medplum.createResource<Observation>(obs)))
+        .then((newVitals) => setVitals([...newVitals, ...vitals]))
         .catch(console.error);
 
-      setVitals([...vitals, newAllergy]);
       close();
     },
     [medplum, patient, encounter, vitals, close]
