@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { LOINC, UCUM, createReference } from '@medplum/core';
 import { CodeableConcept, Encounter, Observation, ObservationComponent, Patient, Quantity } from '@medplum/fhirtypes';
 
 export function getObservationValue(observations: Observation[], code: string): Quantity | undefined {
@@ -82,7 +82,7 @@ export function createLoincCode(code: string, display: string): CodeableConcept 
       {
         code,
         display,
-        system: 'http://loinc.org',
+        system: LOINC,
       },
     ],
     text: display,
@@ -92,7 +92,7 @@ export function createLoincCode(code: string, display: string): CodeableConcept 
 export function createQuantity(value: number, unit: string): Quantity {
   return {
     value,
-    system: 'http://unitsofmeasure.org',
+    system: UCUM,
     unit,
     code: unit,
   };

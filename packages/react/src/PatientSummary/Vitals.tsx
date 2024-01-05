@@ -21,7 +21,7 @@ interface ObservationMeta {
   unit: string;
 }
 
-const LOINC: Record<string, ObservationMeta> = {
+const LOINC_CODES: Record<string, ObservationMeta> = {
   bloodPressure: {
     code: '85354-9',
     title: 'Blood Pressure',
@@ -86,7 +86,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      const newObservations = Object.entries(LOINC)
+      const newObservations = Object.entries(LOINC_CODES)
         .map(([name, meta]) => {
           if (name === 'bloodPressure') {
             return createCompoundObservation(patient, encounter, meta.code, meta.title, [
@@ -141,61 +141,61 @@ export function Vitals(props: VitalsProps): JSX.Element {
           BP Sys
         </Grid.Col>
         <Grid.Col span={3}>
-          <QuantityDisplay value={getCompoundObservationValue(vitals, LOINC.bloodPressure.code, SYSTOLIC)} />
+          <QuantityDisplay value={getCompoundObservationValue(vitals, LOINC_CODES.bloodPressure.code, SYSTOLIC)} />
         </Grid.Col>
         <Grid.Col span={3} ta="right" c="dimmed">
           BP Dias
         </Grid.Col>
         <Grid.Col span={3}>
-          <QuantityDisplay value={getCompoundObservationValue(vitals, LOINC.bloodPressure.code, DIASTOLIC)} />
+          <QuantityDisplay value={getCompoundObservationValue(vitals, LOINC_CODES.bloodPressure.code, DIASTOLIC)} />
         </Grid.Col>
         <Grid.Col span={3} ta="right" c="dimmed">
           HR
         </Grid.Col>
         <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC.heartRate.code)} />
+          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.heartRate.code)} />
         </Grid.Col>
         <Grid.Col span={3} ta="right" c="dimmed">
           Temp
         </Grid.Col>
         <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC.bodyTemperature.code)} />
+          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.bodyTemperature.code)} />
         </Grid.Col>
         <Grid.Col span={3} ta="right" c="dimmed">
           RR
         </Grid.Col>
         <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC.respiratoryRate.code)} />
+          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.respiratoryRate.code)} />
         </Grid.Col>
         <Grid.Col span={3} ta="right" c="dimmed">
           Height
         </Grid.Col>
         <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC.height.code)} />
+          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.height.code)} />
         </Grid.Col>
         <Grid.Col span={3} ta="right" c="dimmed">
           Weight
         </Grid.Col>
         <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC.weight.code)} />
+          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.weight.code)} />
         </Grid.Col>
         <Grid.Col span={3} ta="right" c="dimmed">
           BMI
         </Grid.Col>
         <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC.bmi.code)} />
+          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.bmi.code)} />
         </Grid.Col>
         <Grid.Col span={3} ta="right" c="dimmed">
           O2
         </Grid.Col>
         <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC.oxygen.code)} />
+          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.oxygen.code)} />
         </Grid.Col>
         <Grid.Col span={3} ta="right" c="dimmed">
           HC
         </Grid.Col>
         <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC.headCircumference.code)} />
+          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.headCircumference.code)} />
         </Grid.Col>
       </Grid>
       <Modal opened={opened} onClose={close} title="Add Vitals">

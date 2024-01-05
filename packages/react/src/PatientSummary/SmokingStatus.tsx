@@ -1,6 +1,6 @@
 import { Anchor, Badge, Box, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference } from '@medplum/core';
+import { HTTP_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
@@ -40,7 +40,7 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
         .createResource<Observation>({
           resourceType: 'Observation',
           meta: {
-            profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-smokingstatus'],
+            profile: [HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-smokingstatus'],
           },
           status: 'final',
           category: [
@@ -58,7 +58,7 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
           code: {
             coding: [
               {
-                system: 'http://loinc.org',
+                system: LOINC,
                 code: '72166-2',
                 display: 'Tobacco smoking status',
               },
@@ -71,8 +71,8 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
           valueCodeableConcept: {
             coding: [
               {
-                system: 'http://snomed.info/sct',
-                version: 'http://snomed.info/sct/731000124108',
+                system: SNOMED,
+                version: SNOMED + '/731000124108',
                 code: formData.smokingStatus,
               },
             ],
