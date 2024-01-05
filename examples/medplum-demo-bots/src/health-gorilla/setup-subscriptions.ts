@@ -136,7 +136,9 @@ export async function ensureSubscription(
   existingSubscriptions: Subscription[],
   criteria: string
 ): Promise<void> {
-  const existingSubscription = existingSubscriptions.find((s) => s.criteria === criteria && s.status === 'active');
+  const existingSubscription = existingSubscriptions.find(
+    (s) => s.criteria === criteria && s.status === 'active' && s.channel?.endpoint?.includes(config.callbackBotId)
+  );
   if (existingSubscription) {
     console.log(`Subscription for "${criteria}" already exists: ${existingSubscription.id}`);
     return;

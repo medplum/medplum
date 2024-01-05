@@ -54,6 +54,15 @@ interface HealthGorillaConfig {
 
 // Available labs Health Gorilla IDs
 // These come from the Health Gorilla Organization resources
+
+// Sandbox
+// const availableLabs: Record<string, string> = {
+//   Testing: 'f-4f0235627ac2d59b49e5575c',
+//   Labcorp: 'f-388554647b89801ea5e8320b',
+//   Quest: 'f-7c075564349e1a592e53147a',
+// };
+
+// Prod
 const availableLabs: Record<string, string> = {
   Testing: 'f-4f0235627ac2d59b49e5575c',
   Labcorp: 'f-a855594f43fe879c6570b92e',
