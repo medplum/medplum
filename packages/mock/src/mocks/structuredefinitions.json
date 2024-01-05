@@ -1,91 +1,6 @@
 [
   {
     "resourceType": "StructureDefinition",
-    "id": "Resource",
-    "name": "Resource",
-    "type": "Resource",
-    "snapshot": {
-      "element": [
-        {
-          "id": "Resource",
-          "path": "Resource",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Resource",
-            "min": 0,
-            "max": "*"
-          }
-        },
-        {
-          "id": "Resource.id",
-          "path": "Resource.id",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.id",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "http://hl7.org/fhirpath/System.String"
-            }
-          ]
-        },
-        {
-          "id": "Resource.meta",
-          "path": "Resource.meta",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.meta",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Meta"
-            }
-          ]
-        },
-        {
-          "id": "Resource.implicitRules",
-          "path": "Resource.implicitRules",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.implicitRules",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "uri"
-            }
-          ]
-        },
-        {
-          "id": "Resource.language",
-          "path": "Resource.language",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.language",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "code"
-            }
-          ]
-        }
-      ]
-    }
-  },
-  {
-    "resourceType": "StructureDefinition",
     "id": "ActivityDefinition",
     "name": "ActivityDefinition",
     "type": "ActivityDefinition",
@@ -374,9 +289,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Group"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Group"]
             }
           ]
         },
@@ -681,9 +594,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Library"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Library"]
             }
           ]
         },
@@ -716,9 +627,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
             }
           ]
         },
@@ -830,9 +739,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Location"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Location"]
             }
           ]
         },
@@ -1016,9 +923,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/SpecimenDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/SpecimenDefinition"]
             }
           ]
         },
@@ -1035,9 +940,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ObservationDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ObservationDefinition"]
             }
           ]
         },
@@ -1054,9 +957,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ObservationDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ObservationDefinition"]
             }
           ]
         },
@@ -1073,9 +974,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/StructureMap"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureMap"]
             }
           ]
         },
@@ -1172,601 +1071,6 @@
           "type": [
             {
               "code": "Expression"
-            }
-          ]
-        }
-      ]
-    }
-  },
-  {
-    "resourceType": "StructureDefinition",
-    "id": "AllergyIntolerance",
-    "name": "AllergyIntolerance",
-    "type": "AllergyIntolerance",
-    "snapshot": {
-      "element": [
-        {
-          "id": "AllergyIntolerance",
-          "path": "AllergyIntolerance",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "AllergyIntolerance",
-            "min": 0,
-            "max": "*"
-          }
-        },
-        {
-          "id": "AllergyIntolerance.id",
-          "path": "AllergyIntolerance.id",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.id",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "http://hl7.org/fhirpath/System.String"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.meta",
-          "path": "AllergyIntolerance.meta",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.meta",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Meta"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.implicitRules",
-          "path": "AllergyIntolerance.implicitRules",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.implicitRules",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "uri"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.language",
-          "path": "AllergyIntolerance.language",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.language",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "code"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.text",
-          "path": "AllergyIntolerance.text",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "DomainResource.text",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Narrative"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.contained",
-          "path": "AllergyIntolerance.contained",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "DomainResource.contained",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Resource"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.extension",
-          "path": "AllergyIntolerance.extension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "DomainResource.extension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.modifierExtension",
-          "path": "AllergyIntolerance.modifierExtension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "DomainResource.modifierExtension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.identifier",
-          "path": "AllergyIntolerance.identifier",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "AllergyIntolerance.identifier",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Identifier"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.clinicalStatus",
-          "path": "AllergyIntolerance.clinicalStatus",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.clinicalStatus",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.verificationStatus",
-          "path": "AllergyIntolerance.verificationStatus",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.verificationStatus",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.type",
-          "path": "AllergyIntolerance.type",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.type",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "code"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.category",
-          "path": "AllergyIntolerance.category",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "AllergyIntolerance.category",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "code"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.criticality",
-          "path": "AllergyIntolerance.criticality",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.criticality",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "code"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.code",
-          "path": "AllergyIntolerance.code",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.code",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.patient",
-          "path": "AllergyIntolerance.patient",
-          "min": 1,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.patient",
-            "min": 1,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Patient"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.encounter",
-          "path": "AllergyIntolerance.encounter",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.encounter",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.onset[x]",
-          "path": "AllergyIntolerance.onset[x]",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.onset[x]",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "dateTime"
-            },
-            {
-              "code": "Age"
-            },
-            {
-              "code": "Period"
-            },
-            {
-              "code": "Range"
-            },
-            {
-              "code": "string"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.recordedDate",
-          "path": "AllergyIntolerance.recordedDate",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.recordedDate",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "dateTime"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.recorder",
-          "path": "AllergyIntolerance.recorder",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.recorder",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Practitioner",
-                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
-                "http://hl7.org/fhir/StructureDefinition/Patient",
-                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.asserter",
-          "path": "AllergyIntolerance.asserter",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.asserter",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Patient",
-                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
-                "http://hl7.org/fhir/StructureDefinition/Practitioner",
-                "http://hl7.org/fhir/StructureDefinition/PractitionerRole"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.lastOccurrence",
-          "path": "AllergyIntolerance.lastOccurrence",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.lastOccurrence",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "dateTime"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.note",
-          "path": "AllergyIntolerance.note",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "AllergyIntolerance.note",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Annotation"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.reaction",
-          "path": "AllergyIntolerance.reaction",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "AllergyIntolerance.reaction",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "BackboneElement"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.reaction.id",
-          "path": "AllergyIntolerance.reaction.id",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Element.id",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "http://hl7.org/fhirpath/System.String"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.reaction.extension",
-          "path": "AllergyIntolerance.reaction.extension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Element.extension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.reaction.modifierExtension",
-          "path": "AllergyIntolerance.reaction.modifierExtension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "BackboneElement.modifierExtension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.reaction.substance",
-          "path": "AllergyIntolerance.reaction.substance",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.reaction.substance",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.reaction.manifestation",
-          "path": "AllergyIntolerance.reaction.manifestation",
-          "min": 1,
-          "max": "*",
-          "base": {
-            "path": "AllergyIntolerance.reaction.manifestation",
-            "min": 1,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.reaction.description",
-          "path": "AllergyIntolerance.reaction.description",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.reaction.description",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "string"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.reaction.onset",
-          "path": "AllergyIntolerance.reaction.onset",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.reaction.onset",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "dateTime"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.reaction.severity",
-          "path": "AllergyIntolerance.reaction.severity",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.reaction.severity",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "code"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.reaction.exposureRoute",
-          "path": "AllergyIntolerance.reaction.exposureRoute",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "AllergyIntolerance.reaction.exposureRoute",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "AllergyIntolerance.reaction.note",
-          "path": "AllergyIntolerance.reaction.note",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "AllergyIntolerance.reaction.note",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Annotation"
             }
           ]
         }
@@ -1987,9 +1291,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -2006,9 +1308,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -2025,9 +1325,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Communication"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Communication"]
             }
           ]
         },
@@ -2160,9 +1458,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -2179,9 +1475,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -2390,9 +1684,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -2403,654 +1695,6 @@
           "max": "*",
           "base": {
             "path": "Communication.note",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Annotation"
-            }
-          ]
-        }
-      ]
-    }
-  },
-  {
-    "resourceType": "StructureDefinition",
-    "id": "Condition",
-    "name": "Condition",
-    "type": "Condition",
-    "snapshot": {
-      "element": [
-        {
-          "id": "Condition",
-          "path": "Condition",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Condition",
-            "min": 0,
-            "max": "*"
-          }
-        },
-        {
-          "id": "Condition.id",
-          "path": "Condition.id",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.id",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "http://hl7.org/fhirpath/System.String"
-            }
-          ]
-        },
-        {
-          "id": "Condition.meta",
-          "path": "Condition.meta",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.meta",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Meta"
-            }
-          ]
-        },
-        {
-          "id": "Condition.implicitRules",
-          "path": "Condition.implicitRules",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.implicitRules",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "uri"
-            }
-          ]
-        },
-        {
-          "id": "Condition.language",
-          "path": "Condition.language",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.language",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "code"
-            }
-          ]
-        },
-        {
-          "id": "Condition.text",
-          "path": "Condition.text",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "DomainResource.text",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Narrative"
-            }
-          ]
-        },
-        {
-          "id": "Condition.contained",
-          "path": "Condition.contained",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "DomainResource.contained",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Resource"
-            }
-          ]
-        },
-        {
-          "id": "Condition.extension",
-          "path": "Condition.extension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "DomainResource.extension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "Condition.modifierExtension",
-          "path": "Condition.modifierExtension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "DomainResource.modifierExtension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "Condition.identifier",
-          "path": "Condition.identifier",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Condition.identifier",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Identifier"
-            }
-          ]
-        },
-        {
-          "id": "Condition.clinicalStatus",
-          "path": "Condition.clinicalStatus",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Condition.clinicalStatus",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "Condition.verificationStatus",
-          "path": "Condition.verificationStatus",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Condition.verificationStatus",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "Condition.category",
-          "path": "Condition.category",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Condition.category",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "Condition.severity",
-          "path": "Condition.severity",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Condition.severity",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "Condition.code",
-          "path": "Condition.code",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Condition.code",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "Condition.bodySite",
-          "path": "Condition.bodySite",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Condition.bodySite",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "Condition.subject",
-          "path": "Condition.subject",
-          "min": 1,
-          "max": "1",
-          "base": {
-            "path": "Condition.subject",
-            "min": 1,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Patient",
-                "http://hl7.org/fhir/StructureDefinition/Group"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "Condition.encounter",
-          "path": "Condition.encounter",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Condition.encounter",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "Condition.onset[x]",
-          "path": "Condition.onset[x]",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Condition.onset[x]",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "dateTime"
-            },
-            {
-              "code": "Age"
-            },
-            {
-              "code": "Period"
-            },
-            {
-              "code": "Range"
-            },
-            {
-              "code": "string"
-            }
-          ]
-        },
-        {
-          "id": "Condition.abatement[x]",
-          "path": "Condition.abatement[x]",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Condition.abatement[x]",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "dateTime"
-            },
-            {
-              "code": "Age"
-            },
-            {
-              "code": "Period"
-            },
-            {
-              "code": "Range"
-            },
-            {
-              "code": "string"
-            }
-          ]
-        },
-        {
-          "id": "Condition.recordedDate",
-          "path": "Condition.recordedDate",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Condition.recordedDate",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "dateTime"
-            }
-          ]
-        },
-        {
-          "id": "Condition.recorder",
-          "path": "Condition.recorder",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Condition.recorder",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Practitioner",
-                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
-                "http://hl7.org/fhir/StructureDefinition/Patient",
-                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "Condition.asserter",
-          "path": "Condition.asserter",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Condition.asserter",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Practitioner",
-                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
-                "http://hl7.org/fhir/StructureDefinition/Patient",
-                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "Condition.stage",
-          "path": "Condition.stage",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Condition.stage",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "BackboneElement"
-            }
-          ]
-        },
-        {
-          "id": "Condition.stage.id",
-          "path": "Condition.stage.id",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Element.id",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "http://hl7.org/fhirpath/System.String"
-            }
-          ]
-        },
-        {
-          "id": "Condition.stage.extension",
-          "path": "Condition.stage.extension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Element.extension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "Condition.stage.modifierExtension",
-          "path": "Condition.stage.modifierExtension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "BackboneElement.modifierExtension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "Condition.stage.summary",
-          "path": "Condition.stage.summary",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Condition.stage.summary",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "Condition.stage.assessment",
-          "path": "Condition.stage.assessment",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Condition.stage.assessment",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ClinicalImpression",
-                "http://hl7.org/fhir/StructureDefinition/DiagnosticReport",
-                "http://hl7.org/fhir/StructureDefinition/Observation"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "Condition.stage.type",
-          "path": "Condition.stage.type",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Condition.stage.type",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "Condition.evidence",
-          "path": "Condition.evidence",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Condition.evidence",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "BackboneElement"
-            }
-          ]
-        },
-        {
-          "id": "Condition.evidence.id",
-          "path": "Condition.evidence.id",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Element.id",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "http://hl7.org/fhirpath/System.String"
-            }
-          ]
-        },
-        {
-          "id": "Condition.evidence.extension",
-          "path": "Condition.evidence.extension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Element.extension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "Condition.evidence.modifierExtension",
-          "path": "Condition.evidence.modifierExtension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "BackboneElement.modifierExtension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "Condition.evidence.code",
-          "path": "Condition.evidence.code",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Condition.evidence.code",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "Condition.evidence.detail",
-          "path": "Condition.evidence.detail",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Condition.evidence.detail",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "Condition.note",
-          "path": "Condition.note",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Condition.note",
             "min": 0,
             "max": "*"
           },
@@ -3331,9 +1975,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -3429,9 +2071,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Specimen"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Specimen"]
             }
           ]
         },
@@ -3448,9 +2088,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Observation"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Observation"]
             }
           ]
         },
@@ -3467,9 +2105,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ImagingStudy"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ImagingStudy"]
             }
           ]
         },
@@ -3566,9 +2202,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Media"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Media"]
             }
           ]
         },
@@ -4090,9 +2724,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/EpisodeOfCare"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/EpisodeOfCare"]
             }
           ]
         },
@@ -4109,9 +2741,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ServiceRequest"]
             }
           ]
         },
@@ -4245,9 +2875,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Appointment"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Appointment"]
             }
           ]
         },
@@ -4450,9 +3078,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Account"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Account"]
             }
           ]
         },
@@ -4749,9 +3375,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Location"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Location"]
             }
           ]
         },
@@ -4816,9 +3440,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Organization"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
             }
           ]
         },
@@ -4835,9 +3457,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         }
@@ -5039,9 +3659,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -5147,9 +3765,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -5375,1063 +3991,6 @@
           "type": [
             {
               "code": "Annotation"
-            }
-          ]
-        }
-      ]
-    }
-  },
-  {
-    "resourceType": "StructureDefinition",
-    "id": "MedicationRequest",
-    "name": "MedicationRequest",
-    "type": "MedicationRequest",
-    "snapshot": {
-      "element": [
-        {
-          "id": "MedicationRequest",
-          "path": "MedicationRequest",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "MedicationRequest",
-            "min": 0,
-            "max": "*"
-          }
-        },
-        {
-          "id": "MedicationRequest.id",
-          "path": "MedicationRequest.id",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.id",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "http://hl7.org/fhirpath/System.String"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.meta",
-          "path": "MedicationRequest.meta",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.meta",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Meta"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.implicitRules",
-          "path": "MedicationRequest.implicitRules",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.implicitRules",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "uri"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.language",
-          "path": "MedicationRequest.language",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Resource.language",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "code"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.text",
-          "path": "MedicationRequest.text",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "DomainResource.text",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Narrative"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.contained",
-          "path": "MedicationRequest.contained",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "DomainResource.contained",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Resource"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.extension",
-          "path": "MedicationRequest.extension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "DomainResource.extension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.modifierExtension",
-          "path": "MedicationRequest.modifierExtension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "DomainResource.modifierExtension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.identifier",
-          "path": "MedicationRequest.identifier",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "MedicationRequest.identifier",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Identifier"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.status",
-          "path": "MedicationRequest.status",
-          "min": 1,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.status",
-            "min": 1,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "code"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.statusReason",
-          "path": "MedicationRequest.statusReason",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.statusReason",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.intent",
-          "path": "MedicationRequest.intent",
-          "min": 1,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.intent",
-            "min": 1,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "code"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.category",
-          "path": "MedicationRequest.category",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "MedicationRequest.category",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.priority",
-          "path": "MedicationRequest.priority",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.priority",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "code"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.doNotPerform",
-          "path": "MedicationRequest.doNotPerform",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.doNotPerform",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "boolean"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.reported[x]",
-          "path": "MedicationRequest.reported[x]",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.reported[x]",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "boolean"
-            },
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Patient",
-                "http://hl7.org/fhir/StructureDefinition/Practitioner",
-                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
-                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
-                "http://hl7.org/fhir/StructureDefinition/Organization"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.medication[x]",
-          "path": "MedicationRequest.medication[x]",
-          "min": 1,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.medication[x]",
-            "min": 1,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            },
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Medication"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.subject",
-          "path": "MedicationRequest.subject",
-          "min": 1,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.subject",
-            "min": 1,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Patient",
-                "http://hl7.org/fhir/StructureDefinition/Group"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.encounter",
-          "path": "MedicationRequest.encounter",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.encounter",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.supportingInformation",
-          "path": "MedicationRequest.supportingInformation",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "MedicationRequest.supportingInformation",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.authoredOn",
-          "path": "MedicationRequest.authoredOn",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.authoredOn",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "dateTime"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.requester",
-          "path": "MedicationRequest.requester",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.requester",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Practitioner",
-                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
-                "http://hl7.org/fhir/StructureDefinition/Organization",
-                "http://hl7.org/fhir/StructureDefinition/Patient",
-                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
-                "http://hl7.org/fhir/StructureDefinition/Device"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.performer",
-          "path": "MedicationRequest.performer",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.performer",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Practitioner",
-                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
-                "http://hl7.org/fhir/StructureDefinition/Organization",
-                "http://hl7.org/fhir/StructureDefinition/Patient",
-                "http://hl7.org/fhir/StructureDefinition/Device",
-                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
-                "http://hl7.org/fhir/StructureDefinition/CareTeam"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.performerType",
-          "path": "MedicationRequest.performerType",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.performerType",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.recorder",
-          "path": "MedicationRequest.recorder",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.recorder",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Practitioner",
-                "http://hl7.org/fhir/StructureDefinition/PractitionerRole"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.reasonCode",
-          "path": "MedicationRequest.reasonCode",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "MedicationRequest.reasonCode",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.reasonReference",
-          "path": "MedicationRequest.reasonReference",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "MedicationRequest.reasonReference",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Condition",
-                "http://hl7.org/fhir/StructureDefinition/Observation"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.instantiatesCanonical",
-          "path": "MedicationRequest.instantiatesCanonical",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "MedicationRequest.instantiatesCanonical",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "canonical"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.instantiatesUri",
-          "path": "MedicationRequest.instantiatesUri",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "MedicationRequest.instantiatesUri",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "uri"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.basedOn",
-          "path": "MedicationRequest.basedOn",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "MedicationRequest.basedOn",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/CarePlan",
-                "http://hl7.org/fhir/StructureDefinition/MedicationRequest",
-                "http://hl7.org/fhir/StructureDefinition/ServiceRequest",
-                "http://hl7.org/fhir/StructureDefinition/ImmunizationRecommendation"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.groupIdentifier",
-          "path": "MedicationRequest.groupIdentifier",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.groupIdentifier",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Identifier"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.courseOfTherapyType",
-          "path": "MedicationRequest.courseOfTherapyType",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.courseOfTherapyType",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.insurance",
-          "path": "MedicationRequest.insurance",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "MedicationRequest.insurance",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Coverage",
-                "http://hl7.org/fhir/StructureDefinition/ClaimResponse"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.note",
-          "path": "MedicationRequest.note",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "MedicationRequest.note",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Annotation"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dosageInstruction",
-          "path": "MedicationRequest.dosageInstruction",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "MedicationRequest.dosageInstruction",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Dosage"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest",
-          "path": "MedicationRequest.dispenseRequest",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.dispenseRequest",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "BackboneElement"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.id",
-          "path": "MedicationRequest.dispenseRequest.id",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Element.id",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "http://hl7.org/fhirpath/System.String"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.extension",
-          "path": "MedicationRequest.dispenseRequest.extension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Element.extension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.modifierExtension",
-          "path": "MedicationRequest.dispenseRequest.modifierExtension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "BackboneElement.modifierExtension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.initialFill",
-          "path": "MedicationRequest.dispenseRequest.initialFill",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.dispenseRequest.initialFill",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "BackboneElement"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.initialFill.id",
-          "path": "MedicationRequest.dispenseRequest.initialFill.id",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Element.id",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "http://hl7.org/fhirpath/System.String"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.initialFill.extension",
-          "path": "MedicationRequest.dispenseRequest.initialFill.extension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Element.extension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.initialFill.modifierExtension",
-          "path": "MedicationRequest.dispenseRequest.initialFill.modifierExtension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "BackboneElement.modifierExtension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.initialFill.quantity",
-          "path": "MedicationRequest.dispenseRequest.initialFill.quantity",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.dispenseRequest.initialFill.quantity",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Quantity"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.initialFill.duration",
-          "path": "MedicationRequest.dispenseRequest.initialFill.duration",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.dispenseRequest.initialFill.duration",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Duration"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.dispenseInterval",
-          "path": "MedicationRequest.dispenseRequest.dispenseInterval",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.dispenseRequest.dispenseInterval",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Duration"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.validityPeriod",
-          "path": "MedicationRequest.dispenseRequest.validityPeriod",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.dispenseRequest.validityPeriod",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Period"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.numberOfRepeatsAllowed",
-          "path": "MedicationRequest.dispenseRequest.numberOfRepeatsAllowed",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.dispenseRequest.numberOfRepeatsAllowed",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "unsignedInt"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.quantity",
-          "path": "MedicationRequest.dispenseRequest.quantity",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.dispenseRequest.quantity",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Quantity"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.expectedSupplyDuration",
-          "path": "MedicationRequest.dispenseRequest.expectedSupplyDuration",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.dispenseRequest.expectedSupplyDuration",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Duration"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.dispenseRequest.performer",
-          "path": "MedicationRequest.dispenseRequest.performer",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.dispenseRequest.performer",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Organization"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.substitution",
-          "path": "MedicationRequest.substitution",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.substitution",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "BackboneElement"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.substitution.id",
-          "path": "MedicationRequest.substitution.id",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Element.id",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "http://hl7.org/fhirpath/System.String"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.substitution.extension",
-          "path": "MedicationRequest.substitution.extension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Element.extension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.substitution.modifierExtension",
-          "path": "MedicationRequest.substitution.modifierExtension",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "BackboneElement.modifierExtension",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Extension"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.substitution.allowed[x]",
-          "path": "MedicationRequest.substitution.allowed[x]",
-          "min": 1,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.substitution.allowed[x]",
-            "min": 1,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "boolean"
-            },
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.substitution.reason",
-          "path": "MedicationRequest.substitution.reason",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.substitution.reason",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.priorPrescription",
-          "path": "MedicationRequest.priorPrescription",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "MedicationRequest.priorPrescription",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/MedicationRequest"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.detectedIssue",
-          "path": "MedicationRequest.detectedIssue",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "MedicationRequest.detectedIssue",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/DetectedIssue"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "MedicationRequest.eventHistory",
-          "path": "MedicationRequest.eventHistory",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "MedicationRequest.eventHistory",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Provenance"
-              ]
             }
           ]
         }
@@ -6731,9 +4290,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -6750,9 +4307,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -6960,9 +4515,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Specimen"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Specimen"]
             }
           ]
         },
@@ -7976,9 +5529,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ValueSet"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ValueSet"]
             }
           ]
         },
@@ -7995,9 +5546,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ValueSet"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ValueSet"]
             }
           ]
         },
@@ -8014,9 +5563,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ValueSet"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ValueSet"]
             }
           ]
         },
@@ -8033,9 +5580,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ValueSet"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ValueSet"]
             }
           ]
         }
@@ -8313,9 +5858,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Organization"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
             }
           ]
         },
@@ -8460,9 +6003,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Endpoint"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Endpoint"]
             }
           ]
         }
@@ -8954,9 +6495,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Organization"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
             }
           ]
         },
@@ -9106,9 +6645,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Organization"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
             }
           ]
         },
@@ -9521,9 +7058,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Group"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Group"]
             }
           ]
         },
@@ -9828,9 +7363,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Library"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Library"]
             }
           ]
         },
@@ -10336,9 +7869,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Group"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Group"]
             }
           ]
         },
@@ -10861,9 +8392,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/StructureMap"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureMap"]
             }
           ]
         },
@@ -11377,9 +8906,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Organization"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
             }
           ]
         },
@@ -11641,9 +9168,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Questionnaire"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Questionnaire"]
             }
           ]
         },
@@ -12183,9 +9708,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -12282,9 +9805,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ValueSet"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ValueSet"]
             }
           ]
         },
@@ -12380,9 +9901,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -12512,9 +10031,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -12748,9 +10265,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Questionnaire"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Questionnaire"]
             }
           ]
         },
@@ -12783,9 +10298,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -12802,9 +10315,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -13092,9 +10603,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -13643,9 +11152,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ServiceRequest"]
             }
           ]
         },
@@ -13834,9 +11341,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -13992,9 +11497,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Location"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Location"]
             }
           ]
         },
@@ -14069,9 +11572,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -14088,9 +11589,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Specimen"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Specimen"]
             }
           ]
         },
@@ -14155,9 +11654,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Provenance"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Provenance"]
             }
           ]
         }
@@ -14403,9 +11900,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Schedule"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Schedule"]
             }
           ]
         },
@@ -14754,9 +12249,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Specimen"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Specimen"]
             }
           ]
         },
@@ -14773,9 +12266,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ServiceRequest"]
             }
           ]
         },
@@ -15074,9 +12565,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Substance"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Substance"]
             }
           ]
         },
@@ -15259,9 +12748,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Substance"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Substance"]
             }
           ]
         },
@@ -15881,9 +13368,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Substance"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Substance"]
             }
           ]
         },
@@ -16257,9 +13742,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ActivityDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ActivityDefinition"]
             }
           ]
         },
@@ -16292,9 +13775,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -16327,9 +13808,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Task"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Task"]
             }
           ]
         },
@@ -16458,9 +13937,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -16477,9 +13954,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -16496,9 +13971,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -16629,9 +14102,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Location"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Location"]
             }
           ]
         },
@@ -16664,9 +14135,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -16719,9 +14188,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Provenance"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Provenance"]
             }
           ]
         },
@@ -17345,12 +14812,7 @@
           "id": "Project",
           "path": "Project",
           "min": 0,
-          "max": "*",
-          "base": {
-            "min": 0,
-            "max": "*",
-            "path": "Project"
-          }
+          "max": "*"
         },
         {
           "id": "Project.id",
@@ -17425,12 +14887,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.name",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.description",
@@ -17441,12 +14898,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.description",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.superAdmin",
@@ -17457,12 +14909,7 @@
             {
               "code": "boolean"
             }
-          ],
-          "base": {
-            "path": "Project.superAdmin",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.strictMode",
@@ -17473,12 +14920,7 @@
             {
               "code": "boolean"
             }
-          ],
-          "base": {
-            "path": "Project.strictMode",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.checkReferencesOnWrite",
@@ -17489,12 +14931,7 @@
             {
               "code": "boolean"
             }
-          ],
-          "base": {
-            "path": "Project.checkReferencesOnWrite",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.owner",
@@ -17504,16 +14941,9 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "https://medplum.com/fhir/StructureDefinition/User"
-              ]
+              "targetProfile": ["https://medplum.com/fhir/StructureDefinition/User"]
             }
-          ],
-          "base": {
-            "path": "Project.owner",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.features",
@@ -17524,12 +14954,7 @@
             {
               "code": "code"
             }
-          ],
-          "base": {
-            "path": "Project.features",
-            "min": 0,
-            "max": "*"
-          }
+          ]
         },
         {
           "id": "Project.defaultPatientAccessPolicy",
@@ -17539,16 +14964,9 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "https://medplum.com/fhir/StructureDefinition/AccessPolicy"
-              ]
+              "targetProfile": ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
             }
-          ],
-          "base": {
-            "path": "Project.defaultPatientAccessPolicy",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.secret",
@@ -17559,12 +14977,7 @@
             {
               "code": "BackboneElement"
             }
-          ],
-          "base": {
-            "path": "Project.secret",
-            "min": 0,
-            "max": "*"
-          }
+          ]
         },
         {
           "id": "Project.secret.name",
@@ -17575,12 +14988,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.secret.name",
-            "min": 1,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.secret.value[x]",
@@ -17600,12 +15008,7 @@
             {
               "code": "integer"
             }
-          ],
-          "base": {
-            "path": "Project.secret.value[x]",
-            "min": 1,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.site",
@@ -17616,12 +15019,7 @@
             {
               "code": "BackboneElement"
             }
-          ],
-          "base": {
-            "path": "Project.site",
-            "min": 0,
-            "max": "*"
-          }
+          ]
         },
         {
           "id": "Project.site.name",
@@ -17632,12 +15030,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.site.name",
-            "min": 1,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.site.domain",
@@ -17648,12 +15041,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.site.domain",
-            "min": 1,
-            "max": "*"
-          }
+          ]
         },
         {
           "id": "Project.site.googleClientId",
@@ -17664,12 +15052,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.site.googleClientId",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.site.googleClientSecret",
@@ -17680,12 +15063,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.site.googleClientSecret",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.site.recaptchaSiteKey",
@@ -17696,12 +15074,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.site.recaptchaSiteKey",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.site.recaptchaSecretKey",
@@ -17712,12 +15085,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.site.recaptchaSecretKey",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         }
       ]
     }
@@ -17733,12 +15101,7 @@
           "id": "Bot",
           "path": "Bot",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Bot",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "Bot.id",
@@ -17805,22 +15168,6 @@
           ]
         },
         {
-          "id": "Bot.identifier",
-          "path": "Bot.identifier",
-          "min": 0,
-          "max": "*",
-          "type": [
-            {
-              "code": "Identifier"
-            }
-          ],
-          "base": {
-            "path": "Bot.identifier",
-            "min": 0,
-            "max": "*"
-          }
-        },
-        {
           "id": "Bot.name",
           "path": "Bot.name",
           "min": 0,
@@ -17829,12 +15176,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Bot.name",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Bot.description",
@@ -17845,12 +15187,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Bot.description",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Bot.runtimeVersion",
@@ -17859,140 +15196,15 @@
           "max": "1",
           "type": [
             {
-              "code": "code"
+              "code": "string"
             }
-          ],
-          "base": {
-            "path": "Bot.runtimeVersion",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Bot.photo",
           "path": "Bot.photo",
           "min": 0,
           "max": "1",
-          "type": [
-            {
-              "code": "Attachment"
-            }
-          ],
-          "base": {
-            "path": "Bot.photo",
-            "min": 0,
-            "max": "1"
-          }
-        },
-        {
-          "id": "Bot.cron[x]",
-          "path": "Bot.cron[x]",
-          "min": 0,
-          "max": "1",
-          "type": [
-            {
-              "code": "Timing"
-            },
-            {
-              "code": "string"
-            }
-          ],
-          "base": {
-            "path": "Bot.cron[x]",
-            "min": 0,
-            "max": "1"
-          }
-        },
-        {
-          "id": "Bot.category",
-          "path": "Bot.category",
-          "min": 0,
-          "max": "*",
-          "type": [
-            {
-              "code": "CodeableConcept"
-            }
-          ],
-          "base": {
-            "path": "Bot.category",
-            "min": 0,
-            "max": "*"
-          }
-        },
-        {
-          "id": "Bot.runAsUser",
-          "path": "Bot.runAsUser",
-          "min": 0,
-          "max": "1",
-          "type": [
-            {
-              "code": "boolean"
-            }
-          ],
-          "base": {
-            "path": "Bot.runAsUser",
-            "min": 0,
-            "max": "1"
-          }
-        },
-        {
-          "id": "Bot.auditEventTrigger",
-          "path": "Bot.auditEventTrigger",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Bot.auditEventTrigger",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "code"
-            }
-          ]
-        },
-        {
-          "id": "Bot.auditEventDestination",
-          "path": "Bot.auditEventDestination",
-          "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Bot.auditEventDestination",
-            "min": 0,
-            "max": "*"
-          },
-          "type": [
-            {
-              "code": "code"
-            }
-          ]
-        },
-        {
-          "id": "Bot.sourceCode",
-          "path": "Bot.sourceCode",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Bot.sourceCode",
-            "min": 0,
-            "max": "1"
-          },
-          "type": [
-            {
-              "code": "Attachment"
-            }
-          ]
-        },
-        {
-          "id": "Bot.executableCode",
-          "path": "Bot.executableCode",
-          "min": 0,
-          "max": "1",
-          "base": {
-            "path": "Bot.executableCode",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Attachment"
@@ -18008,12 +15220,18 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Bot.code",
-            "min": 0,
-            "max": "1"
-          }
+          ]
+        },
+        {
+          "id": "Bot.runAsUser",
+          "path": "Bot.runAsUser",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
         }
       ]
     }
