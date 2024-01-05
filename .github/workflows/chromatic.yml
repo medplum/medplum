@@ -1,8 +1,6 @@
 name: 'Chromatic'
 
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+on: push
 
 jobs:
   chromatic:
@@ -26,3 +24,4 @@ jobs:
           workingDir: packages/react
           buildScriptName: storybook
           exitZeroOnChanges: true
+          onlyChanged: true
