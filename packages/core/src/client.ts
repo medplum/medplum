@@ -1576,14 +1576,17 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to a schema with the requested resource type.
    */
   requestSchema(resourceType: string): Promise<void> {
+    // Disable caching so that GQL path will be hit
     if (isDataTypeLoaded(resourceType)) {
-      return Promise.resolve();
+      console.log('Not resolving early to demonstrate GQL mocking');
+      //   return Promise.resolve();
     }
 
     const cacheKey = resourceType + '-requestSchema';
     const cached = this.getCacheEntry(cacheKey, undefined);
     if (cached) {
-      return cached.value;
+      console.log('Not returning cached value to demonstrate GQL mocking');
+      //   return cached.value;
     }
 
     const promise = new ReadablePromise<void>(
@@ -1630,6 +1633,7 @@ export class MedplumClient extends EventTarget {
     }`.replace(/\s+/g, ' ');
 
         const response = (await this.graphql(query)) as SchemaGraphQLResponse;
+        console.log('MedplumClient.requestSchema received GQL response', response);
 
         indexStructureDefinitionBundle(response.data.StructureDefinitionList);
 

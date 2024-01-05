@@ -41,6 +41,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
           .catch(console.log);
       } else {
         const schemaName = props.schemaName ?? defaultValue?.resourceType;
+        console.log(`Calling requestSchema('${schemaName}')...`);
         medplum
           .requestSchema(schemaName)
           .then(() => setSchemaLoaded(schemaName))
