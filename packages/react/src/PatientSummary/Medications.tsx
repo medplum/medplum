@@ -2,13 +2,17 @@ import { Anchor, Badge, Box, Button, Group, Modal, Radio, Stack, Text } from '@m
 import { useDisclosure } from '@mantine/hooks';
 import { createReference } from '@medplum/core';
 import { CodeableConcept, Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay, CodeableConceptInput, Form, useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
+import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
+import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
+import { Form } from '../Form/Form';
+import { killEvent } from '../utils/dom';
 
 export interface MedicationsProps {
-  patient: Patient;
-  encounter?: Encounter;
-  medicationRequests: MedicationRequest[];
+  readonly patient: Patient;
+  readonly encounter?: Encounter;
+  readonly medicationRequests: MedicationRequest[];
 }
 
 export function Medications(props: MedicationsProps): JSX.Element {
@@ -19,7 +23,6 @@ export function Medications(props: MedicationsProps): JSX.Element {
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      console.log('handleSubmit', formData);
       const status = formData.status as 'active' | 'stopped';
       medplum
         .createResource<MedicationRequest>({
@@ -45,7 +48,13 @@ export function Medications(props: MedicationsProps): JSX.Element {
         <Text fz="md" fw={700}>
           Medications
         </Text>
-        <Anchor href="#" onClick={open}>
+        <Anchor
+          href="#"
+          onClick={(e) => {
+            killEvent(e);
+            open();
+          }}
+        >
           + Add
         </Anchor>
       </Group>

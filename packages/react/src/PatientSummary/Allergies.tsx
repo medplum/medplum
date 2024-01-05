@@ -2,13 +2,17 @@ import { Anchor, Badge, Box, Button, Group, Modal, NativeSelect, Stack, Text, Te
 import { useDisclosure } from '@mantine/hooks';
 import { createReference } from '@medplum/core';
 import { AllergyIntolerance, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay, CodeableConceptInput, Form, useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
+import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
+import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
+import { Form } from '../Form/Form';
+import { killEvent } from '../utils/dom';
 
 export interface AllergiesProps {
-  patient: Patient;
-  encounter?: Encounter;
-  allergies: AllergyIntolerance[];
+  readonly patient: Patient;
+  readonly encounter?: Encounter;
+  readonly allergies: AllergyIntolerance[];
 }
 
 export function Allergies(props: AllergiesProps): JSX.Element {
@@ -20,7 +24,6 @@ export function Allergies(props: AllergiesProps): JSX.Element {
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      console.log('handleSubmit', formData);
       medplum
         .createResource<AllergyIntolerance>({
           resourceType: 'AllergyIntolerance',
@@ -45,7 +48,13 @@ export function Allergies(props: AllergiesProps): JSX.Element {
         <Text fz="md" fw={700}>
           Allergies
         </Text>
-        <Anchor href="#" onClick={open}>
+        <Anchor
+          href="#"
+          onClick={(e) => {
+            killEvent(e);
+            open();
+          }}
+        >
           + Add
         </Anchor>
       </Group>

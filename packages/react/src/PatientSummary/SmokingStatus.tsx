@@ -1,9 +1,12 @@
 import { Anchor, Badge, Box, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference } from '@medplum/core';
+import { HTTP_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay, Form, useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
+import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
+import { Form } from '../Form/Form';
+import { killEvent } from '../utils/dom';
 
 // Smoking Status widget
 // See: https://build.fhir.org/ig/HL7/US-Core/StructureDefinition-us-core-smokingstatus.html
@@ -20,9 +23,9 @@ const smokingStatusOptions: Record<string, string> = {
 };
 
 export interface SmokingStatusProps {
-  patient: Patient;
-  encounter?: Encounter;
-  smokingStatus?: Observation;
+  readonly patient: Patient;
+  readonly encounter?: Encounter;
+  readonly smokingStatus?: Observation;
 }
 
 export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
@@ -33,12 +36,11 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      console.log('handleSubmit', formData);
       medplum
         .createResource<Observation>({
           resourceType: 'Observation',
           meta: {
-            profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-smokingstatus'],
+            profile: [HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-smokingstatus'],
           },
           status: 'final',
           category: [
@@ -56,7 +58,7 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
           code: {
             coding: [
               {
-                system: 'http://loinc.org',
+                system: LOINC,
                 code: '72166-2',
                 display: 'Tobacco smoking status',
               },
@@ -69,8 +71,8 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
           valueCodeableConcept: {
             coding: [
               {
-                system: 'http://snomed.info/sct',
-                version: 'http://snomed.info/sct/731000124108',
+                system: SNOMED,
+                version: SNOMED + '/731000124108',
                 code: formData.smokingStatus,
               },
             ],
@@ -92,7 +94,13 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
         <Text fz="md" fw={700}>
           Smoking Status
         </Text>
-        <Anchor href="#" onClick={open}>
+        <Anchor
+          href="#"
+          onClick={(e) => {
+            killEvent(e);
+            open();
+          }}
+        >
           + Edit
         </Anchor>
       </Group>

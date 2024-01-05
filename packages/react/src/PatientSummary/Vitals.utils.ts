@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { LOINC, UCUM, createReference } from '@medplum/core';
 import { CodeableConcept, Encounter, Observation, ObservationComponent, Patient, Quantity } from '@medplum/fhirtypes';
 
 export function getObservationValue(observations: Observation[], code: string): Quantity | undefined {
@@ -22,7 +22,10 @@ export function createObservation(
   code: string,
   title: string,
   valueQuantity: Quantity
-): Observation {
+): Observation | undefined {
+  if (!isValidNumber(valueQuantity.value)) {
+    return undefined;
+  }
   return {
     ...createBaseObservation(patient, encounter, code, title),
     valueQuantity,
@@ -34,8 +37,12 @@ export function createCompoundObservation(
   encounter: Encounter | undefined,
   code: string,
   title: string,
-  component: ObservationComponent[]
-): Observation {
+  components: ObservationComponent[]
+): Observation | undefined {
+  const component = components.filter((c) => isValidNumber(c.valueQuantity?.value));
+  if (component.length === 0) {
+    return undefined;
+  }
   return {
     ...createBaseObservation(patient, encounter, code, title),
     component,
@@ -75,7 +82,7 @@ export function createLoincCode(code: string, display: string): CodeableConcept 
       {
         code,
         display,
-        system: 'http://loinc.org',
+        system: LOINC,
       },
     ],
     text: display,
@@ -85,8 +92,12 @@ export function createLoincCode(code: string, display: string): CodeableConcept 
 export function createQuantity(value: number, unit: string): Quantity {
   return {
     value,
-    system: 'http://unitsofmeasure.org',
+    system: UCUM,
     unit,
     code: unit,
   };
+}
+
+function isValidNumber(value: number | undefined): boolean {
+  return value !== undefined && !isNaN(value) && isFinite(value);
 }
