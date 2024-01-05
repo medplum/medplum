@@ -1,4 +1,5 @@
 import {
+  ChainedSearchLink,
   Filter,
   OperationOutcomeError,
   Operator,
@@ -325,17 +326,16 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
     const { resourceType } = searchRequest;
-    // if we have a chain then we also need to resolve the reference types
-    // then we need to see if esch resolved reference matches the search type.
-    // the problem is that matchesSearchRequest doesnt have a handle to a repo
-    // or other way of resolving the resources.
-
-    // we _could_ re consitute two search requests,
-    // 1. to handle the non-chained
-    // 2. another to handle the chained, using the new resolution logic.
     const resources = this.resources.get(resourceType) ?? new Map();
     const result = [];
 
+    // matchesSearchRequest doesnt have a handle to a repo
+    // or other way of resolving the resources.
+    // TODO: does passing repo to the match.ts make sense?
+
+    // For now, to enable chained searches, we re consitute two search requests:
+    // 1. to handle the non-chained
+    // 2. another to handle the chained, resolving resources as required.
     const chainFilters: Filter[] = [];
     const normalFilters: Filter[] = [];
 
@@ -377,57 +377,64 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
   }
 
   private async matchesChain<T extends Resource>(resource: T, searchRequest: SearchRequest<T>): Promise<boolean> {
-    let matchesChain = true;
+    let toVisit: Resource[] = [resource];
     for (const chainFilter of searchRequest.filters ?? []) {
       const chain = parseChainedParameter(searchRequest.resourceType, chainFilter.code, chainFilter.value);
       for (const link of chain.chain) {
-        const matchingResources: Resource[] = [];
-        if (link.reverse) {
-          const referencedResources = this.resources.get(link.resourceType) ?? new Map<string, Resource>();
-          for (const referencedResource of referencedResources.values()) {
-            const filters: Filter[] = [
-              {
-                code: link.details.columnName,
-                operator: Operator.EQUALS,
-                value: `${resource.resourceType}/${resource.id}`,
-              },
-            ];
-            if (link.filter) {
-              filters.push(link.filter);
-            }
-            const searchRequest: SearchRequest = {
-              resourceType: link.resourceType as ResourceType,
-              filters,
-            };
-            if (matchesSearchRequest(referencedResource, searchRequest)) {
-              matchingResources.push(referencedResource);
-            }
-          }
+        let nextToVisit: Resource[] = [];
+        while (toVisit.length) {
+          const currentResource = toVisit.pop() as Resource;
+          const linkedResources = await this.resolveChainLink(currentResource, link);
+          nextToVisit = nextToVisit.concat(linkedResources);
+        }
 
-          if (!matchingResources.length) {
-            matchesChain = false;
-          }
-        } else {
-          //TODO: hacky -- is there a safer way to access this?
-          // look into using the search param perhaps?
-          const reference = resource[link.details.columnName as keyof T] as Reference;
-          const referencedResource = await this.readReference(reference);
-          if (referencedResource?.resourceType !== link.resourceType) {
-            matchesChain = false;
-          }
+        toVisit = nextToVisit;
+      }
+    }
+    return toVisit.length > 0;
+  }
 
-          if (
-            !matchesSearchRequest(referencedResource, {
-              resourceType: referencedResource.resourceType,
-              filters: link.filter ? [link.filter] : [],
-            })
-          ) {
-            matchesChain = false;
-          }
+  private async resolveChainLink<T extends Resource>(resource: T, link: ChainedSearchLink): Promise<Resource[]> {
+    const matchingResources: Resource[] = [];
+    if (link.reverse) {
+      const referencedResources = this.resources.get(link.resourceType) ?? new Map<string, Resource>();
+      const filters: Filter[] = [
+        {
+          code: link.details.columnName,
+          operator: Operator.EQUALS,
+          value: `${resource.resourceType}/${resource.id}`,
+        },
+      ];
+      if (link.filter) {
+        filters.push(link.filter);
+      }
+      const reverseLinkSearch: SearchRequest = {
+        resourceType: link.resourceType as ResourceType,
+        filters,
+      };
+      for (const referencedResource of referencedResources.values()) {
+        if (matchesSearchRequest(referencedResource, reverseLinkSearch)) {
+          matchingResources.push(referencedResource);
+        }
+      }
+    } else {
+      //TODO: hacky -- is there a safer way to access this?
+      // look into using the search param perhaps?
+      const reference = resource[link.details.columnName as keyof T] as Reference;
+      const referencedResource = await this.readReference(reference);
+      if (referencedResource?.resourceType === link.resourceType) {
+        if (
+          matchesSearchRequest(referencedResource, {
+            resourceType: referencedResource.resourceType,
+            filters: link.filter ? [link.filter] : [],
+          })
+        ) {
+          matchingResources.push(referencedResource);
         }
       }
     }
-    return matchesChain;
+
+    return matchingResources;
   }
 
   async deleteResource(resourceType: string, id: string): Promise<void> {

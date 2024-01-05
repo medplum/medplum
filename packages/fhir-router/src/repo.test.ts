@@ -8,6 +8,7 @@ import {
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
+  AuditEvent,
   Bundle,
   Observation,
   Patient,
@@ -157,6 +158,36 @@ describe('MemoryRepository', () => {
     );
 
     expect(result?.id).toEqual(practitioner.id);
+  });
+
+  test('search via chain (reverse, chained', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+
+    const observation = await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      subject: {
+        reference: `Patient/${patient.id}`,
+      },
+    });
+
+    await repo.createResource<AuditEvent>({
+      resourceType: 'AuditEvent',
+      entity: [{ what: { reference: `Observation/${observation.id}` } }],
+      action: 'C',
+    });
+
+    const result = await repo.searchOne(
+      parseSearchDefinition('Patient?_has:Observation:patient:_has:AuditEvent:entity:action=C')
+    );
+    expect(result?.id).toEqual(patient.id);
+  });
+
+  test('two independent chains', () => {
+    //TODO: we have a bug with the toVisit var
+    //it needs to be isolated to each chain
+    //then aggregated at the end.
   });
 
   test('Sort unknown search parameter', async () => {
