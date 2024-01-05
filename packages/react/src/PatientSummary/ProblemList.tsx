@@ -21,9 +21,9 @@ import { Form } from '../Form/Form';
 import { killEvent } from '../utils/dom';
 
 export interface ProblemListProps {
-  patient: Patient;
-  encounter?: Encounter;
-  problems: Condition[];
+  readonly patient: Patient;
+  readonly encounter?: Encounter;
+  readonly problems: Condition[];
 }
 
 export function ProblemList(props: ProblemListProps): JSX.Element {

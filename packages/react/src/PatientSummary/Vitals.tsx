@@ -16,9 +16,9 @@ import {
 } from './Vitals.utils';
 
 interface ObservationMeta {
-  code: string;
-  title: string;
-  unit: string;
+  readonly code: string;
+  readonly title: string;
+  readonly unit: string;
 }
 
 const LOINC_CODES: Record<string, ObservationMeta> = {
@@ -73,9 +73,9 @@ const SYSTOLIC = '8480-6';
 const DIASTOLIC = '8462-4';
 
 export interface VitalsProps {
-  patient: Patient;
-  encounter?: Encounter;
-  vitals: Observation[];
+  readonly patient: Patient;
+  readonly encounter?: Encounter;
+  readonly vitals: Observation[];
 }
 
 export function Vitals(props: VitalsProps): JSX.Element {

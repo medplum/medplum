@@ -10,9 +10,9 @@ import { Form } from '../Form/Form';
 import { killEvent } from '../utils/dom';
 
 export interface MedicationsProps {
-  patient: Patient;
-  encounter?: Encounter;
-  medicationRequests: MedicationRequest[];
+  readonly patient: Patient;
+  readonly encounter?: Encounter;
+  readonly medicationRequests: MedicationRequest[];
 }
 
 export function Medications(props: MedicationsProps): JSX.Element {

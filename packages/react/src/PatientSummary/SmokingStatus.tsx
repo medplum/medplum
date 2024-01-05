@@ -23,9 +23,9 @@ const smokingStatusOptions: Record<string, string> = {
 };
 
 export interface SmokingStatusProps {
-  patient: Patient;
-  encounter?: Encounter;
-  smokingStatus?: Observation;
+  readonly patient: Patient;
+  readonly encounter?: Encounter;
+  readonly smokingStatus?: Observation;
 }
 
 export function SmokingStatus(props: SmokingStatusProps): JSX.Element {

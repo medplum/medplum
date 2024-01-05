@@ -10,9 +10,9 @@ import { Form } from '../Form/Form';
 import { killEvent } from '../utils/dom';
 
 export interface AllergiesProps {
-  patient: Patient;
-  encounter?: Encounter;
-  allergies: AllergyIntolerance[];
+  readonly patient: Patient;
+  readonly encounter?: Encounter;
+  readonly allergies: AllergyIntolerance[];
 }
 
 export function Allergies(props: AllergiesProps): JSX.Element {
