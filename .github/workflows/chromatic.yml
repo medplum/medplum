@@ -20,8 +20,9 @@ jobs:
       - name: Publish @medplum/react Chromatic
         uses: chromaui/action@v10
         with:
-          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          projectToken: chpt_429b596edaecafb
           workingDir: packages/react
           buildScriptName: storybook
+          exitOnceUploaded: true
           exitZeroOnChanges: true
           onlyChanged: true
