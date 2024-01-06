@@ -23,5 +23,6 @@ jobs:
           projectToken: chpt_429b596edaecafb
           workingDir: packages/react
           buildScriptName: storybook
+          exitOnceUploaded: true
           exitZeroOnChanges: true
           onlyChanged: true
