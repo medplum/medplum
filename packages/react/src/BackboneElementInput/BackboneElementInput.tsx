@@ -2,7 +2,7 @@ import { tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useContext, useMemo, useState } from 'react';
 import { ElementsInput } from '../ElementsInput/ElementsInput';
-import { BackboneElementContext, buildBackboneElementContext } from './BackboneElementInput.utils';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 
 export interface BackboneElementInputProps {
   /** Type name the backbone element represents */
@@ -20,13 +20,9 @@ export interface BackboneElementInputProps {
 export function BackboneElementInput(props: BackboneElementInputProps): JSX.Element {
   const { typeName } = props;
   const [value, setValue] = useState<any>(props.defaultValue ?? {});
-  const backboneContext = useContext(BackboneElementContext);
-  const profileUrl = props.profileUrl ?? backboneContext.profileUrl;
+  const elementsContext = useContext(ElementsContext);
+  const profileUrl = props.profileUrl ?? elementsContext.profileUrl;
   const typeSchema = useMemo(() => tryGetDataType(typeName, profileUrl), [typeName, profileUrl]);
-
-  const context = useMemo(() => {
-    return buildBackboneElementContext(typeSchema, profileUrl);
-  }, [typeSchema, profileUrl]);
 
   if (!typeSchema) {
     return <div>{typeName}&nbsp;not implemented</div>;
@@ -40,14 +36,13 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   }
 
   return (
-    <BackboneElementContext.Provider value={context}>
-      <ElementsInput
-        type={typeSchema.type}
-        elements={typeSchema.elements}
-        defaultValue={value}
-        onChange={setValueWrapper}
-        outcome={props.outcome}
-      />
-    </BackboneElementContext.Provider>
+    <ElementsInput
+      type={typeSchema.type}
+      elements={typeSchema.elements}
+      defaultValue={value}
+      onChange={setValueWrapper}
+      outcome={props.outcome}
+      typeSchema={typeSchema}
+    />
   );
 }
