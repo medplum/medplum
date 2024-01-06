@@ -49,7 +49,7 @@ place to share with us. ([click here to open a new issue](https://github.com/med
 Did you learn how to do something using Medplum that wasn't obvious on your first try? By contributing your new knowledge
 to our documentation, you can help others who might have a similar use case!
 
-Our documentation is hosted on [medplum.com/docs](/docs), but it is built from [Markdown](https://www.markdownguide.org/)
+Our documentation is hosted on [medplum.com/docs](https://www.medplum.com/docs), but it is built from [Markdown](https://www.markdownguide.org/)
 files in our [`docs` package](https://github.com/medplum/medplum/tree/main/packages/docs/docs).
 
 For relatively small changes, you can edit files directly from your web browser on [Github.dev](https://github.dev/medplum/medplum/blob/main/packages/docs/docs/home.md)
