@@ -2,7 +2,7 @@ import { Group, TextInput } from '@mantine/core';
 import { Identifier } from '@medplum/fhirtypes';
 import { useContext, useMemo, useState } from 'react';
 import { getErrorsForInput } from '../utils/outcomes';
-import { BackboneElementContext } from '../BackboneElementInput/BackboneElementInput.utils';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export type IdentifierInputProps = ComplexTypeInputProps<Identifier>;
@@ -10,7 +10,7 @@ export type IdentifierInputProps = ComplexTypeInputProps<Identifier>;
 export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
   const { path, outcome } = props;
   const [value, setValue] = useState(props.defaultValue);
-  const { getModifiedNestedElement } = useContext(BackboneElementContext);
+  const { getModifiedNestedElement } = useContext(ElementsContext);
 
   const [systemElement, valueElement] = useMemo(
     () => ['system', 'value'].map((field) => getModifiedNestedElement(path + '.' + field)),

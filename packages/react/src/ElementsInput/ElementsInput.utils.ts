@@ -1,4 +1,4 @@
-import { InternalSchemaElement, InternalTypeSchema } from '@medplum/core';
+import { InternalSchemaElement, InternalTypeSchema, isPopulated } from '@medplum/core';
 import React from 'react';
 
 /**
@@ -20,11 +20,7 @@ function splitOnceRight(str: string, delim: string): [string, string] {
   return [beginning, last];
 }
 
-export type FlatWalkedPaths = {
-  [path: string]: InternalSchemaElement;
-};
-
-export type BackboneElementContextType = {
+export type ElementsContextType = {
   debugMode: boolean;
   profileUrl: string | undefined;
   /**
@@ -36,33 +32,46 @@ export type BackboneElementContextType = {
   getModifiedNestedElement: (nestedElementPath: string) => InternalSchemaElement | undefined;
 };
 
-export const BackboneElementContext = React.createContext<BackboneElementContextType>({
+export const ElementsContext = React.createContext<ElementsContextType>({
   profileUrl: undefined,
   debugMode: false,
   getModifiedNestedElement: () => undefined,
 });
 
-export function buildBackboneElementContext(
-  typeSchema: InternalTypeSchema | undefined,
+export function buildElementsContext(
+  // typeSchema: InternalTypeSchema | undefined,
+  elements?: InternalTypeSchema['elements'],
+  parentType?: string,
   profileUrl?: string | undefined,
   debugMode?: boolean | undefined
-): BackboneElementContextType {
-  const nestedPaths: FlatWalkedPaths = Object.create(null);
+): ElementsContextType {
+  const nestedPaths: Record<string, InternalSchemaElement> = Object.create(null);
 
-  function getModifiedNestedElement(nestedElementPath: string): InternalSchemaElement | undefined {
+  function getModifiedNestedElement(nestedElementPath: string): InternalSchemaElement {
     return nestedPaths[nestedElementPath];
   }
 
-  const elements = typeSchema?.elements;
+  // if (typeSchema?.elements !== elements) {
+  //   console.log('Inconsistent typeSchema.elements !== elements', typeSchema?.elements, elements);
+  // }
+  // if (typeSchema?.type !== parentType) {
+  //   console.log('Inconsistent typeSchema.type !== parentType', typeSchema?.type, parentType);
+  // }
+
   if (elements) {
     const seenKeys = new Set<string>();
     for (const [key, property] of Object.entries(elements)) {
       const [beginning, _last] = splitOnceRight(key, '.');
       // assume paths are hierarchically sorted, e.g. identifier comes before identifier.id
       if (seenKeys.has(beginning)) {
-        nestedPaths[typeSchema.type + '.' + key] = property;
+        nestedPaths[parentType + '.' + key] = property;
       }
       seenKeys.add(key);
+    }
+    if (isPopulated(nestedPaths)) {
+      console.log('nestedPaths', nestedPaths);
+    } else {
+      console.log('No nestedPaths', elements);
     }
   }
 
