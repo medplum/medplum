@@ -19,7 +19,6 @@ import {
   Parameters,
   Patient,
   Practitioner,
-  ProjectSecret,
   QuestionnaireResponse,
   QuestionnaireResponseItemAnswer,
   Reference,
@@ -143,7 +142,7 @@ const availableDiagnoses: Record<string, string> = {
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<void> {
   // Parse the secrets
   // Make sure all required Health Gorilla config values are present
-  const config = getHealthGorillaConfig(event);
+  const config = getHealthGorillaConfig();
 
   // Parse the QuestionnaireResponse
   // Make sure that required fields are present
@@ -296,25 +295,23 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 /**
  * Returns the Health Gorilla config settings from the Medplum project secrets.
  * If any required config values are missing, this method will throw and the bot will terminate.
- * @param event - The bot input event.
  * @returns The Health Gorilla config settings.
  */
-function getHealthGorillaConfig(event: BotEvent): HealthGorillaConfig {
-  const secrets = event.secrets;
+function getHealthGorillaConfig(): HealthGorillaConfig {
   return {
-    baseUrl: requireStringSecret(secrets, 'HEALTH_GORILLA_BASE_URL'),
-    audienceUrl: requireStringSecret(secrets, 'HEALTH_GORILLA_AUDIENCE_URL'),
-    clientId: requireStringSecret(secrets, 'HEALTH_GORILLA_CLIENT_ID'),
-    clientSecret: requireStringSecret(secrets, 'HEALTH_GORILLA_CLIENT_SECRET'),
-    clientUri: requireStringSecret(secrets, 'HEALTH_GORILLA_CLIENT_URI'),
-    userLogin: requireStringSecret(secrets, 'HEALTH_GORILLA_USER_LOGIN'),
-    tenantId: requireStringSecret(secrets, 'HEALTH_GORILLA_TENANT_ID'),
-    subtenantId: requireStringSecret(secrets, 'HEALTH_GORILLA_SUBTENANT_ID'),
-    subtenantAccountNumber: requireStringSecret(secrets, 'HEALTH_GORILLA_SUBTENANT_ACCOUNT_NUMBER'),
-    scopes: requireStringSecret(secrets, 'HEALTH_GORILLA_SCOPES'),
-    callbackBotId: requireStringSecret(secrets, 'HEALTH_GORILLA_CALLBACK_BOT_ID'),
-    callbackClientId: requireStringSecret(secrets, 'HEALTH_GORILLA_CALLBACK_CLIENT_ID'),
-    callbackClientSecret: requireStringSecret(secrets, 'HEALTH_GORILLA_CALLBACK_CLIENT_SECRET'),
+    baseUrl: requireEnvVar('HEALTH_GORILLA_BASE_URL'),
+    audienceUrl: requireEnvVar('HEALTH_GORILLA_AUDIENCE_URL'),
+    clientId: requireEnvVar('HEALTH_GORILLA_CLIENT_ID'),
+    clientSecret: requireEnvVar('HEALTH_GORILLA_CLIENT_SECRET'),
+    clientUri: requireEnvVar('HEALTH_GORILLA_CLIENT_URI'),
+    userLogin: requireEnvVar('HEALTH_GORILLA_USER_LOGIN'),
+    tenantId: requireEnvVar('HEALTH_GORILLA_TENANT_ID'),
+    subtenantId: requireEnvVar('HEALTH_GORILLA_SUBTENANT_ID'),
+    subtenantAccountNumber: requireEnvVar('HEALTH_GORILLA_SUBTENANT_ACCOUNT_NUMBER'),
+    scopes: requireEnvVar('HEALTH_GORILLA_SCOPES'),
+    callbackBotId: requireEnvVar('HEALTH_GORILLA_CALLBACK_BOT_ID'),
+    callbackClientId: requireEnvVar('HEALTH_GORILLA_CALLBACK_CLIENT_ID'),
+    callbackClientSecret: requireEnvVar('HEALTH_GORILLA_CALLBACK_CLIENT_SECRET'),
   };
 }
 
@@ -410,12 +407,12 @@ export async function ensureSubscription(
   console.log(`Created new subscription for "${criteria}": ${newSubscription.id}`);
 }
 
-function requireStringSecret(secrets: Record<string, ProjectSecret>, name: string): string {
-  const secret = secrets[name];
-  if (!secret?.valueString) {
-    throw new Error(`Missing secret: ${name}`);
+function requireEnvVar(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing env var: ${name}`);
   }
-  return secret.valueString;
+  return value;
 }
 
 function assertNotEmpty<T>(value: T | undefined, message: string): asserts value is T {
