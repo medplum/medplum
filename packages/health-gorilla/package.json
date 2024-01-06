@@ -40,14 +40,7 @@
   },
   "dependencies": {
     "@medplum/core": "*",
-    "@medplum/fhirtypes": "*",
-    "node-fetch": "2.7.0"
-  },
-  "devDependencies": {
-    "@types/node-fetch": "2.6.9"
-  },
-  "peerDependencies": {
-    "node-fetch": "^2.7.0"
+    "@medplum/fhirtypes": "*"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -1,5 +1,5 @@
 {
-  "testEnvironment": "jsdom",
+  "testEnvironment": "node",
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },
@@ -7,6 +7,5 @@
   "testMatch": ["**/src/**/*.test.ts"],
   "coverageDirectory": "coverage",
   "coverageReporters": ["json", "text"],
-  "collectCoverageFrom": ["**/src/**/*.ts"],
-  "setupFilesAfterEnv": ["./test.setup.cjs"]
+  "collectCoverageFrom": ["**/src/**/*.ts"]
 }

@@ -1,7 +1,3 @@
 {
-  "extends": "../../api-extractor.json",
-  "docModel": {
-    "enabled": true,
-    "apiJsonFilePath": "./dist/api/core.api.json"
-  }
+  "extends": "../../api-extractor.json"
 }

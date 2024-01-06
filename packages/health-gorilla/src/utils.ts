@@ -1,6 +1,5 @@
-import { encodeBase64, MedplumClient } from '@medplum/core';
+import { encodeBase64, MedplumClient, MedplumClientOptions } from '@medplum/core';
 import { Parameters, RequestGroup, Subscription } from '@medplum/fhirtypes';
-import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
 
 export interface HealthGorillaConfig {
@@ -45,14 +44,17 @@ export function getHealthGorillaConfig(): HealthGorillaConfig {
 /**
  * Connects to the Health Gorilla API and returns a FHIR client.
  * @param config - The Health Gorilla config settings.
+ * @param clientOptions - Optional FHIR client options.
  * @returns The FHIR client.
  */
-export async function connectToHealthGorilla(config: HealthGorillaConfig): Promise<MedplumClient> {
+export async function connectToHealthGorilla(
+  config: HealthGorillaConfig,
+  clientOptions?: MedplumClientOptions
+): Promise<MedplumClient> {
   const healthGorilla = new MedplumClient({
-    fetch,
+    ...clientOptions,
     baseUrl: config.baseUrl,
     tokenUrl: config.baseUrl + '/oauth/token',
-    onUnauthenticated: () => console.error('Unauthenticated'),
   });
 
   const header = {
