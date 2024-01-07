@@ -59,6 +59,9 @@ describe('App', () => {
       await sleep(100);
     }
 
+    // Send an error message
+    wsClient.send(Buffer.from(JSON.stringify({ type: 'agent:error', body: 'details' })));
+
     // Send an unknown message type
     wsClient.send(Buffer.from(JSON.stringify({ type: 'unknown' })));
 
