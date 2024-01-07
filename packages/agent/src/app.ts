@@ -96,6 +96,9 @@ export class App {
           case 'agent:transmit:request':
             this.pushMessage(command);
             break;
+          case 'agent:error':
+            this.log.error(command.body);
+            break;
           default:
             this.log.error(`Unknown message type: ${command.type}`);
         }
@@ -142,6 +145,11 @@ export class App {
       this.webSocket = undefined;
     }
     this.log.info('Medplum service stopped successfully');
+  }
+
+  async getAccessToken(): Promise<string> {
+    await this.medplum.refreshIfExpired();
+    return this.medplum.getAccessToken() as string;
   }
 
   addToWebSocketQueue(message: AgentMessage): void {

@@ -54,7 +54,7 @@ import {
   validateFhircastSubscriptionRequest,
 } from './fhircast';
 import { Hl7Message } from './hl7';
-import { isJwt, isMedplumAccessToken, parseJWTPayload } from './jwt';
+import { isJwt, isMedplumAccessToken, parseJWTPayload, tryGetJwtExpiration } from './jwt';
 import {
   OperationOutcomeError,
   badRequest,
@@ -660,6 +660,7 @@ export class MedplumClient extends EventTarget {
   private clientSecret?: string;
   private autoBatchTimerId?: any;
   private accessToken?: string;
+  private accessTokenExpires?: number;
   private refreshToken?: string;
   private refreshPromise?: Promise<any>;
   private profilePromise?: Promise<any>;
@@ -815,6 +816,7 @@ export class MedplumClient extends EventTarget {
     this.requestCache?.clear();
     this.accessToken = undefined;
     this.refreshToken = undefined;
+    this.accessTokenExpires = undefined;
     this.sessionDetails = undefined;
     this.medplumServer = undefined;
     this.dispatchEvent({ type: 'change' });
@@ -2447,6 +2449,7 @@ export class MedplumClient extends EventTarget {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
     this.sessionDetails = undefined;
+    this.accessTokenExpires = tryGetJwtExpiration(accessToken);
     this.medplumServer = isMedplumAccessToken(accessToken);
   }
 
@@ -2745,9 +2748,7 @@ export class MedplumClient extends EventTarget {
    * @returns The JSON content body if available.
    */
   private async request<T>(method: string, url: string, options: RequestInit = {}): Promise<T> {
-    if (this.refreshPromise) {
-      await this.refreshPromise;
-    }
+    await this.refreshIfExpired();
 
     options.method = method;
     this.addFetchOptionsDefaults(options);
@@ -3080,6 +3081,22 @@ export class MedplumClient extends EventTarget {
     }
 
     return this.fetchTokens(formBody);
+  }
+
+  /**
+   * Refreshes the access token using the refresh token if available.
+   * @returns Promise to refresh the access token.
+   */
+  refreshIfExpired(): Promise<void> {
+    // If (1) not already refreshing, (2) we have an access token, and (3) the access token is expired,
+    // then start a refresh.
+    if (!this.refreshPromise && this.accessTokenExpires !== undefined && this.accessTokenExpires < Date.now()) {
+      // The result of the `refresh()` function is cached in `this.refreshPromise`,
+      // so we can safely ignore the return value here.
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      this.refresh();
+    }
+    return this.refreshPromise ?? Promise.resolve();
   }
 
   /**

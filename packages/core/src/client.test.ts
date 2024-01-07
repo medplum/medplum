@@ -1065,11 +1065,26 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
 
     const loginResponse = await client.startLogin({ email: 'admin@example.com', password: 'admin' });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    fetch.mockClear();
+
     await client.processCode(loginResponse.code as string);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    fetch.mockClear();
 
     const result = await client.readResource('Patient', '123');
     expect(result).toBeDefined();
-    expect(fetch).toHaveBeenCalledTimes(4);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    fetch.mockClear();
+
+    // Set an expired token
+    tokenExpired = true;
+    client.setAccessToken(createFakeJwt({ exp: 0 }), createFakeJwt({ client_id: '123' }));
+    client.invalidateAll();
+
+    const result2 = await client.readResource('Patient', '123');
+    expect(result2).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(3);
   });
 
   test('Read expired and refresh with unAuthenticated callback', async () => {
