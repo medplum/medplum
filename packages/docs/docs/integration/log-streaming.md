@@ -9,7 +9,7 @@ These instructions primarily apply to self-hosted users. To set up log streaming
 
 :::
 
-Medplum can be configured to stream service logs to your existing log management tools, liek [SumoLogic](https://www.sumologic.com/), [DataDog](https://www.datadoghq.com/), or [Splunk](https://www.splunk.com/). Centralizing log management allows for better observability and auditability, and offers real-time analytics capabilities.
+Medplum can be configured to stream service logs to your existing log management tools, like [SumoLogic](https://www.sumologic.com/), [DataDog](https://www.datadoghq.com/), or [Splunk](https://www.splunk.com/). Centralizing log management allows for better observability and auditability, and offers real-time analytics capabilities.
 
 ## Medplum Logs
 
