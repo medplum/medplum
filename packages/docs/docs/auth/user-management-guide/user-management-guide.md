@@ -280,7 +280,7 @@ Check the box under the `Admin` label, and then save the user. This user will no
 
 To _invite_ a user as an admin in the app, please see the [Invite a User docs](https://www.medplum.com/docs/app/invite).
 
-Promoting a user to admin can also be done programatically. To do so, you will need to update the user's `ProjectMembership`.
+Promoting a user to admin can also be done programmatically. To do so, you will need to update the user's `ProjectMembership`.
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
