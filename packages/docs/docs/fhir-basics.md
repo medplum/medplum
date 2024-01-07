@@ -99,7 +99,7 @@ The example below shows an example [`Patient`][patient] resource. Here we can se
 
 When working with FHIR, clinical data is often split across multiple resources. For example a prescription is related to the receiving patient, and a diagnostic report may consist of multiple observations.
 
-To create link between objects, we use [`Reference`][reference] elements. A FHIR [`Reference`][reference] an element element that functions like a **foreign key** in traditional relational databases to create 1-to-1 or many-to-many relationships between resources.
+To create a link between objects, we use [`Reference`][reference] elements. A FHIR [`Reference`][reference] is an element that functions like a **foreign key** in traditional relational databases to create 1-to-1 or many-to-many relationships between resources.
 
 [`Reference`][reference] elements have the following structure:
 
