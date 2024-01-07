@@ -1,6 +1,6 @@
 {
   "name": "@medplum/health-gorilla",
-  "version": "2.2.6",
+  "version": "2.2.7",
   "description": "Medplum Health Gorilla SDK",
   "homepage": "https://www.medplum.com/",
   "bugs": {
