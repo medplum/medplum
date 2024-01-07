@@ -132,18 +132,14 @@ export class HealthGorillaRequestGroupBuilder {
    */
   async getPractitioner(healthGorilla: MedplumClient, practitioner: Practitioner): Promise<Practitioner> {
     const healthGorillaId = getIdentifier(practitioner, HEALTH_GORILLA_SYSTEM);
-    if (!healthGorillaId) {
-      throw new Error('Practitioner is missing Health Gorilla ID');
-    }
+    assertNotEmpty(healthGorillaId, 'Practitioner is missing Health Gorilla ID');
 
     this.practitioner = await healthGorilla.readResource('Practitioner', healthGorillaId);
     return this.practitioner as Practitioner;
   }
 
   async setupAccount(medplum: MedplumClient, medplumPatient: Patient, medplumAccount: Account): Promise<Account> {
-    if (!this.patient) {
-      throw new Error('Missing patient');
-    }
+    assertNotEmpty(this.patient, 'Missing patient');
 
     const resultAccount: Account = {
       ...medplumAccount,
@@ -200,9 +196,7 @@ export class HealthGorillaRequestGroupBuilder {
   }
 
   createServiceRequest(testId: string, answers: Record<string, QuestionnaireResponseItemAnswer>): ServiceRequest {
-    if (!this.patient) {
-      throw new Error('Missing patient');
-    }
+    assertNotEmpty(this.patient, 'Missing patient');
 
     const code = testId.substring(testId.indexOf('-') + 1);
     const priority = answers[testId + '-priority']?.valueCoding?.code ?? 'routine';
@@ -270,27 +264,13 @@ export class HealthGorillaRequestGroupBuilder {
   }
 
   buildRequestGroup(): RequestGroup {
-    if (!this.account) {
-      throw new Error('Missing account');
-    }
-    if (!this.authorizedBy) {
-      throw new Error('Missing authorizedBy');
-    }
-    if (!this.patient) {
-      throw new Error('Missing patient');
-    }
-    if (!this.performer) {
-      throw new Error('Missing performer');
-    }
-    if (!this.practitioner) {
-      throw new Error('Missing practitioner');
-    }
-    if (!this.practitionerOrganization) {
-      throw new Error('Missing practitionerOrganization');
-    }
-    if (!this.tests) {
-      throw new Error('Missing tests');
-    }
+    assertNotEmpty(this.account, 'Missing account');
+    assertNotEmpty(this.authorizedBy, 'Missing authorizedBy');
+    assertNotEmpty(this.patient, 'Missing patient');
+    assertNotEmpty(this.performer, 'Missing performer');
+    assertNotEmpty(this.practitioner, 'Missing practitioner');
+    assertNotEmpty(this.practitionerOrganization, 'Missing practitionerOrganization');
+    assertNotEmpty(this.tests, 'Missing tests');
 
     const contained: Resource[] = [
       { ...this.account, id: 'account' },

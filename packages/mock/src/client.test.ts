@@ -1,19 +1,19 @@
 import {
-  allOk,
   ClientStorage,
   ContentType,
-  getReferenceString,
-  indexSearchParameterBundle,
-  indexStructureDefinitionBundle,
   LoginState,
+  MockAsyncClientStorage,
   NewPatientRequest,
   NewProjectRequest,
   NewUserRequest,
   OperationOutcomeError,
-  MockAsyncClientStorage,
+  allOk,
+  getReferenceString,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, CodeableConcept, Patient, SearchParameter, ServiceRequest } from '@medplum/fhirtypes';
+import { Bundle, CodeableConcept, Patient, SearchParameter, ServiceRequest, Subscription } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'crypto';
 import { TextEncoder } from 'util';
 import { MockClient } from './client';
@@ -635,6 +635,22 @@ describe('MockClient', () => {
 
     const existingPatient = await medplum.searchOne('Patient', 'identifier=999-47-5984');
     expect(existingPatient).toBeDefined();
+  });
+
+  test('Subscription search', async () => {
+    const medplum = new MockClient();
+    const subscriptions = await medplum.searchResources('Subscription');
+    console.log(subscriptions);
+    expect(subscriptions.length).toBeGreaterThan(0);
+
+    await medplum.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+    });
+
+    const subscriptions2 = await medplum.searchResources('Subscription');
+    console.log(subscriptions2);
+    expect(subscriptions2.length).toEqual(subscriptions.length + 1);
   });
 
   test('Project admin', async () => {

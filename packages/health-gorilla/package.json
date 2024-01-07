@@ -42,6 +42,9 @@
     "@medplum/core": "*",
     "@medplum/fhirtypes": "*"
   },
+  "devDependencies": {
+    "@medplum/mock": "*"
+  },
   "engines": {
     "node": ">=18.0.0"
   }
