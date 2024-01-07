@@ -138,7 +138,7 @@ export class HealthGorillaRequestGroupBuilder {
     return this.practitioner as Practitioner;
   }
 
-  async setupAccount(medplum: MedplumClient, medplumPatient: Patient, medplumAccount: Account): Promise<Account> {
+  async setupAccount(medplum: MedplumClient, medplumAccount: Account): Promise<Account> {
     assertNotEmpty(this.patient, 'Missing patient');
 
     const resultAccount: Account = {
@@ -151,48 +151,59 @@ export class HealthGorillaRequestGroupBuilder {
 
     if (medplumAccount.coverage) {
       for (let i = 0; i < medplumAccount.coverage.length; i++) {
-        const accountCoverage = medplumAccount.coverage[i];
-        const coverageRef = accountCoverage?.coverage;
-        if (coverageRef) {
-          const medplumCoverage = await medplum.readReference(coverageRef);
-          const resultCoverage: Coverage = {
-            ...medplumCoverage,
-            id: 'coverage' + this.coverages.length,
-            beneficiary: createReference(this.patient),
-            payor: undefined,
-            subscriber: undefined,
-          };
-
-          ((resultAccount.coverage as AccountCoverage[])[i].coverage as Reference).reference = '#' + resultCoverage.id;
-          this.coverages = append(this.coverages, resultCoverage);
-
-          if (medplumCoverage.payor) {
-            for (const payorRef of medplumCoverage.payor) {
-              // Payors must be Organizations with Health Gorilla identifiers
-              const medplumPayor = await medplum.readReference(payorRef as Reference<Organization>);
-              resultCoverage.payor = append(resultCoverage.payor, {
-                reference: 'Organization/' + getIdentifier(medplumPayor, HEALTH_GORILLA_SYSTEM),
-              });
-            }
-          }
-
-          const subscriberRef = medplumCoverage.subscriber;
-          if (subscriberRef) {
-            const medplumSubscriber = await medplum.readReference(subscriberRef as Reference<RelatedPerson>);
-            const resultSubscriber = {
-              ...medplumSubscriber,
-              id: 'subscriber' + this.subscribers.length,
-              patient: createReference(this.patient),
-            };
-            resultCoverage.subscriber = { reference: '#' + resultSubscriber.id };
-            this.subscribers = append(this.subscribers, resultSubscriber);
-          }
-        }
+        await this.setupCoverage(medplum, medplumAccount.coverage[i], (resultAccount.coverage as AccountCoverage[])[i]);
       }
     }
 
     this.account = resultAccount;
     return resultAccount;
+  }
+
+  async setupCoverage(
+    medplum: MedplumClient,
+    accountCoverage: AccountCoverage,
+    resultAccountCoverage: AccountCoverage
+  ): Promise<void> {
+    assertNotEmpty(this.patient, 'Missing patient');
+
+    const coverageRef = accountCoverage?.coverage;
+    if (!coverageRef) {
+      return;
+    }
+
+    const medplumCoverage = await medplum.readReference(coverageRef);
+    const resultCoverage: Coverage = {
+      ...medplumCoverage,
+      id: 'coverage' + this.coverages.length,
+      beneficiary: createReference(this.patient),
+      payor: undefined,
+      subscriber: undefined,
+    };
+
+    (resultAccountCoverage.coverage as Reference).reference = '#' + resultCoverage.id;
+    this.coverages = append(this.coverages, resultCoverage);
+
+    if (medplumCoverage.payor) {
+      for (const payorRef of medplumCoverage.payor) {
+        // Payors must be Organizations with Health Gorilla identifiers
+        const medplumPayor = await medplum.readReference(payorRef as Reference<Organization>);
+        resultCoverage.payor = append(resultCoverage.payor, {
+          reference: 'Organization/' + getIdentifier(medplumPayor, HEALTH_GORILLA_SYSTEM),
+        });
+      }
+    }
+
+    const subscriberRef = medplumCoverage.subscriber;
+    if (subscriberRef) {
+      const medplumSubscriber = await medplum.readReference(subscriberRef as Reference<RelatedPerson>);
+      const resultSubscriber = {
+        ...medplumSubscriber,
+        id: 'subscriber' + this.subscribers.length,
+        patient: createReference(this.patient),
+      };
+      resultCoverage.subscriber = { reference: '#' + resultSubscriber.id };
+      this.subscribers = append(this.subscribers, resultSubscriber);
+    }
   }
 
   createServiceRequest(testId: string, answers: Record<string, QuestionnaireResponseItemAnswer>): ServiceRequest {

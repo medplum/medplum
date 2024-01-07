@@ -76,7 +76,7 @@ describe('Health Gorilla RequestGroup builder', () => {
       await builder.getPractitioner(healthGorilla, medplumPractitioner);
 
       // Setup the Account, Coverage, and Subscriber
-      await builder.setupAccount(medplum, medplumPatient, medplumAccount);
+      await builder.setupAccount(medplum, medplumAccount);
 
       // Get the tenant organization
       // This is a special organization that is not available in the Health Gorilla API
@@ -230,7 +230,7 @@ describe('Health Gorilla RequestGroup builder', () => {
     await builder.getPractitioner(healthGorilla, medplumPractitioner);
 
     // Setup the Account, Coverage, and Subscriber
-    await builder.setupAccount(medplum, medplumPatient, medplumAccount);
+    await builder.setupAccount(medplum, medplumAccount);
 
     // Get the tenant organization
     // This is a special organization that is not available in the Health Gorilla API
@@ -299,10 +299,11 @@ describe('Health Gorilla RequestGroup builder', () => {
   });
 
   test('AOE response', async () => {
+    const medplum = new MockClient();
     const b = new HealthGorillaRequestGroupBuilder();
-    b.account = { resourceType: 'Account' };
     b.authorizedBy = { resourceType: 'Organization' };
     b.patient = { resourceType: 'Patient' };
+    await b.setupAccount(medplum, { resourceType: 'Account', coverage: [{}] });
     b.performer = { resourceType: 'Organization' };
     b.practitioner = { resourceType: 'Practitioner' };
     b.practitionerOrganization = { resourceType: 'Organization' };
