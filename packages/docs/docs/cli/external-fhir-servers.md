@@ -243,6 +243,6 @@ The Medplum CLI uses Medplum [TypescriptSDK](/docs/sdk) to power the functionali
 ## Related Resources
 
 - [Epic FHIR Test Environment](https://fhir.epic.com/Developer/Apps)
-- [eCLinicalworks FHIR documentation](https://fhir.eclinicalworks.com/ecwopendev/documentation#)
+- [eClinicalworks FHIR documentation](https://fhir.eclinicalworks.com/ecwopendev/documentation#)
 - [Cerner FHIR Documentation](https://fhir.cerner.com/millennium/r4/#open-sandbox)
 - [Health Gorilla FHIR Documentation](https://developer.healthgorilla.com/docs/oauth20)

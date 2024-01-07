@@ -188,7 +188,7 @@ medplum delete Patient/$id
 
 ### Project
 
-`project` will have administration commands for visibilty and management
+`project` will have administration commands for visibility and management
 
 #### `current`
 
@@ -267,7 +267,7 @@ medplum aws describe <name>
 
 #### update-app
 
-Updates the app S3 buckeet in a Medplum deployment to the latest version.
+Updates the app S3 bucket in a Medplum deployment to the latest version.
 
 ```bash
 medplum aws update-app <name>
