@@ -30,6 +30,7 @@ packages/generator/dist/
 packages/generator/output/
 packages/graphiql/dist/
 packages/graphiql/public/
+packages/health-gorilla/dist/
 packages/hl7/dist/
 packages/mock/dist/
 packages/react/dist/

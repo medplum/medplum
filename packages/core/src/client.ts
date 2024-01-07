@@ -1306,7 +1306,7 @@ export class MedplumClient extends EventTarget {
     options?: RequestInit
   ): ReadablePromise<Bundle<ExtractResource<K>>> {
     const url = this.fhirSearchUrl(resourceType, query);
-    const cacheKey = url.toString() + '-search';
+    const cacheKey = 'search-' + url.toString();
     const cached = this.getCacheEntry(cacheKey, options);
     if (cached) {
       return cached.value;
@@ -1356,7 +1356,7 @@ export class MedplumClient extends EventTarget {
     const url = this.fhirSearchUrl(resourceType, query);
     url.searchParams.set('_count', '1');
     url.searchParams.sort();
-    const cacheKey = url.toString() + '-searchOne';
+    const cacheKey = 'searchOne-' + url.toString();
     const cached = this.getCacheEntry(cacheKey, options);
     if (cached) {
       return cached.value;
@@ -1396,7 +1396,7 @@ export class MedplumClient extends EventTarget {
     options?: RequestInit
   ): ReadablePromise<ResourceArray<ExtractResource<K>>> {
     const url = this.fhirSearchUrl(resourceType, query);
-    const cacheKey = url.toString() + '-searchResources';
+    const cacheKey = 'searchResources-' + url.toString();
     const cached = this.getCacheEntry(cacheKey, options);
     if (cached) {
       return cached.value;
