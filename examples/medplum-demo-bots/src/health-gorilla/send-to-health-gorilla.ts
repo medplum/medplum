@@ -148,9 +148,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // Make sure that required fields are present
   const answers = getQuestionnaireAnswers(event.input);
 
-  const patient = answers.patient?.valueReference;
+  const patient = event.input.subject;
   if (!patient) {
-    throw new Error('QuestionnaireResponse is missing patient');
+    throw new Error('QuestionnaireResponse is missing subject (patient)');
   }
 
   const account = answers.account?.valueReference;
@@ -192,7 +192,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   await builder.getPractitioner(healthGorilla, medplumPractitioner);
 
   // Setup the Account, Coverage, and Subscriber
-  await builder.setupAccount(medplum, medplumPatient, medplumAccount);
+  await builder.setupAccount(medplum, medplumAccount);
 
   // Get the tenant organization
   // This is a special organization that is not available in the Health Gorilla API
@@ -580,7 +580,7 @@ class HealthGorillaRequestGroupBuilder {
     return this.practitioner as Practitioner;
   }
 
-  async setupAccount(medplum: MedplumClient, medplumPatient: Patient, medplumAccount: Account): Promise<Account> {
+  async setupAccount(medplum: MedplumClient, medplumAccount: Account): Promise<Account> {
     if (!this.patient) {
       throw new Error('Missing patient');
     }
