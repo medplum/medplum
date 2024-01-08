@@ -87,7 +87,10 @@ Use the Medplum "additional containers" feature to add the AWS CloudWatch Agent 
     {
       "name": "cloudwatch-agent",
       "image": "amazon/cloudwatch-agent:latest",
-    },
+      "environment": {
+        "CW_CONFIG_CONTENT": "{ \"logs\": { \"metrics_collected\": { \"emf\": {} } }, \"metrics\": { \"metrics_collected\": { \"statsd\": { \"service_address\": \":8125\" } } } }"
+      }
+    }
   ]
 }
 ```
