@@ -1,4 +1,4 @@
-import { InternalSchemaElement, InternalTypeSchema, isPopulated } from '@medplum/core';
+import { InternalSchemaElement, InternalTypeSchema } from '@medplum/core';
 import React from 'react';
 
 /**
@@ -30,37 +30,44 @@ export type ElementsContextType = {
    * the element has the default definition for the given type.
    */
   getModifiedNestedElement: (nestedElementPath: string) => InternalSchemaElement | undefined;
+  elements: Record<string, InternalSchemaElement>;
+  elementsByPath: Record<string, InternalSchemaElement>;
 };
 
 export const ElementsContext = React.createContext<ElementsContextType>({
   profileUrl: undefined,
   debugMode: false,
   getModifiedNestedElement: () => undefined,
+  elements: Object.create(null),
+  elementsByPath: Object.create(null),
 });
 
-export function buildElementsContext(
-  // typeSchema: InternalTypeSchema | undefined,
-  elements?: InternalTypeSchema['elements'],
-  parentType?: string,
-  profileUrl?: string | undefined,
-  debugMode?: boolean | undefined
-): ElementsContextType {
+export type BuildElementsContextArgs = {
+  elements?: InternalTypeSchema['elements'];
+  parentPath: string;
+  parentType?: string;
+  profileUrl?: string | undefined;
+  debugMode?: boolean | undefined;
+};
+
+export function buildElementsContext({
+  elements,
+  parentPath,
+  parentType,
+  profileUrl,
+  debugMode,
+}: BuildElementsContextArgs): ElementsContextType {
   const nestedPaths: Record<string, InternalSchemaElement> = Object.create(null);
+  const elementsByPath: ElementsContextType['elementsByPath'] = Object.create(null);
 
   function getModifiedNestedElement(nestedElementPath: string): InternalSchemaElement {
     return nestedPaths[nestedElementPath];
   }
 
-  // if (typeSchema?.elements !== elements) {
-  //   console.log('Inconsistent typeSchema.elements !== elements', typeSchema?.elements, elements);
-  // }
-  // if (typeSchema?.type !== parentType) {
-  //   console.log('Inconsistent typeSchema.type !== parentType', typeSchema?.type, parentType);
-  // }
-
   if (elements) {
     const seenKeys = new Set<string>();
     for (const [key, property] of Object.entries(elements)) {
+      elementsByPath[parentPath + '.' + key] = property;
       const [beginning, _last] = splitOnceRight(key, '.');
       // assume paths are hierarchically sorted, e.g. identifier comes before identifier.id
       if (seenKeys.has(beginning)) {
@@ -68,12 +75,31 @@ export function buildElementsContext(
       }
       seenKeys.add(key);
     }
-    if (isPopulated(nestedPaths)) {
-      console.log('nestedPaths', nestedPaths);
-    } else {
-      console.log('No nestedPaths', elements);
-    }
   }
 
-  return { debugMode: debugMode ?? false, profileUrl, getModifiedNestedElement };
+  return {
+    debugMode: debugMode ?? false,
+    profileUrl,
+    getModifiedNestedElement,
+    elements: elements ?? Object.create(null),
+    elementsByPath,
+  };
+}
+
+export function mergeElementsForContext(
+  path: string,
+  elements: Record<string, InternalSchemaElement>,
+  parentContext: ElementsContextType
+): ElementsContextType['elements'] {
+  const result: ElementsContextType['elements'] = Object.create(null);
+  for (const [key, element] of Object.entries(elements)) {
+    const elementPath = path + '.' + key;
+    if (parentContext.elementsByPath[elementPath]) {
+      result[key] = parentContext.elementsByPath[elementPath];
+      console.log(`REPLACED ${elementPath}`, parentContext.elementsByPath[elementPath], element);
+    } else {
+      result[key] = element;
+    }
+  }
+  return result;
 }
