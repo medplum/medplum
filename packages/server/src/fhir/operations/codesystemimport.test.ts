@@ -40,7 +40,7 @@ describe('CodeSystem $import', () => {
   });
 
   beforeEach(async () => {
-    accessToken = await initTestAuth();
+    accessToken = await initTestAuth({ superAdmin: true });
     expect(accessToken).toBeDefined();
 
     const resS = await request(app)
