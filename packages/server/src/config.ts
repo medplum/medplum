@@ -89,6 +89,11 @@ export interface MedplumSmtpConfig {
 }
 
 export interface MedplumBullmqConfig {
+  /**
+   * Amount of jobs that a single worker is allowed to work on in parallel.
+   * @see {@link https://docs.bullmq.io/guide/workers/concurrency}
+   */
+  concurrency?: number;
   removeOnComplete: KeepJobs;
   removeOnFail: KeepJobs;
 }
@@ -277,7 +282,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.awsRegion = config.awsRegion || DEFAULT_AWS_REGION;
   config.botLambdaLayerName = config.botLambdaLayerName || 'medplum-bot-layer';
   config.bcryptHashSalt = config.bcryptHashSalt || 10;
-  config.bullmq = { removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
+  config.bullmq = { concurrency: 10, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
   config.shutdownTimeoutMilliseconds = config.shutdownTimeoutMilliseconds ?? 30000;
   return config;
 }
