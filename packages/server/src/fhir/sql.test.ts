@@ -1,6 +1,11 @@
+import { Client } from 'pg';
 import { Column, Condition, Negation, SelectQuery, SqlBuilder } from './sql';
 
 describe('SqlBuilder', () => {
+  beforeEach(() => {
+    jest.resetModules();
+  });
+
   test('Select', () => {
     const sql = new SqlBuilder();
     new SelectQuery('MyTable').column('id').column('name').buildSql(sql);
@@ -113,5 +118,39 @@ describe('SqlBuilder', () => {
     expect(sql.toString()).toBe(
       'SELECT DISTINCT ON ("MyTable"."id", "MyTable"."name") "MyTable"."id", "MyTable"."name", "MyTable"."email" FROM "MyTable" ORDER BY "MyTable"."id", "MyTable"."name", "MyTable"."email"'
     );
+  });
+
+  test('Select where not equals', () => {
+    const sql = new SqlBuilder();
+    new SelectQuery('MyTable').column('id').where('name', '!=', 'x').buildSql(sql);
+    expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" <> $1');
+  });
+
+  test('Select where like', () => {
+    const sql = new SqlBuilder();
+    new SelectQuery('MyTable').column('id').where('name', 'LIKE', 'x').buildSql(sql);
+    expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE LOWER("MyTable"."name") LIKE $1');
+  });
+
+  test('Select where not like', () => {
+    const sql = new SqlBuilder();
+    new SelectQuery('MyTable').column('id').where('name', 'NOT_LIKE', 'x').buildSql(sql);
+    expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE LOWER("MyTable"."name") NOT LIKE $1');
+  });
+
+  test('Debug mode', async () => {
+    console.log = jest.fn();
+
+    const sql = new SqlBuilder();
+    sql.debug = 'true';
+    new SelectQuery('MyTable').column('id').buildSql(sql);
+    expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable"');
+
+    const conn = {
+      query: jest.fn(() => ({ rows: [] })),
+    } as unknown as Client;
+
+    await sql.execute(conn);
+    expect(console.log).toHaveBeenCalledWith('sql', 'SELECT "MyTable"."id" FROM "MyTable"');
   });
 });

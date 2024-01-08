@@ -113,5 +113,6 @@ fi
 if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
   npm run build -- --force --filter=@medplum/server
+  source ./scripts/build-docker.sh
   source ./scripts/deploy-server.sh
 fi

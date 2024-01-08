@@ -49,3 +49,21 @@ export function isMedplumAccessToken(accessToken: string): boolean {
     return false;
   }
 }
+
+/**
+ * Returns the JWT expiration time in number of milliseconds elapsed since the epoch.
+ * @param token - The JWT token.
+ * @returns The JWT expiration time in number of milliseconds elapsed since the epoch if available, undefined if unknown.
+ */
+export function tryGetJwtExpiration(token: string): number | undefined {
+  try {
+    const payload = parseJWTPayload(token);
+    const exp = payload.exp;
+    if (typeof exp === 'number') {
+      return exp * 1000;
+    }
+    return undefined;
+  } catch (err) {
+    return undefined;
+  }
+}

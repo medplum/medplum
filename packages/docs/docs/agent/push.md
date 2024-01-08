@@ -58,7 +58,7 @@ The Agent connects to the Server using secure WebSockets (WSS). Because WebSocke
 
 ![Medplum Agent Push 5](./medplum-agent-push-5.webp)
 
-We can emulate this step using the Medplum CLI. This time, instead of using HL7 over MLLP, we will send a JSON message over HTTPS. The Server forwards the message to the Agent. The Agent forwards the message to the insrument.
+We can emulate this step using the Medplum CLI. This time, instead of using HL7 over MLLP, we will send a JSON message over HTTPS. The Server forwards the message to the Agent. The Agent forwards the message to the instrument.
 
 ```bash
 medplum post 'Agent/1080ee82-e4fc-4312-946f-322fbecf9bb9/$push' $'{"destination":"Device/52c9a9de-1081-4fb2-a40a-e62efe1b73b2","contentType":"x-application/hl7-v2+er7","body":"MSH|^~\\\\&|ADTSYS|HOSPITAL|RECEIVER|DEST|20231023235305.516||ADT^A01|1698105185516|P|2.5|\\nEVN|A01|20231023235305.516||\\nPID|1|12345|12345^^^HOSP^MR|123456|DOE^JOHN^MIDDLE^SUFFIX|19800101|M|||123 STREET^APT 4B^CITY^ST^12345-6789||555-555-5555||S|\\nPV1|1|I|2000^2012^01||||12345^DOCTOR^DOC||||||||||1234567^DOCTOR^DOC||AMB|||||||||||||||||||||||||202309280900|"}'

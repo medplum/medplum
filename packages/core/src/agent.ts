@@ -21,6 +21,14 @@ export interface AgentConnectResponse extends BaseAgentMessage {
   type: 'agent:connect:response';
 }
 
+export interface AgentHeartbeatRequest extends BaseAgentRequestMessage {
+  type: 'agent:heartbeat:request';
+}
+
+export interface AgentHeartbeatResponse extends BaseAgentMessage {
+  type: 'agent:heartbeat:response';
+}
+
 export interface AgentTransmitRequest extends BaseAgentRequestMessage {
   type: 'agent:transmit:request';
   channel?: string;
@@ -41,5 +49,7 @@ export type AgentMessage =
   | AgentError
   | AgentConnectRequest
   | AgentConnectResponse
+  | AgentHeartbeatRequest
+  | AgentHeartbeatResponse
   | AgentTransmitRequest
   | AgentTransmitResponse;

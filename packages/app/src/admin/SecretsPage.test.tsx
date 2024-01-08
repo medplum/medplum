@@ -45,11 +45,11 @@ describe('SecretsPage', () => {
 
   test('Add and submit', async () => {
     await setup('/admin/secrets');
-    await waitFor(() => screen.getByTitle('Add'));
+    await waitFor(() => screen.getByTitle('Add Secret'));
 
     // Click the "Add" button
     await act(async () => {
-      fireEvent.click(screen.getByTitle('Add'));
+      fireEvent.click(screen.getByTitle('Add Secret'));
     });
 
     // Enter the secret name

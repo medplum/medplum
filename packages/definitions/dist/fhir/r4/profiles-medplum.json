@@ -4145,7 +4145,7 @@
             "path" : "Agent.channel",
             "short" : "The channel on which to report matches to the criteria",
             "definition" : "Details where to send notifications when resources are received that meet the criteria.",
-            "min" : 1,
+            "min" : 0,
             "max" : "*",
             "base" : {
               "path" : "Agent.channel",

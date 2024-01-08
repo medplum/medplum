@@ -63,7 +63,7 @@ export class AgentHl7ChannelConnection {
       this.channel.app.log.info(event.message.toString().replaceAll('\r', '\n'));
       this.channel.app.addToWebSocketQueue({
         type: 'agent:transmit:request',
-        accessToken: this.channel.app.medplum.getAccessToken() as string,
+        accessToken: await this.channel.app.getAccessToken(),
         channel: this.channel.definition.name as string,
         remote: this.remote,
         contentType: ContentType.HL7_V2,

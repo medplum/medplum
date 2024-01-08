@@ -29,6 +29,7 @@ import { timingSafeEqual } from 'crypto';
 import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
 import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
+import { getRequestContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { systemRepo } from '../fhir/repo';
 import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
@@ -41,7 +42,6 @@ import {
   verifyJwt,
 } from './keys';
 import { AuthState } from './middleware';
-import { getRequestContext } from '../context';
 
 export type CodeChallengeMethod = 'plain' | 'S256';
 
@@ -656,32 +656,6 @@ export async function getUserByEmailWithoutProject(email: string): Promise<User 
 }
 
 /**
- * Check if a user is associated with a project.
- * @param userId - The user ID.
- * @param projectId - The project ID.
- * @returns True if the user is associated with the project; otherwise, false.
- */
-export async function isUserInProject(userId: string, projectId: string): Promise<boolean> {
-  const bundle = await systemRepo.searchOne({
-    resourceType: 'ProjectMembership',
-    filters: [
-      {
-        code: 'user',
-        operator: Operator.EQUALS,
-        value: 'User/' + userId,
-      },
-      {
-        code: 'project',
-        operator: Operator.EQUALS,
-        value: 'Project/' + projectId,
-      },
-    ],
-  });
-
-  return bundle !== undefined;
-}
-
-/**
  * Performs constant time comparison of two strings.
  * Returns true if a is equal to b, without leaking timing information
  * that would allow an attacker to guess one of the values.
@@ -823,5 +797,5 @@ export async function getLoginForAccessToken(accessToken: string): Promise<AuthS
 
   const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
   const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
-  return { login, membership, project };
+  return { login, membership, project, accessToken };
 }

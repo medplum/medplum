@@ -25,6 +25,8 @@ export const Basic = (): JSX.Element => (
       }
       onChange={console.log}
       name="contact"
+      path="Patient.contact"
+      outcome={undefined}
     />
   </Document>
 );

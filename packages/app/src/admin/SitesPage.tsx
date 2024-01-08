@@ -58,6 +58,7 @@ export function SitesPage(): JSX.Element {
         name="site"
         defaultValue={sites}
         onChange={setSites}
+        outcome={undefined}
       />
       <Button type="submit">Save</Button>
     </form>

@@ -6,6 +6,7 @@ authors:
   title: Medplum Core Team
   url: https://github.com/reshmakh
   image_url: https://github.com/reshmakh.png
+tags: [ai, interop, scheduling, case-study]
 ---
 
 # Titan Intake: AI Driven Patient Intake and EMPI

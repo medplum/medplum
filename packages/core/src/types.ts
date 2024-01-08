@@ -282,30 +282,63 @@ export function getSearchParameter(resourceType: string, code: string): SearchPa
  * @param path - The FHIR element definition path.
  * @returns The best guess of the display name.
  */
-export function getPropertyDisplayName(path: string): string {
+export function getPathDisplayName(path: string): string {
   // Get the property name, which is the remainder after the last period
   // For example, for path "Patient.birthDate"
   // the property name is "birthDate"
   const propertyName = path.replaceAll('[x]', '').split('.').pop() as string;
 
-  // Split by capital letters
+  return getPropertyDisplayName(propertyName);
+}
+
+/**
+ * Returns a human friendly display name for a FHIR element property or slice name
+ * @param propertyName - The FHIR element property or slice name
+ * @returns The best guess of the display name.
+ */
+export function getPropertyDisplayName(propertyName: string): string {
+  let words: string[];
+  // CodeQL flags the regex below for potential ReDoS (Regex Denial of Service), so limit input size
+  // https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+  if (propertyName.length < 100) {
+    /*
+    Split into words looking for acronyms and camelCase
+
+    [A-Z]+(?![a-z])
+    This part of the regular expression matches a sequence of one or more uppercase letters ([A-Z]+)
+    but only if they are not followed by a lowercase letter. The (?![a-z]) is a negative lookahead assertion,
+    meaning it checks for the absence of a lowercase letter ([a-z]) following the uppercase letters but does
+    not include it in the match. This effectively captures acronyms or any series of consecutive uppercase letters.
+
+    [A-Z]?[a-z]+
+    This part matches a single, optional, uppercase letter followed by one or more lowercase letters ([a-z]+).
+    This pattern is suitable for matching words in camelCase format, where a word begins with a lowercase letter
+    but can optionally start with an uppercase letter (like in the middle of camelCase).
+
+    \d+
+    Matches a sequence of one or more digits into their own word
+    */
+    words = propertyName.match(/[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\d+/g) ?? [];
+  } else {
+    // fallback to splitting on capital letters
+    words = propertyName.split(/(?=[A-Z])/);
+  }
+
   // Capitalize the first letter of each word
   // Join together with spaces in between
   // Then normalize whitespace to single space character
   // For example, for property name "birthDate",
   // the display name is "Birth Date".
-  return propertyName
-    .split(/(?=[A-Z])/)
-    .map(capitalizeDisplayWord)
-    .join(' ')
-    .replace('_', ' ')
-    .replace(/\s+/g, ' ');
+  return words.map(capitalizeDisplayWord).join(' ').replace('_', ' ').replace(/\s+/g, ' ');
 }
 
-const capitalizedWords = new Set(['ID', 'IP', 'PKCE', 'JWKS', 'URI', 'URL']);
+const capitalizedWords = new Set(['ID', 'IP', 'PKCE', 'JWKS', 'URI', 'URL', 'OMB', 'UDI']);
 
 function capitalizeDisplayWord(word: string): string {
   const upper = word.toUpperCase();
+  if (word === upper) {
+    return word;
+  }
   if (capitalizedWords.has(upper)) {
     return upper;
   }
@@ -314,7 +347,6 @@ function capitalizeDisplayWord(word: string): string {
 
 /**
  * Returns an element definition by type and property name.
- * Handles content references.
  * @param typeName - The type name.
  * @param propertyName - The property name.
  * @returns The element definition if found.
@@ -324,7 +356,41 @@ export function getElementDefinition(typeName: string, propertyName: string): In
   if (!typeSchema) {
     return undefined;
   }
-  return typeSchema.elements[propertyName] ?? typeSchema.elements[propertyName + '[x]'];
+  return getElementDefinitionFromElements(typeSchema.elements, propertyName);
+}
+
+/**
+ * Returns an element definition from mapping of elements by property name.
+ * @param elements  - A mapping of property names to element definitions
+ * @param propertyName - The property name of interest
+ * @returns The element definition if found.
+ */
+export function getElementDefinitionFromElements(
+  elements: InternalTypeSchema['elements'],
+  propertyName: string
+): InternalSchemaElement | undefined {
+  // Always try to match the exact property name first
+  const simpleMatch = elements[propertyName] ?? elements[propertyName + '[x]'];
+  if (simpleMatch) {
+    return simpleMatch;
+  }
+
+  // The propertyName can be a "choice of type" property, such as "value[x]", but in resolved form "valueString".
+  // So we need to iterate through all the elements and find the one that matches.
+  // Try to split on each capital letter, and see if that matches an element.
+  for (let i = 0; i < propertyName.length; i++) {
+    const c = propertyName[i];
+    if (c >= 'A' && c <= 'Z') {
+      const testProperty = propertyName.slice(0, i) + '[x]';
+      const element = elements[testProperty];
+      if (element) {
+        return element;
+      }
+    }
+  }
+
+  // Otherwise, no matches.
+  return undefined;
 }
 
 /**

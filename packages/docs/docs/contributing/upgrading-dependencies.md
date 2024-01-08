@@ -22,7 +22,7 @@ As a convention, we pin all dependency versions in `package.json`.
 
 ## Steps
 
-First, run the `updgrade.sh` script in the project root directory:
+First, run the `upgrade.sh` script in the project root directory:
 
 ```bash
 ./scripts/upgrade.sh

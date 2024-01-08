@@ -54,6 +54,7 @@ export interface BotExecutionRequest {
   readonly device?: Device;
   readonly remoteAddress?: string;
   readonly forwardedFor?: string;
+  readonly requestTime?: string;
 }
 
 export interface BotExecutionResult {
@@ -147,7 +148,7 @@ async function getBotForRequest(req: Request): Promise<Bot | undefined> {
  */
 export async function executeBot(request: BotExecutionRequest): Promise<BotExecutionResult> {
   const { bot } = request;
-  const startTime = new Date().toISOString();
+  const startTime = request.requestTime ?? new Date().toISOString();
 
   let result: BotExecutionResult;
 

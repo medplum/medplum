@@ -3,12 +3,11 @@ import { Login, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { registerNew } from './register';
 import { withTestContext } from '../test.setup';
+import { registerNew } from './register';
 
 jest.mock('@aws-sdk/client-sesv2');
 
@@ -25,7 +24,7 @@ describe('Profile', () => {
       await initApp(app, config);
 
       // Create a user with multiple profiles
-      // Use the same user/email in the same project
+      // Use the same user/email
       const registerResult = await registerNew({
         firstName: 'Multi1',
         lastName: 'Multi1',
@@ -34,16 +33,17 @@ describe('Profile', () => {
         password,
       });
 
-      const inviteResult = await inviteUser({
-        project: registerResult.project,
-        resourceType: 'Practitioner',
-        firstName: 'Multi2',
-        lastName: 'Multi2',
+      profile1 = registerResult.profile;
+
+      const registerResult2 = await registerNew({
+        firstName: 'Multi12',
+        lastName: 'Multi12',
+        projectName: 'Multi Project 2',
         email,
+        password,
       });
 
-      profile1 = registerResult.profile;
-      profile2 = inviteResult.profile;
+      profile2 = registerResult2.profile;
     })
   );
 

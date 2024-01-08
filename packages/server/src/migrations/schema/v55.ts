@@ -33,7 +33,7 @@ const statements = [
     value TEXT -- value could be string | integer | boolean | dateTime
   )`,
   `CREATE INDEX CONCURRENTLY IF NOT EXISTS "Coding_Property_idx" ON "Coding_Property" (coding, property)`,
-  `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "Coding_Property_relationship_idx" ON "Coding_Property" (coding, target, property) WHERE target IS NOT NULL`,
+  `CREATE INDEX CONCURRENTLY IF NOT EXISTS "Coding_Property_relationship_idx" ON "Coding_Property" (coding, target, property) WHERE target IS NOT NULL`,
 
   `CREATE TABLE IF NOT EXISTS "ValueSet_Membership" (
     "valueSet" UUID NOT NULL, -- reference to "ValueSet".id

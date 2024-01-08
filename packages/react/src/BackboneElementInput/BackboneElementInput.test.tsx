@@ -1,7 +1,7 @@
-import { globalSchema, InternalSchemaElement, TypeInfo } from '@medplum/core';
-import { MockClient } from '@medplum/mock';
+import { globalSchema, indexStructureDefinitionBundle, InternalSchemaElement, TypeInfo } from '@medplum/core';
+import { FishPatientResources, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { BackboneElementInput, BackboneElementInputProps } from './BackboneElementInput';
 
@@ -87,5 +87,43 @@ describe('BackboneElementInput', () => {
   test('Not implemented', async () => {
     await setup({ typeName: 'Foo' });
     expect(screen.getByText('Foo not implemented')).toBeInTheDocument();
+  });
+
+  test('Resource with profile', async () => {
+    const fishPatientProfile = FishPatientResources.getFishPatientProfileSD();
+    const fishSpeciesProfile = FishPatientResources.getFishSpeciesExtensionSD();
+    const fishPatient = FishPatientResources.getSampleFishPatient();
+
+    for (const profile of [fishPatientProfile, fishSpeciesProfile]) {
+      indexStructureDefinitionBundle([profile], profile.url);
+    }
+    await setup({
+      typeName: fishPatientProfile.name,
+      profileUrl: fishPatientProfile.url,
+      defaultValue: fishPatient,
+      onChange: () => {},
+    });
+
+    // Name is required
+    expect(screen.getByText('Name')).toBeInTheDocument();
+    expect(within(screen.getByText('Name')).getByText('*')).toBeInTheDocument();
+
+    // Marital Status and Communication eliminated
+    expect(screen.queryByText('Marital Status')).toBeNull();
+    expect(screen.queryByText('Communication')).toBeNull();
+
+    // Fish Patient has an extension defined as shown below; the sliceName and definition appear in the form
+    /*{
+      "id": "Patient.extension:species",
+      "path": "Patient.extension",
+      "sliceName": "species",
+      "definition": "The species of the fish.",
+      ...
+    }*/
+    expect(screen.getByText('Species')).toBeInTheDocument();
+    expect(screen.getByText('The species of the fish.')).toBeInTheDocument();
+
+    // fishPatient's species
+    expect(screen.getByText('Carpiodes cyprinus (organism)')).toBeInTheDocument();
   });
 });

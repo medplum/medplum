@@ -1,6 +1,6 @@
 {
   "name": "medplum-react-native-example",
-  "version": "2.2.2",
+  "version": "2.2.7",
   "main": "src/main.ts",
   "scripts": {
     "android": "expo start --android",
@@ -20,9 +20,9 @@
   },
   "dependencies": {
     "@expo/webpack-config": "19.0.0",
-    "@medplum/core": "2.2.2",
-    "@medplum/expo-polyfills": "2.2.2",
-    "@medplum/react-hooks": "2.2.2",
+    "@medplum/core": "2.2.7",
+    "@medplum/expo-polyfills": "2.2.7",
+    "@medplum/react-hooks": "2.2.7",
     "expo": "49.0.21",
     "expo-status-bar": "1.7.1",
     "react": "18.2.0",

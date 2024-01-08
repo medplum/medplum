@@ -1,4 +1,5 @@
 const values = new Map<string, string>();
+const sets = new Map<string, Set<string>>();
 const subscribers = new Map<string, Set<Redis>>();
 
 class Redis {
@@ -90,6 +91,45 @@ class Redis {
       return [channel, subscribers.get(channel)?.size ?? 0];
     }
     throw new Error('Invalid command.');
+  }
+
+  async exists(key: string): Promise<boolean> {
+    return values.has(key);
+  }
+
+  async sadd(setKey: string, ...members: string[]): Promise<number> {
+    let keySet: Set<string>;
+    if (!sets.has(setKey)) {
+      keySet = new Set<string>();
+      sets.set(setKey, keySet);
+    } else {
+      keySet = sets.get(setKey) as Set<string>;
+    }
+    let added = 0;
+    for (const member of members) {
+      if (keySet.has(member)) {
+        continue;
+      }
+      keySet.add(member);
+      added += 1;
+    }
+    return added;
+  }
+
+  async smembers(setKey: string): Promise<string[]> {
+    const set = sets.get(setKey);
+    if (!set) {
+      return [];
+    }
+    return Array.from(set.keys());
+  }
+
+  async scard(setKey: string): Promise<number> {
+    const set = sets.get(setKey);
+    if (!set) {
+      return 0;
+    }
+    return set.size;
   }
 }
 

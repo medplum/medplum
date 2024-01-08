@@ -1,10 +1,8 @@
 import {
   allOk,
   badRequest,
-  ClientStorage,
   ContentType,
   getStatus,
-  IClientStorage,
   indexSearchParameter,
   loadDataType,
   LoginState,
@@ -23,7 +21,7 @@ import {
   DrAliceSmith,
   DrAliceSmithPreviousVersion,
   DrAliceSmithSchedule,
-  DrAliceSmithSlots,
+  makeDrAliceSmithSlots,
   ExampleBot,
   ExampleClient,
   ExampleQuestionnaire,
@@ -529,7 +527,7 @@ export class MockFetchClient {
       await this.repo.createResource(searchParameter as SearchParameter);
     }
 
-    DrAliceSmithSlots.forEach((slot) => this.repo.createResource(slot));
+    makeDrAliceSmithSlots().forEach((slot) => this.repo.createResource(slot));
   }
 
   private async mockFhirHandler(method: HttpMethod, url: string, options: any): Promise<Resource> {
@@ -567,31 +565,6 @@ export class MockFetchClient {
     } else {
       return result[1];
     }
-  }
-}
-
-export class MockAsyncClientStorage extends ClientStorage implements IClientStorage {
-  #initialized: boolean;
-  #initPromise: Promise<void>;
-  #initResolve: () => void = () => undefined;
-  constructor() {
-    super();
-    this.#initialized = false;
-    this.#initPromise = new Promise((resolve) => {
-      this.#initResolve = resolve;
-    });
-  }
-  setInitialized(): void {
-    if (!this.#initialized) {
-      this.#initResolve();
-      this.#initialized = true;
-    }
-  }
-  getInitPromise(): Promise<void> {
-    return this.#initPromise;
-  }
-  get isInitialized(): boolean {
-    return this.#initialized;
   }
 }
 

@@ -4,7 +4,9 @@ import {
   Appointment,
   Binary,
   Bundle,
+  CodeSystem,
   Condition,
+  Extension,
   HumanName,
   ImplementationGuide,
   Media,
@@ -1240,6 +1242,54 @@ describe('Legacy tests for parity checking', () => {
     expect(() =>
       validateResource({ resourceType: 'Patient', name: { family: 'foo' } as unknown as HumanName[] })
     ).toThrow('Expected array of values for property (Patient.name)');
+  });
+
+  test('Primitive and extension', () => {
+    const resource: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      concept: [
+        {
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/codesystem-concept-comments',
+              _valueString: {
+                extension: [
+                  {
+                    extension: [
+                      {
+                        url: 'lang',
+                        valueCode: 'nl',
+                      },
+                      {
+                        url: 'content',
+                        valueString: 'Zo spoedig mogelijk',
+                      },
+                    ],
+                    url: 'http://hl7.org/fhir/StructureDefinition/translation',
+                  },
+                ],
+              },
+            } as unknown as Extension,
+          ],
+          code: 'A',
+          display: 'ASAP',
+          designation: [
+            {
+              language: 'nl',
+              use: {
+                system: 'http://terminology.hl7.org/CodeSystem/designation-usage',
+                code: 'display',
+              },
+              value: 'ZSM',
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(() => validateResource(resource)).not.toThrow();
   });
 });
 
