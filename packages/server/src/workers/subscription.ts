@@ -54,6 +54,7 @@ export interface SubscriptionJobData {
   readonly id: string;
   readonly versionId: string;
   readonly interaction: 'create' | 'update' | 'delete';
+  readonly requestTime: string;
 }
 
 const queueName = 'SubscriptionQueue';
@@ -138,6 +139,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
     // Never send subscriptions for audit events
     return;
   }
+  const requestTime = new Date().toISOString();
   const subscriptions = await getSubscriptions(resource);
   ctx.logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
@@ -149,6 +151,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
         id: resource.id as string,
         versionId: resource.meta?.versionId as string,
         interaction: context.interaction,
+        requestTime,
       });
     }
   }
@@ -289,7 +292,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
  * @param job - The subscription job details.
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
-  const { subscriptionId, resourceType, id, versionId, interaction } = job.data;
+  const { subscriptionId, resourceType, id, versionId, interaction, requestTime } = job.data;
 
   const subscription = await tryGetSubscription(subscriptionId);
   if (!subscription) {
@@ -321,9 +324,9 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     switch (channelType) {
       case 'rest-hook':
         if (subscription.channel?.endpoint?.startsWith('Bot/')) {
-          await execBot(subscription, versionedResource, interaction);
+          await execBot(subscription, versionedResource, interaction, requestTime);
         } else {
-          await sendRestHook(job, subscription, versionedResource, interaction);
+          await sendRestHook(job, subscription, versionedResource, interaction, requestTime);
         }
         break;
       case 'websocket':
@@ -374,12 +377,14 @@ async function tryGetCurrentVersion(resourceType: string, id: string): Promise<R
  * @param subscription - The subscription.
  * @param resource - The resource that triggered the subscription.
  * @param interaction - The interaction type.
+ * @param requestTime - The request time.
  */
 async function sendRestHook(
   job: Job<SubscriptionJobData>,
   subscription: Subscription,
   resource: Resource,
-  interaction: BackgroundJobInteraction
+  interaction: BackgroundJobInteraction,
+  requestTime: string
 ): Promise<void> {
   const ctx = getRequestContext();
   const url = subscription.channel?.endpoint as string;
@@ -388,8 +393,6 @@ async function sendRestHook(
     ctx.logger.debug(`Ignore rest hook missing URL`);
     return;
   }
-
-  const startTime = new Date().toISOString();
 
   const headers = buildRestHookHeaders(subscription, resource) as Record<string, string>;
   if (interaction === 'delete') {
@@ -407,7 +410,7 @@ async function sendRestHook(
     const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(
       resource,
-      startTime,
+      requestTime,
       success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received status ${response.status}`,
       subscription
@@ -420,7 +423,7 @@ async function sendRestHook(
     ctx.logger.info('Subscription exception: ' + ex);
     await createAuditEvent(
       resource,
-      startTime,
+      requestTime,
       AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received error ${ex}`,
       subscription
@@ -470,11 +473,13 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
  * @param subscription - The subscription.
  * @param resource - The resource that triggered the subscription.
  * @param interaction - The interaction type.
+ * @param requestTime - The request time.
  */
 async function execBot(
   subscription: Subscription,
   resource: Resource,
-  interaction: BackgroundJobInteraction
+  interaction: BackgroundJobInteraction,
+  requestTime: string
 ): Promise<void> {
   const url = subscription.channel?.endpoint as string;
   if (!url) {
@@ -504,6 +509,7 @@ async function execBot(
     runAs,
     input: interaction === 'delete' ? { deletedResource: resource } : resource,
     contentType: ContentType.FHIR_JSON,
+    requestTime,
   });
 }
 
