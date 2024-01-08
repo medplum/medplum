@@ -656,32 +656,6 @@ export async function getUserByEmailWithoutProject(email: string): Promise<User 
 }
 
 /**
- * Check if a user is associated with a project.
- * @param userId - The user ID.
- * @param projectId - The project ID.
- * @returns True if the user is associated with the project; otherwise, false.
- */
-export async function isUserInProject(userId: string, projectId: string): Promise<boolean> {
-  const bundle = await systemRepo.searchOne({
-    resourceType: 'ProjectMembership',
-    filters: [
-      {
-        code: 'user',
-        operator: Operator.EQUALS,
-        value: 'User/' + userId,
-      },
-      {
-        code: 'project',
-        operator: Operator.EQUALS,
-        value: 'Project/' + projectId,
-      },
-    ],
-  });
-
-  return bundle !== undefined;
-}
-
-/**
  * Performs constant time comparison of two strings.
  * Returns true if a is equal to b, without leaking timing information
  * that would allow an attacker to guess one of the values.
