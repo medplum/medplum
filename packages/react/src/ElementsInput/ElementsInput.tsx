@@ -1,21 +1,22 @@
 import { Stack } from '@mantine/core';
 import { InternalSchemaElement, InternalTypeSchema, TypedValue, getPathDisplayName, isPopulated } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { useMemo, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
 import { FormSection } from '../FormSection/FormSection';
 import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
 import { getValueAndTypeFromElement } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
-import { ElementsContext, buildElementsContext } from './ElementsInput.utils';
+import { ElementsContext, buildElementsContext, mergeElementsForContext } from './ElementsInput.utils';
 
 const EXTENSION_KEYS = new Set(['extension', 'modifierExtension']);
 const IGNORED_PROPERTIES = new Set(['id', ...DEFAULT_IGNORED_PROPERTIES].filter((prop) => !EXTENSION_KEYS.has(prop)));
 
 export interface ElementsInputProps {
   type: string | undefined;
-  elements: { [key: string]: InternalSchemaElement };
+  path: string;
+  elements: Record<string, InternalSchemaElement>;
   defaultValue: any;
   outcome: OperationOutcome | undefined;
   onChange: ((value: any) => void) | undefined;
@@ -23,24 +24,69 @@ export interface ElementsInputProps {
   typeSchema: InternalTypeSchema | undefined;
 }
 
-export function ElementsInput(props: ElementsInputProps): JSX.Element {
-  const { elements } = props;
-  const [value, setValue] = useState<any>(props.defaultValue ?? {});
-  const DEBUG = useMemo(() => props.testId === 'slice-VSCat-elements-0', []);
+type Elements = ElementsInputProps['elements'];
 
-  const context = useMemo(() => {
-    return buildElementsContext(elements, props.type, undefined);
-  }, [elements, props.type]);
+export function ElementsInput(props: ElementsInputProps): JSX.Element {
+  const [value, setValue] = useState<any>(props.defaultValue ?? {});
+  // const DEBUG = useMemo(() => props.testId === 'slice-VSCat-elements-0', [props.testId]);
+  // const DEBUG = useMemo(() => true || props.path === 'Patient.extension.extension', [props.path]);
+  const parentElementsContextValue = useContext(ElementsContext);
+
+  const mergedElements: Elements = useMemo(() => {
+    const result = mergeElementsForContext(props.path, props.elements, parentElementsContextValue);
+    return result;
+  }, [props.path, props.elements, parentElementsContextValue]);
+
+  const elementsContextValue = useMemo(() => {
+    return buildElementsContext({ elements: mergedElements, parentPath: props.path, parentType: props.type });
+  }, [mergedElements, props.path, props.type]);
 
   const fixedProperties = useMemo(() => {
     const result: { [key: string]: InternalSchemaElement & { fixed: TypedValue } } = Object.create(null);
-    for (const [key, property] of Object.entries(elements)) {
+    for (const [key, property] of Object.entries(mergedElements)) {
       if (property.fixed) {
         result[key] = property as any;
       }
     }
     return result;
-  }, [elements]);
+  }, [mergedElements]);
+
+  const elementsToRender = useMemo(() => {
+    const result = Object.entries(mergedElements).filter(([key, element]) => {
+      if (!element.type) {
+        return false;
+      }
+
+      if (element.max === 0) {
+        return false;
+      }
+
+      // mostly for Extension.url
+      if (key === 'url' && element.fixed) {
+        return false;
+      }
+
+      if (EXTENSION_KEYS.has(key) && !isPopulated(element.slicing?.slices)) {
+        // an extension property without slices has no nested extensions
+        return false;
+      } else if (IGNORED_PROPERTIES.has(key)) {
+        return false;
+      } else if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && element.path.split('.').length === 2) {
+        return false;
+      }
+
+      // Profiles can include nested elements in addition to their containing element, e.g.:
+      // identifier, identifier.use, identifier.system
+      // Skip nested elements, e.g. identifier.use, since they are handled by the containing element
+      if (key.includes('.')) {
+        return false;
+      }
+
+      return true;
+    });
+
+    return result;
+  }, [mergedElements]);
 
   function setValueWrapper(newValue: any): void {
     for (const [key, prop] of Object.entries(fixedProperties)) {
@@ -53,50 +99,17 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
   }
 
   return (
-    <ElementsContext.Provider value={context}>
+    <ElementsContext.Provider value={elementsContextValue}>
       <Stack style={{ flexGrow: 1 }} data-testid={props.testId}>
-        {Object.entries(elements).map(([key, element]) => {
-          if (!element.type) {
-            return null;
-          }
-
-          if (element.max === 0) {
-            return null;
-          }
-
-          // mostly for Extension.url
-          if (key === 'url' && element.fixed) {
-            return null;
-          }
-
-          if (EXTENSION_KEYS.has(key) && !isPopulated(element.slicing?.slices)) {
-            // an extension property without slices has no nested extensions
-            return null;
-          } else if (IGNORED_PROPERTIES.has(key)) {
-            return null;
-          } else if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && element.path.split('.').length === 2) {
-            return null;
-          }
-
-          // Profiles can include nested elements in addition to their containing element, e.g.:
-          // identifier, identifier.use, identifier.system
-          // Skip nested elements, e.g. identifier.use, since they are handled by the containing element
-          if (key.includes('.')) {
-            if (DEBUG) {
-              console.log('SKIPPING', props.testId, key, element);
-            }
-            return null;
-          }
-
+        {elementsToRender.map(([key, element]) => {
           const [propertyValue, propertyType] = getValueAndTypeFromElement(value, key, element);
-
           const required = element.min !== undefined && element.min > 0;
-
           const resourcePropertyInput = (
             <ResourcePropertyInput
               key={key}
               property={element}
               name={key}
+              path={props.path + '.' + key}
               defaultValue={propertyValue}
               defaultPropertyType={propertyType}
               onChange={(newValue: any, propName?: string) => {
