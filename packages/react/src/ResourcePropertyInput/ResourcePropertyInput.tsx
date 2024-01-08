@@ -31,6 +31,7 @@ import { ComplexTypeInputProps } from './ResourcePropertyInput.utils';
 export interface ResourcePropertyInputProps {
   property: InternalSchemaElement;
   name: string;
+  path: string;
   defaultPropertyType?: string | undefined;
   defaultValue: any;
   arrayElement?: boolean | undefined;
@@ -58,6 +59,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
       <ResourceArrayInput
         property={property}
         name={name}
+        path={props.path}
         defaultValue={defaultValue}
         indent={indent}
         onChange={onChange}
@@ -84,7 +86,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         min={property.min}
         max={property.min}
         binding={property.binding}
-        path={property.path}
+        path={props.path}
       />
     );
   }
@@ -326,6 +328,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return (
         <BackboneElementInput
           typeName={propertyType}
+          path={properties.path}
           defaultValue={defaultValue}
           onChange={onChange}
           outcome={outcome}

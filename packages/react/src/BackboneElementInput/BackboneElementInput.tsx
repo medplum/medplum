@@ -7,6 +7,8 @@ import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 export interface BackboneElementInputProps {
   /** Type name the backbone element represents */
   typeName: string;
+  /** FHIR path of the backbone element in the resource being shown*/
+  path: string;
   /** (optional) The contents of the resource represented by the backbone element */
   defaultValue?: any;
   /** (optional) OperationOutcome from the last attempted system action*/
@@ -23,9 +25,10 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   const elementsContext = useContext(ElementsContext);
   const profileUrl = props.profileUrl ?? elementsContext.profileUrl;
   const typeSchema = useMemo(() => tryGetDataType(typeName, profileUrl), [typeName, profileUrl]);
+  const type = typeSchema?.type ?? typeName ?? '';
 
   if (!typeSchema) {
-    return <div>{typeName}&nbsp;not implemented</div>;
+    return <div>{type}&nbsp;not implemented</div>;
   }
 
   function setValueWrapper(newValue: any): void {
@@ -37,7 +40,8 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
 
   return (
     <ElementsInput
-      type={typeSchema.type}
+      path={props.path}
+      type={type}
       elements={typeSchema.elements}
       defaultValue={value}
       onChange={setValueWrapper}
