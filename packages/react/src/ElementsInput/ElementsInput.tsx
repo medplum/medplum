@@ -8,7 +8,7 @@ import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
 import { getValueAndTypeFromElement } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
-import { ElementsContext, buildElementsContext, mergeElementsForContext } from './ElementsInput.utils';
+import { ElementsContext, buildElementsContext } from './ElementsInput.utils';
 
 const EXTENSION_KEYS = new Set(['extension', 'modifierExtension']);
 const IGNORED_PROPERTIES = new Set(['id', ...DEFAULT_IGNORED_PROPERTIES].filter((prop) => !EXTENSION_KEYS.has(prop)));
@@ -24,35 +24,34 @@ export interface ElementsInputProps {
   typeSchema: InternalTypeSchema | undefined;
 }
 
-type Elements = ElementsInputProps['elements'];
-
 export function ElementsInput(props: ElementsInputProps): JSX.Element {
   const [value, setValue] = useState<any>(props.defaultValue ?? {});
   // const DEBUG = useMemo(() => props.testId === 'slice-VSCat-elements-0', [props.testId]);
   // const DEBUG = useMemo(() => true || props.path === 'Patient.extension.extension', [props.path]);
   const parentElementsContextValue = useContext(ElementsContext);
 
-  const mergedElements: Elements = useMemo(() => {
-    const result = mergeElementsForContext(props.path, props.elements, parentElementsContextValue);
-    return result;
-  }, [props.path, props.elements, parentElementsContextValue]);
-
   const elementsContextValue = useMemo(() => {
-    return buildElementsContext({ elements: mergedElements, parentPath: props.path, parentType: props.type });
-  }, [mergedElements, props.path, props.type]);
+    return buildElementsContext({
+      parentContext: parentElementsContextValue,
+      elements: props.elements,
+      parentPath: props.path,
+      parentType: props.type,
+    });
+  }, [parentElementsContextValue, props.elements, props.path, props.type]);
+  const elements = elementsContextValue.elements;
 
   const fixedProperties = useMemo(() => {
     const result: { [key: string]: InternalSchemaElement & { fixed: TypedValue } } = Object.create(null);
-    for (const [key, property] of Object.entries(mergedElements)) {
+    for (const [key, property] of Object.entries(elements)) {
       if (property.fixed) {
         result[key] = property as any;
       }
     }
     return result;
-  }, [mergedElements]);
+  }, [elements]);
 
   const elementsToRender = useMemo(() => {
-    const result = Object.entries(mergedElements).filter(([key, element]) => {
+    const result = Object.entries(elements).filter(([key, element]) => {
       if (!element.type) {
         return false;
       }
@@ -86,7 +85,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
     });
 
     return result;
-  }, [mergedElements]);
+  }, [elements]);
 
   function setValueWrapper(newValue: any): void {
     for (const [key, prop] of Object.entries(fixedProperties)) {

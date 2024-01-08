@@ -43,6 +43,7 @@ export const ElementsContext = React.createContext<ElementsContextType>({
 });
 
 export type BuildElementsContextArgs = {
+  parentContext: ElementsContextType | undefined;
   elements?: InternalTypeSchema['elements'];
   parentPath: string;
   parentType?: string;
@@ -51,12 +52,18 @@ export type BuildElementsContextArgs = {
 };
 
 export function buildElementsContext({
+  parentContext,
   elements,
   parentPath,
   parentType,
   profileUrl,
   debugMode,
 }: BuildElementsContextArgs): ElementsContextType {
+  let mergedElements: ElementsContextType['elements'] | undefined;
+  if (elements && parentContext) {
+    mergedElements = mergeElementsForContext(parentPath, elements, parentContext);
+  }
+
   const nestedPaths: Record<string, InternalSchemaElement> = Object.create(null);
   const elementsByPath: ElementsContextType['elementsByPath'] = Object.create(null);
 
@@ -64,10 +71,11 @@ export function buildElementsContext({
     return nestedPaths[nestedElementPath];
   }
 
-  if (elements) {
+  if (mergedElements) {
     const seenKeys = new Set<string>();
-    for (const [key, property] of Object.entries(elements)) {
+    for (const [key, property] of Object.entries(mergedElements)) {
       elementsByPath[parentPath + '.' + key] = property;
+
       const [beginning, _last] = splitOnceRight(key, '.');
       // assume paths are hierarchically sorted, e.g. identifier comes before identifier.id
       if (seenKeys.has(beginning)) {
@@ -81,12 +89,12 @@ export function buildElementsContext({
     debugMode: debugMode ?? false,
     profileUrl,
     getModifiedNestedElement,
-    elements: elements ?? Object.create(null),
+    elements: mergedElements ?? Object.create(null),
     elementsByPath,
   };
 }
 
-export function mergeElementsForContext(
+function mergeElementsForContext(
   path: string,
   elements: Record<string, InternalSchemaElement>,
   parentContext: ElementsContextType
