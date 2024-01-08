@@ -43,7 +43,6 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
 
   function onChange(newValue: any): void {
     if (props.onChange) {
-      console.log('Extension', newValue);
       props.onChange(newValue);
     }
   }
@@ -75,7 +74,8 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
   return (
     <BackboneElementInput
       profileUrl={profileUrl}
-      typeName={typeSchema.name}
+      path={props.path}
+      typeName={typeSchema?.name ?? 'Extension'}
       defaultValue={props.defaultValue}
       onChange={onChange}
     />

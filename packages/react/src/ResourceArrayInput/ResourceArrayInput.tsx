@@ -15,6 +15,7 @@ import { assignValuesIntoSlices } from './ResourceArrayInput.utils';
 export interface ResourceArrayInputProps {
   readonly property: InternalSchemaElement;
   readonly name: string;
+  readonly path: string;
   readonly defaultValue?: any[];
   readonly indent?: boolean;
   readonly outcome: OperationOutcome | undefined;
@@ -118,6 +119,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
           <SliceInput
             slice={slice}
             key={slice.name}
+            path={props.path}
             property={property}
             defaultValue={slicedValues[sliceIndex]}
             onChange={(newValue: any[]) => {
@@ -136,6 +138,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
                 arrayElement={true}
                 property={props.property}
                 name={props.name + '.' + valueIndex}
+                path={props.path}
                 defaultValue={value}
                 onChange={(newValue: any) => {
                   const newNonSliceValues = [...nonSliceValues];
