@@ -1,4 +1,4 @@
-import { Button, Divider, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
+import { Button, Divider, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { forbidden, normalizeErrorString } from '@medplum/core';
 import { Document, Form, OperationOutcomeAlert, useMedplum } from '@medplum/react';
@@ -22,10 +22,13 @@ export function ProjectAdminConfigPage(): JSX.Element {
       <Title order={1}>Project Admin</Title>
       <Divider my="lg" />
       <Title order={2}>Force Set Password</Title>
-      <p>
-        Note that this applies to all projects for the user. Therefore, this should only be used in extreme
-        circumstances. Always prefer to use the "Forgot Password" flow first.
-      </p>
+      <Text>
+        Sets the password for the specified user <Text w={500}>in this project</Text>.
+      </Text>
+      <Text>
+        This action can only be performed by project administrators. Passwords can only be set for users scoped in this
+        project.
+      </Text>
       <Form onSubmit={forceSetPassword}>
         <Stack>
           <TextInput name="email" label="Email" required />
