@@ -16,9 +16,8 @@ git checkout -b "$BRANCH_NAME"
 
 # Exclude known problem packages
 # @mantine/* - holding back until the Mantine 7 migration is complete
-# hibp - version 14+ requires ESM, holding back until server supports ESM
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
-EXCLUDE="@mantine/* hibp node-fetch"
+EXCLUDE="@mantine/* node-fetch"
 
 npx npm-check-updates -u -x "$EXCLUDE" --packageFile package.json
 

@@ -14,7 +14,13 @@ export const Basic = (): JSX.Element => (
   <Document>
     <Form onSubmit={console.log}>
       <Stack>
-        <HumanNameInput name="patient-name" defaultValue={{ given: ['Homer'], family: 'Simpson' } as HumanName} />
+        <HumanNameInput
+          name="patient-name"
+          path="name"
+          onChange={undefined}
+          outcome={undefined}
+          defaultValue={{ given: ['Homer'], family: 'Simpson' } as HumanName}
+        />
         <NativeSelect name="appointment-type" data={['Sick', 'Well']} />
         <Button type="submit" mt="sm">
           Submit

@@ -20,6 +20,7 @@ export interface RegisterRequest {
   readonly password: string;
   readonly remoteAddress?: string;
   readonly userAgent?: string;
+  readonly scope?: string;
 }
 
 export interface RegisterResponse {
@@ -55,7 +56,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
 
   const login = await tryLogin({
     authMethod: 'password',
-    scope: 'openid offline',
+    scope: request.scope ?? 'openid offline',
     nonce: randomUUID(),
     email: email,
     password: password,

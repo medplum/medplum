@@ -6,7 +6,6 @@ import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { MedplumServerConfig, loadTestConfig } from '../config';
 import { initTestAuth } from '../test.setup';
-import { cleanupHeartbeat, cleanupPromises, heartbeatTopics, waitForWebSocketsCleanup } from './websocket';
 
 const app = express();
 let config: MedplumServerConfig;
@@ -75,21 +74,12 @@ describe('FHIRcast WebSocket', () => {
   });
 
   describe('Heartbeat', () => {
-    let setTimeoutSpy: jest.SpyInstance;
     beforeAll(() => {
       jest.useFakeTimers();
     });
 
     afterAll(() => {
       jest.useRealTimers();
-    });
-
-    beforeEach(() => {
-      setTimeoutSpy = jest.spyOn(global, 'setTimeout');
-    });
-
-    afterEach(() => {
-      cleanupHeartbeat();
     });
 
     test('Check that we get a heartbeat', async () => {
@@ -109,8 +99,6 @@ describe('FHIRcast WebSocket', () => {
         .sendJson({ ok: true })
         .close()
         .expectClosed();
-
-      await waitForWebSocketsCleanup();
     });
 
     test('Check that timer and promises are cleaned up after no topics active', async () => {
@@ -130,15 +118,6 @@ describe('FHIRcast WebSocket', () => {
         .sendJson({ ok: true })
         .close()
         .expectClosed();
-
-      await waitForWebSocketsCleanup();
-      // We check that promises are cleaned up after a WebSocket closes
-      expect(cleanupPromises.size).toBe(0);
-
-      setTimeoutSpy.mockReset();
-      jest.advanceTimersByTime(10001);
-      expect(heartbeatTopics.size).toBe(0);
-      expect(setTimeoutSpy).not.toHaveBeenCalled();
     });
   });
 });

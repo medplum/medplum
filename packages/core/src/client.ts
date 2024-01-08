@@ -54,7 +54,7 @@ import {
   validateFhircastSubscriptionRequest,
 } from './fhircast';
 import { Hl7Message } from './hl7';
-import { isJwt, isMedplumAccessToken, parseJWTPayload } from './jwt';
+import { isJwt, isMedplumAccessToken, parseJWTPayload, tryGetJwtExpiration } from './jwt';
 import {
   OperationOutcomeError,
   badRequest,
@@ -413,6 +413,7 @@ export interface InviteRequest {
   password?: string;
   sendEmail?: boolean;
   membership?: Partial<ProjectMembership>;
+  upsert?: boolean;
   /** @deprecated Use membership.accessPolicy instead. */
   accessPolicy?: Reference<AccessPolicy>;
   /** @deprecated Use membership.access instead. */
@@ -573,6 +574,18 @@ interface SessionDetails {
 }
 
 /**
+ * ValueSet $expand operation parameters.
+ * See: https://hl7.org/fhir/r4/valueset-operation-expand.html
+ */
+export interface ValueSetExpandParams {
+  url?: string;
+  filter?: string;
+  date?: string;
+  offset?: number;
+  count?: number;
+}
+
+/**
  * The MedplumClient class provides a client for the Medplum FHIR server.
  *
  * The client can be used in the browser, in a Node.js application, or in a Medplum Bot.
@@ -647,6 +660,7 @@ export class MedplumClient extends EventTarget {
   private clientSecret?: string;
   private autoBatchTimerId?: any;
   private accessToken?: string;
+  private accessTokenExpires?: number;
   private refreshToken?: string;
   private refreshPromise?: Promise<any>;
   private profilePromise?: Promise<any>;
@@ -802,6 +816,7 @@ export class MedplumClient extends EventTarget {
     this.requestCache?.clear();
     this.accessToken = undefined;
     this.refreshToken = undefined;
+    this.accessTokenExpires = undefined;
     this.sessionDetails = undefined;
     this.medplumServer = undefined;
     this.dispatchEvent({ type: 'change' });
@@ -1110,9 +1125,8 @@ export class MedplumClient extends EventTarget {
     if (!code) {
       await this.requestAuthorization(loginParams);
       return undefined;
-    } else {
-      return this.processCode(code);
     }
+    return this.processCode(code);
   }
 
   /**
@@ -1292,7 +1306,7 @@ export class MedplumClient extends EventTarget {
     options?: RequestInit
   ): ReadablePromise<Bundle<ExtractResource<K>>> {
     const url = this.fhirSearchUrl(resourceType, query);
-    const cacheKey = url.toString() + '-search';
+    const cacheKey = 'search-' + url.toString();
     const cached = this.getCacheEntry(cacheKey, options);
     if (cached) {
       return cached.value;
@@ -1342,7 +1356,7 @@ export class MedplumClient extends EventTarget {
     const url = this.fhirSearchUrl(resourceType, query);
     url.searchParams.set('_count', '1');
     url.searchParams.sort();
-    const cacheKey = url.toString() + '-searchOne';
+    const cacheKey = 'searchOne-' + url.toString();
     const cached = this.getCacheEntry(cacheKey, options);
     if (cached) {
       return cached.value;
@@ -1382,7 +1396,7 @@ export class MedplumClient extends EventTarget {
     options?: RequestInit
   ): ReadablePromise<ResourceArray<ExtractResource<K>>> {
     const url = this.fhirSearchUrl(resourceType, query);
-    const cacheKey = url.toString() + '-searchResources';
+    const cacheKey = 'searchResources-' + url.toString();
     const cached = this.getCacheEntry(cacheKey, options);
     if (cached) {
       return cached.value;
@@ -1442,11 +1456,23 @@ export class MedplumClient extends EventTarget {
    * @param filter - The search string.
    * @param options - Optional fetch options.
    * @returns Promise to expanded ValueSet.
+   * @deprecated Use `valueSetExpand()` instead.
    */
   searchValueSet(system: string, filter: string, options?: RequestInit): ReadablePromise<ValueSet> {
+    return this.valueSetExpand({ url: system, filter }, options);
+  }
+
+  /**
+   * Searches a ValueSet resource using the "expand" operation.
+   * See: https://www.hl7.org/fhir/operation-valueset-expand.html
+   * @category Search
+   * @param params - The ValueSet expand parameters.
+   * @param options - Optional fetch options.
+   * @returns Promise to expanded ValueSet.
+   */
+  valueSetExpand(params: ValueSetExpandParams, options?: RequestInit): ReadablePromise<ValueSet> {
     const url = this.fhirUrl('ValueSet', '$expand');
-    url.searchParams.set('url', system);
-    url.searchParams.set('filter', filter);
+    url.search = new URLSearchParams(params as Record<string, string>).toString();
     return this.get(url.toString(), options);
   }
 
@@ -1893,9 +1919,8 @@ export class MedplumClient extends EventTarget {
 
     if (onProgress) {
       return this.uploadwithProgress(url, data, contentType, onProgress, options);
-    } else {
-      return this.post(url, data, contentType, options);
     }
+    return this.post(url, data, contentType, options);
   }
 
   uploadwithProgress(
@@ -2424,6 +2449,7 @@ export class MedplumClient extends EventTarget {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
     this.sessionDetails = undefined;
+    this.accessTokenExpires = tryGetJwtExpiration(accessToken);
     this.medplumServer = isMedplumAccessToken(accessToken);
   }
 
@@ -2527,7 +2553,8 @@ export class MedplumClient extends EventTarget {
   async getProfileAsync(): Promise<ProfileResource | undefined> {
     if (this.profilePromise) {
       return this.profilePromise;
-    } else if (this.sessionDetails) {
+    }
+    if (this.sessionDetails) {
       return this.sessionDetails.profile;
     }
     return this.refreshProfile();
@@ -2721,9 +2748,7 @@ export class MedplumClient extends EventTarget {
    * @returns The JSON content body if available.
    */
   private async request<T>(method: string, url: string, options: RequestInit = {}): Promise<T> {
-    if (this.refreshPromise) {
-      await this.refreshPromise;
-    }
+    await this.refreshIfExpired();
 
     options.method = method;
     this.addFetchOptionsDefaults(options);
@@ -3056,6 +3081,22 @@ export class MedplumClient extends EventTarget {
     }
 
     return this.fetchTokens(formBody);
+  }
+
+  /**
+   * Refreshes the access token using the refresh token if available.
+   * @returns Promise to refresh the access token.
+   */
+  refreshIfExpired(): Promise<void> {
+    // If (1) not already refreshing, (2) we have an access token, and (3) the access token is expired,
+    // then start a refresh.
+    if (!this.refreshPromise && this.accessTokenExpires !== undefined && this.accessTokenExpires < Date.now()) {
+      // The result of the `refresh()` function is cached in `this.refreshPromise`,
+      // so we can safely ignore the return value here.
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      this.refresh();
+    }
+    return this.refreshPromise ?? Promise.resolve();
   }
 
   /**

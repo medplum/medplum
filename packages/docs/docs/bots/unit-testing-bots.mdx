@@ -102,12 +102,12 @@ Once you have created your data, you can write your tests. The above example use
 
 #### Using the Medplum CLI
 
-If you have a dev project that already has rich data, you can use the Mepdlum CLI to easily convert this data into test data.
+If you have a dev project that already has rich data, you can use the Medplum CLI to easily convert this data into test data.
 
 The Medplum CLI offers the optional `--as-transaction` flag when using the `medplum get` command. A `GET` request returns a `Bundle` with `type=searchset`, but this flag will convert it to `type=transaction`.
 
 <details>
-  <summary>Example: Get a patient and all encounters that reference them as a transactioin</summary>
+  <summary>Example: Get a patient and all encounters that reference them as a transaction</summary>
   <MedplumCodeBlock language="ts" selectBlocks="cliAsTransaction">
     {ExampleCode3}
   </MedplumCodeBlock>
@@ -115,7 +115,7 @@ The Medplum CLI offers the optional `--as-transaction` flag when using the `medp
 
 This example searches for all `Patient` resources named 'Alex'. It also uses the [`_revinclude` parameter](/docs/search/includes) to search for all `Encounter` resources that reference those patients.
 
-A transaction `Bundle` can be used directly in a batch request, and can be passed as an argument to `executeBatch` on your `MockClient`. This allows you to easily create test resoures from already existing data.
+A transaction `Bundle` can be used directly in a batch request, and can be passed as an argument to `executeBatch` on your `MockClient`. This allows you to easily create test resources from already existing data.
 
 #### Cloning an Existing Projects
 
@@ -158,12 +158,12 @@ Many times, you'd like to make sure your Bot is [idempotent](https://en.wikipedi
 
 ### Using the Medplum CLI
 
-If you have a dev project that already has rich data, you can use the Mepdlum CLI to easily convert this data into test data.
+If you have a dev project that already has rich data, you can use the Medplum CLI to easily convert this data into test data.
 
 The Medplum CLI offers the optional `--as-transaction` flag when using the `medplum get` command. A `GET` request returns a `Bundle` with `type=searchset`, but this flag will convert it to `type=transaction`.
 
 <details>
-<summary>Example: Get a patient and all encounters that reference them as a transactioin</summary>
+<summary>Example: Get a patient and all encounters that reference them as a transaction</summary>
 
 ```cli
 
@@ -175,4 +175,4 @@ The Medplum CLI offers the optional `--as-transaction` flag when using the `medp
 
 This example searches for all `Patient` resources named 'Alex'. It also uses the [`_revinclude` parameter](/docs/search/includes) to search for all `Encounter` resources that reference those patients.
 
-A transaction `Bundle` can be used directly in a batch request, and can be passed as an argument to `executeBatch` on your `MockClient`. This allows you to easily create test resoures from already existing data.
+A transaction `Bundle` can be used directly in a batch request, and can be passed as an argument to `executeBatch` on your `MockClient`. This allows you to easily create test resources from already existing data.

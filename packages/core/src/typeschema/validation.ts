@@ -3,24 +3,24 @@ import { UCUM } from '../constants';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import {
+  OperationOutcomeError,
   createConstraintIssue,
   createProcessingIssue,
   createStructureIssue,
-  OperationOutcomeError,
   validationError,
 } from '../outcomes';
 import { PropertyType, TypedValue } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
-import { crawlResource, getNestedProperty, ResourceVisitor } from './crawler';
+import { ResourceVisitor, crawlResource, getNestedProperty } from './crawler';
 import {
   Constraint,
-  getDataType,
   InternalSchemaElement,
   InternalTypeSchema,
-  parseStructureDefinition,
   SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
+  getDataType,
+  parseStructureDefinition,
 } from './types';
 
 /*
@@ -209,7 +209,8 @@ class ResourceValidator implements ResourceVisitor {
         this.issues.push(createStructureIssue(path, 'Missing required property'));
       }
       return false;
-    } else if (isEmpty(value)) {
+    }
+    if (isEmpty(value)) {
       this.issues.push(createStructureIssue(path, 'Invalid empty value'));
       return false;
     }
@@ -287,10 +288,10 @@ class ResourceValidator implements ResourceVisitor {
   private isExpressionTrue(constraint: Constraint, value: TypedValue, path: string): boolean {
     try {
       const evalValues = evalFhirPathTyped(constraint.expression, [value], {
-        context: value,
-        resource: toTypedValue(this.currentResource[this.currentResource.length - 1]),
-        rootResource: toTypedValue(this.rootResource),
-        ucum: toTypedValue(UCUM),
+        '%context': value,
+        '%resource': toTypedValue(this.currentResource[this.currentResource.length - 1]),
+        '%rootResource': toTypedValue(this.rootResource),
+        '%ucum': toTypedValue(UCUM),
       });
 
       return evalValues.length === 1 && evalValues[0].value === true;
@@ -312,7 +313,7 @@ class ResourceValidator implements ResourceVisitor {
         return;
       }
       const expectedType = fhirTypeToJsType[type as keyof typeof fhirTypeToJsType];
-      // rome-ignore lint/suspicious/useValidTypeof: expected value ensured to be one of: 'string' | 'boolean' | 'number'
+      // biome-ignore lint/suspicious/useValidTypeof: expected value ensured to be one of: 'string' | 'boolean' | 'number'
       if (typeof value !== expectedType) {
         if (value !== null) {
           this.issues.push(
@@ -346,7 +347,7 @@ class ResourceValidator implements ResourceVisitor {
   }
 
   private validateNumber(n: number, type: string, path: string): void {
-    if (isNaN(n) || !isFinite(n)) {
+    if (Number.isNaN(n) || !Number.isFinite(n)) {
       this.issues.push(createStructureIssue(path, 'Invalid numeric value'));
     } else if (isIntegerType(type) && !Number.isInteger(n)) {
       this.issues.push(createStructureIssue(path, 'Expected number to be an integer'));
@@ -413,7 +414,8 @@ function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: 
 function matchesSpecifiedValue(value: TypedValue | TypedValue[], element: InternalSchemaElement): boolean {
   if (element.pattern && !deepIncludes(value, element.pattern)) {
     return false;
-  } else if (element.fixed && !deepEquals(value, element.fixed)) {
+  }
+  if (element.fixed && !deepEquals(value, element.fixed)) {
     return false;
   }
   return true;
@@ -438,16 +440,16 @@ export function matchDiscriminant(
     case 'pattern':
       if (!value || !sliceElement) {
         return false;
-      } else if (matchesSpecifiedValue(value, sliceElement)) {
+      }
+      if (matchesSpecifiedValue(value, sliceElement)) {
         return true;
       }
       break;
     case 'type':
       if (!value || !sliceType?.length) {
         return false;
-      } else {
-        return sliceType.some((t) => t.code === value.type);
       }
+      return sliceType.some((t) => t.code === value.type);
     // Other discriminator types are not yet supported, see http://hl7.org/fhir/R4/profiling.html#discriminator
   }
   // Default to no match

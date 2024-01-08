@@ -1,5 +1,5 @@
 import { Stack } from '@mantine/core';
-import { InternalSchemaElement, TypedValue, getPathDisplayName } from '@medplum/core';
+import { InternalSchemaElement, TypedValue, getPathDisplayName, isPopulated } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMemo, useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
@@ -9,7 +9,8 @@ import { getValueAndTypeFromElement } from '../ResourcePropertyDisplay/ResourceP
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 
-const EXTENSION_KEYS = ['extension', 'modifierExtension'];
+const EXTENSION_KEYS = new Set(['extension', 'modifierExtension']);
+const IGNORED_PROPERTIES = new Set(['id', ...DEFAULT_IGNORED_PROPERTIES].filter((prop) => !EXTENSION_KEYS.has(prop)));
 
 export interface ElementsInputProps {
   type: string | undefined;
@@ -43,6 +44,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
       props.onChange(newValue);
     }
   }
+
   return (
     <Stack style={{ flexGrow: 1 }} data-testid={props.testId}>
       {Object.entries(elements).map(([key, element]) => {
@@ -59,12 +61,10 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
           return null;
         }
 
-        if (EXTENSION_KEYS.includes(key)) {
+        if (EXTENSION_KEYS.has(key) && !isPopulated(element.slicing?.slices)) {
           // an extension property without slices has no nested extensions
-          if (!element.slicing || element.slicing.slices.length === 0) {
-            return null;
-          }
-        } else if (key === 'id' || DEFAULT_IGNORED_PROPERTIES.includes(key)) {
+          return null;
+        } else if (IGNORED_PROPERTIES.has(key)) {
           return null;
         } else if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && element.path.split('.').length === 2) {
           return null;
@@ -97,7 +97,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
         );
 
         // no FormSection wrapper for extensions
-        if (props.type === 'Extension' || EXTENSION_KEYS.includes(key)) {
+        if (props.type === 'Extension' || EXTENSION_KEYS.has(key)) {
           return resourcePropertyInput;
         }
 

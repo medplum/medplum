@@ -131,6 +131,7 @@ const q: Questionnaire = {
   name: 'Health Gorilla Order Form',
   title: 'Health Gorilla Order Form',
   status: 'active',
+  subjectType: ['Patient'],
   item: [
     {
       id: 'page1',
@@ -149,19 +150,6 @@ const q: Questionnaire = {
             {
               url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
               valueCode: 'Practitioner',
-            },
-          ],
-        },
-        {
-          id: 'patient',
-          linkId: 'patient',
-          type: 'reference',
-          text: 'Patient',
-          required: true,
-          extension: [
-            {
-              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
-              valueCode: 'Patient',
             },
           ],
         },

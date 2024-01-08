@@ -2,6 +2,7 @@ import { MantineProvider, MantineThemeOverride } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { BrowserRouter } from 'react-router-dom';
+import { createGlobalTimer } from '../src/stories/MockDateWrapper.utils';
 
 export const parameters = {
   layout: 'fullscreen',
@@ -15,8 +16,14 @@ export const parameters = {
   },
 };
 
+// wrap intialization of MockClient and initial page navigation
+// so that resources created in MockFetchClient#initMockRepo have
+// consistent timestamps between storybook runs
+const clock = createGlobalTimer();
 const medplum = new MockClient();
-medplum.get('/');
+medplum.get('/').then(() => {
+  clock.restore();
+});
 
 const theme: MantineThemeOverride = {
   headings: {

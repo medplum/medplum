@@ -177,7 +177,7 @@ Function UpgradeApp
 
     # Create the service
     DetailPrint "Creating service..."
-    ExecWait "shawl-v1.4.0-win64.exe add --name $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
+    ExecWait "shawl-v1.4.0-win64.exe add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service display name
@@ -239,7 +239,7 @@ Function InstallApp
 
     # Create the service
     DetailPrint "Creating service..."
-    ExecWait "shawl-v1.4.0-win64.exe add --name $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
+    ExecWait "shawl-v1.4.0-win64.exe add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service display name

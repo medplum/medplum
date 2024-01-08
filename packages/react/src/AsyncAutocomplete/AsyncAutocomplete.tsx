@@ -23,15 +23,14 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const { defaultValue, toKey, toOption, loadOptions, onChange, onCreate, creatable, ...rest } = props;
   const defaultItems = toDefaultItems(defaultValue);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [lastValue, setLastValue] = useState<string>();
   const [timer, setTimer] = useState<number>();
   const [abortController, setAbortController] = useState<AbortController>();
   const [autoSubmit, setAutoSubmit] = useState<boolean>();
   const [selected, setSelected] = useState<AsyncAutocompleteOption<T>[]>(defaultItems.map(toOption));
   const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
 
+  const lastLoadOptionsRef = useRef<AsyncAutocompleteProps<T>['loadOptions']>();
   const lastValueRef = useRef<string>();
-  lastValueRef.current = lastValue;
 
   const timerRef = useRef<number>();
   timerRef.current = timer;
@@ -49,12 +48,13 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     setTimer(undefined);
 
     const value = inputRef.current?.value.trim() || '';
-    if (value === lastValueRef.current) {
-      // Nothing has changed, move on
+    if (value === lastValueRef.current && loadOptions === lastLoadOptionsRef.current) {
+      // Same search input and loadOptions function, move on
       return;
     }
 
-    setLastValue(value);
+    lastValueRef.current = value;
+    lastLoadOptionsRef.current = loadOptions;
 
     const newAbortController = new AbortController();
     setAbortController(newAbortController);

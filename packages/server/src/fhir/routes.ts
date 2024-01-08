@@ -10,6 +10,7 @@ import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
 import { agentPushHandler } from './operations/agentpush';
+import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
 import { deployHandler } from './operations/deploy';
 import { evaluateMeasureHandler } from './operations/evaluatemeasure';
@@ -17,17 +18,17 @@ import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
+import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
 import { patientEverythingHandler } from './operations/patienteverything';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
+import { projectInitHandler } from './operations/projectinit';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { sendOutcome } from './outcomes';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { getFullUrl } from './search';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { projectInitHandler } from './operations/projectinit';
-import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 
 export const fhirRouter = Router();
@@ -152,6 +153,9 @@ protectedRoutes.get('/Patient/:id/([$]|%24)everything', asyncWrap(patientEveryth
 
 // $expunge operation
 protectedRoutes.post('/:resourceType/:id/([$]|%24)expunge', asyncWrap(expungeHandler));
+
+// $get-ws-binding-token operation
+protectedRoutes.get('/Subscription/:id/([$]|%24)get-ws-binding-token', asyncWrap(getWsBindingTokenHandler));
 
 // Validate create resource
 protectedRoutes.post(

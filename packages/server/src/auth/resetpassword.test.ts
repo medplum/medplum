@@ -1,12 +1,12 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { DomainConfiguration } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, Operator, resolveId } from '@medplum/core';
+import { DomainConfiguration, PasswordChangeRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
-import { createReference, resolveId } from '@medplum/core';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
@@ -382,6 +382,72 @@ describe('Reset Password', () => {
     expect(res.status).toBe(200);
     expect(SESv2Client).toHaveBeenCalledTimes(1); // Ensure SESv2Client is called once
     expect(SendEmailCommand).toHaveBeenCalledTimes(1); // Ensure SendEmailCommand is called once
+
+    // Verify email details
+    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
+    expect(args.Destination.ToAddresses[0]).toBe(email);
+
+    // Verify parsed email content
+    const parsed = await simpleParser(args.Content.Raw.Data);
+    expect(parsed.subject).toBe('Medplum Password Reset');
+  });
+
+  test('Password change request with redirectUri', async () => {
+    const email = `recaptcha-client${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { project, user } = await withTestContext(async () => {
+      // Register and create a project
+      const { project, user } = await registerNew({
+        firstName: 'Reset',
+        lastName: 'Reset',
+        projectName: 'Reset Project',
+        email,
+        password,
+      });
+
+      // Add the project to the user
+      await systemRepo.patchResource('User', resolveId(user) as string, [
+        {
+          path: '/project',
+          op: 'add',
+          value: createReference(project),
+        },
+      ]);
+
+      return { project, user };
+    });
+
+    // Attempt to reset the password for the user with a project
+    const res = await request(app).post('/auth/resetpassword').type('json').send({
+      email,
+      projectId: project.id,
+      recaptchaToken: 'xyz',
+      redirectUri: 'http://example.com',
+    });
+
+    // Verify the response and expectations
+    expect(res.status).toBe(200);
+    expect(SESv2Client).toHaveBeenCalledTimes(1); // Ensure SESv2Client is called once
+    expect(SendEmailCommand).toHaveBeenCalledTimes(1); // Ensure SendEmailCommand is called once
+
+    // Get newly created PasswordChangeRequest
+    const passwordChangeRequest = (await withTestContext(async () => {
+      const passwordChangeRequest = await systemRepo.searchOne<PasswordChangeRequest>({
+        resourceType: 'PasswordChangeRequest',
+        filters: [
+          {
+            code: 'user',
+            operator: Operator.EQUALS,
+            value: getReferenceString(user),
+          },
+        ],
+      });
+      return passwordChangeRequest;
+    })) as PasswordChangeRequest;
+
+    // Verify PasswordChangeRequest redirectUri
+    expect(passwordChangeRequest.redirectUri).toBe('http://example.com');
 
     // Verify email details
     const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];

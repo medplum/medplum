@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cli",
-  "version": "2.2.4",
+  "version": "2.2.7",
   "description": "Medplum Command Line Interface",
   "keywords": [
     "medplum",
@@ -35,7 +35,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
+    "build": "npm run clean && tsc && node esbuild.mjs",
     "clean": "rimraf dist",
     "medplum": "ts-node src/index.ts",
     "test": "jest"

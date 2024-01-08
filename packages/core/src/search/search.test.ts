@@ -1,8 +1,8 @@
-import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
-import { formatSearchQuery, Operator, parseSearchDefinition, parseXFhirQuery, SearchRequest } from './search';
-import { indexSearchParameterBundle } from '../types';
 import { readJson } from '@medplum/definitions';
+import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
+import { Operator, SearchRequest, formatSearchQuery, parseSearchDefinition, parseXFhirQuery } from './search';
 
 describe('Search Utils', () => {
   beforeAll(() => {
@@ -351,7 +351,7 @@ describe('Search Utils', () => {
       name: [{ given: ['Jan', 'Wyatt'], family: 'Smith' }, { text: 'Green Lantern' }],
       generalPractitioner: [{ reference: 'Practitioner/98765' }],
     };
-    const actual = parseXFhirQuery(query, { patient: { type: 'Patient', value: patient } });
+    const actual = parseXFhirQuery(query, { '%patient': { type: 'Patient', value: patient } });
     expect(actual).toEqual(expected);
   });
 });

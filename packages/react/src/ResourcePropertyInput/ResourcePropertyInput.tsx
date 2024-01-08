@@ -1,5 +1,5 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
-import { capitalize, InternalSchemaElement, PropertyType } from '@medplum/core';
+import { capitalize, HTTP_HL7_ORG, InternalSchemaElement, PropertyType } from '@medplum/core';
 import { ElementDefinitionBinding, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
 import { useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
@@ -23,6 +23,7 @@ import { RangeInput } from '../RangeInput/RangeInput';
 import { RatioInput } from '../RatioInput/RatioInput';
 import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
 import { ResourceArrayInput } from '../ResourceArrayInput/ResourceArrayInput';
+import { SensitiveTextarea } from '../SensitiveTextarea/SensitiveTextarea';
 import { TimingInput } from '../TimingInput/TimingInput';
 import { getErrorsForInput } from '../utils/outcomes';
 import { ComplexTypeInputProps } from './ResourcePropertyInput.utils';
@@ -46,7 +47,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
 
   const propertyTypes = property.type as ElementDefinitionType[];
 
-  if (property.max > 1 && !props.arrayElement) {
+  if ((property.isArray || property.max > 1) && !props.arrayElement) {
     if (defaultPropertyType === PropertyType.Attachment) {
       return <AttachmentArrayInput name={name} defaultValue={defaultValue} onChange={onChange} />;
     }
@@ -104,7 +105,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
   }
   const [selectedType, setSelectedType] = useState(initialPropertyType);
   return (
-    <Group spacing="xs" grow noWrap>
+    <Group spacing="xs" grow noWrap align="flex-start">
       <NativeSelect
         style={{ width: '200px' }}
         defaultValue={selectedType.code}
@@ -174,6 +175,24 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.time:
     case PropertyType.uri:
     case PropertyType.url:
+      if (props.path === 'Project.secret.value[x]') {
+        return (
+          <SensitiveTextarea
+            id={name}
+            name={name}
+            data-testid={name}
+            defaultValue={defaultValue}
+            required={required}
+            onChange={(e) => {
+              if (props.onChange) {
+                props.onChange(e.currentTarget.value);
+              }
+            }}
+            error={getErrorsForInput(props.outcome, name)}
+          />
+        );
+      }
+
       return (
         <TextInput
           id={name}
@@ -245,10 +264,12 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           }}
         />
       );
+    case PropertyType.base64Binary:
     case PropertyType.markdown:
       return (
         <Textarea
           id={name}
+          spellCheck={propertyType !== PropertyType.base64Binary}
           name={name}
           data-testid={name}
           defaultValue={defaultValue}
@@ -313,6 +334,17 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
   }
 }
 
+const RESOURCE_TYPE_URL_PREFIXES = [
+  `${HTTP_HL7_ORG}/fhir/StructureDefinition/`,
+  'https://medplum.com/fhir/StructureDefinition/',
+];
 function getTargetTypes(elementDefinitionType?: ElementDefinitionType): string[] | undefined {
-  return elementDefinitionType?.targetProfile?.map((p) => p.split('/').pop() as string);
+  return elementDefinitionType?.targetProfile?.map((p) => {
+    const resourceTypePrefix = RESOURCE_TYPE_URL_PREFIXES.find((prefix) => p.startsWith(prefix));
+    if (resourceTypePrefix) {
+      return p.slice(resourceTypePrefix.length);
+    } else {
+      return p;
+    }
+  });
 }

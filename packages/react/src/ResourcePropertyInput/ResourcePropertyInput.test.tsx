@@ -14,9 +14,9 @@ import {
   Ratio,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
-import { MedplumProvider } from '@medplum/react-hooks';
 import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
 
 const medplum = new MockClient();
@@ -601,5 +601,33 @@ describe('ResourcePropertyInput', () => {
 
     expect(screen.getByDisplayValue('integer')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('Quantity')).toBeNull();
+  });
+
+  test('Project secrets', async () => {
+    const property: InternalSchemaElement = {
+      ...baseProperty,
+      path: 'Project.secret.value[x]',
+      type: [{ code: 'string' }],
+    };
+
+    const onChange = jest.fn();
+
+    await setup({
+      ...defaultProps,
+      name: 'secret',
+      property,
+      onChange,
+    });
+
+    const input = screen.getByTestId('secret');
+    expect(input).toBeInTheDocument();
+
+    expect(screen.getByTitle('Copy secret')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'hello' } });
+    });
+
+    expect(onChange).toHaveBeenCalledWith('hello', 'secret');
   });
 });

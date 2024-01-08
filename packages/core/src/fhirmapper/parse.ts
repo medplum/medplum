@@ -1,4 +1,5 @@
 import {
+  ConceptMap,
   StructureMap,
   StructureMapGroup,
   StructureMapGroupInput,
@@ -13,6 +14,20 @@ import { Atom, Parser } from '../fhirlexer/parse';
 import { FunctionAtom, LiteralAtom, SymbolAtom } from '../fhirpath/atoms';
 import { OperatorPrecedence, initFhirPathParserBuilder } from '../fhirpath/parse';
 import { tokenize } from './tokenize';
+
+/**
+ * Mapping from FHIR Mapping Language equivalence operators to FHIR ConceptMap equivalence codes.
+ *
+ * See: https://build.fhir.org/mapping.g4 for FHIR Mapping Language operators.
+ *
+ * See: https://hl7.org/fhir/r4/valueset-concept-map-equivalence.html for ConceptMap equivalence codes.
+ *
+ * @internal
+ */
+const CONCEPT_MAP_EQUIVALENCE: Record<string, string> = {
+  '-': 'disjoint',
+  '==': 'equal',
+};
 
 class StructureMapParser {
   readonly structureMap: StructureMap = { resourceType: 'StructureMap' };
@@ -202,7 +217,6 @@ class StructureMapParser {
 
     if (this.parser.hasMore() && this.parser.peek()?.value === 'default') {
       this.parser.consume('Symbol', 'default');
-      // this.parser.consumeAndParse();
       result.defaultValueString = this.parser.consume('String').value;
     }
 
@@ -223,7 +237,7 @@ class StructureMapParser {
 
     if (this.parser.peek()?.value === 'log') {
       this.parser.consume('Symbol', 'log');
-      result.logMessage = this.parser.consume('String').value;
+      result.logMessage = this.parser.consume().value;
     }
 
     if (this.parser.peek()?.value === 'where') {
@@ -269,45 +283,35 @@ class StructureMapParser {
       result.variable = this.parser.consume().value;
     }
 
+    if (this.parser.peek()?.value === 'share') {
+      this.parser.consume('Symbol', 'share');
+      result.listMode = ['share'];
+      this.parser.consume('Symbol'); // NB: Not in the spec, but used by FHIRCH maps
+    }
+
     if (
       this.parser.peek()?.value === 'first' ||
-      this.parser.peek()?.value === 'share' ||
       this.parser.peek()?.value === 'last' ||
       this.parser.peek()?.value === 'collate'
     ) {
-      result.listMode = [this.parser.consume().value as 'first' | 'share' | 'last' | 'collate'];
+      result.listMode = [this.parser.consume().value as 'first' | 'last' | 'collate'];
     }
 
     return result;
   }
 
   private parseRuleTargetTransform(result: StructureMapGroupRuleTarget): void {
-    result.transform = 'copy';
-
-    const transformFhirPath = this.parser.consumeAndParse(OperatorPrecedence.As);
-    if (transformFhirPath instanceof SymbolAtom) {
-      this.parseRuleTargetSymbol(result, transformFhirPath);
-    } else if (transformFhirPath instanceof FunctionAtom) {
-      this.parseRuleTargetFunction(result, transformFhirPath);
-    } else if (transformFhirPath instanceof LiteralAtom) {
-      this.parseRuleTargetLiteral(result, transformFhirPath);
+    const transformAtom = this.parser.consumeAndParse(OperatorPrecedence.As);
+    if (transformAtom instanceof FunctionAtom) {
+      result.transform = transformAtom.name as 'append' | 'truncate';
+      result.parameter = transformAtom.args?.map(atomToParameter);
+    } else if (transformAtom instanceof LiteralAtom || transformAtom instanceof SymbolAtom) {
+      result.transform = 'copy';
+      result.parameter = [atomToParameter(transformAtom)];
     } else {
-      result.parameter = [{ valueId: transformFhirPath.toString() }];
+      result.transform = 'evaluate';
+      result.parameter = [{ valueString: transformAtom.toString() }];
     }
-  }
-
-  private parseRuleTargetSymbol(result: StructureMapGroupRuleTarget, literalAtom: SymbolAtom): void {
-    result.parameter = [{ valueId: literalAtom.name }];
-  }
-
-  private parseRuleTargetFunction(result: StructureMapGroupRuleTarget, functionAtom: FunctionAtom): void {
-    // https://hl7.org/fhir/r4/valueset-map-transform.html
-    result.transform = functionAtom.name as 'copy';
-    result.parameter = functionAtom.args?.map(atomToParameter);
-  }
-
-  private parseRuleTargetLiteral(result: StructureMapGroupRuleTarget, literalAtom: LiteralAtom): void {
-    result.parameter = [literalToParameter(literalAtom)];
   }
 
   private parseRuleContext(): string {
@@ -330,10 +334,69 @@ class StructureMapParser {
   }
 
   private parseConceptMap(): void {
-    while (this.parser.peek()?.value !== '}') {
-      this.parser.consume();
+    this.parser.consume('Symbol', 'conceptmap');
+
+    const conceptMap = { resourceType: 'ConceptMap', status: 'active' } as ConceptMap;
+    conceptMap.url = this.parser.consume('String').value;
+
+    this.parser.consume('{');
+
+    const prefixes: Record<string, string> = {};
+
+    let next = this.parser.peek()?.value;
+    while (next !== '}') {
+      if (next === 'prefix') {
+        this.parseConceptMapPrefix(prefixes);
+      } else {
+        this.parseConceptMapRule(conceptMap, prefixes);
+      }
+      next = this.parser.peek()?.value;
     }
     this.parser.consume('}');
+
+    if (!this.structureMap.contained) {
+      this.structureMap.contained = [];
+    }
+    this.structureMap.contained.push(conceptMap);
+  }
+
+  private parseConceptMapPrefix(prefixes: Record<string, string>): void {
+    this.parser.consume('Symbol', 'prefix');
+    const prefix = this.parser.consume().value;
+    this.parser.consume('=');
+    const uri = this.parser.consume().value;
+    prefixes[prefix] = uri;
+  }
+
+  private parseConceptMapRule(conceptMap: ConceptMap, prefixes: Record<string, string>): void {
+    const sourcePrefix = this.parser.consume().value;
+    const sourceSystem = prefixes[sourcePrefix];
+    this.parser.consume(':');
+    const sourceCode = this.parser.consume().value;
+    const equivalence = CONCEPT_MAP_EQUIVALENCE[this.parser.consume().value] as 'relatedto';
+    const targetPrefix = this.parser.consume().value;
+    const targetSystem = prefixes[targetPrefix];
+    this.parser.consume(':');
+    const targetCode = this.parser.consume().value;
+
+    let group = conceptMap?.group?.find((g) => g.source === sourceSystem && g.target === targetSystem);
+
+    if (!group) {
+      group = { source: sourceSystem, target: targetSystem };
+      if (!conceptMap.group) {
+        conceptMap.group = [];
+      }
+      conceptMap.group.push(group);
+    }
+
+    if (!group.element) {
+      group.element = [];
+    }
+
+    group.element.push({
+      code: sourceCode,
+      target: [{ code: targetCode, equivalence }],
+    });
   }
 }
 
@@ -344,7 +407,7 @@ function atomToParameter(atom: Atom): StructureMapGroupRuleTargetParameter {
   if (atom instanceof LiteralAtom) {
     return literalToParameter(atom);
   }
-  throw new Error('Unexpected atom: ' + atom.constructor.name);
+  throw new Error(`Unknown parameter atom type: ${atom.constructor.name} (${atom.toString()})`);
 }
 
 function literalToParameter(literalAtom: LiteralAtom): StructureMapGroupRuleTargetParameter {
@@ -355,6 +418,7 @@ function literalToParameter(literalAtom: LiteralAtom): StructureMapGroupRuleTarg
       return { valueDecimal: literalAtom.value.value as number };
     case 'integer':
       return { valueInteger: literalAtom.value.value as number };
+    case 'dateTime':
     case 'string':
       return { valueString: literalAtom.value.value as string };
     default:

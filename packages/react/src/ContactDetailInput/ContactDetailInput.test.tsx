@@ -8,6 +8,9 @@ describe('ContactDetailInput', () => {
     render(
       <ContactDetailInput
         name="test"
+        path="test"
+        onChange={jest.fn()}
+        outcome={undefined}
         defaultValue={{ name: 'Foo', telecom: [{ system: 'email', value: 'abc@example.com' }] }}
       />
     );
@@ -24,7 +27,15 @@ describe('ContactDetailInput', () => {
   test('Change events', async () => {
     let lastValue: ContactDetail | undefined = undefined;
 
-    render(<ContactDetailInput name="test" defaultValue={{}} onChange={(value) => (lastValue = value)} />);
+    render(
+      <ContactDetailInput
+        name="test"
+        path="test"
+        outcome={undefined}
+        defaultValue={{}}
+        onChange={(value) => (lastValue = value)}
+      />
+    );
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('Name'), { target: { value: 'Foo' } });
@@ -61,6 +72,8 @@ describe('ContactDetailInput', () => {
     render(
       <ContactDetailInput
         name="test"
+        path="test"
+        outcome={undefined}
         defaultValue={{
           name: 'Foo',
           telecom: [
