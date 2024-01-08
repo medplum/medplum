@@ -2,9 +2,9 @@
 sidebar_position: 900
 ---
 
-# OpenTelemetry Support
+# OpenTelemetry
 
-This page describes how to add the Datadog agent to your ECS Fargate tasks. Adding Datadog allows you to collect metrics from all containers.
+This page describes Medplum's optional OpenTelemetry support, and how to integrate with AWS CloudWatch.
 
 ## Introduction to OpenTelemetry
 
@@ -108,8 +108,6 @@ Run `deploy` to apply changes:
 ```bash
 npx cdk deploy -c config=my-config-file.json
 ```
-
-For more details about the Datadog / Amazon ECS Fargate integration, refer to the full documentation: [https://docs.datadoghq.com/integrations/ecs_fargate/](https://docs.datadoghq.com/integrations/ecs_fargate/)
 
 ## OpenTelemetry Resources
 
