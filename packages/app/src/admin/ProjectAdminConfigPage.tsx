@@ -23,8 +23,8 @@ export function ProjectAdminConfigPage(): JSX.Element {
       <Divider my="lg" />
       <Title order={2}>Force Set Password</Title>
       <p>
-        Note that this applies to all projects for the user. Therefore, this should only be used in extreme
-        circumstances. Always prefer to use the "Forgot Password" flow first.
+        Note that this applies only to users scoped to this project. This will not work for users who are members of
+        multiple projects. Always prefer to use the "Forgot Password" flow first.
       </p>
       <Form onSubmit={forceSetPassword}>
         <Stack>
