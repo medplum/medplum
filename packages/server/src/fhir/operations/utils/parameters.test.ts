@@ -176,8 +176,11 @@ describe('Operation Input Parameters parsing', () => {
   });
 
   test.each<[Parameters | Record<string, any>, string]>([
-    [{}, `Expected required input parameter 'requiredIn'`],
-    [{ resourceType: 'Parameters', parameter: [] }, 'Expected 1 value for input parameter requiredIn, but 0 provided'],
+    [{}, `Expected at least 1 value(s) for required input parameter 'requiredIn'`],
+    [
+      { resourceType: 'Parameters', parameter: [] },
+      'Expected 1 value(s) for input parameter requiredIn, but 0 provided',
+    ],
     [
       {
         resourceType: 'Parameters',
@@ -186,9 +189,9 @@ describe('Operation Input Parameters parsing', () => {
           { name: 'requiredIn', valueBoolean: false },
         ],
       },
-      'Expected 1 value for input parameter requiredIn, but 2 provided',
+      'Expected 1 value(s) for input parameter requiredIn, but 2 provided',
     ],
-    [{ requiredIn: [true, false] }, 'Expected 1 value for input parameter requiredIn, but 2 provided'],
+    [{ requiredIn: [true, false] }, 'Expected 1 value(s) for input parameter requiredIn, but 2 provided'],
     [
       {
         resourceType: 'Parameters',
@@ -198,9 +201,12 @@ describe('Operation Input Parameters parsing', () => {
           { name: 'singleIn', valueString: 'b' },
         ],
       },
-      'Expected 0..1 value for input parameter singleIn, but 2 provided',
+      'Expected 0..1 value(s) for input parameter singleIn, but 2 provided',
     ],
-    [{ requiredIn: false, singleIn: ['a', 'b'] }, 'Expected 0..1 value for input parameter singleIn, but 2 provided'],
+    [
+      { requiredIn: false, singleIn: ['a', 'b'] },
+      'Expected 0..1 value(s) for input parameter singleIn, but 2 provided',
+    ],
   ])('Throws error on incorrect argument counts: %j', (body, errorMsg) => {
     const req: Request = { body } as unknown as Request;
     expect(() => parseInputParameters(opDef, req)).toThrow(new Error(errorMsg));
