@@ -5,7 +5,7 @@ import { createInterface } from 'node:readline';
 import { cpt, cvx, icd10cm, icd10pcs, loinc, rxnorm, snomed } from './codesystems';
 import { env } from 'node:process';
 import { MedplumClient } from '@medplum/core';
-import { open, stat, writeFile } from 'node:fs/promises';
+import { writeFile } from 'node:fs/promises';
 
 const client = new MedplumClient({
   baseUrl: 'http://localhost:8103/',
@@ -179,29 +179,7 @@ async function addSources(): Promise<void> {
 }
 
 async function processConcepts(): Promise<Record<string, UmlsConcept>> {
-  if (await Promise.all([stat('concepts.ndjson'), stat('cache.tsv')]).catch((_) => undefined)) {
-    // Use cached results from disk
-    const startTime = process.hrtime.bigint();
-    const inStream = createReadStream('concepts.ndjson', 'utf8');
-    const rl = createInterface(inStream);
-
-    for await (const payload of rl) {
-      await sendParameters(JSON.parse(payload) as Parameters);
-    }
-
-    const mappedConcepts = createInterface(createReadStream('cache.tsv', 'utf8'));
-    const result = Object.create(null);
-    for await (const line of mappedConcepts) {
-      const [key, str] = line.split('\t', 2);
-      result[key] = new UmlsConcept(str);
-    }
-
-    console.log(`Processed cached concepts from disk in ${process.hrtime.bigint() - startTime}`);
-    return result;
-  }
-
   const inStream = createReadStream(resolve(__dirname, '2023AB/META/MRCONSO.RRF'), 'utf8');
-  const outStream = (await open('concepts.ndjson', 'w+', 0o660)).createWriteStream();
   const rl = createInterface(inStream);
 
   let processed = 0;
@@ -210,7 +188,6 @@ async function processConcepts(): Promise<Record<string, UmlsConcept>> {
   const codings = Object.create(null) as Record<string, Coding[]>;
   const mappedConcepts: Record<string, UmlsConcept> = Object.create(null);
 
-  const startTime = process.hrtime.bigint();
   for await (const line of rl) {
     const concept = new UmlsConcept(line);
     const source = umlsSources[concept.SAB];
@@ -253,7 +230,7 @@ async function processConcepts(): Promise<Record<string, UmlsConcept>> {
     }
 
     if (foundCodings.length >= 500) {
-      await sendCodings(foundCodings, source.system, outStream);
+      await sendCodings(foundCodings, source.system);
       codings[source.system] = [];
     } else {
       codings[source.system] = foundCodings;
@@ -263,10 +240,9 @@ async function processConcepts(): Promise<Record<string, UmlsConcept>> {
 
   for (const [system, foundCodings] of Object.entries(codings)) {
     if (foundCodings.length > 0) {
-      await sendCodings(foundCodings, system, outStream);
+      await sendCodings(foundCodings, system);
     }
   }
-  outStream.close();
   await writeFile(
     'cache.tsv',
     Object.entries(mappedConcepts)
@@ -275,7 +251,7 @@ async function processConcepts(): Promise<Record<string, UmlsConcept>> {
     'utf8'
   );
 
-  console.log(`Processed ${fmtNum(processed)} entries in ${process.hrtime.bigint() - startTime}`);
+  console.log(`Processed ${fmtNum(processed)} entries`);
   console.log(`(skipped ${fmtNum(skipped)})`);
   console.log(`==============================`);
   for (const [systemUrl, count] of Object.entries(counts).sort((l, r) => r[1] - l[1])) {
@@ -449,21 +425,7 @@ type Property = {
 };
 
 async function processProperties(): Promise<void> {
-  if (await stat('properties.ndjson').catch((_) => undefined)) {
-    // Use cached results from disk
-    const startTime = process.hrtime.bigint();
-    const inStream = createReadStream('properties.ndjson', 'utf8');
-    const rl = createInterface(inStream);
-
-    for await (const payload of rl) {
-      await sendParameters(JSON.parse(payload) as Parameters);
-    }
-
-    console.log(`Processed cached properties from disk in ${process.hrtime.bigint() - startTime}`);
-    return;
-  }
   const inStream = createReadStream(resolve(__dirname, '2023AB/META/MRSAT.RRF'));
-  const outStream = (await open('properties.ndjson', 'w+', 0o660)).createWriteStream();
   const rl = createInterface(inStream);
 
   let processed = 0;
@@ -499,7 +461,7 @@ async function processProperties(): Promise<void> {
     }
 
     if (foundProperties.length >= 500) {
-      await sendProperties(properties[source.system], source.system, outStream);
+      await sendProperties(properties[source.system], source.system);
       properties[source.system] = [];
     } else {
       properties[source.system] = foundProperties;
@@ -512,10 +474,9 @@ async function processProperties(): Promise<void> {
 
   for (const [system, foundProperties] of Object.entries(properties)) {
     if (foundProperties.length > 0) {
-      await sendProperties(foundProperties, system, outStream);
+      await sendProperties(foundProperties, system);
     }
   }
-  outStream.close();
 
   console.log(`Found ${fmtNum(processed)} code properties`);
   console.log(`(skipped ${fmtNum(skipped)})`);
@@ -611,7 +572,6 @@ async function processRelationships(
   mappedCodes: Record<string, UmlsConcept>
 ): Promise<void> {
   const inStream = createReadStream(resolve(__dirname, '2023AB/META/MRREL.RRF'));
-  const outStream = (await open('relationships.ndjson', 'w+', 0o660)).createWriteStream();
   const rl = createInterface(inStream);
 
   let processed = 0;
@@ -671,7 +631,7 @@ async function processRelationships(
     }
 
     if (foundProperties.length >= 500) {
-      await sendProperties(properties[source.system], source.system, outStream);
+      await sendProperties(properties[source.system], source.system);
       properties[source.system] = [];
     } else {
       properties[source.system] = foundProperties;
@@ -684,10 +644,9 @@ async function processRelationships(
 
   for (const [system, foundProperties] of Object.entries(properties)) {
     if (foundProperties.length > 0) {
-      await sendProperties(foundProperties, system, outStream);
+      await sendProperties(foundProperties, system);
     }
   }
-  outStream.end();
 
   console.log(`Found ${fmtNum(processed)} relationship properties`);
   console.log(`(skipped ${fmtNum(skipped)})`);
