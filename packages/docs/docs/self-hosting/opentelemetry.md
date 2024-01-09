@@ -20,21 +20,9 @@ This page describes Medplum's optional OpenTelemetry support, and how to integra
 
 4. **Collectors**: The OpenTelemetry Collector offers a vendor-agnostic implementation for receiving, processing, and exporting telemetry data. It's a standalone service that can be deployed alongside your application, providing a centralized way to gather and dispatch observability data.
 
-## Introduction to AWS CloudWatch Agent
+## Introduction to AWS Distro for OpenTelemetry
 
-**AWS CloudWatch Agent** is a monitoring service provided by Amazon Web Services for collecting and tracking metrics and logs from your AWS resources and applications. It's a powerful tool for real-time monitoring and operational insights.
-
-### Features of AWS CloudWatch Agent
-
-1. **Collection of System-Level Metrics**: The CloudWatch Agent gathers system-level metrics such as CPU utilization, memory usage, disk I/O, and network bandwidth from your EC2 instances and on-premises servers.
-
-2. **Application Log Monitoring**: It can also be configured to collect and monitor logs from your applications and services, providing insights into their operational behavior.
-
-3. **Custom Metrics Support**: The CloudWatch Agent allows you to define and collect custom metrics specific to your application, enabling more detailed monitoring.
-
-4. **Integration with AWS Services**: Being an AWS-native service, it seamlessly integrates with other AWS services, offering a centralized solution for monitoring AWS resources and applications.
-
-5. **Flexibility and Configurability**: The CloudWatch Agent can be customized to suit specific monitoring needs, allowing for fine-grained control over what data is collected and how it's used.
+**AWS Distro for OpenTelemetry (ADOT)** is a secure and scalable observability solution provided by AWS, designed to integrate seamlessly with the broader OpenTelemetry ecosystem. As an AWS-supported distribution of the OpenTelemetry project, ADOT simplifies the process of collecting, processing, and exporting telemetry data — including metrics, traces, and logs — from your applications and infrastructure. By facilitating the collection of rich, detailed observability data, ADOT enables developers and operators to gain deeper insights into the performance and health of their applications. Furthermore, ADOT's integration with AWS CloudWatch provides a powerful platform for monitoring and analysis, allowing teams to leverage the robust features of CloudWatch for metrics storage, alerting, and dashboarding. This integration forms a comprehensive observability pipeline, from data collection with ADOT to data analysis and visualization with AWS CloudWatch, offering a cohesive solution for monitoring modern cloud-native applications on AWS.
 
 ## Using OpenTelemetry
 
@@ -85,11 +73,9 @@ Use the Medplum "additional containers" feature to add the AWS CloudWatch Agent 
   // ...
   "additionalContainers": [
     {
-      "name": "cloudwatch-agent",
-      "image": "amazon/cloudwatch-agent:latest",
-      "environment": {
-        "CW_CONFIG_CONTENT": "{ \"logs\": { \"metrics_collected\": { \"emf\": {} } }, \"metrics\": { \"metrics_collected\": { \"statsd\": { \"service_address\": \":8125\" } } } }"
-      }
+      "name": "aws-otel-collector",
+      "image": "amazon/aws-otel-collector:latest",
+      "command": ["--config=/etc/ecs/ecs-default-config.yaml"]
     }
   ]
 }
