@@ -9,8 +9,8 @@ import * as unzip from 'unzip-stream';
 
 const client = new MedplumClient({
   baseUrl: 'http://localhost:8103/',
-  clientId: '3d946d6b-f8bf-4b45-9bfd-7481caab94ed',
-  clientSecret: 'd158b7e49c7a0de656449f35042cc3af35d3b5d652c62e9d5d1e9cd02737cfe0',
+  clientId: '80110f1e-9b92-4eb1-a1a4-8b3a69d70c21',
+  clientSecret: 'ea7fabbdfb9ff978dd13c282d76b1c39b825876b97fe5b50a41e0dd4c18ca24c',
 });
 
 /**
@@ -46,15 +46,20 @@ class EOF extends Error {
 }
 
 async function main(): Promise<void> {
-  await addSources();
-
+  const archivePath = argv[2];
+  if (!archivePath) {
+    return Promise.reject(
+      new Error('Missing argument: specify path to UMLS release archive (e.g. umls-2023AB-full.zip)')
+    );
+  }
   let resolve: () => void, reject: (e: Error) => void;
   const result = new Promise<void>((_resolve, _reject) => {
     resolve = _resolve;
     reject = _reject;
   });
 
-  const archivePath = argv[2];
+  await addSources();
+
   let mappedCodes: Record<string, UmlsConcept>;
   let relationshipProperties: Record<string, string>;
   let remainingParts = 4;
@@ -81,9 +86,11 @@ async function main(): Promise<void> {
             remainingParts--;
           } else if (filePath.endsWith('/MRREL.RRF')) {
             if (!mappedCodes) {
-              throw new Error('Expected to read concepts (MRCONSO.RRF) before relationships (MRREL.RRF)');
+              return done(new Error('Expected to read concepts (MRCONSO.RRF) before relationships (MRREL.RRF)'));
             } else if (!relationshipProperties) {
-              throw new Error('Expected to read property definitions (MRDOC.RRF) before relationships (MRREL.RRF)');
+              return done(
+                new Error('Expected to read property definitions (MRDOC.RRF) before relationships (MRREL.RRF)')
+              );
             }
             console.log('Importing relationship properties...');
             await processRelationships(entry, relationshipProperties, mappedCodes);
@@ -91,7 +98,7 @@ async function main(): Promise<void> {
             remainingParts--;
           } else if (filePath.endsWith('/MRSAT.RRF')) {
             if (!mappedCodes) {
-              throw new Error('Expected to read concepts (MRCONSO.RRF) before properties (MRSAT.RRF)');
+              return done(new Error('Expected to read concepts (MRCONSO.RRF) before properties (MRSAT.RRF)'));
             }
             console.log('Importing concept properties...');
             await processProperties(entry);
