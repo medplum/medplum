@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'medplum/medplum'
     env:
-      NODE_VERSION: '18'
+      NODE_VERSION: '20'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: 'medplum'
       TURBO_REMOTE_ONLY: true
@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20
       - name: Cache node modules
         uses: actions/cache@v3
         env:
