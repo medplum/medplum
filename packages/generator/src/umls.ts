@@ -1,19 +1,20 @@
 import { CodeSystem, Coding, Parameters } from '@medplum/fhirtypes';
 import { WriteStream, createReadStream } from 'node:fs';
-import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { cpt, cvx, icd10cm, icd10pcs, loinc, rxnorm, snomed } from './codesystems';
-import { env } from 'node:process';
+import { argv, env } from 'node:process';
 import { MedplumClient } from '@medplum/core';
-import { open, stat, writeFile } from 'node:fs/promises';
+import { Readable, Transform, TransformCallback } from 'node:stream';
+import * as unzip from 'unzip-stream';
 
 const client = new MedplumClient({
   baseUrl: 'http://localhost:8103/',
-  accessToken: '',
+  clientId: '3d946d6b-f8bf-4b45-9bfd-7481caab94ed',
+  clientSecret: 'd158b7e49c7a0de656449f35042cc3af35d3b5d652c62e9d5d1e9cd02737cfe0',
 });
 
 /**
- * This utility generates data for ValueSet and ConceptMap resources from the UMLS Metathesaurus.
+ * This utility generates data for CodeSystem resources from the UMLS Metathesaurus.
  *
  * The source files provided by UMLS are quite large (GB+) and are not included in this repository.
  *
@@ -22,35 +23,95 @@ const client = new MedplumClient({
  * Requirements:
  *
  * - Download the UMLS Metathesaurus from https://www.nlm.nih.gov/research/umls/licensedcontent/umlsknowledgesources.html
- * - For terminology alone, only MRCONSO.RRF is required
- * - For terminology and concept maps, both MRCONSO.RRF and MRMAP.RRF are required
  *
- * Most recently tested with the 2022AB release.
+ * Most recently verified with the 2023AB release in January 2024.
  *
  * References:
  *
  * UMLS Metathesaurus Vocabulary Documentation
  * https://www.nlm.nih.gov/research/umls/sourcereleasedocs/index.html
  *
- * 2022AB Release Documentation
+ * UMLS Release Documentation
  * https://www.nlm.nih.gov/research/umls/knowledge_sources/metathesaurus/release/index.html
  *
- * Columns and Data Elements - 2022AB
+ * Columns and Data Elements
  * https://www.nlm.nih.gov/research/umls/knowledge_sources/metathesaurus/release/columns_data_elements.html
  *
- * Abbreviations Used in Data Elements - 2022AB Release
+ * Abbreviations Used in Data Elements
  * https://www.nlm.nih.gov/research/umls/knowledge_sources/metathesaurus/release/abbreviations.html
  */
+
+class EOF extends Error {
+  message = '<EOF>';
+}
 
 async function main(): Promise<void> {
   await addSources();
 
-  const mappedCodes = await processConcepts();
-  console.log('\n');
-  await processProperties();
-  console.log('\n');
-  const relationshipProperties = await prepareRelationshipProperties();
-  await processRelationships(relationshipProperties, mappedCodes);
+  let resolve: () => void, reject: (e: Error) => void;
+  const result = new Promise<void>((_resolve, _reject) => {
+    resolve = _resolve;
+    reject = _reject;
+  });
+
+  const archivePath = argv[2];
+  let mappedCodes: Record<string, UmlsConcept>;
+  let relationshipProperties: Record<string, string>;
+  let remainingParts = 4;
+  createReadStream(archivePath)
+    .pipe(unzip.Parse())
+    .pipe(
+      new Transform({
+        objectMode: true,
+        transform: async (entry: unzip.Entry, _, done: TransformCallback) => {
+          if (entry.type !== 'File' || entry.size === 0) {
+            entry.autodrain();
+            return done();
+          }
+
+          const filePath = entry.path as string;
+          if (filePath.endsWith('/MRCONSO.RRF')) {
+            console.log('Importing concepts...');
+            mappedCodes = await processConcepts(entry);
+            console.log('\n');
+            remainingParts--;
+          } else if (filePath.endsWith('/MRDOC.RRF')) {
+            relationshipProperties = await prepareRelationshipProperties(entry);
+            console.log(`Mapped ${Object.keys(relationshipProperties).length} relationship properties`);
+            remainingParts--;
+          } else if (filePath.endsWith('/MRREL.RRF')) {
+            if (!mappedCodes) {
+              throw new Error('Expected to read concepts (MRCONSO.RRF) before relationships (MRREL.RRF)');
+            } else if (!relationshipProperties) {
+              throw new Error('Expected to read property definitions (MRDOC.RRF) before relationships (MRREL.RRF)');
+            }
+            console.log('Importing relationship properties...');
+            await processRelationships(entry, relationshipProperties, mappedCodes);
+            console.log('\n');
+            remainingParts--;
+          } else if (filePath.endsWith('/MRSAT.RRF')) {
+            if (!mappedCodes) {
+              throw new Error('Expected to read concepts (MRCONSO.RRF) before properties (MRSAT.RRF)');
+            }
+            console.log('Importing concept properties...');
+            await processProperties(entry);
+            console.log('\n');
+            remainingParts--;
+          } else {
+            console.log(`Skipping file ${filePath}`);
+            entry.autodrain();
+          }
+          return remainingParts > 0 ? done() : done(new EOF());
+        },
+      })
+        .on('finish', () => {
+          resolve();
+        })
+        .on('error', (err) => {
+          return err instanceof EOF ? resolve() : reject(err);
+        })
+    );
+  return result;
 }
 
 /** @see https://www.ncbi.nlm.nih.gov/books/NBK9685/table/ch03.T.concept_names_and_sources_file_mr */
@@ -158,7 +219,9 @@ class UmlsConcept {
   }
 }
 
-const umlsSources: Record<string, { system: string; tty: string[]; resource: CodeSystem }> = {
+type UmlsSource = { system: string; tty: string[]; resource: CodeSystem };
+
+const umlsSources: Record<string, UmlsSource> = {
   SNOMEDCT_US: { system: 'http://snomed.info/sct', tty: ['FN', 'PT', 'SY'], resource: snomed },
   LNC: { system: 'http://loinc.org', tty: ['LC', 'LPDN', 'LA', 'DN', 'HC', 'LN', 'LG'], resource: loinc },
   RXNORM: {
@@ -178,30 +241,7 @@ async function addSources(): Promise<void> {
   }
 }
 
-async function processConcepts(): Promise<Record<string, UmlsConcept>> {
-  if (await Promise.all([stat('concepts.ndjson'), stat('cache.tsv')]).catch((_) => undefined)) {
-    // Use cached results from disk
-    const startTime = process.hrtime.bigint();
-    const inStream = createReadStream('concepts.ndjson', 'utf8');
-    const rl = createInterface(inStream);
-
-    for await (const payload of rl) {
-      await sendParameters(JSON.parse(payload) as Parameters);
-    }
-
-    const mappedConcepts = createInterface(createReadStream('cache.tsv', 'utf8'));
-    const result = Object.create(null);
-    for await (const line of mappedConcepts) {
-      const [key, str] = line.split('\t', 2);
-      result[key] = new UmlsConcept(str);
-    }
-
-    console.log(`Processed cached concepts from disk in ${process.hrtime.bigint() - startTime}`);
-    return result;
-  }
-
-  const inStream = createReadStream(resolve(__dirname, '2023AB/META/MRCONSO.RRF'), 'utf8');
-  const outStream = (await open('concepts.ndjson', 'w+', 0o660)).createWriteStream();
+async function processConcepts(inStream: Readable): Promise<Record<string, UmlsConcept>> {
   const rl = createInterface(inStream);
 
   let processed = 0;
@@ -253,7 +293,7 @@ async function processConcepts(): Promise<Record<string, UmlsConcept>> {
     }
 
     if (foundCodings.length >= 500) {
-      await sendCodings(foundCodings, source.system, outStream);
+      await sendCodings(foundCodings, source.system);
       codings[source.system] = [];
     } else {
       codings[source.system] = foundCodings;
@@ -263,18 +303,9 @@ async function processConcepts(): Promise<Record<string, UmlsConcept>> {
 
   for (const [system, foundCodings] of Object.entries(codings)) {
     if (foundCodings.length > 0) {
-      await sendCodings(foundCodings, system, outStream);
+      await sendCodings(foundCodings, system);
     }
   }
-  outStream.close();
-  await writeFile(
-    'cache.tsv',
-    Object.entries(mappedConcepts)
-      .map(([key, concept]) => `${key}\t${concept}`)
-      .join('\n'),
-    'utf8'
-  );
-
   console.log(`Processed ${fmtNum(processed)} entries in ${process.hrtime.bigint() - startTime}`);
   console.log(`(skipped ${fmtNum(skipped)})`);
   console.log(`==============================`);
@@ -329,8 +360,7 @@ class UmlsDoc {
   }
 }
 
-async function prepareRelationshipProperties(): Promise<Record<string, string>> {
-  const inStream = createReadStream(resolve(__dirname, '2023AB/META/MRDOC.RRF'));
+async function prepareRelationshipProperties(inStream: Readable): Promise<Record<string, string>> {
   const rl = createInterface(inStream);
 
   const propertyMappings: Record<
@@ -448,22 +478,7 @@ type Property = {
   value: string;
 };
 
-async function processProperties(): Promise<void> {
-  if (await stat('properties.ndjson').catch((_) => undefined)) {
-    // Use cached results from disk
-    const startTime = process.hrtime.bigint();
-    const inStream = createReadStream('properties.ndjson', 'utf8');
-    const rl = createInterface(inStream);
-
-    for await (const payload of rl) {
-      await sendParameters(JSON.parse(payload) as Parameters);
-    }
-
-    console.log(`Processed cached properties from disk in ${process.hrtime.bigint() - startTime}`);
-    return;
-  }
-  const inStream = createReadStream(resolve(__dirname, '2023AB/META/MRSAT.RRF'));
-  const outStream = (await open('properties.ndjson', 'w+', 0o660)).createWriteStream();
+async function processProperties(inStream: Readable): Promise<void> {
   const rl = createInterface(inStream);
 
   let processed = 0;
@@ -499,7 +514,7 @@ async function processProperties(): Promise<void> {
     }
 
     if (foundProperties.length >= 500) {
-      await sendProperties(properties[source.system], source.system, outStream);
+      await sendProperties(foundProperties, source.system);
       properties[source.system] = [];
     } else {
       properties[source.system] = foundProperties;
@@ -512,19 +527,26 @@ async function processProperties(): Promise<void> {
 
   for (const [system, foundProperties] of Object.entries(properties)) {
     if (foundProperties.length > 0) {
-      await sendProperties(foundProperties, system, outStream);
+      await sendProperties(foundProperties, system);
     }
   }
-  outStream.close();
 
   console.log(`Found ${fmtNum(processed)} code properties`);
   console.log(`(skipped ${fmtNum(skipped)})`);
   console.log(`==============================`);
-  for (const [property, count] of Object.entries(counts).sort(
-    (l, r) => r[0].split('|', 1)[0].localeCompare(l[0].split('|', 1)[0]) || r[1] - l[1]
-  )) {
+  for (const [property, count] of Object.entries(counts).sort(groupCounts)) {
     console.log(`${property}: ${fmtNum(count)}`);
   }
+}
+
+/**
+ * Sort function used to group properties by system.
+ * @param l - Left entry.
+ * @param r - Right entry.
+ * @returns Sort ordering.
+ */
+function groupCounts(l: [string, number], r: [string, number]): number {
+  return r[0].split('|', 1)[0].localeCompare(l[0].split('|', 1)[0]) || r[1] - l[1];
 }
 
 /** @see https://www.ncbi.nlm.nih.gov/books/NBK9685/table/ch03.T.related_concepts_file_mrrel_rrf */
@@ -607,11 +629,10 @@ const PARENT_PROPERTY = 'http://hl7.org/fhir/concept-properties#parent';
 const CHILD_PROPERTY = 'http://hl7.org/fhir/concept-properties#child';
 
 async function processRelationships(
+  inStream: Readable,
   relationshipProperties: Record<string, string>,
   mappedCodes: Record<string, UmlsConcept>
 ): Promise<void> {
-  const inStream = createReadStream(resolve(__dirname, '2023AB/META/MRREL.RRF'));
-  const outStream = (await open('relationships.ndjson', 'w+', 0o660)).createWriteStream();
   const rl = createInterface(inStream);
 
   let processed = 0;
@@ -630,39 +651,11 @@ async function processRelationships(
       continue;
     }
 
-    const mappedPropertyName = relationshipProperties[rel.SAB + '/' + rel.REL + '/' + rel.RELA];
-    let propertyName: string | undefined;
-    if (mappedPropertyName) {
-      propertyName = mappedPropertyName;
-    } else if (rel.REL === 'PAR') {
-      propertyName = source.resource.property?.find((p) => p.uri === PARENT_PROPERTY)?.code;
-    } else if (rel.REL === 'CHD') {
-      propertyName = source.resource.property?.find((p) => p.uri === CHILD_PROPERTY)?.code;
-    }
-    if (!propertyName) {
-      // Ignore unknown property
-      skipped++;
-      continue;
-    } else if (!source.resource.property?.find((p) => p.code === propertyName)) {
-      // Ignore unsupported property
+    const property = resolveRelationship(rel, source, mappedCodes, relationshipProperties);
+    if (!property) {
       skipped++;
       continue;
     }
-
-    const code = mappedCodes[rel.AUI1]?.CODE;
-    const value = mappedCodes[rel.AUI2]?.CODE;
-    if (!code || !value) {
-      console.warn(
-        'Skipping relationship with missing atom:',
-        propertyName,
-        rel.REL + '/' + rel.RELA,
-        code ? rel.AUI2 : rel.AUI1
-      );
-      skipped++;
-      continue;
-    }
-
-    const property = { code, property: propertyName, value };
     let foundProperties = properties[source.system];
     if (foundProperties) {
       foundProperties.push(property);
@@ -671,32 +664,67 @@ async function processRelationships(
     }
 
     if (foundProperties.length >= 500) {
-      await sendProperties(properties[source.system], source.system, outStream);
+      await sendProperties(foundProperties, source.system);
       properties[source.system] = [];
     } else {
       properties[source.system] = foundProperties;
     }
 
-    const key = `${source.system}|${propertyName} (${rel.REL}/${rel.RELA})`;
+    const key = `${source.system}|${property.code} (${rel.REL}/${rel.RELA})`;
     counts[key] = (counts[key] ?? 0) + 1;
     processed++;
   }
 
   for (const [system, foundProperties] of Object.entries(properties)) {
     if (foundProperties.length > 0) {
-      await sendProperties(foundProperties, system, outStream);
+      await sendProperties(foundProperties, system);
     }
   }
-  outStream.end();
 
   console.log(`Found ${fmtNum(processed)} relationship properties`);
   console.log(`(skipped ${fmtNum(skipped)})`);
   console.log(`==============================`);
-  for (const [property, count] of Object.entries(counts).sort(
-    (l, r) => r[0].split('|', 1)[0].localeCompare(l[0].split('|', 1)[0]) || r[1] - l[1]
-  )) {
+  for (const [property, count] of Object.entries(counts).sort(groupCounts)) {
     console.log(`${property}: ${fmtNum(count)}`);
   }
+}
+
+function resolveRelationship(
+  rel: UmlsRelationship,
+  source: UmlsSource,
+  mappedCodes: Record<string, UmlsConcept>,
+  relationshipProperties: Record<string, string>
+): Property | undefined {
+  const mappedPropertyName = relationshipProperties[rel.SAB + '/' + rel.REL + '/' + rel.RELA];
+  let propertyName: string | undefined;
+  if (mappedPropertyName) {
+    propertyName = mappedPropertyName;
+  } else if (rel.REL === 'PAR') {
+    propertyName = source.resource.property?.find((p) => p.uri === PARENT_PROPERTY)?.code;
+  } else if (rel.REL === 'CHD') {
+    propertyName = source.resource.property?.find((p) => p.uri === CHILD_PROPERTY)?.code;
+  }
+  if (!propertyName) {
+    // Ignore unknown property
+    return undefined;
+  } else if (!source.resource.property?.find((p) => p.code === propertyName)) {
+    // Ignore unsupported property
+    return undefined;
+  }
+
+  const code = mappedCodes[rel.AUI1]?.CODE;
+  const value = mappedCodes[rel.AUI2]?.CODE;
+  if (!code || !value) {
+    console.warn(
+      'Skipping relationship with missing atom:',
+      propertyName,
+      rel.REL + '/' + rel.RELA,
+      code ? rel.AUI2 : rel.AUI1
+    );
+    return undefined;
+  }
+
+  return { code, property: propertyName, value };
 }
 
 async function sendProperties(properties: Property[], system: string, file?: WriteStream): Promise<void> {
@@ -734,6 +762,6 @@ function fmtNum(n: number): string {
 
 if (require.main === module) {
   main()
-    .then(() => console.log('Done'))
+    .then(() => console.log('Done!'))
     .catch(console.error);
 }
