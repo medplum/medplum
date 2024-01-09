@@ -74,6 +74,7 @@ export interface SliceDefinition {
   elements: Record<string, InternalSchemaElement>;
   min: number;
   max: number;
+  binding?: ElementDefinitionBinding;
 }
 
 export interface SliceDiscriminator {
@@ -436,6 +437,7 @@ class StructureDefinitionParser {
       elements: {},
       min: element.min ?? 0,
       max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string, 10),
+      binding: element.binding,
     };
   }
 

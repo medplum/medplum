@@ -90,7 +90,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                   outcome={props.outcome}
                   min={slice.min}
                   max={slice.max}
-                  binding={undefined}
+                  binding={slice.binding}
                   path={props.path}
                 />
               </div>
