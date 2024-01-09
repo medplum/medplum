@@ -49,6 +49,8 @@ export interface MedplumServerConfig {
   keepAliveTimeout?: number;
   vmContextBotsEnabled?: boolean;
   shutdownTimeoutMilliseconds?: number;
+  otlpTraceEndpoint?: string;
+  otlpMetricsEndpoint?: string;
 }
 
 /**

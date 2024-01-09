@@ -269,6 +269,14 @@ export class BackEnd extends Construct {
           ],
           resources: ['arn:aws:lambda:*'],
         }),
+
+        // XRay: Write to segment store
+        // https://docs.aws.amazon.com/xray/latest/devguide/xray-api-permissions-ref.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['xray:PutTraceSegments', 'xray:PutTelemetryRecords'],
+          resources: ['*'],
+        }),
       ],
     });
 

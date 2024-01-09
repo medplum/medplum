@@ -144,6 +144,8 @@ You will also be prompted for a parameter "Type". The default option is "String"
 | `maxJsonSize`          | Maximum JSON size for API calls. String is parsed with the [bytes](https://www.npmjs.com/package/bytes) library. Default is `1mb`.                                                                    |          |            | `1mb`                               |
 | `smtp`                 | Optional SMTP email settings to use SMTP for email. See [Sending SMTP Emails](/docs/self-hosting/sendgrid) for more details.                                                                          |          |            |                                     |
 | `awsRegion`            | The AWS Region identifier.                                                                                                                                                                            |          | `cdk`      | `us-east-1`                         |
+| `otlpMetricsEndpoint`  | Optional OTLP metrics endpoint for OpenTelemetry. For example, `http://localhost:4318/v1/metrics`. See [OpenTelemetry](/docs/self-hosting/opentelemetry) for more details.                            |          |            |                                     |
+| `otlpTraceEndpoint`    | Optional OTLP trace endpoint for OpenTelemetry. For example, `http://localhost:4318/v1/traces`. See [OpenTelemetry](/docs/self-hosting/opentelemetry) for more details.                               |          |            |                                     |
 
 :::tip Local Config
 To make changes to the server config after your first deploy, you must the edit parameter values _directly in AWS parameter store_
