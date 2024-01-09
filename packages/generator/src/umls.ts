@@ -7,12 +7,6 @@ import { MedplumClient } from '@medplum/core';
 import { Readable, Transform, TransformCallback } from 'node:stream';
 import * as unzip from 'unzip-stream';
 
-const client = new MedplumClient({
-  baseUrl: 'http://localhost:8103/',
-  clientId: '80110f1e-9b92-4eb1-a1a4-8b3a69d70c21',
-  clientSecret: 'ea7fabbdfb9ff978dd13c282d76b1c39b825876b97fe5b50a41e0dd4c18ca24c',
-});
-
 /**
  * This utility generates data for CodeSystem resources from the UMLS Metathesaurus.
  *
@@ -46,10 +40,18 @@ class EOF extends Error {
 }
 
 async function main(): Promise<void> {
-  const archivePath = argv[2];
+  const [archivePath, clientId, clientSecret, baseUrl] = argv.slice(2);
   if (!archivePath) {
     return Promise.reject(
-      new Error('Missing argument: specify path to UMLS release archive (e.g. umls-2023AB-full.zip)')
+      new Error(
+        'Missing argument: specify path to UMLS release archive (e.g. umls-2023AB-full.zip)\nUsage: npm run umls <archivePath> <clientID> <clientSecret> [baseUrl]'
+      )
+    );
+  } else if (!clientId || !clientSecret) {
+    return Promise.reject(
+      new Error(
+        'Missing argument: specify super admin credentials (i.e. ClientApplication ID and secret)\nUsage: npm run umls <archivePath> <clientID> <clientSecret> [baseUrl]'
+      )
     );
   }
   let resolve: () => void, reject: (e: Error) => void;
@@ -58,7 +60,13 @@ async function main(): Promise<void> {
     reject = _reject;
   });
 
-  await addSources();
+  const client = new MedplumClient({
+    baseUrl: baseUrl || 'http://localhost:8103/',
+    clientId,
+    clientSecret,
+  });
+
+  await addSources(client);
 
   let mappedCodes: Record<string, UmlsConcept>;
   let relationshipProperties: Record<string, string>;
@@ -77,7 +85,7 @@ async function main(): Promise<void> {
           const filePath = entry.path as string;
           if (filePath.endsWith('/MRCONSO.RRF')) {
             console.log('Importing concepts...');
-            mappedCodes = await processConcepts(entry);
+            mappedCodes = await processConcepts(entry, client);
             console.log('\n');
             remainingParts--;
           } else if (filePath.endsWith('/MRDOC.RRF')) {
@@ -93,7 +101,7 @@ async function main(): Promise<void> {
               );
             }
             console.log('Importing relationship properties...');
-            await processRelationships(entry, relationshipProperties, mappedCodes);
+            await processRelationships(entry, relationshipProperties, mappedCodes, client);
             console.log('\n');
             remainingParts--;
           } else if (filePath.endsWith('/MRSAT.RRF')) {
@@ -101,7 +109,7 @@ async function main(): Promise<void> {
               return done(new Error('Expected to read concepts (MRCONSO.RRF) before properties (MRSAT.RRF)'));
             }
             console.log('Importing concept properties...');
-            await processProperties(entry);
+            await processProperties(entry, client);
             console.log('\n');
             remainingParts--;
           } else {
@@ -242,13 +250,13 @@ const umlsSources: Record<string, UmlsSource> = {
   ICD10CM: { system: 'http://hl7.org/fhir/sid/icd-10-cm', tty: ['PT', 'HT'], resource: icd10cm },
 };
 
-async function addSources(): Promise<void> {
+async function addSources(client: MedplumClient): Promise<void> {
   for (const source of Object.values(umlsSources)) {
     await client.createResourceIfNoneExist(source.resource, 'url=' + source.system);
   }
 }
 
-async function processConcepts(inStream: Readable): Promise<Record<string, UmlsConcept>> {
+async function processConcepts(inStream: Readable, client: MedplumClient): Promise<Record<string, UmlsConcept>> {
   const rl = createInterface(inStream);
 
   let processed = 0;
@@ -300,7 +308,7 @@ async function processConcepts(inStream: Readable): Promise<Record<string, UmlsC
     }
 
     if (foundCodings.length >= 500) {
-      await sendCodings(foundCodings, source.system);
+      await sendCodings(foundCodings, source.system, client);
       codings[source.system] = [];
     } else {
       codings[source.system] = foundCodings;
@@ -310,7 +318,7 @@ async function processConcepts(inStream: Readable): Promise<Record<string, UmlsC
 
   for (const [system, foundCodings] of Object.entries(codings)) {
     if (foundCodings.length > 0) {
-      await sendCodings(foundCodings, system);
+      await sendCodings(foundCodings, system, client);
     }
   }
   console.log(`Processed ${fmtNum(processed)} entries in ${process.hrtime.bigint() - startTime}`);
@@ -322,12 +330,17 @@ async function processConcepts(inStream: Readable): Promise<Record<string, UmlsC
   return mappedConcepts;
 }
 
-async function sendCodings(codings: Coding[], system: string, file?: WriteStream): Promise<void> {
+async function sendCodings(
+  codings: Coding[],
+  system: string,
+  client: MedplumClient,
+  file?: WriteStream
+): Promise<void> {
   const parameters = {
     resourceType: 'Parameters',
     parameter: [{ name: 'system', valueUri: system }, ...codings.map((c) => ({ name: 'concept', valueCoding: c }))],
   } as Parameters;
-  await sendParameters(parameters);
+  await sendParameters(parameters, client);
 
   if (file) {
     file.write(JSON.stringify(parameters) + '\n');
@@ -341,7 +354,7 @@ async function sendCodings(codings: Coding[], system: string, file?: WriteStream
   }
 }
 
-async function sendParameters(parameters: Parameters): Promise<void> {
+async function sendParameters(parameters: Parameters, client: MedplumClient): Promise<void> {
   await client.post('fhir/R4/CodeSystem/$import', parameters, 'application/fhir+json').catch((err) => {
     console.error(
       'Error sending batch for system',
@@ -485,7 +498,7 @@ type Property = {
   value: string;
 };
 
-async function processProperties(inStream: Readable): Promise<void> {
+async function processProperties(inStream: Readable, client: MedplumClient): Promise<void> {
   const rl = createInterface(inStream);
 
   let processed = 0;
@@ -521,7 +534,7 @@ async function processProperties(inStream: Readable): Promise<void> {
     }
 
     if (foundProperties.length >= 500) {
-      await sendProperties(foundProperties, source.system);
+      await sendProperties(foundProperties, source.system, client);
       properties[source.system] = [];
     } else {
       properties[source.system] = foundProperties;
@@ -534,7 +547,7 @@ async function processProperties(inStream: Readable): Promise<void> {
 
   for (const [system, foundProperties] of Object.entries(properties)) {
     if (foundProperties.length > 0) {
-      await sendProperties(foundProperties, system);
+      await sendProperties(foundProperties, system, client);
     }
   }
 
@@ -638,7 +651,8 @@ const CHILD_PROPERTY = 'http://hl7.org/fhir/concept-properties#child';
 async function processRelationships(
   inStream: Readable,
   relationshipProperties: Record<string, string>,
-  mappedCodes: Record<string, UmlsConcept>
+  mappedCodes: Record<string, UmlsConcept>,
+  client: MedplumClient
 ): Promise<void> {
   const rl = createInterface(inStream);
 
@@ -671,7 +685,7 @@ async function processRelationships(
     }
 
     if (foundProperties.length >= 500) {
-      await sendProperties(foundProperties, source.system);
+      await sendProperties(foundProperties, source.system, client);
       properties[source.system] = [];
     } else {
       properties[source.system] = foundProperties;
@@ -684,7 +698,7 @@ async function processRelationships(
 
   for (const [system, foundProperties] of Object.entries(properties)) {
     if (foundProperties.length > 0) {
-      await sendProperties(foundProperties, system);
+      await sendProperties(foundProperties, system, client);
     }
   }
 
@@ -734,7 +748,12 @@ function resolveRelationship(
   return { code, property: propertyName, value };
 }
 
-async function sendProperties(properties: Property[], system: string, file?: WriteStream): Promise<void> {
+async function sendProperties(
+  properties: Property[],
+  system: string,
+  client: MedplumClient,
+  file?: WriteStream
+): Promise<void> {
   const parameters = {
     resourceType: 'Parameters',
     parameter: [
@@ -749,7 +768,7 @@ async function sendProperties(properties: Property[], system: string, file?: Wri
       })),
     ],
   } as Parameters;
-  await sendParameters(parameters);
+  await sendParameters(parameters, client);
 
   if (file) {
     file.write(JSON.stringify(parameters) + '\n');
