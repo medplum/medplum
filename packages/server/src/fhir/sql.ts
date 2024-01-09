@@ -645,7 +645,7 @@ export class InsertQuery extends BaseQuery {
       return;
     }
 
-    sql.append(` ON CONFLICT (${this.conflictColumns.map((c) => `"${c}"`).join(', ')}) DO UPDATE SET `);
+    sql.append(` ON CONFLICT (${this.conflictColumns.map((c) => '"' + c + '"').join(', ')}) DO UPDATE SET `);
 
     const columns = Object.keys(this.values[0]);
     let first = true;

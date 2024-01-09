@@ -144,8 +144,6 @@ async function processProperties(
       )[0]?.id;
       if (targetId) {
         property.target = targetId;
-      } else {
-        // throw new OperationOutcomeError(badRequest('Unknown code: ' + imported.value));
       }
     }
 

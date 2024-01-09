@@ -64,15 +64,15 @@ function validateInputParam(param: OperationDefinitionParameter, value: any): an
     if (value.length < min || value.length > max) {
       throw new OperationOutcomeError(
         badRequest(
-          `Expected ${min === max ? max : min + '..' + max} value${min > 1 ? 's' : ''} for input parameter ${
-            param.name
-          }, but ${value.length} provided`
+          `Expected ${min === max ? max : min + '..' + max} value(s) for input parameter ${param.name}, but ${
+            value.length
+          } provided`
         )
       );
     }
   } else if (min > 0 && isEmpty(value)) {
     throw new OperationOutcomeError(
-      badRequest(`Expected ${min > 1 ? 'at least' + min + ' values for' : 'required'} input parameter '${param.name}'`)
+      badRequest(`Expected at least ${min} value(s) for required input parameter '${param.name}'`)
     );
   }
 
