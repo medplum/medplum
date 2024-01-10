@@ -2,7 +2,7 @@ import { createStyles } from '@mantine/core';
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconMessage2Down, IconMessage2Plus, IconSquareRoundedArrowRight } from '@tabler/icons-react';
 import { Suspense } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import DemoInstructionsPage from './components/DemoInstructionsPage';
 import LandingPage from './components/LandingPage';
 import Publisher from './components/Publisher';
@@ -19,7 +19,6 @@ const useStyles = createStyles((theme) => ({
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
-  const location = useLocation();
   const profile = useMedplumProfile();
 
   const { classes } = useStyles();
@@ -52,7 +51,7 @@ export function App(): JSX.Element | null {
       resourceTypeSearchDisabled={true}
     >
       <div className={classes.root}>
-        <ErrorBoundary key={location.key}>
+        <ErrorBoundary>
           <Suspense fallback={<Loading />}>
             <Routes>
               <Route path="/" element={!profile ? <LandingPage /> : <DemoInstructionsPage />} />
