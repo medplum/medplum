@@ -163,3 +163,60 @@ jobs:
               name: "medplum-agent-installer-" + packageJson.version + ".exe.sha256",
               data: await fs.readFileSync("packages/agent/medplum-agent-installer-" + packageJson.version + ".exe.sha256")
             });
+
+  build_agent_linux:
+    runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: '18'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: 'medplum'
+      TURBO_REMOTE_ONLY: true
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci --maxsockets 1
+
+      - name: Build
+        run: npm run build -- --filter=@medplum/agent
+
+      - name: Build Agent
+        shell: bash
+        run: ./scripts/build-agent-installer-linux.sh
+
+      - name: Upload Agent
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const packageJson = require('./packages/agent/package.json');
+            const fs = require('fs');
+            const tag = context.ref.replace("refs/tags/", "");
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-" + packageJson.version + "-linux",
+              data: await fs.readFileSync("packages/agent/medplum-agent-" + packageJson.version + "-linux")
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-" + packageJson.version + "-linux.sha256",
+              data: await fs.readFileSync("packages/agent/medplum-agent-" + packageJson.version + "-linux.sha256")
+            });
