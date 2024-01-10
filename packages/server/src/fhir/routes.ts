@@ -30,6 +30,7 @@ import { rewriteAttachments, RewriteMode } from './rewrite';
 import { getFullUrl } from './search';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 import { codeSystemImportHandler } from './operations/codesystemimport';
+import { codeSystemLookupHandler } from './operations/codesystemlookup';
 
 export const fhirRouter = Router();
 
@@ -105,6 +106,9 @@ protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 
 // CodeSystem $import operation
 protectedRoutes.post('/CodeSystem/([$]|%24)import', codeSystemImportHandler);
+
+// CodeSystem $lookup operation
+protectedRoutes.post('/CodeSystem/([$]|%24)lookup', codeSystemLookupHandler);
 
 // CSV Export
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));

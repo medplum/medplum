@@ -176,5 +176,21 @@ function makeParameter(param: OperationDefinitionParameter, value: any): Paramet
     }
     return { name: param.name, part: parts };
   }
-  return { name: param.name, ['value' + capitalize(param.type as string)]: value };
+  const type =
+    param.type && param.type !== 'Element'
+      ? [param.type]
+      : param.extension
+          ?.filter((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type')
+          ?.map((e) => e.valueUri as string);
+  if (type?.length === 1) {
+    return { name: param.name, ['value' + capitalize(type[0] as string)]: value };
+  } else if (typeof value.type === 'string' && value.value && type?.length) {
+    // Handle TypedValue
+    for (const t of type) {
+      if (value.type === t) {
+        return { name: param.name, ['value' + capitalize(t)]: value.value };
+      }
+    }
+  }
+  return {};
 }
