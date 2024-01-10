@@ -90,7 +90,7 @@ jobs:
       - name: Deploy bot layer
         run: ./scripts/deploy-bot-layer.sh
 
-  build_agent:
+  build_agent_win64:
     runs-on: windows-latest
     env:
       NODE_VERSION: '20'
@@ -129,7 +129,7 @@ jobs:
 
       - name: Build Agent installer
         shell: bash
-        run: ./scripts/build-agent-installer.sh
+        run: ./scripts/build-agent-installer-win64.sh
         env:
           SM_HOST: ${{ secrets.SM_HOST }}
           SM_API_KEY: ${{ secrets.SM_API_KEY }}
