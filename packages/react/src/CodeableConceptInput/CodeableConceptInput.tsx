@@ -8,16 +8,16 @@ export interface CodeableConceptInputProps extends Omit<ValueSetAutocompleteProp
 }
 
 export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Element {
-  const { defaultValue, onChange, ...rest } = props;
-  const [value, setValue] = useState<CodeableConcept | undefined>(defaultValue);
-
-  function handleChange(newValues: ValueSetExpansionContains[]): void {
-    const newConcept = valueSetElementToCodeableConcept(newValues);
-    setValue(newConcept);
-    if (onChange) {
-      onChange(newConcept);
-    }
-  }
+  const handleChange = useCallback(
+    (newValues: ValueSetExpansionContains[]): void => {
+      const newConcept = valueSetElementToCodeableConcept(newValues);
+      setValue(newConcept);
+      if (onChange) {
+        onChange(newConcept);
+      }
+    },
+    [onChange]
+  );
 
   return (
     <ValueSetAutocomplete

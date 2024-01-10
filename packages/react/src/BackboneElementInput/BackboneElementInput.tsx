@@ -1,6 +1,6 @@
 import { tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { useContext, useMemo, useState } from 'react';
+import { useCallback, useContext, useMemo, useState } from 'react';
 import { ElementsInput } from '../ElementsInput/ElementsInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 
@@ -20,22 +20,24 @@ export interface BackboneElementInputProps {
 }
 
 export function BackboneElementInput(props: BackboneElementInputProps): JSX.Element {
-  const { typeName } = props;
+  const { typeName, onChange } = props;
   const [value, setValue] = useState<any>(props.defaultValue ?? {});
   const elementsContext = useContext(ElementsContext);
   const profileUrl = props.profileUrl ?? elementsContext.profileUrl;
   const typeSchema = useMemo(() => tryGetDataType(typeName, profileUrl), [typeName, profileUrl]);
   const type = typeSchema?.type ?? typeName ?? '';
+  const setValueWrapper = useCallback(
+    (newValue: any): void => {
+      setValue(newValue);
+      if (onChange) {
+        onChange(newValue);
+      }
+    },
+    [onChange]
+  );
 
   if (!typeSchema) {
     return <div>{type}&nbsp;not implemented</div>;
-  }
-
-  function setValueWrapper(newValue: any): void {
-    setValue(newValue);
-    if (props.onChange) {
-      props.onChange(newValue);
-    }
   }
 
   return (
