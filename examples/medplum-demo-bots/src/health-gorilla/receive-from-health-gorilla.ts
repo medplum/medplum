@@ -5,6 +5,7 @@ import {
   encodeBase64,
   getIdentifier,
   getReferenceString,
+  isReference,
   MedplumClient,
   normalizeErrorString,
 } from '@medplum/core';
@@ -13,6 +14,7 @@ import {
   Bundle,
   BundleEntryRequest,
   DiagnosticReport,
+  DocumentReference,
   Observation,
   OperationOutcome,
   Organization,
@@ -121,7 +123,7 @@ export async function handler(
       );
       const createdResource = entry?.resource as RequestGroup | DiagnosticReport | undefined;
       if (createdResource) {
-        await attachPdf(medplum, event, createdResource.subject as Reference<Patient> | undefined);
+        await attachPdf(medplum, event, createdResource);
       }
     }
   } catch (err) {
@@ -286,11 +288,11 @@ async function rewriteReferencesInArray(medplum: MedplumClient, array: unknown[]
 }
 
 async function rewriteReferencesInObject(medplum: MedplumClient, obj: Record<string, unknown>): Promise<void> {
-  if ('reference' in obj && typeof obj.reference === 'string') {
+  if (isReference(obj)) {
     // Rewrite the reference
     const reference = obj.reference;
     if (referenceMap.has(reference)) {
-      obj.reference = referenceMap.get(reference);
+      obj.reference = referenceMap.get(reference) as string;
       console.log('Rewrite', reference, '->', obj.reference);
     } else if (reference.includes('/')) {
       const [resourceType, id] = reference.split('/');
@@ -343,12 +345,12 @@ async function searchByHealthGorillaId(
  * Downloads the PDF from Health Gorilla and attaches it to the Medplum resource as a Media resource.
  * @param medplum - The Medplum client.
  * @param event - The Bot execution event with a Health Gorilla resource.
- * @param subject - The Medplum Patient resource.
+ * @param createdResource - The Medplum DiagnosticReport or RequestGroup resource
  */
 async function attachPdf<T extends HealthGorillaResource>(
   medplum: MedplumClient,
   event: BotEvent<T>,
-  subject: Reference<Patient> | undefined
+  createdResource: DiagnosticReport | RequestGroup | undefined
 ): Promise<void> {
   const resource = event.input;
   const id = getIdentifier(resource, HEALTH_GORILLA_SYSTEM);
@@ -368,8 +370,21 @@ async function attachPdf<T extends HealthGorillaResource>(
   const pdfUint8Array = new Uint8Array(pdfArrayBuffer);
 
   // Create a Medplum media resource
-  const media = await medplum.uploadMedia(pdfUint8Array, 'application/pdf', resource.resourceType + '.pdf', {
-    subject,
-  });
-  console.log('Uploaded PDF as media: ' + media.id);
+  const attachment = await medplum.createAttachment(pdfUint8Array, resource.resourceType + '.pdf', 'application/pdf');
+  const docReference = await medplum.createResource({
+    resourceType: 'DocumentReference',
+    status: 'current',
+    subject: createdResource?.subject as Reference<Patient> | undefined,
+    docStatus: 'final',
+    content: [{ attachment }],
+  } as DocumentReference);
+
+  if (createdResource?.resourceType === 'DiagnosticReport') {
+    await medplum.updateResource({
+      ...createdResource,
+      presentedForm: [attachment],
+    });
+  }
+
+  console.log('Uploaded PDF as DocumentReference: ' + docReference.id);
 }
