@@ -188,7 +188,7 @@ class BatchProcessor {
     if (typeof input === 'string') {
       return this.rewriteIdsInString(input);
     }
-    if (typeof input === 'object') {
+    if (typeof input === 'object' && input !== null) {
       return this.rewriteIdsInObject(input);
     }
     return input;

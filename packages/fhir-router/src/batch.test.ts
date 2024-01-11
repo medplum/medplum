@@ -11,6 +11,7 @@ import {
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
+  AllergyIntolerance,
   Bundle,
   BundleEntry,
   Observation,
@@ -1148,5 +1149,41 @@ describe('Batch', () => {
       expect(checkPatient.managingOrganization).toBeDefined();
       expect(checkPatient.managingOrganization?.reference).not.toMatch(/urn:uuid.*/);
     });
+  });
+
+  test('Valid null', async () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:adf86b3c-c254-47df-9e2d-81c4a922f6e7',
+          request: {
+            method: 'POST',
+            url: 'AllergyIntolerance',
+          },
+          resource: {
+            resourceType: 'AllergyIntolerance',
+            category: [null],
+            patient: {
+              display: 'patient',
+            },
+            _category: [
+              {
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason',
+                    valueCode: 'unsupported',
+                  },
+                ],
+              },
+            ],
+          } as unknown as AllergyIntolerance,
+        },
+      ],
+    };
+
+    const result = await processBatch(router, repo, bundle);
+    expect(result).toBeDefined();
   });
 });

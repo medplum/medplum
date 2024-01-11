@@ -51,7 +51,7 @@ export default function PricingPage(): JSX.Element {
                 <th>
                   Enterprise
                   <sup>
-                    <a href="#note4">4</a>
+                    <a href="/enterprise">4</a>
                   </sup>
                 </th>
                 <th>
@@ -63,7 +63,7 @@ export default function PricingPage(): JSX.Element {
                 <th>
                   Enterprise
                   <sup>
-                    <a href="#note6">6</a>
+                    <a href="/enterprise">6</a>
                   </sup>
                 </th>
               </tr>
@@ -360,7 +360,7 @@ export default function PricingPage(): JSX.Element {
               </li>
               <li id="note4">
                 <strong>Enterprise</strong>: recommended for institutions with complex workflow, integration or data
-                requirements.
+                requirements. Read more details on our <a href="/enterprise">Enterprise</a> offering page.
               </li>
               <li id="note5">
                 <strong>Community</strong>: refers to self-hosting the{' '}

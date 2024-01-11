@@ -1,13 +1,17 @@
 import GitHubSvg from './github.svg';
 import LinkedInSvg from './linkedin.svg';
+import LinkSvg from './link.svg';
+import YouTubeSvg from './youtube.svg';
 import styles from './ProfileCard.module.css';
 
 export interface ProfileCardProps {
   name: string;
   title: string;
   imgUrl: string;
-  linkedInUrl: string;
-  githubUrl: string;
+  linkedInUrl?: string;
+  githubUrl?: string;
+  webUrl?: string;
+  youtubeUrl?: string;
 }
 
 export function ProfileCard(props: ProfileCardProps): JSX.Element {
@@ -19,14 +23,30 @@ export function ProfileCard(props: ProfileCardProps): JSX.Element {
       <h3>{props.name}</h3>
       <p>{props.title}</p>
       <div className={styles.profileLinks}>
-        <a href={props.linkedInUrl} target="_blank" className={styles.profileLink}>
-          <LinkedInSvg />
-          <div>LinkedIn</div>
-        </a>
-        <a href={props.githubUrl} target="_blank" className={styles.profileLink}>
-          <GitHubSvg />
-          <div>GitHub</div>
-        </a>
+        {props.linkedInUrl && (
+          <a href={props.linkedInUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
+            <LinkedInSvg />
+            <div>LinkedIn</div>
+          </a>
+        )}
+        {props.githubUrl && (
+          <a href={props.githubUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
+            <GitHubSvg />
+            <div>GitHub</div>
+          </a>
+        )}
+        {props.webUrl && (
+          <a href={props.webUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
+            <LinkSvg />
+            <div>Web</div>
+          </a>
+        )}
+        {props.youtubeUrl && (
+          <a href={props.youtubeUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
+            <YouTubeSvg />
+            <div>YouTube</div>
+          </a>
+        )}
       </div>
     </div>
   );

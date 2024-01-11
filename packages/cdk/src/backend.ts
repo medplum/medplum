@@ -269,6 +269,14 @@ export class BackEnd extends Construct {
           ],
           resources: ['arn:aws:lambda:*'],
         }),
+
+        // XRay: Write to segment store
+        // https://docs.aws.amazon.com/xray/latest/devguide/xray-api-permissions-ref.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['xray:PutTraceSegments', 'xray:PutTelemetryRecords'],
+          resources: ['*'],
+        }),
       ],
     });
 
@@ -422,9 +430,8 @@ export class BackEnd extends Construct {
     // DNS
     if (!config.skipDns) {
       // Route 53
-      const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-        domainName: config.domainName.split('.').slice(-2).join('.'),
-      });
+      const hostedZoneName = config.hostedZoneName ?? config.domainName.split('.').slice(-2).join('.');
+      const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: hostedZoneName });
 
       // Route53 alias record for the load balancer
       this.dnsRecord = new route53.ARecord(this, 'LoadBalancerAliasRecord', {

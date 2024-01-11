@@ -573,6 +573,7 @@ function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
                     answerOption: newOptions,
                   });
                 }}
+                outcome={undefined}
               />
             </div>
 

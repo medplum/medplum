@@ -20,7 +20,7 @@ _This guide includes an example of a bot written in TypeScript, deployed using t
 
 ## Background: Insurance Eligibility Check Concepts
 
-The term _eligbility check_ implies a yes or no answer, but in practice this tends to be more complex. Medical billing is run off of an [X12](https://x12.org/products/by-industry) data standard, and claims are submitted and managed using that standard. Eligibility checks, though they do not submit a full claim, use some of the data outlined by the format. In this simple example, the request has the following inputs and outputs.
+The term _eligibility check_ implies a yes or no answer, but in practice this tends to be more complex. Medical billing is run off of an [X12](https://x12.org/products/by-industry) data standard, and claims are submitted and managed using that standard. Eligibility checks, though they do not submit a full claim, use some of the data outlined by the format. In this simple example, the request has the following inputs and outputs.
 
 - Data Inputs
   - Patient information like **name** and **date of birth**

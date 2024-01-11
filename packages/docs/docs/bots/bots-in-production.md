@@ -22,7 +22,7 @@ Editing bots in the web editor is good for getting started quickly, but as Bots 
 
 The first thing we'll do is set up a Git repository to host your Bot code. While you can set up bots in any git repository, we provide a [template Git repository](https://github.com/medplum/medplum-demo-bots) to help you get started.
 
-Note that the Medplum Bot SDK requires [Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) version 18+.
+The Medplum Bot SDK requires [Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm). Version 18+ required, but version 20+ is recommended.
 
 Clone the repo and install the dependencies
 
@@ -296,7 +296,7 @@ You can choose to only log certain events using the `Bot.auditEventTrigger` fiel
 
 Logging can also be limited by setting the destination that your Bot logs to. This is done using the `Bot.auditEventDestination` field. This element can be set to either `resource` or `log`.
 
-By default, `auditEventDestination` is set to `resource`. This will create an `AuditEvent` resource in the main database, which can be accessed by Medplum's API and will be visibile in your app. However, the operation is slower and takes up more space. It is best practice to always start by using `resource` as it allows for easier testing and debugging of your Bot.
+By default, `auditEventDestination` is set to `resource`. This will create an `AuditEvent` resource in the main database, which can be accessed by Medplum's API and will be visible in your app. However, the operation is slower and takes up more space. It is best practice to always start by using `resource` as it allows for easier testing and debugging of your Bot.
 
 Setting `auditEventDestination` to `log` will only output an `AuditEvent` in your existing enterprise logging infrastructure, such as [AWS Athena](/docs/self-hosting/aws-athena-guide), [Datadog](/docs/self-hosting/datadog), or others. This can make testing and debugging more difficult, but is quicker and useful for high-volume operations as it will fill up or slow down your main database.
 

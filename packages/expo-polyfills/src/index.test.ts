@@ -1,6 +1,22 @@
 import { MemoryStorage } from '@medplum/core';
+import { subtle, webcrypto } from 'node:crypto';
 import { Platform } from 'react-native';
-import { ExpoClientStorage, polyfillMedplumWebAPIs } from '.';
+import { TextDecoder, TextEncoder } from 'text-encoding';
+import { ExpoClientStorage, cleanupMedplumWebAPIs, polyfillMedplumWebAPIs } from '.';
+
+const originalWindow = window;
+
+beforeAll(() => {
+  Object.defineProperty(globalThis, 'window', {
+    value: { ...originalWindow },
+  });
+});
+
+afterAll(() => {
+  Object.defineProperty(globalThis, 'window', {
+    value: originalWindow,
+  });
+});
 
 jest.mock('expo-secure-store', () => {
   const store = new Map<string, string>();
@@ -18,12 +34,27 @@ jest.mock('expo-secure-store', () => {
 });
 
 if (Platform.OS === 'web') {
+  // Polyfill the globals that should be there on web but are missing from jsdom for some reason
+  // See: https://caniuse.com/?search=localstorage
+  // See: https://caniuse.com/?search=textencoder%2Ctextdecoder
+  // See: https://caniuse.com/?search=crypto
+  // See: https://caniuse.com/?search=subtlecrypto
   globalThis.localStorage = new MemoryStorage();
+  globalThis.TextEncoder = TextEncoder;
+  globalThis.TextDecoder = TextDecoder;
+  // @ts-expect-error Crypto expected to be defined, but is not in Node/jsdom env
+  window.crypto = webcrypto;
+  // @ts-expect-error SubtleCrypto expected to be defined, but is not in Node/jsdom env
+  window.crypto.subtle = subtle;
 }
 
 describe('polyfillMedplumWebAPIs', () => {
   beforeAll(() => {
     polyfillMedplumWebAPIs();
+  });
+
+  afterAll(() => {
+    cleanupMedplumWebAPIs();
   });
 
   describe('Encoding', () => {

@@ -1,4 +1,5 @@
 import {
+  ConceptMap,
   StructureMap,
   StructureMapGroup,
   StructureMapGroupInput,
@@ -6,27 +7,39 @@ import {
   StructureMapGroupRuleDependent,
   StructureMapGroupRuleSource,
   StructureMapGroupRuleTarget,
+  StructureMapGroupRuleTargetParameter,
   StructureMapStructure,
 } from '@medplum/fhirtypes';
-import { Parser } from '../fhirlexer/parse';
+import { Atom, Parser } from '../fhirlexer/parse';
 import { FunctionAtom, LiteralAtom, SymbolAtom } from '../fhirpath/atoms';
-import { initFhirPathParserBuilder, OperatorPrecedence } from '../fhirpath/parse';
+import { OperatorPrecedence, initFhirPathParserBuilder } from '../fhirpath/parse';
 import { tokenize } from './tokenize';
+
+/**
+ * Mapping from FHIR Mapping Language equivalence operators to FHIR ConceptMap equivalence codes.
+ *
+ * See: https://build.fhir.org/mapping.g4 for FHIR Mapping Language operators.
+ *
+ * See: https://hl7.org/fhir/r4/valueset-concept-map-equivalence.html for ConceptMap equivalence codes.
+ *
+ * @internal
+ */
+const CONCEPT_MAP_EQUIVALENCE: Record<string, string> = {
+  '-': 'disjoint',
+  '==': 'equal',
+};
 
 class StructureMapParser {
   readonly structureMap: StructureMap = { resourceType: 'StructureMap' };
   constructor(readonly parser: Parser) {}
 
   parse(): StructureMap {
-    // 'map' url '=' identifier
-    // map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
-    this.parser.consume('Symbol', 'map');
-    this.structureMap.url = this.parser.consume('String').value;
-    this.parser.consume('=');
-    this.structureMap.name = this.parser.consume().value;
     while (this.parser.hasMore()) {
       const next = this.parser.peek()?.value;
       switch (next) {
+        case 'map':
+          this.parseMap();
+          break;
         case 'uses':
           this.parseUses();
           break;
@@ -44,6 +57,15 @@ class StructureMapParser {
       }
     }
     return this.structureMap;
+  }
+
+  private parseMap(): void {
+    // 'map' url '=' identifier
+    // map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
+    this.parser.consume('Symbol', 'map');
+    this.structureMap.url = this.parser.consume('String').value;
+    this.parser.consume('=');
+    this.structureMap.name = this.parser.consume().value;
   }
 
   private parseUses(): void {
@@ -184,13 +206,9 @@ class StructureMapParser {
     const result: StructureMapGroupRuleSource = {};
 
     const context = this.parseRuleContext();
-    if (context.includes('.')) {
-      const parts = context.split('.');
-      result.context = parts[0];
-      result.element = parts[1];
-    } else {
-      result.context = context;
-    }
+    const parts = context.split('.');
+    result.context = parts[0];
+    result.element = parts[1];
 
     if (this.parser.hasMore() && this.parser.peek()?.value === ':') {
       this.parser.consume(':');
@@ -198,8 +216,8 @@ class StructureMapParser {
     }
 
     if (this.parser.hasMore() && this.parser.peek()?.value === 'default') {
-      this.parser.consume('default');
-      this.parser.consumeAndParse();
+      this.parser.consume('Symbol', 'default');
+      result.defaultValueString = this.parser.consume('String').value;
     }
 
     if (
@@ -215,6 +233,11 @@ class StructureMapParser {
     if (this.parser.peek()?.value === 'as') {
       this.parser.consume('Symbol', 'as');
       result.variable = this.parser.consume().value;
+    }
+
+    if (this.parser.peek()?.value === 'log') {
+      this.parser.consume('Symbol', 'log');
+      result.logMessage = this.parser.consume().value;
     }
 
     if (this.parser.peek()?.value === 'where') {
@@ -245,14 +268,10 @@ class StructureMapParser {
     const result: StructureMapGroupRuleTarget = {};
 
     const context = this.parseRuleContext();
-    if (context.includes('.')) {
-      const parts = context.split('.');
-      result.contextType = 'variable';
-      result.context = parts[0];
-      result.element = parts[1];
-    } else {
-      result.context = context;
-    }
+    const parts = context.split('.');
+    result.contextType = 'variable';
+    result.context = parts[0];
+    result.element = parts[1];
 
     if (this.parser.peek()?.value === '=') {
       this.parser.consume('=');
@@ -264,70 +283,34 @@ class StructureMapParser {
       result.variable = this.parser.consume().value;
     }
 
+    if (this.parser.peek()?.value === 'share') {
+      this.parser.consume('Symbol', 'share');
+      result.listMode = ['share'];
+      this.parser.consume('Symbol'); // NB: Not in the spec, but used by FHIRCH maps
+    }
+
     if (
       this.parser.peek()?.value === 'first' ||
-      this.parser.peek()?.value === 'share' ||
       this.parser.peek()?.value === 'last' ||
       this.parser.peek()?.value === 'collate'
     ) {
-      result.listMode = [this.parser.consume().value as 'first' | 'share' | 'last' | 'collate'];
+      result.listMode = [this.parser.consume().value as 'first' | 'last' | 'collate'];
     }
 
     return result;
   }
 
   private parseRuleTargetTransform(result: StructureMapGroupRuleTarget): void {
-    result.transform = 'copy';
-
-    const transformFhirPath = this.parser.consumeAndParse(OperatorPrecedence.As);
-    if (transformFhirPath instanceof SymbolAtom) {
-      this.parseRuleTargetSymbol(result, transformFhirPath);
-    } else if (transformFhirPath instanceof FunctionAtom) {
-      this.parseRuleTargetFunction(result, transformFhirPath);
-    } else if (transformFhirPath instanceof LiteralAtom) {
-      this.parseRuleTargetLiteral(result, transformFhirPath);
+    const transformAtom = this.parser.consumeAndParse(OperatorPrecedence.As);
+    if (transformAtom instanceof FunctionAtom) {
+      result.transform = transformAtom.name as 'append' | 'truncate';
+      result.parameter = transformAtom.args?.map(atomToParameter);
+    } else if (transformAtom instanceof LiteralAtom || transformAtom instanceof SymbolAtom) {
+      result.transform = 'copy';
+      result.parameter = [atomToParameter(transformAtom)];
     } else {
-      throw new Error(`Unexpected FHIRPath: ${transformFhirPath}`);
-    }
-  }
-
-  private parseRuleTargetSymbol(result: StructureMapGroupRuleTarget, literalAtom: SymbolAtom): void {
-    result.parameter = [{ valueId: literalAtom.name }];
-  }
-
-  private parseRuleTargetFunction(result: StructureMapGroupRuleTarget, functionAtom: FunctionAtom): void {
-    const functionName = functionAtom.name;
-    switch (functionName) {
-      case 'create':
-        result.parameter = [
-          {
-            valueString: (functionAtom.args[0] as LiteralAtom).value.value as string,
-          },
-        ];
-        break;
-
-      case 'translate':
-        result.parameter = [{}];
-        break;
-
-      default:
-        throw new Error('Unknown target function: ' + functionName);
-    }
-  }
-
-  private parseRuleTargetLiteral(result: StructureMapGroupRuleTarget, literalAtom: LiteralAtom): void {
-    switch (literalAtom.value.type) {
-      case 'boolean':
-        result.parameter = [{ valueBoolean: literalAtom.value.value as boolean }];
-        break;
-      case 'decimal':
-        result.parameter = [{ valueDecimal: literalAtom.value.value as number }];
-        break;
-      case 'string':
-        result.parameter = [{ valueString: literalAtom.value.value as string }];
-        break;
-      default:
-        throw new Error('Unknown target literal type: ' + literalAtom.value.type);
+      result.transform = 'evaluate';
+      result.parameter = [{ valueString: transformAtom.toString() }];
     }
   }
 
@@ -351,10 +334,95 @@ class StructureMapParser {
   }
 
   private parseConceptMap(): void {
-    while (this.parser.peek()?.value !== '}') {
-      this.parser.consume();
+    this.parser.consume('Symbol', 'conceptmap');
+
+    const conceptMap = { resourceType: 'ConceptMap', status: 'active' } as ConceptMap;
+    conceptMap.url = this.parser.consume('String').value;
+
+    this.parser.consume('{');
+
+    const prefixes: Record<string, string> = {};
+
+    let next = this.parser.peek()?.value;
+    while (next !== '}') {
+      if (next === 'prefix') {
+        this.parseConceptMapPrefix(prefixes);
+      } else {
+        this.parseConceptMapRule(conceptMap, prefixes);
+      }
+      next = this.parser.peek()?.value;
     }
     this.parser.consume('}');
+
+    if (!this.structureMap.contained) {
+      this.structureMap.contained = [];
+    }
+    this.structureMap.contained.push(conceptMap);
+  }
+
+  private parseConceptMapPrefix(prefixes: Record<string, string>): void {
+    this.parser.consume('Symbol', 'prefix');
+    const prefix = this.parser.consume().value;
+    this.parser.consume('=');
+    const uri = this.parser.consume().value;
+    prefixes[prefix] = uri;
+  }
+
+  private parseConceptMapRule(conceptMap: ConceptMap, prefixes: Record<string, string>): void {
+    const sourcePrefix = this.parser.consume().value;
+    const sourceSystem = prefixes[sourcePrefix];
+    this.parser.consume(':');
+    const sourceCode = this.parser.consume().value;
+    const equivalence = CONCEPT_MAP_EQUIVALENCE[this.parser.consume().value] as 'relatedto';
+    const targetPrefix = this.parser.consume().value;
+    const targetSystem = prefixes[targetPrefix];
+    this.parser.consume(':');
+    const targetCode = this.parser.consume().value;
+
+    let group = conceptMap?.group?.find((g) => g.source === sourceSystem && g.target === targetSystem);
+
+    if (!group) {
+      group = { source: sourceSystem, target: targetSystem };
+      if (!conceptMap.group) {
+        conceptMap.group = [];
+      }
+      conceptMap.group.push(group);
+    }
+
+    if (!group.element) {
+      group.element = [];
+    }
+
+    group.element.push({
+      code: sourceCode,
+      target: [{ code: targetCode, equivalence }],
+    });
+  }
+}
+
+function atomToParameter(atom: Atom): StructureMapGroupRuleTargetParameter {
+  if (atom instanceof SymbolAtom) {
+    return { valueId: atom.name };
+  }
+  if (atom instanceof LiteralAtom) {
+    return literalToParameter(atom);
+  }
+  throw new Error(`Unknown parameter atom type: ${atom.constructor.name} (${atom.toString()})`);
+}
+
+function literalToParameter(literalAtom: LiteralAtom): StructureMapGroupRuleTargetParameter {
+  switch (literalAtom.value.type) {
+    case 'boolean':
+      return { valueBoolean: literalAtom.value.value as boolean };
+    case 'decimal':
+      return { valueDecimal: literalAtom.value.value as number };
+    case 'integer':
+      return { valueInteger: literalAtom.value.value as number };
+    case 'dateTime':
+    case 'string':
+      return { valueString: literalAtom.value.value as string };
+    default:
+      throw new Error('Unknown target literal type: ' + literalAtom.value.type);
   }
 }
 

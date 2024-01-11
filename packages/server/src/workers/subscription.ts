@@ -6,8 +6,10 @@ import {
   isGone,
   matchesSearchRequest,
   normalizeOperationOutcome,
+  OperationOutcomeError,
   Operator,
   parseSearchUrl,
+  serverError,
   stringify,
 } from '@medplum/core';
 import { Bot, ProjectMembership, Reference, Resource, Subscription } from '@medplum/fhirtypes';
@@ -20,6 +22,8 @@ import { getRequestContext } from '../context';
 import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
+import { getRedis } from '../redis';
+import { createSubEventNotification } from '../subscriptions/websockets';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext, BackgroundJobInteraction } from './context';
 import { createAuditEvent, findProjectMembership, isFhirCriteriaMet, isJobSuccessful } from './utils';
@@ -50,6 +54,7 @@ export interface SubscriptionJobData {
   readonly id: string;
   readonly versionId: string;
   readonly interaction: 'create' | 'update' | 'delete';
+  readonly requestTime: string;
 }
 
 const queueName = 'SubscriptionQueue';
@@ -134,6 +139,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
     // Never send subscriptions for audit events
     return;
   }
+  const requestTime = new Date().toISOString();
   const subscriptions = await getSubscriptions(resource);
   ctx.logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
@@ -145,6 +151,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
         id: resource.id as string,
         versionId: resource.meta?.versionId as string,
         interaction: context.interaction,
+        requestTime,
       });
     }
   }
@@ -225,6 +232,10 @@ function matchesChannelType(subscription: Subscription): boolean {
     return true;
   }
 
+  if (channelType === 'websocket') {
+    return true;
+  }
+
   return false;
 }
 
@@ -252,7 +263,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
   if (!project) {
     return [];
   }
-  return systemRepo.searchResources<Subscription>({
+  const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
     filters: [
@@ -268,6 +279,12 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
+  const inMemorySubscriptionsStr = await getRedis().get(`medplum:subscriptions:r4:project:${project}`);
+  if (inMemorySubscriptionsStr) {
+    const inMemorySubscriptions = JSON.parse(inMemorySubscriptionsStr) as Subscription[];
+    subscriptions.push(...inMemorySubscriptions);
+  }
+  return subscriptions;
 }
 
 /**
@@ -275,7 +292,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
  * @param job - The subscription job details.
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
-  const { subscriptionId, resourceType, id, versionId, interaction } = job.data;
+  const { subscriptionId, resourceType, id, versionId, interaction, requestTime } = job.data;
 
   const subscription = await tryGetSubscription(subscriptionId);
   if (!subscription) {
@@ -302,14 +319,24 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   }
 
   try {
-    const resourceVersion = await systemRepo.readVersion(resourceType, id, versionId);
+    const versionedResource = await systemRepo.readVersion(resourceType, id, versionId);
     const channelType = subscription.channel?.type;
-    if (channelType === 'rest-hook') {
-      if (subscription.channel?.endpoint?.startsWith('Bot/')) {
-        await execBot(subscription, resourceVersion, interaction);
-      } else {
-        await sendRestHook(job, subscription, resourceVersion, interaction);
-      }
+    switch (channelType) {
+      case 'rest-hook':
+        if (subscription.channel?.endpoint?.startsWith('Bot/')) {
+          await execBot(subscription, versionedResource, interaction, requestTime);
+        } else {
+          await sendRestHook(job, subscription, versionedResource, interaction, requestTime);
+        }
+        break;
+      case 'websocket':
+        await getRedis().publish(
+          subscriptionId as string,
+          JSON.stringify(createSubEventNotification(versionedResource, subscriptionId, { includeResource: true }))
+        );
+        break;
+      default:
+        throw new OperationOutcomeError(serverError(new Error('Subscription type not currently supported.')));
     }
   } catch (err) {
     await catchJobError(subscription, job, err);
@@ -350,12 +377,14 @@ async function tryGetCurrentVersion(resourceType: string, id: string): Promise<R
  * @param subscription - The subscription.
  * @param resource - The resource that triggered the subscription.
  * @param interaction - The interaction type.
+ * @param requestTime - The request time.
  */
 async function sendRestHook(
   job: Job<SubscriptionJobData>,
   subscription: Subscription,
   resource: Resource,
-  interaction: BackgroundJobInteraction
+  interaction: BackgroundJobInteraction,
+  requestTime: string
 ): Promise<void> {
   const ctx = getRequestContext();
   const url = subscription.channel?.endpoint as string;
@@ -364,8 +393,6 @@ async function sendRestHook(
     ctx.logger.debug(`Ignore rest hook missing URL`);
     return;
   }
-
-  const startTime = new Date().toISOString();
 
   const headers = buildRestHookHeaders(subscription, resource) as Record<string, string>;
   if (interaction === 'delete') {
@@ -383,7 +410,7 @@ async function sendRestHook(
     const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(
       resource,
-      startTime,
+      requestTime,
       success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received status ${response.status}`,
       subscription
@@ -396,7 +423,7 @@ async function sendRestHook(
     ctx.logger.info('Subscription exception: ' + ex);
     await createAuditEvent(
       resource,
-      startTime,
+      requestTime,
       AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received error ${ex}`,
       subscription
@@ -446,11 +473,13 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
  * @param subscription - The subscription.
  * @param resource - The resource that triggered the subscription.
  * @param interaction - The interaction type.
+ * @param requestTime - The request time.
  */
 async function execBot(
   subscription: Subscription,
   resource: Resource,
-  interaction: BackgroundJobInteraction
+  interaction: BackgroundJobInteraction,
+  requestTime: string
 ): Promise<void> {
   const url = subscription.channel?.endpoint as string;
   if (!url) {
@@ -480,6 +509,7 @@ async function execBot(
     runAs,
     input: interaction === 'delete' ? { deletedResource: resource } : resource,
     contentType: ContentType.FHIR_JSON,
+    requestTime,
   });
 }
 
@@ -498,8 +528,7 @@ async function catchJobError(subscription: Subscription, job: Job<SubscriptionJo
     await job.changePriority({ priority: 1 + job.attemptsMade });
 
     throw err;
-  } else {
-    // If the maxJobAttempts equals the jobs.attemptsMade, we won't throw, which won't trigger a retry
-    globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
   }
+  // If the maxJobAttempts equals the jobs.attemptsMade, we won't throw, which won't trigger a retry
+  globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
 }

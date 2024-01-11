@@ -10,12 +10,13 @@ import {
   NewProjectRequest,
   NewUserRequest,
   OperationOutcomeError,
+  MockAsyncClientStorage,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, CodeableConcept, Patient, SearchParameter, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'crypto';
 import { TextEncoder } from 'util';
-import { MockAsyncClientStorage, MockClient } from './client';
+import { MockClient } from './client';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson } from './mocks';
 
 describe('MockClient', () => {

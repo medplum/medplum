@@ -1,25 +1,55 @@
 import { Identifier } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { ExtensionInput } from './ExtensionInput';
+import { ExtensionInput, ExtensionInputProps } from './ExtensionInput';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
+
+const medplum = new MockClient();
+
+const defaultProps: ExtensionInputProps = {
+  name: 'a',
+  path: 'Resource.extension',
+  onChange: undefined,
+  outcome: undefined,
+  propertyType: { code: 'Extension', profile: [] },
+};
 
 describe('ExtensionInput', () => {
-  test('Renders', () => {
-    render(<ExtensionInput name="a" defaultValue={{ url: 'https://example.com' }} />);
-    expect(screen.getByTestId('extension-input')).toBeDefined();
+  async function setup(props: ExtensionInputProps): Promise<void> {
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <ExtensionInput {...props} />
+        </MedplumProvider>
+      );
+    });
+  }
+
+  test('Renders', async () => {
+    await setup({
+      ...defaultProps,
+      defaultValue: { url: 'https://example.com' },
+    });
+    expect(screen.getByTestId('extension-json-input')).toBeDefined();
   });
 
-  test('Renders undefined value', () => {
-    render(<ExtensionInput name="a" />);
-    expect(screen.getByTestId('extension-input')).toBeDefined();
+  test('Renders undefined value', async () => {
+    await setup({
+      ...defaultProps,
+    });
+    expect(screen.getByTestId('extension-json-input')).toBeDefined();
   });
 
   test('Set value', async () => {
     let lastValue: Identifier | undefined = undefined;
 
-    render(<ExtensionInput name="a" onChange={(value) => (lastValue = value)} />);
+    await setup({
+      ...defaultProps,
+      onChange: (value) => (lastValue = value),
+    });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('extension-input'), {
+      fireEvent.change(screen.getByTestId('extension-json-input'), {
         target: { value: '{"url":"https://foo.com"}' },
       });
     });

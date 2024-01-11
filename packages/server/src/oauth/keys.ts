@@ -191,10 +191,14 @@ export function generateIdToken(claims: MedplumIdTokenClaims): Promise<string> {
 /**
  * Generates an access token JWT.
  * @param claims - The access token claims.
+ * @param additionalClaims - Any additional custom claims. Optional.
  * @returns A well-formed JWT that can be used as an access token.
  */
-export function generateAccessToken(claims: MedplumAccessTokenClaims): Promise<string> {
-  return generateJwt('1h', claims);
+export function generateAccessToken(
+  claims: MedplumAccessTokenClaims,
+  additionalClaims?: Record<string, string | number>
+): Promise<string> {
+  return generateJwt('1h', additionalClaims ? { ...claims, ...additionalClaims } : claims);
 }
 
 /**

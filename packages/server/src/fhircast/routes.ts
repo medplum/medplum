@@ -128,17 +128,17 @@ protectedCommonRoutes.post(
         stringifiedBody = JSON.stringify(req.body);
       }
       // TODO: we need to get topic from event and not route param since per spec, the topic shouldn't be the slug like we have it
-      await getRedis().set(`::fhircast::${req.params.topic}::latest::`, stringifiedBody);
+      await getRedis().set(`medplum:fhircast:topic:${req.params.topic}:latest`, stringifiedBody);
     } else if (event['hub.event'].endsWith('-close')) {
       // We always close the current context, even if the event is not for the original resource... There isn't any mention of checking to see it's the right resource, so it seems it may be assumed to be always valid to do any arbitrary close as long as there is an existing context...
-      await getRedis().del(`::fhircast::${req.params.topic}::latest::`);
+      await getRedis().del(`medplum:fhircast:topic:${req.params.topic}:latest`);
     } else if (event['hub.event'] === 'DiagnosticReport-update') {
       // See: https://build.fhir.org/ig/HL7/fhircast-docs/3-6-3-DiagnosticReport-update.html#:~:text=The%20Hub%20SHALL,the%20new%20updates.
       event['context.priorVersionId'] = event['context.versionId'];
       event['context.versionId'] = generateId();
       stringifiedBody = JSON.stringify(req.body);
       // TODO: Make sure this is actually supposed to be stored / overwrite open context? (ambiguous from docs, see: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html)
-      await getRedis().set(`::fhircast::${req.params.topic}::latest::`, stringifiedBody);
+      await getRedis().set(`medplum:fhircast:topic:${req.params.topic}:latest`, stringifiedBody);
     }
     await getRedis().publish(req.params.topic as string, stringifiedBody);
     res.status(201).json({ success: true, event: body });
@@ -149,7 +149,7 @@ protectedCommonRoutes.post(
 protectedSTU2Routes.get(
   '/:topic',
   asyncWrap(async (req: Request, res: Response) => {
-    const latestEventStr = await getRedis().get(`::fhircast::${req.params.topic}::latest::`);
+    const latestEventStr = await getRedis().get(`medplum:fhircast:topic:${req.params.topic}:latest`);
     // Non-standard FHIRCast extension to support Nuance PowerCast Hub
     if (!latestEventStr) {
       res.status(200).json([]);
@@ -162,7 +162,7 @@ protectedSTU2Routes.get(
 protectedSTU3Routes.get(
   '/:topic',
   asyncWrap(async (req: Request, res: Response) => {
-    const latestEventStr = await getRedis().get(`::fhircast::${req.params.topic}::latest::`);
+    const latestEventStr = await getRedis().get(`medplum:fhircast:topic:${req.params.topic}:latest`);
     if (!latestEventStr) {
       // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#:~:text=The%20following%20example%20shows%20the%20returned%20structure%20when%20no%20context%20is%20established%3A
       res.status(200).json({

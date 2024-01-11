@@ -1,5 +1,6 @@
 import { Attachment, CodeableConcept, ObservationDefinition, Patient, Resource } from '@medplum/fhirtypes';
 import { ContentType } from './contenttype';
+import { OperationOutcomeError } from './outcomes';
 import {
   ResourceWithCode,
   arrayBufferToBase64,
@@ -7,7 +8,6 @@ import {
   calculateAge,
   calculateAgeString,
   capitalize,
-  createDeferredPromise,
   createReference,
   deepClone,
   deepEquals,
@@ -25,9 +25,12 @@ import {
   getImageSrc,
   getQuestionnaireAnswers,
   getReferenceString,
+  isEmpty,
   isLowerCase,
+  isPopulated,
   isProfileResource,
   isUUID,
+  lazy,
   parseReference,
   preciseEquals,
   preciseGreaterThan,
@@ -90,13 +93,18 @@ describe('Core Utils', () => {
   });
 
   test('parseReference', () => {
-    expect(parseReference(undefined)).toBeUndefined();
-    expect(parseReference({})).toBeUndefined();
-    expect(parseReference({ id: '123' })).toBeUndefined();
-    expect(parseReference({ reference: 'Patient' })).toBeUndefined();
-    expect(parseReference({ reference: '/' })).toBeUndefined();
-    expect(parseReference({ reference: 'Patient/' })).toBeUndefined();
+    expect(() => parseReference(undefined)).toThrow(OperationOutcomeError);
+    expect(() => parseReference({})).toThrow(OperationOutcomeError);
+    expect(() => parseReference({ id: '123' })).toThrow(OperationOutcomeError);
+    expect(() => parseReference({ reference: 'Patient' })).toThrow(OperationOutcomeError);
+    expect(() => parseReference({ reference: '/' })).toThrow(OperationOutcomeError);
+    expect(() => parseReference({ reference: 'Patient/' })).toThrow(OperationOutcomeError);
     expect(parseReference({ reference: 'Patient/123' })).toEqual(['Patient', '123']);
+
+    // Destructuring test
+    const [resourceType, id] = parseReference({ reference: 'Patient/123' });
+    expect(resourceType).toEqual('Patient');
+    expect(id).toEqual('123');
   });
 
   test('isProfileResource', () => {
@@ -132,6 +140,40 @@ describe('Core Utils', () => {
     expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [] })).toEqual('Device/123');
     expect(getDisplayString({ resourceType: 'User', email: 'foo@example.com' })).toEqual('foo@example.com');
     expect(getDisplayString({ resourceType: 'User', id: '123' })).toEqual('User/123');
+  });
+
+  const EMPTY = [true, false];
+  const POPULATED = [false, true];
+  test.each([
+    [undefined, EMPTY],
+    [null, EMPTY],
+
+    ['', EMPTY],
+    [' ', POPULATED],
+    ['foo', POPULATED],
+
+    [{}, EMPTY],
+    [Object.create(null), EMPTY],
+    [{ foo: 'bar' }, POPULATED],
+    [{ length: 0 }, POPULATED],
+    [{ length: 1 }, POPULATED],
+
+    [[], EMPTY],
+    [[undefined], POPULATED],
+    [[null], POPULATED],
+    [[0], POPULATED],
+    [[1, 2, 3], POPULATED],
+
+    [NaN, [false, false]],
+    [123, [false, false]],
+    [5.5, [false, false]],
+    [true, [false, false]],
+    [false, [false, false]],
+  ])('for %j, [isEmpty, isPopulated] should be %j', (input: any, expected: any) => {
+    const [emptyExpected, populatedExpected] = expected;
+
+    expect(isEmpty(input)).toBe(emptyExpected);
+    expect(isPopulated(input)).toBe(populatedExpected);
   });
 
   test('getImageSrc', () => {
@@ -1020,24 +1062,19 @@ describe('Core Utils', () => {
     expect(splitN('organization', ':', 2)).toEqual(['organization']);
   });
 
-  describe('createDeferredPromise', () => {
-    test('Created promise has all props', () => {
-      const deferredPromise = createDeferredPromise();
-      expect(deferredPromise.promise).toBeInstanceOf(Promise);
-      expect(deferredPromise.resolve).toBeInstanceOf(Function);
-      expect(deferredPromise.reject).toBeInstanceOf(Function);
-    });
+  test('lazy', () => {
+    const mockFn = jest.fn().mockReturnValue('test result');
+    const lazyFn = lazy(mockFn);
 
-    test('Calling `resolve` resolves promise', async () => {
-      const deferredPromise = createDeferredPromise();
-      expect(() => deferredPromise.resolve()).not.toThrow();
-      await expect(deferredPromise.promise).resolves;
-    });
+    // the mock function should not have been called
+    expect(mockFn).not.toHaveBeenCalled();
 
-    test('Calling `reject` rejects promise', async () => {
-      const deferredPromise = createDeferredPromise();
-      expect(() => deferredPromise.reject(new Error('Rejected!'))).not.toThrow();
-      await expect(deferredPromise.promise).rejects.toThrow(/Rejected!/);
-    });
+    // Call the lazy function for the first time
+    expect(lazyFn()).toBe('test result');
+    expect(mockFn).toHaveBeenCalledTimes(1);
+
+    // Call the lazy function for the second time, wrapped fn still only called once
+    expect(lazyFn()).toBe('test result');
+    expect(mockFn).toHaveBeenCalledTimes(1);
   });
 });

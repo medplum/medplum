@@ -12,6 +12,7 @@ export const Basic = (): JSX.Element => (
   <Document>
     <IdentifierInput
       name="patient-identifier"
+      path="Patient.identifier"
       defaultValue={
         {
           system: 'http://hl7.org/fhir/sid/us-ssn',
@@ -19,6 +20,7 @@ export const Basic = (): JSX.Element => (
         } as Identifier
       }
       onChange={console.log}
+      outcome={undefined}
     />
   </Document>
 );

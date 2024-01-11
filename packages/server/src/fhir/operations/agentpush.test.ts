@@ -27,13 +27,6 @@ describe('Agent Push', () => {
         identifier: [{ system: 'https://example.com/agent', value: randomUUID() }],
         name: 'Test Agent',
         status: 'active',
-        channel: [
-          {
-            name: 'test',
-            endpoint: { reference: 'Endpoint/' + randomUUID() },
-            targetReference: { reference: 'Bot/' + randomUUID() },
-          },
-        ],
       });
     expect(res1.status).toBe(201);
     agent = res1.body as Agent;

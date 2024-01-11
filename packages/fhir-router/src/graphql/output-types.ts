@@ -12,6 +12,7 @@ import {
   OperationOutcomeError,
   toJsBoolean,
   toTypedValue,
+  tryGetDataType,
 } from '@medplum/core';
 import { ElementDefinitionType, Resource, ResourceType } from '@medplum/fhirtypes';
 import {
@@ -106,6 +107,9 @@ function buildOutputPropertyField(
   if (typeName === 'Element' || typeName === 'BackboneElement') {
     typeName = elementDefinition.type[0].code;
   }
+  if (typeName === 'Resource') {
+    typeName = 'ResourceList';
+  }
 
   const fieldConfig: GraphQLFieldConfig<any, any> = {
     description: elementDefinition.description, // TODO: elementDefinition.short
@@ -157,8 +161,8 @@ function buildListPropertyFieldArgs(fieldTypeName: string): GraphQLFieldConfigAr
     };
 
     // Add all "string" and "code" properties as arguments
-    const fieldTypeSchema = getDataType(fieldTypeName);
-    if (fieldTypeSchema.elements) {
+    const fieldTypeSchema = tryGetDataType(fieldTypeName);
+    if (fieldTypeSchema?.elements) {
       for (const [fieldKey, fieldElementDefinition] of Object.entries(fieldTypeSchema.elements)) {
         for (const type of fieldElementDefinition.type) {
           buildListPropertyFieldArg(fieldArgs, fieldKey, fieldElementDefinition, type);

@@ -9,7 +9,7 @@ interface Args {
   agentId: string;
 }
 
-export async function main(argv: string[]): Promise<void> {
+export async function main(argv: string[]): Promise<App> {
   let args: Args;
   if (argv.length >= 6) {
     args = readCommandLineArgs(argv);
@@ -44,10 +44,12 @@ export async function main(argv: string[]): Promise<void> {
   await app.start();
 
   process.on('SIGINT', () => {
-    console.log('\ngracefully shutting down from SIGINT (Crtl-C)');
+    console.log('Gracefully shutting down from SIGINT (Crtl-C)');
     app.stop();
     process.exit();
   });
+
+  return app;
 }
 
 function readCommandLineArgs(argv: string[]): Args {

@@ -18,6 +18,7 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
+import { OperationOutcomeError, validationError } from './outcomes';
 import { isReference } from './types';
 
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
@@ -76,15 +77,13 @@ export function resolveId(input: Reference | Resource | undefined): string | und
  * @param reference - A reference to a FHIR resource.
  * @returns A tuple containing the `ResourceType` and the ID of the resource or `undefined` when `undefined` or an invalid reference is passed.
  */
-export function parseReference(reference: Reference): [ResourceType, string] | undefined;
-export function parseReference(reference: undefined): undefined;
-export function parseReference(reference: Reference | undefined): [ResourceType, string] | undefined {
+export function parseReference(reference: Reference | undefined): [ResourceType, string] {
   if (reference?.reference === undefined) {
-    return undefined;
+    throw new OperationOutcomeError(validationError('Reference missing reference property.'));
   }
   const [type, id] = reference.reference.split('/');
   if (type === '' || id === '' || id === undefined) {
-    return undefined;
+    throw new OperationOutcomeError(validationError('Unable to parse reference string.'));
   }
   return [type as ResourceType, id];
 }
@@ -456,12 +455,35 @@ function isArrayKey(k: string): boolean {
  * @param v - Any value.
  * @returns True if the value is an empty string or an empty object.
  */
-export function isEmpty(v: any): boolean {
+export function isEmpty(v: unknown): boolean {
   if (v === null || v === undefined) {
     return true;
   }
+
   const t = typeof v;
-  return (t === 'string' && v === '') || (t === 'object' && Object.keys(v).length === 0);
+  if (t === 'string' || t === 'object') {
+    return !isPopulated(v);
+  }
+
+  return false;
+}
+
+export type CanBePopulated = { length: number } | object;
+/**
+ * Returns true if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
+ * @param arg - Any value
+ * @returns True if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
+ */
+export function isPopulated<T extends { length: number } | object>(arg: CanBePopulated | undefined | null): arg is T {
+  if (arg === null || arg === undefined) {
+    return false;
+  }
+  const t = typeof arg;
+
+  return (
+    (t === 'string' && arg !== '') ||
+    (t === 'object' && (('length' in arg && arg.length > 0) || Object.keys(arg).length > 0))
+  );
 }
 
 /**
@@ -924,18 +946,20 @@ export function splitN(str: string, delim: string, n: number): string[] {
   return result;
 }
 
-export type DeferredPromise = {
-  promise: Promise<void>;
-  resolve: () => void;
-  reject: (err: Error) => void;
-};
+/**
+ * Memoizes the result of a parameterless function
+ * @param fn - The function to be wrapped
+ * @returns The result of the first invocation of the wrapped function
+ */
+export function lazy<T>(fn: () => T): () => T {
+  let result: T;
+  let executed = false;
 
-export function createDeferredPromise(): DeferredPromise {
-  let _resolve!: () => void;
-  let _reject!: (err: Error) => void;
-  const promise = new Promise<void>((resolve, reject) => {
-    _resolve = resolve;
-    _reject = reject;
-  });
-  return { promise, resolve: _resolve, reject: _reject };
+  return function (): T {
+    if (!executed) {
+      result = fn();
+      executed = true;
+    }
+    return result;
+  };
 }

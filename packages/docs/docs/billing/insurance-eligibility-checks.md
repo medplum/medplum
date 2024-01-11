@@ -13,9 +13,9 @@ Insurance eligibility checks cover a variety of use cases, but generally they ar
 2. Does this insurance cover basic visits to a provider?
 3. Does this insurance cover a specific service type?
 
-The most basic use case for an eligibility check is simply seeing if the policy is active and inforce.
+The most basic use case for an eligibility check is simply seeing if the policy is active and in force.
 
-Adding a second layer is checking if the policy is active and also covers basic visits to a provider. These include appointments like phsyicals and check-ups and is the most common type of eligibility request.
+Adding a second layer is checking if the policy is active and also covers basic visits to a provider. These include appointments like physicals and check-ups and is the most common type of eligibility request.
 
 Because it is so common, these types of requests are defined by the [X12 Service Type Codes](https://x12.org/codes/service-type-codes) in **service code 30**. This service type is "Plan Coverage and General Benefits", and checks for active basic coverage.
 
@@ -91,7 +91,7 @@ The `item` field also provides additional data about the procedure, product, or 
 
 Once you have created your [`CoverageEligibilityRequest`](/docs/api/fhir/resources/coverageeligibilityrequest), you need to send it to the insurer.
 
-In addition to sending it directly to the insurer, there are services that simplify the process. Companies such as [Opkit](https://www.opkit.co/), [Availty](https://www.availity.com/), [Change Healthcare](https://www.changehealthcare.com/), [Waystar](https://www.waystar.com/) and [Candid Health](https://www.joincandidhealth.com/) allow you to send them eligibility checks directly.
+In addition to sending it directly to the insurer, there are services that simplify the process. Companies such as [Opkit](https://www.opkit.co/), [Availity](https://www.availity.com/), [Change Healthcare](https://www.changehealthcare.com/), [Waystar](https://www.waystar.com/) and [Candid Health](https://www.joincandidhealth.com/) allow you to send them eligibility checks directly.
 
 Unfortunately, these companies format their requests based on [X12 EDI Format](https://x12.org/examples/005010x279) rather than FHIR, so you will need to convert your [`CoverageEligibilityRequest`](/docs/api/fhir/resources/coverageeligibilityrequest) to the correct format. This is a good workflow to implement [Bots](/docs/bots/bot-basics) to convert your request, interface with the company's API, and send the request. Additionally, you can have a [Subscription](/docs/subscriptions) to listen for a response and have a bot handle that as well.
 
@@ -105,7 +105,7 @@ When you send your request, the insurer will review it and respond. This respons
 | `disposition`             | A human-readable description of the status of the request.                                                                              | The policy is currently in-force.                               |
 | `error`                   | Documents any errors that encountered during the eligibility check. Describes why a check may not have been able to be completed.       | Missing Identifier                                              |
 | `insurance.item`          | Details about the benefits, authorization requirements, and current benefits of the insurance.                                          | [See below](#the-item-element-on-a-coverageeligibilityresponse) |
-| `insurance.inforce`       | A boolean indicating if the coverage is inforce for the requested period.                                                               | true                                                            |
+| `insurance.inforce`       | A boolean indicating if the coverage is in force for the requested period.                                                               | true                                                            |
 | `insurance.benefitPeriod` | The term period of the benefits documented in the response.                                                                             | 2023-01-01 – 2023-12-31                                         |
 | `insurance.coverage`      | A reference to the patient's [`Coverage`](/docs/api/fhir/resources/coverage) resource.                                                  | Coverage/example-coverage                                       |
 | `request`                 | A reference to the original [`CoverageEligibilityRequest`](/docs/api/fhir/resources/coverageeligibilityrequest) this is in response to. | CoverageEligibilityRequest/check-for-vision-coverage            |

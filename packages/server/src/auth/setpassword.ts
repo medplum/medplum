@@ -6,8 +6,8 @@ import { pwnedPassword } from 'hibp';
 import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { timingSafeEqualStr } from '../oauth/utils';
-import { bcryptHashPassword } from './utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { bcryptHashPassword } from './utils';
 
 export const setPasswordValidator = makeValidationMiddleware([
   body('id').isUUID().withMessage('Invalid request ID'),
@@ -36,7 +36,7 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
     return;
   }
 
-  await setPassword(user, req.body.password);
+  await setPassword({ ...user, emailVerified: true }, req.body.password);
   await systemRepo.updateResource<PasswordChangeRequest>({ ...pcr, used: true });
   sendOutcome(res, allOk);
 }

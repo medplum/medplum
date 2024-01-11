@@ -14,9 +14,9 @@ import {
   Ratio,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
-import { MedplumProvider } from '@medplum/react-hooks';
 import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
 
 const medplum = new MockClient();
@@ -28,6 +28,12 @@ const baseProperty: Omit<InternalSchemaElement, 'type'> = {
   isArray: false,
   constraints: [],
   path: '',
+};
+
+const defaultProps: Pick<ResourcePropertyInputProps, 'defaultValue' | 'outcome' | 'onChange'> = {
+  defaultValue: undefined,
+  outcome: undefined,
+  onChange: undefined,
 };
 
 describe('ResourcePropertyInput', () => {
@@ -48,6 +54,7 @@ describe('ResourcePropertyInput', () => {
     const onChange = jest.fn();
 
     await setup({
+      ...defaultProps,
       name: 'active',
       property: { ...baseProperty, type: [{ code: 'boolean' }] },
       onChange,
@@ -58,13 +65,14 @@ describe('ResourcePropertyInput', () => {
       fireEvent.click(screen.getByTestId('active'));
     });
 
-    expect(onChange).toHaveBeenCalledWith(true);
+    expect(onChange).toHaveBeenCalledWith(true, 'active');
   });
 
   test('Date property', async () => {
     const onChange = jest.fn();
 
     await setup({
+      ...defaultProps,
       name: 'date',
       property: { ...baseProperty, type: [{ code: 'date' }] },
       onChange,
@@ -75,7 +83,7 @@ describe('ResourcePropertyInput', () => {
       fireEvent.change(screen.getByTestId('date'), { target: { value: '2021-01-01' } });
     });
 
-    expect(onChange).toHaveBeenCalledWith('2021-01-01');
+    expect(onChange).toHaveBeenCalledWith('2021-01-01', 'date');
   });
 
   test('Date/Time property', async () => {
@@ -84,6 +92,7 @@ describe('ResourcePropertyInput', () => {
     const isoString = convertLocalToIso(localString);
 
     await setup({
+      ...defaultProps,
       name: 'dateTime',
       property: { ...baseProperty, type: [{ code: 'dateTime' }] },
       onChange,
@@ -94,13 +103,14 @@ describe('ResourcePropertyInput', () => {
       fireEvent.change(screen.getByTestId('dateTime'), { target: { value: localString } });
     });
 
-    expect(onChange).toHaveBeenCalledWith(isoString);
+    expect(onChange).toHaveBeenCalledWith(isoString, 'dateTime');
   });
 
   test('Markdown property', async () => {
     const onChange = jest.fn();
 
     await setup({
+      ...defaultProps,
       name: 'markdown',
       property: { ...baseProperty, type: [{ code: 'markdown' }] },
       onChange,
@@ -111,7 +121,7 @@ describe('ResourcePropertyInput', () => {
       fireEvent.change(screen.getByTestId('markdown'), { target: { value: 'xyz' } });
     });
 
-    expect(onChange).toHaveBeenCalledWith('xyz');
+    expect(onChange).toHaveBeenCalledWith('xyz', 'markdown');
   });
 
   // 2.24.0.2 Complex Types
@@ -125,6 +135,7 @@ describe('ResourcePropertyInput', () => {
     ];
 
     await setup({
+      ...defaultProps,
       name: 'address',
       property: { ...baseProperty, type: [{ code: 'Address' }], max: Number.POSITIVE_INFINITY },
       defaultValue,
@@ -140,6 +151,7 @@ describe('ResourcePropertyInput', () => {
     ];
 
     await setup({
+      ...defaultProps,
       name: 'note',
       property: { ...baseProperty, type: [{ code: 'Annotation' }], max: Number.POSITIVE_INFINITY },
       defaultValue,
@@ -157,6 +169,7 @@ describe('ResourcePropertyInput', () => {
     const onChange = jest.fn();
 
     await setup({
+      ...defaultProps,
       name: 'content',
       property: { ...baseProperty, type: [{ code: 'Attachment' }] },
       defaultValue,
@@ -177,7 +190,7 @@ describe('ResourcePropertyInput', () => {
       });
     });
 
-    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ title: 'world.txt' }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ title: 'world.txt' }), 'content');
   });
 
   test('Attachment array property', async () => {
@@ -192,6 +205,7 @@ describe('ResourcePropertyInput', () => {
     const onChange = jest.fn();
 
     await setup({
+      ...defaultProps,
       name: 'photo',
       property: { ...baseProperty, type: [{ code: 'Attachment' }], max: Number.POSITIVE_INFINITY },
       defaultValue,
@@ -225,6 +239,7 @@ describe('ResourcePropertyInput', () => {
     };
 
     await setup({
+      ...defaultProps,
       name: 'maritalStatus',
       property: { ...baseProperty, type: [{ code: 'CodeableConcept' }] },
       defaultValue,
@@ -241,6 +256,7 @@ describe('ResourcePropertyInput', () => {
     ];
 
     await setup({
+      ...defaultProps,
       name: 'telecom',
       property: { ...baseProperty, type: [{ code: 'ContactPoint' }], max: Number.POSITIVE_INFINITY },
       defaultValue,
@@ -260,6 +276,7 @@ describe('ResourcePropertyInput', () => {
     const onChange = jest.fn();
 
     await setup({
+      ...defaultProps,
       name: 'extension',
       property: { ...baseProperty, type: [{ code: 'Extension' }], max: Number.POSITIVE_INFINITY },
       defaultValue,
@@ -284,6 +301,7 @@ describe('ResourcePropertyInput', () => {
     ];
 
     await setup({
+      ...defaultProps,
       name: 'name',
       property: { ...baseProperty, type: [{ code: 'HumanName' }], max: Number.POSITIVE_INFINITY },
       defaultValue,
@@ -302,6 +320,7 @@ describe('ResourcePropertyInput', () => {
     const onChange = jest.fn();
 
     await setup({
+      ...defaultProps,
       name: 'identifier',
       property: { ...baseProperty, type: [{ code: 'Identifier' }], max: Number.POSITIVE_INFINITY },
       defaultValue,
@@ -328,6 +347,7 @@ describe('ResourcePropertyInput', () => {
     const onChange = jest.fn();
 
     await setup({
+      ...defaultProps,
       name: 'period',
       property: { ...baseProperty, type: [{ code: 'Period' }] },
       defaultValue,
@@ -343,7 +363,10 @@ describe('ResourcePropertyInput', () => {
       });
     });
 
-    expect(onChange).toHaveBeenCalledWith({ start: '2020-01-01T12:00:00.000Z', end: '2021-01-03T12:00:00.000Z' });
+    expect(onChange).toHaveBeenCalledWith(
+      { start: '2020-01-01T12:00:00.000Z', end: '2021-01-03T12:00:00.000Z' },
+      'period'
+    );
   });
 
   test('Quantity property', async () => {
@@ -355,6 +378,7 @@ describe('ResourcePropertyInput', () => {
     const onChange = jest.fn();
 
     await setup({
+      ...defaultProps,
       name: 'test',
       property: { ...baseProperty, type: [{ code: 'Quantity' }] },
       defaultValue,
@@ -370,7 +394,7 @@ describe('ResourcePropertyInput', () => {
       });
     });
 
-    expect(onChange).toHaveBeenCalledWith({ value: 2, unit: 'mg' });
+    expect(onChange).toHaveBeenCalledWith({ value: 2, unit: 'mg' }, 'test');
   });
 
   test('Range property', async () => {
@@ -382,6 +406,7 @@ describe('ResourcePropertyInput', () => {
     const onChange = jest.fn();
 
     await setup({
+      ...defaultProps,
       name: 'test',
       property: { ...baseProperty, type: [{ code: 'Range' }] },
       defaultValue,
@@ -397,10 +422,13 @@ describe('ResourcePropertyInput', () => {
       });
     });
 
-    expect(onChange).toHaveBeenCalledWith({
-      low: { value: 2, unit: 'mg' },
-      high: { value: 10, unit: 'mg' },
-    });
+    expect(onChange).toHaveBeenCalledWith(
+      {
+        low: { value: 2, unit: 'mg' },
+        high: { value: 10, unit: 'mg' },
+      },
+      'test'
+    );
   });
 
   test('Ratio property', async () => {
@@ -412,6 +440,7 @@ describe('ResourcePropertyInput', () => {
     const onChange = jest.fn();
 
     await setup({
+      ...defaultProps,
       name: 'test',
       property: { ...baseProperty, type: [{ code: 'Ratio' }] },
       defaultValue,
@@ -427,10 +456,13 @@ describe('ResourcePropertyInput', () => {
       });
     });
 
-    expect(onChange).toHaveBeenCalledWith({
-      numerator: { value: 2, unit: 'mg' },
-      denominator: { value: 10, unit: 'ml' },
-    });
+    expect(onChange).toHaveBeenCalledWith(
+      {
+        numerator: { value: 2, unit: 'mg' },
+        denominator: { value: 10, unit: 'ml' },
+      },
+      'test'
+    );
   });
 
   test('Reference property single target type', async () => {
@@ -445,6 +477,7 @@ describe('ResourcePropertyInput', () => {
     };
 
     await setup({
+      ...defaultProps,
       name: 'managingOrganization',
       property,
     });
@@ -466,6 +499,7 @@ describe('ResourcePropertyInput', () => {
     };
 
     await setup({
+      ...defaultProps,
       name: 'subject',
       property,
     });
@@ -485,6 +519,7 @@ describe('ResourcePropertyInput', () => {
     const onChange = jest.fn();
 
     await setup({
+      ...defaultProps,
       name: 'value[x]',
       property,
       onChange,
@@ -558,6 +593,7 @@ describe('ResourcePropertyInput', () => {
     };
 
     await setup({
+      ...defaultProps,
       name: 'value[x]',
       property,
       defaultPropertyType: PropertyType.integer,
@@ -565,5 +601,33 @@ describe('ResourcePropertyInput', () => {
 
     expect(screen.getByDisplayValue('integer')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('Quantity')).toBeNull();
+  });
+
+  test('Project secrets', async () => {
+    const property: InternalSchemaElement = {
+      ...baseProperty,
+      path: 'Project.secret.value[x]',
+      type: [{ code: 'string' }],
+    };
+
+    const onChange = jest.fn();
+
+    await setup({
+      ...defaultProps,
+      name: 'secret',
+      property,
+      onChange,
+    });
+
+    const input = screen.getByTestId('secret');
+    expect(input).toBeInTheDocument();
+
+    expect(screen.getByTitle('Copy secret')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'hello' } });
+    });
+
+    expect(onChange).toHaveBeenCalledWith('hello', 'secret');
   });
 });

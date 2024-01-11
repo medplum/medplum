@@ -22,9 +22,10 @@ import { fhirRouter } from './fhir/routes';
 import { initBinaryStorage } from './fhir/storage';
 import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
-import { cleanupHeartbeat } from './fhircast/websocket';
 import { healthcheckHandler } from './healthcheck';
+import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
+import { initOpenTelemetry, shutdownOpenTelemetry } from './instrumentation';
 import { globalLogger } from './logger';
 import { initKeys } from './oauth/keys';
 import { oauthRouter } from './oauth/routes';
@@ -189,6 +190,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 
 export function initAppServices(config: MedplumServerConfig): Promise<void> {
   return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
+    initOpenTelemetry(config);
     loadStructureDefinitions();
     initRedis(config.redis);
     await initDatabase(config.database);
@@ -196,6 +198,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
     await initKeys(config);
     initBinaryStorage(config.binaryStorage);
     initWorkers(config);
+    initHeartbeat();
   });
 }
 
@@ -206,6 +209,7 @@ export async function shutdownApp(): Promise<void> {
   await closeWebSockets();
   closeRedis();
   closeRateLimiter();
+  await shutdownOpenTelemetry();
 
   if (server) {
     server.close();

@@ -11,7 +11,7 @@ jobs:
     name: Staging
     runs-on: ubuntu-latest
     env:
-      NODE_VERSION: '18'
+      NODE_VERSION: '20'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: 'medplum'
       TURBO_REMOTE_ONLY: true
@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20
       - name: Cache node modules
         uses: actions/cache@v3
         env:
@@ -59,10 +59,13 @@ jobs:
         env:
           APP_BUCKET: ${{ secrets.STAGING_APP_BUCKET }}
           AWS_REGION: ${{ secrets.STAGING_AWS_REGION }}
+      - name: Build Docker Image
+        run: ./scripts/build-docker.sh
+        env:
+          DOCKERHUB_REPOSITORY: ${{ secrets.STAGING_DOCKERHUB_REPOSITORY }}
       - name: Deploy Server
         run: ./scripts/deploy-server.sh
         env:
           AWS_REGION: ${{ secrets.STAGING_AWS_REGION }}
-          DOCKERHUB_REPOSITORY: ${{ secrets.STAGING_DOCKERHUB_REPOSITORY }}
           ECS_CLUSTER: ${{ secrets.STAGING_ECS_CLUSTER }}
           ECS_SERVICE: ${{ secrets.STAGING_ECS_SERVICE }}
