@@ -77,9 +77,46 @@ export function assignValuesIntoSlices(
   }
 
   // for slices without existing values, add a placeholder empty value
-  for (let i = 0; i < slices.length; i++) {
-    if (slicedValues[i].length === 0) {
-      slicedValues[i].push(undefined);
+  for (let sliceIndex = 0; sliceIndex < slices.length; sliceIndex++) {
+    const slice = slices[sliceIndex];
+    const sliceValues = slicedValues[sliceIndex];
+
+    if (sliceValues.length < slice.min) {
+      while (sliceValues.length < slice.min) {
+        sliceValues.push(undefined);
+        continue;
+        const defaultValue = Object.create(null);
+        Object.entries(slice.elements).forEach(([key, element]) => {
+          const fixedOrPattern = element.fixed ?? element.pattern;
+          if (fixedOrPattern) {
+            const keyParts = key.split('.');
+            if (keyParts.length > 1) {
+              let last = defaultValue;
+              for (let i = 0; i < keyParts.length; i++) {
+                const keyPart = keyParts[i];
+                if (i === keyParts.length - 1) {
+                  if (Array.isArray(last)) {
+                    last.forEach((item) => (item[keyPart] = fixedOrPattern.value));
+                  } else {
+                    last[keyPart] = fixedOrPattern.value;
+                  }
+                } else {
+                  if (!(keyPart in last)) {
+                    const elementKey = keyParts.slice(0, i + 1).join('.');
+                    last[keyPart] = slice.elements[elementKey].isArray ? [Object.create(null)] : Object.create(null);
+                  }
+                  last = last[keyPart];
+                }
+              }
+            }
+            console.log(slice, 'FIXED or PATTERN', key, fixedOrPattern, JSON.stringify(defaultValue));
+          }
+        });
+        console.log(slice.path, 'FIXED FINAL', defaultValue);
+        sliceValues.push(defaultValue);
+      }
+    } else if (sliceValues.length === 0) {
+      sliceValues.push(undefined);
     }
   }
 

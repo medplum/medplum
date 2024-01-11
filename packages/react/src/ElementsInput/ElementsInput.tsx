@@ -1,14 +1,15 @@
 import { Stack } from '@mantine/core';
-import { InternalSchemaElement, InternalTypeSchema, TypedValue, getPathDisplayName, isPopulated } from '@medplum/core';
+import { InternalTypeSchema, getPathDisplayName, isPopulated } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { useContext, useMemo, useState } from 'react';
+import { useContext, useMemo } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
 import { FormSection } from '../FormSection/FormSection';
 import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
 import { getValueAndTypeFromElement } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
-import { ElementsContext, buildElementsContext } from './ElementsInput.utils';
+import { ElementsContext } from './ElementsInput.utils';
+import useCallbackState from '../hooks/useCallbackState';
 
 const EXTENSION_KEYS = new Set(['extension', 'modifierExtension']);
 const IGNORED_PROPERTIES = new Set(['id', ...DEFAULT_IGNORED_PROPERTIES].filter((prop) => !EXTENSION_KEYS.has(prop)));
@@ -16,7 +17,6 @@ const IGNORED_PROPERTIES = new Set(['id', ...DEFAULT_IGNORED_PROPERTIES].filter(
 export interface ElementsInputProps {
   type: string | undefined;
   path: string;
-  elements: Record<string, InternalSchemaElement>;
   defaultValue: any;
   outcome: OperationOutcome | undefined;
   onChange: ((value: any) => void) | undefined;
@@ -25,31 +25,12 @@ export interface ElementsInputProps {
 }
 
 export function ElementsInput(props: ElementsInputProps): JSX.Element {
-  const [value, setValue] = useState<any>(props.defaultValue ?? {});
+  const { onChange } = props;
+  const [value, setValue] = useCallbackState<any>(() => props.defaultValue ?? {}, `ElementsInput[${props.path}]`);
   // const DEBUG = useMemo(() => props.testId === 'slice-VSCat-elements-0', [props.testId]);
   // const DEBUG = useMemo(() => true || props.path === 'Patient.extension.extension', [props.path]);
-  const parentElementsContextValue = useContext(ElementsContext);
-
-  const elementsContextValue = useMemo(() => {
-    return buildElementsContext({
-      parentContext: parentElementsContextValue,
-      elements: props.elements,
-      parentPath: props.path,
-      parentType: props.type,
-    });
-  }, [parentElementsContextValue, props.elements, props.path, props.type]);
-  const elements = elementsContextValue.elements;
-
-  const fixedProperties = useMemo(() => {
-    const result: { [key: string]: InternalSchemaElement & { fixed: TypedValue } } = Object.create(null);
-    for (const [key, property] of Object.entries(elements)) {
-      if (property.fixed) {
-        result[key] = property as any;
-      }
-    }
-    return result;
-  }, [elements]);
-
+  const elementsContext = useContext(ElementsContext);
+  const elements = elementsContext.elements;
   const elementsToRender = useMemo(() => {
     const result = Object.entries(elements).filter(([key, element]) => {
       if (!element.type) {
@@ -87,73 +68,85 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
     return result;
   }, [elements]);
 
-  function setValueWrapper(newValue: any): void {
-    for (const [key, prop] of Object.entries(fixedProperties)) {
-      setPropertyValue(newValue, key, key, prop, prop.fixed.value);
-    }
-    setValue(newValue);
-    if (props.onChange) {
-      props.onChange(newValue);
-    }
-  }
+  const onChangeCallbacks = useMemo(() => {
+    const result = elementsToRender.map(([key, element]) => {
+      return (newPropValue: any, propName?: string) => {
+        // const newValue = setPropertyValue({ ...value }, key, propName ?? key, element, newPropValue);
+        // for (const [key, prop] of Object.entries(elementsContext.fixedProperties)) {
+        //   setPropertyValue(newValue, key, key, prop, prop.fixed.value);
+        // }
+        // setValue(newValue);
+        setValue((prevValue: any) => {
+          const newValue = setPropertyValue({ ...prevValue }, key, propName ?? key, element, newPropValue);
+          for (const [key, prop] of Object.entries(elementsContext.fixedProperties)) {
+            setPropertyValue(newValue, key, key, prop, prop.fixed.value);
+          }
+          console.log(`ElementsInput[${props.path}]`, {
+            newPropValue: JSON.stringify(newPropValue),
+            propName,
+            prevValue: JSON.stringify(prevValue),
+            newValue: JSON.stringify(newValue),
+          });
+          return newValue;
+        }, onChange);
+      };
+    });
+    return result;
+  }, [elementsToRender, setValue, onChange, props.path, elementsContext.fixedProperties]);
 
   return (
-    <ElementsContext.Provider value={elementsContextValue}>
-      <Stack style={{ flexGrow: 1 }} data-testid={props.testId}>
-        {elementsToRender.map(([key, element]) => {
-          const [propertyValue, propertyType] = getValueAndTypeFromElement(value, key, element);
-          const required = element.min !== undefined && element.min > 0;
-          const resourcePropertyInput = (
-            <ResourcePropertyInput
-              key={key}
-              property={element}
-              name={key}
-              path={props.path + '.' + key}
-              defaultValue={propertyValue}
-              defaultPropertyType={propertyType}
-              onChange={(newValue: any, propName?: string) => {
-                setValueWrapper(setPropertyValue({ ...value }, key, propName ?? key, element, newValue));
-              }}
-              arrayElement={undefined}
-              outcome={props.outcome}
-            />
-          );
+    <Stack style={{ flexGrow: 1 }} data-testid={props.testId}>
+      {elementsToRender.map(([key, element], elementIndex) => {
+        const [propertyValue, propertyType] = getValueAndTypeFromElement(value, key, element);
+        const required = element.min !== undefined && element.min > 0;
+        const resourcePropertyInput = (
+          <ResourcePropertyInput
+            key={key}
+            property={element}
+            name={key}
+            path={props.path + '.' + key}
+            defaultValue={propertyValue}
+            defaultPropertyType={propertyType}
+            onChange={onChangeCallbacks[elementIndex]}
+            arrayElement={undefined}
+            outcome={props.outcome}
+          />
+        );
 
-          // no FormSection wrapper for extensions
-          if (props.type === 'Extension' || EXTENSION_KEYS.has(key)) {
-            return resourcePropertyInput;
-          }
+        // no FormSection wrapper for extensions
+        if (props.type === 'Extension' || EXTENSION_KEYS.has(key)) {
+          return resourcePropertyInput;
+        }
 
-          if (element.type.length === 1 && element.type[0].code === 'boolean') {
-            return (
-              <CheckboxFormSection
-                key={key}
-                title={getPathDisplayName(key)}
-                description={element.description}
-                htmlFor={key}
-                fhirPath={element.path}
-                withAsterisk={required}
-              >
-                {resourcePropertyInput}
-              </CheckboxFormSection>
-            );
-          }
-
+        if (element.type.length === 1 && element.type[0].code === 'boolean') {
           return (
-            <FormSection
+            <CheckboxFormSection
               key={key}
               title={getPathDisplayName(key)}
               description={element.description}
-              withAsterisk={required}
               htmlFor={key}
-              outcome={props.outcome}
               fhirPath={element.path}
+              withAsterisk={required}
             >
               {resourcePropertyInput}
-            </FormSection>
+            </CheckboxFormSection>
           );
-        })}
-      </Stack>
-    </ElementsContext.Provider>
+        }
+
+        return (
+          <FormSection
+            key={key}
+            title={getPathDisplayName(key)}
+            description={element.description}
+            withAsterisk={required}
+            htmlFor={key}
+            outcome={props.outcome}
+            fhirPath={element.path}
+          >
+            {resourcePropertyInput}
+          </FormSection>
+        );
+      })}
+    </Stack>
   );
 }

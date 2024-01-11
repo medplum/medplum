@@ -1,4 +1,4 @@
-import { InternalSchemaElement, InternalTypeSchema } from '@medplum/core';
+import { InternalSchemaElement, InternalTypeSchema, TypedValue } from '@medplum/core';
 import React from 'react';
 
 /**
@@ -30,25 +30,29 @@ export type ElementsContextType = {
    * the element has the default definition for the given type.
    */
   getModifiedNestedElement: (nestedElementPath: string) => InternalSchemaElement | undefined;
+  getElementByPath: (path: string) => InternalSchemaElement | undefined;
   elements: Record<string, InternalSchemaElement>;
   elementsByPath: Record<string, InternalSchemaElement>;
+  fixedProperties: { [key: string]: InternalSchemaElement & { fixed: TypedValue } };
 };
 
 export const ElementsContext = React.createContext<ElementsContextType>({
   profileUrl: undefined,
   debugMode: false,
   getModifiedNestedElement: () => undefined,
+  getElementByPath: () => undefined,
   elements: Object.create(null),
   elementsByPath: Object.create(null),
+  fixedProperties: Object.create(null),
 });
 
 export type BuildElementsContextArgs = {
-  parentContext: ElementsContextType | undefined;
-  elements?: InternalTypeSchema['elements'];
+  elements: InternalTypeSchema['elements'] | undefined;
   parentPath: string;
-  parentType?: string;
-  profileUrl?: string | undefined;
-  debugMode?: boolean | undefined;
+  parentContext: ElementsContextType | undefined;
+  parentType: string | undefined;
+  profileUrl?: string;
+  debugMode?: boolean;
 };
 
 export function buildElementsContext({
@@ -59,38 +63,52 @@ export function buildElementsContext({
   profileUrl,
   debugMode,
 }: BuildElementsContextArgs): ElementsContextType {
-  let mergedElements: ElementsContextType['elements'] | undefined;
+  let mergedElements: ElementsContextType['elements'];
   if (elements && parentContext) {
     mergedElements = mergeElementsForContext(parentPath, elements, parentContext);
+  } else {
+    mergedElements = Object.create(null);
   }
 
   const nestedPaths: Record<string, InternalSchemaElement> = Object.create(null);
   const elementsByPath: ElementsContextType['elementsByPath'] = Object.create(null);
+  const fixedProperties: ElementsContextType['fixedProperties'] = Object.create(null);
 
-  function getModifiedNestedElement(nestedElementPath: string): InternalSchemaElement {
+  const seenKeys = new Set<string>();
+  for (const [key, property] of Object.entries(mergedElements)) {
+    elementsByPath[parentPath + '.' + key] = property;
+
+    if (property.fixed) {
+      console.log('  FIXED PROPERTY', parentPath + '.' + key, property.fixed);
+      fixedProperties[key] = property as any;
+    } else if (property.pattern) {
+      console.log('PATTERN PROPERTY', parentPath + '.' + key, property.pattern);
+    }
+
+    const [beginning, _last] = splitOnceRight(key, '.');
+    // assume paths are hierarchically sorted, e.g. identifier comes before identifier.id
+    if (seenKeys.has(beginning)) {
+      nestedPaths[parentType + '.' + key] = property;
+    }
+    seenKeys.add(key);
+  }
+
+  function getElementByPath(path: string): InternalSchemaElement | undefined {
+    return elementsByPath[path];
+  }
+
+  function getModifiedNestedElement(nestedElementPath: string): InternalSchemaElement | undefined {
     return nestedPaths[nestedElementPath];
   }
 
-  if (mergedElements) {
-    const seenKeys = new Set<string>();
-    for (const [key, property] of Object.entries(mergedElements)) {
-      elementsByPath[parentPath + '.' + key] = property;
-
-      const [beginning, _last] = splitOnceRight(key, '.');
-      // assume paths are hierarchically sorted, e.g. identifier comes before identifier.id
-      if (seenKeys.has(beginning)) {
-        nestedPaths[parentType + '.' + key] = property;
-      }
-      seenKeys.add(key);
-    }
-  }
-
   return {
-    debugMode: debugMode ?? false,
-    profileUrl,
+    debugMode: debugMode ?? parentContext?.debugMode ?? false,
+    profileUrl: profileUrl ?? parentContext?.profileUrl,
     getModifiedNestedElement,
-    elements: mergedElements ?? Object.create(null),
+    getElementByPath,
+    elements: mergedElements,
     elementsByPath,
+    fixedProperties,
   };
 }
 
@@ -104,7 +122,6 @@ function mergeElementsForContext(
     const elementPath = path + '.' + key;
     if (parentContext.elementsByPath[elementPath]) {
       result[key] = parentContext.elementsByPath[elementPath];
-      console.log(`REPLACED ${elementPath}`, parentContext.elementsByPath[elementPath], element);
     } else {
       result[key] = element;
     }
