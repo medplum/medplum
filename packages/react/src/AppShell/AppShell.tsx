@@ -84,7 +84,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
         ) : undefined
       }
     >
-      <ErrorBoundary key={`${props.pathname}?${props.searchParams?.toString()}`}>
+      <ErrorBoundary>
         <Suspense fallback={<Loading />}>{props.children}</Suspense>
       </ErrorBoundary>
     </MantineAppShell>
