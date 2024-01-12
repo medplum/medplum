@@ -377,9 +377,9 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
   }
 
   private async matchesChain<T extends Resource>(resource: T, searchRequest: SearchRequest<T>): Promise<boolean> {
-    let toVisit: Resource[] = [resource];
     for (const chainFilter of searchRequest.filters ?? []) {
       const chain = parseChainedParameter(searchRequest.resourceType, chainFilter.code, chainFilter.value);
+      let toVisit: Resource[] = [resource];
       for (const link of chain.chain) {
         let nextToVisit: Resource[] = [];
         while (toVisit.length) {
@@ -390,8 +390,12 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
 
         toVisit = nextToVisit;
       }
+
+      if (!toVisit.length) {
+        return false
+      }
     }
-    return toVisit.length > 0;
+    return true
   }
 
   private async resolveChainLink<T extends Resource>(resource: T, link: ChainedSearchLink): Promise<Resource[]> {

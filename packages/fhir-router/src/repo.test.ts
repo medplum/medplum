@@ -10,6 +10,7 @@ import { readJson } from '@medplum/definitions';
 import {
   AuditEvent,
   Bundle,
+  Condition,
   Observation,
   Patient,
   Practitioner,
@@ -184,10 +185,34 @@ describe('MemoryRepository', () => {
     expect(result?.id).toEqual(patient.id);
   });
 
-  test('two independent chains', () => {
-    //TODO: we have a bug with the toVisit var
-    //it needs to be isolated to each chain
-    //then aggregated at the end.
+  test.todo('two independent chains')
+  
+  test('two independent reverse chains', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+
+    await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      subject: { reference: `Patient/${patient.id}`},
+      code: {
+        coding: [{  code: '123' }]
+      }
+    })
+
+    await repo.createResource<Condition>({
+      resourceType: 'Condition',
+      subject: { reference: `Patient/${patient.id}`},
+      code: {
+        coding: [{ code: '456' }]
+      }
+    })
+
+    const result = await repo.searchOne(
+      parseSearchDefinition('Patient?_has:Observation:patient:code=123&_has:Condition:patient:code=456')
+    );
+
+    expect(result?.id).toEqual(patient.id)
   });
 
   test('Sort unknown search parameter', async () => {
