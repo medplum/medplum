@@ -70,14 +70,5 @@ function SelectMenu(props: SelectMenuProps): JSX.Element {
   }
   const menus = userConfigToMenu(props.config);
 
-  return (
-    <NativeSelect
-      name="menuname"
-      defaultValue={menus[0]}
-      label="Select Menu Option"
-      placeholder="Menu"
-      data={menus}
-      withAsterisk
-    />
-  );
+  return <NativeSelect name="menuname" defaultValue={menus[0]} label="Select Menu Option" data={menus} withAsterisk />;
 }
