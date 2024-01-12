@@ -18,7 +18,15 @@ export async function updateServerCommand(tag: string, options: any): Promise<vo
     return;
   }
   const separatorIndex = config.serverImage.lastIndexOf(':');
-  const initialVersion = config.serverImage.slice(separatorIndex + 1);
+  let initialVersion = config.serverImage.slice(separatorIndex + 1);
+  if (initialVersion === 'latest') {
+    const serverInfo = JSON.parse(await client.get('/healthcheck'));
+    initialVersion = serverInfo.version as string;
+    const sep = initialVersion.indexOf('-');
+    if (sep > -1) {
+      initialVersion = initialVersion.slice(0, sep);
+    }
+  }
   let updateVersion = await nextUpdateVersion(initialVersion);
   while (updateVersion) {
     console.log(`Performing update to v${updateVersion}`);
