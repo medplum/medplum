@@ -203,7 +203,14 @@ export class BackEnd extends Construct {
         // CloudWatch Logs: Create streams and put events
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          actions: ['logs:CreateLogStream', 'logs:PutLogEvents'],
+          actions: [
+            'logs:PutLogEvents',
+            'logs:CreateLogGroup',
+            'logs:CreateLogStream',
+            'logs:DescribeLogStreams',
+            'logs:DescribeLogGroups',
+            'logs:PutRetentionPolicy',
+          ],
           resources: ['arn:aws:logs:*'],
         }),
 
@@ -274,7 +281,13 @@ export class BackEnd extends Construct {
         // https://docs.aws.amazon.com/xray/latest/devguide/xray-api-permissions-ref.html
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          actions: ['xray:PutTraceSegments', 'xray:PutTelemetryRecords'],
+          actions: [
+            'xray:PutTraceSegments',
+            'xray:PutTelemetryRecords',
+            'xray:GetSamplingRules',
+            'xray:GetSamplingTargets',
+            'xray:GetSamplingStatisticSummaries',
+          ],
           resources: ['*'],
         }),
       ],
@@ -312,6 +325,7 @@ export class BackEnd extends Construct {
       image: this.getContainerImage(config, config.serverImage),
       command: [config.region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${config.region}:/medplum/${name}/`],
       logging: this.logDriver,
+      environment: config.environment,
     });
 
     this.serviceContainer.addPortMappings({
