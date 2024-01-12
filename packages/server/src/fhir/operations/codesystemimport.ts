@@ -147,7 +147,7 @@ async function processProperties(
       }
     }
 
-    const query = new InsertQuery('Coding_Property', [property]);
+    const query = new InsertQuery('Coding_Property', [property]).ignoreOnConflict();
     await query.execute(db);
   }
 }

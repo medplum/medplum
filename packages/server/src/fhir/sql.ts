@@ -566,6 +566,7 @@ export class InsertQuery extends BaseQuery {
   private readonly values: Record<string, any>[];
   private returnColumns?: string[];
   private conflictColumns?: string[];
+  private ignoreConflict?: boolean;
 
   constructor(tableName: string, values: Record<string, any>[]) {
     super(tableName);
@@ -574,6 +575,11 @@ export class InsertQuery extends BaseQuery {
 
   mergeOnConflict(columns?: string[]): this {
     this.conflictColumns = columns ?? ['id'];
+    return this;
+  }
+
+  ignoreOnConflict(): this {
+    this.ignoreConflict = true;
     return this;
   }
 
@@ -641,7 +647,10 @@ export class InsertQuery extends BaseQuery {
   }
 
   private appendMerge(sql: SqlBuilder): void {
-    if (!this.conflictColumns?.length) {
+    if (this.ignoreConflict) {
+      sql.append(` ON CONFLICT DO NOTHING`);
+      return;
+    } else if (!this.conflictColumns?.length) {
       return;
     }
 
