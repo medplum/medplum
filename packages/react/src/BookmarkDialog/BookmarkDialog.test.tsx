@@ -149,7 +149,7 @@ describe('BookmarkDialog', () => {
         />
       </MedplumProvider>
     );
-    const menuInput = screen.getByPlaceholderText('Menu') as HTMLInputElement;
+    const menuInput = screen.getByLabelText('Select Menu Option *') as HTMLSelectElement;
     const bookmarkInput = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
 
     await act(async () => {
@@ -199,7 +199,7 @@ describe('BookmarkDialog', () => {
         />
       </MedplumProvider>
     );
-    const menuInput = screen.getByPlaceholderText('Menu') as HTMLInputElement;
+    const menuInput = screen.getByLabelText('Select Menu Option *') as HTMLSelectElement;
     const bookmarkInput = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
 
     await act(async () => {

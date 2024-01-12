@@ -22,7 +22,7 @@ Similar workflows can be built up to enable patient SMS, email notifications, or
 
 ## Why was this communication initiated
 
-Keeping records of the topic and origin of communications. Using [codeable concepts](/docs/fhir-basics#codeable-concepts-standarding-data) with common ontologies like LOINC, SNOMED or CPT as `Communication.topic` can be beneficial. Similarly `Communication.about` and `Communication.encounter` can be used to refer to other FHIR resources like AppointmentRequest or DiagnosticReport.
+Keeping records of the topic and origin of communications. Using [codeable concepts](/docs/fhir-basics#standardizing-data-codeable-concepts) with common ontologies like LOINC, SNOMED or CPT as `Communication.topic` can be beneficial. Similarly `Communication.about` and `Communication.encounter` can be used to refer to other FHIR resources like AppointmentRequest or DiagnosticReport.
 
 There are special resources for distinct communication types like `Consent` and `CommunicationRequest` that may be appropriate in specific contexts.
 

@@ -8,7 +8,7 @@ toc_max_heading_level: 2
 Bots are an advanced Medplum feature that enable complex workflows. A **Medplum Bot** is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to a [**Medplum client**](../sdk) , which itself can invoke FHIR operations.
 
 **Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
-You can apply an [AccessPolicy](/docs/access/access-policies#access-policies) to the Bot if you want to further reduce the data it can read and write.
+You can apply an [AccessPolicy](/docs/access/access-policies) to the Bot if you want to further reduce the data it can read and write.
 
 Bots are disabled by default for accounts. Contact info@medplum.com if you'd like to learn more.
 
@@ -44,7 +44,7 @@ To create a Bot, navigate to the [Project Admin panel](https://app.medplum.com/a
 
 ![Create a Bot](/img/app/bots/create_bot.png)
 
-On the next page you can enter a bot **name** and **description** (optional). You can also optionally set an [**access policy**](/docs/access/access-policies#access-policies) on the Bot, which can restrict the read/write privileges of the bot's code. By default, Bots have read/write access to all resources.
+On the next page you can enter a bot **name** and **description** (optional). You can also optionally set an [**access policy**](/docs/access/access-policies) on the Bot, which can restrict the read/write privileges of the bot's code. By default, Bots have read/write access to all resources.
 
 ![Enter Bot Properties](/img/app/bots/enter_bot_properties.png)
 
@@ -138,7 +138,7 @@ There are a few different ways a bot can be executed:
 
 1. Clicking the "Execute" button in the **Bot Code Editor**
 1. Sending a POST request to the [`$execute` endpoint](/docs/api/fhir/operations/bot-execute)
-1. Setting up a [Subscription](../fhir-basics#subscriptions-listening-for-changes) to execute the Bot automatically based on changes (see next section).
+1. Setting up a [Subscription](/docs/fhir-basics#listening-for-changes-subscriptions) to execute the Bot automatically based on changes (see next section).
 
 ### _Executing from the Code Editor_
 
@@ -174,7 +174,7 @@ You can find the `id` of your Bot by clicking on the **Details** tab of the Bot 
 | `text/plain`                         | `string`                                  | `<INPUT_DATA>` is parsed as plaintext string                                                                                                                        |
 | `application/json`                   | `Record<string, any>`                     | `<INPUT_DATA>` is parsed as JSON-encoded object                                                                                                                     |
 | `application/x-www-form-urlencoded ` | `Record<string, string>`                  | `<INPUT_DATA>` is parsed as URL-encoded string, resulting in a key/value map                                                                                        |
-| `application/fhir+json`              | [`Resource`](/docs/api/fhir/resources)    | `<INPUT_DATA>` is parsed as a [FHIR Resource](../fhir-basics#resources) encoded as JSON                                                                             |
+| `application/fhir+json`              | [`Resource`](/docs/api/fhir/resources)    | `<INPUT_DATA>` is parsed as a [FHIR Resource](/docs/fhir-basics#storing-data-resources) encoded as JSON                                                                             |
 | `x-application/hl7-v2+er7`           | [`HL7Message`](../sdk/core.hl7message) | `<INPUT_DATA>` is a string that should be parsed as a pipe-delimited HL7v2 message. HL7v2 is a common text-based message protocol used in legacy healthcare systems |
 
 #### `ACCESS_TOKEN`
@@ -187,9 +187,9 @@ This is the input data that will be parsed according to `CONTENT_TYPE` and passe
 
 Read more in the [Bot `$execute`](/docs/api/fhir/operations/bot-execute) documentation.
 
-### _Executing automatically using a [`Subscription`](../fhir-basics#subscriptions-listening-for-changes)_
+### _Executing automatically using a [`Subscription`](/docs/fhir-basics#listening-for-changes-subscriptions)_
 
-While using the `$execute` endpoint allows developers to trigger Bots from 3rd party applications, the most common way to execute a bot is to use a [FHIR subscription](../fhir-basics#subscriptions-listening-for-changes) to trigger the Bot whenever a resource has been updated.
+While using the `$execute` endpoint allows developers to trigger Bots from 3rd party applications, the most common way to execute a bot is to use a [FHIR subscription](/docs/fhir-basics#listening-for-changes-subscriptions) to trigger the Bot whenever a resource has been updated.
 
 Let's connect our bot to [`Patient`](/docs/api/fhir/resources/patient) resources. That means that the Bot code will run on any "create" or "update" operation to any [`Patient`](/docs/api/fhir/resources/patient).
 

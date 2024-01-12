@@ -17,7 +17,7 @@ Read more about the Medplum App [here](/docs/app)
 
 ## Download JSON Files
 
-Below are resources belonging to two patients. This is FHIR data constructed in accordance with the [USCDI Data Element](/docs/fhir-datastore/understanding-uscdi-dataclasses) standards. That means that the FHIR Resources provided are tagged with the right [CodableConcepts](/docs/fhir-basics#codeable-concepts-standarding-data) and ontologies to match the interoperability requirements for an EHR in the US.
+Below are resources belonging to two patients. This is FHIR data constructed in accordance with the [USCDI Data Element](/docs/fhir-datastore/understanding-uscdi-dataclasses) standards. That means that the FHIR Resources provided are tagged with the right [CodableConcepts](/docs/fhir-basics#standardizing-data-codeable-concepts) and ontologies to match the interoperability requirements for an EHR in the US.
 
 Download one or both of the following files:
 
