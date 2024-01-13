@@ -88,7 +88,7 @@ class DcmjsDimseScp extends dimse.Scp {
     try {
       App.instance.addToWebSocketQueue({
         type: 'agent:transmit:request',
-        accessToken: App.instance.medplum.getAccessToken() as string,
+        accessToken: 'placeholder',
         channel: AgentDicomChannel.instance.definition.name as string,
         remote: 'foo',
         contentType: ContentType.JSON,
