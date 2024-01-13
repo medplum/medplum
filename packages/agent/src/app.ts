@@ -20,6 +20,8 @@ export class App {
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
+  private healthcheckTimer?: NodeJS.Timeout;
+  private reconnectTimer?: NodeJS.Timeout;
   private webSocket?: WebSocket;
   private live = false;
   private shutdown = false;
@@ -35,11 +37,35 @@ export class App {
       warn: console.warn,
       error: console.error,
     } as EventLogger;
+  }
 
+  async start(): Promise<void> {
+    this.log.info('Medplum service starting...');
+    this.startWebSocket();
+    await this.startListeners();
+    this.log.info('Medplum service started successfully');
+  }
+
+  private startWebSocket(): void {
     this.connectWebSocket();
+    this.healthcheckTimer = setInterval(() => this.healthcheck(), 10 * 1000);
+  }
+
+  private healthcheck(): void {
+    if (!this.webSocket && !this.reconnectTimer) {
+      this.log.warn('WebSocket not connected');
+      this.connectWebSocket();
+    } else {
+      this.sendToWebSocket({ type: 'agent:heartbeat:request' });
+    }
   }
 
   private connectWebSocket(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
+
     const webSocketUrl = new URL(this.medplum.getBaseUrl());
     webSocketUrl.protocol = webSocketUrl.protocol === 'https:' ? 'wss:' : 'ws:';
     webSocketUrl.pathname = '/ws/agent';
@@ -64,9 +90,10 @@ export class App {
 
     this.webSocket.addEventListener('close', () => {
       if (!this.shutdown) {
+        this.webSocket = undefined;
         this.live = false;
         this.log.info('WebSocket closed');
-        setTimeout(() => this.connectWebSocket(), 1000);
+        this.reconnectTimer = setTimeout(() => this.connectWebSocket(), 1000);
       }
     });
 
@@ -85,6 +112,9 @@ export class App {
             break;
           case 'agent:heartbeat:request':
             this.sendToWebSocket({ type: 'agent:heartbeat:response' });
+            break;
+          case 'agent:heartbeat:response':
+            // Do nothing
             break;
           // @ts-expect-error - Deprecated message type
           case 'transmit':
@@ -108,9 +138,7 @@ export class App {
     });
   }
 
-  async start(): Promise<void> {
-    this.log.info('Medplum service starting...');
-
+  private async startListeners(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId);
 
     for (const definition of agent.channel ?? []) {
@@ -132,18 +160,29 @@ export class App {
         this.channels.set(definition.name as string, channel);
       }
     }
-
-    this.log.info('Medplum service started successfully');
   }
 
   stop(): void {
     this.log.info('Medplum service stopping...');
     this.shutdown = true;
+
+    if (this.healthcheckTimer) {
+      clearInterval(this.healthcheckTimer);
+      this.healthcheckTimer = undefined;
+    }
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
+
     this.channels.forEach((channel) => channel.stop());
+
     if (this.webSocket) {
       this.webSocket.close();
       this.webSocket = undefined;
     }
+
     this.log.info('Medplum service stopped successfully');
   }
 
