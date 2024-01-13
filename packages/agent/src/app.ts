@@ -20,6 +20,7 @@ export class App {
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
+  healthcheckPeriod = 10 * 1000;
   private healthcheckTimer?: NodeJS.Timeout;
   private reconnectTimer?: NodeJS.Timeout;
   private webSocket?: WebSocket;
@@ -60,7 +61,7 @@ export class App {
 
   private startWebSocket(): void {
     this.connectWebSocket();
-    this.healthcheckTimer = setInterval(() => this.healthcheck(), 10 * 1000);
+    this.healthcheckTimer = setInterval(() => this.healthcheck(), this.healthcheckPeriod);
   }
 
   private async healthcheck(): Promise<void> {
