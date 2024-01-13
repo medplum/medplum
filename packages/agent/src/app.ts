@@ -55,7 +55,9 @@ export class App {
     if (!this.webSocket && !this.reconnectTimer) {
       this.log.warn('WebSocket not connected');
       this.connectWebSocket();
-    } else {
+    }
+
+    if (this.webSocket && this.live) {
       this.sendToWebSocket({ type: 'agent:heartbeat:request' });
     }
   }
