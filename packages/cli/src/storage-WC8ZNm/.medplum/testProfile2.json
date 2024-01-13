@@ -1,3 +1,0 @@
-{
-  "options": "{\"name\":\"testProfile2\",\"authType\":\"basic\",\"baseUrl\":\"https://valid.gov\",\"fhirUrlPath\":\"api/v2\",\"tokenUrl\":\"https://validtoken.gov\"}"
-}
