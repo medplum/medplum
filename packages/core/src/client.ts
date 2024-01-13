@@ -816,6 +816,7 @@ export class MedplumClient extends EventTarget {
     this.requestCache?.clear();
     this.accessToken = undefined;
     this.refreshToken = undefined;
+    this.refreshPromise = undefined;
     this.accessTokenExpires = undefined;
     this.sessionDetails = undefined;
     this.medplumServer = undefined;
@@ -3386,7 +3387,14 @@ export class MedplumClient extends EventTarget {
       headers['Authorization'] = `Basic ${this.basicAuth}`;
     }
 
-    const response = await this.fetchWithRetry(this.tokenUrl, options);
+    let response: Response;
+    try {
+      response = await this.fetchWithRetry(this.tokenUrl, options);
+    } catch (err) {
+      this.refreshPromise = undefined;
+      throw err;
+    }
+
     if (!response.ok) {
       this.clearActiveLogin();
       try {

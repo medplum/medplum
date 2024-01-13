@@ -23,6 +23,7 @@ export class App {
   private healthcheckTimer?: NodeJS.Timeout;
   private reconnectTimer?: NodeJS.Timeout;
   private webSocket?: WebSocket;
+  private webSocketWorker?: Promise<void>;
   private live = false;
   private shutdown = false;
 
@@ -41,8 +42,19 @@ export class App {
 
   async start(): Promise<void> {
     this.log.info('Medplum service starting...');
+
     this.startWebSocket();
+
     await this.startListeners();
+
+    this.medplum.addEventListener('change', () => {
+      if (!this.webSocket) {
+        this.connectWebSocket();
+      } else {
+        this.startWebSocketWorker();
+      }
+    });
+
     this.log.info('Medplum service started successfully');
   }
 
@@ -51,14 +63,15 @@ export class App {
     this.healthcheckTimer = setInterval(() => this.healthcheck(), 10 * 1000);
   }
 
-  private healthcheck(): void {
+  private async healthcheck(): Promise<void> {
     if (!this.webSocket && !this.reconnectTimer) {
       this.log.warn('WebSocket not connected');
       this.connectWebSocket();
+      return;
     }
 
     if (this.webSocket && this.live) {
-      this.sendToWebSocket({ type: 'agent:heartbeat:request' });
+      await this.sendToWebSocket({ type: 'agent:heartbeat:request' });
     }
   }
 
@@ -82,8 +95,8 @@ export class App {
       }
     });
 
-    this.webSocket.addEventListener('open', () => {
-      this.sendToWebSocket({
+    this.webSocket.addEventListener('open', async () => {
+      await this.sendToWebSocket({
         type: 'agent:connect:request',
         accessToken: this.medplum.getAccessToken() as string,
         agentId: this.agentId,
@@ -99,7 +112,7 @@ export class App {
       }
     });
 
-    this.webSocket.addEventListener('message', (e) => {
+    this.webSocket.addEventListener('message', async (e) => {
       try {
         const data = e.data as Buffer;
         const str = data.toString('utf8');
@@ -110,10 +123,10 @@ export class App {
           case 'connected':
           case 'agent:connect:response':
             this.live = true;
-            this.trySendToWebSocket();
+            this.startWebSocketWorker();
             break;
           case 'agent:heartbeat:request':
-            this.sendToWebSocket({ type: 'agent:heartbeat:response' });
+            await this.sendToWebSocket({ type: 'agent:heartbeat:response' });
             break;
           case 'agent:heartbeat:response':
             // Do nothing
@@ -188,14 +201,9 @@ export class App {
     this.log.info('Medplum service stopped successfully');
   }
 
-  async getAccessToken(): Promise<string> {
-    await this.medplum.refreshIfExpired();
-    return this.medplum.getAccessToken() as string;
-  }
-
   addToWebSocketQueue(message: AgentMessage): void {
     this.webSocketQueue.push(message);
-    this.trySendToWebSocket();
+    this.startWebSocketWorker();
   }
 
   addToHl7Queue(message: AgentMessage): void {
@@ -203,15 +211,36 @@ export class App {
     this.trySendToHl7Connection();
   }
 
-  private trySendToWebSocket(): void {
+  private startWebSocketWorker(): void {
+    if (this.webSocketWorker) {
+      // Websocket worker is already running
+      return;
+    }
+
+    // Start the worker
+    this.webSocketWorker = this.trySendToWebSocket()
+      .then(() => {
+        this.webSocketWorker = undefined;
+      })
+      .catch((err) => console.log('WebSocket worker error', err));
+  }
+
+  private async trySendToWebSocket(): Promise<void> {
     if (this.live) {
       while (this.webSocketQueue.length > 0) {
         const msg = this.webSocketQueue.shift();
         if (msg) {
-          this.sendToWebSocket(msg);
+          try {
+            await this.sendToWebSocket(msg);
+          } catch (err) {
+            this.log.error(`WebSocket error: ${normalizeErrorString(err)}`);
+            this.webSocketQueue.unshift(msg);
+            throw err;
+          }
         }
       }
     }
+    this.webSocketWorker = undefined;
   }
 
   private trySendToHl7Connection(): void {
@@ -226,9 +255,15 @@ export class App {
     }
   }
 
-  private sendToWebSocket(message: AgentMessage): void {
+  private async sendToWebSocket(message: AgentMessage): Promise<void> {
     if (!this.webSocket) {
       throw new Error('WebSocket not connected');
+    }
+    if ('accessToken' in message) {
+      // Use the latest access token
+      // This can be necessary if the message was queued before the access token was refreshed
+      await this.medplum.refreshIfExpired();
+      message.accessToken = this.medplum.getAccessToken() as string;
     }
     this.webSocket.send(JSON.stringify(message));
   }
