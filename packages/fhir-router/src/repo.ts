@@ -329,11 +329,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     const resources = this.resources.get(resourceType) ?? new Map();
     const result = [];
 
-    // matchesSearchRequest doesnt have a handle to a repo
-    // or other way of resolving the resources.
-    // TODO: does passing repo to the match.ts make sense?
-
-    // For now, to enable chained searches, we re consitute two search requests:
+    // For now, to enable chained searches, we re-consitute two search requests:
     // 1. to handle the non-chained
     // 2. another to handle the chained, resolving resources as required.
     const chainFilters: Filter[] = [];
@@ -422,8 +418,8 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
         }
       }
     } else {
-      //TODO: hacky -- is there a safer way to access this?
-      // look into using the search param perhaps?
+      //TODO: hacky -- is there a more type safe way to access this?
+      //TODO: is usage of column safe / accurate here? seems like a server concept, but is defined in core
       const reference = resource[link.details.columnName as keyof T] as Reference;
       const referencedResource = await this.readReference(reference);
       if (referencedResource?.resourceType === link.resourceType) {
