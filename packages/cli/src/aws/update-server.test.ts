@@ -97,7 +97,10 @@ describe('update-server command', () => {
     console.log = jest.fn();
     writeFileSync(configFile, JSON.stringify({ serverImage: `medplum-server:${currentVersion}`, region: 'us-west-2' }));
 
-    medplum = { startAsyncRequest: jest.fn() } as unknown as MedplumClient;
+    medplum = {
+      startAsyncRequest: jest.fn(),
+      get: jest.fn().mockResolvedValue(`{"version":"2.4.17-b27a9f"}`),
+    } as unknown as MedplumClient;
     (createMedplumClient as unknown as jest.Mock).mockResolvedValue(medplum);
   });
 
@@ -121,5 +124,17 @@ describe('update-server command', () => {
     expect(console.log).toBeCalledWith('Configuration file medplum.not-found.config.json not found');
     expect(spawnSync).not.toHaveBeenCalled();
     expect(medplum.startAsyncRequest).not.toHaveBeenCalled();
+  });
+
+  test('Update server from latest', async () => {
+    writeFileSync(configFile, JSON.stringify({ serverImage: `medplum-server:latest`, region: 'us-west-2' }));
+    await main(['node', 'index.js', 'aws', 'update-server', 'dev']);
+    expect(console.log).toBeCalledWith('Performing update to v2.5.0');
+    expect(spawnSync).toHaveBeenCalledTimes(2);
+    expect(spawnSync).toHaveBeenCalledWith(`npx cdk deploy -c config=medplum.dev.config.json --all`, {
+      stdio: 'inherit',
+    });
+    expect(medplum.startAsyncRequest).toHaveBeenCalledTimes(2);
+    expect(medplum.startAsyncRequest).toHaveBeenCalledWith('/admin/super/migrate');
   });
 });
