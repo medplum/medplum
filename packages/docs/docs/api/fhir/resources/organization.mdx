@@ -13,7 +13,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 A formally or informally recognized grouping of people or organizations formed for the purpose of achieving some form of collective action. Includes companies, institutions, corporations, departments, community groups, healthcare practice groups, payer/insurer, etc.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -29,16 +29,16 @@ A formally or informally recognized grouping of people or organizations formed f
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+  </TabItem>
+<TabItem value="usage" label="Usage">
+<div> <a name="scope"></a>  <p> This resource may be used in a shared registry of contact and other information for various organizations or it can be used merely as a support for other resources that need to reference organizations, perhaps as a <a href="https://www.hl7.org/fhir/documents.html">document</a>, <a href="https://www.hl7.org/fhir/messaging.html">message</a> or  as a <a href="https://www.hl7.org/fhir/references.html#contained">contained</a> resource.  If using a registry approach, it's entirely possible for multiple registries to exist, each dealing with different types or levels of organization. </p> </div>
 </TabItem>
-  <TabItem value="usage" label="Usage">
-    <div> <a name="scope"></a>  <p> This resource may be used in a shared registry of contact and other information for various organizations or it can be used merely as a support for other resources that need to reference organizations, perhaps as a <a href="https://www.hl7.org/fhir/documents.html">document</a>, <a href="https://www.hl7.org/fhir/messaging.html">message</a> or  as a <a href="https://www.hl7.org/fhir/references.html#contained">contained</a> resource.  If using a registry approach, it's entirely possible for multiple registries to exist, each dealing with different types or levels of organization. </p> </div>
-    </TabItem>
-  <TabItem value="relationships" label="Relationships">
-    <div> <a name="bnr"></a>  <p> The <a href="/docs/api/fhir/resources/organization">Organization</a> resource is used for collections of people that have come together to achieve an objective.   The <a href="/docs/api/fhir/resources/group">Group</a> resource is used to identify a collection of people (or animals, devices, etc.)  that are gathered for the purpose of analysis or acting upon, but are not expected to act themselves. </p>  <p>   The <a href="/docs/api/fhir/resources/organization">Organization</a> resource often exists as a hierarchy of organization resources, using the <i>part-of</i> property to provide   the association of the child to its parent organization.<br/>   This organizational hierarchy helps communicate the conceptual structure, whereas the <a href="/docs/api/fhir/resources/location">Location</a> resource provides the physical   representation of the hierarchy.<br/>   The linkage between <a href="/docs/api/fhir/resources/organization">Organization</a> and <a href="/docs/api/fhir/resources/location">Location</a> is from each point in the location hierarchy to the appropriate level in the    <a href="/docs/api/fhir/resources/organization">Organization</a> hierarchy. These links don't all have to be to the top level <a href="/docs/api/fhir/resources/organization">Organization</a>.<br/>   When populating the organization and location hierarchies there is often not a clear distinction between these 2, however   to assist in making the decision, <a href="/docs/api/fhir/resources/location">Locations</a> are always used for recording where a service occurs, and hence where encounters   and observations are associated. The <a href="/docs/api/fhir/resources/organization">Organization</a> property on these resources might not be the location where the service took place.  </p> </div>
-    </TabItem>
-  
-  <TabItem value="referencedBy" label="Referenced By">
-    <ul><li><a href="https://www.hl7.org/fhir/datatypes.html#Annotation">Annotation</a></li>
+<TabItem value="relationships" label="Relationships">
+<div> <a name="bnr"></a>  <p> The <Link to="/docs/api/fhir/resources/organization">Organization</Link> resource is used for collections of people that have come together to achieve an objective.   The <a href="/docs/api/fhir/resources/group">Group</a> resource is used to identify a collection of people (or animals, devices, etc.)  that are gathered for the purpose of analysis or acting upon, but are not expected to act themselves. </p>  <p>   The <Link to="/docs/api/fhir/resources/organization">Organization</Link> resource often exists as a hierarchy of organization resources, using the <i>part-of</i> property to provide   the association of the child to its parent organization.<br/>   This organizational hierarchy helps communicate the conceptual structure, whereas the <Link to="/docs/api/fhir/resources/location">Location</Link> resource provides the physical   representation of the hierarchy.<br/>   The linkage between <Link to="/docs/api/fhir/resources/organization">Organization</Link> and <Link to="/docs/api/fhir/resources/location">Location</Link> is from each point in the location hierarchy to the appropriate level in the    <Link to="/docs/api/fhir/resources/organization">Organization</Link> hierarchy. These links don't all have to be to the top level <Link to="/docs/api/fhir/resources/organization">Organization</Link>.<br/>   When populating the organization and location hierarchies there is often not a clear distinction between these 2, however   to assist in making the decision, <Link to="/docs/api/fhir/resources/location">Locations</Link> are always used for recording where a service occurs, and hence where encounters   and observations are associated. The <Link to="/docs/api/fhir/resources/organization">Organization</Link> property on these resources might not be the location where the service took place.  </p> </div>
+</TabItem>
+
+<TabItem value="referencedBy" label="Referenced By">
+<ul><li><a href="https://www.hl7.org/fhir/datatypes.html#Annotation">Annotation</a></li>
 <li><a href="https://www.hl7.org/fhir/datatypes.html#Identifier">Identifier</a></li>
 <li><a href="https://www.hl7.org/fhir/datatypes.html#Signature">Signature</a></li>
 <li><a href="https://www.hl7.org/fhir/metadatatypes.html#UsageContext">UsageContext</a></li>
@@ -116,6 +116,5 @@ A formally or informally recognized grouping of people or organizations formed f
 <li><a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a></li>
 <li><a href="/docs/api/fhir/resources/task">Task</a></li>
 <li><a href="/docs/api/fhir/resources/verificationresult">VerificationResult</a></li></ul>
-    </TabItem>
-
+</TabItem>
 </Tabs>

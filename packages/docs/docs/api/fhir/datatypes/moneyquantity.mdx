@@ -13,7 +13,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 An amount of money. With regard to precision, see [Decimal Precision](https://www.hl7.org/fhir/datatypes.html#precision)
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -21,8 +21,6 @@ An amount of money. With regard to precision, see [Decimal Precision](https://ww
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
 />
 
-</TabItem>
-  
-
+  </TabItem>
 
 </Tabs>

@@ -13,7 +13,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 Example of workflow instance.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -29,10 +29,9 @@ Example of workflow instance.
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+  </TabItem>
+<TabItem value="usage" label="Usage">
+<div> <a name="bnc"></a>  <p> Todo    </p> </div>
 </TabItem>
-  <TabItem value="usage" label="Usage">
-    <div> <a name="bnc"></a>  <p> Todo    </p> </div>
-    </TabItem>
-
 
 </Tabs>

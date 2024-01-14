@@ -10,10 +10,10 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # ParameterDefinition
 
-Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/parameterdefinition">ParameterDefinition</a> Type: The parameters to the module. This collection specifies both the input and output parameters. Input parameters are provided by the caller as part of the $evaluate operation. Output parameters are included in the <a href="/docs/api/fhir/resources/guidanceresponse">GuidanceResponse</a>.
+Base <Link to="/docs/api/fhir/resources/structuredefinition">StructureDefinition</Link> for <Link to="/docs/api/fhir/datatypes/parameterdefinition">ParameterDefinition</Link> Type: The parameters to the module. This collection specifies both the input and output parameters. Input parameters are provided by the caller as part of the $evaluate operation. Output parameters are included in the <Link to="/docs/api/fhir/resources/guidanceresponse">GuidanceResponse</Link>.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -21,8 +21,6 @@ Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition<
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
 />
 
-</TabItem>
-  
-
+  </TabItem>
 
 </Tabs>

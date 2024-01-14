@@ -10,10 +10,10 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # HumanName
 
-Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/humanname">HumanName</a> Type: A human's name with the ability to identify parts and usage.
+Base <Link to="/docs/api/fhir/resources/structuredefinition">StructureDefinition</Link> for <Link to="/docs/api/fhir/datatypes/humanname">HumanName</Link> Type: A human's name with the ability to identify parts and usage.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -21,8 +21,6 @@ Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition<
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
 />
 
-</TabItem>
-  
-
+  </TabItem>
 
 </Tabs>

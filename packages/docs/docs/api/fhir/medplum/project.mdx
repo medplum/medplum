@@ -10,8 +10,10 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Project
 
+Encapsulation of resources for a specific project or organization.
+
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -27,8 +29,6 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
-</TabItem>
-  
-
+  </TabItem>
 
 </Tabs>

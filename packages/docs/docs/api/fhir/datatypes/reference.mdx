@@ -10,10 +10,10 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Reference
 
-Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/reference">Reference</a> Type: A reference from one resource to another.
+Base <Link to="/docs/api/fhir/resources/structuredefinition">StructureDefinition</Link> for <Link to="/docs/api/fhir/datatypes/reference">Reference</Link> Type: A reference from one resource to another.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -21,8 +21,6 @@ Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition<
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
 />
 
-</TabItem>
-  
-
+  </TabItem>
 
 </Tabs>

@@ -10,10 +10,10 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Distance
 
-Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/distance">Distance</a> Type: A length - a value with a unit that is a physical distance.
+Base <Link to="/docs/api/fhir/resources/structuredefinition">StructureDefinition</Link> for <Link to="/docs/api/fhir/datatypes/distance">Distance</Link> Type: A length - a value with a unit that is a physical distance.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -21,8 +21,6 @@ Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition<
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
 />
 
-</TabItem>
-  
-
+  </TabItem>
 
 </Tabs>

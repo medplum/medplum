@@ -10,10 +10,10 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # CodeableConcept
 
-Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/codeableconcept">CodeableConcept</a> Type: A concept that may be defined by a formal reference to a terminology or ontology or may be provided by text.
+Base <Link to="/docs/api/fhir/resources/structuredefinition">StructureDefinition</Link> for <Link to="/docs/api/fhir/datatypes/codeableconcept">CodeableConcept</Link> Type: A concept that may be defined by a formal reference to a terminology or ontology or may be provided by text.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -21,8 +21,6 @@ Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition<
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
 />
 
-</TabItem>
-  
-
+  </TabItem>
 
 </Tabs>

@@ -13,7 +13,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 Information about a person that is involved in the care for a patient, but who is not the target of healthcare, nor has a formal responsibility in the care process.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -29,16 +29,16 @@ Information about a person that is involved in the care for a patient, but who i
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+  </TabItem>
+<TabItem value="usage" label="Usage">
+<div> <a name="scope"></a>  <p> <Link to="/docs/api/fhir/resources/relatedperson">RelatedPersons</Link> typically have a personal or non-healthcare-specific professional relationship to the patient. A <Link to="/docs/api/fhir/resources/relatedperson">RelatedPerson</Link>  resource is primarily used for attribution of information,  since <Link to="/docs/api/fhir/resources/relatedperson">RelatedPersons</Link> are often a source of information about the patient.  For keeping information about people for contact purposes for a patient, use a <Link to="/docs/api/fhir/resources/patient">Patient</Link>'s Contact element.  Some individuals may serve as both a <Link to="/docs/api/fhir/resources/patient">Patient</Link>'s Contact and a Related <Link to="/docs/api/fhir/resources/person">Person</Link>. </p> <p> Example <Link to="/docs/api/fhir/resources/relatedperson">RelatedPersons</Link> are: </p> <ul> <li>A patient's wife or husband</li> <li>A patient's relatives or friends</li> <li>A neighbor bringing a patient to the hospital</li> <li>The owner or trainer of a horse</li> <li>A patient's attorney or guardian</li> <li>A Guide Dog</li> </ul> </div>
 </TabItem>
-  <TabItem value="usage" label="Usage">
-    <div> <a name="scope"></a>  <p> <a href="/docs/api/fhir/resources/relatedperson">RelatedPersons</a> typically have a personal or non-healthcare-specific professional relationship to the patient. A <a href="/docs/api/fhir/resources/relatedperson">RelatedPerson</a>  resource is primarily used for attribution of information,  since <a href="/docs/api/fhir/resources/relatedperson">RelatedPersons</a> are often a source of information about the patient.  For keeping information about people for contact purposes for a patient, use a <a href="/docs/api/fhir/resources/patient">Patient</a>'s Contact element.  Some individuals may serve as both a <a href="/docs/api/fhir/resources/patient">Patient</a>'s Contact and a Related <a href="/docs/api/fhir/resources/person">Person</a>. </p> <p> Example <a href="/docs/api/fhir/resources/relatedperson">RelatedPersons</a> are: </p> <ul> <li>A patient's wife or husband</li> <li>A patient's relatives or friends</li> <li>A neighbor bringing a patient to the hospital</li> <li>The owner or trainer of a horse</li> <li>A patient's attorney or guardian</li> <li>A Guide Dog</li> </ul> </div>
-    </TabItem>
-  <TabItem value="relationships" label="Relationships">
-    <div>  <p>  The primary distinction between a <a href="/docs/api/fhir/resources/practitioner">Practitioner</a> and a <a href="/docs/api/fhir/resources/relatedperson">RelatedPerson</a> is based on whether: </p> <ul> <li>  The person/animal operates on behalf of the care delivery organization over multiple patients (Practitioner) or, </li> <li>  Where the person/animal is not associated with the organization, and instead is  allocated tasks specifically for the <a href="/docs/api/fhir/resources/relatedperson">RelatedPerson</a>'s <a href="/docs/api/fhir/resources/patient">Patient</a> (RelatedPerson). </li> </ul> <p>  A standard extension <a href="https://www.hl7.org/fhir/extension-practitioner-animalspecies.html">animalSpecies</a> can be used to indicate the species of a service animal. </p> </div>
-    </TabItem>
-  
-  <TabItem value="referencedBy" label="Referenced By">
-    <ul><li><a href="https://www.hl7.org/fhir/datatypes.html#Annotation">Annotation</a></li>
+<TabItem value="relationships" label="Relationships">
+<div>  <p>  The primary distinction between a <Link to="/docs/api/fhir/resources/practitioner">Practitioner</Link> and a <Link to="/docs/api/fhir/resources/relatedperson">RelatedPerson</Link> is based on whether: </p> <ul> <li>  The person/animal operates on behalf of the care delivery organization over multiple patients (Practitioner) or, </li> <li>  Where the person/animal is not associated with the organization, and instead is  allocated tasks specifically for the <Link to="/docs/api/fhir/resources/relatedperson">RelatedPerson</Link>'s <Link to="/docs/api/fhir/resources/patient">Patient</Link> (RelatedPerson). </li> </ul> <p>  A standard extension <a href="https://www.hl7.org/fhir/extension-practitioner-animalspecies.html">animalSpecies</a> can be used to indicate the species of a service animal. </p> </div>
+</TabItem>
+
+<TabItem value="referencedBy" label="Referenced By">
+<ul><li><a href="https://www.hl7.org/fhir/datatypes.html#Annotation">Annotation</a></li>
 <li><a href="https://www.hl7.org/fhir/datatypes.html#Signature">Signature</a></li>
 <li><a href="/docs/api/fhir/resources/account">Account</a></li>
 <li><a href="/docs/api/fhir/resources/adverseevent">AdverseEvent</a></li>
@@ -85,6 +85,5 @@ Information about a person that is involved in the care for a patient, but who i
 <li><a href="/docs/api/fhir/resources/servicerequest">ServiceRequest</a></li>
 <li><a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a></li>
 <li><a href="/docs/api/fhir/resources/task">Task</a></li></ul>
-    </TabItem>
-
+</TabItem>
 </Tabs>

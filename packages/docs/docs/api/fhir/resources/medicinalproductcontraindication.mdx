@@ -13,7 +13,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 The clinical particulars - indications, contraindications etc. of a medicinal product, including for regulatory purposes.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -29,10 +29,9 @@ The clinical particulars - indications, contraindications etc. of a medicinal pr
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+  </TabItem>
+<TabItem value="usage" label="Usage">
+<div>   <a name="scope"></a>      <p>    A reason why a medicinal product is not to be used in a certain context   </p>  </div>
 </TabItem>
-  <TabItem value="usage" label="Usage">
-    <div>   <a name="scope"></a>      <p>    A reason why a medicinal product is not to be used in a certain context   </p>  </div>
-    </TabItem>
-
 
 </Tabs>

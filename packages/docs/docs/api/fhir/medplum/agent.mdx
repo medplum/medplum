@@ -1,16 +1,16 @@
 ---
-title: Population
-sidebar_position: 25
+title: Agent
+sidebar_position: 15
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-import definition from '@site/static/data/datatypeDefinitions/population.json';
+import definition from '@site/static/data/medplumDefinitions/agent.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
-# Population
+# Agent
 
-Base <Link to="/docs/api/fhir/resources/structuredefinition">StructureDefinition</Link> for <Link to="/docs/api/fhir/datatypes/population">Population</Link> Type: A populatioof people with some set of grouping criteria.
+Configuration details for an instance of the Medplum agent application.
 
 <Tabs queryString="section">
   <TabItem value="schema" label="Schema" default>
@@ -20,6 +20,14 @@ Base <Link to="/docs/api/fhir/resources/structuredefinition">StructureDefinition
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
 />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
   </TabItem>
 

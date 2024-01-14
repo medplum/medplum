@@ -10,10 +10,10 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # SubstanceProtein
 
-A <a href="/docs/api/fhir/resources/substanceprotein">SubstanceProtein</a> is defined as a single unit of a linear amino acid sequence, or a combination of subunits that are either covalently linked or have a defined invariant stoichiometric relationship. This includes all synthetic, recombinant and purified <a href="/docs/api/fhir/resources/substanceprotein">SubstanceProteins</a> of defined sequence, whether the use is therapeutic or prophylactic. This set of elements will be used to describe albumins, coagulation factors, cytokines, growth factors, peptide/SubstanceProtein hormones, enzymes, toxins, toxoids, recombinant vaccines, and immunomodulators.
+A <Link to="/docs/api/fhir/resources/substanceprotein">SubstanceProtein</Link> is defined as a single unit of a linear amino acid sequence, or a combination of subunits that are either covalently linked or have a defined invariant stoichiometric relationship. This includes all synthetic, recombinant and purified <Link to="/docs/api/fhir/resources/substanceprotein">SubstanceProteins</Link> of defined sequence, whether the use is therapeutic or prophylactic. This set of elements will be used to describe albumins, coagulation factors, cytokines, growth factors, peptide/SubstanceProtein hormones, enzymes, toxins, toxoids, recombinant vaccines, and immunomodulators.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -29,14 +29,13 @@ A <a href="/docs/api/fhir/resources/substanceprotein">SubstanceProtein</a> is de
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+  </TabItem>
+<TabItem value="usage" label="Usage">
+<div>   <a name="scope"> </a>     </div>
 </TabItem>
-  <TabItem value="usage" label="Usage">
-    <div>   <a name="scope"> </a>     </div>
-    </TabItem>
-  
-  
-  <TabItem value="referencedBy" label="Referenced By">
-    <ul><li><a href="/docs/api/fhir/resources/substancespecification">SubstanceSpecification</a></li></ul>
-    </TabItem>
 
+
+<TabItem value="referencedBy" label="Referenced By">
+<ul><li><a href="/docs/api/fhir/resources/substancespecification">SubstanceSpecification</a></li></ul>
+</TabItem>
 </Tabs>

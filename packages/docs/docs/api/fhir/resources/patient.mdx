@@ -10,14 +10,10 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Patient
 
-Demographics and other administrative information about an individual or animal receiving care or other health-related services. Refer to the following profiles for information on representing specific details:
-
-- [US Core Patient profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-patient.html).
-- [US Core Gender Identity Extension](http://hl7.org/fhir/us/core/StructureDefinition-us-core-genderIdentity.html).
-- [US Core Birth Sex Extension](http://hl7.org/fhir/us/core/StructureDefinition-us-core-birthsex.html).
+Demographics and other administrative information about an individual or animal receiving care or other health-related services.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -33,14 +29,14 @@ Demographics and other administrative information about an individual or animal 
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+  </TabItem>
+<TabItem value="usage" label="Usage">
+<div> <a name="scope"></a>  <p> This Resource covers data about patients and animals involved in a wide range of health-related activities, including: </p> <ul> <li>Curative activities</li> <li>Psychiatric care</li> <li>Social services</li> <li>Pregnancy care</li> <li>Nursing and assisted living</li> <li>Dietary services</li> <li>Tracking of personal health and exercise data</li> </ul> <p> The data in the Resource covers the "who" information about the patient: its attributes are focused on the demographic information necessary to support the administrative, financial and logistic procedures. A <Link to="/docs/api/fhir/resources/patient">Patient</Link> record is generally  created and maintained by each organization providing care for a patient. A patient or animal receiving care at multiple organizations may therefore have its information present in multiple <Link to="/docs/api/fhir/resources/patient">Patient</Link> Resources. </p> <p> Not all concepts are included within the base resource (such as race, ethnicity, organ donor status, nationality, etc.),  but may be found in <a href="https://www.hl7.org/fhir/patient-profiles.html">profiles</a> defined for specific jurisdictions (e.g., US Meaningful Use Program)  or <a href="https://www.hl7.org/fhir/patient-extensions.html">standard extensions</a>. Such fields vary widely between jurisdictions and often have different  names and valuesets for the similar concepts, but they are not similar enough to be able to map and exchange. </p> </div>
 </TabItem>
-  <TabItem value="usage" label="Usage">
-    <div> <a name="scope"></a>  <p> This Resource covers data about patients and animals involved in a wide range of health-related activities, including: </p> <ul> <li>Curative activities</li> <li>Psychiatric care</li> <li>Social services</li> <li>Pregnancy care</li> <li>Nursing and assisted living</li> <li>Dietary services</li> <li>Tracking of personal health and exercise data</li> </ul> <p> The data in the Resource covers the "who" information about the patient: its attributes are focused on the demographic information necessary to support the administrative, financial and logistic procedures. A <a href="/docs/api/fhir/resources/patient">Patient</a> record is generally  created and maintained by each organization providing care for a patient. A patient or animal receiving care at multiple organizations may therefore have its information present in multiple <a href="/docs/api/fhir/resources/patient">Patient</a> Resources. </p> <p> Not all concepts are included within the base resource (such as race, ethnicity, organ donor status, nationality, etc.),  but may be found in <a href="https://www.hl7.org/fhir/patient-profiles.html">profiles</a> defined for specific jurisdictions (e.g., US Meaningful Use Program)  or <a href="https://www.hl7.org/fhir/patient-extensions.html">standard extensions</a>. Such fields vary widely between jurisdictions and often have different  names and valuesets for the similar concepts, but they are not similar enough to be able to map and exchange. </p> </div>
-    </TabItem>
-  
-  
-  <TabItem value="referencedBy" label="Referenced By">
-    <ul><li><a href="https://www.hl7.org/fhir/datatypes.html#Annotation">Annotation</a></li>
+
+
+<TabItem value="referencedBy" label="Referenced By">
+<ul><li><a href="https://www.hl7.org/fhir/datatypes.html#Annotation">Annotation</a></li>
 <li><a href="https://www.hl7.org/fhir/datatypes.html#Signature">Signature</a></li>
 <li><a href="/docs/api/fhir/resources/account">Account</a></li>
 <li><a href="/docs/api/fhir/resources/adverseevent">AdverseEvent</a></li>
@@ -112,6 +108,5 @@ Demographics and other administrative information about an individual or animal 
 <li><a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a></li>
 <li><a href="/docs/api/fhir/resources/task">Task</a></li>
 <li><a href="/docs/api/fhir/resources/visionprescription">VisionPrescription</a></li></ul>
-    </TabItem>
-
+</TabItem>
 </Tabs>

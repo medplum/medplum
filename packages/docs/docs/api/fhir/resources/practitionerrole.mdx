@@ -13,7 +13,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 A specific set of Roles/Locations/specialties/services that a practitioner may perform at an organization for a period of time.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -29,18 +29,18 @@ A specific set of Roles/Locations/specialties/services that a practitioner may p
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
+  </TabItem>
+<TabItem value="usage" label="Usage">
+<div> <a name="scope"></a>  <p> <Link to="/docs/api/fhir/resources/practitionerrole">PractitionerRole</Link> covers the recording of the location and types of services that <Link to="/docs/api/fhir/resources/practitioner">Practitioners</Link> are able to provide for an organization. </p> <p> The role, specialty, <Link to="/docs/api/fhir/resources/location">Location</Link> telecom and <Link to="/docs/api/fhir/resources/healthcareservice">HealthcareService</Link> properties can be repeated if required in other instances of the <Link to="/docs/api/fhir/resources/practitionerrole">PractitionerRole</Link>. Some systems record a collection of service values for a single location, others record the  single service and the list of locations it is available. Both are acceptable options for representing this data.<br/> Where availability, telecom, or other details are not the same across all healthcareservices, or locations  a seperate <Link to="/docs/api/fhir/resources/practitionerrole">PractitionerRole</Link> instance should be created. </p> </div>
 </TabItem>
-  <TabItem value="usage" label="Usage">
-    <div> <a name="scope"></a>  <p> <a href="/docs/api/fhir/resources/practitionerrole">PractitionerRole</a> covers the recording of the location and types of services that <a href="/docs/api/fhir/resources/practitioner">Practitioners</a> are able to provide for an organization. </p> <p> The role, specialty, <a href="/docs/api/fhir/resources/location">Location</a> telecom and <a href="/docs/api/fhir/resources/healthcareservice">HealthcareService</a> properties can be repeated if required in other instances of the <a href="/docs/api/fhir/resources/practitionerrole">PractitionerRole</a>. Some systems record a collection of service values for a single location, others record the  single service and the list of locations it is available. Both are acceptable options for representing this data.<br/> Where availability, telecom, or other details are not the same across all healthcareservices, or locations  a seperate <a href="/docs/api/fhir/resources/practitionerrole">PractitionerRole</a> instance should be created. </p> </div>
-    </TabItem>
-  <TabItem value="relationships" label="Relationships">
-    <div> <a name="bnr"></a>  <p>  Qualifications (from the <a href="/docs/api/fhir/resources/practitioner">Practitioner</a> resource) do not imply a Role, but might be considered when an <a href="/docs/api/fhir/resources/organization">Organization</a>    allocates practitioners to roles within their organization, and could provide useful information (such as expiry information)   which could need to be tracked in some situations to ensure they continue to be eligible for a specific role. </p> <p>   The <a href="/docs/api/fhir/resources/careteam">CareTeam</a> resource is also often used to provide details of a role that a practitioner is   allocated to perform, but is usually scoped to a much finer granularity of care, and often within the specific context   of a <a href="/docs/api/fhir/resources/patient">Patient</a>, or functional role (e.g. Crisis planning team). In contrast the <a href="/docs/api/fhir/resources/practitionerrole">PractitionerRole</a>   is used in a more general sense to cover all the places that the practitioner is allocated to work (and specific details   relevant to that role - such as a specific contact number, or electronic services endpoint). </p> </div>
-    </TabItem>
-  <TabItem value="backgroundAndContext" label="Background and Context">
-    <div> <a name="bnc"></a>  <p> <a href="/docs/api/fhir/resources/practitioner">Practitioner</a> performs different roles within the same or even different organizations. Depending on jurisdiction and custom,  it may be necessary to maintain a specific <a href="/docs/api/fhir/resources/practitioner">Practitioner</a> Resource for each such role or have a single <a href="/docs/api/fhir/resources/practitioner">Practitioner</a> with multiple roles. The role can be limited to a specific period, after which authorization for this role ends. Note that the represented organization need not necessarily be the (direct) employer of a <a href="/docs/api/fhir/resources/practitioner">Practitioner</a>. </p> </div>
-    </TabItem>
-  <TabItem value="referencedBy" label="Referenced By">
-    <ul><li><a href="https://www.hl7.org/fhir/datatypes.html#Signature">Signature</a></li>
+<TabItem value="relationships" label="Relationships">
+<div> <a name="bnr"></a>  <p>  Qualifications (from the <Link to="/docs/api/fhir/resources/practitioner">Practitioner</Link> resource) do not imply a Role, but might be considered when an <Link to="/docs/api/fhir/resources/organization">Organization</Link>    allocates practitioners to roles within their organization, and could provide useful information (such as expiry information)   which could need to be tracked in some situations to ensure they continue to be eligible for a specific role. </p> <p>   The <a href="/docs/api/fhir/resources/careteam">CareTeam</a> resource is also often used to provide details of a role that a practitioner is   allocated to perform, but is usually scoped to a much finer granularity of care, and often within the specific context   of a <a href="/docs/api/fhir/resources/patient">Patient</a>, or functional role (e.g. Crisis planning team). In contrast the <Link to="/docs/api/fhir/resources/practitionerrole">PractitionerRole</Link>   is used in a more general sense to cover all the places that the practitioner is allocated to work (and specific details   relevant to that role - such as a specific contact number, or electronic services endpoint). </p> </div>
+</TabItem>
+<TabItem value="backgroundAndContext" label="Background and Context">
+<div> <a name="bnc"></a>  <p> <Link to="/docs/api/fhir/resources/practitioner">Practitioner</Link> performs different roles within the same or even different organizations. Depending on jurisdiction and custom,  it may be necessary to maintain a specific <Link to="/docs/api/fhir/resources/practitioner">Practitioner</Link> Resource for each such role or have a single <Link to="/docs/api/fhir/resources/practitioner">Practitioner</Link> with multiple roles. The role can be limited to a specific period, after which authorization for this role ends. Note that the represented organization need not necessarily be the (direct) employer of a <Link to="/docs/api/fhir/resources/practitioner">Practitioner</Link>. </p> </div>
+</TabItem>
+<TabItem value="referencedBy" label="Referenced By">
+<ul><li><a href="https://www.hl7.org/fhir/datatypes.html#Signature">Signature</a></li>
 <li><a href="/docs/api/fhir/resources/account">Account</a></li>
 <li><a href="/docs/api/fhir/resources/adverseevent">AdverseEvent</a></li>
 <li><a href="/docs/api/fhir/resources/allergyintolerance">AllergyIntolerance</a></li>
@@ -110,6 +110,5 @@ A specific set of Roles/Locations/specialties/services that a practitioner may p
 <li><a href="/docs/api/fhir/resources/task">Task</a></li>
 <li><a href="/docs/api/fhir/resources/verificationresult">VerificationResult</a></li>
 <li><a href="/docs/api/fhir/resources/visionprescription">VisionPrescription</a></li></ul>
-    </TabItem>
-
+</TabItem>
 </Tabs>
