@@ -27,6 +27,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 20
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Cache node modules
         uses: actions/cache@v3
@@ -120,6 +121,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 20
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm ci --maxsockets 1
@@ -182,6 +184,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 20
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm ci --maxsockets 1

@@ -14,6 +14,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
+          registry-url: 'https://registry.npmjs.org'
       - name: Setup git
         run: |
           git config --global user.email "${{ secrets.MEDPLUM_BOT_EMAIL }}"
