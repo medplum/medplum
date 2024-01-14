@@ -40,9 +40,9 @@ export async function main(): Promise<void> {
 
   const indexedSearchParams = indexSearchParameters(searchParams);
   // Definitions for FHIR Spec resources
-  const fhirCoreDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-resources.json`)).filter(
-    (definition) => definition.id !== 'SubscriptionStatus'
-  );
+  const fhirCoreDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-resources.json`))
+    .filter((definition) => definition.id !== 'SubscriptionStatus')
+    .filter((definition) => definition.id === 'Observation');
   // Medplum-defined resources
   const medplumResourceDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-medplum.json`));
   // StructureDefinitions for FHIR "Datatypes" (e.g. Address, ContactPoint, Identifier...)
@@ -215,7 +215,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 $description$
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
 ## Properties
 
@@ -238,7 +238,8 @@ $referencedBy$
   for (const key of Object.keys(replacements)) {
     result = result.replaceAll('$' + key + '$', replacements[key]);
   }
-  return result.replaceAll(/\n\n\n+/g, '\n');
+  result = result.replaceAll(/^\n\n+$/gm, '');
+  return result;
 }
 
 function createTabItem(text: string | undefined, value: string, label: string): string {
@@ -382,7 +383,7 @@ function rewriteLinksText(text: string | undefined): string {
   const resourceTypeExp = new RegExp(`\\s((${documentedTypeNames.join('|')})[s]?)\\b`, 'g');
   text = text.replace(
     resourceTypeExp,
-    (_, resourceText, resourceName) => ` <a href="${getMedplumDocsPath(resourceName)}">${resourceText}</a>`
+    (_, resourceText, resourceName) => ` <Link to="${getMedplumDocsPath(resourceName)}">${resourceText}</Link>`
   );
 
   return text;
