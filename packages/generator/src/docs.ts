@@ -206,6 +206,7 @@ title: $resourceName$
 sidebar_position: $position$
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/$location$Definitions/$resourceNameLowerCase$.json';
@@ -249,9 +250,9 @@ function createTabItem(text: string | undefined, value: string, label: string): 
   }
 
   return `\
-<TabItem value="${value}" label="${label}">
+  <TabItem value="${value}" label="${label}">
 ${text}
-</TabItem>`;
+  </TabItem>`;
 }
 
 function writeDocs(
@@ -589,8 +590,12 @@ function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
   // Remove comment nodes and style attributes.
   removeUnwantedNodes(node);
 
+  let result = clonedDiv.outerHTML.replaceAll('<br>', '<br/>');
+  result = result.replaceAll(/[\n\t]+/g, ' ');
+  result = result.replaceAll('<sup>*</sup>', '<sup>†</sup>');
+
   // Replace br tags with closed ones.
-  return clonedDiv.outerHTML.replaceAll('<br>', '<br/>').replace(/[\n\t]/g, ' ');
+  return result;
 }
 
 /**
