@@ -40,10 +40,9 @@ export async function main(): Promise<void> {
 
   const indexedSearchParams = indexSearchParameters(searchParams);
   // Definitions for FHIR Spec resources
-  const fhirCoreDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-resources.json`)).filter(
-    (definition) => definition.id !== 'SubscriptionStatus'
-  );
-  // .filter((definition) => definition.id === 'Observation');
+  const fhirCoreDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-resources.json`))
+    .filter((definition) => definition.id !== 'SubscriptionStatus')
+    .filter((definition) => ['DeviceRequest', 'Procedure', 'ServiceRequest'].includes(definition.id as string));
   // Medplum-defined resources
   const medplumResourceDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-medplum.json`));
   // StructureDefinitions for FHIR "Datatypes" (e.g. Address, ContactPoint, Identifier...)
@@ -382,10 +381,18 @@ function rewriteLinksText(text: string | undefined): string {
 
   // Replace names of all Resources/datatypes with internal links
   const documentedTypeNames = Object.keys(documentedTypes);
-  const resourceTypeExp = new RegExp(`\\s((${documentedTypeNames.join('|')})[s]?)\\b`, 'g');
-  text = text.replace(
-    resourceTypeExp,
+  const resourceTypeExp = `(${documentedTypeNames.join('|')})`;
+  const resourceNameTextExp = new RegExp(`\\s(${resourceTypeExp}[s]?)\\b`, 'g');
+  text = text.replaceAll(
+    resourceNameTextExp,
     (_, resourceText, resourceName) => ` <Link to="${getMedplumDocsPath(resourceName)}">${resourceText}</Link>`
+  );
+
+  const resourceNameLinkExp = new RegExp(`(\\[(.*?)\\])\\(${resourceTypeExp}.html\\)`, 'gi');
+  text = text.replaceAll(
+    resourceNameLinkExp,
+    (...matches: string[]) =>
+      `<Link to="${getMedplumDocsPath(lowerCaseResourceNames[matches[3].toLowerCase()])}">${matches[2]}</Link>`
   );
 
   return text;
