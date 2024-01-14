@@ -40,9 +40,9 @@ export async function main(): Promise<void> {
 
   const indexedSearchParams = indexSearchParameters(searchParams);
   // Definitions for FHIR Spec resources
-  const fhirCoreDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-resources.json`))
-    .filter((definition) => definition.id !== 'SubscriptionStatus')
-    .filter((definition) => ['DeviceRequest', 'Procedure', 'ServiceRequest'].includes(definition.id as string));
+  const fhirCoreDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-resources.json`)).filter(
+    (definition) => definition.id !== 'SubscriptionStatus'
+  );
   // Medplum-defined resources
   const medplumResourceDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-medplum.json`));
   // StructureDefinitions for FHIR "Datatypes" (e.g. Address, ContactPoint, Identifier...)
