@@ -2,7 +2,7 @@ import { getExpressionForResourceType, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import fs, { writeFileSync } from 'fs';
-import { JSDOM, DOMWindow } from 'jsdom';
+import { DOMWindow, JSDOM } from 'jsdom';
 import * as mkdirp from 'mkdirp';
 import fetch from 'node-fetch';
 import * as path from 'path';
@@ -40,7 +40,9 @@ export async function main(): Promise<void> {
 
   const indexedSearchParams = indexSearchParameters(searchParams);
   // Definitions for FHIR Spec resources
-  const fhirCoreDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-resources.json`));
+  const fhirCoreDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-resources.json`))
+    .filter((definition) => definition.id !== 'SubscriptionStatus')
+    .filter((definition) => definition.id === 'Observation');
   // Medplum-defined resources
   const medplumResourceDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-medplum.json`));
   // StructureDefinitions for FHIR "Datatypes" (e.g. Address, ContactPoint, Identifier...)
@@ -144,83 +146,110 @@ function buildDocsDefinition(
         | 'quantity'
         | 'special',
       description: getSearchParamDescription(param, result.name),
-      expression: getExpressionForResourceType(result.name, param.expression || '') || '',
+      expression: getExpressionForResourceType(result.name, param.expression || '') || (param.expression as string),
     }));
   }
   return result;
 }
 
 function buildDocsMarkdown(position: number, definition: ResourceDocsProps, resourceIntroduction?: any): string {
-  const resourceName = definition.name;
-  const description = rewriteLinksText(definition.description);
+  const replacements: any = {
+    position,
+    resourceName: definition.name,
+    resourceNameLowerCase: definition.name.toLowerCase(),
+    description: rewriteLinksText(definition.description).replaceAll(/\s\s+/g, ' '),
+    location: definition.location,
+    ...resourceIntroduction,
+  };
 
-  return `\
+  if (['resource', 'medplum'].includes(replacements.location)) {
+    replacements.searchParameterTable = `\
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+`;
+    replacements.inheritedPropertiesTable = `\
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />`;
+  } else {
+    replacements.searchParameterTable = '';
+    replacements.inheritedPropertiesTable = '';
+  }
+
+  replacements.scopeAndUsage = createTabItem(
+    replacements.scopeAndUsage && rewriteLinksText(replacements.scopeAndUsage),
+    'usage',
+    'Usage'
+  );
+  replacements.boundariesAndRelationships = createTabItem(
+    replacements.boundariesAndRelationships && rewriteLinksText(replacements.boundariesAndRelationships),
+    'relationships',
+    'Relationships'
+  );
+  replacements.backgroundAndContext = createTabItem(
+    replacements.backgroundAndContext && rewriteLinksText(replacements.backgroundAndContext),
+    'backgroundAndContext',
+    'Background and Context'
+  );
+  replacements.referencedBy = createTabItem(
+    replacements.referencedBy?.length &&
+      `<ul>${replacements.referencedBy.map((e: string) => `<li>${e}</li>`).join('\n')}</ul>`,
+    'referencedBy',
+    'Referenced By'
+  );
+
+  const template = `\
 ---
-title: ${resourceName}
-sidebar_position: ${position}
+title: $resourceName$
+sidebar_position: $position$
 ---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-import definition from '@site/static/data/${definition.location}Definitions/${resourceName.toLowerCase()}.json';
+import definition from '@site/static/data/$location$Definitions/$resourceNameLowerCase$.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
-# ${resourceName}
+# $resourceName$
 
-${description}
+$description$
 
 <Tabs queryString="section">
-${`<TabItem value="schema" label="Schema" default>
-
+<TabItem value="schema" label="Schema" default>
 
 ## Properties
 
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+$searchParameterTable$
+$inheritedPropertiesTable$
 
-${
-  definition.location === 'resource' || definition.location === 'medplum'
-    ? `## Search Parameters
-
-<SearchParamsTable searchParams={definition.searchParameters} />
-
-## Inherited Properties
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-`
-    : ''
-}
-</TabItem>
-  ${
-    resourceIntroduction?.scopeAndUsage
-      ? `<TabItem value="usage" label="Usage">
-    ${rewriteLinksText(resourceIntroduction.scopeAndUsage)}
-    </TabItem>`
-      : ''
-  }
-  ${
-    resourceIntroduction?.boundariesAndRelationships
-      ? `<TabItem value="relationships" label="Relationships">
-    ${rewriteLinksText(resourceIntroduction.boundariesAndRelationships)}
-    </TabItem>`
-      : ''
-  }
-  ${
-    resourceIntroduction?.backgroundAndContext
-      ? `<TabItem value="backgroundAndContext" label="Background and Context">
-    ${rewriteLinksText(resourceIntroduction.backgroundAndContext)}
-    </TabItem>`
-      : ''
-  }
-  ${
-    resourceIntroduction?.referencedBy?.length > 0
-      ? `<TabItem value="referencedBy" label="Referenced By">
-    <ul>${resourceIntroduction.referencedBy.map((e: string) => `<li>${e}</li>`).join('\n')}</ul>
-    </TabItem>`
-      : ''
-  }`}
-
+  </TabItem>
+$scopeAndUsage$
+$boundariesAndRelationships$
+$backgroundAndContext$
+$referencedBy$
 </Tabs>
 `;
+
+  let result = template;
+  for (const key of Object.keys(replacements)) {
+    result = result.replaceAll('$' + key + '$', replacements[key]);
+  }
+  return result.replaceAll(/\n\n\n+/g, '\n');
+}
+
+function createTabItem(text: string | undefined, value: string, label: string): string {
+  if (!text) {
+    return '';
+  }
+
+  return `\
+<TabItem value="${value}" label="${label}">
+${text}
+</TabItem>`;
 }
 
 function writeDocs(
@@ -234,7 +263,7 @@ function writeDocs(
     printProgress(Math.round((i / definitions.length) * 100));
     writeFileSync(
       resolve(__dirname, `../../docs/static/data/${location}Definitions/${resourceType.toLowerCase()}.json`),
-      JSON.stringify(definition, null, 2),
+      JSON.stringify(definition, null, 2) + '\n',
       'utf8'
     );
 
