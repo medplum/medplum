@@ -3,6 +3,7 @@ title: Substance
 sidebar_position: 130
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/substance.json';
@@ -30,14 +31,14 @@ A homogeneous material with a definite composition.
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
   </TabItem>
-<TabItem value="usage" label="Usage">
-<div> <a name="scope"></a>   <p> This resource allows for a material to be represented. The resource can be used to represent either a kind of a  substance - e.g. a formulation commonly used for treating patients, or it can be used to describe a particular package of a known substance (e.g. bottle, jar, packet).  </p>   <p> The composition of the material can be specified in terms of a mix of other materials, including with precise amounts if required. </p> </div>
-</TabItem>
-<TabItem value="relationships" label="Relationships">
-<div>  <a name="bnr"></a>   <p> A medication is a substance that is packaged and used as an administered medication.  The <a href="/docs/api/fhir/resources/medication">medication resource</a> uses the substance resource to represent  the actual ingredients of a medication. </p>  </div>
-</TabItem>
+  <TabItem value="usage" label="Usage">
+<div> <a name="scope"></a> <p> This resource allows for a material to be represented. The resource can be used to represent either a kind of a  substance - e.g. a formulation commonly used for treating patients, or it can be used to describe a particular package of a known substance (e.g. bottle, jar, packet).  </p>   <p> The composition of the material can be specified in terms of a mix of other materials, including with precise amounts if required. </p> </div>
+  </TabItem>
+  <TabItem value="relationships" label="Relationships">
+<div>  <a name="bnr"></a>   <p> A medication is a substance that is packaged and used as an administered medication.  The <a href="/docs/api/fhir/resources/medication">medication resource</a> uses the substance resource to represent  the actual ingredients of a medication. </p> </div>
+  </TabItem>
 
-<TabItem value="referencedBy" label="Referenced By">
+  <TabItem value="referencedBy" label="Referenced By">
 <ul><li><a href="/docs/api/fhir/resources/activitydefinition">ActivityDefinition</a></li>
 <li><a href="/docs/api/fhir/resources/adverseevent">AdverseEvent</a></li>
 <li><a href="/docs/api/fhir/resources/biologicallyderivedproduct">BiologicallyDerivedProduct</a></li>
@@ -57,5 +58,5 @@ A homogeneous material with a definite composition.
 <li><a href="/docs/api/fhir/resources/substancespecification">SubstanceSpecification</a></li>
 <li><a href="/docs/api/fhir/resources/supplydelivery">SupplyDelivery</a></li>
 <li><a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a></li></ul>
-</TabItem>
+  </TabItem>
 </Tabs>

@@ -3,6 +3,7 @@ title: Medication
 sidebar_position: 74
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/medication.json';
@@ -30,12 +31,12 @@ This resource is primarily used for the identification and definition of a medic
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
   </TabItem>
-<TabItem value="usage" label="Usage">
-<div> <a name="scope"></a>  <p> Representing medications in the majority of healthcare settings is a matter of identifying an item from a list and then conveying a reference  for the item selected either into a patient-related resource or to other applications.  Additional information about the medication is frequently  provided for human verification, but a full representation of the details of composition and efficacy of the medicine is conveyed by referring to drug dictionaries by means of the codes they define. There are some occasions where it is necessary to identify slightly more detail, such as when dispensing a package containing a particular medication requires identification both of the medicine and the package at once.   There are also some occasions (e.g. custom formulations) where the composition of a medicine must be represented.   In these cases, the ingredients of the medicine have to be specified together with the amount contained, though the <Link to="/docs/api/fhir/resources/medication">Medication</Link> resource  does not provide full details. </p> <p> The <Link to="/docs/api/fhir/resources/medication">Medication</Link> resource allows for medications to be characterized by the form of the drug and the ingredient (or ingredients), as well as how it is packaged. The medication will include the ingredient(s) and their strength(s) and the package can include the amount (for example, number of tablets, volume, etc.) that is contained in a particular container (for example, 100 capsules of Amoxicillin 500mg per bottle). </p>     <p> The <Link to="/docs/api/fhir/resources/medication">Medication</Link> resource can be used to describe a compounded (aka extemporaneous or magistral) product that is manufactured by the pharmacy at the time of dispensing.  In this case there will be multiple ingredients which are typically base chemicals (for example, hydrocortisone powder) and there may be other ingredients that are manufactured products (for example, Glaxal Base).</p> <p> When a medication includes a package, further details about the composition can be provided. A package has a container (vacuum packed box, jar, etc.) and a list of the products or other packages that are in the package. </p> </div>
-</TabItem>
+  <TabItem value="usage" label="Usage">
+<div> <a name="scope"></a> <p> Representing medications in the majority of healthcare settings is a matter of identifying an item from a list and then conveying a reference  for the item selected either into a patient-related resource or to other applications.  Additional information about the medication is frequently  provided for human verification, but a full representation of the details of composition and efficacy of the medicine is conveyed by referring to drug dictionaries by means of the codes they define. There are some occasions where it is necessary to identify slightly more detail, such as when dispensing a package containing a particular medication requires identification both of the medicine and the package at once.   There are also some occasions (e.g. custom formulations) where the composition of a medicine must be represented.   In these cases, the ingredients of the medicine have to be specified together with the amount contained, though the <Link to="/docs/api/fhir/resources/medication">Medication</Link> resource  does not provide full details. </p> <p> The <Link to="/docs/api/fhir/resources/medication">Medication</Link> resource allows for medications to be characterized by the form of the drug and the ingredient (or ingredients), as well as how it is packaged. The medication will include the ingredient(s) and their strength(s) and the package can include the amount (for example, number of tablets, volume, etc.) that is contained in a particular container (for example, 100 capsules of Amoxicillin 500mg per bottle). </p>     <p> The <Link to="/docs/api/fhir/resources/medication">Medication</Link> resource can be used to describe a compounded (aka extemporaneous or magistral) product that is manufactured by the pharmacy at the time of dispensing.  In this case there will be multiple ingredients which are typically base chemicals (for example, hydrocortisone powder) and there may be other ingredients that are manufactured products (for example, Glaxal Base).</p> <p> When a medication includes a package, further details about the composition can be provided. A package has a container (vacuum packed box, jar, etc.) and a list of the products or other packages that are in the package. </p> </div>
+  </TabItem>
 
 
-<TabItem value="referencedBy" label="Referenced By">
+  <TabItem value="referencedBy" label="Referenced By">
 <ul><li><a href="/docs/api/fhir/resources/activitydefinition">ActivityDefinition</a></li>
 <li><a href="/docs/api/fhir/resources/adverseevent">AdverseEvent</a></li>
 <li><a href="/docs/api/fhir/resources/careplan">CarePlan</a></li>
@@ -56,5 +57,5 @@ This resource is primarily used for the identification and definition of a medic
 <li><a href="/docs/api/fhir/resources/procedure">Procedure</a></li>
 <li><a href="/docs/api/fhir/resources/supplydelivery">SupplyDelivery</a></li>
 <li><a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a></li></ul>
-</TabItem>
+  </TabItem>
 </Tabs>

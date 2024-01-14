@@ -3,6 +3,7 @@ title: MedicationKnowledge
 sidebar_position: 77
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/medicationknowledge.json';
@@ -30,8 +31,8 @@ Information about a medication that is used to support knowledge.
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
   </TabItem>
-<TabItem value="usage" label="Usage">
+  <TabItem value="usage" label="Usage">
 <div>     <a name="scope"></a>          <p>Note that this content is preliminary has not undergone proper review by the appropriate             Workgroups.</p>     <p>This resource supports use cases for creation of and querying for drug information             including attributes such as drug classifications, images of medications, drug costs             and/or coverages, etc. This resource can be used to return drug information as part of a             formulary or a catalogue.</p>   </div>
-</TabItem>
+  </TabItem>
 
 </Tabs>

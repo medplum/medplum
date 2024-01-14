@@ -3,6 +3,7 @@ title: SubstanceProtein
 sidebar_position: 133
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/substanceprotein.json';
@@ -30,12 +31,12 @@ A <Link to="/docs/api/fhir/resources/substanceprotein">SubstanceProtein</Link> i
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
   </TabItem>
-<TabItem value="usage" label="Usage">
-<div>   <a name="scope"> </a>     </div>
-</TabItem>
+  <TabItem value="usage" label="Usage">
+<div> <a name="scope"> </a> </div>
+  </TabItem>
 
 
-<TabItem value="referencedBy" label="Referenced By">
+  <TabItem value="referencedBy" label="Referenced By">
 <ul><li><a href="/docs/api/fhir/resources/substancespecification">SubstanceSpecification</a></li></ul>
-</TabItem>
+  </TabItem>
 </Tabs>

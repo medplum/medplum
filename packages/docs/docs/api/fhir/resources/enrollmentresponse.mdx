@@ -3,6 +3,7 @@ title: EnrollmentResponse
 sidebar_position: 46
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/enrollmentresponse.json';
@@ -30,8 +31,8 @@ This resource provides enrollment and plan details from the processing of an <Li
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
   </TabItem>
-<TabItem value="usage" label="Usage">
-<div> <a name="scope"></a>  <p><b>This resource has not yet undergone proper review by FM. At this time it is a 'stub', is known to be incomplete, and is to be considered as a draft.</b></p> <p> The <Link to="/docs/api/fhir/resources/enrollmentresponse">EnrollmentResponse</Link> resource provides enrollment and plan details from the processing of an  Enrollment resource.  </p>  <p>    </p> </div>
-</TabItem>
+  <TabItem value="usage" label="Usage">
+<div> <a name="scope"></a> <p><b>This resource has not yet undergone proper review by FM. At this time it is a 'stub', is known to be incomplete, and is to be considered as a draft.</b></p> <p> The <Link to="/docs/api/fhir/resources/enrollmentresponse">EnrollmentResponse</Link> resource provides enrollment and plan details from the processing of an  Enrollment resource.  </p> <p>    </p> </div>
+  </TabItem>
 
 </Tabs>
