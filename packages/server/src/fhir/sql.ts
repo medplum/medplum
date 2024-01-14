@@ -564,15 +564,34 @@ export class ArraySubquery implements Expression {
 
 export class InsertQuery extends BaseQuery {
   private readonly values: Record<string, any>[];
-  private merge?: boolean;
+  private returnColumns?: string[];
+  private conflictColumns?: string[];
+  private ignoreConflict?: boolean;
 
   constructor(tableName: string, values: Record<string, any>[]) {
     super(tableName);
     this.values = values;
   }
 
-  mergeOnConflict(): this {
-    this.merge = true;
+  mergeOnConflict(columns?: string[]): this {
+    this.conflictColumns = columns ?? ['id'];
+    return this;
+  }
+
+  ignoreOnConflict(): this {
+    this.ignoreConflict = true;
+    return this;
+  }
+
+  returnColumn(column: Column | string): this {
+    if (column instanceof Column) {
+      column = column.columnName;
+    }
+    if (this.returnColumns) {
+      this.returnColumns.push(column);
+    } else {
+      this.returnColumns = [column];
+    }
     return this;
   }
 
@@ -584,6 +603,9 @@ export class InsertQuery extends BaseQuery {
     this.appendColumns(sql, columnNames);
     this.appendAllValues(sql, columnNames);
     this.appendMerge(sql);
+    if (this.returnColumns) {
+      sql.append(` RETURNING (${this.returnColumns.join(', ')})`);
+    }
     return sql.execute(conn);
   }
 
@@ -625,24 +647,27 @@ export class InsertQuery extends BaseQuery {
   }
 
   private appendMerge(sql: SqlBuilder): void {
-    if (!this.merge) {
+    if (this.ignoreConflict) {
+      sql.append(` ON CONFLICT DO NOTHING`);
+      return;
+    } else if (!this.conflictColumns?.length) {
       return;
     }
 
-    sql.append(' ON CONFLICT ("id") DO UPDATE SET ');
+    sql.append(` ON CONFLICT (${this.conflictColumns.map((c) => '"' + c + '"').join(', ')}) DO UPDATE SET `);
 
-    const entries = Object.entries(this.values[0]);
+    const columns = Object.keys(this.values[0]);
     let first = true;
-    for (const [columnName, value] of entries) {
-      if (columnName === 'id') {
+    for (const columnName of columns) {
+      if (this.conflictColumns.includes(columnName)) {
         continue;
       }
       if (!first) {
         sql.append(', ');
       }
       sql.appendIdentifier(columnName);
-      sql.append('=');
-      sql.param(value);
+      sql.append('= EXCLUDED.');
+      sql.appendIdentifier(columnName);
       first = false;
     }
   }

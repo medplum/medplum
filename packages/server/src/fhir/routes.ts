@@ -29,6 +29,7 @@ import { sendOutcome } from './outcomes';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { getFullUrl } from './search';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { codeSystemImportHandler } from './operations/codesystemimport';
 
 export const fhirRouter = Router();
 
@@ -101,6 +102,9 @@ protectedRoutes.post('/ConceptMap/:id/([$]|%24)translate', asyncWrap(conceptMapT
 
 // ValueSet $expand operation
 protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
+
+// CodeSystem $import operation
+protectedRoutes.post('/CodeSystem/([$]|%24)import', codeSystemImportHandler);
 
 // CSV Export
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
