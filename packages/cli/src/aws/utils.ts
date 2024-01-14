@@ -10,6 +10,7 @@ import {
 import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { ECSClient } from '@aws-sdk/client-ecs';
 import { S3Client } from '@aws-sdk/client-s3';
+import fetch from 'node-fetch';
 
 export interface MedplumStackDetails {
   stack: Stack;
@@ -69,7 +70,11 @@ export async function getStackDetails(stackName: string): Promise<MedplumStackDe
   const result = {} as Partial<MedplumStackDetails>;
   await buildStackDetails(cloudFormationClient, stackName, result);
   if ((await cloudFormationClient.config.region()) !== 'us-east-1') {
-    await buildStackDetails(new CloudFormationClient({ region: 'us-east-1' }), stackName + '-us-east-1', result);
+    try {
+      await buildStackDetails(new CloudFormationClient({ region: 'us-east-1' }), stackName + '-us-east-1', result);
+    } catch {
+      // Fail gracefully
+    }
   }
   return result as MedplumStackDetails;
 }
@@ -196,4 +201,19 @@ export async function createInvalidation(distributionId: string): Promise<void> 
     })
   );
   console.log(`Created invalidation with ID: ${response.Invalidation?.Id}`);
+}
+
+export async function getServerVersions(from?: string): Promise<string[]> {
+  const response = await fetch('https://api.github.com/repos/medplum/medplum/releases?per_page=100', {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
+
+  const json = (await response.json()) as { tag_name: string }[];
+  const versions = json.map((release) =>
+    release.tag_name.startsWith('v') ? release.tag_name.slice(1) : release.tag_name
+  );
+  return from ? versions.slice(0, versions.indexOf(from)) : versions;
 }

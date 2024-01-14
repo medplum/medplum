@@ -132,9 +132,21 @@ export function readBotConfigs(botName: string): MedplumBotConfig[] {
   return botConfigs;
 }
 
+export function configFileName(tagName?: string): string {
+  return tagName ? `medplum.${tagName}.config.json` : 'medplum.config.json';
+}
+
+/**
+ * Writes a config file to disk.
+ * @param configFileName - The config file name.
+ * @param config - The config file contents.
+ */
+export function writeConfig(configFileName: string, config: Record<string, any>): void {
+  writeFileSync(resolve(configFileName), JSON.stringify(config, undefined, 2), 'utf-8');
+}
+
 export function readConfig(tagName?: string): MedplumConfig | undefined {
-  const fileName = tagName ? `medplum.${tagName}.config.json` : 'medplum.config.json';
-  const content = readFileContents(fileName);
+  const content = readFileContents(configFileName(tagName));
   if (!content) {
     return undefined;
   }

@@ -10,9 +10,10 @@ import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/cl
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { MedplumInfraConfig, normalizeErrorString } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'crypto';
-import { existsSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { existsSync } from 'fs';
 import readline from 'readline';
+import { getServerVersions } from './utils';
+import { writeConfig } from '../utils';
 
 type MedplumDomainType = 'api' | 'app' | 'storage';
 type MedplumDomainSetting = `${MedplumDomainType}DomainName`;
@@ -199,7 +200,8 @@ export async function initStackCommand(): Promise<void> {
   print('You can choose the image to use for the servers.');
   print('Docker images can be loaded from either Docker Hub or AWS ECR.');
   print('The default is the latest Medplum release.');
-  config.serverImage = await ask('Enter the server image:', 'medplum/medplum-server:latest');
+  const latestVersion = (await getServerVersions())[0] ?? 'latest';
+  config.serverImage = await ask('Enter the server image:', `medplum/medplum-server:${latestVersion}`);
   writeConfig(configFileName, config);
 
   header('SIGNING KEY');
@@ -272,7 +274,7 @@ export async function initStackCommand(): Promise<void> {
     const serverConfigFileName = configFileName.replace('.json', '.server.json');
     writeConfig(serverConfigFileName, serverParams);
     print('Skipping AWS Parameter Store.');
-    print('Writing values to local config file: ' + serverConfigFileName);
+    print(`Writing values to local config file: ${serverConfigFileName}`);
     print('Please add these values to AWS Parameter Store manually.');
   }
 
@@ -381,15 +383,6 @@ async function checkOk(text: string): Promise<void> {
     print('Exiting...');
     throw new Error('User cancelled');
   }
-}
-
-/**
- * Writes a config file to disk.
- * @param configFileName - The config file name.
- * @param config - The config file contents.
- */
-function writeConfig(configFileName: string, config: Record<string, any>): void {
-  writeFileSync(resolve(configFileName), JSON.stringify(config, undefined, 2), 'utf-8');
 }
 
 /**
