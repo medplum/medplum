@@ -35,6 +35,7 @@ import { getConfig } from '../../config';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { globalLogger } from '../../logger';
 import { generateAccessToken } from '../../oauth/keys';
+import { incrementCounter } from '../../otel';
 import { AuditEventOutcome } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
 import { createAuditEventEntities } from '../../workers/utils';
@@ -165,6 +166,10 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
       result = { success: false, logResult: 'Unsupported bot runtime' };
     }
   }
+
+  const attributes = { project: bot.meta?.project, bot: bot.id };
+  incrementCounter('medplum.bot.execute', attributes);
+  incrementCounter(result.success ? 'medplum.bot.execute.success' : 'medplum.bot.execute.failure', attributes);
 
   await createAuditEvent(
     request,
