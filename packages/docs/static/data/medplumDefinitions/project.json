@@ -1,7 +1,7 @@
 {
   "name": "Project",
   "location": "medplum",
-  "description": "",
+  "description": "Encapsulation of resources for a specific project or organization.",
   "properties": [
     {
       "name": "Project",

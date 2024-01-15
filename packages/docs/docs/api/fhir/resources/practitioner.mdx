@@ -3,6 +3,7 @@ title: Practitioner
 sidebar_position: 107
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/practitioner.json';
@@ -13,9 +14,9 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 A person who is directly or indirectly involved in the provisioning of healthcare.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
-## Properties
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
@@ -25,22 +26,22 @@ A person who is directly or indirectly involved in the provisioning of healthcar
 
 <SearchParamsTable searchParams={definition.searchParameters} />
 
-## Inherited Properties
+## Inherited Elements
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
-</TabItem>
+  </TabItem>
   <TabItem value="usage" label="Usage">
-    <div> <a name="scope"></a>  <p> <a href="/docs/api/fhir/resources/practitioner">Practitioner</a> covers all individuals who are engaged in the healthcare process and healthcare-related services as part of their formal  responsibilities and this Resource is used for attribution of activities and responsibilities to these individuals.  <a href="/docs/api/fhir/resources/practitioner">Practitioners</a> include (but are not limited to): </p> <ul> <li>physicians,&nbsp;dentists,&nbsp;pharmacists</li> <li>physician assistants,&nbsp;nurses, scribes</li> <li>midwives,&nbsp;dietitians,&nbsp;therapists,&nbsp;optometrists, paramedics</li> <li>medical technicians,&nbsp;laboratory scientists, prosthetic technicians, radiographers</li> <li>social workers, professional homecare providers, official volunteers</li> <li>receptionists handling patient registration</li> <li>IT personnel merging or unmerging patient records</li> <li>Service animal (e.g., ward assigned dog capable of detecting cancer in patients)</li> </ul> </div>
-    </TabItem>
+<div> <a name="scope"></a> <p> <Link to="/docs/api/fhir/resources/practitioner">Practitioner</Link> covers all individuals who are engaged in the healthcare process and healthcare-related services as part of their formal  responsibilities and this Resource is used for attribution of activities and responsibilities to these individuals. <Link to="/docs/api/fhir/resources/practitioner">Practitioners</Link> include (but are not limited to): </p> <ul> <li>physicians,&nbsp;dentists,&nbsp;pharmacists</li> <li>physician assistants,&nbsp;nurses, scribes</li> <li>midwives,&nbsp;dietitians,&nbsp;therapists,&nbsp;optometrists, paramedics</li> <li>medical technicians,&nbsp;laboratory scientists, prosthetic technicians, radiographers</li> <li>social workers, professional homecare providers, official volunteers</li> <li>receptionists handling patient registration</li> <li>IT personnel merging or unmerging patient records</li> <li>Service animal (e.g., ward assigned dog capable of detecting cancer in patients)</li> </ul> </div>
+  </TabItem>
   <TabItem value="relationships" label="Relationships">
-    <div> <a name="bnr"></a>  <p> The Resource SHALL NOT be used for persons involved without a formal responsibility like individuals taking care for friends,  relatives or neighbors. These can be registered as a <a href="/docs/api/fhir/resources/patient">Patient</a>'s Contact.  If performing some action or being referenced by another resource, use the <a href="/docs/api/fhir/resources/relatedperson">RelatedPerson</a> resource. </p> <p>  The primary distinction between a <a href="/docs/api/fhir/resources/practitioner">Practitioner</a> and a <a href="/docs/api/fhir/resources/relatedperson">RelatedPerson</a> is based on whether: </p> <ul> <li>  The person/animal operates on behalf of the care delivery organization over multiple patients (Practitioner) or, </li> <li>  Where the person/animal is not associated with the organization, and instead is  allocated tasks specifically for the <a href="/docs/api/fhir/resources/relatedperson">RelatedPerson</a>'s <a href="/docs/api/fhir/resources/patient">Patient</a> (RelatedPerson). </li> </ul> <p>  A standard extension <a href="https://www.hl7.org/fhir/extension-practitioner-animalspecies.html">animalSpecies</a> can be used to indicate the species of a service animal. </p> <p>   The <a href="/docs/api/fhir/resources/practitionerrole">PractitionerRole</a> resource provides the details of roles that the practitioner    is approved to perform for which organizations (and at which locations, and optionally what services too). </p> <p>   <a href="/docs/api/fhir/resources/practitioner">Practitioners</a> are also often grouped into <a href="/docs/api/fhir/resources/careteam">CareTeams</a> independently of roles, where the <a href="/docs/api/fhir/resources/careteam">CareTeam</a>   defines what specific role that they are fulfilling within the team, and might or might not have actual practitioner role resources   created for the practitioner (and in the care team context, the organization the practitioner is representing) </p> </div>
-    </TabItem>
+<div> <a name="bnr"></a> <p> The Resource SHALL NOT be used for persons involved without a formal responsibility like individuals taking care for friends,  relatives or neighbors. These can be registered as a <Link to="/docs/api/fhir/resources/patient">Patient</Link>'s Contact.  If performing some action or being referenced by another resource, use the <a href="/docs/api/fhir/resources/relatedperson">RelatedPerson</a> resource. </p> <p> The primary distinction between a <Link to="/docs/api/fhir/resources/practitioner">Practitioner</Link> and a <Link to="/docs/api/fhir/resources/relatedperson">RelatedPerson</Link> is based on whether: </p> <ul> <li> The person/animal operates on behalf of the care delivery organization over multiple patients (Practitioner) or, </li> <li> Where the person/animal is not associated with the organization, and instead is allocated tasks specifically for the <Link to="/docs/api/fhir/resources/relatedperson">RelatedPerson</Link>'s <Link to="/docs/api/fhir/resources/patient">Patient</Link> (RelatedPerson). </li> </ul> <p> A standard extension <a href="https://www.hl7.org/fhir/extension-practitioner-animalspecies.html">animalSpecies</a> can be used to indicate the species of a service animal. </p> <p>   The <a href="/docs/api/fhir/resources/practitionerrole">PractitionerRole</a> resource provides the details of roles that the practitioner    is approved to perform for which organizations (and at which locations, and optionally what services too). </p> <p>   <Link to="/docs/api/fhir/resources/practitioner">Practitioners</Link> are also often grouped into <a href="/docs/api/fhir/resources/careteam">CareTeams</a> independently of roles, where the <Link to="/docs/api/fhir/resources/careteam">CareTeam</Link>   defines what specific role that they are fulfilling within the team, and might or might not have actual practitioner role resources   created for the practitioner (and in the care team context, the organization the practitioner is representing) </p> </div>
+  </TabItem>
   <TabItem value="backgroundAndContext" label="Background and Context">
-    <div> <a name="bnc"></a>  <p> <a href="/docs/api/fhir/resources/practitioner">Practitioner</a> performs different roles within the same or even different organizations. Depending on jurisdiction and custom,  it may be necessary to maintain a specific <a href="/docs/api/fhir/resources/practitioner">Practitioner</a> Resource for each such role or have a single <a href="/docs/api/fhir/resources/practitioner">Practitioner</a> with multiple roles. The role can be limited to a specific period, after which authorization for this role ends. Note that the represented organization need not necessarily be the (direct) employer of a <a href="/docs/api/fhir/resources/practitioner">Practitioner</a>. </p> </div>
-    </TabItem>
+<div> <a name="bnc"></a> <p> <Link to="/docs/api/fhir/resources/practitioner">Practitioner</Link> performs different roles within the same or even different organizations. Depending on jurisdiction and custom,  it may be necessary to maintain a specific <Link to="/docs/api/fhir/resources/practitioner">Practitioner</Link> Resource for each such role or have a single <Link to="/docs/api/fhir/resources/practitioner">Practitioner</Link> with multiple roles. The role can be limited to a specific period, after which authorization for this role ends. Note that the represented organization need not necessarily be the (direct) employer of a <Link to="/docs/api/fhir/resources/practitioner">Practitioner</Link>. </p> </div>
+  </TabItem>
   <TabItem value="referencedBy" label="Referenced By">
-    <ul><li><a href="https://www.hl7.org/fhir/datatypes.html#Annotation">Annotation</a></li>
+<ul><li><a href="https://www.hl7.org/fhir/datatypes.html#Annotation">Annotation</a></li>
 <li><a href="https://www.hl7.org/fhir/datatypes.html#Signature">Signature</a></li>
 <li><a href="/docs/api/fhir/resources/account">Account</a></li>
 <li><a href="/docs/api/fhir/resources/adverseevent">AdverseEvent</a></li>
@@ -112,6 +113,5 @@ A person who is directly or indirectly involved in the provisioning of healthcar
 <li><a href="/docs/api/fhir/resources/task">Task</a></li>
 <li><a href="/docs/api/fhir/resources/verificationresult">VerificationResult</a></li>
 <li><a href="/docs/api/fhir/resources/visionprescription">VisionPrescription</a></li></ul>
-    </TabItem>
-
+  </TabItem>
 </Tabs>

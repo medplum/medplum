@@ -3,6 +3,7 @@ title: Age
 sidebar_position: 1
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/datatypeDefinitions/age.json';
@@ -10,19 +11,17 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Age
 
-Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/age">Age</a> Type: A duration of time during which an organism (or a process) has existed.
+Base <Link to="/docs/api/fhir/resources/structuredefinition">StructureDefinition</Link> for <Link to="/docs/api/fhir/datatypes/age">Age</Link> Type: A duration of time during which an organism (or a process) has existed.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
-## Properties
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
 />
 
-</TabItem>
-  
-
+  </TabItem>
 
 </Tabs>
