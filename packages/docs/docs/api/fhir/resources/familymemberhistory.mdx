@@ -16,7 +16,7 @@ Significant health conditions for a person related to the patient relevant in th
 <Tabs queryString="section">
   <TabItem value="schema" label="Schema" default>
 
-## Properties
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
@@ -26,7 +26,7 @@ Significant health conditions for a person related to the patient relevant in th
 
 <SearchParamsTable searchParams={definition.searchParameters} />
 
-## Inherited Properties
+## Inherited Elements
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 

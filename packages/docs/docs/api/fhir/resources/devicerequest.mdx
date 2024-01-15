@@ -16,7 +16,7 @@ Represents a request for a patient to employ a medical device. The device may be
 <Tabs queryString="section">
   <TabItem value="schema" label="Schema" default>
 
-## Properties
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
@@ -26,7 +26,7 @@ Represents a request for a patient to employ a medical device. The device may be
 
 <SearchParamsTable searchParams={definition.searchParameters} />
 
-## Inherited Properties
+## Inherited Elements
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 

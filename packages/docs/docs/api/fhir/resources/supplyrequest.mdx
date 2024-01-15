@@ -16,7 +16,7 @@ A record of a request for a medication, substance or device used in the healthca
 <Tabs queryString="section">
   <TabItem value="schema" label="Schema" default>
 
-## Properties
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
@@ -26,7 +26,7 @@ A record of a request for a medication, substance or device used in the healthca
 
 <SearchParamsTable searchParams={definition.searchParameters} />
 
-## Inherited Properties
+## Inherited Elements
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
