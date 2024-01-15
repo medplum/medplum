@@ -1,4 +1,4 @@
-import opentelemetry, { Counter, Histogram, Meter } from '@opentelemetry/api';
+import opentelemetry, { Attributes, Counter, Histogram, Meter } from '@opentelemetry/api';
 
 let meter: Meter | undefined = undefined;
 const counters = new Map<string, Counter>();
@@ -20,9 +20,9 @@ function getCounter(name: string): Counter {
   return result;
 }
 
-export function incrementCounter(name: string): void {
+export function incrementCounter(name: string, attributes: Attributes): void {
   if (isOtelMetricsEnabled()) {
-    getCounter(name).add(1);
+    getCounter(name).add(1, attributes);
   }
 }
 
@@ -35,9 +35,9 @@ function getHistogram(name: string): Histogram {
   return result;
 }
 
-export function recordHistogramValue(name: string, value: number): void {
+export function recordHistogramValue(name: string, value: number, attributes: Attributes): void {
   if (isOtelMetricsEnabled()) {
-    getHistogram(name).record(value);
+    getHistogram(name).record(value, attributes);
   }
 }
 

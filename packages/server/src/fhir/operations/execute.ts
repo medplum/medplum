@@ -167,8 +167,9 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
     }
   }
 
-  incrementCounter('bot.execute');
-  incrementCounter(result.success ? 'bot.execute.success' : 'bot.execute.failure');
+  const attributes = { project: bot.meta?.project, bot: bot.id };
+  incrementCounter('medplum.bot.execute', attributes);
+  incrementCounter(result.success ? 'medplum.bot.execute.success' : 'medplum.bot.execute.failure', attributes);
 
   await createAuditEvent(
     request,
