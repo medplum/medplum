@@ -9,7 +9,11 @@ import { NodeSDK } from '@opentelemetry/sdk-node';
 import { SpanExporter } from '@opentelemetry/sdk-trace-base';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 
-// Configures OpenTelemetry for Node.js
+// This file includes OpenTelemetry instrumentation.
+// Note that this file is related but separate from the OpenTelemetry helpers in otel.ts.
+// This file is used to initialize OpenTelemetry, and must be loaded before any other code.
+//
+// References:
 // https://opentelemetry.io/docs/instrumentation/js/getting-started/nodejs/
 // https://opentelemetry.io/docs/instrumentation/js/exporters/
 
