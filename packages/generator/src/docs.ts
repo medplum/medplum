@@ -169,7 +169,7 @@ function buildDocsMarkdown(position: number, definition: ResourceDocsProps, reso
 <SearchParamsTable searchParams={definition.searchParameters} />
 `;
     replacements.inheritedPropertiesTable = `\
-## Inherited Properties
+## Inherited Elements
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />`;
   } else {
@@ -218,7 +218,7 @@ $description$
 <Tabs queryString="section">
   <TabItem value="schema" label="Schema" default>
 
-## Properties
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
