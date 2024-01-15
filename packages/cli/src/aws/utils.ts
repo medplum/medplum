@@ -10,7 +10,9 @@ import {
 import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { ECSClient } from '@aws-sdk/client-ecs';
 import { S3Client } from '@aws-sdk/client-s3';
+import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import fetch from 'node-fetch';
+import { checkOk, print } from './terminal';
 
 export interface MedplumStackDetails {
   stack: Stack;
@@ -216,4 +218,68 @@ export async function getServerVersions(from?: string): Promise<string[]> {
     release.tag_name.startsWith('v') ? release.tag_name.slice(1) : release.tag_name
   );
   return from ? versions.slice(0, versions.indexOf(from)) : versions;
+}
+
+/**
+ * Writes a collection of parameters to AWS Parameter Store.
+ * @param region - The AWS region.
+ * @param prefix - The AWS Parameter Store prefix.
+ * @param params - The parameters to write.
+ */
+export async function writeParameters(
+  region: string,
+  prefix: string,
+  params: Record<string, string | number>
+): Promise<void> {
+  const client = new SSMClient({ region });
+  for (const [key, value] of Object.entries(params)) {
+    const name = prefix + key;
+    const valueStr = value.toString();
+    const existingValue = await readParameter(client, name);
+
+    if (existingValue !== undefined && existingValue !== valueStr) {
+      print(`Parameter "${name}" exists with different value.`);
+      await checkOk(`Do you want to overwrite "${name}"?`);
+    }
+
+    await writeParameter(client, name, valueStr);
+  }
+}
+
+/**
+ * Reads a parameter from AWS Parameter Store.
+ * @param client - The AWS SSM client.
+ * @param name - The parameter name.
+ * @returns The parameter value, or undefined if not found.
+ */
+async function readParameter(client: SSMClient, name: string): Promise<string | undefined> {
+  const command = new GetParameterCommand({
+    Name: name,
+    WithDecryption: true,
+  });
+  try {
+    const result = await client.send(command);
+    return result.Parameter?.Value;
+  } catch (err: any) {
+    if (err.name === 'ParameterNotFound') {
+      return undefined;
+    }
+    throw err;
+  }
+}
+
+/**
+ * Writes a parameter to AWS Parameter Store.
+ * @param client - The AWS SSM client.
+ * @param name - The parameter name.
+ * @param value - The parameter value.
+ */
+async function writeParameter(client: SSMClient, name: string, value: string): Promise<void> {
+  const command = new PutParameterCommand({
+    Name: name,
+    Value: value,
+    Type: 'SecureString',
+    Overwrite: true,
+  });
+  await client.send(command);
 }

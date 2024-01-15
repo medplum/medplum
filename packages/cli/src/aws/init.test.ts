@@ -8,9 +8,10 @@ import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import { readFileSync, unlinkSync, writeFileSync } from 'fs';
-import readline from 'readline';
 import fetch from 'node-fetch';
+import readline from 'readline';
 import { main } from '../index';
+import { mockReadline } from './test.utils';
 
 jest.mock('readline');
 jest.mock('node-fetch');
@@ -641,17 +642,3 @@ describe('init command', () => {
     unlinkSync(filename);
   });
 });
-
-function mockReadline(...answers: string[]): readline.Interface {
-  const result = { write: jest.fn(), question: jest.fn(), close: jest.fn() };
-  const debug = false;
-  for (const answer of answers) {
-    result.question.mockImplementationOnce((q: string, cb: (answer: string) => void) => {
-      if (debug) {
-        console.log(q, answer);
-      }
-      cb(answer);
-    });
-  }
-  return result as unknown as readline.Interface;
-}

@@ -1,9 +1,9 @@
-import { getServerVersions } from './utils';
-import { configFileName, readConfig, writeConfig } from '../utils';
 import { MedplumInfraConfig } from '@medplum/core';
-import * as semver from 'semver';
 import { spawnSync } from 'child_process';
+import * as semver from 'semver';
 import { createMedplumClient } from '../util/client';
+import { getConfigFileName, readConfig, writeConfig } from '../utils';
+import { getServerVersions } from './utils';
 
 /**
  * The AWS "update-server" command updates the Medplum server in a Medplum CloudFormation stack.
@@ -14,7 +14,7 @@ export async function updateServerCommand(tag: string, options: any): Promise<vo
   const client = await createMedplumClient(options);
   const config = readConfig(tag) as MedplumInfraConfig;
   if (!config) {
-    console.log(`Configuration file ${configFileName(tag)} not found`);
+    console.log(`Configuration file ${getConfigFileName(tag)} not found`);
     return;
   }
   const separatorIndex = config.serverImage.lastIndexOf(':');
@@ -46,7 +46,7 @@ async function nextUpdateVersion(currentVersion: string): Promise<string | undef
 }
 
 function deployServerUpdate(tag: string, config: MedplumInfraConfig): void {
-  const configFile = configFileName(tag);
+  const configFile = getConfigFileName(tag);
   writeConfig(configFile, config);
 
   const cmd = `npx cdk deploy -c config=${configFile}${config.region !== 'us-east-1' ? ' --all' : ''}`;
