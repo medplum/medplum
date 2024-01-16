@@ -360,7 +360,7 @@ export function Chat(): JSX.Element | null {
               </ScrollArea>
             </div>
             <div className={classes.chatInputContainer}>
-              <Form ref={formRef} onSubmit={sendMessage}>
+              <Form onSubmit={sendMessage}>
                 <TextInput
                   ref={inputRef}
                   name="message"

@@ -1,32 +1,41 @@
 {
-  "name": "medplum-chat-demo",
+  "name": "medplum-live-chat-demo",
+  "version": "2.2.10",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "dev": "vite",
     "preview": "vite preview"
   },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
+  },
   "devDependencies": {
-    "@emotion/react": "11.11.1",
+    "@emotion/react": "11.11.3",
     "@mantine/core": "6.0.21",
     "@mantine/hooks": "6.0.21",
     "@mantine/notifications": "6.0.21",
-    "@medplum/core": "2.2.7",
-    "@medplum/eslint-config": "2.2.7",
-    "@medplum/fhirtypes": "2.2.7",
-    "@medplum/react": "2.2.7",
-    "@tabler/icons-react": "2.42.0",
-    "@types/node": "20.10.3",
-    "@types/react": "18.2.42",
-    "@types/react-dom": "18.2.17",
+    "@medplum/core": "2.2.10",
+    "@medplum/eslint-config": "2.2.10",
+    "@medplum/fhirtypes": "2.2.10",
+    "@medplum/react": "2.2.10",
+    "@tabler/icons-react": "2.45.0",
+    "@types/node": "20.11.0",
+    "@types/react": "18.2.47",
+    "@types/react-dom": "18.2.18",
     "@vitejs/plugin-react": "4.2.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "6.20.1",
-    "typescript": "5.3.2",
-    "vite": "5.0.5"
+    "react-router-dom": "6.21.2",
+    "typescript": "5.3.3",
+    "vite": "5.0.11"
   }
 }
