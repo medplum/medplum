@@ -113,16 +113,22 @@ export function buildElementsContext({
 }
 
 function mergeElementsForContext(
-  path: string,
+  parentPath: string,
   elements: Record<string, InternalSchemaElement>,
   parentContext: ElementsContextType
 ): ElementsContextType['elements'] {
   const result: ElementsContextType['elements'] = Object.create(null);
+
+  const parentPathPrefix = parentPath + '.';
+  for (const [path, element] of Object.entries(parentContext.elementsByPath)) {
+    if (path.startsWith(parentPathPrefix)) {
+      const key = path.slice(parentPathPrefix.length);
+      result[key] = element;
+    }
+  }
+
   for (const [key, element] of Object.entries(elements)) {
-    const elementPath = path + '.' + key;
-    if (parentContext.elementsByPath[elementPath]) {
-      result[key] = parentContext.elementsByPath[elementPath];
-    } else {
+    if (!(key in result)) {
       result[key] = element;
     }
   }
