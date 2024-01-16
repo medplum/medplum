@@ -108,6 +108,11 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
+  if (client.status && client.status !== 'active') {
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return;
+  }
+
   if (!(await validateClientIdAndSecret(res, client, clientSecret))) {
     return;
   }
