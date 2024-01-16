@@ -164,11 +164,15 @@ export function isDataTypeLoaded(type: string): boolean {
 }
 
 export function tryGetDataType(type: string, profileUrl?: string): InternalTypeSchema | undefined {
-  return getDataTypesMap(profileUrl)[type];
+  let result: InternalTypeSchema | undefined = getDataTypesMap(profileUrl)[type];
+  if (!result && profileUrl) {
+    result = getDataTypesMap(undefined)[type];
+  }
+  return result;
 }
 
 export function getDataType(type: string, profileUrl?: string): InternalTypeSchema {
-  const schema = getDataTypesMap(profileUrl)[type];
+  const schema = tryGetDataType(type, profileUrl);
   if (!schema) {
     throw new OperationOutcomeError(badRequest('Unknown data type: ' + type));
   }
