@@ -2,6 +2,8 @@ import { CodeSystem, CodeSystemConcept, Coding, Resource } from '@medplum/fhirty
 import { Pool, PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 import { DeleteQuery } from '../sql';
+import { append } from '@medplum/core';
+import { ImportedProperty, importCodeSystem } from '../operations/codesystemimport';
 
 /**
  * The CodingTable class is used to index and search Coding values associated with a CodeSystem.
@@ -25,28 +27,12 @@ export class CodingTable extends LookupTable<Coding> {
   }
 
   async indexResource(client: PoolClient, resource: Resource): Promise<void> {
-    const resourceType = resource.resourceType;
+    if (resource.resourceType === 'CodeSystem' && resource.content === 'complete') {
+      await this.deleteValuesForResource(client, resource);
 
-    let elements: Coding[] | undefined = undefined;
-    if (resourceType === 'CodeSystem' && resource.content === 'complete') {
-      elements = this.getCodeSystemElements(resource);
+      const elements = this.getCodeSystemElements(resource);
+      await importCodeSystem(resource as CodeSystem, elements.concepts, elements.properties);
     }
-    if (!elements?.length) {
-      return;
-    }
-
-    await this.deleteValuesForResource(client, resource);
-
-    const values = [];
-    for (const element of elements) {
-      values.push({
-        system: resource.id,
-        code: element.code,
-        display: element.display,
-      });
-    }
-
-    await this.insertValuesForResource(client, resourceType, values);
   }
 
   /**
@@ -58,8 +44,8 @@ export class CodingTable extends LookupTable<Coding> {
     await new DeleteQuery(this.getTableName()).where('system', '=', resource.id).execute(client);
   }
 
-  private getCodeSystemElements(codeSystem: CodeSystem): Coding[] {
-    const result: Coding[] = [];
+  private getCodeSystemElements(codeSystem: CodeSystem): { concepts: Coding[]; properties: ImportedProperty[] } {
+    const result = { concepts: [], properties: [] };
     if (codeSystem.concept) {
       for (const concept of codeSystem.concept) {
         this.addCodeSystemConcepts(codeSystem, concept, result);
@@ -73,23 +59,25 @@ export class CodingTable extends LookupTable<Coding> {
    * See: https://www.hl7.org/fhir/codesystem-definitions.html#CodeSystem.concept
    * @param codeSystem - The CodeSystem.
    * @param concept - The CodeSystem concept.
-   * @param result - The output value set concept array.
+   * @param result - The results.
+   * @param result.concepts - Concepts defined by the CodeSystem.
+   * @param result.properties - Coding properties specified by the CodeSystem.
    */
-  private addCodeSystemConcepts(codeSystem: CodeSystem, concept: CodeSystemConcept, result: CodeSystemConcept[]): void {
-    result.push({
-      code: concept.code,
-      display: concept.display,
-      property: concept.property,
-    });
+  private addCodeSystemConcepts(
+    codeSystem: CodeSystem,
+    concept: CodeSystemConcept,
+    result: { concepts: Coding[]; properties: ImportedProperty[] }
+  ): void {
+    const { code, display } = concept;
+    result.concepts = append(result.concepts, { code, display });
     if (concept.concept) {
       for (const child of concept.concept) {
-        if (child.property) {
-          child.property.push({
-            code: codeSystem.hierarchyMeaning,
-            valueCode: concept.code,
-          });
-        }
         this.addCodeSystemConcepts(codeSystem, child, result);
+        result.properties = append(result.properties, {
+          code: child.code as string,
+          property: codeSystem.hierarchyMeaning ?? 'parent',
+          value: code as string,
+        });
       }
     }
   }
