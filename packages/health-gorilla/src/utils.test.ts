@@ -1,9 +1,8 @@
-import { ContentType, allOk } from '@medplum/core';
+import { ContentType, allOk, append } from '@medplum/core';
 import { RequestGroup } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
   HealthGorillaConfig,
-  append,
   assertNotEmpty,
   checkAbn,
   connectToHealthGorilla,

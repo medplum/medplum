@@ -8,6 +8,7 @@ import {
   MedplumClient,
   setIdentifier,
   SNOMED,
+  append,
 } from '@medplum/core';
 import {
   Account,
@@ -452,13 +453,6 @@ async function checkAbn(
     const media = await medplum.uploadMedia(abnUint8Array, 'application/pdf', 'RequestGroup-ABN.pdf');
     console.log('Uploaded ABN PDF as media: ' + media.id);
   }
-}
-
-function append<T>(array: T[] | undefined, value: T): T[] {
-  if (!array) {
-    return [value];
-  }
-  return [...array, value];
 }
 
 class HealthGorillaRequestGroupBuilder {
