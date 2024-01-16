@@ -11,6 +11,9 @@ import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-clo
 import { ECSClient } from '@aws-sdk/client-ecs';
 import { S3Client } from '@aws-sdk/client-s3';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
+import { normalizeErrorString } from '@medplum/core';
+import { readdirSync } from 'fs';
 import fetch from 'node-fetch';
 import { checkOk, print } from './terminal';
 
@@ -282,4 +285,58 @@ async function writeParameter(client: SSMClient, name: string, value: string): P
     Overwrite: true,
   });
   await client.send(command);
+}
+
+/**
+ * Prints a "config not found" message to stdout.
+ * Includes helpful debugging information such as available configs.
+ * @param tagName - Medplum stack tag name.
+ */
+export async function printConfigNotFound(tagName: string): Promise<void> {
+  console.log(`Config not found: ${tagName}`);
+  console.log();
+
+  let files: any[] = readdirSync('.', { withFileTypes: true });
+  files = files
+    .filter((f) => f.isFile() && f.name.startsWith('medplum.') && f.name.endsWith('.json'))
+    .map((f) => f.name);
+
+  if (files.length === 0) {
+    console.log('No configs found');
+  } else {
+    console.log('Available configs:');
+    for (const file of files) {
+      console.log(
+        `  ${file
+          .replaceAll('medplum.', '')
+          .replaceAll('.config', '')
+          .replaceAll('.server', '')
+          .replaceAll('.json', '')
+          .padEnd(40, ' ')} (${file})`
+      );
+    }
+  }
+}
+
+/**
+ * Prints a "stack not found" message to stdout.
+ * Includes helpful debugging information such as AWS account ID and region.
+ * @param tagName - Medplum stack tag name.
+ */
+export async function printStackNotFound(tagName: string): Promise<void> {
+  console.log(`Stack not found: ${tagName}`);
+  console.log();
+
+  try {
+    const client = new STSClient();
+    const command = new GetCallerIdentityCommand({});
+    const response = await client.send(command);
+    const region = await client.config.region();
+    console.log('AWS Region:        ', region);
+    console.log('AWS Account ID:    ', response.Account);
+    console.log('AWS Account ARN:   ', response.Arn);
+    console.log('AWS User ID:       ', response.UserId);
+  } catch (err) {
+    console.log('Warning: Unable to get AWS account ID', normalizeErrorString(err));
+  }
 }
