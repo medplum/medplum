@@ -96,6 +96,6 @@ describe('describe command', () => {
   test('Describe not found', async () => {
     console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'describe', 'not-found']);
-    expect(console.log).toBeCalledWith('Stack not found');
+    expect(console.log).toBeCalledWith('Stack not found: not-found');
   });
 });
