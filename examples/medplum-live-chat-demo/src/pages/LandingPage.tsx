@@ -10,10 +10,10 @@ export function LandingPage(): JSX.Element {
           Welcome!
         </Title>
         <Text>
-          This "WebSocket Subscriptions" example demonstrates how to build a simple React application that utilizes the
-          Medplum WebSocket subscriptions. If you haven't already done so,{' '}
-          <Anchor href="https://app.medplum.com/register">register</Anchor> for Medplum Project. After that you can sign
-          into your project by clicking the link below.
+          This "Live Chat" example demonstrates how to build a simple React live chat application that utilizes Medplum
+          WebSocket subscriptions to sync chat messages modeled as{' '}
+          <Anchor href="https://www.medplum.com/docs/communications">Communication</Anchor> resources between two
+          clients.
         </Text>
         <Button component={Link} to="/signin" size="lg" radius="xl">
           Sign in

@@ -4,7 +4,7 @@ import { Communication, Practitioner, Reference } from '@medplum/fhirtypes';
 import { DrAliceSmith } from '@medplum/mock';
 import { Document, Loading, ResourceName, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useMemo } from 'react';
-import { Chat } from '../Chat';
+import { Chat } from '../components/Chat';
 
 const DR_ALICE_SMITH: Reference<Practitioner> = {
   reference: getReferenceString(DrAliceSmith),

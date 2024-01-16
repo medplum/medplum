@@ -7,15 +7,7 @@ import {
   normalizeErrorString,
   ProfileResource,
 } from '@medplum/core';
-import {
-  Bundle,
-  BundleEntry,
-  Communication,
-  Parameters,
-  Practitioner,
-  Reference,
-  Subscription,
-} from '@medplum/fhirtypes';
+import { Bundle, Communication, Parameters, Practitioner, Reference, Subscription } from '@medplum/fhirtypes';
 import { DrAliceSmith } from '@medplum/mock';
 import { Form, useMedplum } from '@medplum/react';
 import { IconArrowRight, IconChevronDown, IconMessage } from '@tabler/icons-react';
@@ -163,23 +155,6 @@ async function listenForSub(
 
   ws.addEventListener('message', (event: MessageEvent<string>) => {
     const bundle = JSON.parse(event.data) as Bundle;
-    for (const entry of bundle.entry as BundleEntry[]) {
-      const entryResource = entry?.resource;
-      if (
-        entryResource?.resourceType === 'Communication' &&
-        !(entryResource.received && entryResource.status === 'completed')
-      ) {
-        medplum
-          .updateResource<Communication>({
-            ...entryResource,
-            received: new Date().toISOString(), // Mark as received
-            status: 'completed', // Mark as read
-            // See: https://www.medplum.com/docs/communications/organizing-communications#:~:text=THE%20Communication%20LIFECYCLE
-            // for more info about recommended `Communication` lifecycle
-          })
-          .catch(console.error);
-      }
-    }
     const communication = bundle.entry?.[1]?.resource;
     if (!communication || communication.resourceType !== 'Communication') {
       console.error('Invalid chat bundle!');
@@ -228,6 +203,7 @@ export function Chat(): JSX.Element | null {
   const scrollToBottomRef = useRef<boolean>(false);
 
   const searchMessages = useCallback(async (): Promise<void> => {
+    console.log('Here');
     const searchResult = await medplum.searchResources(
       'Communication',
       {
@@ -245,7 +221,7 @@ export function Chat(): JSX.Element | null {
   useEffect(() => {
     // Create subscription...
     // Check for creatingSubRef
-    if (!profileRefStr || creatingSubRef.current) {
+    if (!(profile && profileRefStr) || creatingSubRef.current) {
       return () => undefined;
     }
     if (!subscription) {
@@ -266,6 +242,24 @@ export function Chat(): JSX.Element | null {
             upsertCommunications(communicationsRef.current, [communication], setCommunications, () => {
               scrollToBottomRef.current = true;
             });
+            // NOTE: We may normally want to do a guard like this to prevent our client from updating messages that we have sent ourselves, but in this case
+            // We allow them to be updated anyways so that we have received timestamps on our sent messages
+            // const senderId = resolveId(communication.sender);
+            // if (senderId === profile.id) {
+            //   return;
+            // }
+            // You may want to update received time and "completed" status independently, but for the purposes of this demo we are updating them together
+            if (!(communication.received && communication.status === 'completed')) {
+              medplum
+                .updateResource<Communication>({
+                  ...communication,
+                  received: new Date().toISOString(), // Mark as received
+                  status: 'completed', // Mark as read
+                  // See: https://www.medplum.com/docs/communications/organizing-communications#:~:text=THE%20Communication%20LIFECYCLE
+                  // for more info about recommended `Communication` lifecycle
+                })
+                .catch(console.error);
+            }
           })
             .then(() => {
               creatingSubRef.current = false;
@@ -284,7 +278,7 @@ export function Chat(): JSX.Element | null {
       }
       deleteSubTimerRef.current = setTimeout(() => {}, 1000);
     };
-  }, [medplum, profileRefStr, subscription]);
+  }, [medplum, profile, profileRefStr, subscription]);
 
   const sendMessage = useCallback(
     async (formData: Record<string, string>) => {
@@ -345,8 +339,9 @@ export function Chat(): JSX.Element | null {
             <div className={classes.chatTitle}>Chat with Dr. John Miller</div>
             <div className={classes.chatBody}>
               <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} w={400} h={360}>
-                {communications.map((c) =>
-                  c.sender?.reference === profileRefStr ? (
+                {communications.map((c) => {
+                  console.log(communications);
+                  return c.sender?.reference === profileRefStr ? (
                     <Group key={c.id} position="apart" noWrap>
                       <div>{parseSentTime(c)}</div>
                       <Group position="right" align="flex-start" spacing="xs" mb="sm" noWrap>
@@ -360,12 +355,12 @@ export function Chat(): JSX.Element | null {
                       <Avatar radius="xl" color="teal" />
                       <ChatBubble communication={c} />
                     </Group>
-                  )
-                )}
+                  );
+                })}
               </ScrollArea>
             </div>
             <div className={classes.chatInputContainer}>
-              <Form onSubmit={sendMessage}>
+              <Form ref={formRef} onSubmit={sendMessage}>
                 <TextInput
                   ref={inputRef}
                   name="message"

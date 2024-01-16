@@ -6,8 +6,13 @@
   </a>
 </p>
 
-## TODO: Write a description of what this app demonstrates
+This example app demonstrates the following:
 
+- Creating WebSocket `Subscription` resource and connecting and listening to events
+- Loading chat history from FHIR server on initial load
+- Sending chat messages by creating new `Communication` resources
+- Marking a message as received or read by updating received `Communication` resources from other chat participant
+- Parsing `Communication` resources and displaying message contents as well as read receipts, message timestamps, etc.
 
 ### Getting Started
 
