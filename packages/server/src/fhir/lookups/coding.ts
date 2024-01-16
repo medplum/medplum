@@ -75,16 +75,20 @@ export class CodingTable extends LookupTable<Coding> {
    * @param concept - The CodeSystem concept.
    * @param result - The output value set concept array.
    */
-  private addCodeSystemConcepts(codeSystem: CodeSystem, concept: CodeSystemConcept, result: Coding[]): void {
-    if (concept.code && concept.display) {
-      result.push({
-        system: codeSystem.id,
-        code: concept.code,
-        display: concept.display,
-      });
-    }
+  private addCodeSystemConcepts(codeSystem: CodeSystem, concept: CodeSystemConcept, result: CodeSystemConcept[]): void {
+    result.push({
+      code: concept.code,
+      display: concept.display,
+      property: concept.property,
+    });
     if (concept.concept) {
       for (const child of concept.concept) {
+        if (child.property) {
+          child.property.push({
+            code: codeSystem.hierarchyMeaning,
+            valueCode: concept.code,
+          });
+        }
         this.addCodeSystemConcepts(codeSystem, child, result);
       }
     }
