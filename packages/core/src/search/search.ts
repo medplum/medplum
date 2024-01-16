@@ -2,6 +2,7 @@ import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { OperationOutcomeError, badRequest } from '../outcomes';
 import { TypedValue, globalSchema, stringifyTypedValue } from '../types';
+import { append } from '../utils';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 
@@ -204,7 +205,7 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
   }
 
   if (code === '_has' || key.includes('.')) {
-    addFilter(searchRequest, { code: key, operator: Operator.EQUALS, value });
+    searchRequest.filters = append(searchRequest.filters, { code: key, operator: Operator.EQUALS, value });
     return;
   }
 
@@ -239,11 +240,7 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
       if (modifier === 'iterate') {
         target.modifier = Operator.ITERATE;
       }
-      if (searchRequest.include) {
-        searchRequest.include.push(target);
-      } else {
-        searchRequest.include = [target];
-      }
+      searchRequest.include = append(searchRequest.include, target);
       break;
     }
 
@@ -252,11 +249,7 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
       if (modifier === 'iterate') {
         target.modifier = Operator.ITERATE;
       }
-      if (searchRequest.revInclude) {
-        searchRequest.revInclude.push(target);
-      } else {
-        searchRequest.revInclude = [target];
-      }
+      searchRequest.revInclude = append(searchRequest.revInclude, target);
       break;
     }
 
@@ -268,9 +261,9 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
     default: {
       const param = globalSchema.types[searchRequest.resourceType]?.searchParams?.[code];
       if (param) {
-        addFilter(searchRequest, parseParameter(param, modifier, value));
+        searchRequest.filters = append(searchRequest.filters, parseParameter(param, modifier, value));
       } else {
-        addFilter(searchRequest, parseUnknownParameter(code, modifier, value));
+        searchRequest.filters = append(searchRequest.filters, parseUnknownParameter(code, modifier, value));
       }
     }
   }
@@ -387,14 +380,6 @@ function parseIncludeTarget(input: string): IncludeTarget {
     };
   } else {
     throw new OperationOutcomeError(badRequest(`Invalid include value '${input}'`));
-  }
-}
-
-function addFilter(searchRequest: SearchRequest, filter: Filter): void {
-  if (searchRequest.filters) {
-    searchRequest.filters.push(filter);
-  } else {
-    searchRequest.filters = [filter];
   }
 }
 
