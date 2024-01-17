@@ -1,42 +1,17 @@
-import { createStyles } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { BundleEntry, Patient, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { MedplumLink, sortByDateAndPriority, useMedplum, useResource } from '@medplum/react';
+import cx from 'clsx';
 import { useEffect, useState } from 'react';
 import { getPatient } from '../utils';
-
-const useStyles = createStyles((theme) => ({
-  container: {
-    position: 'fixed',
-    top: 300,
-    left: 0,
-    width: 160,
-    zIndex: 5,
-    fontSize: theme.fontSizes.xs,
-    '@media (max-width: 700px)': {
-      display: 'none',
-    },
-  },
-  entry: {
-    textAlign: 'center',
-    width: 150,
-    backgroundColor: theme.colors.gray[0],
-    border: `1px solid ${theme.colors.gray[3]}`,
-  },
-  active: {
-    width: 160,
-    backgroundColor: theme.colors.yellow[0],
-    border: `1px solid ${theme.colors.yellow[5]}`,
-  },
-}));
+import classes from './QuickServiceRequests.module.css';
 
 export interface QuickServiceRequestsProps {
   value: Resource | Reference;
 }
 
 export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Element | null {
-  const { classes, cx } = useStyles();
   const medplum = useMedplum();
   const resource = useResource(props.value);
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>();

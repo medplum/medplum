@@ -1,5 +1,5 @@
 import { InternalSchemaElement } from '@medplum/core';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '../test-utils/render';
 import { ResourceArrayInput, ResourceArrayInputProps } from './ResourceArrayInput';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';

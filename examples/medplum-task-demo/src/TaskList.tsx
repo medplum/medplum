@@ -20,18 +20,18 @@ export function TaskList(props: TaskListProps): JSX.Element {
       <Title order={4} mb="xl">
         {props.title}
       </Title>
-      <Table verticalSpacing={2} fontSize="xs" width="100%">
-        <thead>
-          <tr>
-            <th>Code</th>
-            {props.withOwner && <th>Owner</th>}
-            {props.withDueDate && <th>Due</th>}
-            <th>Status</th>
-            {props.withLastUpdated && <th>Last Updated</th>}
-            {props.withActions && <th />}
-          </tr>
-        </thead>
-        <tbody>
+      <Table verticalSpacing={2} fz="xs" width="100%">
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Code</Table.Th>
+            {props.withOwner && <Table.Th>Owner</Table.Th>}
+            {props.withDueDate && <Table.Th>Due</Table.Th>}
+            <Table.Th>Status</Table.Th>
+            {props.withLastUpdated && <Table.Th>Last Updated</Table.Th>}
+            {props.withActions && <Table.Th />}
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
           {props.tasks
             .filter(props.filter)
             .sort((a, b) => scoreTask(b) - scoreTask(a))
@@ -47,15 +47,15 @@ export function TaskList(props: TaskListProps): JSX.Element {
               />
             ))}
           {props.tasks.length === 0 && (
-            <tr>
-              <td colSpan={100} align="center">
+            <Table.Tr>
+              <Table.Td colSpan={100} align="center">
                 <Text size="xs" color="gray" fs="italic">
                   No tasks found.
                 </Text>
-              </td>
-            </tr>
+              </Table.Td>
+            </Table.Tr>
           )}
-        </tbody>
+        </Table.Tbody>
       </Table>
     </Paper>
   );

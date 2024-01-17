@@ -1,8 +1,8 @@
 import { Operator, SearchRequest } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ReactNode } from 'react';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SearchFilterEditor } from './SearchFilterEditor';
 
 const medplum = new MockClient();

@@ -92,6 +92,7 @@ export * from './SmartAppLaunchLink/SmartAppLaunchLink';
 export * from './StatusBadge/StatusBadge';
 export * from './Timeline/Timeline';
 export * from './TimingInput/TimingInput';
+export * from './ValueSetAutocomplete/ValueSetAutocomplete';
 export * from './auth/RegisterForm';
 export * from './auth/SignInForm';
 export * from './utils/date';

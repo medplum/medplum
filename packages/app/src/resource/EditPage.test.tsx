@@ -3,10 +3,10 @@ import { Notifications } from '@mantine/notifications';
 import { Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 
 const medplum = new MockClient();
 

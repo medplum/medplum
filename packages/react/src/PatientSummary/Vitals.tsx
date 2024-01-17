@@ -122,7 +122,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
 
   return (
     <>
-      <Group position="apart">
+      <Group justify="space-between">
         <Text fz="md" fw={700}>
           Vitals
         </Text>
@@ -223,7 +223,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
             </Group>
             <Textarea name="notes" label="Notes" />
           </Stack>
-          <Group position="right" spacing={4} mt="md">
+          <Group justify="flex-end" gap={4} mt="md">
             <Button type="submit">Save</Button>
           </Group>
         </Form>

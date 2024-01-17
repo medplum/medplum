@@ -20,7 +20,7 @@ export function PeriodInput(props: PeriodInputProps): JSX.Element {
   }
 
   return (
-    <Group spacing="xs" grow noWrap>
+    <Group gap="xs" grow wrap="nowrap">
       <DateTimeInput
         name={props.name + '.start'}
         placeholder="Start"

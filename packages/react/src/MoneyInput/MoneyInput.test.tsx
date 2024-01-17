@@ -1,5 +1,5 @@
 import { Money } from '@medplum/fhirtypes';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { MoneyInput } from './MoneyInput';
 
 describe('MoneyInput', () => {

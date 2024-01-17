@@ -1,49 +1,8 @@
-import { Button, createStyles, Group } from '@mantine/core';
+import { Button, Group } from '@mantine/core';
 import { Slot } from '@medplum/fhirtypes';
 import { useMemo, useState } from 'react';
+import classes from './CalendarInput.module.css';
 import { getMonthString, getStartMonth } from './CalendarInput.utils';
-
-const useStyles = createStyles((theme) => ({
-  table: {
-    width: 350,
-
-    '& th': {
-      fontWeight: 'normal',
-      fontSize: 11,
-      padding: 8,
-      textAlign: 'center',
-    },
-
-    '& td': {
-      padding: '2px 4px',
-    },
-
-    '& td button': {
-      width: 44,
-      height: 44,
-      color: theme.colors[theme.primaryColor][5],
-      fontSize: 16,
-      fontWeight: 500,
-      textAlign: 'center',
-      padding: 0,
-      backgroundColor: theme.colors[theme.primaryColor][0],
-      border: 0,
-      borderRadius: '50%',
-      cursor: 'pointer',
-    },
-
-    '& td button:hover': {
-      backgroundColor: theme.colors[theme.primaryColor][1],
-    },
-
-    '& td button:disabled': {
-      backgroundColor: 'transparent',
-      cursor: 'default',
-      color: theme.colors.gray[4],
-      fontWeight: 'normal',
-    },
-  },
-}));
 
 export interface CalendarInputProps {
   slots: Slot[];
@@ -59,7 +18,6 @@ interface CalendarCell {
 type OptionalCalendarCell = CalendarCell | undefined;
 
 export function CalendarInput(props: CalendarInputProps): JSX.Element {
-  const { classes } = useStyles();
   const { onChangeMonth, onClick } = props;
   const [month, setMonth] = useState<Date>(getStartMonth);
 
@@ -76,9 +34,9 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
 
   return (
     <div>
-      <Group position="apart" spacing="xs" grow noWrap>
+      <Group justify="space-between" gap="xs" grow wrap="nowrap">
         <p style={{ flex: 1 }}>{getMonthString(month)}</p>
-        <Group position="right" spacing="xs">
+        <Group justify="flex-end" gap="xs">
           <Button variant="outline" aria-label="Previous month" onClick={() => moveMonth(-1)}>
             &lt;
           </Button>

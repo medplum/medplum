@@ -11,7 +11,7 @@ export function PanelsPage(): JSX.Element {
   }
 
   return (
-    <Table withBorder withColumnBorders>
+    <Table withTableBorder withRowBorders withColumnBorders>
       <thead>
         <tr>
           <th>Category</th>

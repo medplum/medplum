@@ -57,7 +57,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   }
 
   return (
-    <Group spacing="xs" grow noWrap align="flex-start">
+    <Group gap="xs" grow wrap="nowrap" align="flex-start">
       <NativeSelect
         data-testid="system"
         defaultValue={contactPoint?.system}

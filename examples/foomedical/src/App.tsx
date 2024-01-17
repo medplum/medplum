@@ -29,12 +29,16 @@ export function App(): JSX.Element | null {
   }
 
   return (
-    <AppShell padding={0} fixed={true} header={<Header />} footer={<Footer />}>
-      <ErrorBoundary>
-        <Suspense fallback={<Loading />}>
-          <Router />
-        </Suspense>
-      </ErrorBoundary>
+    <AppShell header={{ height: 80 }}>
+      <Header />
+      <AppShell.Main>
+        <ErrorBoundary>
+          <Suspense fallback={<Loading />}>
+            <Router />
+          </Suspense>
+        </ErrorBoundary>
+      </AppShell.Main>
+      <Footer />
     </AppShell>
   );
 }

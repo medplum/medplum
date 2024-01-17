@@ -1,5 +1,5 @@
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { DateTimeInput } from './DateTimeInput';
 import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput.utils';
 

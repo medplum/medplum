@@ -20,12 +20,12 @@ export function DiagnosticReportModal(props: TaskCellProps): JSX.Element {
   }
   return (
     <>
-      <Button variant="outline" onClick={() => setOpen(true)} sx={{ color: '#4EB180', borderColor: '#4EB180' }}>
+      <Button variant="outline" onClick={() => setOpen(true)} style={{ color: '#4EB180', borderColor: '#4EB180' }}>
         Review {<CodeableConceptDisplay value={report.code} />}
       </Button>
       <Modal opened={open} onClose={() => setOpen(false)} size="xl">
         <DiagnosticReportDisplay value={report} />
-        <Flex justify={'flex-end'}>
+        <Flex justify="flex-end">
           <Button mt={8} onClick={handleClick}>
             Release
           </Button>

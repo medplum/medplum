@@ -1,7 +1,7 @@
 import { ExampleWorkflowPlanDefinition, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { PlanDefinitionBuilder, PlanDefinitionBuilderProps } from './PlanDefinitionBuilder';
 
 const medplum = new MockClient();
@@ -59,7 +59,7 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.mouseOver(screen.getByText('Example Action'));
     });
 
-    expect(screen.getByTestId('action1')).toHaveStyle('border: 1.5px solid #339af0;');
+    expect(screen.getByTestId('action1')).toHaveClass('hovering');
 
     await act(async () => {
       fireEvent.mouseOver(document.body);

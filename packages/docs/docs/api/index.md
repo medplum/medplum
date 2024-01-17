@@ -65,4 +65,4 @@ Our [**TypeScript SDK**](./sdk/core.medplumclient) provides a powerful, type-saf
 
 ## Prebuilt UI
 
-If you're building a [**React**](https://reactjs.org/) app with Medplum, our [**React Components**](./api/react-components) can give you building blocks to get you started.
+If you're building a [**React**](https://reactjs.org/) app with Medplum, our [**React Components**](./api/react) can give you building blocks to get you started.

@@ -26,7 +26,7 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
       }}
     >
       <Stack>
-        <Center sx={{ flexDirection: 'column' }}>
+        <Center style={{ flexDirection: 'column' }}>
           <Logo size={32} />
           <Title>Choose scope</Title>
         </Center>
@@ -35,7 +35,7 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
             <Checkbox key={scopeName} id={scopeName} name={scopeName} label={scopeName} defaultChecked />
           ))}
         </Stack>
-        <Group position="right" mt="xl">
+        <Group justify="flex-end" mt="xl">
           <Button type="submit">Set scope</Button>
         </Group>
       </Stack>

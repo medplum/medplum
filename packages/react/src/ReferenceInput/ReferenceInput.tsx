@@ -152,7 +152,7 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   }, [targetTypes]);
 
   return (
-    <Group spacing="xs" grow noWrap>
+    <Group gap="xs" grow wrap="nowrap">
       {targetTypes && targetTypes.length > 1 && (
         <NativeSelect
           data-autofocus={props.autoFocus}

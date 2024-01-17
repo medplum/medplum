@@ -22,7 +22,7 @@ export function CheckboxFormSection(props: CheckboxFormSectionProps): JSX.Elemen
     label = props.title;
   }
   return (
-    <Group noWrap data-testid={props.testId}>
+    <Group wrap="nowrap" data-testid={props.testId}>
       <div>{props.children}</div>
       <div>
         <Input.Wrapper

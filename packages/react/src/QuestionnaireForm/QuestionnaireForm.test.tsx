@@ -2,7 +2,7 @@ import { getQuestionnaireAnswers } from '@medplum/core';
 import { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { randomUUID } from 'crypto';
 import each from 'jest-each';
 import { MemoryRouter } from 'react-router-dom';

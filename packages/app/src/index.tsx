@@ -1,5 +1,7 @@
-import { MantineProvider, MantineThemeOverride } from '@mantine/core';
+import { MantineProvider, createTheme } from '@mantine/core';
+import '@mantine/core/styles.css';
 import { Notifications } from '@mantine/notifications';
+import '@mantine/notifications/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import { StrictMode } from 'react';
@@ -7,6 +9,7 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { App } from './App';
 import { getConfig } from './config';
+import './index.css';
 
 if ('serviceWorker' in navigator) {
   // Clear all server workers
@@ -37,13 +40,13 @@ export async function initApp(): Promise<void> {
     },
   });
 
-  const theme: MantineThemeOverride = {
+  const theme = createTheme({
     headings: {
       sizes: {
         h1: {
           fontSize: '1.125rem',
-          fontWeight: 500,
-          lineHeight: 2.0,
+          fontWeight: '500',
+          lineHeight: '2.0',
         },
       },
     },
@@ -54,7 +57,7 @@ export async function initApp(): Promise<void> {
       lg: '1.0rem',
       xl: '1.125rem',
     },
-  };
+  });
 
   const router = createBrowserRouter([{ path: '*', element: <App /> }]);
 
@@ -64,7 +67,7 @@ export async function initApp(): Promise<void> {
   root.render(
     <StrictMode>
       <MedplumProvider medplum={medplum} navigate={navigate}>
-        <MantineProvider theme={theme} withGlobalStyles withNormalizeCSS>
+        <MantineProvider theme={theme}>
           <Notifications position="bottom-right" />
           <RouterProvider router={router} />
         </MantineProvider>

@@ -1,0 +1,155 @@
+# React Components
+
+Medplum maintains a library of React components which we use in the [Medplum app](../app/index.md) and are open source. We support use of our React component library in third party apps as well.
+
+- [Storybook](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs)
+- [Source Code](https://github.com/medplum/medplum/tree/main/packages/react) on Github
+
+The best way to get started is to try one of the Medplum example apps:
+
+- [Medplum Hello World](https://github.com/medplum/medplum/tree/main/examples/medplum-hello-world)
+- [Medplum Chart Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-chart-demo)
+- [Medplum Next.js Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-nextjs-demo)
+
+Or, you can try our full-featured patient demo called [Foo Medical](https://github.com/medplum/medplum/tree/main/examples/foomedical).
+
+## Prerequisites
+
+As the name implies, Medplum React components are built with [React](https://reactjs.org/). Medplum requires React 18+.
+
+```bash
+npm i -D react react-dom
+```
+
+Medplum React components are built with [Mantine](https://mantine.dev/), which is a fantastic library for building functional accessible web applications. Medplum uses Mantine version 7+.
+
+```bash
+npm i -D @mantine/core @mantine/hooks @mantine/notifications
+```
+
+Medplum and Mantine both use [PostCSS](https://postcss.org/) for CSS processing. Mantine provides a [PostCSS preset](https://mantine.dev/theming/postcss) for common configuration.
+
+```bash
+npm i -D postcss postcss-preset-mantine
+```
+
+While not strictly required, Medplum recommends using [React Router](https://reactrouter.com/) for client side routing. Medplum uses React Router version 6+.
+
+```bash
+npm i -D react-router-dom
+```
+
+And then finally you can install Medplum React components:
+
+```bash
+npm i -D @medplum/core @medplum/react
+```
+
+## Getting Started
+
+If you are not familiar with Mantine, you may want to start with the [Mantine Getting Started](https://mantine.dev/getting-started/) guide.
+
+There are a few important steps.
+
+### PostCSS Configuration
+
+Create a `postcss.config.mjs` file in the root of your project:
+
+```javascript
+import mantinePreset from 'postcss-preset-mantine';
+import simpleVars from 'postcss-simple-vars';
+
+const config = {
+  plugins: [
+    mantinePreset(),
+    simpleVars({
+      variables: {
+        'mantine-breakpoint-xs': '36em',
+        'mantine-breakpoint-sm': '48em',
+        'mantine-breakpoint-md': '62em',
+        'mantine-breakpoint-lg': '75em',
+        'mantine-breakpoint-xl': '88em',
+      },
+    }),
+  ],
+};
+
+export default config;
+```
+
+### Mantine Imports
+
+Import the Mantine CSS styles in your `index.tsx` file:
+
+```typescript
+import '@mantine/core/styles.css';
+```
+
+Wrap your application with the `MantineProvider` component:
+
+```tsx
+import { createTheme, MantineProvider } from '@mantine/core';
+
+const theme = createTheme({
+  /** Put your mantine theme override here */
+});
+
+function Demo() {
+  return (
+    <MantineProvider theme={theme}>
+      <App />
+    </MantineProvider>
+  );
+}
+```
+
+## Simple Example
+
+```tsx
+import { MantineProvider, createTheme } from '@mantine/core';
+import '@mantine/core/styles.css';
+import { MedplumClient } from '@medplum/core';
+import { MedplumProvider } from '@medplum/react';
+import '@medplum/react/styles.css';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import { App } from './App';
+
+const medplum = new MedplumClient({
+  onUnauthenticated: () => (window.location.href = '/'),
+});
+
+const theme = createTheme({
+  headings: {
+    sizes: {
+      h1: {
+        fontSize: '1.125rem',
+        fontWeight: '500',
+        lineHeight: '2.0',
+      },
+    },
+  },
+  fontSizes: {
+    xs: '0.6875rem',
+    sm: '0.875rem',
+    md: '0.875rem',
+    lg: '1.0rem',
+    xl: '1.125rem',
+  },
+});
+
+const container = document.getElementById('root') as HTMLDivElement;
+const root = createRoot(container);
+root.render(
+  <StrictMode>
+    <BrowserRouter>
+      <MedplumProvider medplum={medplum}>
+        <MantineProvider theme={theme}>
+          <App />
+        </MantineProvider>
+      </MedplumProvider>
+    </BrowserRouter>
+  </StrictMode>
+);
+```

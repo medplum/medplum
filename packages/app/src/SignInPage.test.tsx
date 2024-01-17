@@ -1,12 +1,12 @@
+import { type MedplumClient } from '@medplum/core';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import crypto from 'crypto';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
 import { getConfig } from './config';
-import { type MedplumClient } from '@medplum/core';
+import { act, fireEvent, render, screen, waitFor } from './test-utils/render';
 
 // logged out
 const medplum = new MockClient({ profile: null });
