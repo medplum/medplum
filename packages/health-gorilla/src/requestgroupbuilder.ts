@@ -1,4 +1,4 @@
-import { createReference, getIdentifier, MedplumClient, setIdentifier, SNOMED } from '@medplum/core';
+import { createReference, getIdentifier, MedplumClient, setIdentifier, SNOMED, append } from '@medplum/core';
 import {
   Account,
   AccountCoverage,
@@ -19,7 +19,7 @@ import {
   Specimen,
 } from '@medplum/fhirtypes';
 import { HEALTH_GORILLA_SYSTEM } from './constants';
-import { append, assertNotEmpty } from './utils';
+import { assertNotEmpty } from './utils';
 
 export class HealthGorillaRequestGroupBuilder {
   practitioner?: Practitioner;

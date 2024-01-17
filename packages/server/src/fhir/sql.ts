@@ -1,3 +1,4 @@
+import { append } from '@medplum/core';
 import { AsyncLocalStorage } from 'async_hooks';
 import { Client, Pool, PoolClient } from 'pg';
 import Cursor from 'pg-cursor';
@@ -584,14 +585,7 @@ export class InsertQuery extends BaseQuery {
   }
 
   returnColumn(column: Column | string): this {
-    if (column instanceof Column) {
-      column = column.columnName;
-    }
-    if (this.returnColumns) {
-      this.returnColumns.push(column);
-    } else {
-      this.returnColumns = [column];
-    }
+    this.returnColumns = append(this.returnColumns, column instanceof Column ? column.columnName : column);
     return this;
   }
 
