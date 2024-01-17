@@ -29,11 +29,9 @@ function upsertCommunications(
   communications: Communication[],
   received: Communication[],
   setCommunications: (communications: Communication[]) => void,
-  onNewCommunications: () => void,
-  onNewVersions: (markedAsNew: string[]) => void
+  onChange: () => void
 ): void {
   const newCommunications = [...communications];
-  const haveNewVersions = [];
   let foundNew = false;
   for (const comm of received) {
     const existingIdx = newCommunications.findIndex((c) => c.id === comm.id);
@@ -43,16 +41,13 @@ function upsertCommunications(
       newCommunications.push(comm);
       foundNew = true;
     }
-    haveNewVersions.push(comm.id as string);
   }
 
   if (foundNew) {
     newCommunications.sort((a, b) => (a.sent as string).localeCompare(b.sent as string));
-    setCommunications(newCommunications);
-    onNewCommunications();
   }
 
-  onNewVersions(haveNewVersions);
+  setCommunications(newCommunications);
 }
 
 async function listenForSub(
@@ -97,7 +92,6 @@ export function Chat(): JSX.Element | null {
   const medplum = useMedplum();
   const [open, setOpen] = useState(false);
   const [communications, setCommunications] = useState<Communication[]>([]);
-  const [versions, setVersions] = useState<Record<string, number>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState(medplum.getProfile());
@@ -123,6 +117,7 @@ export function Chat(): JSX.Element | null {
 
   const communicationsRef = useRef<Communication[]>(communications);
   communicationsRef.current = communications;
+  const prevCommunicationsRef = useRef<Communication[]>(communications);
 
   const openRef = useRef<boolean>();
   openRef.current = open;
@@ -139,26 +134,9 @@ export function Chat(): JSX.Element | null {
       },
       { cache: 'no-cache' }
     );
-    upsertCommunications(
-      communicationsRef.current,
-      searchResult,
-      setCommunications,
-      () => {
-        scrollToBottomRef.current = true;
-      },
-      (markedAsNew: string[]) =>
-        setVersions((oldVersions: Record<string, number>) => {
-          const newVersions = { ...oldVersions };
-          for (const id of markedAsNew) {
-            if (oldVersions[id] === undefined) {
-              newVersions[id] = 0;
-            } else {
-              newVersions[id]++;
-            }
-          }
-          return newVersions;
-        })
-    );
+    upsertCommunications(communicationsRef.current, searchResult, setCommunications, () => {
+      scrollToBottomRef.current = true;
+    });
   }, [medplum, profileRefStr]);
 
   useEffect(() => {
@@ -182,26 +160,9 @@ export function Chat(): JSX.Element | null {
         .then((subscription) => {
           setSubscription(subscription);
           listenForSub(medplum, subscription, setWebSocket, (communication) => {
-            upsertCommunications(
-              communicationsRef.current,
-              [communication],
-              setCommunications,
-              () => {
-                scrollToBottomRef.current = true;
-              },
-              (markedAsNew: string[]) =>
-                setVersions((oldVersions: Record<string, number>) => {
-                  const newVersions = { ...oldVersions };
-                  for (const id of markedAsNew) {
-                    if (oldVersions[id] === undefined) {
-                      newVersions[id] = 0;
-                    } else {
-                      newVersions[id]++;
-                    }
-                  }
-                  return newVersions;
-                })
-            );
+            upsertCommunications(communicationsRef.current, [communication], setCommunications, () => {
+              scrollToBottomRef.current = true;
+            });
             // NOTE: We may normally want to do a guard like this to prevent our client from updating messages that we have sent ourselves, but in this case
             // We allow them to be updated anyways so that we have received timestamps on our sent messages
             // const senderId = resolveId(communication.sender);
@@ -266,6 +227,13 @@ export function Chat(): JSX.Element | null {
   }, [searchMessages]);
 
   useEffect(() => {
+    if (communications !== prevCommunicationsRef.current) {
+      scrollToBottomRef.current = true;
+    }
+    prevCommunicationsRef.current = communications;
+  }, [communications]);
+
+  useEffect(() => {
     if (scrollToBottomRef.current) {
       if (scrollAreaRef.current) {
         scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
@@ -304,12 +272,12 @@ export function Chat(): JSX.Element | null {
                   const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
                   const currCommTime = parseSentTime(c);
                   return (
-                    <Stack key={`${c.id}--${versions[c.id as string] ?? 'no-version'}`} align="stretch">
+                    <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
                       {!prevCommTime ||
                         (currCommTime !== prevCommTime && <div style={{ textAlign: 'center' }}>{currCommTime}</div>)}
                       {c.sender?.reference === profileRefStr ? (
                         <Group justify="flex-end" gap="xs" mb="sm">
-                          <ChatBubble communication={c} showSeen={c.id === myLastCommunicationId} />
+                          <ChatBubble communication={c} showSeen={!!c.received && c.id === myLastCommunicationId} />
                           <Avatar radius="xl" color="orange" />
                         </Group>
                       ) : (
