@@ -295,7 +295,7 @@ export function Chat(): JSX.Element | null {
                   radius="xl"
                   rightSectionWidth={42}
                   rightSection={
-                    <ActionIcon size="1.5rem" radius="xl" color="blue" variant="filled">
+                    <ActionIcon type="submit" size="1.5rem" radius="xl" color="blue" variant="filled">
                       <IconArrowRight size="1rem" stroke={1.5} />
                     </ActionIcon>
                   }
