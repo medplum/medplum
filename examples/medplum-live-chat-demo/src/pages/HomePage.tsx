@@ -45,7 +45,7 @@ export function HomePage(): JSX.Element {
       <Title>
         Welcome <ResourceName value={profile} link />
       </Title>
-      <Group position="center" pt="xl">
+      <Group justify="center" pt="xl">
         <Button onClick={() => createIncomingMessage().catch(console.error)}>Create Incoming Message</Button>
       </Group>
       <Chat />

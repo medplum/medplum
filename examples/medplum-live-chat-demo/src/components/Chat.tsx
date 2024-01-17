@@ -1,101 +1,23 @@
-import { ActionIcon, Avatar, createStyles, Group, Paper, ScrollArea, TextInput } from '@mantine/core';
+import { ActionIcon, Avatar, Group, Paper, ScrollArea, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
+  MedplumClient,
+  ProfileResource,
   createReference,
   getReferenceString,
-  MedplumClient,
   normalizeErrorString,
-  ProfileResource,
 } from '@medplum/core';
 import { Bundle, Communication, Parameters, Practitioner, Reference, Subscription } from '@medplum/fhirtypes';
 import { DrAliceSmith } from '@medplum/mock';
 import { Form, useMedplum } from '@medplum/react';
 import { IconArrowRight, IconChevronDown, IconMessage } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import classes from './Chat.module.css';
 
 const DR_ALICE_SMITH: Reference<Practitioner> = {
   reference: getReferenceString(DrAliceSmith),
   display: 'Dr. Alice Smith',
 };
-
-const useStyles = createStyles((theme) => ({
-  iconContainer: {
-    position: 'fixed',
-    bottom: '0.5rem',
-    right: '0.5rem',
-    zIndex: 100,
-  },
-
-  icon: {
-    backgroundColor: 'white',
-    boxShadow: '0 0.2rem 0.4rem rgba(0, 0, 0, 0.05), 0 0.2rem 0.4rem rgba(0, 0, 0, 0.1)',
-  },
-
-  chatContainer: {
-    position: 'fixed',
-    bottom: '3rem',
-    right: '0.5rem',
-    zIndex: 100,
-    width: '400px',
-    height: '450px',
-    maxHeight: '450px',
-    overflow: 'hidden',
-    borderRadius: theme.radius.md,
-    boxShadow: '0 0.2rem 0.4rem rgba(0, 0, 0, 0.05), 0 0.2rem 0.4rem rgba(0, 0, 0, 0.1)',
-  },
-
-  chatPaper: {
-    width: '400px',
-    height: '450px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 0,
-  },
-
-  chatTitle: {
-    backgroundColor: theme.colors.blue[7],
-    borderRadius: `${theme.radius.md} ${theme.radius.md} 0 0`,
-    color: theme.white,
-    fontSize: theme.fontSizes.sm,
-    fontWeight: 500,
-    padding: theme.spacing.sm,
-    userSelect: 'none',
-  },
-
-  chatBody: {
-    backgroundColor: theme.white,
-    flex: 1,
-    height: '360px',
-    maxHeight: '360px',
-  },
-
-  chatScrollArea: {
-    padding: theme.spacing.xs,
-  },
-
-  chatInputContainer: {
-    backgroundColor: theme.colors.gray[0],
-    borderRadius: `0 0 ${theme.radius.md} ${theme.radius.md}`,
-    padding: '4px 4px',
-  },
-
-  chatBubble: {
-    backgroundColor: theme.colors.gray[0],
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.sm,
-    maxWidth: '300px',
-
-    '& p': {
-      marginTop: '0.25rem',
-      marginBottom: '0.25rem',
-    },
-
-    '& pre': {
-      maxWidth: '280px',
-      overflow: 'auto',
-    },
-  },
-}));
 
 function parseSentTime(communication: Communication): string {
   const sentTime = new Date(communication.sent ?? 0);
@@ -107,9 +29,11 @@ function upsertCommunications(
   communications: Communication[],
   received: Communication[],
   setCommunications: (communications: Communication[]) => void,
-  onNewCommunications: () => void
+  onNewCommunications: () => void,
+  onNewVersions: (markedAsNew: string[]) => void
 ): void {
   const newCommunications = [...communications];
+  const haveNewVersions = [];
   let foundNew = false;
   for (const comm of received) {
     const existingIdx = newCommunications.findIndex((c) => c.id === comm.id);
@@ -119,6 +43,7 @@ function upsertCommunications(
       newCommunications.push(comm);
       foundNew = true;
     }
+    haveNewVersions.push(comm.id as string);
   }
 
   if (foundNew) {
@@ -126,6 +51,8 @@ function upsertCommunications(
     setCommunications(newCommunications);
     onNewCommunications();
   }
+
+  onNewVersions(haveNewVersions);
 }
 
 async function listenForSub(
@@ -168,9 +95,9 @@ async function listenForSub(
 
 export function Chat(): JSX.Element | null {
   const medplum = useMedplum();
-  const { classes } = useStyles();
   const [open, setOpen] = useState(false);
   const [communications, setCommunications] = useState<Communication[]>([]);
+  const [versions, setVersions] = useState<Record<string, number>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState(medplum.getProfile());
@@ -203,7 +130,6 @@ export function Chat(): JSX.Element | null {
   const scrollToBottomRef = useRef<boolean>(false);
 
   const searchMessages = useCallback(async (): Promise<void> => {
-    console.log('Here');
     const searchResult = await medplum.searchResources(
       'Communication',
       {
@@ -213,9 +139,26 @@ export function Chat(): JSX.Element | null {
       },
       { cache: 'no-cache' }
     );
-    upsertCommunications(communicationsRef.current, searchResult, setCommunications, () => {
-      scrollToBottomRef.current = true;
-    });
+    upsertCommunications(
+      communicationsRef.current,
+      searchResult,
+      setCommunications,
+      () => {
+        scrollToBottomRef.current = true;
+      },
+      (markedAsNew: string[]) =>
+        setVersions((oldVersions: Record<string, number>) => {
+          const newVersions = { ...oldVersions };
+          for (const id of markedAsNew) {
+            if (oldVersions[id] === undefined) {
+              newVersions[id] = 0;
+            } else {
+              newVersions[id]++;
+            }
+          }
+          return newVersions;
+        })
+    );
   }, [medplum, profileRefStr]);
 
   useEffect(() => {
@@ -239,9 +182,26 @@ export function Chat(): JSX.Element | null {
         .then((subscription) => {
           setSubscription(subscription);
           listenForSub(medplum, subscription, setWebSocket, (communication) => {
-            upsertCommunications(communicationsRef.current, [communication], setCommunications, () => {
-              scrollToBottomRef.current = true;
-            });
+            upsertCommunications(
+              communicationsRef.current,
+              [communication],
+              setCommunications,
+              () => {
+                scrollToBottomRef.current = true;
+              },
+              (markedAsNew: string[]) =>
+                setVersions((oldVersions: Record<string, number>) => {
+                  const newVersions = { ...oldVersions };
+                  for (const id of markedAsNew) {
+                    if (oldVersions[id] === undefined) {
+                      newVersions[id] = 0;
+                    } else {
+                      newVersions[id]++;
+                    }
+                  }
+                  return newVersions;
+                })
+            );
             // NOTE: We may normally want to do a guard like this to prevent our client from updating messages that we have sent ourselves, but in this case
             // We allow them to be updated anyways so that we have received timestamps on our sent messages
             // const senderId = resolveId(communication.sender);
@@ -288,7 +248,7 @@ export function Chat(): JSX.Element | null {
       const message = formData.message;
       const communication = await medplum.createResource<Communication>({
         resourceType: 'Communication',
-        status: 'completed',
+        status: 'in-progress',
         // subject: createReference(resource),
         sender: createReference(profile as ProfileResource),
         recipient: [DR_ALICE_SMITH],
@@ -339,22 +299,26 @@ export function Chat(): JSX.Element | null {
             <div className={classes.chatTitle}>Chat with Dr. John Miller</div>
             <div className={classes.chatBody}>
               <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} w={400} h={360}>
-                {communications.map((c) => {
-                  console.log(communications);
-                  return c.sender?.reference === profileRefStr ? (
-                    <Group key={c.id} position="apart" noWrap>
-                      <div>{parseSentTime(c)}</div>
-                      <Group position="right" align="flex-start" spacing="xs" mb="sm" noWrap>
-                        <ChatBubble communication={c} showSeen={c.id === myLastCommunicationId} />
-                        <Avatar radius="xl" color="orange" />
-                      </Group>
-                    </Group>
-                  ) : (
-                    <Group key={c.id} align="flex-start" spacing="xs" mb="sm" noWrap>
-                      <div>{parseSentTime(c)}</div>
-                      <Avatar radius="xl" color="teal" />
-                      <ChatBubble communication={c} />
-                    </Group>
+                {communications.map((c, i) => {
+                  const prevCommunication = i > 0 ? communications[i - 1] : undefined;
+                  const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
+                  const currCommTime = parseSentTime(c);
+                  return (
+                    <Stack key={`${c.id}--${versions[c.id as string] ?? 'no-version'}`} align="stretch">
+                      {!prevCommTime ||
+                        (currCommTime !== prevCommTime && <div style={{ textAlign: 'center' }}>{currCommTime}</div>)}
+                      {c.sender?.reference === profileRefStr ? (
+                        <Group justify="flex-end" gap="xs" mb="sm">
+                          <ChatBubble communication={c} showSeen={c.id === myLastCommunicationId} />
+                          <Avatar radius="xl" color="orange" />
+                        </Group>
+                      ) : (
+                        <Group align="flex-start" gap="xs" mb="sm">
+                          <Avatar radius="xl" color="teal" />
+                          <ChatBubble communication={c} />
+                        </Group>
+                      )}
+                    </Stack>
                   );
                 })}
               </ScrollArea>
@@ -418,11 +382,10 @@ interface ChatBubbleProps {
 }
 
 function ChatBubble(props: ChatBubbleProps): JSX.Element {
-  const { classes } = useStyles();
   const content = props.communication.payload?.[0]?.contentString || '';
   const seenTime = new Date(props.communication.received ?? -1);
   return (
-    <div>
+    <div className={classes.chatBubbleWrap}>
       <div className={classes.chatBubble}>{content}</div>
       {props.showSeen && (
         <div style={{ textAlign: 'right' }}>
