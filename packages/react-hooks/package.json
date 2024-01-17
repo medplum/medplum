@@ -1,6 +1,6 @@
 {
   "name": "@medplum/react-hooks",
-  "version": "2.2.10",
+  "version": "3.0.0",
   "description": "Medplum React Hooks Library",
   "keywords": [
     "medplum",

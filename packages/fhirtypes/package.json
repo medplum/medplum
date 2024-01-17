@@ -1,6 +1,6 @@
 {
   "name": "@medplum/fhirtypes",
-  "version": "2.2.10",
+  "version": "3.0.0",
   "description": "Medplum FHIR Type Definitions",
   "keywords": [
     "medplum",

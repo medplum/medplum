@@ -1,6 +1,6 @@
 {
   "name": "medplum-chart-demo",
-  "version": "2.2.10",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -22,10 +22,10 @@
     "@mantine/core": "7.3.2",
     "@mantine/hooks": "7.3.2",
     "@mantine/notifications": "7.3.2",
-    "@medplum/core": "2.2.10",
-    "@medplum/eslint-config": "2.2.10",
-    "@medplum/fhirtypes": "2.2.10",
-    "@medplum/react": "2.2.10",
+    "@medplum/core": "3.0.0",
+    "@medplum/eslint-config": "3.0.0",
+    "@medplum/fhirtypes": "3.0.0",
+    "@medplum/react": "3.0.0",
     "@tabler/icons-react": "2.45.0",
     "@types/node": "20.11.0",
     "@types/react": "18.2.47",
