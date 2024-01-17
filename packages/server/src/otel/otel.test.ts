@@ -1,4 +1,4 @@
-import { incrementCounter, recordHistogramValue } from './otel';
+import { incrementCounter, recordHistogramValue } from '../otel/otel';
 
 describe('OpenTelemetry', () => {
   const OLD_ENV = process.env;
