@@ -2,11 +2,11 @@ import { OperationOutcomeError, Operator, allOk, badRequest, normalizeOperationO
 import { CodeSystem, Coding, OperationDefinition } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { Pool } from 'pg';
-import { getAuthenticatedContext } from '../../context';
 import { getClient } from '../../database';
 import { sendOutcome } from '../outcomes';
 import { InsertQuery, SelectQuery } from '../sql';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
+import { requireSuperAdmin } from '../../admin/super';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -59,7 +59,7 @@ type CodeSystemImportParameters = {
  * @param res - The HTTP response.
  */
 export async function codeSystemImportHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getAuthenticatedContext();
+  const ctx = requireSuperAdmin();
 
   const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
   const codeSystems = await ctx.repo.searchResources<CodeSystem>({

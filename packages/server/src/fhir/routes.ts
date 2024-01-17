@@ -104,7 +104,7 @@ protectedRoutes.post('/ConceptMap/:id/([$]|%24)translate', asyncWrap(conceptMapT
 protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 
 // CodeSystem $import operation
-protectedRoutes.post('/CodeSystem/([$]|%24)import', codeSystemImportHandler);
+protectedRoutes.post('/CodeSystem/([$]|%24)import', asyncWrap(codeSystemImportHandler));
 
 // CSV Export
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
