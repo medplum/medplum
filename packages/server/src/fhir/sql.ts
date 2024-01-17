@@ -668,11 +668,20 @@ export class InsertQuery extends BaseQuery {
 }
 
 export class DeleteQuery extends BaseQuery {
-  async execute(conn: Pool | PoolClient): Promise<any> {
+  returnColumns?: string[];
+
+  returnColumn(column: Column | string): this {
+    this.returnColumns = append(this.returnColumns, column instanceof Column ? column.columnName : column);
+    return this;
+  }
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
     const sql = new SqlBuilder();
     sql.append('DELETE FROM ');
     sql.appendIdentifier(this.tableName);
     this.buildConditions(sql);
+    if (this.returnColumns) {
+      sql.append(` RETURNING (${this.returnColumns.join(', ')})`);
+    }
     return sql.execute(conn);
   }
 }

@@ -84,6 +84,7 @@ import { validateReferences } from './references';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, getFullUrl, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, SelectQuery } from './sql';
+import { CodingTable } from './lookups/coding';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -168,6 +169,7 @@ const lookupTables: LookupTable<unknown>[] = [
   new TokenTable(),
   new ValueSetElementTable(),
   new ReferenceTable(),
+  new CodingTable(),
 ];
 
 /**
