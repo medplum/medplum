@@ -134,7 +134,7 @@ export interface ResearchStudy {
   /**
    * The current state of the study.
    */
-  status?: 'active' | 'administratively-completed' | 'approved' | 'closed-to-accrual' |
+  status: 'active' | 'administratively-completed' | 'approved' | 'closed-to-accrual' |
       'closed-to-accrual-and-intervention' | 'completed' | 'disapproved' | 'in-review' | 'temporarily-closed-to-accrual' |
       'temporarily-closed-to-accrual-and-intervention' | 'withdrawn';
 
@@ -303,7 +303,7 @@ export interface ResearchStudyArm {
   /**
    * Unique, human-readable label for this arm of the study.
    */
-  name?: string;
+  name: string;
 
   /**
    * Categorization of study arm, e.g. experimental, active comparator,

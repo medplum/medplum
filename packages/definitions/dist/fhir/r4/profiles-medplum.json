@@ -476,6 +476,26 @@
             }]
           },
           {
+            "id" : "ClientApplication.status",
+            "path" : "ClientApplication.status",
+            "short" : "active | error | off",
+            "definition" : "The client application status. The status is active by default. The status can be set to error to indicate that the client application is not working properly. The status can be set to off to indicate that the client application is no longer in use.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "ClientApplication.status",
+              "min" : 1,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/CodeSystem/client-application-status"
+            }
+          },
+          {
             "id" : "ClientApplication.name",
             "path" : "ClientApplication.name",
             "definition" : "A name associated with the ClientApplication.",

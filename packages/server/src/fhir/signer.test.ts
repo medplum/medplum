@@ -16,13 +16,13 @@ describe('Signer', () => {
   test('Presign URL', () => {
     jest.setSystemTime(new Date('2023-02-10T00:00:00.000Z'));
 
-    const binary: Binary = {
+    const binary = {
       resourceType: 'Binary',
       id: randomUUID(),
       meta: {
         versionId: randomUUID(),
       },
-    };
+    } as Binary;
 
     expect(getPresignedUrl(binary)).toMatch(/\?Expires=1675990800&Key-Pair-Id=/);
   });

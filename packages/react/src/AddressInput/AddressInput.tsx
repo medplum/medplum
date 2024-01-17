@@ -68,7 +68,7 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
   }
 
   return (
-    <Group spacing="xs" grow noWrap>
+    <Group gap="xs" wrap="nowrap" grow>
       <NativeSelect
         data-testid="address-use"
         defaultValue={value.use}

@@ -61,7 +61,7 @@ export function ResourceVersionPage(): JSX.Element {
     <>
       <Tabs
         value={tab || defaultTab}
-        onTabChange={(name: string) => navigate(`/${resourceType}/${id}/_history/${versionId}/${name}`)}
+        onChange={(name) => navigate(`/${resourceType}/${id}/_history/${versionId}/${name || defaultTab}`)}
       >
         <Paper>
           <Container fluid p="md">

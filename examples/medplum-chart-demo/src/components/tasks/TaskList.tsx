@@ -119,7 +119,7 @@ function TaskItem(props: TaskItemProps): JSX.Element {
   const dateTime = resource.meta?.lastUpdated;
   return (
     <>
-      <Group position="apart" spacing={8} my="sm" align="flex-start">
+      <Group justify="space-between" gap={8} my="sm" align="flex-start">
         <Box mt={3}>{focusIcons[resource.resourceType]}</Box>
         <Box style={{ flex: 1 }}>
           <Flex justify="space-between">

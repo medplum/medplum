@@ -1,6 +1,6 @@
 import { Operator } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { SearchControl, SearchControlProps } from './SearchControl';

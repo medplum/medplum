@@ -1,7 +1,7 @@
 import { globalSchema, indexStructureDefinitionBundle, InternalSchemaElement, TypeInfo } from '@medplum/core';
 import { FishPatientResources, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '../test-utils/render';
 import { MemoryRouter } from 'react-router-dom';
 import { BackboneElementInput, BackboneElementInputProps } from './BackboneElementInput';
 

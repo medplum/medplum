@@ -1,0 +1,25 @@
+.container {
+  position: fixed;
+  top: 300px;
+  left: 0;
+  width: 160px;
+  z-index: 5;
+  font-size: var(--mantine-font-size-sx);
+
+  @media (max-width: 700px) {
+    display: none;
+  }
+}
+
+.entry {
+  text-align: center;
+  width: 150px;
+  background-color: var(--mantine-color-gray-0);
+  border: 1px solid var(--mantine-color-gray-3);
+}
+
+.active {
+  width: 160px;
+  background-color: var(--mantine-color-yellow-0);
+  border: 1px solid var(--mantine-color-yellow-5);
+}

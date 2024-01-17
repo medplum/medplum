@@ -132,9 +132,36 @@ export function readBotConfigs(botName: string): MedplumBotConfig[] {
   return botConfigs;
 }
 
-export function readConfig(tagName?: string): MedplumConfig | undefined {
-  const fileName = tagName ? `medplum.${tagName}.config.json` : 'medplum.config.json';
-  const content = readFileContents(fileName);
+/**
+ * Returns the config file name.
+ * @param tagName - Optional environment tag name.
+ * @param server - Optional server flag.
+ * @returns The config file name.
+ */
+export function getConfigFileName(tagName?: string, server = false): string {
+  const parts = ['medplum'];
+  if (tagName) {
+    parts.push(tagName);
+  }
+  parts.push('config');
+  if (server) {
+    parts.push('server');
+  }
+  parts.push('json');
+  return parts.join('.');
+}
+
+/**
+ * Writes a config file to disk.
+ * @param configFileName - The config file name.
+ * @param config - The config file contents.
+ */
+export function writeConfig(configFileName: string, config: Record<string, any>): void {
+  writeFileSync(resolve(configFileName), JSON.stringify(config, undefined, 2), 'utf-8');
+}
+
+export function readConfig(tagName?: string, server = false): MedplumConfig | undefined {
+  const content = readFileContents(getConfigFileName(tagName, server));
   if (!content) {
     return undefined;
   }
@@ -199,12 +226,8 @@ export function safeTarExtractor(destinationDir: string): internal.Writable {
 
 export function getUnsupportedExtension(): Extension {
   return {
-    extension: [
-      {
-        url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason',
-        valueCode: 'unsupported',
-      },
-    ],
+    url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason',
+    valueCode: 'unsupported',
   };
 }
 

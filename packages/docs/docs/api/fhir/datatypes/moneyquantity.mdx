@@ -3,6 +3,7 @@ title: MoneyQuantity
 sidebar_position: 39
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/datatypeDefinitions/moneyquantity.json';
@@ -13,16 +14,14 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 An amount of money. With regard to precision, see [Decimal Precision](https://www.hl7.org/fhir/datatypes.html#precision)
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
-## Properties
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
 />
 
-</TabItem>
-  
-
+  </TabItem>
 
 </Tabs>

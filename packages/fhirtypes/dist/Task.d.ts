@@ -176,7 +176,7 @@ export interface Task {
   /**
    * The current status of the task.
    */
-  status?: 'draft' | 'requested' | 'received' | 'accepted' | 'rejected' | 'ready' | 'cancelled' | 'in-progress' |
+  status: 'draft' | 'requested' | 'received' | 'accepted' | 'rejected' | 'ready' | 'cancelled' | 'in-progress' |
       'on-hold' | 'failed' | 'completed' | 'entered-in-error';
 
   /**
@@ -194,7 +194,7 @@ export interface Task {
    * i+R[9]Cs this a proposed task, a planned task, an actionable task,
    * etc.
    */
-  intent?: 'unknown' | 'proposal' | 'plan' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
+  intent: 'unknown' | 'proposal' | 'plan' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * Indicates how quickly the Task should be addressed with respect to
@@ -361,7 +361,7 @@ export interface TaskInput {
    * A code or description indicating how the input is intended to be used
    * as part of the task execution.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * The value of the input parameter as a basic type.
@@ -657,7 +657,7 @@ export interface TaskOutput {
   /**
    * The name of the Output parameter.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * The value of the Output parameter as a basic type.

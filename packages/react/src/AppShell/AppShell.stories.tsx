@@ -1,4 +1,3 @@
-import { createStyles } from '@mantine/core';
 import { Meta } from '@storybook/react';
 import {
   Icon2fa,
@@ -11,36 +10,14 @@ import {
 } from '@tabler/icons-react';
 import { Logo } from '../Logo/Logo';
 import { AppShell } from './AppShell';
+import classes from './AppShell.stories.module.css';
 
 export default {
   title: 'Medplum/AppShell',
   component: AppShell,
 } as Meta;
 
-// Extra styles to contain the AppShell inside of a Storybook story
-// By default, the Mantine AppShell component is position: fixed
-// But that breaks out of the Storybook story container
-// By using position: absolute, we can keep the AppShell inside the story
-const useStyles = createStyles(() => {
-  return {
-    root: {
-      position: 'relative',
-      margin: 0,
-      padding: 0,
-
-      '& header': {
-        position: 'absolute',
-      },
-
-      '& nav': {
-        position: 'absolute',
-      },
-    },
-  };
-});
-
 export function Basic(): JSX.Element {
-  const { classes } = useStyles();
   return (
     <div className={classes.root}>
       <AppShell
@@ -69,7 +46,6 @@ export function Basic(): JSX.Element {
 }
 
 export function LongMenu(): JSX.Element {
-  const { classes } = useStyles();
   return (
     <div className={classes.root}>
       <AppShell
@@ -96,7 +72,6 @@ export function LongMenu(): JSX.Element {
 }
 
 export function DisabledSearch(): JSX.Element {
-  const { classes } = useStyles();
   return (
     <div className={classes.root}>
       <AppShell
@@ -124,7 +99,6 @@ export function DisabledSearch(): JSX.Element {
 }
 
 export function DisabledResourceNavigator(): JSX.Element {
-  const { classes } = useStyles();
   return (
     <div className={classes.root}>
       <AppShell

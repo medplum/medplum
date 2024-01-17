@@ -1,13 +1,5 @@
 import { readJson } from '@medplum/definitions';
-import {
-  AuditEvent,
-  Bundle,
-  BundleEntry,
-  Observation,
-  Patient,
-  SearchParameter,
-  ServiceRequest,
-} from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { PropertyType } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { evalFhirPath, evalFhirPathTyped, parseFhirPath } from './parse';
@@ -370,7 +362,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Eval FHIRPath resolve function', () => {
-    const observation: Observation = {
+    const observation = {
       resourceType: 'Observation',
       subject: {
         reference: 'Patient/123',
@@ -388,7 +380,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Resolve is resourceType', () => {
-    const auditEvent: AuditEvent = {
+    const auditEvent = {
       resourceType: 'AuditEvent',
       entity: [
         {
@@ -404,7 +396,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Resolve is not resourceType', () => {
-    const auditEvent: AuditEvent = {
+    const auditEvent = {
       resourceType: 'AuditEvent',
       entity: [
         {
@@ -540,7 +532,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Choice of type', () => {
-    const observations: Observation[] = [
+    const observations = [
       {
         resourceType: 'Observation',
         valueQuantity: { value: 100, unit: 'mg' },
@@ -572,20 +564,20 @@ describe('FHIRPath parser', () => {
         resourceType: 'Observation',
         code: { coding: [{ code: 'ALB' }] },
         valueQuantity: { value: 120, unit: 'ng/dL' },
-      },
+      } as Observation,
       {
         resourceType: 'Observation',
         code: { coding: [{ code: 'HBA1C' }] },
         valueQuantity: { value: 5, unit: '%' },
-      },
+      } as Observation,
     ];
 
     // This is an example of how FHIR GraphQL returns embedded searches.
     // The "ObservationList" is not a real property, but a search result.
-    const serviceRequest: ServiceRequest = {
+    const serviceRequest = {
       resourceType: 'ServiceRequest',
       ObservationList: observations,
-    } as ServiceRequest;
+    };
 
     const query = "ObservationList.where(code.coding[0].code='HBA1C').value";
     const result = evalFhirPathTyped(query, [toTypedValue(serviceRequest)]);

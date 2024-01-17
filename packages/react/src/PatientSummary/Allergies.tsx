@@ -44,7 +44,7 @@ export function Allergies(props: AllergiesProps): JSX.Element {
 
   return (
     <>
-      <Group position="apart">
+      <Group justify="space-between">
         <Text fz="md" fw={700}>
           Allergies
         </Text>
@@ -61,7 +61,7 @@ export function Allergies(props: AllergiesProps): JSX.Element {
       {allergies.length > 0 ? (
         <Box>
           {allergies.map((allergy) => (
-            <Badge key={allergy.id} maw="100%">
+            <Badge key={allergy.id} variant="light" maw="100%">
               <CodeableConceptDisplay value={allergy.code} />
             </Badge>
           ))}
@@ -81,7 +81,7 @@ export function Allergies(props: AllergiesProps): JSX.Element {
             <TextInput name="reaction" label="Reaction" />
             <NativeSelect name="status" label="Status" data={['active']} />
             <TextInput name="onset" label="Onset" type="date" />
-            <Group position="right" spacing={4} mt="md">
+            <Group justify="flex-end" gap={4} mt="md">
               <Button type="submit">Save</Button>
             </Group>
           </Stack>

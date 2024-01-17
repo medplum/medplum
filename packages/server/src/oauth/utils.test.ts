@@ -1,5 +1,5 @@
 import { OperationOutcomeError } from '@medplum/core';
-import { ClientApplication } from '@medplum/fhirtypes';
+import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
@@ -373,7 +373,7 @@ describe('OAuth utils', () => {
 
   test('verifyMfaToken login revoked', async () => {
     try {
-      await verifyMfaToken({ resourceType: 'Login', revoked: true }, 'token');
+      await verifyMfaToken({ resourceType: 'Login', revoked: true } as Login, 'token');
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -383,7 +383,7 @@ describe('OAuth utils', () => {
 
   test('verifyMfaToken login granted', async () => {
     try {
-      await verifyMfaToken({ resourceType: 'Login', granted: true }, 'token');
+      await verifyMfaToken({ resourceType: 'Login', granted: true } as Login, 'token');
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -393,7 +393,7 @@ describe('OAuth utils', () => {
 
   test('verifyMfaToken login already verified', async () => {
     try {
-      await verifyMfaToken({ resourceType: 'Login', mfaVerified: true }, 'token');
+      await verifyMfaToken({ resourceType: 'Login', mfaVerified: true } as Login, 'token');
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -403,7 +403,7 @@ describe('OAuth utils', () => {
 
   test('getMembershipsForLogin missing user reference', async () => {
     try {
-      await getMembershipsForLogin({ resourceType: 'Login', user: {} });
+      await getMembershipsForLogin({ resourceType: 'Login', user: {} } as Login);
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -413,7 +413,7 @@ describe('OAuth utils', () => {
 
   test('getAuthTokens missing user', async () => {
     try {
-      await getAuthTokens({ resourceType: 'Login', user: {} }, { reference: 'Patient/123' });
+      await getAuthTokens({ resourceType: 'Login', user: {} } as Login, { reference: 'Patient/123' });
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -423,7 +423,9 @@ describe('OAuth utils', () => {
 
   test('getAuthTokens Login missing profile', async () => {
     try {
-      await getAuthTokens({ resourceType: 'Login', user: { reference: 'User/123' } }, { reference: 'Patient/123' });
+      await getAuthTokens({ resourceType: 'Login', user: { reference: 'User/123' } } as Login, {
+        reference: 'Patient/123',
+      });
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;

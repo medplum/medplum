@@ -1,0 +1,16 @@
+
+.container {
+  display: flex;
+  min-height: 400px;
+}
+
+.info {
+  min-width: 300px;
+  padding: 20px;
+  border-right: 1px solid var(--mantine-color-gray-3);
+}
+
+.selection {
+  min-width: 300px;
+  padding: 20px;
+}

@@ -15,7 +15,10 @@ export function CreateResourcePage(): JSX.Element {
    * Handles a tab change event.
    * @param newTabName - The new tab name.
    */
-  function onTabChange(newTabName: string): void {
+  function onTabChange(newTabName: string | null): void {
+    if (!newTabName) {
+      newTabName = defaultTab;
+    }
     setCurrentTab(newTabName);
     navigate(`/${resourceType}/new/${newTabName}`);
   }
@@ -23,11 +26,11 @@ export function CreateResourcePage(): JSX.Element {
   return (
     <>
       <Paper>
-        <Text p="md" weight={500}>
+        <Text p="md" fw={500}>
           New&nbsp;{resourceType}
         </Text>
         <ScrollArea>
-          <Tabs defaultValue="form" value={currentTab} onTabChange={onTabChange}>
+          <Tabs defaultValue={defaultTab} value={currentTab} onChange={onTabChange}>
             <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
               {tabs.map((t) => (
                 <Tabs.Tab key={t} value={t.toLowerCase()} px="md">

@@ -104,7 +104,7 @@ export interface ResearchSubject {
   /**
    * The current state of the subject.
    */
-  status?: 'candidate' | 'eligible' | 'follow-up' | 'ineligible' | 'not-registered' | 'off-study' | 'on-study' |
+  status: 'candidate' | 'eligible' | 'follow-up' | 'ineligible' | 'not-registered' | 'off-study' | 'on-study' |
       'on-study-intervention' | 'on-study-observation' | 'pending-on-study' | 'potential-candidate' | 'screening' |
       'withdrawn';
 
@@ -117,12 +117,12 @@ export interface ResearchSubject {
   /**
    * Reference to the study the subject is participating in.
    */
-  study?: Reference<ResearchStudy>;
+  study: Reference<ResearchStudy>;
 
   /**
    * The record of the person or animal who is involved in the study.
    */
-  individual?: Reference<Patient>;
+  individual: Reference<Patient>;
 
   /**
    * The name of the arm in the study the subject is expected to follow as

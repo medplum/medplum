@@ -163,7 +163,7 @@ export interface MedicationStatement {
    * state of the medication used that this statement is about.  Generally,
    * this will be active or completed.
    */
-  status?: 'active' | 'completed' | 'entered-in-error' | 'intended' | 'stopped' | 'on-hold' | 'unknown' | 'not-taken';
+  status: 'active' | 'completed' | 'entered-in-error' | 'intended' | 'stopped' | 'on-hold' | 'unknown' | 'not-taken';
 
   /**
    * Captures the reason for the current state of the MedicationStatement.
@@ -195,7 +195,7 @@ export interface MedicationStatement {
   /**
    * The person, animal or group who is/was taking the medication.
    */
-  subject?: Reference<Patient | Group>;
+  subject: Reference<Patient | Group>;
 
   /**
    * The encounter or episode of care that establishes the context for this

@@ -1,8 +1,8 @@
+import { normalizeOperationOutcome } from '@medplum/core';
 import { Attachment, Binary, OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { ChangeEvent, MouseEvent, ReactNode, useRef } from 'react';
 import { killEvent } from '../utils/dom';
-import { normalizeOperationOutcome } from '@medplum/core';
 
 export interface AttachmentButtonProps {
   onUpload: (attachment: Attachment) => void;

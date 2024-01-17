@@ -1,17 +1,16 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
 import { ResourcePage } from './pages/ResourcePage';
-import { SignInPage } from './pages/SignInPage';
 import { SearchPage } from './pages/SearchPage';
+import { SignInPage } from './pages/SignInPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
-  const location = useLocation();
   const profile = useMedplumProfile();
 
   if (medplum.isLoading()) {
@@ -28,7 +27,7 @@ export function App(): JSX.Element | null {
         },
       ]}
     >
-      <ErrorBoundary key={location.key}>
+      <ErrorBoundary>
         <Suspense fallback={<Loading />}>
           <Routes>
             <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />

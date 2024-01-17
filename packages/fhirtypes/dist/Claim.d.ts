@@ -123,13 +123,13 @@ export interface Claim {
   /**
    * The status of the resource instance.
    */
-  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
+  status: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * The category of claim, e.g. oral, pharmacy, vision, institutional,
    * professional.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * A finer grained suite of claim type codes which may convey additional
@@ -145,14 +145,14 @@ export interface Claim {
    * or requesting the non-binding adjudication of the listed products and
    * services which could be provided in the future.
    */
-  use?: 'claim' | 'preauthorization' | 'predetermination';
+  use: 'claim' | 'preauthorization' | 'predetermination';
 
   /**
    * The party to whom the professional services and/or products have been
    * supplied or are being considered and for whom actual or forecast
    * reimbursement is sought.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 
   /**
    * The period for which charges are being submitted.
@@ -162,7 +162,7 @@ export interface Claim {
   /**
    * The date this resource was created.
    */
-  created?: string;
+  created: string;
 
   /**
    * Individual who created the claim, predetermination or
@@ -179,13 +179,13 @@ export interface Claim {
    * The provider which is responsible for the claim, predetermination or
    * preauthorization.
    */
-  provider?: Reference<Practitioner | PractitionerRole | Organization>;
+  provider: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The provider-required urgency of processing the request. Typical
    * values include: stat, routine deferred.
    */
-  priority?: CodeableConcept;
+  priority: CodeableConcept;
 
   /**
    * A code to indicate whether and for whom funds are to be reserved for
@@ -254,7 +254,7 @@ export interface Claim {
    * Financial instruments for reimbursement for the health care products
    * and services specified on the claim.
    */
-  insurance?: ClaimInsurance[];
+  insurance: ClaimInsurance[];
 
   /**
    * Details of an accident which resulted in injuries which required the
@@ -319,7 +319,7 @@ export interface ClaimAccident {
    * Date of an accident event  related to the products and services
    * contained in the claim.
    */
-  date?: string;
+  date: string;
 
   /**
    * The type or context of the accident event for the purposes of
@@ -382,12 +382,12 @@ export interface ClaimCareTeam {
   /**
    * A number to uniquely identify care team entries.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * Member of the team who provided the product or service.
    */
-  provider?: Reference<Practitioner | PractitionerRole | Organization>;
+  provider: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The party who is billing and/or responsible for the claimed products
@@ -451,7 +451,7 @@ export interface ClaimDiagnosis {
   /**
    * A number to uniquely identify diagnosis entries.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * The nature of illness or problem in a coded form or as a reference to
@@ -529,13 +529,13 @@ export interface ClaimInsurance {
    * A number to uniquely identify insurance entries and provide a sequence
    * of coverages to convey coordination of benefit order.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * A flag to indicate that this Coverage is to be used for adjudication
    * of this claim when set to true.
    */
-  focal?: boolean;
+  focal: boolean;
 
   /**
    * The business identifier to be used when the claim is sent for
@@ -549,7 +549,7 @@ export interface ClaimInsurance {
    * to locate the patient's actual coverage within the insurer's
    * information system.
    */
-  coverage?: Reference<Coverage>;
+  coverage: Reference<Coverage>;
 
   /**
    * A business agreement number established between the provider and the
@@ -615,7 +615,7 @@ export interface ClaimItem {
   /**
    * A number to uniquely identify item entries.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * CareTeam members related to this service or product.
@@ -655,7 +655,7 @@ export interface ClaimItem {
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  productOrService?: CodeableConcept;
+  productOrService: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
@@ -794,7 +794,7 @@ export interface ClaimItemDetail {
   /**
    * A number to uniquely identify item entries.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * The type of revenue or cost center providing the product and/or
@@ -813,7 +813,7 @@ export interface ClaimItemDetail {
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  productOrService?: CodeableConcept;
+  productOrService: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
@@ -908,7 +908,7 @@ export interface ClaimItemDetailSubDetail {
   /**
    * A number to uniquely identify item entries.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * The type of revenue or cost center providing the product and/or
@@ -927,7 +927,7 @@ export interface ClaimItemDetailSubDetail {
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  productOrService?: CodeableConcept;
+  productOrService: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
@@ -1016,7 +1016,7 @@ export interface ClaimPayee {
   /**
    * Type of Party to be reimbursed: subscriber, provider, other.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Reference to the individual or organization to whom any payment will
@@ -1069,7 +1069,7 @@ export interface ClaimProcedure {
   /**
    * A number to uniquely identify procedure entries.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * When the condition was observed or the relative ranking.
@@ -1201,13 +1201,13 @@ export interface ClaimSupportingInfo {
   /**
    * A number to uniquely identify supporting information entries.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * The general class of the information supplied: information; exception;
    * accident, employment; onset, etc.
    */
-  category?: CodeableConcept;
+  category: CodeableConcept;
 
   /**
    * System and code pertaining to the specific information regarding

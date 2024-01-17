@@ -108,7 +108,7 @@ export interface ProjectSecret {
   /**
    * The secret name.
    */
-  name?: string;
+  name: string;
 
   /**
    * The secret value.
@@ -140,7 +140,7 @@ export interface ProjectSite {
    * Friendly name that will make it easy for you to identify the site in
    * the future.
    */
-  name?: string;
+  name: string;
 
   /**
    * The list of domain names associated with the site. User authentication
@@ -149,7 +149,7 @@ export interface ProjectSite {
    * subdomain.example.com. A valid domain requires a host and must not
    * include any path, port, query or fragment.
    */
-  domain?: string[];
+  domain: string[];
 
   /**
    * The publicly visible Google Client ID for the site. This is used to

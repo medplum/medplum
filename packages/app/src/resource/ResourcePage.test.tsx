@@ -4,10 +4,10 @@ import { OperationOutcomeError } from '@medplum/core';
 import { Bot, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 
 describe('ResourcePage', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {

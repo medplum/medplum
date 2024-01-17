@@ -75,7 +75,7 @@ function getFieldDefinition(resourceType: string, name: string): SearchControlFi
           name: '_lastUpdated',
           type: 'date',
           expression: 'Resource.meta.lastUpdated',
-        },
+        } as SearchParameter,
       ],
     };
   }
@@ -91,7 +91,7 @@ function getFieldDefinition(resourceType: string, name: string): SearchControlFi
           name: '_versionId',
           type: 'token',
           expression: 'Resource.meta.versionId',
-        },
+        } as SearchParameter,
       ],
     };
   }

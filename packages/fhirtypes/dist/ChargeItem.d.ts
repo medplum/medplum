@@ -143,7 +143,7 @@ export interface ChargeItem {
   /**
    * The current state of the ChargeItem.
    */
-  status?: 'planned' | 'billable' | 'not-billable' | 'aborted' | 'billed' | 'entered-in-error' | 'unknown';
+  status: 'planned' | 'billable' | 'not-billable' | 'aborted' | 'billed' | 'entered-in-error' | 'unknown';
 
   /**
    * ChargeItems can be grouped to larger ChargeItems covering the whole
@@ -154,13 +154,13 @@ export interface ChargeItem {
   /**
    * A code that identifies the charge, like a billing code.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * The individual or set of individuals the action is being or was
    * performed on.
    */
-  subject?: Reference<Patient | Group>;
+  subject: Reference<Patient | Group>;
 
   /**
    * The encounter or episode of care that establishes the context for this
@@ -334,5 +334,5 @@ export interface ChargeItemPerformer {
    * The device, practitioner, etc. who performed or participated in the
    * service.
    */
-  actor?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | Patient | Device | RelatedPerson>;
+  actor: Reference<Practitioner | PractitionerRole | Organization | CareTeam | Patient | Device | RelatedPerson>;
 }

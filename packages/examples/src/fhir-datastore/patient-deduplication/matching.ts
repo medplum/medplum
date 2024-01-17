@@ -7,6 +7,7 @@ const dedupeAssessment: RiskAssessment =
   {
     resourceType: 'RiskAssessment',
     id: 'homer-simpson-match-risk-assessment',
+    status: 'final',
     subject: {
       reference: 'Patient/homer-simpson',
     },
@@ -47,6 +48,8 @@ const doNotMatchList: List =
   {
     resourceType: 'List',
     id: 'homer-simpson-do-not-match-list',
+    status: 'current',
+    mode: 'snapshot',
     subject: {
       reference: 'Patient/homer-simpson',
     },

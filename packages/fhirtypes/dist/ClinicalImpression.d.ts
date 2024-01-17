@@ -125,7 +125,7 @@ export interface ClinicalImpression {
   /**
    * Identifies the workflow status of the assessment.
    */
-  status?: 'in-progress' | 'completed' | 'entered-in-error';
+  status: 'in-progress' | 'completed' | 'entered-in-error';
 
   /**
    * Captures the reason for the current state of the ClinicalImpression.
@@ -146,7 +146,7 @@ export interface ClinicalImpression {
   /**
    * The patient or group of individuals assessed as part of this record.
    */
-  subject?: Reference<Patient | Group>;
+  subject: Reference<Patient | Group>;
 
   /**
    * The Encounter during which this ClinicalImpression was created or to
@@ -346,7 +346,7 @@ export interface ClinicalImpressionInvestigation {
    * but the list is not constrained, and others such groups such as
    * (exposure|family|travel|nutritional) history may be used.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * A record of a specific investigation that was undertaken.

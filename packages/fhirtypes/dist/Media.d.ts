@@ -132,7 +132,7 @@ export interface Media {
   /**
    * The current state of the {{title}}.
    */
-  status?: 'preparation' | 'in-progress' | 'not-done' | 'on-hold' | 'stopped' | 'completed' | 'entered-in-error' | 'unknown';
+  status: 'preparation' | 'in-progress' | 'not-done' | 'on-hold' | 'stopped' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * A code that classifies whether the media is an image, video or audio
@@ -233,7 +233,7 @@ export interface Media {
    * The actual content of the media - inline or by direct reference to the
    * media source file.
    */
-  content?: Attachment;
+  content: Attachment;
 
   /**
    * Comments made about the media by the performer, subject or other

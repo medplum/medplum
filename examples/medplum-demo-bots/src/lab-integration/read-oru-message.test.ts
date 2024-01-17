@@ -28,10 +28,10 @@ import { handler, processOruMessage } from './read-oru-message';
 dotenv.config();
 
 const CONNECTION_DETAILS = {
-  SFTP_USER: { valueString: 'user' },
-  SFTP_HOST: { valueString: '111111.server.transfer.us-east-1.amazonaws.com' },
-  SFTP_PRIVATE_KEY: { valueString: 'abcd' },
-  SFTP_ENVIRONMENT: { valueString: 'test' },
+  SFTP_USER: { name: 'SFTP_USER', valueString: 'user' },
+  SFTP_HOST: { name: 'SFTP_HOST', valueString: '111111.server.transfer.us-east-1.amazonaws.com' },
+  SFTP_PRIVATE_KEY: { name: 'SFTP_PRIVATE_KEY', valueString: 'abcd' },
+  SFTP_ENVIRONMENT: { name: 'SFTP_ENVIRONMENT', valueString: 'test' },
 };
 
 vi.mock('ssh2-sftp-client');
@@ -124,7 +124,7 @@ describe('Read from Partner Lab', () => {
 
   test.skip('Test Connection', async (ctx: any) => {
     await handler(ctx.medplum, {
-      input: { resourceType: 'QuestionnaireResponse' },
+      input: { resourceType: 'QuestionnaireResponse', status: 'completed' },
       contentType: 'string',
       secrets: { ...CONNECTION_DETAILS },
     } as BotEvent<QuestionnaireResponse>);
@@ -377,7 +377,7 @@ describe('Read from Partner Lab', () => {
     });
 
     await handler(medplum, {
-      input: { resourceType: 'QuestionnaireResponse' },
+      input: { resourceType: 'QuestionnaireResponse', status: 'completed' },
       contentType: 'string',
       secrets: { ...CONNECTION_DETAILS },
     } as BotEvent<QuestionnaireResponse>);

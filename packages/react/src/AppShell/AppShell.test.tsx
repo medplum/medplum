@@ -1,8 +1,8 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Logo } from '../Logo/Logo';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { AppShell } from './AppShell';
 
 const medplum = new MockClient();
@@ -90,18 +90,8 @@ describe('AppShell', () => {
       fireEvent.click(screen.getByTitle('Medplum Logo'));
     });
 
-    const comboboxes = screen.getAllByRole('combobox');
-
-    let resultInput: HTMLInputElement | undefined = undefined;
     const input = screen.getByPlaceholderText('Resource Type') as HTMLInputElement;
 
-    for (const combobox of comboboxes) {
-      const element = combobox.querySelector(`input[name="resourceType"]`) as HTMLInputElement;
-      if (element) {
-        resultInput = element;
-        break;
-      }
-    }
     // Enter random text
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
@@ -127,6 +117,5 @@ describe('AppShell', () => {
     });
 
     expect(screen.getByText('Test Display')).toBeDefined();
-    expect(resultInput?.value).toBe('test-code');
   });
 });

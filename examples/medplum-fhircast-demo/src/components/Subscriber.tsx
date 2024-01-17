@@ -15,7 +15,7 @@ type FhircastMessageDisplayProps = {
 function FhircastMessageLabel(props: FhircastMessageDisplayProps): JSX.Element {
   const { message, eventNo } = props;
   return (
-    <Group noWrap={true}>
+    <Group wrap="nowrap">
       <IconMessage2Exclamation />
       <div>
         <Text fw={700} c="dimmed">
@@ -120,7 +120,7 @@ export default function Subscriber(): JSX.Element {
         onMessage={handleFhircastMessage}
         onStatusChange={(status) => setStatus(status)}
       />
-      <Title align="center" fz={36}>
+      <Title ta="center" fz={36}>
         Subscriber
       </Title>
       <Center>
@@ -137,7 +137,7 @@ export default function Subscriber(): JSX.Element {
         <>
           <Divider />
           <Stack pt={20}>
-            <Title align="center" order={2}>
+            <Title ta="center" order={2}>
               Events
             </Title>
             <Accordion title="Events">

@@ -64,6 +64,7 @@ describe('Finalize Report', async () => {
     const report: DiagnosticReport = await medplum.createResource({
       resourceType: 'DiagnosticReport',
       status: 'preliminary',
+      code: { text: 'Body Mass Index' },
       result: [createReference(observation)],
     });
     // end-block create-resources
@@ -128,6 +129,7 @@ describe('Finalize Report', async () => {
     const report: DiagnosticReport = await medplum.createResource({
       resourceType: 'DiagnosticReport',
       status: 'preliminary',
+      code: { text: 'Body Mass Index' },
       result: [createReference(observation)],
     });
 

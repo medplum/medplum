@@ -115,7 +115,7 @@ export interface DocumentManifest {
   /**
    * The status of this document manifest.
    */
-  status?: 'current' | 'superseded' | 'entered-in-error';
+  status: 'current' | 'superseded' | 'entered-in-error';
 
   /**
    * The code specifying the type of clinical activity that resulted in
@@ -167,7 +167,7 @@ export interface DocumentManifest {
   /**
    * The list of Resources that consist of the parts of this manifest.
    */
-  content?: Reference<Resource>[];
+  content: Reference<Resource>[];
 
   /**
    * Related identifiers or resources associated with the DocumentManifest.

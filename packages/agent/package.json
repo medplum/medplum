@@ -1,6 +1,6 @@
 {
   "name": "@medplum/agent",
-  "version": "2.2.7",
+  "version": "3.0.0",
   "description": "Medplum Agent",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -27,7 +27,7 @@
     "@medplum/hl7": "*",
     "dcmjs-dimse": "0.1.23",
     "node-windows": "1.0.0-beta.8",
-    "ws": "8.14.2"
+    "ws": "8.16.0"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "*",

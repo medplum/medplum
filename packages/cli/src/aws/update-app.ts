@@ -7,7 +7,7 @@ import { tmpdir } from 'os';
 import { join, sep } from 'path';
 import { pipeline } from 'stream/promises';
 import { readConfig, safeTarExtractor } from '../utils';
-import { createInvalidation, getStackByTag, s3Client } from './utils';
+import { createInvalidation, getStackByTag, printConfigNotFound, printStackNotFound, s3Client } from './utils';
 
 export interface UpdateAppOptions {
   dryrun?: boolean;
@@ -21,12 +21,12 @@ export interface UpdateAppOptions {
 export async function updateAppCommand(tag: string, options: UpdateAppOptions): Promise<void> {
   const config = readConfig(tag);
   if (!config) {
-    console.log('Config not found');
+    await printConfigNotFound(tag);
     return;
   }
   const details = await getStackByTag(tag);
   if (!details) {
-    console.log('Stack not found');
+    await printStackNotFound(tag);
     return;
   }
   const appBucket = details.appBucket;

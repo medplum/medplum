@@ -133,10 +133,10 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   return (
     <div onContextMenu={(e) => killEvent(e)} data-testid="search-control">
       <Table>
-        <thead>
-          <tr>
+        <Table.Thead>
+          <Table.Tr>
             {checkboxColumn && (
-              <th>
+              <Table.Th>
                 <input
                   type="checkbox"
                   value="checked"
@@ -145,25 +145,25 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
                   checked={isAllSelected()}
                   onChange={(e) => handleAllCheckboxClick(e)}
                 />
-              </th>
+              </Table.Th>
             )}
             {fields.map((field) => (
-              <th key={field.name}>{field.name}</th>
+              <Table.Th key={field.name}>{field.name}</Table.Th>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
           {response?.data.ResourceList.map(
             (resource) =>
               resource && (
-                <tr
+                <Table.Tr
                   key={resource.id}
                   data-testid="search-control-row"
                   onClick={(e) => handleRowClick(e, resource)}
                   onAuxClick={(e) => handleRowClick(e, resource)}
                 >
                   {checkboxColumn && (
-                    <td>
+                    <Table.Td>
                       <input
                         type="checkbox"
                         value="checked"
@@ -172,19 +172,19 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
                         checked={!!selected[resource.id as string]}
                         onChange={(e) => handleSingleCheckboxClick(e, resource.id as string)}
                       />
-                    </td>
+                    </Table.Td>
                   )}
                   {fields.map((field) => {
                     return (
-                      <td key={field.name}>
+                      <Table.Td key={field.name}>
                         <FhirPathDisplay propertyType={field.propertyType} path={field.fhirPath} resource={resource} />
-                      </td>
+                      </Table.Td>
                     );
                   })}
-                </tr>
+                </Table.Tr>
               )
           )}
-        </tbody>
+        </Table.Tbody>
       </Table>
       {response?.data.ResourceList.length === 0 && <div data-testid="empty-search">No results</div>}
       {outcome && (

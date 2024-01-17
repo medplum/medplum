@@ -1,12 +1,12 @@
+import { OperationOutcomeError, Operator, allOk, badRequest, normalizeOperationOutcome } from '@medplum/core';
 import { CodeSystem, Coding, OperationDefinition } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { getAuthenticatedContext } from '../../context';
-import { parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { OperationOutcomeError, Operator, allOk, badRequest, normalizeOperationOutcome } from '@medplum/core';
-import { getClient } from '../../database';
-import { InsertQuery, SelectQuery } from '../sql';
-import { sendOutcome } from '../outcomes';
 import { Pool } from 'pg';
+import { getAuthenticatedContext } from '../../context';
+import { getClient } from '../../database';
+import { sendOutcome } from '../outcomes';
+import { InsertQuery, SelectQuery } from '../sql';
+import { parseInputParameters, sendOutputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -28,9 +28,9 @@ const operation: OperationDefinition = {
       min: 0,
       max: '*',
       part: [
-        { name: 'code', type: 'code', min: 1, max: '1' },
-        { name: 'property', type: 'code', min: 1, max: '1' },
-        { name: 'value', type: 'string', min: 1, max: '1' },
+        { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
+        { use: 'in', name: 'property', type: 'code', min: 1, max: '1' },
+        { use: 'in', name: 'value', type: 'string', min: 1, max: '1' },
       ],
     },
     { use: 'out', name: 'return', type: 'CodeSystem', min: 1, max: '1' },
@@ -147,7 +147,7 @@ async function processProperties(
       }
     }
 
-    const query = new InsertQuery('Coding_Property', [property]);
+    const query = new InsertQuery('Coding_Property', [property]).ignoreOnConflict();
     await query.execute(db);
   }
 }

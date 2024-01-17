@@ -1,5 +1,5 @@
 import { Patient } from '@medplum/fhirtypes';
-import { render, screen } from '@testing-library/react';
+import { render, screen } from '../test-utils/render';
 import { ResourceDiff } from './ResourceDiff';
 
 describe('ResourceDiff', () => {
@@ -20,10 +20,10 @@ describe('ResourceDiff', () => {
 
     const removed = screen.getByText('"active": false');
     expect(removed).toBeDefined();
-    expect(removed).toHaveStyle('color: rgb(240, 62, 62);');
+    expect(removed).toHaveClass('removed');
 
     const added = screen.getByText('"active": true');
     expect(added).toBeDefined();
-    expect(added).toHaveStyle('color: rgb(55, 178, 77);');
+    expect(added).toHaveClass('added');
   });
 });

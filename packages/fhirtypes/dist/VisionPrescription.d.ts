@@ -107,18 +107,18 @@ export interface VisionPrescription {
   /**
    * The status of the resource instance.
    */
-  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
+  status: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * The date this resource was created.
    */
-  created?: string;
+  created: string;
 
   /**
    * A resource reference to the person to whom the vision prescription
    * applies.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 
   /**
    * A reference to a resource that identifies the particular occurrence of
@@ -130,19 +130,19 @@ export interface VisionPrescription {
   /**
    * The date (and perhaps time) when the prescription was written.
    */
-  dateWritten?: string;
+  dateWritten: string;
 
   /**
    * The healthcare professional responsible for authorizing the
    * prescription.
    */
-  prescriber?: Reference<Practitioner | PractitionerRole>;
+  prescriber: Reference<Practitioner | PractitionerRole>;
 
   /**
    * Contain the details of  the individual lens specifications and serves
    * as the authorization for the fullfillment by certified professionals.
    */
-  lensSpecification?: VisionPrescriptionLensSpecification[];
+  lensSpecification: VisionPrescriptionLensSpecification[];
 }
 
 /**
@@ -190,12 +190,12 @@ export interface VisionPrescriptionLensSpecification {
    * Identifies the type of vision correction product which is required for
    * the patient.
    */
-  product?: CodeableConcept;
+  product: CodeableConcept;
 
   /**
    * The eye for which the lens specification applies.
    */
-  eye?: 'right' | 'left';
+  eye: 'right' | 'left';
 
   /**
    * Lens power measured in dioptres (0.25 units).
@@ -302,10 +302,10 @@ export interface VisionPrescriptionLensSpecificationPrism {
   /**
    * Amount of prism to compensate for eye alignment in fractional units.
    */
-  amount?: number;
+  amount: number;
 
   /**
    * The relative base, or reference lens edge, for the prism.
    */
-  base?: 'up' | 'down' | 'in' | 'out';
+  base: 'up' | 'down' | 'in' | 'out';
 }

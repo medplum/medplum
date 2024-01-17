@@ -3,6 +3,7 @@ title: MedicinalProductInteraction
 sidebar_position: 85
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/medicinalproductinteraction.json';
@@ -13,9 +14,9 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 The interactions of the medicinal product with other medicinal products, or other forms of interactions.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
-## Properties
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
@@ -25,14 +26,13 @@ The interactions of the medicinal product with other medicinal products, or othe
 
 <SearchParamsTable searchParams={definition.searchParameters} />
 
-## Inherited Properties
+## Inherited Elements
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
-</TabItem>
+  </TabItem>
   <TabItem value="usage" label="Usage">
-    <div>   <a name="scope"></a>      <p>    For detailing potential interactions associated with usage of a medicinal product   </p>  </div>
-    </TabItem>
-
+<div> <a name="scope"></a> <p> For detailing potential interactions associated with usage of a medicinal product </p> </div>
+  </TabItem>
 
 </Tabs>

@@ -67,7 +67,7 @@ National Drug Codes (NDCs) are _product identifiers_ allocated by manufacturers 
 
 Unlike RXNorm, NDC operates as a flat code system and only refers to the "leaf nodes" of the RXNorm hierarchy. If a single manufacturer issues the same medication in packages of different sizes (like 25 tablets, 50 tablets, etc.), each size is assigned a unique NDC.
 
-However, there are connections between the two code systems, as a drug product can have both NDC and RXNorm codes. Below is an example of the a [CodeableConcept](/docs/fhir-basics#codeable-concepts-standarding-data) for Tylenol, with both NDC and RxNorm codes
+However, there are connections between the two code systems, as a drug product can have both NDC and RXNorm codes. Below is an example of the a [CodeableConcept](/docs/fhir-basics#standardizing-data-codeable-concepts) for Tylenol, with both NDC and RxNorm codes
 
 <MedplumCodeBlock language="ts" selectBlocks="tylenol-example">
   {ExampleCode}

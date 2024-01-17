@@ -21,12 +21,12 @@ export function ChangePasswordPage(): JSX.Element {
             .catch((err) => setOutcome(normalizeOperationOutcome(err)));
         }}
       >
-        <Center sx={{ flexDirection: 'column' }}>
+        <Center style={{ flexDirection: 'column' }}>
           <Logo size={32} />
           <Title>Change password</Title>
         </Center>
         {!success && (
-          <Stack spacing="xl" mt="xl">
+          <Stack gap="xl" mt="xl">
             <PasswordInput
               name="oldPassword"
               label="Old password"
@@ -46,7 +46,7 @@ export function ChangePasswordPage(): JSX.Element {
               required={true}
               error={getErrorsForInput(outcome, 'confirmPassword')}
             />
-            <Group position="right" mt="xl" noWrap>
+            <Group justify="flex-end" mt="xl" wrap="nowrap">
               <Button type="submit">Change password</Button>
             </Group>
           </Stack>

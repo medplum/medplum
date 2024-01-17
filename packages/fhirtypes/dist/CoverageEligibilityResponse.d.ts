@@ -109,7 +109,7 @@ export interface CoverageEligibilityResponse {
   /**
    * The status of the resource instance.
    */
-  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
+  status: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * Code to specify whether requesting: prior authorization requirements
@@ -118,13 +118,13 @@ export interface CoverageEligibilityResponse {
    * patient; and/or validation that the specified coverage is in-force at
    * the date/period specified or 'now' if not specified.
    */
-  purpose?: ('auth-requirements' | 'benefits' | 'discovery' | 'validation')[];
+  purpose: ('auth-requirements' | 'benefits' | 'discovery' | 'validation')[];
 
   /**
    * The party who is the beneficiary of the supplied coverage and for whom
    * eligibility is sought.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 
   /**
    * The date or dates when the enclosed suite of services were performed
@@ -141,7 +141,7 @@ export interface CoverageEligibilityResponse {
   /**
    * The date this resource was created.
    */
-  created?: string;
+  created: string;
 
   /**
    * The provider which is responsible for the request.
@@ -151,12 +151,12 @@ export interface CoverageEligibilityResponse {
   /**
    * Reference to the original request resource.
    */
-  request?: Reference<CoverageEligibilityRequest>;
+  request: Reference<CoverageEligibilityRequest>;
 
   /**
    * The outcome of the request processing.
    */
-  outcome?: 'queued' | 'complete' | 'error' | 'partial';
+  outcome: 'queued' | 'complete' | 'error' | 'partial';
 
   /**
    * A human readable description of the status of the adjudication.
@@ -167,7 +167,7 @@ export interface CoverageEligibilityResponse {
    * The Insurer who issued the coverage in question and is the author of
    * the response.
    */
-  insurer?: Reference<Organization>;
+  insurer: Reference<Organization>;
 
   /**
    * Financial instruments for reimbursement for the health care products
@@ -236,7 +236,7 @@ export interface CoverageEligibilityResponseError {
    * An error code,from a specified code system, which details why the
    * eligibility check could not be performed.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 }
 
 /**
@@ -286,7 +286,7 @@ export interface CoverageEligibilityResponseInsurance {
    * to locate the patient's actual coverage within the insurer's
    * information system.
    */
-  coverage?: Reference<Coverage>;
+  coverage: Reference<Coverage>;
 
   /**
    * Flag indicating if the coverage provided is inforce currently if no
@@ -473,7 +473,7 @@ export interface CoverageEligibilityResponseInsuranceItemBenefit {
   /**
    * Classification of benefit being provided.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * The quantity of the benefit which is permitted under the coverage.

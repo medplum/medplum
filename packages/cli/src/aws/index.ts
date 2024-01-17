@@ -1,9 +1,11 @@
 import { Command } from 'commander';
+import { createMedplumCommand } from '../util/command';
 import { describeStacksCommand } from './describe';
 import { initStackCommand } from './init';
 import { listStacksCommand } from './list';
 import { updateAppCommand } from './update-app';
 import { updateBucketPoliciesCommand } from './update-bucket-policies';
+import { updateConfigCommand } from './update-config';
 import { updateServerCommand } from './update-server';
 
 export const aws = new Command('aws').description('Commands to manage AWS resources');
@@ -19,11 +21,23 @@ aws
   .action(describeStacksCommand);
 
 aws
-  .command('update-server')
-  .alias('deploy-server')
-  .description('Update the server image')
+  .command('update-config')
+  .alias('deploy-config')
+  .description('Update the AWS Parameter Store config values')
   .argument('<tag>')
-  .action(updateServerCommand);
+  .option(
+    '--dryrun',
+    'Displays the operations that would be performed using the specified command without actually running them.'
+  )
+  .action(updateConfigCommand);
+
+aws.addCommand(
+  createMedplumCommand('update-server')
+    .alias('deploy-server')
+    .description('Update the server image')
+    .argument('<tag>')
+    .action(updateServerCommand)
+);
 
 aws
   .command('update-app')

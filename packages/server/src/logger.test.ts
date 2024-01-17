@@ -4,15 +4,16 @@ import {
   CreateLogStreamCommand,
   PutLogEventsCommand,
 } from '@aws-sdk/client-cloudwatch-logs';
-import fs from 'fs';
-import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
+import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
+import fs from 'fs';
 
+import { AuditEvent } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
+import { PassThrough } from 'stream';
 import { loadConfig } from './config';
 import { LogLevel, Logger, globalLogger, parseLogLevel } from './logger';
 import { waitFor } from './test.setup';
-import { PassThrough } from 'stream';
-import { randomUUID } from 'crypto';
 
 describe('Global Logger', () => {
   let mockCloudWatchLogsClient: AwsClientStub<CloudWatchLogsClient>;
@@ -96,7 +97,7 @@ describe('Global Logger', () => {
 
     await loadConfig('file:test.json');
 
-    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' });
+    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' } as AuditEvent);
 
     expect(console.info).not.toHaveBeenCalled();
     expect(console.log).not.toHaveBeenCalled();
@@ -109,7 +110,7 @@ describe('Global Logger', () => {
     await loadConfig('file:test.json');
 
     // Log an AuditEvent
-    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' });
+    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' } as AuditEvent);
 
     // It should have been logged
     expect(console.log).toHaveBeenCalledWith('{"resourceType":"AuditEvent"}');
@@ -131,8 +132,8 @@ describe('Global Logger', () => {
     await loadConfig('file:test.json');
 
     // Log an AuditEvent
-    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' });
-    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' });
+    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' } as AuditEvent);
+    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' } as AuditEvent);
 
     await waitFor(async () => expect(mockCloudWatchLogsClient).toHaveReceivedCommand(PutLogEventsCommand));
 

@@ -8,7 +8,8 @@ export interface ErrorBoundaryProps {
 }
 
 export interface ErrorBoundaryState {
-  error?: any;
+  error?: Error;
+  lastLocation: string;
 }
 
 /**
@@ -20,11 +21,33 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = {};
+    this.state = { lastLocation: window.location.toString() };
   }
 
-  static getDerivedStateFromError(error: any): ErrorBoundaryState {
-    return { error };
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { error, lastLocation: window.location.toString() };
+  }
+
+  componentDidUpdate(_prevProps: Readonly<ErrorBoundaryProps>, _prevState: Readonly<ErrorBoundaryState>): void {
+    if (window.location.toString() !== this.state.lastLocation) {
+      this.setState({
+        lastLocation: window.location.toString(),
+        error: undefined,
+      });
+    }
+  }
+
+  shouldComponentUpdate(nextProps: Readonly<ErrorBoundaryProps>, nextState: Readonly<ErrorBoundaryState>): boolean {
+    if (this.props.children !== nextProps.children) {
+      return true;
+    }
+    if (nextState.error && !this.state.error) {
+      return true;
+    }
+    if (this.state.lastLocation !== window.location.toString()) {
+      return true;
+    }
+    return false;
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {

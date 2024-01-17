@@ -108,7 +108,7 @@ protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 protectedRoutes.post('/CodeSystem/([$]|%24)import', codeSystemImportHandler);
 
 // CodeSystem $lookup operation
-protectedRoutes.post('/CodeSystem/([$]|%24)lookup', codeSystemLookupHandler);
+protectedRoutes.post('/CodeSystem/([$]|%24)lookup', asyncWrap(codeSystemLookupHandler));
 
 // CSV Export
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));

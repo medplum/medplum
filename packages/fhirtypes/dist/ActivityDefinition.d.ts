@@ -166,7 +166,7 @@ export interface ActivityDefinition {
    * The status of this activity definition. Enables tracking the
    * life-cycle of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this activity definition is authored
@@ -521,12 +521,12 @@ export interface ActivityDefinitionDynamicValue {
    * multiple-cardinality sub-elements (see the [Simple FHIRPath
    * Profile](fhirpath.html#simple) for full details).
    */
-  path?: string;
+  path: string;
 
   /**
    * An expression specifying the value of the customized element.
    */
-  expression?: Expression;
+  expression: Expression;
 }
 
 /**
@@ -572,7 +572,7 @@ export interface ActivityDefinitionParticipant {
   /**
    * The type of participant in the action.
    */
-  type?: 'patient' | 'practitioner' | 'related-person' | 'device';
+  type: 'patient' | 'practitioner' | 'related-person' | 'device';
 
   /**
    * The role the participant should play in performing the described

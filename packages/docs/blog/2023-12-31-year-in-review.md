@@ -21,7 +21,7 @@ We wanted to highlight a few memorable moments and reflect on all that happened 
 
 ✅ 99.999% [uptime](https://status.medplum.com)
 
-✅ Launched [integrations](docs/integration) with many popular platforms like Labcorp and Epic
+✅ Launched [integrations](/docs/integration) with many popular platforms like Labcorp and Epic
 
 ✅ Enhanced our connectivity with on premise systems with the [Medplum agent](/docs/agent)
 

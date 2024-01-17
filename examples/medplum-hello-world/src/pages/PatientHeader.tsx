@@ -1,43 +1,13 @@
-import { createStyles } from '@mantine/core';
 import { calculateAgeString } from '@medplum/core';
 import { Patient, Reference } from '@medplum/fhirtypes';
 import { HumanNameDisplay, MedplumLink, ResourceAvatar, useResource } from '@medplum/react';
-
-const useStyles = createStyles((theme) => ({
-  root: {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: '8px 10px',
-    background: theme.white,
-
-    '& dl': {
-      display: 'inline-block',
-      margin: '5px 20px 5px 5px',
-    },
-
-    '& dt': {
-      color: theme.colors.gray[6],
-      textTransform: 'uppercase',
-      fontSize: theme.fontSizes.xs,
-      whiteSpace: 'nowrap',
-    },
-
-    '& dd': {
-      fontSize: theme.fontSizes.md,
-      fontWeight: 600,
-      marginLeft: 0,
-      whiteSpace: 'nowrap',
-    },
-  },
-}));
+import classes from './PatientHeader.module.css';
 
 export interface PatientHeaderProps {
   patient: Patient | Reference<Patient>;
 }
 
 export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
-  const { classes } = useStyles();
   const patient = useResource(props.patient);
   if (!patient) {
     return null;

@@ -114,14 +114,14 @@ export interface ClaimResponse {
   /**
    * The status of the resource instance.
    */
-  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
+  status: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * A finer grained suite of claim type codes which may convey additional
    * information such as Inpatient vs Outpatient and/or a specialty
    * service.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * A finer grained suite of claim type codes which may convey additional
@@ -137,25 +137,25 @@ export interface ClaimResponse {
    * or requesting the non-binding adjudication of the listed products and
    * services which could be provided in the future.
    */
-  use?: 'claim' | 'preauthorization' | 'predetermination';
+  use: 'claim' | 'preauthorization' | 'predetermination';
 
   /**
    * The party to whom the professional services and/or products have been
    * supplied or are being considered and for whom actual for facast
    * reimbursement is sought.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 
   /**
    * The date this resource was created.
    */
-  created?: string;
+  created: string;
 
   /**
    * The party responsible for authorization, adjudication and
    * reimbursement.
    */
-  insurer?: Reference<Organization>;
+  insurer: Reference<Organization>;
 
   /**
    * The provider which is responsible for the claim, predetermination or
@@ -172,7 +172,7 @@ export interface ClaimResponse {
    * The outcome of the claim, predetermination, or preauthorization
    * processing.
    */
-  outcome?: 'queued' | 'complete' | 'error' | 'partial';
+  outcome: 'queued' | 'complete' | 'error' | 'partial';
 
   /**
    * A human readable description of the status of the adjudication.
@@ -332,7 +332,7 @@ export interface ClaimResponseAddItem {
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  productOrService?: CodeableConcept;
+  productOrService: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
@@ -418,7 +418,7 @@ export interface ClaimResponseAddItem {
   /**
    * The adjudication results.
    */
-  adjudication?: ClaimResponseItemAdjudication[];
+  adjudication: ClaimResponseItemAdjudication[];
 
   /**
    * The second-tier service adjudications for payor added services.
@@ -471,7 +471,7 @@ export interface ClaimResponseAddItemDetail {
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  productOrService?: CodeableConcept;
+  productOrService: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
@@ -514,7 +514,7 @@ export interface ClaimResponseAddItemDetail {
   /**
    * The adjudication results.
    */
-  adjudication?: ClaimResponseItemAdjudication[];
+  adjudication: ClaimResponseItemAdjudication[];
 
   /**
    * The third-tier service adjudications for payor added services.
@@ -567,7 +567,7 @@ export interface ClaimResponseAddItemDetailSubDetail {
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  productOrService?: CodeableConcept;
+  productOrService: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
@@ -610,7 +610,7 @@ export interface ClaimResponseAddItemDetailSubDetail {
   /**
    * The adjudication results.
    */
-  adjudication?: ClaimResponseItemAdjudication[];
+  adjudication: ClaimResponseItemAdjudication[];
 }
 
 /**
@@ -678,7 +678,7 @@ export interface ClaimResponseError {
    * An error code, from a specified code system, which details why the
    * claim could not be adjudicated.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 }
 
 /**
@@ -726,13 +726,13 @@ export interface ClaimResponseInsurance {
    * A number to uniquely identify insurance entries and provide a sequence
    * of coverages to convey coordination of benefit order.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * A flag to indicate that this Coverage is to be used for adjudication
    * of this claim when set to true.
    */
-  focal?: boolean;
+  focal: boolean;
 
   /**
    * Reference to the insurance card level information contained in the
@@ -740,7 +740,7 @@ export interface ClaimResponseInsurance {
    * to locate the patient's actual coverage within the insurer's
    * information system.
    */
-  coverage?: Reference<Coverage>;
+  coverage: Reference<Coverage>;
 
   /**
    * A business agreement number established between the provider and the
@@ -799,7 +799,7 @@ export interface ClaimResponseItem {
   /**
    * A number to uniquely reference the claim item entries.
    */
-  itemSequence?: number;
+  itemSequence: number;
 
   /**
    * The numbers associated with notes below which apply to the
@@ -812,7 +812,7 @@ export interface ClaimResponseItem {
    * adjudication of the detail items. If this item is a simple product or
    * service then this is the result of the adjudication of this item.
    */
-  adjudication?: ClaimResponseItemAdjudication[];
+  adjudication: ClaimResponseItemAdjudication[];
 
   /**
    * A claim detail. Either a simple (a product or service) or a 'group' of
@@ -871,7 +871,7 @@ export interface ClaimResponseItemAdjudication {
    * amounts paid by other coverages; and, the benefit payable for this
    * item.
    */
-  category?: CodeableConcept;
+  category: CodeableConcept;
 
   /**
    * A code supporting the understanding of the adjudication result and
@@ -935,7 +935,7 @@ export interface ClaimResponseItemDetail {
   /**
    * A number to uniquely reference the claim detail entry.
    */
-  detailSequence?: number;
+  detailSequence: number;
 
   /**
    * The numbers associated with notes below which apply to the
@@ -946,7 +946,7 @@ export interface ClaimResponseItemDetail {
   /**
    * The adjudication results.
    */
-  adjudication?: ClaimResponseItemAdjudication[];
+  adjudication: ClaimResponseItemAdjudication[];
 
   /**
    * A sub-detail adjudication of a simple product or service.
@@ -997,7 +997,7 @@ export interface ClaimResponseItemDetailSubDetail {
   /**
    * A number to uniquely reference the claim sub-detail entry.
    */
-  subDetailSequence?: number;
+  subDetailSequence: number;
 
   /**
    * The numbers associated with notes below which apply to the
@@ -1055,7 +1055,7 @@ export interface ClaimResponsePayment {
    * Whether this represents partial or complete payment of the benefits
    * payable.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Total amount of all adjustments to this payment included in this
@@ -1077,7 +1077,7 @@ export interface ClaimResponsePayment {
   /**
    * Benefits payable less any payment adjustment.
    */
-  amount?: Money;
+  amount: Money;
 
   /**
    * Issuer's unique identifier for the payment instrument.
@@ -1139,7 +1139,7 @@ export interface ClaimResponseProcessNote {
   /**
    * The explanation or description associated with the processing.
    */
-  text?: string;
+  text: string;
 
   /**
    * A code to define the language used in the text of the note.
@@ -1195,10 +1195,10 @@ export interface ClaimResponseTotal {
    * amounts paid by other coverages, and the benefit payable for this
    * item.
    */
-  category?: CodeableConcept;
+  category: CodeableConcept;
 
   /**
    * Monetary total amount associated with the category.
    */
-  amount?: Money;
+  amount: Money;
 }

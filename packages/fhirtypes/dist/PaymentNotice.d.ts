@@ -106,7 +106,7 @@ export interface PaymentNotice {
   /**
    * The status of the resource instance.
    */
-  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
+  status: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * Reference of resource for which payment is being made.
@@ -121,7 +121,7 @@ export interface PaymentNotice {
   /**
    * The date when this resource was created.
    */
-  created?: string;
+  created: string;
 
   /**
    * The practitioner who is responsible for the services rendered to the
@@ -132,7 +132,7 @@ export interface PaymentNotice {
   /**
    * A reference to the payment which is the subject of this notice.
    */
-  payment?: Reference<PaymentReconciliation>;
+  payment: Reference<PaymentReconciliation>;
 
   /**
    * The date when the above payment action occurred.
@@ -148,12 +148,12 @@ export interface PaymentNotice {
   /**
    * The party who is notified of the payment status.
    */
-  recipient?: Reference<Organization>;
+  recipient: Reference<Organization>;
 
   /**
    * The amount sent to the payee.
    */
-  amount?: Money;
+  amount: Money;
 
   /**
    * A code indicating whether payment has been sent or cleared.

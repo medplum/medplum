@@ -87,7 +87,7 @@ Subscriptions are event-driven notifications, like webhooks, are are commonly us
 
 ## React UI Components {#react}
 
-Build apps quickly with a ready to integrate react component library. Enable a custom experience for both customers and patients. [Learn More](/docs/ui-components)
+Build apps quickly with a ready to integrate react component library. Enable a custom experience for both customers and patients. [Learn More](/docs/react)
 
 ## Search {#search}
 

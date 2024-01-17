@@ -1,0 +1,121 @@
+.outer {
+  overflow: hidden;
+  background-image: radial-gradient(640px at left top, var(--mantine-primary-color-light), white);
+}
+
+.inner {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 6rem;
+  padding-bottom: 6rem;
+  margin-top: 6rem;
+  margin-bottom: 6rem;
+
+  @mixin smaller-than $mantine-breakpoint-md {
+    flex-direction: column;
+  }
+}
+
+.content {
+  max-width: 480px;
+  margin-right: 4.5rem;
+}
+
+.title {
+  color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
+  font-family:
+    Greycliff CF,
+    theme.fontFamily;
+  font-size: 56px;
+  line-height: 1.2;
+  font-weight: 600;
+
+  @mixin smaller-than $mantine-breakpoint-xs {
+    font-size: 28px;
+  }
+}
+
+.control {
+  @mixin smaller-than $mantine-breakpoint-xs {
+    flex: 1;
+  }
+}
+
+.highlight {
+  color: var(--mantine-primary-color-filled);
+}
+
+.heroImage1,
+.heroImage2,
+.heroImage3,
+.heroImage4 {
+  position: absolute;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.heroImage1 {
+  top: 192px;
+  right: 24px;
+  width: 384px;
+  height: 384px;
+
+  @mixin smaller-than $mantine-breakpoint-md {
+    display: none;
+  }
+}
+
+.heroImage2 {
+  top: 415px;
+  left: 435px;
+  width: 288px;
+  height: 288px;
+
+  @mixin smaller-than $mantine-breakpoint-md {
+    position: static;
+  }
+}
+
+.heroImage3 {
+  top: 0;
+  right: -128px;
+  width: 448px;
+  height: 448px;
+}
+
+.heroImage4 {
+  top: -48px;
+  left: -432px;
+  width: 864px;
+  height: 864px;
+
+  @mixin smaller-than $mantine-breakpoint-md {
+    position: static;
+    width: 288px;
+    height: 288px;
+  }
+}
+
+.featureSection {
+  justify-content: flex-end;
+  padding-top: 0;
+}
+
+.featureBox {
+  background: var(--mantine-primary-color-light);
+  border-radius: var(--mantine-radius-xl);
+  padding: 2.25rem;
+  width: 512px;
+}
+
+.featureTitle {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: var(--mantine-spacing-md);
+}
+
+.featureDescription {
+  font-size: 18px;
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
+}

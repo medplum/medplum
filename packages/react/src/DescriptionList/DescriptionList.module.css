@@ -1,0 +1,22 @@
+.root {
+  display: grid;
+  grid-template-columns: 30% 70%;
+  margin: 0;
+
+  & > dt,
+  & > dd {
+    padding: var(--mantine-spacing-sm);
+    border-top: 0.1px solid var(--mantine-color-gray-3);
+    margin: 0;
+  }
+}
+
+.compact {
+  grid-template-columns: 20% 80%;
+
+  & > dt,
+  & > dd {
+    padding: 0 var(--mantine-spacing-xs) var(--mantine-spacing-xs);
+    border: 0;
+  }
+}

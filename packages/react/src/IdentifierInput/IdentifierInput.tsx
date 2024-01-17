@@ -25,7 +25,7 @@ export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
   }
 
   return (
-    <Group spacing="xs" grow noWrap align="flex-start">
+    <Group gap="xs" grow wrap="nowrap" align="flex-start">
       <TextInput
         placeholder="System"
         required={(systemElement?.min ?? 0) > 0}

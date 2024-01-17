@@ -181,7 +181,7 @@ export interface MedicinalProductContraindicationOtherTherapy {
    * The type of relationship between the medicinal product indication or
    * contraindication and another therapy.
    */
-  therapyRelationshipType?: CodeableConcept;
+  therapyRelationshipType: CodeableConcept;
 
   /**
    * Reference to a specific medication (active substance, medicinal
