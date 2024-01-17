@@ -2,7 +2,10 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "dist",
-    "lib": ["esnext"]
+    "lib": ["esnext"],
+    "paths": {
+      "*": ["./src/@types/*"]
+    },
   },
   "include": ["src/**/*.ts"]
 }

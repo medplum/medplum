@@ -1,12 +1,18 @@
-import { AgentTransmitResponse, ContentType, normalizeErrorString } from '@medplum/core';
-import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
+import { AgentTransmitResponse, ContentType, createReference, normalizeErrorString } from '@medplum/core';
+import { AgentChannel, Binary, Endpoint } from '@medplum/fhirtypes';
+import * as dcmjs from 'dcmjs';
 import * as dimse from 'dcmjs-dimse';
+import { randomUUID } from 'node:crypto';
+import { mkdtempSync, readFileSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { App } from './app';
 import { Channel } from './channel';
 
 export class AgentDicomChannel implements Channel {
   static instance: AgentDicomChannel;
   readonly server: dimse.Server;
+  readonly tempDir: string;
 
   constructor(
     readonly app: App,
@@ -15,6 +21,7 @@ export class AgentDicomChannel implements Channel {
   ) {
     AgentDicomChannel.instance = this;
     this.server = new dimse.Server(DcmjsDimseScp);
+    this.tempDir = mkdtempSync(join(tmpdir(), 'dicom-'));
   }
 
   start(): void {
@@ -37,11 +44,15 @@ export class AgentDicomChannel implements Channel {
 }
 
 class DcmjsDimseScp extends dimse.Scp {
+  association?: dimse.association.Association;
+
   /**
    * Handle incoming association requests.
    * @param association - The incoming association.
    */
   associationRequested(association: dimse.association.Association): void {
+    this.association = association;
+
     // Set the preferred max PDU length
     association.setMaxPduLength(65536);
 
@@ -85,21 +96,62 @@ class DcmjsDimseScp extends dimse.Scp {
     request: dimse.requests.CStoreRequest,
     callback: (response: dimse.responses.CStoreResponse) => void
   ): void {
+    this.cStoreImpl(request).then(callback).catch(callback);
+  }
+
+  private async cStoreImpl(request: dimse.requests.CStoreRequest): Promise<dimse.responses.CStoreResponse> {
+    const response = dimse.responses.CStoreResponse.fromRequest(request);
     try {
+      const dataset = request.getDataset();
+      let binary: Binary | undefined = undefined;
+      let dicomJson: Record<string, unknown> | undefined = undefined;
+      if (dataset) {
+        // Save the DICOM file to a temp file
+        const tempFileName = join(AgentDicomChannel.instance.tempDir, randomUUID() + '.dcm');
+        dataset.toFile(tempFileName);
+
+        // Read the temp file into a buffer
+        const buffer = readFileSync(tempFileName);
+
+        // Upload the Medplum as a FHIR Binary
+        const medplum = App.instance.medplum;
+        binary = await medplum.createBinary(buffer, 'dicom.dcm', 'application/dicom');
+
+        // Parse the DICOM file into DICOM JSON
+        const dicomDict = dcmjs.data.DicomMessage.readFile(buffer.buffer);
+        dicomJson = {
+          ...dicomDict.meta,
+          ...dicomDict.dict,
+          '7FE00010': undefined, // Remove PixelData
+        };
+
+        // Delete the temp file
+        unlinkSync(tempFileName);
+      }
+
+      const payload = {
+        association: {
+          callingAeTitle: this.association?.getCallingAeTitle(),
+          calledAeTitle: this.association?.getCalledAeTitle(),
+        },
+        dataset: dicomJson,
+        binary: binary ? createReference(binary) : undefined,
+      };
+
       App.instance.addToWebSocketQueue({
         type: 'agent:transmit:request',
         accessToken: 'placeholder',
         channel: AgentDicomChannel.instance.definition.name as string,
-        remote: 'foo',
+        remote: this.association?.getCallingAeTitle() as string,
         contentType: ContentType.JSON,
-        body: JSON.stringify(request.getDataset()),
+        body: JSON.stringify(payload),
       });
+      response.setStatus(dimse.constants.Status.Success);
     } catch (err) {
       App.instance.log.error(`DICOM error: ${normalizeErrorString(err)}`);
+      response.setStatus(dimse.constants.Status.ProcessingFailure);
     }
 
-    const response = dimse.responses.CStoreResponse.fromRequest(request);
-    response.setStatus(dimse.constants.Status.Success);
-    callback(response);
+    return response;
   }
 }
