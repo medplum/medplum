@@ -62,7 +62,7 @@ captured. For example, we would prefer the following:
 - **Gauge**: `system.cpu.utilization` over `system.cpu` (describes what is being measured)
 - **Counter**: `medplum.bot.execution.count` over `medplum.bot.execution.{success|failure}` (use attributes to combine metrics that are effectively measuring the same event)
 
-[otel-sem-conv]: https://opentelemetry.io/docs/specs/semconv/
+[otel-sem-conv]: https://opentelemetry.io/docs/specs/semconv/general/metrics/
 
 ### Instrumenting the code
 
