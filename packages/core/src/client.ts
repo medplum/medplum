@@ -83,7 +83,8 @@ export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
-const DEFAULT_CACHE_TIME = 60000; // 60 seconds
+const DEFAULT_BROWSER_CACHE_TIME = 60000; // 60 seconds
+const DEFAULT_NODE_CACHE_TIME = 0;
 const BINARY_URL_PREFIX = 'Binary/';
 
 const system: Device = {
@@ -695,7 +696,8 @@ export class MedplumClient extends EventTarget {
     this.clientSecret = options?.clientSecret ?? '';
     this.onUnauthenticated = options?.onUnauthenticated;
 
-    this.cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
+    this.cacheTime =
+      options?.cacheTime ?? (typeof window === 'undefined' ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
     if (this.cacheTime > 0) {
       this.requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     } else {
