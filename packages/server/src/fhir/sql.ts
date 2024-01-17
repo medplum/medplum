@@ -674,7 +674,7 @@ export class DeleteQuery extends BaseQuery {
     this.returnColumns = append(this.returnColumns, column instanceof Column ? column.columnName : column);
     return this;
   }
-  async execute(conn: Pool | PoolClient): Promise<any> {
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
     const sql = new SqlBuilder();
     sql.append('DELETE FROM ');
     sql.appendIdentifier(this.tableName);
