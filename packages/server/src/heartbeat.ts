@@ -1,6 +1,10 @@
-import { EventTarget } from '@medplum/core';
+import { TypedEventTarget } from '@medplum/core';
 
-export const heartbeat = new EventTarget();
+export type HeartbeatEventMap = {
+  heartbeat: { type: 'heartbeat' };
+};
+
+export const heartbeat = new TypedEventTarget<HeartbeatEventMap>();
 
 export const DEFAULT_HEARTBEAT_MS = 10 * 1000;
 
@@ -11,7 +15,7 @@ let heartbeatTimer: NodeJS.Timeout | undefined;
  */
 export function initHeartbeat(): void {
   if (!heartbeatTimer) {
-    heartbeatTimer = setInterval(() => heartbeat.dispatchEvent(new Event('heartbeat')), DEFAULT_HEARTBEAT_MS);
+    heartbeatTimer = setInterval(() => heartbeat.dispatchEvent({ type: 'heartbeat' }), DEFAULT_HEARTBEAT_MS);
   }
 }
 
