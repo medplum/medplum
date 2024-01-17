@@ -28,8 +28,7 @@ function parseSentTime(communication: Communication): string {
 function upsertCommunications(
   communications: Communication[],
   received: Communication[],
-  setCommunications: (communications: Communication[]) => void,
-  onChange: () => void
+  setCommunications: (communications: Communication[]) => void
 ): void {
   const newCommunications = [...communications];
   let foundNew = false;
@@ -134,9 +133,7 @@ export function Chat(): JSX.Element | null {
       },
       { cache: 'no-cache' }
     );
-    upsertCommunications(communicationsRef.current, searchResult, setCommunications, () => {
-      scrollToBottomRef.current = true;
-    });
+    upsertCommunications(communicationsRef.current, searchResult, setCommunications);
   }, [medplum, profileRefStr]);
 
   useEffect(() => {
@@ -160,9 +157,7 @@ export function Chat(): JSX.Element | null {
         .then((subscription) => {
           setSubscription(subscription);
           listenForSub(medplum, subscription, setWebSocket, (communication) => {
-            upsertCommunications(communicationsRef.current, [communication], setCommunications, () => {
-              scrollToBottomRef.current = true;
-            });
+            upsertCommunications(communicationsRef.current, [communication], setCommunications);
             // NOTE: We may normally want to do a guard like this to prevent our client from updating messages that we have sent ourselves, but in this case
             // We allow them to be updated anyways so that we have received timestamps on our sent messages
             // const senderId = resolveId(communication.sender);
