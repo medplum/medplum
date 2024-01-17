@@ -41,7 +41,12 @@ export class CodingTable extends LookupTable<Coding> {
    * @param resource - The resource to delete.
    */
   async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
-    await new DeleteQuery(this.getTableName()).where('system', '=', resource.id).execute(client);
+    const deletedCodes = await new DeleteQuery('Coding')
+      .where('system', '=', resource.id)
+      .returnColumn('id')
+      .execute(client);
+    await new DeleteQuery('CodeSystem_Property').where('system', '=', resource.id).execute(client);
+    await new DeleteQuery('Coding_Property').where('coding', 'IN', deletedCodes).execute(client);
   }
 
   private getCodeSystemElements(codeSystem: CodeSystem): { concepts: Coding[]; properties: ImportedProperty[] } {
