@@ -1,11 +1,11 @@
 import { createReference, normalizeErrorString } from '@medplum/core';
-import { Patient, ServiceRequest } from '@medplum/fhirtypes';
+import { Login, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { getRepoForLogin } from './accesspolicy';
 import { withTestContext } from '../test.setup';
+import { getRepoForLogin } from './accesspolicy';
 
 describe('Reference checks', () => {
   beforeAll(async () => {
@@ -27,7 +27,7 @@ describe('Reference checks', () => {
         password: randomUUID(),
       });
 
-      const repo = await getRepoForLogin({ resourceType: 'Login' }, membership, true, true, true);
+      const repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, true, true, true);
 
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',

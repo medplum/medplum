@@ -135,7 +135,7 @@ export interface TerminologyCapabilities {
    * The status of this terminology capabilities. Enables tracking the
    * life-cycle of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this terminology capabilities is
@@ -151,7 +151,7 @@ export interface TerminologyCapabilities {
    * change when the substantive content of the terminology capabilities
    * changes.
    */
-  date?: string;
+  date: string;
 
   /**
    * The name of the organization or individual that published the
@@ -209,7 +209,7 @@ export interface TerminologyCapabilities {
    * instance of software) or a class of implementation (e.g. a desired
    * purchase).
    */
-  kind?: 'instance' | 'capability' | 'requirements';
+  kind: 'instance' | 'capability' | 'requirements';
 
   /**
    * Software that is covered by this terminology capability statement.  It
@@ -490,12 +490,12 @@ export interface TerminologyCapabilitiesCodeSystemVersionFilter {
   /**
    * Code of the property supported.
    */
-  code?: string;
+  code: string;
 
   /**
    * Operations supported for the property.
    */
-  op?: string[];
+  op: string[];
 }
 
 /**
@@ -608,7 +608,7 @@ export interface TerminologyCapabilitiesExpansionParameter {
   /**
    * Expansion Parameter name.
    */
-  name?: string;
+  name: string;
 
   /**
    * Description of support for parameter.
@@ -662,7 +662,7 @@ export interface TerminologyCapabilitiesImplementation {
    * Information about the specific installation that this terminology
    * capability statement relates to.
    */
-  description?: string;
+  description: string;
 
   /**
    * An absolute base URL for the implementation.
@@ -715,7 +715,7 @@ export interface TerminologyCapabilitiesSoftware {
   /**
    * Name the software is known by.
    */
-  name?: string;
+  name: string;
 
   /**
    * The version identifier for the software covered by this statement.
@@ -768,7 +768,7 @@ export interface TerminologyCapabilitiesTranslation {
   /**
    * Whether the client must identify the map.
    */
-  needsMap?: boolean;
+  needsMap: boolean;
 }
 
 /**
@@ -816,5 +816,5 @@ export interface TerminologyCapabilitiesValidateCode {
   /**
    * Whether translations are validated.
    */
-  translations?: boolean;
+  translations: boolean;
 }

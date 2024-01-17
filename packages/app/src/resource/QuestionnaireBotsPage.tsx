@@ -1,7 +1,7 @@
 import { Button, Group, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Bot, Resource, Subscription } from '@medplum/fhirtypes';
+import { Bot, Subscription } from '@medplum/fhirtypes';
 import { Document, ResourceInput, ResourceName, useMedplum } from '@medplum/react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -9,7 +9,7 @@ import { useParams } from 'react-router-dom';
 export function QuestionnaireBotsPage(): JSX.Element {
   const medplum = useMedplum();
   const { id } = useParams() as { id: string };
-  const [connectBot, setConnectBot] = useState<Resource | undefined>();
+  const [connectBot, setConnectBot] = useState<Bot | undefined>();
   const [updated, setUpdated] = useState<number>(0);
   const subscriptions = medplum
     .searchResources('Subscription', 'status=active&_count=100')
@@ -22,7 +22,7 @@ export function QuestionnaireBotsPage(): JSX.Element {
         .createResource({
           resourceType: 'Subscription',
           status: 'active',
-          reason: (connectBot as Bot).name,
+          reason: `Connect bot ${connectBot.name} to questionnaire responses`,
           criteria: 'QuestionnaireResponse?questionnaire=Questionnaire/' + id,
           channel: {
             type: 'rest-hook',
@@ -54,7 +54,7 @@ export function QuestionnaireBotsPage(): JSX.Element {
       <hr />
       <Title>Connect to bot</Title>
       <Group>
-        <ResourceInput name="bot" resourceType="Bot" onChange={setConnectBot} />
+        <ResourceInput name="bot" resourceType="Bot" onChange={(r) => setConnectBot(r as Bot)} />
         <Button onClick={connectToBot}>Connect</Button>
       </Group>
       <div style={{ display: 'none' }}>{updated}</div>

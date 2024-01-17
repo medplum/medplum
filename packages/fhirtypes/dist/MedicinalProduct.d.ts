@@ -191,7 +191,7 @@ export interface MedicinalProduct {
   /**
    * The product's name, including full name and possibly coded parts.
    */
-  name?: MedicinalProductName[];
+  name: MedicinalProductName[];
 
   /**
    * Reference to another product, e.g. for linking authorised to
@@ -327,7 +327,7 @@ export interface MedicinalProductName {
   /**
    * The full product name.
    */
-  productName?: string;
+  productName: string;
 
   /**
    * Coding words or phrases of the name.
@@ -383,7 +383,7 @@ export interface MedicinalProductNameCountryLanguage {
   /**
    * Country code for where this name applies.
    */
-  country?: CodeableConcept;
+  country: CodeableConcept;
 
   /**
    * Jurisdiction code for where this name applies.
@@ -393,7 +393,7 @@ export interface MedicinalProductNameCountryLanguage {
   /**
    * Language code for this name.
    */
-  language?: CodeableConcept;
+  language: CodeableConcept;
 }
 
 /**
@@ -439,12 +439,12 @@ export interface MedicinalProductNameNamePart {
   /**
    * A fragment of a product name.
    */
-  part?: string;
+  part: string;
 
   /**
    * Idenifying type for this part of the name (e.g. strength part).
    */
-  type?: Coding;
+  type: Coding;
 }
 
 /**

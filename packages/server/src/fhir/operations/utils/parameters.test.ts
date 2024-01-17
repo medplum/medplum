@@ -1,3 +1,5 @@
+import { allOk, created, indexStructureDefinitionBundle } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
 import {
   Observation,
   OperationDefinition,
@@ -7,11 +9,9 @@ import {
   Patient,
   Reference,
 } from '@medplum/fhirtypes';
-import { parseInputParameters, parseParameters, sendOutputParameters } from './parameters';
 import { Request, Response } from 'express';
-import { allOk, created, indexStructureDefinitionBundle } from '@medplum/core';
 import { withTestContext } from '../../../test.setup';
-import { readJson } from '@medplum/definitions';
+import { parseInputParameters, parseParameters, sendOutputParameters } from './parameters';
 
 describe('FHIR Parameters parsing', () => {
   test('Read Parameters', () => {
@@ -59,8 +59,8 @@ const opDef: OperationDefinition = {
       min: 0,
       max: '*',
       part: [
-        { name: 'foo', min: 1, max: '1', type: 'string' },
-        { name: 'bar', min: 0, max: '1', type: 'boolean' },
+        { use: 'in', name: 'foo', min: 1, max: '1', type: 'string' },
+        { use: 'in', name: 'bar', min: 0, max: '1', type: 'boolean' },
       ],
     },
     { name: 'singleOut', use: 'out', min: 1, max: '1', type: 'Quantity' },

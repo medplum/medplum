@@ -3,6 +3,7 @@ import {
   CodeableConcept,
   Coding,
   ContactPoint,
+  ElementDefinition,
   Extension,
   HumanName,
   Identifier,
@@ -12,6 +13,7 @@ import {
 } from '@medplum/fhirtypes';
 import { LOINC, UCUM } from './constants';
 import {
+  TypedValue,
   getElementDefinitionFromElements,
   getElementDefinitionTypeName,
   getPathDisplayName,
@@ -19,7 +21,6 @@ import {
   isReference,
   isResource,
   stringifyTypedValue,
-  TypedValue,
 } from './types';
 
 describe('Type Utils', () => {
@@ -44,7 +45,7 @@ describe('Type Utils', () => {
   });
 
   test('getElementDefinitionTypeName', () => {
-    expect(getElementDefinitionTypeName({ type: [{ code: 'string' }] })).toEqual('string');
+    expect(getElementDefinitionTypeName({ type: [{ code: 'string' }] } as ElementDefinition)).toEqual('string');
     expect(getElementDefinitionTypeName({ path: 'Patient.address', type: [{ code: 'Address' }] })).toEqual('Address');
     expect(getElementDefinitionTypeName({ path: 'Patient.contact', type: [{ code: 'BackboneElement' }] })).toEqual(
       'PatientContact'
@@ -60,7 +61,7 @@ describe('Type Utils', () => {
     expect(
       getElementDefinitionTypeName({
         path: 'Questionnaire.item.item',
-        base: { path: 'Questionnaire.item' },
+        base: { path: 'Questionnaire.item', min: 0, max: '*' },
         type: [{ code: 'Element' }],
       })
     ).toEqual('QuestionnaireItem');

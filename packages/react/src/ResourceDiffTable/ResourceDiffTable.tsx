@@ -1,6 +1,6 @@
 import { Table } from '@mantine/core';
 import { capitalize, evalFhirPathTyped, getSearchParameterDetails, toTypedValue } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
+import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
 import { createPatch } from 'rfc6902';
@@ -53,7 +53,7 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
             base: [props.original.resourceType],
             code: props.original.resourceType + '.' + fhirPath,
             expression: props.original.resourceType + '.' + fhirPath,
-          });
+          } as SearchParameter);
           const property = details?.elementDefinitions?.[0];
           const isArray = !!property?.isArray;
           const originalValue = op.op === 'add' ? undefined : evalFhirPathTyped(fhirPath, typedOriginal)?.[0];

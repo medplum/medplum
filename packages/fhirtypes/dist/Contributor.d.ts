@@ -31,13 +31,13 @@ export interface Contributor {
   /**
    * The type of contributor.
    */
-  type?: 'author' | 'editor' | 'reviewer' | 'endorser';
+  type: 'author' | 'editor' | 'reviewer' | 'endorser';
 
   /**
    * The name of the individual or organization responsible for the
    * contribution.
    */
-  name?: string;
+  name: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the

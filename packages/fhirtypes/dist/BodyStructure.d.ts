@@ -138,5 +138,5 @@ export interface BodyStructure {
   /**
    * The person to which the body site belongs.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 }

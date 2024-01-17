@@ -126,7 +126,7 @@ export interface RiskAssessment {
    * The status of the RiskAssessment, using the same statuses as an
    * Observation.
    */
-  status?: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
+  status: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * The algorithm, process or mechanism used to evaluate the risk.
@@ -141,7 +141,7 @@ export interface RiskAssessment {
   /**
    * The patient or group the risk assessment applies to.
    */
-  subject?: Reference<Patient | Group>;
+  subject: Reference<Patient | Group>;
 
   /**
    * The encounter where the assessment was performed.

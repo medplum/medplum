@@ -31,7 +31,7 @@ export interface RelatedArtifact {
   /**
    * The type of relationship to the related artifact.
    */
-  type?: 'documentation' | 'justification' | 'citation' | 'predecessor' | 'successor' | 'derived-from' | 'depends-on' | 'composed-of';
+  type: 'documentation' | 'justification' | 'citation' | 'predecessor' | 'successor' | 'derived-from' | 'depends-on' | 'composed-of';
 
   /**
    * A short label that can be used to reference the citation from

@@ -45,18 +45,18 @@ export interface Signature {
    * can be used when determining accountability for various actions
    * concerning the document.
    */
-  type?: Coding[];
+  type: Coding[];
 
   /**
    * When the digital signature was signed.
    */
-  when?: string;
+  when: string;
 
   /**
    * A reference to an application-usable description of the identity that
    * signed  (e.g. the signature used their private key).
    */
-  who?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
+  who: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
 
   /**
    * A reference to an application-usable description of the identity that

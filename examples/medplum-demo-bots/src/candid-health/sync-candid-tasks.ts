@@ -28,6 +28,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     const encounter = await medplum.createResourceIfNoneExist(
       {
         resourceType: 'Encounter',
+        status: 'finished',
+        class: { code: 'inpatient' },
         identifier: [
           {
             system: 'https://joincandidhealth.com/encounter/id',
@@ -40,6 +42,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     await medplum.createResourceIfNoneExist(
       {
         resourceType: 'Task',
+        status: 'in-progress',
+        intent: 'order',
         identifier: [
           {
             system: 'https://api-staging.joincandidhealth.com/task/id',

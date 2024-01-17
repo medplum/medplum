@@ -119,14 +119,14 @@ export interface Composition {
    * The workflow/clinical status of this composition. The status is a
    * marker for the clinical standing of the document.
    */
-  status?: 'preliminary' | 'final' | 'amended' | 'entered-in-error';
+  status: 'preliminary' | 'final' | 'amended' | 'entered-in-error';
 
   /**
    * Specifies the particular kind of composition (e.g. History and
    * Physical, Discharge Summary, Progress Note). This usually equates to
    * the purpose of making the composition.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * A categorization for the type of the composition - helps for indexing
@@ -153,18 +153,18 @@ export interface Composition {
    * The composition editing time, when the composition was last logically
    * changed by the author.
    */
-  date?: string;
+  date: string;
 
   /**
    * Identifies who is responsible for the information in the composition,
    * not necessarily who typed it in.
    */
-  author?: Reference<Practitioner | PractitionerRole | Device | Patient | RelatedPerson | Organization>[];
+  author: Reference<Practitioner | PractitionerRole | Device | Patient | RelatedPerson | Organization>[];
 
   /**
    * Official human-readable label for the composition.
    */
-  title?: string;
+  title: string;
 
   /**
    * The code specifying the level of confidentiality of the Composition.
@@ -245,7 +245,7 @@ export interface CompositionAttester {
   /**
    * The type of attestation the authenticator offers.
    */
-  mode?: 'personal' | 'professional' | 'legal' | 'official';
+  mode: 'personal' | 'professional' | 'legal' | 'official';
 
   /**
    * When the composition was attested by the party.
@@ -368,7 +368,7 @@ export interface CompositionRelatesTo {
    * The type of relationship that this composition has with anther
    * composition or document.
    */
-  code?: 'replaces' | 'transforms' | 'signs' | 'appends';
+  code: 'replaces' | 'transforms' | 'signs' | 'appends';
 
   /**
    * The target composition/document of this relationship.

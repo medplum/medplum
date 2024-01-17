@@ -38,7 +38,14 @@ describe('PatientSummary - ProblemList', () => {
     await setup(
       <ProblemList
         patient={HomerSimpson}
-        problems={[{ resourceType: 'Condition', id: 'peanut', code: { text: 'Peanut' } }]}
+        problems={[
+          {
+            resourceType: 'Condition',
+            id: 'peanut',
+            subject: { reference: 'Patient/123' },
+            code: { text: 'Peanut' },
+          },
+        ]}
       />
     );
     expect(screen.getByText('Problem List')).toBeInTheDocument();

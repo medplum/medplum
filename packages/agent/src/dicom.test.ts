@@ -25,7 +25,7 @@ describe('DICOM', () => {
     endpoint = await medplum.createResource<Endpoint>({
       resourceType: 'Endpoint',
       address: 'dicom://0.0.0.0:8104',
-    });
+    } as Endpoint);
   });
 
   test('C-ECHO and C-STORE', async () => {
@@ -55,7 +55,7 @@ describe('DICOM', () => {
           targetReference: createReference(bot),
         },
       ],
-    });
+    } as Agent);
 
     const app = new App(medplum, agent.id as string);
     await app.start();

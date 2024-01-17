@@ -54,7 +54,7 @@ describe('CalendarInput', () => {
         resourceType: 'Slot',
         start: startTime.toISOString(),
       },
-    ];
+    ] as Slot[];
 
     const onClick = jest.fn();
     render(<CalendarInput slots={slots} onChangeMonth={jest.fn()} onClick={onClick} />);

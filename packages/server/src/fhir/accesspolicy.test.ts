@@ -696,6 +696,9 @@ describe('AccessPolicy', () => {
       const clientRepo = await getRepoForLogin(
         {
           resourceType: 'Login',
+          user: createReference(clientApplication),
+          authMethod: 'client',
+          authTime: new Date().toISOString(),
         },
         {
           resourceType: 'ProjectMembership',
@@ -704,6 +707,7 @@ describe('AccessPolicy', () => {
           },
           profile: createReference(clientApplication as ClientApplication),
           accessPolicy: createReference(accessPolicy),
+          user: createReference(clientApplication),
         }
       );
 
@@ -798,6 +802,9 @@ describe('AccessPolicy', () => {
       const clientRepo = await getRepoForLogin(
         {
           resourceType: 'Login',
+          user: createReference(clientApplication),
+          authMethod: 'client',
+          authTime: new Date().toISOString(),
         },
         {
           resourceType: 'ProjectMembership',
@@ -806,6 +813,7 @@ describe('AccessPolicy', () => {
           },
           profile: createReference(clientApplication as ClientApplication),
           accessPolicy: createReference(accessPolicy),
+          user: createReference(clientApplication),
         }
       );
 

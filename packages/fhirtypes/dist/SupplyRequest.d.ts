@@ -152,7 +152,7 @@ export interface SupplyRequest {
   /**
    * The amount that is being ordered of the indicated item.
    */
-  quantity?: Quantity;
+  quantity: Quantity;
 
   /**
    * Specific parameters for the ordered item.  For example, the size of

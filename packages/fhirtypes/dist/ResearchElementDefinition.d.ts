@@ -166,7 +166,7 @@ export interface ResearchElementDefinition {
    * The status of this research element definition. Enables tracking the
    * life-cycle of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this research element definition is
@@ -326,7 +326,7 @@ export interface ResearchElementDefinition {
    * The type of research element, a population, an exposure, or an
    * outcome.
    */
-  type?: 'population' | 'exposure' | 'outcome';
+  type: 'population' | 'exposure' | 'outcome';
 
   /**
    * The type of the outcome (e.g. Dichotomous, Continuous, or
@@ -338,7 +338,7 @@ export interface ResearchElementDefinition {
    * A characteristic that defines the members of the research element.
    * Multiple characteristics are applied with &quot;and&quot; semantics.
    */
-  characteristic?: ResearchElementDefinitionCharacteristic[];
+  characteristic: ResearchElementDefinitionCharacteristic[];
 }
 
 /**

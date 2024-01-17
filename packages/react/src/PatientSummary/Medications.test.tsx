@@ -39,7 +39,14 @@ describe('PatientSummary - Medications', () => {
       <Medications
         patient={HomerSimpson}
         medicationRequests={[
-          { resourceType: 'MedicationRequest', id: 'peanut', medicationCodeableConcept: { text: 'Tylenol' } },
+          {
+            resourceType: 'MedicationRequest',
+            id: 'peanut',
+            status: 'active',
+            intent: 'order',
+            subject: { reference: 'Patient/123' },
+            medicationCodeableConcept: { text: 'Tylenol' },
+          },
         ]}
       />
     );

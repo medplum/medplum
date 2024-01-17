@@ -86,7 +86,7 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
             console.error(`StructureDefinition.type missing for ${tt.value}`);
             newTargetType.error = 'StructureDefinition.type missing';
           } else {
-            newTargetType.resourceType = profile.type satisfies string;
+            newTargetType.resourceType = profile.type;
             newTargetType.name = profile.name;
             newTargetType.title = profile.title;
           }
@@ -246,18 +246,16 @@ function getInitialTargetType(
   return undefined;
 }
 
-type PartialStructureDefinition = Pick<StructureDefinition, 'type' | 'name' | 'title'>;
-
 interface ResourceTypeGraphQLResponse {
   readonly data: {
-    readonly StructureDefinitionList: PartialStructureDefinition[];
+    readonly StructureDefinitionList: Partial<StructureDefinition>[];
   };
 }
 
 async function fetchResourceTypeOfProfile(
   medplum: MedplumClient,
   profileUrl: string
-): Promise<PartialStructureDefinition | undefined> {
+): Promise<Partial<StructureDefinition> | undefined> {
   const profile = tryGetProfile(profileUrl);
   if (profile) {
     return { type: profile.type, name: profile.name, title: profile.title };

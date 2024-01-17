@@ -25,7 +25,10 @@ export type IntervalGroup = {
 };
 
 const defaultProps: ReferenceRangeEditorProps = {
-  definition: { resourceType: 'ObservationDefinition' },
+  definition: {
+    resourceType: 'ObservationDefinition',
+    code: { text: '' },
+  },
   onSubmit: () => {
     return undefined;
   },

@@ -99,7 +99,7 @@ export interface Subscription {
    * The status of the subscription, which marks the server state for
    * managing the subscription.
    */
-  status?: 'requested' | 'active' | 'error' | 'off';
+  status: 'requested' | 'active' | 'error' | 'off';
 
   /**
    * Contact details for a human to contact about the subscription. The
@@ -115,13 +115,13 @@ export interface Subscription {
   /**
    * A description of why this subscription is defined.
    */
-  reason?: string;
+  reason: string;
 
   /**
    * The rules that the server should use to determine when to generate
    * notifications for this subscription.
    */
-  criteria?: string;
+  criteria: string;
 
   /**
    * A record of the last error that occurred when the server processed a
@@ -133,7 +133,7 @@ export interface Subscription {
    * Details where to send notifications when resources are received that
    * meet the criteria.
    */
-  channel?: SubscriptionChannel;
+  channel: SubscriptionChannel;
 }
 
 /**
@@ -180,7 +180,7 @@ export interface SubscriptionChannel {
   /**
    * The type of channel to send notifications on.
    */
-  type?: 'rest-hook' | 'websocket' | 'email' | 'sms' | 'message';
+  type: 'rest-hook' | 'websocket' | 'email' | 'sms' | 'message';
 
   /**
    * The url that describes the actual end-point to send messages to.

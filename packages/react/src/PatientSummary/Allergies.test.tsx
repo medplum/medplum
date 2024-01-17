@@ -38,7 +38,14 @@ describe('PatientSummary - Allergies', () => {
     await setup(
       <Allergies
         patient={HomerSimpson}
-        allergies={[{ resourceType: 'AllergyIntolerance', id: 'peanut', code: { text: 'Peanut' } }]}
+        allergies={[
+          {
+            resourceType: 'AllergyIntolerance',
+            id: 'peanut',
+            patient: { reference: 'Patient/123' },
+            code: { text: 'Peanut' },
+          },
+        ]}
       />
     );
     expect(screen.getByText('Allergies')).toBeInTheDocument();

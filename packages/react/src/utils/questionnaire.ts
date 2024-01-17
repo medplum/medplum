@@ -268,6 +268,7 @@ export function buildInitialResponse(questionnaire: Questionnaire): Questionnair
     resourceType: 'QuestionnaireResponse',
     questionnaire: getReferenceString(questionnaire),
     item: buildInitialResponseItems(questionnaire.item),
+    status: 'in-progress',
   };
 
   return response;

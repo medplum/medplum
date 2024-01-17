@@ -1,6 +1,7 @@
 import { createReference } from '@medplum/core';
 import {
   Account,
+  AccountCoverage,
   Coverage,
   Organization,
   Patient,
@@ -8,6 +9,7 @@ import {
   QuestionnaireResponse,
   QuestionnaireResponseItem,
   RelatedPerson,
+  ServiceRequest,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { HEALTH_GORILLA_SYSTEM } from './constants';
@@ -46,7 +48,7 @@ describe('Health Gorilla RequestGroup builder', () => {
       ],
     });
 
-    const medplumAccount = { resourceType: 'Account' } satisfies Account;
+    const medplumAccount = { resourceType: 'Account', status: 'active' } satisfies Account;
     const healthGorilla = new MockClient();
 
     const config: HealthGorillaConfig = {
@@ -183,7 +185,7 @@ describe('Health Gorilla RequestGroup builder', () => {
     const medplumCoverage1 = await medplum.createResource<Coverage>({
       resourceType: 'Coverage',
       payor: [createReference(medplumPayor)],
-    });
+    } as Coverage);
 
     const medplumRelatedPerson = await medplum.createResource<RelatedPerson>({
       resourceType: 'RelatedPerson',
@@ -194,14 +196,14 @@ describe('Health Gorilla RequestGroup builder', () => {
     const medplumCoverage2 = await medplum.createResource<Coverage>({
       resourceType: 'Coverage',
       subscriber: createReference(medplumRelatedPerson),
-    });
+    } as Coverage);
 
     const medplumAccount = await medplum.createResource<Account>({
       resourceType: 'Account',
       type: { coding: [{ code: 'patient' }] },
       subject: [createReference(medplumPatient)],
       coverage: [{ coverage: createReference(medplumCoverage1) }, { coverage: createReference(medplumCoverage2) }],
-    });
+    } as Account);
 
     const healthGorilla = new MockClient();
 
@@ -303,7 +305,7 @@ describe('Health Gorilla RequestGroup builder', () => {
     const b = new HealthGorillaRequestGroupBuilder();
     b.authorizedBy = { resourceType: 'Organization' };
     b.patient = { resourceType: 'Patient' };
-    await b.setupAccount(medplum, { resourceType: 'Account', coverage: [{}] });
+    await b.setupAccount(medplum, { resourceType: 'Account', coverage: [{} as AccountCoverage] } as Account);
     b.performer = { resourceType: 'Organization' };
     b.practitioner = { resourceType: 'Practitioner' };
     b.practitionerOrganization = { resourceType: 'Organization' };
@@ -329,7 +331,7 @@ describe('Health Gorilla RequestGroup builder', () => {
   test('Missing values', async () => {
     const b = new HealthGorillaRequestGroupBuilder();
     expect(() => b.buildRequestGroup()).toThrow('Missing account');
-    b.account = { resourceType: 'Account' };
+    b.account = { resourceType: 'Account' } as Account;
     expect(() => b.buildRequestGroup()).toThrow('Missing authorizedBy');
     b.authorizedBy = { resourceType: 'Organization' };
     expect(() => b.buildRequestGroup()).toThrow('Missing patient');
@@ -341,7 +343,7 @@ describe('Health Gorilla RequestGroup builder', () => {
     expect(() => b.buildRequestGroup()).toThrow('Missing practitionerOrganization');
     b.practitionerOrganization = { resourceType: 'Organization' };
     expect(() => b.buildRequestGroup()).toThrow('Missing tests');
-    b.tests = [{ resourceType: 'ServiceRequest' }];
+    b.tests = [{ resourceType: 'ServiceRequest' } as ServiceRequest];
     expect(() => b.buildRequestGroup()).not.toThrow();
   });
 });

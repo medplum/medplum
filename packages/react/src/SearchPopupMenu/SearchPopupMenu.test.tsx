@@ -1,11 +1,11 @@
 import { Button, Menu } from '@mantine/core';
-import { Filter, globalSchema, Operator, SearchRequest } from '@medplum/core';
+import { Filter, Operator, SearchRequest, globalSchema } from '@medplum/core';
 import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen } from '../test-utils/render';
-import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { MemoryRouter } from 'react-router-dom';
 import { getFieldDefinitions } from '../SearchControl/SearchControlField';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { SearchPopupMenu, SearchPopupMenuProps } from './SearchPopupMenu';
 
 const medplum = new MockClient();
@@ -678,7 +678,7 @@ describe('SearchPopupMenu', () => {
         code: 'patient',
         type: 'reference',
         expression: 'Observation.patient',
-      },
+      } as SearchParameter,
     };
 
     const search: SearchRequest = {

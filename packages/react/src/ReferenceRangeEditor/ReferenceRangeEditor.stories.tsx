@@ -1,8 +1,9 @@
+import { ObservationDefinition } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
 import { Document } from '../Document/Document';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
-import { ReferenceRangeEditor } from './ReferenceRangeEditor';
 import { HDLDefinition, KidneyLabDefinition, TestosteroneDefinition } from '../stories/referenceLab';
+import { ReferenceRangeEditor } from './ReferenceRangeEditor';
 
 export default {
   title: 'Medplum/ReferenceRangeEditor',
@@ -14,7 +15,7 @@ export const Empty = (): JSX.Element => {
     <Document>
       <ErrorBoundary>
         <ReferenceRangeEditor
-          definition={{ resourceType: 'ObservationDefinition' }}
+          definition={{ resourceType: 'ObservationDefinition' } as ObservationDefinition}
           onSubmit={(definition) => console.dir(definition, { depth: null })}
         />
       </ErrorBoundary>

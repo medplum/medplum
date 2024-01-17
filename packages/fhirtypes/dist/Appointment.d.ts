@@ -121,7 +121,7 @@ export interface Appointment {
    * their own participation status which indicates their involvement in
    * the process, however this status indicates the shared status.
    */
-  status?: 'proposed' | 'pending' | 'booked' | 'arrived' | 'fulfilled' | 'cancelled' | 'noshow' | 'entered-in-error' | 'checked-in' | 'waitlist';
+  status: 'proposed' | 'pending' | 'booked' | 'arrived' | 'fulfilled' | 'cancelled' | 'noshow' | 'entered-in-error' | 'checked-in' | 'waitlist';
 
   /**
    * The coded reason for the appointment being cancelled. This is often
@@ -245,7 +245,7 @@ export interface Appointment {
   /**
    * List of participants involved in the appointment.
    */
-  participant?: AppointmentParticipant[];
+  participant: AppointmentParticipant[];
 
   /**
    * A set of date ranges (potentially including times) that the
@@ -321,7 +321,7 @@ export interface AppointmentParticipant {
   /**
    * Participation status of the actor.
    */
-  status?: 'accepted' | 'declined' | 'tentative' | 'needs-action';
+  status: 'accepted' | 'declined' | 'tentative' | 'needs-action';
 
   /**
    * Participation period of the actor.

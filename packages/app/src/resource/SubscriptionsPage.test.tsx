@@ -66,6 +66,7 @@ describe('SubscriptionsPage', () => {
       resourceType: 'Subscription',
       reason: 'test',
       status: 'active',
+      criteria: 'Patient',
       channel: {
         type: 'rest-hook',
         endpoint: `${getReferenceString(bot)}`,

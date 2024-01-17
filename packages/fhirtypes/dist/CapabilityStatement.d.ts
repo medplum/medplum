@@ -139,7 +139,7 @@ export interface CapabilityStatement {
    * The status of this capability statement. Enables tracking the
    * life-cycle of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this capability statement is authored
@@ -155,7 +155,7 @@ export interface CapabilityStatement {
    * change when the substantive content of the capability statement
    * changes.
    */
-  date?: string;
+  date: string;
 
   /**
    * The name of the organization or individual that published the
@@ -212,7 +212,7 @@ export interface CapabilityStatement {
    * instance of software) or a class of implementation (e.g. a desired
    * purchase).
    */
-  kind?: 'instance' | 'capability' | 'requirements';
+  kind: 'instance' | 'capability' | 'requirements';
 
   /**
    * Reference to a canonical URL of another CapabilityStatement that this
@@ -252,14 +252,14 @@ export interface CapabilityStatement {
    * describes (which SHALL be the same as the FHIR version of the
    * CapabilityStatement itself). There is no default value.
    */
-  fhirVersion?: '0.01' | '0.05' | '0.06' | '0.11' | '0.0.80' | '0.0.81' | '0.0.82' | '0.4.0' | '0.5.0' | '1.0.0' |
+  fhirVersion: '0.01' | '0.05' | '0.06' | '0.11' | '0.0.80' | '0.0.81' | '0.0.82' | '0.4.0' | '0.5.0' | '1.0.0' |
       '1.0.1' | '1.0.2' | '1.1.0' | '1.4.0' | '1.6.0' | '1.8.0' | '3.0.0' | '3.0.1' | '3.3.0' | '3.5.0' | '4.0.0' | '4.0.1';
 
   /**
    * A list of the formats supported by this implementation using their
    * content types.
    */
-  format?: string[];
+  format: string[];
 
   /**
    * A list of the patch formats supported by this implementation using
@@ -333,7 +333,7 @@ export interface CapabilityStatementDocument {
    * Mode of this document declaration - whether an application is a
    * producer or consumer.
    */
-  mode?: 'producer' | 'consumer';
+  mode: 'producer' | 'consumer';
 
   /**
    * A description of how the application supports or uses the specified
@@ -346,7 +346,7 @@ export interface CapabilityStatementDocument {
    * A profile on the document Bundle that constrains which resources are
    * present, and their contents.
    */
-  profile?: string;
+  profile: string;
 }
 
 /**
@@ -395,7 +395,7 @@ export interface CapabilityStatementImplementation {
    * Information about the specific installation that this capability
    * statement relates to.
    */
-  description?: string;
+  description: string;
 
   /**
    * An absolute base URL for the implementation.  This forms the base for
@@ -523,13 +523,13 @@ export interface CapabilityStatementMessagingEndpoint {
    * A list of the messaging transport protocol(s) identifiers, supported
    * by this endpoint.
    */
-  protocol?: Coding;
+  protocol: Coding;
 
   /**
    * The network address of the endpoint. For solutions that do not use
    * network addresses for routing, it can be just an identifier.
    */
-  address?: string;
+  address: string;
 }
 
 /**
@@ -577,13 +577,13 @@ export interface CapabilityStatementMessagingSupportedMessage {
    * The mode of this event declaration - whether application is sender or
    * receiver.
    */
-  mode?: 'sender' | 'receiver';
+  mode: 'sender' | 'receiver';
 
   /**
    * Points to a message definition that identifies the messaging event,
    * message structure, allowed responses, etc.
    */
-  definition?: string;
+  definition: string;
 }
 
 /**
@@ -630,7 +630,7 @@ export interface CapabilityStatementRest {
    * Identifies whether this portion of the statement is describing the
    * ability to initiate or receive restful operations.
    */
-  mode?: 'client' | 'server';
+  mode: 'client' | 'server';
 
   /**
    * Information about the system's restful capabilities that apply across
@@ -720,7 +720,7 @@ export interface CapabilityStatementRestInteraction {
   /**
    * A coded identifier of the operation, supported by the system.
    */
-  code?: 'transaction' | 'batch' | 'search-system' | 'history-system';
+  code: 'transaction' | 'batch' | 'search-system' | 'history-system';
 
   /**
    * Guidance specific to the implementation of this operation, such as
@@ -774,7 +774,7 @@ export interface CapabilityStatementRestResource {
   /**
    * A type of resource exposed via the restful interface.
    */
-  type?: ResourceType;
+  type: ResourceType;
 
   /**
    * A specification of the profile that describes the solution's overall
@@ -926,7 +926,7 @@ export interface CapabilityStatementRestResourceInteraction {
   /**
    * Coded identifier of the operation, supported by the system resource.
    */
-  code?: 'read' | 'vread' | 'update' | 'patch' | 'delete' | 'history-instance' | 'history-type' | 'create' | 'search-type';
+  code: 'read' | 'vread' | 'update' | 'patch' | 'delete' | 'history-instance' | 'history-type' | 'create' | 'search-type';
 
   /**
    * Guidance specific to the implementation of this operation, such as
@@ -984,7 +984,7 @@ export interface CapabilityStatementRestResourceOperation {
    * prefixed with $ and used in the URL. For a query, this is the name
    * used in the _query parameter when the query is called.
    */
-  name?: string;
+  name: string;
 
   /**
    * Where the formal definition can be found. If a server references the
@@ -997,7 +997,7 @@ export interface CapabilityStatementRestResourceOperation {
    * 'base' of the original OperationDefinition.  The custom definition
    * would describe the specific subset of functionality supported.
    */
-  definition?: string;
+  definition: string;
 
   /**
    * Documentation that describes anything special about the operation
@@ -1052,7 +1052,7 @@ export interface CapabilityStatementRestResourceSearchParam {
   /**
    * The name of the search parameter used in the interface.
    */
-  name?: string;
+  name: string;
 
   /**
    * An absolute URI that is a formal reference to where this parameter was
@@ -1069,7 +1069,7 @@ export interface CapabilityStatementRestResourceSearchParam {
    * The type of value a search parameter refers to, and how the content is
    * interpreted.
    */
-  type?: 'number' | 'date' | 'string' | 'token' | 'reference' | 'composite' | 'quantity' | 'uri' | 'special';
+  type: 'number' | 'date' | 'string' | 'token' | 'reference' | 'composite' | 'quantity' | 'uri' | 'special';
 
   /**
    * This allows documentation of any distinct behaviors about how the
@@ -1181,7 +1181,7 @@ export interface CapabilityStatementSoftware {
   /**
    * Name the software is known by.
    */
-  name?: string;
+  name: string;
 
   /**
    * The version identifier for the software covered by this statement.

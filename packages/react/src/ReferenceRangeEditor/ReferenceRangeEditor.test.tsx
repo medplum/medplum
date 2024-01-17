@@ -32,7 +32,7 @@ describe('ReferenceRangeEditor', () => {
     await setup({
       definition: {
         resourceType: 'ObservationDefinition',
-      },
+      } as ObservationDefinition,
       onSubmit: jest.fn(),
     });
     const checkAddButton = screen.getByTitle('Add Group');
@@ -49,7 +49,7 @@ describe('ReferenceRangeEditor', () => {
     await setup({
       definition: {
         resourceType: 'ObservationDefinition',
-      },
+      } as ObservationDefinition,
       onSubmit,
     });
 
@@ -72,7 +72,7 @@ describe('ReferenceRangeEditor', () => {
     await setup({
       definition: {
         resourceType: 'ObservationDefinition',
-      },
+      } as ObservationDefinition,
       onSubmit,
     });
 
@@ -105,7 +105,7 @@ describe('ReferenceRangeEditor', () => {
     await setup({
       definition: {
         resourceType: 'ObservationDefinition',
-      },
+      } as ObservationDefinition,
       onSubmit,
     });
 

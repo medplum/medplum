@@ -2,10 +2,12 @@ import { readJson } from '@medplum/definitions';
 import {
   Account,
   Appointment,
+  AppointmentParticipant,
   Binary,
   Bundle,
   CodeSystem,
   Condition,
+  DiagnosticReport,
   Extension,
   HumanName,
   ImplementationGuide,
@@ -777,7 +779,7 @@ describe('Legacy tests for parity checking', () => {
 
   test('Required properties', () => {
     try {
-      validateResource({ resourceType: 'DiagnosticReport' });
+      validateResource({ resourceType: 'DiagnosticReport' } as unknown as DiagnosticReport);
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -1001,13 +1003,13 @@ describe('Legacy tests for parity checking', () => {
   });
 
   test('id', () => {
-    const ig: ImplementationGuide = {
+    const ig = {
       resourceType: 'ImplementationGuide',
       name: 'x',
       status: 'active',
       fhirVersion: ['4.0.1'],
       url: 'https://example.com',
-    };
+    } as ImplementationGuide;
 
     ig.packageId = 123 as unknown as string;
     expect(() => validateResource(ig)).toThrowError(
@@ -1151,7 +1153,7 @@ describe('Legacy tests for parity checking', () => {
       validateResource({
         resourceType: 'Appointment',
         status: 'booked',
-        participant: [{ type: [{ text: 'x' }] }], // "status" is required
+        participant: [{ type: [{ text: 'x' }] } as AppointmentParticipant], // "status" is required
       });
       fail('Expected error');
     } catch (err) {

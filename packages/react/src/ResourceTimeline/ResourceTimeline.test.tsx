@@ -102,6 +102,7 @@ describe('ResourceTimeline', () => {
       createCommunication: jest.fn(),
       createMedia: (resource: Encounter, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
+        status: 'completed',
         encounter: createReference(resource),
         subject: (resource as Encounter).subject,
         operator: createReference(operator),

@@ -1,5 +1,5 @@
 import { OperationOutcomeError } from '@medplum/core';
-import { Patient, Questionnaire, Resource } from '@medplum/fhirtypes';
+import { DiagnosticReport, Patient, Questionnaire, Resource } from '@medplum/fhirtypes';
 import { validateResourceWithJsonSchema } from './jsonschema';
 
 describe('FHIR JSONSchema', () => {
@@ -42,7 +42,7 @@ describe('FHIR JSONSchema', () => {
 
   test('Required properties', () => {
     try {
-      validateResourceWithJsonSchema({ resourceType: 'DiagnosticReport' });
+      validateResourceWithJsonSchema({ resourceType: 'DiagnosticReport' } as DiagnosticReport);
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;

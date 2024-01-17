@@ -21,6 +21,7 @@ import {
   Organization,
   Project,
   ProjectMembership,
+  ProjectSecret,
   Reference,
   Subscription,
 } from '@medplum/fhirtypes';
@@ -490,7 +491,7 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
   return accessToken;
 }
 
-async function getBotSecrets(bot: Bot): Promise<Record<string, string>> {
+async function getBotSecrets(bot: Bot): Promise<Record<string, ProjectSecret>> {
   const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
   return secrets;

@@ -162,7 +162,7 @@ export interface Evidence {
    * The status of this evidence. Enables tracking the life-cycle of the
    * content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * The date  (and optionally time) when the evidence was published. The
@@ -279,7 +279,7 @@ export interface Evidence {
    * A reference to a EvidenceVariable resource that defines the population
    * for the research.
    */
-  exposureBackground?: Reference<EvidenceVariable>;
+  exposureBackground: Reference<EvidenceVariable>;
 
   /**
    * A reference to a EvidenceVariable resource that defines the exposure

@@ -168,13 +168,13 @@ export interface CarePlan {
    * Indicates whether the plan is currently being acted upon, represents
    * future intentions or is now a historical record.
    */
-  status?: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
+  status: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Indicates the level of authority/intentionality associated with the
    * care plan and where the care plan fits into the workflow chain.
    */
-  intent?: 'proposal' | 'plan' | 'order' | 'option';
+  intent: 'proposal' | 'plan' | 'order' | 'option';
 
   /**
    * Identifies what &quot;kind&quot; of plan this is to support differentiation
@@ -197,7 +197,7 @@ export interface CarePlan {
    * Identifies the patient or group whose intended care is described by
    * the plan.
    */
-  subject?: Reference<Patient | Group>;
+  subject: Reference<Patient | Group>;
 
   /**
    * The Encounter during which this CarePlan was created or to which the
@@ -439,7 +439,7 @@ export interface CarePlanActivityDetail {
   /**
    * Identifies what progress is being made for the specific activity.
    */
-  status?: 'not-started' | 'scheduled' | 'in-progress' | 'on-hold' | 'completed' | 'cancelled' | 'stopped' | 'unknown' | 'entered-in-error';
+  status: 'not-started' | 'scheduled' | 'in-progress' | 'on-hold' | 'completed' | 'cancelled' | 'stopped' | 'unknown' | 'entered-in-error';
 
   /**
    * Provides reason why the activity isn't yet started, is on hold, was
