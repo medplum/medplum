@@ -656,7 +656,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         this.writeLookupTables(client, resource),
       ]);
       await client.query('COMMIT');
-    } catch (err: any) {
+    } catch (err) {
       await client.query('ROLLBACK');
       throw err;
     } finally {
