@@ -33,6 +33,12 @@ export function initWebSockets(server: http.Server): void {
     // See: https://github.com/websockets/ws/blob/master/doc/ws.md#websocketbinarytype
     socket.binaryType = 'nodebuffer';
 
+    // Add a default error handler to the socket
+    // If we don't do this, then errors will be thrown and crash the server
+    socket.on('error', (err) => {
+      globalLogger.error('WebSocket connection error', err);
+    });
+
     const path = getWebSocketPath(request.url as string);
     const handler = handlerMap.get(path);
     if (handler) {
