@@ -12,7 +12,7 @@ import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 import useCallbackState from '../hooks/useCallbackState';
 import { killEvent } from '../utils/dom';
 import classes from './ResourceArrayInput.module.css';
-import { assignValuesIntoSlices } from './ResourceArrayInput.utils';
+import { assignValuesIntoSlices, prepareSlices } from './ResourceArrayInput.utils';
 
 export interface ResourceArrayInputProps {
   property: InternalSchemaElement;
@@ -61,14 +61,12 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
 
   const propertyTypeCode = property.type[0]?.code;
   useEffect(() => {
-    assignValuesIntoSlices({
+    prepareSlices({
       medplum,
       property,
-      defaultValue,
-      elementsContext: ctx,
     })
-      .then(({ slices, slicedValues }) => {
-        console.log(`ResourceArrayInput[${props.path}] assignValues`, defaultValue, { slices, slicedValues });
+      .then((slices) => {
+        const slicedValues = assignValuesIntoSlices(defaultValue, slices, property.slicing, ctx.profileUrl);
         setSlices(slices);
         setSlicedValues(slicedValues);
         setLoading(false);

@@ -45,6 +45,7 @@ export const ElementsContext = React.createContext<ElementsContextType>({
   elementsByPath: Object.create(null),
   fixedProperties: Object.create(null),
 });
+ElementsContext.displayName = 'ElementsContext';
 
 export type BuildElementsContextArgs = {
   elements: InternalTypeSchema['elements'] | undefined;
@@ -55,6 +56,10 @@ export type BuildElementsContextArgs = {
   debugMode?: boolean;
 };
 
+function hasFixed(element: InternalSchemaElement): element is InternalSchemaElement & { fixed: TypedValue } {
+  return Boolean(element.fixed);
+}
+
 export function buildElementsContext({
   parentContext,
   elements,
@@ -63,12 +68,15 @@ export function buildElementsContext({
   profileUrl,
   debugMode,
 }: BuildElementsContextArgs): ElementsContextType {
-  let mergedElements: ElementsContextType['elements'];
-  if (elements && parentContext) {
-    mergedElements = mergeElementsForContext(parentPath, elements, parentContext);
-  } else {
-    mergedElements = Object.create(null);
+  if (debugMode) {
+    console.debug('Building ElementsContext', { parentPath, profileUrl, elements });
   }
+  const mergedElements: ElementsContextType['elements'] = mergeElementsForContext(
+    parentPath,
+    elements,
+    parentContext,
+    Boolean(debugMode)
+  );
 
   const nestedPaths: Record<string, InternalSchemaElement> = Object.create(null);
   const elementsByPath: ElementsContextType['elementsByPath'] = Object.create(null);
@@ -78,11 +86,8 @@ export function buildElementsContext({
   for (const [key, property] of Object.entries(mergedElements)) {
     elementsByPath[parentPath + '.' + key] = property;
 
-    if (property.fixed) {
-      console.log('  FIXED PROPERTY', parentPath + '.' + key, property.fixed);
-      fixedProperties[key] = property as any;
-    } else if (property.pattern) {
-      console.log('PATTERN PROPERTY', parentPath + '.' + key, property.pattern);
+    if (hasFixed(property)) {
+      fixedProperties[key] = property;
     }
 
     const [beginning, _last] = splitOnceRight(key, '.');
@@ -114,23 +119,37 @@ export function buildElementsContext({
 
 function mergeElementsForContext(
   parentPath: string,
-  elements: Record<string, InternalSchemaElement>,
-  parentContext: ElementsContextType
+  elements: BuildElementsContextArgs['elements'],
+  parentContext: BuildElementsContextArgs['parentContext'],
+  debugMode: boolean
 ): ElementsContextType['elements'] {
   const result: ElementsContextType['elements'] = Object.create(null);
 
-  const parentPathPrefix = parentPath + '.';
-  for (const [path, element] of Object.entries(parentContext.elementsByPath)) {
-    if (path.startsWith(parentPathPrefix)) {
-      const key = path.slice(parentPathPrefix.length);
-      result[key] = element;
+  if (parentContext) {
+    const parentPathPrefix = parentPath + '.';
+    for (const [path, element] of Object.entries(parentContext.elementsByPath)) {
+      if (path.startsWith(parentPathPrefix)) {
+        const key = path.slice(parentPathPrefix.length);
+        result[key] = element;
+      }
     }
   }
 
-  for (const [key, element] of Object.entries(elements)) {
-    if (!(key in result)) {
-      result[key] = element;
+  let usedNewElements = false;
+  if (elements) {
+    for (const [key, element] of Object.entries(elements)) {
+      if (!(key in result)) {
+        result[key] = element;
+        usedNewElements = true;
+      }
     }
+  }
+
+  // TODO if no new elements are used, the elementscontext is very likely not necessary;
+  // there could be an optimization where buildElementsContext returns undefined in this case
+  // to avoid needless contexts
+  if (debugMode && parentContext && !usedNewElements) {
+    console.debug('ElementsContext elements same as parent context');
   }
   return result;
 }

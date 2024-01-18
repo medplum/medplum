@@ -1,5 +1,5 @@
 import { Stack } from '@mantine/core';
-import { InternalTypeSchema, getPathDisplayName, isPopulated } from '@medplum/core';
+import { InternalTypeSchema, TypedValue, getPathDisplayName, isPopulated } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useContext, useMemo } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
@@ -15,7 +15,7 @@ const EXTENSION_KEYS = new Set(['extension', 'modifierExtension']);
 const IGNORED_PROPERTIES = new Set(['id', ...DEFAULT_IGNORED_PROPERTIES].filter((prop) => !EXTENSION_KEYS.has(prop)));
 
 export interface ElementsInputProps {
-  type: string | undefined;
+  type: string;
   path: string;
   defaultValue: any;
   outcome: OperationOutcome | undefined;
@@ -27,13 +27,11 @@ export interface ElementsInputProps {
 export function ElementsInput(props: ElementsInputProps): JSX.Element {
   const { onChange } = props;
   const [value, setValue] = useCallbackState<any>(() => props.defaultValue ?? {}, `ElementsInput[${props.path}]`);
-  // const DEBUG = useMemo(() => props.testId === 'slice-VSCat-elements-0', [props.testId]);
-  // const DEBUG = useMemo(() => true || props.path === 'Patient.extension.extension', [props.path]);
   const elementsContext = useContext(ElementsContext);
   const elements = elementsContext.elements;
   const elementsToRender = useMemo(() => {
     const result = Object.entries(elements).filter(([key, element]) => {
-      if (!element.type) {
+      if (!isPopulated(element.type)) {
         return false;
       }
 
@@ -71,33 +69,23 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
   const onChangeCallbacks = useMemo(() => {
     const result = elementsToRender.map(([key, element]) => {
       return (newPropValue: any, propName?: string) => {
-        // const newValue = setPropertyValue({ ...value }, key, propName ?? key, element, newPropValue);
-        // for (const [key, prop] of Object.entries(elementsContext.fixedProperties)) {
-        //   setPropertyValue(newValue, key, key, prop, prop.fixed.value);
-        // }
-        // setValue(newValue);
         setValue((prevValue: any) => {
           const newValue = setPropertyValue({ ...prevValue }, key, propName ?? key, element, newPropValue);
           for (const [key, prop] of Object.entries(elementsContext.fixedProperties)) {
             setPropertyValue(newValue, key, key, prop, prop.fixed.value);
           }
-          console.log(`ElementsInput[${props.path}]`, {
-            newPropValue: JSON.stringify(newPropValue),
-            propName,
-            prevValue: JSON.stringify(prevValue),
-            newValue: JSON.stringify(newValue),
-          });
           return newValue;
         }, onChange);
       };
     });
     return result;
-  }, [elementsToRender, setValue, onChange, props.path, elementsContext.fixedProperties]);
+  }, [elementsToRender, setValue, onChange, elementsContext.fixedProperties]);
+  const typedValue: TypedValue = { type: props.type, value };
 
   return (
     <Stack style={{ flexGrow: 1 }} data-testid={props.testId}>
       {elementsToRender.map(([key, element], elementIndex) => {
-        const [propertyValue, propertyType] = getValueAndTypeFromElement(value, key, element);
+        const [propertyValue, propertyType] = getValueAndTypeFromElement(typedValue, key, element);
         const required = element.min !== undefined && element.min > 0;
         const resourcePropertyInput = (
           <ResourcePropertyInput

@@ -1,9 +1,9 @@
-import { Device, Patient } from '@medplum/fhirtypes';
+import { Device, Patient, StructureDefinition } from '@medplum/fhirtypes';
 import StructureDefinitionList from './uscore-v5.0.1-structuredefinitions.json';
 import { HTTP_HL7_ORG, deepClone } from '@medplum/core';
 import { HomerSimpson } from '../simpsons';
 
-export const USCoreStructureDefinitionList = StructureDefinitionList;
+export const USCoreStructureDefinitionList: StructureDefinition[] = StructureDefinitionList as StructureDefinition[];
 
 export const HomerSimpsonUSCorePatient: Patient = {
   ...deepClone(HomerSimpson),

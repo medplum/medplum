@@ -40,7 +40,7 @@ export function getValueAndType(context: TypedValue, path: string): [any, string
  * @returns The value of the property and the property type.
  */
 export function getValueAndTypeFromElement(
-  value: TypedValue['value'],
+  value: TypedValue,
   path: string,
   element: InternalSchemaElement
 ): [any, string] {

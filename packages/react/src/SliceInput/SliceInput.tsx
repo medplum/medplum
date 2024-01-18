@@ -36,20 +36,22 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
   });
 
   const sliceType = slice.typeSchema?.type ?? slice.type[0].code;
+  const sliceElements = slice.typeSchema?.elements ?? slice.elements;
 
   const parentElementsContextValue = useContext(ElementsContext);
 
   const contextValue = useMemo(() => {
-    if (isPopulated(slice.elements)) {
+    if (isPopulated(sliceElements)) {
       return buildElementsContext({
         parentContext: parentElementsContextValue,
-        elements: slice.elements,
+        elements: sliceElements,
         parentPath: props.path,
         parentType: sliceType,
       });
     }
+    console.assert(false, 'Expected sliceElements to always be populated', slice.name);
     return undefined;
-  }, [parentElementsContextValue, props.path, slice.elements, sliceType]);
+  }, [parentElementsContextValue, props.path, slice.name, sliceElements, sliceType]);
 
   function setValuesWrapper(newValues: any[]): void {
     setValues(newValues);

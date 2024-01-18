@@ -12,19 +12,14 @@ import {
   tryGetProfile,
 } from '@medplum/core';
 import { SupportedSliceDefinition, isSupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
-import { ElementsContextType } from '../ElementsInput/ElementsInput.utils';
 
 function isDiscriminatorComponentMatch(
   typedValue: TypedValue,
   discriminator: SliceDiscriminator,
   slice: SupportedSliceDefinition,
-  profileUrl: string | undefined,
-  elements: ElementsContextType['elements']
+  profileUrl: string | undefined
 ): boolean {
   const elementList = slice.typeSchema?.elements ?? slice.elements;
-  if (discriminator.path.includes('.')) {
-    console.log('assignValues dotted', discriminator.path, slice.typeSchema?.elements, slice.elements, elements);
-  }
 
   // const pathParts = discriminator.path.split('.');
   // let lastEd: InternalSchemaElement | undefined;
@@ -61,7 +56,6 @@ function getValueSliceName(
   value: any,
   slices: SupportedSliceDefinition[],
   discriminators: SliceDiscriminator[],
-  elements: ElementsContextType['elements'],
   profileUrl?: string
 ): string | undefined {
   if (!value) {
@@ -75,7 +69,7 @@ function getValueSliceName(
     };
     if (
       discriminators.every((d) =>
-        isDiscriminatorComponentMatch(typedValue, d, slice, slice.typeSchema?.url ?? profileUrl, elements)
+        isDiscriminatorComponentMatch(typedValue, d, slice, slice.typeSchema?.url ?? profileUrl)
       )
     ) {
       return slice.name;
@@ -84,15 +78,13 @@ function getValueSliceName(
   return undefined;
 }
 
-function assignValuesIntoSlicesImpl(
+export function assignValuesIntoSlices(
   values: any[],
   slices: SupportedSliceDefinition[],
   slicing: SlicingRules | undefined,
-  elements: ElementsContextType['elements'],
   profileUrl: string | undefined
 ): any[][] {
   if (!slicing || slicing.slices.length === 0) {
-    console.log('assignValues no slicing or slices');
     return [values];
   }
 
@@ -102,9 +94,8 @@ function assignValuesIntoSlicesImpl(
     slicedValues[i] = [];
   }
 
-  // console.log('assignValues TOP', values, slices, slicing, elements, profileUrl);
   for (const value of values) {
-    const sliceName = getValueSliceName(value, slices, slicing.discriminator, elements, profileUrl);
+    const sliceName = getValueSliceName(value, slices, slicing.discriminator, profileUrl);
     if (!isPopulated(sliceName)) {
       console.debug('slice value assigned to default slice', value, slicing);
     }
@@ -132,20 +123,16 @@ function assignValuesIntoSlicesImpl(
   return slicedValues;
 }
 
-export async function assignValuesIntoSlices({
+export async function prepareSlices({
   medplum,
   property,
-  defaultValue,
-  elementsContext,
 }: {
   medplum: MedplumClient;
   property: InternalSchemaElement;
-  defaultValue: any[];
-  elementsContext: ElementsContextType;
-}): Promise<{ slices: SupportedSliceDefinition[]; slicedValues: any[][] }> {
+}): Promise<SupportedSliceDefinition[]> {
   return new Promise((resolve, reject) => {
     if (!property.slicing) {
-      resolve({ slices: [], slicedValues: [defaultValue] });
+      resolve([]);
       return;
     }
 
@@ -183,15 +170,7 @@ export async function assignValuesIntoSlices({
             slice.typeSchema = typeSchema;
           }
         }
-        const results = assignValuesIntoSlicesImpl(
-          defaultValue,
-          supportedSlices,
-          property.slicing,
-          elementsContext.elements,
-          elementsContext.profileUrl
-        );
-
-        resolve({ slices: supportedSlices, slicedValues: results });
+        resolve(supportedSlices);
       })
       .catch(reject);
   });
