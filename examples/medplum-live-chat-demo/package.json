@@ -1,0 +1,42 @@
+{
+  "name": "medplum-live-chat-demo",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
+  },
+  "devDependencies": {
+    "@mantine/core": "7.3.2",
+    "@mantine/hooks": "7.3.2",
+    "@mantine/notifications": "7.3.2",
+    "@medplum/core": "3.0.0",
+    "@medplum/eslint-config": "3.0.0",
+    "@medplum/fhirtypes": "3.0.0",
+    "@medplum/react": "3.0.0",
+    "@tabler/icons-react": "2.45.0",
+    "@types/node": "20.11.0",
+    "@types/react": "18.2.47",
+    "@types/react-dom": "18.2.18",
+    "@vitejs/plugin-react": "4.2.1",
+    "postcss": "8.4.31",
+    "postcss-preset-mantine": "1.11.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-router-dom": "6.21.2",
+    "typescript": "5.3.3",
+    "vite": "5.0.11"
+  }
+}
