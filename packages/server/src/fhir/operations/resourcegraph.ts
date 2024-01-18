@@ -23,7 +23,7 @@ import {
 import { Request, Response } from 'express';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { Repository } from '../repo';
-import { sendResponse } from '../routes';
+import { sendResponse } from '../response';
 
 /**
  * Handles a Resource $graph request.

@@ -17,7 +17,7 @@ import {
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { sendOutcome } from '../../outcomes';
-import { sendResponse } from '../../routes';
+import { sendResponse } from '../../response';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
