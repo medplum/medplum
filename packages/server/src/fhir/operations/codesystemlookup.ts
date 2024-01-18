@@ -6,6 +6,7 @@ import { TypedValue, allOk, badRequest, notFound } from '@medplum/core';
 import { Column, Condition, SelectQuery } from '../sql';
 import { sendOutcome } from '../outcomes';
 import { getClient } from '../../database';
+import { getAuthenticatedContext } from '../../context';
 
 const operation = getOperationDefinition('CodeSystem', 'lookup');
 
@@ -17,6 +18,7 @@ type CodeSystemLookupParameters = {
 };
 
 export async function codeSystemLookupHandler(req: Request, res: Response): Promise<void> {
+  const ctx = getAuthenticatedContext();
   const params = parseInputParameters<CodeSystemLookupParameters>(operation, req);
 
   let coding: Coding;
@@ -56,6 +58,7 @@ export async function codeSystemLookupHandler(req: Request, res: Response): Prom
     .column(new Column(csPropTable, 'description'))
     .column(new Column(propertyTable, 'value'))
     .where(new Column(codeSystemTable, 'url'), '=', coding.system)
+    .where(new Column(codeSystemTable, 'projectId'), '=', ctx.project.id)
     .where(new Column('Coding', 'code'), '=', coding.code);
 
   const db = getClient();

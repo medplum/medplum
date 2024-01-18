@@ -16,13 +16,24 @@ const testCodeSystem: CodeSystem = {
   title: 'Test Code System',
   status: 'active',
   hierarchyMeaning: 'is-a',
-  content: 'not-present',
+  content: 'complete',
   property: [
     {
       code: 'parent',
       uri: 'http://hl7.org/fhir/concept-properties#parent',
       description: 'Test parent property',
       type: 'code',
+    },
+  ],
+  concept: [
+    {
+      code: '1',
+      display: 'Biopsy of brain',
+      concept: [
+        { code: '2', display: 'Biopsy of head' },
+        { code: '3', display: 'Procedure on head' },
+        { code: '4', display: 'Procedure' },
+      ],
     },
   ],
 };
@@ -35,7 +46,7 @@ describe('CodeSystem lookup', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    accessToken = await initTestAuth({ superAdmin: true });
+    accessToken = await initTestAuth();
     expect(accessToken).toBeDefined();
 
     const res = await request(app)
@@ -45,46 +56,6 @@ describe('CodeSystem lookup', () => {
       .send(testCodeSystem);
     expect(res.status).toEqual(201);
     codeSystem = res.body as CodeSystem;
-
-    const res2 = await request(app)
-      .post(`/fhir/R4/CodeSystem/$import`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'system', valueUri: codeSystem.url },
-          { name: 'concept', valueCoding: { code: '1', display: 'Biopsy of brain' } },
-          { name: 'concept', valueCoding: { code: '2', display: 'Biopsy of head' } },
-          { name: 'concept', valueCoding: { code: '3', display: 'Procedure on head' } },
-          { name: 'concept', valueCoding: { code: '4', display: 'Procedure' } },
-          {
-            name: 'property',
-            part: [
-              { name: 'code', valueCode: '1' },
-              { name: 'property', valueCode: 'parent' },
-              { name: 'value', valueString: '2' },
-            ],
-          },
-          {
-            name: 'property',
-            part: [
-              { name: 'code', valueCode: '1' },
-              { name: 'property', valueCode: 'parent' },
-              { name: 'value', valueString: '3' },
-            ],
-          },
-          {
-            name: 'property',
-            part: [
-              { name: 'code', valueCode: '1' },
-              { name: 'property', valueCode: 'parent' },
-              { name: 'value', valueString: '4' },
-            ],
-          },
-        ],
-      } as Parameters);
-    expect(res2.status).toBe(200);
   });
 
   afterAll(async () => {
@@ -103,6 +74,7 @@ describe('CodeSystem lookup', () => {
           { name: 'code', valueCode: '1' },
         ],
       } as Parameters);
+    console.log(codeSystem.url, res.body.issue);
     expect(res.status).toEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
