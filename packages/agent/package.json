@@ -25,7 +25,7 @@
   "dependencies": {
     "@medplum/core": "*",
     "@medplum/hl7": "*",
-    "dcmjs-dimse": "0.1.23",
+    "dcmjs-dimse": "0.1.24",
     "node-windows": "1.0.0-beta.8",
     "ws": "8.16.0"
   },
