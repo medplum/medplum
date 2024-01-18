@@ -44,6 +44,7 @@ import { getConfig } from '../config';
 import { getClient } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { getLookupTable, Repository } from './repo';
+import { getFullUrl } from './response';
 import {
   ArraySubquery,
   Column,
@@ -388,10 +389,6 @@ function getSearchLinks(searchRequest: SearchRequest, hasMore: boolean | undefin
   }
 
   return result;
-}
-
-export function getFullUrl(resourceType: string, id: string): string {
-  return `${getConfig().baseUrl}fhir/R4/${resourceType}/${id}`;
 }
 
 function getSearchUrl(searchRequest: SearchRequest): string {
