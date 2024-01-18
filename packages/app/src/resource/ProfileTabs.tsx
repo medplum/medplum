@@ -3,6 +3,12 @@ import { Resource } from '@medplum/fhirtypes';
 import { SupportedProfileStructureDefinition, isSupportedProfileStructureDefinition, useMedplum } from '@medplum/react';
 import { IconCircleFilled } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
+
+const PREFERRED_PROFILES = [
+  'http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure',
+  'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient',
+];
+
 export type ProfileTabsProps = {
   resource: Resource;
   currentProfile: SupportedProfileStructureDefinition | undefined;
@@ -24,6 +30,13 @@ export function ProfileTabs({ resource, currentProfile, onChange }: ProfileTabsP
       .searchResources('StructureDefinition', { type: resourceType, derivation: 'constraint', _count: 50 })
       .then((results) => {
         setAvailableProfiles(results.filter(isSupportedProfileStructureDefinition));
+
+        const preferredSD = results
+          .filter(isSupportedProfileStructureDefinition)
+          .find((sd) => PREFERRED_PROFILES.includes(sd.url));
+        if (preferredSD) {
+          onChange(preferredSD);
+        }
       })
       .catch(console.error);
   }, [medplum, onChange, resourceType]);

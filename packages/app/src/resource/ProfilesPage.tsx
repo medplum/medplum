@@ -8,6 +8,11 @@ import { useParams } from 'react-router-dom';
 import { addProfileToResource, cleanResource, removeProfileFromResource } from './utils';
 import { ProfileTabs } from './ProfileTabs';
 
+const PREFERRED_PROFILES = [
+  'http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure',
+  'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient',
+];
+
 export function ProfilesPage(): JSX.Element | null {
   const medplum = useMedplum();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
@@ -60,7 +65,9 @@ type ProfileDetailProps = {
 const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resource, onResourceUpdated }) => {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
-  const [active, setActive] = useState(() => resource.meta?.profile?.includes(profile.url));
+  const [active, setActive] = useState(
+    () => resource.meta?.profile?.includes(profile.url) || PREFERRED_PROFILES.includes(profile.url)
+  );
 
   const handleSubmit = useCallback(
     (newResource: Resource): void => {
