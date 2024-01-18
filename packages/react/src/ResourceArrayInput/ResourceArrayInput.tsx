@@ -1,17 +1,18 @@
 import { Group, Stack } from '@mantine/core';
-import { InternalSchemaElement, getPathDisplayName, isEmpty, tryGetProfile } from '@medplum/core';
+import { InternalSchemaElement, getPathDisplayName, isPopulated } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { MouseEvent, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { SliceInput } from '../SliceInput/SliceInput';
-import { SupportedSliceDefinition, isSupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
+import { SupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
+import useCallbackState from '../hooks/useCallbackState';
 import { killEvent } from '../utils/dom';
 import classes from './ResourceArrayInput.module.css';
 import { assignValuesIntoSlices } from './ResourceArrayInput.utils';
-import useCallbackState from '../hooks/useCallbackState';
 
 export interface ResourceArrayInputProps {
   property: InternalSchemaElement;
@@ -34,12 +35,13 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
   // props.defaultValue should NOT be used after this; prefer the defaultValue state
   const [defaultValue] = useState<any[]>(() => (Array.isArray(props.defaultValue) ? props.defaultValue : []));
   const [slicedValues, setSlicedValues] = useCallbackState<SlicedValuesType>([[]], `ResourceArrayInput[${props.path}]`);
+  const ctx = useContext(ElementsContext);
 
   // props.onChange should NOT be used directly; prefer onChangeWrapper
   const onChangeWrapper = useCallback(
     (values: SlicedValuesType) => {
       if (onChange) {
-        const cleaned = values.flat().filter((val) => val !== undefined);
+        const cleaned = values.flat().filter((val) => isPopulated(val));
         onChange(cleaned);
       }
     },
@@ -59,61 +61,23 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
 
   const propertyTypeCode = property.type[0]?.code;
   useEffect(() => {
-    if (!property.slicing) {
-      const emptySlices: SupportedSliceDefinition[] = [];
-      setSlices(emptySlices);
-      const results = assignValuesIntoSlices(defaultValue, emptySlices, property.slicing);
-      setSlicedValues(results);
-      setLoading(false);
-      return;
-    }
-
-    const supportedSlices: SupportedSliceDefinition[] = [];
-    const profileUrls: (string | undefined)[] = [];
-    const promises: Promise<void>[] = [];
-    for (const slice of property.slicing.slices) {
-      if (!isSupportedSliceDefinition(slice)) {
-        continue;
-      }
-
-      const sliceType = slice.type[0];
-      let profileUrl: string | undefined;
-      if (isEmpty(slice.elements)) {
-        if (sliceType.profile) {
-          profileUrl = sliceType.profile[0];
-        }
-      }
-
-      // important to keep these three arrays the same length;
-      supportedSlices.push(slice);
-      profileUrls.push(profileUrl);
-      if (profileUrl) {
-        promises.push(medplum.requestProfileSchema(profileUrl));
-      } else {
-        promises.push(Promise.resolve());
-      }
-    }
-
-    Promise.all(promises)
-      .then(() => {
-        for (let i = 0; i < supportedSlices.length; i++) {
-          const slice = supportedSlices[i];
-          const profileUrl = profileUrls[i];
-          if (profileUrl) {
-            const typeSchema = tryGetProfile(profileUrl);
-            slice.typeSchema = typeSchema;
-          }
-        }
-        setSlices(supportedSlices);
-        const results = assignValuesIntoSlices(defaultValue, supportedSlices, property.slicing);
-        setSlicedValues(results);
+    assignValuesIntoSlices({
+      medplum,
+      property,
+      defaultValue,
+      elementsContext: ctx,
+    })
+      .then(({ slices, slicedValues }) => {
+        console.log(`ResourceArrayInput[${props.path}] assignValues`, defaultValue, { slices, slicedValues });
+        setSlices(slices);
+        setSlicedValues(slicedValues);
         setLoading(false);
       })
       .catch((reason) => {
         console.error(reason);
         setLoading(false);
       });
-  }, [medplum, property.slicing, propertyTypeCode, defaultValue, setSlicedValues]);
+  }, [medplum, property, defaultValue, ctx, setSlicedValues, props.path]);
 
   const sliceOnChanges = useMemo(() => {
     return slices.map((_slice, sliceIndex) => {
