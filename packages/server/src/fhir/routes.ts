@@ -10,6 +10,7 @@ import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
 import { agentPushHandler } from './operations/agentpush';
 import { codeSystemImportHandler } from './operations/codesystemimport';
+import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
 import { deployHandler } from './operations/deploy';
@@ -103,6 +104,9 @@ protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 
 // CodeSystem $import operation
 protectedRoutes.post('/CodeSystem/([$]|%24)import', asyncWrap(codeSystemImportHandler));
+
+// CodeSystem $lookup operation
+protectedRoutes.post('/CodeSystem/([$]|%24)lookup', asyncWrap(codeSystemLookupHandler));
 
 // CSV Export
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));

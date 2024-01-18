@@ -3,7 +3,7 @@ import { Pool, PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 import { DeleteQuery } from '../sql';
 import { append } from '@medplum/core';
-import { ImportedProperty, importCodeSystem } from '../operations/codesystemimport';
+import { ImportedProperty, importCodeSystem, parentProperty } from '../operations/codesystemimport';
 
 /**
  * The CodingTable class is used to index and search Coding values associated with a CodeSystem.
@@ -88,7 +88,8 @@ export class CodingTable extends LookupTable<Coding> {
         this.addCodeSystemConcepts(codeSystem, child, result);
         result.properties = append(result.properties, {
           code: child.code as string,
-          property: codeSystem.hierarchyMeaning ?? 'parent',
+          property:
+            codeSystem.property?.find((p) => p.uri === parentProperty)?.code ?? codeSystem.hierarchyMeaning ?? 'parent',
           value: code as string,
         });
       }

@@ -160,11 +160,13 @@ async function processProperties(
   }
 }
 
+export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
+
 async function resolveProperty(codeSystem: CodeSystem, code: string, db: Pool): Promise<[number, boolean]> {
   let prop = codeSystem.property?.find((p) => p.code === code);
   if (!prop) {
     if (code === codeSystem.hierarchyMeaning || (code === 'parent' && !codeSystem.hierarchyMeaning)) {
-      prop = { code, uri: 'http://hl7.org/fhir/concept-properties#parent', type: 'code' };
+      prop = { code, uri: parentProperty, type: 'code' };
     } else {
       throw new OperationOutcomeError(badRequest(`Unknown property: ${code}`));
     }
