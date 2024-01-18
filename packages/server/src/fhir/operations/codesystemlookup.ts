@@ -66,7 +66,7 @@ export async function codeSystemLookupHandler(req: Request, res: Response): Prom
     .column(new Column(csPropTable, 'type'))
     .column(new Column(csPropTable, 'description'))
     .column(new Column(propertyTable, 'value'))
-    .where(new Column(codeSystemTable, 'url'), '=', coding.system)
+    .where(new Column(codeSystemTable, 'id'), '=', codeSystem.id)
     .where(new Column('Coding', 'code'), '=', coding.code);
 
   const db = getClient();
