@@ -1,5 +1,5 @@
 import { JsonInput } from '@mantine/core';
-import { InternalTypeSchema, stringify, tryGetProfile } from '@medplum/core';
+import { InternalTypeSchema, stringify, tryGetProfile, isProfileLoaded } from '@medplum/core';
 import { ElementDefinitionType, Extension } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useMemo, useState } from 'react';
@@ -14,9 +14,8 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
   const { propertyType } = props;
 
   const medplum = useMedplum();
-  const [loading, setLoading] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(false);
   const [typeSchema, setTypeSchema] = useState<InternalTypeSchema | undefined>();
-
   const profileUrl: string | undefined = useMemo(() => {
     if (!propertyType.profile || propertyType.profile.length === 0) {
       return undefined;
@@ -27,16 +26,16 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
 
   useEffect(() => {
     if (profileUrl) {
-      setLoading(true);
+      setLoadingProfile(true);
       medplum
         .requestProfileSchema(profileUrl)
         .then(() => {
           const profile = tryGetProfile(profileUrl);
-          setLoading(false);
+          setLoadingProfile(false);
           setTypeSchema(profile);
         })
         .catch((reason) => {
-          setLoading(false);
+          setLoadingProfile(false);
           console.warn(reason);
         });
     }
@@ -53,8 +52,8 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
     return <ExtensionJsonInput {...props} />;
   }
 
-  if (loading) {
-    return <div>Loading {profileUrl}...</div>;
+  if (profileUrl && (loadingProfile || !isProfileLoaded(profileUrl))) {
+    return <div>Loading...</div>;
   }
 
   if (!typeSchema) {
