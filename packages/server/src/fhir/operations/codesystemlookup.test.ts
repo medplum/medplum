@@ -27,12 +27,14 @@ const testCodeSystem: CodeSystem = {
   ],
   concept: [
     {
-      code: '1',
-      display: 'Biopsy of brain',
+      code: '4',
+      display: 'Procedure',
       concept: [
-        { code: '2', display: 'Biopsy of head' },
-        { code: '3', display: 'Procedure on head' },
-        { code: '4', display: 'Procedure' },
+        {
+          code: '3',
+          display: 'Procedure on head',
+          concept: [{ code: '2', display: 'Biopsy of head', concept: [{ code: '1', display: 'Biopsy of brain' }] }],
+        },
       ],
     },
   ],
@@ -74,7 +76,6 @@ describe('CodeSystem lookup', () => {
           { name: 'code', valueCode: '1' },
         ],
       } as Parameters);
-    console.log(codeSystem.url, res.body.issue);
     expect(res.status).toEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
@@ -86,22 +87,6 @@ describe('CodeSystem lookup', () => {
           part: [
             { name: 'code', valueCode: 'parent' },
             { name: 'value', valueCode: '2' },
-            { name: 'description', valueString: 'Test parent property' },
-          ],
-        },
-        {
-          name: 'property',
-          part: [
-            { name: 'code', valueCode: 'parent' },
-            { name: 'value', valueCode: '3' },
-            { name: 'description', valueString: 'Test parent property' },
-          ],
-        },
-        {
-          name: 'property',
-          part: [
-            { name: 'code', valueCode: 'parent' },
-            { name: 'value', valueCode: '4' },
             { name: 'description', valueString: 'Test parent property' },
           ],
         },
@@ -129,22 +114,6 @@ describe('CodeSystem lookup', () => {
           part: [
             { name: 'code', valueCode: 'parent' },
             { name: 'value', valueCode: '2' },
-            { name: 'description', valueString: 'Test parent property' },
-          ],
-        },
-        {
-          name: 'property',
-          part: [
-            { name: 'code', valueCode: 'parent' },
-            { name: 'value', valueCode: '3' },
-            { name: 'description', valueString: 'Test parent property' },
-          ],
-        },
-        {
-          name: 'property',
-          part: [
-            { name: 'code', valueCode: 'parent' },
-            { name: 'value', valueCode: '4' },
             { name: 'description', valueString: 'Test parent property' },
           ],
         },
@@ -178,12 +147,29 @@ describe('CodeSystem lookup', () => {
       .set('Content-Type', 'application/fhir+json')
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'code', valueCode: 'wrong code' }],
+        parameter: [{ name: 'code', valueCode: '1' }],
       } as Parameters);
     expect(res.status).toEqual(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'invalid', details: { text: 'No coding specified' } }],
+    });
+  });
+
+  test('Checks project', async () => {
+    const otherAccessToken = await initTestAuth();
+    const res = await request(app)
+      .post('/fhir/R4/CodeSystem/$lookup')
+      .set('Authorization', 'Bearer ' + otherAccessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'coding', valueCoding: { system: codeSystem.url, code: '1' } }],
+      } as Parameters);
+    expect(res.status).toEqual(404);
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [{ severity: 'error', code: 'not-found', details: { text: 'Not found' } }],
     });
   });
 });
