@@ -99,6 +99,7 @@ export function AddNote(props: AddCommentProps): JSX.Element {
 
 const commentQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
+  status: 'active',
   id: 'add-comment',
   title: 'Add a comment',
   item: [

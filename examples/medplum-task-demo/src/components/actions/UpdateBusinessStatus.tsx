@@ -82,6 +82,7 @@ export function UpdateBusinessStatus(props: UpdateBusinessStatusProps): JSX.Elem
 
 const updateStatusQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
+  status: 'active',
   id: 'update-status',
   title: 'Update the Status of the Task',
   item: [

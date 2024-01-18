@@ -1,7 +1,6 @@
-import { Tabs, Title } from '@mantine/core';
+import { Paper, Tabs, Title } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
-import { DefaultResourceTimeline, Document, ResourceTable, useResource } from '@medplum/react';
-import { useState } from 'react';
+import { DefaultResourceTimeline, Document, ResourceTable, useMedplumNavigate, useResource } from '@medplum/react';
 import { useParams } from 'react-router-dom';
 import { ResourceHistoryTab } from '../components/ResourceHistoryTab';
 
@@ -12,17 +11,18 @@ import { ResourceHistoryTab } from '../components/ResourceHistoryTab';
  */
 export function ResourcePage(): JSX.Element | null {
   const { resourceType, id } = useParams();
+  const navigate = useMedplumNavigate();
   const reference = { reference: resourceType + '/' + id };
   const resource = useResource(reference);
   const tabs = ['Details', 'Timeline', 'History'];
-  const [currentTab, setCurrentTab] = useState<string>(() => {
-    const tab = window.location.pathname.split('/').pop();
-    return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
-  });
+
+  const tab = window.location.pathname.split('/').pop();
+  const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
+  console.log('Current tab', tab);
 
   // Update the tab and navigate to that tab's URL
-  const handleTabChange = (newTab: string): void => {
-    setCurrentTab(newTab);
+  const handleTabChange = (newTab: string | null): void => {
+    navigate(`/${resourceType}/${id}/${newTab}`);
   };
 
   if (!resource) {
@@ -32,7 +32,7 @@ export function ResourcePage(): JSX.Element | null {
   return (
     <Document key={getReferenceString(resource)}>
       <Title>{getDisplayString(resource)}</Title>
-      <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
+      <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
           {tabs.map((tab) => (
             <Tabs.Tab key={tab} value={tab.toLowerCase()}>
@@ -41,7 +41,9 @@ export function ResourcePage(): JSX.Element | null {
           ))}
         </Tabs.List>
         <Tabs.Panel value="details">
-          <ResourceTable key={`${resourceType}/${id}`} value={resource} />
+          <Paper mt={'lg'}>
+            <ResourceTable key={`${resourceType}/${id}`} value={resource} />
+          </Paper>
         </Tabs.Panel>
         <Tabs.Panel value="timeline">
           <DefaultResourceTimeline resource={resource} />

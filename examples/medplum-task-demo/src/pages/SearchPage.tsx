@@ -51,12 +51,12 @@ export function SearchPage(): JSX.Element {
     }
   }, [medplum, navigate, location]);
 
-  const handleTabChange = (newTab: string): void => {
+  const handleTabChange = (newTab: string | null): void => {
     if (!search) {
       throw new Error('Error: No valid search');
     }
 
-    const updatedSearch = updateSearch(newTab, search);
+    const updatedSearch = updateSearch(newTab ?? 'active', search);
     const updatedSearchQuery = formatSearchQuery(updatedSearch);
     console.log(updatedSearchQuery);
     navigate(`/Task${updatedSearchQuery}`);
@@ -69,7 +69,7 @@ export function SearchPage(): JSX.Element {
   return (
     <Document>
       {showTabs ? (
-        <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
+        <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
           <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
             {tabs.map((tab) => (
               <Tabs.Tab key={tab} value={tab.toLowerCase()}>

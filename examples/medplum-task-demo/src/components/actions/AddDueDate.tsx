@@ -94,6 +94,7 @@ export function AddDueDate(props: AddDueDateProps): JSX.Element {
 
 const dueDateQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
+  status: 'active',
   id: 'due-date',
   title: 'Due-Date',
   item: [

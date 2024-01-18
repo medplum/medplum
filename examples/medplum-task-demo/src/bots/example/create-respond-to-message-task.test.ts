@@ -28,7 +28,7 @@ describe('Create Respond to Message Task', async () => {
 
     const result = await handler(medplum);
     expect(result).toBe(false);
-    expect(console.log).toBeCalledWith('No messages in the last 30 minutes that require a response.');
+    expect(console.log).toHaveBeenCalledWith('No messages in the last 30 minutes that require a response.');
   });
 
   test('Messages in the last 30 minutes not sent by patients', async () => {
@@ -39,7 +39,7 @@ describe('Create Respond to Message Task', async () => {
 
     const result = await handler(medplum);
     expect(result).toBe(false);
-    expect(console.log).toBeCalledWith('No messages in the last 30 minutes that require a response.');
+    expect(console.log).toHaveBeenCalledWith('No messages in the last 30 minutes that require a response.');
   });
 
   test('Messages part of thread that already has active task', async () => {
@@ -50,7 +50,7 @@ describe('Create Respond to Message Task', async () => {
 
     const result = await handler(medplum);
     expect(result).toBe(true);
-    expect(console.log).toBeCalledWith('Task already exists for this thread.');
+    expect(console.log).toHaveBeenCalledWith('Task already exists for this thread.');
   });
 
   test('Assign task to care coordinator queue', async () => {
@@ -61,8 +61,8 @@ describe('Create Respond to Message Task', async () => {
 
     const result = await handler(medplum);
     expect(result).toBe(true);
-    expect(console.log).toBeCalledWith('Task created');
-    expect(console.log).toBeCalledWith('Assigned to care coordinator queue');
+    expect(console.log).toHaveBeenCalledWith('Task created');
+    expect(console.log).toHaveBeenCalledWith('Assigned to care coordinator queue');
   });
 
   test('Assign to practitioner who previously responded to thread', async () => {
@@ -73,7 +73,7 @@ describe('Create Respond to Message Task', async () => {
 
     const result = await handler(medplum);
     expect(result).toBe(true);
-    expect(console.log).toBeCalledWith('Task created');
-    expect(console.log).toBeCalledWith('Assigned to most recent responder');
+    expect(console.log).toHaveBeenCalledWith('Task created');
+    expect(console.log).toHaveBeenCalledWith('Assigned to most recent responder');
   });
 });

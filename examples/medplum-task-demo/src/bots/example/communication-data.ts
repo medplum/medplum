@@ -29,6 +29,7 @@ export const noMessagesInLast30Minutes: Bundle = {
     {
       resource: {
         resourceType: 'Communication',
+        status: 'completed',
         sent: new Date().toISOString(),
         partOf: [
           {
@@ -76,6 +77,7 @@ export const messagesNotSentByPatients: Bundle = {
     {
       resource: {
         resourceType: 'Communication',
+        status: 'completed',
         sent: earlier.toISOString(),
         partOf: [
           {
@@ -493,6 +495,7 @@ export const threadsWithTasks: Bundle = {
       resource: {
         resourceType: 'Task',
         status: 'in-progress',
+        intent: 'order',
         focus: {
           reference: 'urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002',
         },

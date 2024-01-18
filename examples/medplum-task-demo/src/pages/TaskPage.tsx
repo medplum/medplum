@@ -1,15 +1,22 @@
 import { Grid, Paper, Skeleton, Tabs, Title } from '@mantine/core';
 import { formatCodeableConcept, getDisplayString, resolveId } from '@medplum/core';
 import { Patient, Task } from '@medplum/fhirtypes';
-import { DefaultResourceTimeline, Document, PatientSummary, ResourceTable, useMedplum } from '@medplum/react';
+import {
+  DefaultResourceTimeline,
+  Document,
+  PatientSummary,
+  ResourceTable,
+  useMedplum,
+  useMedplumNavigate,
+} from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { TaskActions } from '../components/actions/TaskActions';
 import { NotesPage } from './NotesPage';
 
 export function TaskPage(): JSX.Element {
   const medplum = useMedplum();
-  const navigate = useNavigate();
+  const navigate = useMedplumNavigate();
   const { id } = useParams() as { id: string };
   const [task, setTask] = useState<Task | undefined>(undefined);
   const tabs = ['Details', 'Timeline', 'Notes'];
@@ -53,8 +60,8 @@ export function TaskPage(): JSX.Element {
   }, [medplum, patientReference]);
 
   // Update the current tab and navigate to its URL
-  const handleTabChange = (newTab: string): void => {
-    navigate(`/Task/${id}/${newTab}`);
+  const handleTabChange = (newTab: string | null): void => {
+    navigate(`/Task/${id}/${newTab ?? ''}`);
   };
 
   const onTaskChange = (updatedTask: Task): void => {
@@ -103,14 +110,14 @@ interface TaskDetailsProps {
   task: Task;
   tabs: string[];
   currentTab: string;
-  handleTabChange: (newTab: string) => void;
+  handleTabChange: (newTab: string | null) => void;
 }
 
 function TaskDetails({ task, tabs, currentTab, handleTabChange }: TaskDetailsProps): JSX.Element {
   return (
     <Paper p="md" key={task ? task.id : 'loading'}>
       <Title>{task.code ? formatCodeableConcept(task.code) : getDisplayString(task)}</Title>
-      <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
+      <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
           {tabs.map((tab) => (
             <Tabs.Tab key={tab} value={tab.toLowerCase()}>

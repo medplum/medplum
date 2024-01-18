@@ -79,6 +79,7 @@ export function AssignTask(props: AssignTaskProps): JSX.Element {
 
 const assignTaskQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
+  status: 'active',
   id: 'assign-task',
   title: 'Assign Owner to the Task',
   item: [

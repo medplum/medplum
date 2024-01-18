@@ -83,6 +83,7 @@ export function AssignRole(props: AssignTaskProps): JSX.Element {
 
 const assignRoleQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
+  status: 'active',
   id: 'assign-role',
   title: 'Assign to a Role',
   item: [
